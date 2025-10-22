@@ -41,6 +41,7 @@
       "@scarf/scarf",
       "@tailwindcss/oxide",
       "@tree-sitter-grammars/tree-sitter-yaml",
+      "better-sqlite3",
       "core-js-pure",
       "esbuild",
       "msgpackr-extract",

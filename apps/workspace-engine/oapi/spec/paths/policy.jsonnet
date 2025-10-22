@@ -10,7 +10,6 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
       ],
       responses: openapi.okResponse(
-        'A list of policies',
         {
           type: 'object',
           properties: {
@@ -19,7 +18,8 @@ local openapi = import '../lib/openapi.libsonnet';
               items: openapi.schemaRef('Policy'),
             },
           },
-        }
+        },
+        'A list of policies'
       ) + openapi.notFoundResponse(),
     },
   },
@@ -34,9 +34,11 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.policyIdParam(),
       ],
       responses: openapi.okResponse(
-        'The requested policy',
-        openapi.schemaRef('Policy')
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+                   openapi.schemaRef('Policy'),
+                   'The requested policy'
+                 )
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 
@@ -50,7 +52,6 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.policyIdParam(),
       ],
       responses: openapi.okResponse(
-        'A list of release targets',
         {
           type: 'object',
           properties: {
@@ -59,7 +60,8 @@ local openapi = import '../lib/openapi.libsonnet';
               items: openapi.schemaRef('ReleaseTarget'),
             },
           },
-        }
+        },
+        'A list of release targets'
       ) + openapi.notFoundResponse(),
     },
   },

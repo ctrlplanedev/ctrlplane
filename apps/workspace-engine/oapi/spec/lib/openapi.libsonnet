@@ -65,7 +65,7 @@
       { '$ref': '#/components/schemas/' + name }
   ),
   
-  okResponse(description, schema):: {
+  okResponse(schema, description = "OK response"):: {
     '200': {
       description: description,
       content: {
@@ -84,7 +84,10 @@
           schema: {
             type: 'object',
             properties: {
-              items: itemsSchema,
+              items: {
+                type: 'array',
+                items: itemsSchema,
+              },
               total: {
                 type: 'integer',
                 description: 'Total number of items available',

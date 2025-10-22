@@ -7,7 +7,6 @@ local openapi = import '../lib/openapi.libsonnet';
       operationId: 'listWorkspaceIds',
       description: 'Returns a list of workspace that are in memory. These could be inactive.',
       responses: openapi.okResponse(
-        'A list of workspace IDs',
         {
           type: 'object',
           properties: {
@@ -16,7 +15,8 @@ local openapi = import '../lib/openapi.libsonnet';
               items: { type: 'string' },
             },
           },
-        }
+        },
+        'A list of workspace IDs'
       ),
     },
   },

@@ -58,14 +58,14 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 		log.Error("Failed to get Kafka metadata - broker may not be reachable", "error", err)
 		return fmt.Errorf("kafka metadata error: %w", err)
 	}
-	
+
 	topicInfo, topicExists := metadata.Topics[Topic]
 	if !topicExists {
 		log.Error("Topic does not exist", "topic", Topic)
 		return fmt.Errorf("kafka topic '%s' does not exist - please create it before starting the consumer", Topic)
 	}
 	log.Info("Topic exists", "topic", Topic, "partitions", len(topicInfo.Partitions))
-	
+
 	// Subscribe to topic
 	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID)
 	if err := consumer.SubscribeTopics([]string{Topic}, nil); err != nil {
@@ -73,7 +73,7 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 		return err
 	}
 	log.Info("Successfully subscribed to topic", "topic", Topic)
-	
+
 	assignedPartitions, err := waitForPartitionAssignment(ctx, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to wait for partition assignment: %w", err)
@@ -85,7 +85,6 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 		return fmt.Errorf("failed to get topic partition count: %w", err)
 	}
 	log.Info("Partition assignment complete", "assigned", assignedPartitions)
-
 
 	allWorkspaceIDs, err := wskafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
 	if err != nil {

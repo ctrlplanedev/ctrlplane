@@ -64,7 +64,7 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 	}
 
 	total := len(resourceList)
-	
+
 	// Apply pagination
 	start := offset
 	if start > total {

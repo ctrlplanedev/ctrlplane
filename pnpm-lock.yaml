@@ -140,9 +140,24 @@ importers:
       '@ctrlplane/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@ctrlplane/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../../packages/events
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@ctrlplane/trpc':
         specifier: workspace:*
         version: link:../../packages/trpc
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
+      '@ctrlplane/workspace-engine-sdk':
+        specifier: workspace:*
+        version: link:../../packages/workspace-engine-sdk
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
@@ -552,8 +567,8 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       date-fns:
-        specifier: 'catalog:'
-        version: 3.6.0
+        specifier: ^4.1.0
+        version: 4.1.0
       isbot:
         specifier: ^5.1.31
         version: 5.1.31

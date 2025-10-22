@@ -96,10 +96,10 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 	}
 
 	total := len(matchedResources)
-	
+
 	// Apply pagination
 	start := min(offset, total)
-	end := min(start + limit, total)
+	end := min(start+limit, total)
 	paginatedResources := matchedResources[start:end]
 
 	c.JSON(http.StatusOK, gin.H{

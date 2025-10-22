@@ -11,9 +11,11 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.environmentIdParam(),
       ],
       responses: openapi.okResponse(
-        'The requested environment',
-        openapi.schemaRef('Environment')
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+                   openapi.schemaRef('Environment'),
+                   'The requested environment'
+                 )
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }

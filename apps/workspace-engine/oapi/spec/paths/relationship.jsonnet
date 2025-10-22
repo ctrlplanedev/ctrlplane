@@ -12,7 +12,6 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.entityIdParam(),
       ],
       responses: openapi.okResponse(
-        'Related entities grouped by relationship reference',
         {
           type: 'object',
           properties: {
@@ -24,7 +23,8 @@ local openapi = import '../lib/openapi.libsonnet';
               },
             },
           },
-        }
+        },
+        'Related entities grouped by relationship reference',
       ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
   },

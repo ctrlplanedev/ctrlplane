@@ -12,12 +12,8 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(
-        {
-          type: 'array',
-          items: openapi.schemaRef('Resource'),
-        }
-      ) + openapi.notFoundResponse(),
+      responses: openapi.paginatedResponse(openapi.schemaRef('Resource'))
+                 + openapi.notFoundResponse(),
     },
   },
 
@@ -32,12 +28,8 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(
-        {
-          type: 'array',
-          items: openapi.schemaRef('Resource'),
-        }
-      ) + openapi.notFoundResponse(),
+      responses: openapi.paginatedResponse(openapi.schemaRef('Resource'))
+                 + openapi.notFoundResponse(),
     },
   },
 
@@ -50,10 +42,9 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.resourceIdentifierParam(),
       ],
-      responses: openapi.okResponse(
-        'The requested resource',
-        openapi.schemaRef('Resource')
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.okResponse(openapi.schemaRef('Resource'), 'The requested resource')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 
@@ -75,12 +66,8 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.paginatedResponse(
-        {
-          type: 'array',
-          items: openapi.schemaRef('Resource'),
-        }
-      ) + openapi.badRequestResponse(),
+      responses: openapi.paginatedResponse(openapi.schemaRef('Resource'))
+                 + openapi.badRequestResponse(),
     },
   },
 }

@@ -63,7 +63,7 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 	}
 
 	total := len(resourceList)
-	
+
 	// Apply pagination
 	start := offset
 	if start > total {
@@ -80,5 +80,91 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 		"offset": offset,
 		"limit":  limit,
 		"items":  paginatedResources,
+	})
+}
+
+func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params oapi.ListDeploymentsParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	deployments := ws.Deployments().Items()
+
+	c.JSON(http.StatusOK, deployments)
+
+	// Get pagination parameters with defaults
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(deployments)
+
+	// Apply pagination
+	start := min(offset, total)
+	end := min(start+limit, total)
+
+	deploymentsList := make([]*oapi.Deployment, 0, total)
+	for _, deployment := range deployments {
+		deploymentsList = append(deploymentsList, deployment)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  deploymentsList[start:end],
+	})
+}
+
+func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetReleaseTargetsForDeploymentParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	releaseTargets, err := ws.ReleaseTargets().Items(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(releaseTargets)
+	start := min(offset, total)
+	end := min(start+limit, total)
+
+	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, total)
+	for _, releaseTarget := range releaseTargets {
+		releaseTargetsList = append(releaseTargetsList, releaseTarget)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  releaseTargetsList[start:end],
 	})
 }

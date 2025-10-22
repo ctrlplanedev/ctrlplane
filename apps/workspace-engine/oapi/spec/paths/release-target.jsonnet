@@ -18,13 +18,13 @@ local openapi = import '../lib/openapi.libsonnet';
         },
       },
       responses: openapi.okResponse(
-        'Policy evaluation results for the release target',
         {
           properties: {
             workspaceDecision: openapi.schemaRef('DeployDecision'),
             versionDecision: openapi.schemaRef('DeployDecision'),
           },
-        }
+        },
+        'Policy evaluation results for the release target',
       ) + openapi.notFoundResponse(),
     },
   },
@@ -39,7 +39,6 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.releaseTargetIdParam(),
       ],
       responses: openapi.okResponse(
-        'A list of policies',
         {
           type: 'object',
           properties: {
@@ -48,7 +47,8 @@ local openapi = import '../lib/openapi.libsonnet';
               items: openapi.schemaRef('Policy'),
             },
           },
-        }
+        },
+        'A list of policies',
       ) + openapi.notFoundResponse(),
     },
   },

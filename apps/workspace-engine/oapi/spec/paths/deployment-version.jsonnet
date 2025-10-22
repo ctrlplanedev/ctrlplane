@@ -17,7 +17,6 @@ local openapi = import '../lib/openapi.libsonnet';
         },
       ],
       responses: openapi.okResponse(
-        'Jobs list grouped by environment and release target',
         {
           type: 'array',
           items: {
@@ -63,7 +62,8 @@ local openapi = import '../lib/openapi.libsonnet';
               },
             },
           },
-        }
+        },
+        'Jobs list grouped by environment and release target',
       ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
   },

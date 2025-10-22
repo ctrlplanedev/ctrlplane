@@ -481,6 +481,24 @@ type Value struct {
 	union json.RawMessage
 }
 
+// ListDeploymentsParams defines parameters for ListDeployments.
+type ListDeploymentsParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetReleaseTargetsForDeploymentParams defines parameters for GetReleaseTargetsForDeployment.
+type GetReleaseTargetsForDeploymentParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetDeploymentResourcesParams defines parameters for GetDeploymentResources.
 type GetDeploymentResourcesParams struct {
 	// Limit Maximum number of items to return
@@ -1144,9 +1162,15 @@ type ServerInterface interface {
 	// Get deployment version jobs list
 	// (GET /v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list)
 	GetDeploymentVersionJobsList(c *gin.Context, workspaceId string, versionId string)
+	// List deployments
+	// (GET /v1/workspaces/{workspaceId}/deployments)
+	ListDeployments(c *gin.Context, workspaceId string, params ListDeploymentsParams)
 	// Get deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId})
 	GetDeployment(c *gin.Context, workspaceId string, deploymentId string)
+	// Get release targets for a deployment
+	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets)
+	GetReleaseTargetsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params GetReleaseTargetsForDeploymentParams)
 	// Get resources for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/resources)
 	GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string, params GetDeploymentResourcesParams)
@@ -1240,6 +1264,49 @@ func (siw *ServerInterfaceWrapper) GetDeploymentVersionJobsList(c *gin.Context) 
 	siw.Handler.GetDeploymentVersionJobsList(c, workspaceId, versionId)
 }
 
+// ListDeployments operation middleware
+func (siw *ServerInterfaceWrapper) ListDeployments(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeploymentsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListDeployments(c, workspaceId, params)
+}
+
 // GetDeployment operation middleware
 func (siw *ServerInterfaceWrapper) GetDeployment(c *gin.Context) {
 
@@ -1271,6 +1338,58 @@ func (siw *ServerInterfaceWrapper) GetDeployment(c *gin.Context) {
 	}
 
 	siw.Handler.GetDeployment(c, workspaceId, deploymentId)
+}
+
+// GetReleaseTargetsForDeployment operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetsForDeployment(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "deploymentId" -------------
+	var deploymentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReleaseTargetsForDeploymentParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReleaseTargetsForDeployment(c, workspaceId, deploymentId, params)
 }
 
 // GetDeploymentResources operation middleware
@@ -1737,7 +1856,9 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-versions/:versionId/jobs-list", wrapper.GetDeploymentVersionJobsList)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments", wrapper.ListDeployments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/release-targets", wrapper.GetReleaseTargetsForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)

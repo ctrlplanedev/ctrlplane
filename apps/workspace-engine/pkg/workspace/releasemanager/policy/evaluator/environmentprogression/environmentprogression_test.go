@@ -45,7 +45,7 @@ func setupTestStore() *store.Store {
 	jobAgentId := "agent-1"
 	description := "Test deployment"
 	deployment := &oapi.Deployment{
-		Id:             "deploy-1",	
+		Id:             "deploy-1",
 		Name:           "my-app",
 		Slug:           "my-app",
 		SystemId:       "system-1",

@@ -10,10 +10,9 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.systemIdParam(),
       ],
-      responses: openapi.okResponse(
-        'The requested system',
-        openapi.schemaRef('System')
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.okResponse(openapi.schemaRef('System'), 'The requested system')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }

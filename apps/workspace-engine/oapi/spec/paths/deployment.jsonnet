@@ -1,6 +1,24 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  '/v1/workspaces/{workspaceId}/deployments': {
+    get: {
+      summary: 'List deployments',
+      operationId: 'listDeployments',
+      description: 'Returns a paginated list of deployments for a workspace.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(
+        {
+          type: 'array',
+          items: openapi.schemaRef('Deployment'),
+        }
+      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}': {
     get: {
       summary: 'Get deployment',
@@ -10,10 +28,39 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
       ],
-      responses: openapi.okResponse(
-        'The requested deployment',
-        openapi.schemaRef('Deployment')
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.paginatedResponse(openapi.schemaRef('Deployment'), 'The requested deployment')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets': {
+    get: {
+      summary: 'Get release targets for a deployment',
+      operationId: 'getReleaseTargetsForDeployment',
+      description: 'Returns a list of release targets for a deployment.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTarget'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/releases': {
+    get: {
+      summary: 'Get releases for a deployment',
+      operationId: 'getReleasesForDeployment',
+      description: 'Returns a list of releases for a deployment.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Release'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }

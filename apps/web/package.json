@@ -44,7 +44,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "date-fns": "catalog:",
+    "date-fns": "^4.1.0",
     "isbot": "^5.1.31",
     "lucide-react": "^0.441.0",
     "next-themes": "^0.3.0",

@@ -31,7 +31,7 @@ type CelSelector struct {
 	Program cel.Program
 }
 
-func (s *CelSelector) Matches(entity any) (bool, error) {	
+func (s *CelSelector) Matches(entity any) (bool, error) {
 	celCtx := map[string]any{
 		"resource":    map[string]any{},
 		"deployment":  map[string]any{},
@@ -48,7 +48,7 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 	if isPointerResource || isResource {
 		celCtx["resource"] = entityAsMap
 	}
-	 
+
 	_, isPointerDeployment := entity.(*oapi.Deployment)
 	_, isDeployment := entity.(oapi.Deployment)
 	if isPointerDeployment || isDeployment {

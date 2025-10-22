@@ -8,7 +8,6 @@ import (
 
 type Selector any
 
-
 func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.Resource) (map[string]*oapi.Resource, error) {
 	// If no selector is provided, return no resources
 	if sel == nil {

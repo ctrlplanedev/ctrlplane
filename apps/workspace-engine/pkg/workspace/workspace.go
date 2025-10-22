@@ -269,7 +269,7 @@ func CreateWorkspaceLoader(
 	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
 		var allWorkspaceIDs []string
 		var err error
-		
+
 		// Use discoverer if provided, otherwise use default implementation
 		if discoverer != nil {
 			// Collect workspace IDs for each assigned partition
