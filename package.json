@@ -24,11 +24,9 @@
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo typecheck",
     "ui-add": "pnpm -F ui ui-add",
-    "openapi:merge": "pnpm -F openapi-merge merge",
-    "buf:generate": "buf generate"
+    "openapi:merge": "pnpm -F openapi-merge merge"
   },
   "devDependencies": {
-    "@bufbuild/buf": "^1.57.2",
     "@ctrlplane/prettier-config": "workspace:*",
     "@turbo/gen": "^2.5.6",
     "prettier": "catalog:",
@@ -38,7 +36,6 @@
   "prettier": "@ctrlplane/prettier-config",
   "pnpm": {
     "onlyBuiltDependencies": [
-      "@bufbuild/buf",
       "@nestjs/core",
       "@openapitools/openapi-generator-cli",
       "@scarf/scarf",
@@ -47,7 +44,6 @@
       "core-js-pure",
       "esbuild",
       "msgpackr-extract",
-      "protobufjs",
       "sharp",
       "tree-sitter",
       "tree-sitter-json",

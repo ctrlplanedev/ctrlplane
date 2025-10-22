@@ -1,4 +1,0 @@
-version: v2
-
-modules:
-  - path: apps/workspace-engine/proto

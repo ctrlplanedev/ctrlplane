@@ -33,7 +33,7 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@faker-js/faker": "^9.6.0",
-    "@openapitools/openapi-generator-cli": "^2.13.5",
+    "@openapitools/openapi-generator-cli": "^2.21.0",
     "@playwright/test": "^1.51.0",
     "@types/js-yaml": "^4.0.9",
     "@types/mustache": "^4.2.5",
