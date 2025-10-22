@@ -209,13 +209,11 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 		return ws, nil
 	}
 
-	if !workspace.IsGCSStorageEnabled() {
-		if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "failed to flush changeset")
-			log.Error("Failed to flush changeset", "error", err)
-			return nil, fmt.Errorf("failed to flush changeset: %w", err)
-		}
+	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to flush changeset")
+		log.Error("Failed to flush changeset", "error", err)
+		return nil, fmt.Errorf("failed to flush changeset: %w", err)
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")

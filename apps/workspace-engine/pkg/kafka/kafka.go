@@ -43,15 +43,15 @@ func RunConsumer(ctx context.Context) error {
 	if workspace.IsGCSStorageEnabled() {
 		return runConsumerWithGCSStore(ctx)
 	}
-	return RunConsumerWithWorkspaceStore(ctx, nil)
+	return RunConsumerWithWorkspaceLoader(ctx, nil)
 }
 
 func runConsumerWithGCSStore(ctx context.Context) error {
 	workspaceLoader := workspace.CreateGCSWorkspaceLoader(nil)
-	return RunConsumerWithWorkspaceStore(ctx, workspaceLoader)
+	return RunConsumerWithWorkspaceLoader(ctx, workspaceLoader)
 }
 
-// RunConsumerWithWorkspaceStore starts the Kafka consumer with workspace-based offset resume
+// RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
 //
 // Flow:
 //  1. Connect to Kafka and subscribe to topic
@@ -59,7 +59,7 @@ func runConsumerWithGCSStore(ctx context.Context) error {
 //  3. Load workspaces for assigned partitions (if workspaceLoader provided)
 //  4. Seek to stored offsets per partition
 //  5. Start consuming and processing messages
-func RunConsumerWithWorkspaceStore(ctx context.Context, workspaceLoader workspace.WorkspaceLoader) error {
+func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspace.WorkspaceLoader) error {
 	// Initialize Kafka consumer
 	consumer, err := createConsumer()
 	if err != nil {
