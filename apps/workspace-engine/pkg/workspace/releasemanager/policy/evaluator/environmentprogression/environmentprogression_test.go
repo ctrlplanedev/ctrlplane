@@ -103,7 +103,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 		Tag:          "v1.0.0",
 		DeploymentId: "deploy-1",
 		Status:       oapi.DeploymentVersionStatusReady,
-		CreatedAt:    time.Now().Format(time.RFC3339),
+		CreatedAt:    time.Now(),
 	}
 
 	releaseTarget := &oapi.ReleaseTarget{
@@ -144,7 +144,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		Tag:          "v1.0.0",
 		DeploymentId: "deploy-1",
 		Status:       oapi.DeploymentVersionStatusReady,
-		CreatedAt:    time.Now().Format(time.RFC3339),
+		CreatedAt:    time.Now(),
 	}
 	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
@@ -234,7 +234,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		Tag:          "v1.0.0",
 		DeploymentId: "deploy-1",
 		Status:       oapi.DeploymentVersionStatusReady,
-		CreatedAt:    time.Now().Format(time.RFC3339),
+		CreatedAt:    time.Now(),
 	}
 	st.DeploymentVersions.Upsert(ctx, version.Id, version)
 
@@ -351,7 +351,7 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 		Tag:          "v1.0.0",
 		DeploymentId: "deploy-1",
 		Status:       oapi.DeploymentVersionStatusReady,
-		CreatedAt:    time.Now().Format(time.RFC3339),
+		CreatedAt:    time.Now(),
 	}
 
 	releaseTarget := &oapi.ReleaseTarget{

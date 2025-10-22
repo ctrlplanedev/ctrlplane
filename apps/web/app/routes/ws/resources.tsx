@@ -146,14 +146,16 @@ export default function Resources() {
                 filteredResources?.map((resource) => (
                   <TableRow key={resource.id}>
                     <TableCell className="font-medium">
+                      {resource.name}
+                    </TableCell>
+                    <TableCell>
                       <div>
-                        <div>{resource.name}</div>
+                        <div>{resource.kind}</div>
                         <div className="text-xs text-muted-foreground">
                           {resource.version}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{resource.kind}</TableCell>
                     <TableCell>
                       <Badge
                         variant="secondary"

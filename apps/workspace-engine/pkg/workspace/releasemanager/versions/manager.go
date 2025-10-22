@@ -46,7 +46,7 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.
 		if filtered[i].CreatedAt == filtered[j].CreatedAt {
 			return filtered[i].Id > filtered[j].Id
 		}
-		return filtered[i].CreatedAt > filtered[j].CreatedAt
+		return filtered[i].CreatedAt.After(filtered[j].CreatedAt)
 	})
 
 	return filtered

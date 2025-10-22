@@ -2,6 +2,7 @@ package deployments
 
 import (
 	"net/http"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 
@@ -166,5 +167,49 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		"offset": offset,
 		"limit":  limit,
 		"items":  releaseTargetsList[start:end],
+	})
+}
+
+func (s *Deployments) GetVersionsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetVersionsForDeploymentParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	versions := ws.DeploymentVersions().Items()
+	versionsList := make([]*oapi.DeploymentVersion, 0, len(versions))
+	for _, version := range versions {
+		if version.DeploymentId == deploymentId {
+			versionsList = append(versionsList, version)
+		}
+	}
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(versionsList)
+	start := min(offset, total)
+	end := min(start+limit, total)
+
+	// Sort versionsList by CreatedAt ascending
+	sort.Slice(versionsList, func(i, j int) bool {
+		return versionsList[i].CreatedAt.Before(versionsList[j].CreatedAt)
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  versionsList[start:end],
 	})
 }

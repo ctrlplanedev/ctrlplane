@@ -77,7 +77,7 @@ func scanDeploymentVersion(rows pgx.Rows) (*oapi.DeploymentVersion, error) {
 
 	// Set status from string to enum
 	deploymentVersion.Status = convertStatusToEnum(statusStr)
-	deploymentVersion.CreatedAt = createdAt.Format(time.RFC3339)
+	deploymentVersion.CreatedAt = createdAt
 
 	// Handle nullable message field
 	if message != nil {

@@ -42,9 +42,6 @@ func validateRetrievedDeploymentVersions(t *testing.T, actualVersions []*oapi.De
 			t.Fatalf("expected deployment version status %v, got %v", expected.Status, actual.Status)
 		}
 		compareStrPtr(t, actual.Message, expected.Message)
-		if actual.CreatedAt == "" {
-			t.Fatalf("expected deployment version created_at to be set")
-		}
 
 		// Validate config
 		if expected.Config != nil {

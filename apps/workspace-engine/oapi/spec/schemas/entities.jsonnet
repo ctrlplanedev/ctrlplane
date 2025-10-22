@@ -144,7 +144,7 @@ local openapi = import '../lib/openapi.libsonnet';
       deploymentId: { type: 'string' },
       status: openapi.schemaRef('DeploymentVersionStatus'),
       message: { type: 'string' },
-      createdAt: { type: 'string' },
+      createdAt: { type: 'string', format: 'date-time' },
     },
   },
 

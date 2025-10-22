@@ -39,7 +39,7 @@ func createTestDeployment(id, systemID, name string) *oapi.Deployment {
 }
 
 func createTestDeploymentVersion(id, deploymentID, tag string) *oapi.DeploymentVersion {
-	now := time.Now().Format(time.RFC3339)
+	now := time.Now()
 	return &oapi.DeploymentVersion{
 		Id:           id,
 		DeploymentId: deploymentID,

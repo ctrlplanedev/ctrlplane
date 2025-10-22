@@ -27,7 +27,7 @@ func NewDeploymentVersion() *oapi.DeploymentVersion {
 		Tag:            fmt.Sprintf("v1.0.%d", deploymentVersionCounter),
 		DeploymentId:   uuid.New().String(),
 		Status:         oapi.DeploymentVersionStatusReady,
-		CreatedAt:      time.Now().Format(time.RFC3339Nano),
+		CreatedAt:      time.Now(),
 		Config:         make(map[string]any),
 		JobAgentConfig: make(map[string]any),
 	}
