@@ -21,8 +21,8 @@ export default [
         "routes/ws/deployments/settings/_layout.tsx",
         [
           route(
-            "settings",
-            "routes/ws/deployments/settings/page.$deploymentId.settings.tsx",
+            "general",
+            "routes/ws/deployments/settings/page.$deploymentId.general.tsx",
           ),
         ],
       ),

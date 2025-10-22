@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useWorkspace } from "~/components/WorkspaceProvider";
@@ -9,8 +9,16 @@ export const DeploymentsNavbarTabs = ({
   deploymentId: string;
 }) => {
   const { workspace } = useWorkspace();
+  const baseUrl = `/${workspace.slug}/deployments/${deploymentId}`;
+  const path = useLocation();
+  const value = path.pathname.startsWith(`${baseUrl}/environments`)
+    ? "environments"
+    : path.pathname.startsWith(`${baseUrl}/settings`)
+      ? "settings"
+      : "versions";
+
   return (
-    <Tabs value="environments">
+    <Tabs value={value}>
       <TabsList>
         <TabsTrigger value="environments" asChild>
           <Link to={`/${workspace.slug}/deployments/${deploymentId}`}>
@@ -22,12 +30,7 @@ export const DeploymentsNavbarTabs = ({
             Versions
           </Link>
         </TabsTrigger>
-        <TabsTrigger value="activity" asChild>
-          <Link to={`/${workspace.slug}/deployments/${deploymentId}/activity`}>
-            Activity
-          </Link>
-        </TabsTrigger>
-        <TabsTrigger value="activity" asChild>
+        <TabsTrigger value="settings" asChild>
           <Link to={`/${workspace.slug}/deployments/${deploymentId}/settings`}>
             Settings
           </Link>

@@ -1,3 +1,3 @@
 export default function DeploymentsSettingsPage() {
-  return <div>Settings</div>;
+  return <>Settings</>;
 }
