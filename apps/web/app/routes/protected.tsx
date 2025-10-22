@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
+import { WorkspaceProvider } from "~/components/WorkspaceProvider";
 
 function LoadingScreen() {
   return (
@@ -30,5 +31,9 @@ export default function ProtectedLayout() {
     return <Navigate to={`/${activeWorkspace.slug}/deployments`} />;
   }
 
-  return <Outlet />;
+  return (
+    <WorkspaceProvider workspace={activeWorkspace}>
+      <Outlet />
+    </WorkspaceProvider>
+  );
 }

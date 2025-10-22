@@ -8,6 +8,7 @@ import {
   Upload,
 } from "lucide-react";
 
+import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
 import {
   Breadcrumb,
@@ -34,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 
 type Resource = {
   id: string;
@@ -46,43 +48,25 @@ type Resource = {
 };
 
 export default function Resources() {
-  const resources = [
-    {
-      id: "1",
-      name: "prod-api-server-01",
-      type: "Compute Instance",
-      status: "active",
-      region: "us-east-1",
-      lastUpdated: "2025-10-20T10:30:00",
-      description: "Production API server",
-    },
-    {
-      id: "2",
-      name: "staging-db-cluster",
-      type: "Database",
-      status: "active",
-      region: "us-west-2",
-      lastUpdated: "2025-10-19T15:45:00",
-      description: "Staging database cluster",
-    },
-    {
-      id: "3",
-      name: "dev-cache-redis",
-      type: "Cache",
-      status: "active",
-      region: "us-east-1",
-      lastUpdated: "2025-10-18T09:20:00",
-      description: "Development Redis cache",
-    },
-  ];
-
+  const { workspace } = useWorkspace();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredResources = resources.filter(
-    (resource) =>
-      resource.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.region.toLowerCase().includes(searchQuery.toLowerCase()),
+  const cel = `resource.name.startsWith("${searchQuery}") 
+    || resource.name.endsWith("${searchQuery}") 
+    || resource.name.contains("${searchQuery}")
+    || resource.identifier.startsWith("${searchQuery}")
+    || resource.identifier.endsWith("${searchQuery}")
+    || resource.identifier.contains("${searchQuery}")`;
+
+  const { data: resources } = trpc.resources.list.useQuery({
+    workspaceId: workspace.id,
+    selector: { cel },
+    limit: 10,
+    offset: 0,
+  });
+
+  const filteredResources = resources?.items.filter((resource) =>
+    resource.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const getStatusColor = (status: Resource["status"]) => {
@@ -147,7 +131,7 @@ export default function Resources() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResources.length === 0 ? (
+              {filteredResources?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center">
                     <div className="flex flex-col items-center gap-2">
@@ -159,30 +143,28 @@ export default function Resources() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredResources.map((resource) => (
+                filteredResources?.map((resource) => (
                   <TableRow key={resource.id}>
                     <TableCell className="font-medium">
                       <div>
                         <div>{resource.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {resource.description}
+                          {resource.version}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{resource.type}</TableCell>
+                    <TableCell>{resource.kind}</TableCell>
                     <TableCell>
                       <Badge
                         variant="secondary"
-                        className={getStatusColor(
-                          resource.status as Resource["status"],
-                        )}
+                        className={getStatusColor("active")}
                       >
-                        {resource.status}
+                        Active
                       </Badge>
                     </TableCell>
-                    <TableCell>{resource.region}</TableCell>
+                    <TableCell>{resource.workspaceId}</TableCell>
                     <TableCell>
-                      {new Date(resource.lastUpdated).toLocaleDateString()}
+                      {new Date(resource.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

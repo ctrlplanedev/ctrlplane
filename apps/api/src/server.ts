@@ -59,7 +59,6 @@ app.use(
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext: async (opts) => {
-      console.log("createContext");
       const headers = Object.fromEntries(
         Object.entries(opts.req.headers)
           .filter(([_, v]) => typeof v === "string")
@@ -70,8 +69,6 @@ app.use(
         (await auth.api.getSession({
           headers: new Headers(headers),
         })) ?? null;
-
-      console.log("session", session?.user.id);
 
       return createTRPCContext(session);
     },
