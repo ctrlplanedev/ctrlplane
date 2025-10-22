@@ -151,11 +151,13 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	var ws *workspace.Workspace
 	changeSet := changeset.NewChangeSet[any]()
 
-	if workspace.IsGCSStorageEnabled() {
+	isUsingGCSExternalState := workspace.IsGCSStorageEnabled()
+
+	if isUsingGCSExternalState {
 		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 	}
 
-	if !workspace.IsGCSStorageEnabled() {
+	if !isUsingGCSExternalState {
 		wsExists := workspace.Exists(rawEvent.WorkspaceID)
 		if wsExists {
 			ws = workspace.GetWorkspace(rawEvent.WorkspaceID)

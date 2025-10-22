@@ -15,29 +15,7 @@ func IsGCSStorageEnabled() bool {
 	return strings.HasPrefix(os.Getenv("WORKSPACE_STATES_BUCKET_URL"), "gs://")
 }
 
-// getBucketURL parses a GCS URL like "gs://bucket-name/base-path"
-// Returns bucket name and base path (without leading slash).
-func getBucketURL() (string, string) {
-	url := os.Getenv("WORKSPACE_STATES_BUCKET_URL")
-
-	// Trim gs:// scheme
-	url = strings.TrimPrefix(url, "gs://")
-
-	// Split on first '/' to separate bucket and prefix
-	parts := strings.SplitN(url, "/", 2)
-	bucket := parts[0]
-	prefix := ""
-
-	if len(parts) > 1 {
-		prefix = strings.TrimPrefix(parts[1], "/")
-	}
-
-	return bucket, prefix
-}
-
 func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) ([]byte, error) {
-	bucket, prefix := getBucketURL()
-
 	snapshot, err := db.GetWorkspaceSnapshot(ctx, workspaceID)
 	if err != nil {
 		return nil, err
@@ -51,17 +29,19 @@ func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) ([]byte, erro
 		return nil, nil
 	}
 
+	// Parse bucket/object/path from stored path
+	parts := strings.SplitN(snapshot.Path, "/", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid GCS path: %s", snapshot.Path)
+	}
+	bucket := parts[0]
+	objectPath := parts[1]
+
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GCS client: %w", err)
 	}
 	defer client.Close()
-
-	// Prepend prefix to object path
-	objectPath := snapshot.Path
-	if prefix != "" {
-		objectPath = prefix + "/" + snapshot.Path
-	}
 
 	obj := client.Bucket(bucket).Object(objectPath)
 	reader, err := obj.NewReader(ctx)
@@ -79,9 +59,19 @@ func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) ([]byte, erro
 }
 
 // PutWorkspaceSnapshot writes a new timestamped snapshot for a workspace to GCS.
-// Reads bucket URL from WORKSPACE_STATES_BUCKET_URL env variable.
 func PutWorkspaceSnapshot(ctx context.Context, workspaceID string, timestamp string, partition int32, numPartitions int32, data []byte) error {
-	bucket, prefix := getBucketURL()
+	// Get bucket URL like "gs://bucket-name" or "gs://bucket-name/prefix"
+	bucketURL := os.Getenv("WORKSPACE_STATES_BUCKET_URL")
+	bucketURL = strings.TrimSuffix(bucketURL, "/")
+
+	// Parse bucket and optional prefix
+	gsPath := strings.TrimPrefix(bucketURL, "gs://")
+	parts := strings.SplitN(gsPath, "/", 2)
+	bucket := parts[0]
+	prefix := ""
+	if len(parts) > 1 {
+		prefix = parts[1]
+	}
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -89,13 +79,11 @@ func PutWorkspaceSnapshot(ctx context.Context, workspaceID string, timestamp str
 	}
 	defer client.Close()
 
-	// Base path for the object (without prefix)
-	path := fmt.Sprintf("%s_%s.gob", workspaceID, timestamp)
-
-	// Prepend prefix to object path
-	objectPath := path
+	// Generate object path
+	objectName := fmt.Sprintf("%s_%s.gob", workspaceID, timestamp)
+	objectPath := objectName
 	if prefix != "" {
-		objectPath = prefix + "/" + path
+		objectPath = prefix + "/" + objectName
 	}
 
 	obj := client.Bucket(bucket).Object(objectPath)
@@ -110,8 +98,11 @@ func PutWorkspaceSnapshot(ctx context.Context, workspaceID string, timestamp str
 		return fmt.Errorf("failed to close writer: %w", err)
 	}
 
+	// Store bucket/object/path in database (no gs:// prefix)
+	fullPath := fmt.Sprintf("%s/%s", bucket, objectPath)
+
 	snapshot := &db.WorkspaceSnapshot{
-		Path:          path,
+		Path:          fullPath,
 		Timestamp:     timestamp,
 		Partition:     partition,
 		NumPartitions: numPartitions,
