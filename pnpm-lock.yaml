@@ -155,6 +155,9 @@ importers:
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
+      better-auth:
+        specifier: ^1.3.28
+        version: 1.3.28(better-sqlite3@12.4.1)(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.53.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       connect-rid:
         specifier: ^0.0.1
         version: 0.0.1
@@ -182,9 +185,6 @@ importers:
       next-auth:
         specifier: 'catalog:'
         version: 5.0.0-beta.25(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.53.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(nodemailer@6.10.1)(react@19.2.0)
-      openapi-backend:
-        specifier: ^5.15.0
-        version: 5.15.0
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
@@ -201,6 +201,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@openapitools/openapi-generator-cli':
+        specifier: ^2.21.0
+        version: 2.21.0
       '@types/cookie-parser':
         specifier: ^1.4.7
         version: 1.4.9(@types/express@5.0.3)
@@ -983,7 +986,7 @@ importers:
         specifier: ^9.6.0
         version: 9.9.0
       '@openapitools/openapi-generator-cli':
-        specifier: ^2.13.5
+        specifier: ^2.21.0
         version: 2.21.0
       '@playwright/test':
         specifier: ^1.51.0
@@ -1577,7 +1580,7 @@ importers:
         version: 5.8.2
       vite-tsconfig-paths:
         specifier: ^5.1.4
-        version: 5.1.4(typescript@5.8.2)(vite@7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0))
+        version: 5.1.4(typescript@5.8.2)(vite@5.4.8(@types/node@24.8.1)(lightningcss@1.30.2)(terser@5.36.0))
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@24.8.1)(jsdom@25.0.1)(lightningcss@1.30.2)(terser@5.36.0)
@@ -1638,7 +1641,7 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@openapitools/openapi-generator-cli':
-        specifier: ^2.13.5
+        specifier: ^2.21.0
         version: 2.21.0
       '@types/node':
         specifier: catalog:node22
@@ -2010,7 +2013,7 @@ importers:
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@openapitools/openapi-generator-cli':
-        specifier: ^2.13.5
+        specifier: ^2.21.0
         version: 2.21.0
       '@types/node':
         specifier: catalog:node22
@@ -2244,10 +2247,6 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
-
-  '@apidevtools/json-schema-ref-parser@11.9.3':
-    resolution: {integrity: sha512-60vepv88RwcJtSHrD6MjIL6Ta3SOYbgfnkHb+ppAVK+o9mXprRtulx7VlRl3lN3bbvysAfCS7WMVfhUYemB0IQ==}
-    engines: {node: '>= 16'}
 
   '@apidevtools/json-schema-ref-parser@14.2.1':
     resolution: {integrity: sha512-HmdFw9CDYqM6B25pqGBpNeLCKvGPlIx1EbLrVL0zPvj50CJQUHyBNBw45Muk0kEIkogo1VZvOKHajdMuAzSxRg==}
@@ -7826,14 +7825,6 @@ packages:
       ajv:
         optional: true
 
-  ajv-formats@2.1.1:
-    resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
-    peerDependenciesMeta:
-      ajv:
-        optional: true
-
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
     peerDependencies:
@@ -8058,9 +8049,6 @@ packages:
   basic-ftp@5.0.5:
     resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
     engines: {node: '>=10.0.0'}
-
-  bath-es5@3.0.3:
-    resolution: {integrity: sha512-PdCioDToH3t84lP40kUFCKWCOCH389Dl1kbC8FGoqOwamxsmqxxnJSXdkTOsPoNHXjem4+sJ+bbNoQm5zeCqxg==}
 
   bcrypt-pbkdf@1.0.2:
     resolution: {integrity: sha512-qeFIXtP4MSoi6NLqO12WfqARWWuCKi2Rn/9hJLEmtB5yTNr9DqFWkJRCf2qShWzPeAMRnOgCrq0sg/KLv5ES9w==}
@@ -8786,9 +8774,6 @@ packages:
   deprecation@2.3.1:
     resolution: {integrity: sha512-xmHIy4F3scKVwMsQ4WnVaS8bHOx0DmVwRywosKhaILI0ywMDWPtBSku2HNxRvF7jtwDRsoEwYQSfbxj8b7RlJQ==}
 
-  dereference-json-schema@0.2.1:
-    resolution: {integrity: sha512-uzJsrg225owJyRQ8FNTPHIuBOdSzIZlHhss9u6W8mp7jJldHqGuLv9cULagP/E26QVJDnjtG8U7Dw139mM1ydA==}
-
   destroy@1.2.0:
     resolution: {integrity: sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
@@ -9503,10 +9488,6 @@ packages:
   form-data@2.3.3:
     resolution: {integrity: sha512-1lLKB2Mu3aGP1Q/2eCOx0fNbRMe7XdwktwOruhfqqd0rIJWwN4Dh+E3hrPSlDCXnSR7UtZ1N38rVXm+6+MEhJQ==}
     engines: {node: '>= 0.12'}
-
-  form-data@4.0.3:
-    resolution: {integrity: sha512-qsITQPfmvMOSAdeyZ+12I1c+CKSstAFAwu+97zrnWAbIr5u8wfsExUzCesVLC8NgHuRUqNN4Zy6UPWUTRGslcA==}
-    engines: {node: '>= 6'}
 
   form-data@4.0.4:
     resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
@@ -10231,9 +10212,6 @@ packages:
   jose@5.9.6:
     resolution: {integrity: sha512-AMlnetc9+CV9asI19zHmrgS/WYsWUwCn2R7RzlbJWD7F9eWYUTGyBmU9o6PxngtLGOiDGPRu+Uc4fhKzbpteZQ==}
 
-  jose@6.0.11:
-    resolution: {integrity: sha512-QxG7EaliDARm1O1S8BGakqncGT9s25bKL1WSf6/oa17Tkqwi8D2ZNglqCF+DsYF88/rV66Q/Q2mFAy697E1DUg==}
-
   jose@6.1.0:
     resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
 
@@ -10328,9 +10306,6 @@ packages:
     resolution: {integrity: sha512-3QItJOXp2AP1uv7waBkao5nCvhEv+QmJAd38Ybq7wNI74Q+BBmnLn4EDKz6yI9xGAIQoUF87qHt+kc1IVxB4zQ==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
-
-  jsonfile@6.1.0:
-    resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
 
   jsonfile@6.2.0:
     resolution: {integrity: sha512-FGuPw30AdOIUTRMC2OMRtQV+jkVj2cfPqSeWXv1NEAJ1qZ5zb1X6z1mFhbfOB/iy3ssJCD+3KuZ8r8C3uVFlAg==}
@@ -10777,9 +10752,6 @@ packages:
   mlly@1.7.4:
     resolution: {integrity: sha512-qmdSIPC4bDJXgZTCR7XosJiNKySV7O215tsPtDN9iEO/7q/76b/ijtgRu/+epFXSJhijtTCCGp3DWS549P3xKw==}
 
-  mock-json-schema@1.1.2:
-    resolution: {integrity: sha512-3IyduYlhfzPy+nFN8wxUjloUi1hM7l8lN5LITuauUNMQltynJIOfLf/DADwTAp2d6kvSBtWojly1EuxX5B0WkA==}
-
   module-details-from-path@1.0.3:
     resolution: {integrity: sha512-ySViT69/76t8VhE1xXHK6Ch4NcDd26gx0MzKXLO+F7NOtnqH68d9zF94nT8ZWSxXh8ELOERsnJO/sWt1xZYw5A==}
 
@@ -11116,10 +11088,6 @@ packages:
   ono@7.1.3:
     resolution: {integrity: sha512-9jnfVriq7uJM4o5ganUY54ntUm+5EK21EGaQ5NWnkWg3zz5ywbbonlBguRcnmF1/HDiIe3zxNxXcO1YPBmPcQQ==}
 
-  openapi-backend@5.15.0:
-    resolution: {integrity: sha512-yox0nCv511YWUeBNCdKY6xmUB92yEN+N9rHO4BHA5GOAZaNtY+zzuftAdfEwIbCsCcvZJ9ysENCguqBg+hLlWw==}
-    engines: {node: '>=12.0.0'}
-
   openapi-fetch@0.13.8:
     resolution: {integrity: sha512-yJ4QKRyNxE44baQ9mY5+r/kAzZ8yXMemtNAOFwOzRXJscdjSxxzWSNlyBAr+o5JjkUw9Lc3W7OIoca0cY3PYnQ==}
 
@@ -11130,15 +11098,9 @@ packages:
     resolution: {integrity: sha512-eN14VrDvl/YyGxxrkGOHkVkWEoPyhyeydOUrbvjoz8K5eIGgELASwN1eqFOJ2CTQMGCy2EntOK1KdtJ8ZMekcg==}
     engines: {node: '>=12.20.0'}
 
-  openapi-schema-validator@12.1.3:
-    resolution: {integrity: sha512-xTHOmxU/VQGUgo7Cm0jhwbklOKobXby+/237EG967+3TQEYJztMgX9Q5UE2taZKwyKPUq0j11dngpGjUuxz1hQ==}
-
   openapi-server-url-templating@1.3.0:
     resolution: {integrity: sha512-DPlCms3KKEbjVQb0spV6Awfn6UWNheuG/+folQPzh/wUaKwuqvj8zt5gagD7qoyxtE03cIiKPgLFS3Q8Bz00uQ==}
     engines: {node: '>=12.20.0'}
-
-  openapi-types@12.1.3:
-    resolution: {integrity: sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw==}
 
   openapi-typescript-helpers@0.0.15:
     resolution: {integrity: sha512-opyTPaunsklCBpTK8JGef6mfPhLSnyy5a0IN9vKtx3+4aExf+KxEqYwIy3hqkedXIB97u357uLMJsOnm3GVjsw==}
@@ -13641,12 +13603,6 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
-
-  '@apidevtools/json-schema-ref-parser@11.9.3':
-    dependencies:
-      '@jsdevtools/ono': 7.1.3
-      '@types/json-schema': 7.0.15
-      js-yaml: 4.1.0
 
   '@apidevtools/json-schema-ref-parser@14.2.1(@types/json-schema@7.0.15)':
     dependencies:
@@ -20686,10 +20642,6 @@ snapshots:
     optionalDependencies:
       ajv: 8.17.1
 
-  ajv-formats@2.1.1(ajv@8.17.1):
-    optionalDependencies:
-      ajv: 8.17.1
-
   ajv-formats@3.0.1(ajv@8.17.1):
     optionalDependencies:
       ajv: 8.17.1
@@ -20922,7 +20874,7 @@ snapshots:
   axios@1.10.0:
     dependencies:
       follow-redirects: 1.15.9
-      form-data: 4.0.3
+      form-data: 4.0.4
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -20949,8 +20901,6 @@ snapshots:
       safe-buffer: 5.1.2
 
   basic-ftp@5.0.5: {}
-
-  bath-es5@3.0.3: {}
 
   bcrypt-pbkdf@1.0.2:
     dependencies:
@@ -20982,6 +20932,29 @@ snapshots:
       react-dom: 19.2.0(react@19.2.0)
       svelte: 5.2.7
       vue: 3.5.13(typescript@5.8.2)
+    transitivePeerDependencies:
+      - better-sqlite3
+
+  better-auth@1.3.28(better-sqlite3@12.4.1)(next@15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.53.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+    dependencies:
+      '@better-auth/core': 1.3.28(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.0.19)(better-sqlite3@12.4.1)(jose@6.1.0)(kysely@0.28.8)(nanostores@1.0.1)
+      '@better-auth/telemetry': 1.3.28(better-call@1.0.19)(better-sqlite3@12.4.1)(jose@6.1.0)(kysely@0.28.8)(nanostores@1.0.1)
+      '@better-auth/utils': 0.3.0
+      '@better-fetch/fetch': 1.1.18
+      '@noble/ciphers': 2.0.1
+      '@noble/hashes': 2.0.1
+      '@simplewebauthn/browser': 13.2.2
+      '@simplewebauthn/server': 13.2.2
+      better-call: 1.0.19
+      defu: 6.1.4
+      jose: 6.1.0
+      kysely: 0.28.8
+      nanostores: 1.0.1
+      zod: 4.1.12
+    optionalDependencies:
+      next: 15.2.4(@opentelemetry/api@1.9.0)(@playwright/test@1.53.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
     transitivePeerDependencies:
       - better-sqlite3
 
@@ -21687,8 +21660,6 @@ snapshots:
   depd@2.0.0: {}
 
   deprecation@2.3.1: {}
-
-  dereference-json-schema@0.2.1: {}
 
   destroy@1.2.0: {}
 
@@ -22751,14 +22722,6 @@ snapshots:
       combined-stream: 1.0.8
       mime-types: 2.1.35
 
-  form-data@4.0.3:
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      es-set-tostringtag: 2.1.0
-      hasown: 2.0.2
-      mime-types: 2.1.35
-
   form-data@4.0.4:
     dependencies:
       asynckit: 0.4.0
@@ -22766,7 +22729,6 @@ snapshots:
       es-set-tostringtag: 2.1.0
       hasown: 2.0.2
       mime-types: 2.1.35
-    optional: true
 
   format@0.2.2: {}
 
@@ -22791,7 +22753,7 @@ snapshots:
   fs-extra@11.3.0:
     dependencies:
       graceful-fs: 4.2.11
-      jsonfile: 6.1.0
+      jsonfile: 6.2.0
       universalify: 2.0.1
 
   fs.realpath@1.0.0: {}
@@ -23594,9 +23556,6 @@ snapshots:
 
   jose@5.9.6: {}
 
-  jose@6.0.11:
-    optional: true
-
   jose@6.1.0: {}
 
   joycon@3.1.1: {}
@@ -23684,12 +23643,6 @@ snapshots:
       '@types/diff-match-patch': 1.0.36
       chalk: 5.3.0
       diff-match-patch: 1.0.5
-
-  jsonfile@6.1.0:
-    dependencies:
-      universalify: 2.0.1
-    optionalDependencies:
-      graceful-fs: 4.2.11
 
   jsonfile@6.2.0:
     dependencies:
@@ -24061,10 +24014,6 @@ snapshots:
       pkg-types: 1.3.1
       ufo: 1.6.1
 
-  mock-json-schema@1.1.2:
-    dependencies:
-      lodash: 4.17.21
-
   module-details-from-path@1.0.3: {}
 
   monaco-editor@0.52.0: {}
@@ -24416,19 +24365,6 @@ snapshots:
     dependencies:
       '@jsdevtools/ono': 7.1.3
 
-  openapi-backend@5.15.0:
-    dependencies:
-      '@apidevtools/json-schema-ref-parser': 11.9.3
-      ajv: 8.17.1
-      bath-es5: 3.0.3
-      cookie: 1.0.2
-      dereference-json-schema: 0.2.1
-      lodash: 4.17.21
-      mock-json-schema: 1.1.2
-      openapi-schema-validator: 12.1.3
-      openapi-types: 12.1.3
-      qs: 6.14.0
-
   openapi-fetch@0.13.8:
     dependencies:
       openapi-typescript-helpers: 0.0.15
@@ -24443,18 +24379,9 @@ snapshots:
     dependencies:
       apg-lite: 1.0.5
 
-  openapi-schema-validator@12.1.3:
-    dependencies:
-      ajv: 8.17.1
-      ajv-formats: 2.1.1(ajv@8.17.1)
-      lodash.merge: 4.6.2
-      openapi-types: 12.1.3
-
   openapi-server-url-templating@1.3.0:
     dependencies:
       apg-lite: 1.0.5
-
-  openapi-types@12.1.3: {}
 
   openapi-typescript-helpers@0.0.15: {}
 
@@ -24472,7 +24399,7 @@ snapshots:
 
   openid-client@6.6.2:
     dependencies:
-      jose: 6.0.11
+      jose: 6.1.0
       oauth4webapi: 3.5.5
     optional: true
 
@@ -26941,13 +26868,13 @@ snapshots:
       - tsx
       - yaml
 
-  vite-tsconfig-paths@5.1.4(typescript@5.8.2)(vite@7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0)):
+  vite-tsconfig-paths@5.1.4(typescript@5.8.2)(vite@5.4.8(@types/node@24.8.1)(lightningcss@1.30.2)(terser@5.36.0)):
     dependencies:
       debug: 4.4.1
       globrex: 0.1.2
       tsconfck: 3.1.3(typescript@5.8.2)
     optionalDependencies:
-      vite: 7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0)
+      vite: 5.4.8(@types/node@24.8.1)(lightningcss@1.30.2)(terser@5.36.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -27001,24 +26928,6 @@ snapshots:
       terser: 5.36.0
       tsx: 4.20.3
       yaml: 2.6.0
-
-  vite@7.1.10(@types/node@24.8.1)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0):
-    dependencies:
-      esbuild: 0.25.6
-      fdir: 6.5.0(picomatch@4.0.3)
-      picomatch: 4.0.3
-      postcss: 8.5.6
-      rollup: 4.44.2
-      tinyglobby: 0.2.15
-    optionalDependencies:
-      '@types/node': 24.8.1
-      fsevents: 2.3.3
-      jiti: 2.6.1
-      lightningcss: 1.30.2
-      terser: 5.36.0
-      tsx: 4.20.3
-      yaml: 2.6.0
-    optional: true
 
   vitest@2.1.9(@types/node@22.13.10)(jsdom@25.0.1)(lightningcss@1.30.2)(terser@5.36.0):
     dependencies:

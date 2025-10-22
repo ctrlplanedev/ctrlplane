@@ -1,0 +1,94 @@
+{
+  "components": {
+    "parameters": {},
+    "responses": {
+      "BadRequestError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "Bad request"
+      },
+      "InternalServerError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "Internal server error"
+      },
+      "NotFoundError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "Resource not found"
+      },
+      "UnauthorizedError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "description": "Unauthorized"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "properties": {
+          "code": {
+            "description": "Error code",
+            "type": "string"
+          },
+          "details": {
+            "description": "Additional error details",
+            "type": "object"
+          },
+          "message": {
+            "description": "Error message",
+            "type": "string"
+          }
+        },
+        "required": ["message"],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "description": "API key authentication using X-API-Key header",
+        "in": "header",
+        "name": "X-API-Key",
+        "type": "apiKey"
+      },
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "description": "Session-based authentication using Better Auth",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "OpenAPI schemas for Ctrlplane API",
+    "title": "Ctrlplane API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.0.0",
+  "paths": {},
+  "servers": [
+    {
+      "description": "Development server",
+      "url": "http://localhost:3001"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import { ApiError } from "@/types/api.js";
 
 import { logger } from "@ctrlplane/logger";
@@ -7,13 +7,7 @@ import { logger } from "@ctrlplane/logger";
  * Global error handler middleware
  * Must be registered last in the middleware chain
  */
-export const errorHandler = (
-  error: Error,
-  req: Request,
-  res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction,
-) => {
+export const errorHandler = (error: Error, req: Request, res: Response) => {
   // Log the error
   logger.error("API Error", {
     error: error.message,
@@ -38,20 +32,7 @@ export const errorHandler = (
   }
 
   // Handle generic errors
-  return res.status(500).json({
-    message: "Internal server error",
-    code: "INTERNAL_ERROR",
-  });
-};
-
-/**
- * Async error wrapper for route handlers
- * Automatically catches and forwards errors to the error handler
- */
-export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>,
-) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+  return res
+    .status(500)
+    .json({ message: "Internal server error", code: "INTERNAL_ERROR" });
 };

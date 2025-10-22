@@ -2,17 +2,16 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { requireAuth } from "@/middleware/auth.js";
 import { errorHandler } from "@/middleware/error-handler.js";
-import { registerHandlers } from "@/routes/index.js";
-import { ExpressAuth } from "@auth/express";
-import GitHub from "@auth/express/providers/github";
+import { createV1Router } from "@/routes/index.js";
 import * as trpcExpress from "@trpc/server/adapters/express";
+import { toNodeHandler } from "better-auth/node";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import * as OpenApiValidator from "express-openapi-validator";
 import helmet from "helmet";
-import OpenAPIBackend from "openapi-backend";
 
+import { auth } from "@ctrlplane/auth/server";
 import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,34 +30,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.set("trust proxy", true);
-app.use("/api/auth/*splat", ExpressAuth({ providers: [GitHub] }));
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
-// Initialize OpenAPI Backend
-const api = new OpenAPIBackend({
-  definition: join(__dirname, "../openapi/openapi.json"),
-  strict: false,
-  validate: true,
-  ajvOpts: {
-    strict: false,
-  },
-});
-
-// Register all route handlers
-registerHandlers(api);
-
-// Initialize the API
-await api.init();
-
-// Apply authentication middleware to all /api/v1 routes
-app.use("/api/v1", requireAuth);
-
-// OpenAPI routes - handle all /api/v1 requests through OpenAPI Backend
-app.use("/api/v1", (req, res) =>
-  api.handleRequest(req as any, req as any, res),
-);
-
-// Additional validation with express-openapi-validator (optional, for extra validation layer)
+// Optional: OpenAPI validation middleware
 app.use(
   OpenApiValidator.middleware({
     apiSpec: join(__dirname, "../openapi/openapi.json"),
@@ -67,6 +41,12 @@ app.use(
     ignorePaths: /\/api\/(auth|internal)/,
   }),
 );
+
+// Apply authentication middleware to all /api/v1 routes
+app.use("/api/v1", requireAuth);
+
+// Register v1 API routes
+app.use("/api/v1", createV1Router());
 
 app.use(
   "/api/internal/trpc",
