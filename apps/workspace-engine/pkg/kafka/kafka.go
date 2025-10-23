@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"workspace-engine/pkg/db"
@@ -21,9 +22,10 @@ import (
 
 // Configuration variables loaded from environment
 var (
-	Topic   = getEnv("KAFKA_TOPIC", "workspace-events")
-	GroupID = getEnv("KAFKA_GROUP_ID", "workspace-engine")
-	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
+	Topic               = getEnv("KAFKA_TOPIC", "workspace-events")
+	GroupID             = getEnv("KAFKA_GROUP_ID", "workspace-engine")
+	Brokers             = getEnv("KAFKA_BROKERS", "localhost:9092")
+	MinSnapshotDistance = getEnvInt("SNAPSHOT_DISTANCE_MINUTES", 60)
 )
 
 // getEnv retrieves an environment variable or returns a default value
@@ -35,25 +37,38 @@ func getEnv(varName string, defaultValue string) string {
 	return v
 }
 
-func getLastWorkspaceOffset(ctx context.Context, msg *kafka.Message) int64 {
-	beginning := int64(kafka.OffsetBeginning)
+// getEnvInt retrieves an integer environment variable or returns a default value
+func getEnvInt(varName string, defaultValue int64) int64 {
+	v := os.Getenv(varName)
+	if v == "" {
+		return defaultValue
+	}
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		log.Warn("Failed to parse environment variable as integer, using default", "var", varName, "value", v, "default", defaultValue)
+		return defaultValue
+	}
+	return i
+}
+
+func getLastSnapshot(ctx context.Context, msg *kafka.Message) (*db.WorkspaceSnapshot, error) {
 	var rawEvent eventHanlder.RawEvent
 	if err := json.Unmarshal(msg.Value, &rawEvent); err != nil {
 		log.Error("Failed to unmarshal event", "error", err, "message", string(msg.Value))
+		return nil, fmt.Errorf("failed to unmarshal event: %w", err)
+	}
+
+	return db.GetWorkspaceSnapshot(ctx, rawEvent.WorkspaceID)
+}
+
+func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
+	beginning := int64(kafka.OffsetBeginning)
+
+	if snapshot == nil {
 		return beginning
 	}
 
-	lastSnapshot, err := db.GetWorkspaceSnapshot(ctx, rawEvent.WorkspaceID)
-	if err != nil {
-		log.Error("Failed to get workspace snapshot", "error", err)
-		return beginning
-	}
-
-	if lastSnapshot == nil {
-		return beginning
-	}
-
-	return lastSnapshot.Offset
+	return snapshot.Offset
 }
 
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
@@ -166,13 +181,19 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
+		lastSnapshot, err := getLastSnapshot(ctx, msg)
+		if err != nil {
+			log.Error("Failed to get last snapshot", "error", err)
+			continue
+		}
+
 		messageOffset := int64(msg.TopicPartition.Offset)
 		lastCommittedOffset, err := getCommittedOffset(consumer, msg.TopicPartition.Partition)
 		if err != nil {
 			log.Error("Failed to get committed offset", "error", err)
 			continue
 		}
-		lastWorkspaceOffset := getLastWorkspaceOffset(ctx, msg)
+		lastWorkspaceOffset := getLastWorkspaceOffset(lastSnapshot)
 
 		offsetTracker := eventHanlder.OffsetTracker{
 			LastCommittedOffset: lastCommittedOffset,
@@ -186,17 +207,20 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		snapshot := &db.WorkspaceSnapshot{
-			WorkspaceID:   ws.ID,
-			Path:          fmt.Sprintf("%s.gob", ws.ID),
-			Timestamp:     msg.Timestamp,
-			Partition:     int32(msg.TopicPartition.Partition),
-			Offset:        int64(msg.TopicPartition.Offset),
-			NumPartitions: numPartitions,
-		}
+		shouldSaveSnapshot := lastSnapshot == nil || lastSnapshot.Timestamp.Before(msg.Timestamp.Add(-time.Duration(MinSnapshotDistance)*time.Minute))
+		if shouldSaveSnapshot {
+			snapshot := &db.WorkspaceSnapshot{
+				WorkspaceID:   ws.ID,
+				Path:          fmt.Sprintf("%s.gob", ws.ID),
+				Timestamp:     msg.Timestamp,
+				Partition:     int32(msg.TopicPartition.Partition),
+				Offset:        int64(msg.TopicPartition.Offset),
+				NumPartitions: numPartitions,
+			}
 
-		if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
-			log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
+			if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
+				log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
+			}
 		}
 
 		// Commit offset to Kafka
