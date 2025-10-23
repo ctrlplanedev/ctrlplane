@@ -140,12 +140,6 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		// Commit offset to Kafka
-		if _, err := consumer.CommitMessage(msg); err != nil {
-			log.Error("Failed to commit message", "error", err)
-			continue
-		}
-
 		snapshot := &db.WorkspaceSnapshot{
 			Path:          fmt.Sprintf("%s.gob", ws.ID),
 			Timestamp:     msg.Timestamp,
@@ -155,6 +149,11 @@ func RunConsumer(ctx context.Context) error {
 
 		if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
 			log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
+		}
+
+		// Commit offset to Kafka
+		if _, err := consumer.CommitMessage(msg); err != nil {
+			log.Error("Failed to commit message", "error", err)
 			continue
 		}
 	}
