@@ -64,6 +64,9 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	go func() {
 		if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, ErrUnsupportedJobAgent) {
 			log.Error("error dispatching job to integration", "error", err.Error())
+			newJob.Status = oapi.InvalidIntegration
+			newJob.UpdatedAt = time.Now()
+			e.store.Jobs.Upsert(ctx, newJob)
 		}
 	}()
 
