@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
@@ -444,16 +446,165 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
 
-	// Create a deployment version - should NOT create jobs because deployment has no agent
+	// Create a deployment version - should create job with InvalidJobAgent status
 	dv1 := c.NewDeploymentVersion()
 	dv1.DeploymentId = d1.Id
 	dv1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
 
-	// Verify no jobs were created (deployment has no job agent)
+	// Verify job was created with InvalidJobAgent status
+	allJobs := engine.Workspace().Jobs().Items()
+	if len(allJobs) != 1 {
+		t.Fatalf("expected 1 job without job agent, got %d", len(allJobs))
+	}
+
+	var job *oapi.Job
+	for _, j := range allJobs {
+		job = j
+		break
+	}
+
+	if job.Status != oapi.InvalidJobAgent {
+		t.Errorf("expected job status InvalidJobAgent, got %v", job.Status)
+	}
+
+	if job.JobAgentId != "" {
+		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
+	}
+
+	// Verify no pending jobs (InvalidJobAgent jobs are not pending)
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 0 {
-		t.Fatalf("expected 0 pending jobs without job agent, got %d", len(pendingJobs))
+		t.Errorf("expected 0 pending jobs, got %d", len(pendingJobs))
+	}
+}
+
+// TestEngine_JobCreatedWithInvalidJobAgent verifies comprehensive behavior
+// when a deployment has no job agent configured
+func TestEngine_JobCreatedWithInvalidJobAgent(t *testing.T) {
+	deploymentId := uuid.New().String()
+	environmentId := uuid.New().String()
+	resourceId := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("no-agent-deployment"),
+				// No job agent specified - this is the key test condition
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("production"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId),
+			integration.ResourceName("server-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Verify release target was created
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
+	}
+
+	var releaseTarget *oapi.ReleaseTarget
+	for _, rt := range releaseTargets {
+		releaseTarget = rt
+		break
+	}
+
+	// Create deployment version
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentId
+	dv.Tag = "v1.0.0"
+	dv.Config = map[string]any{
+		"image": "myapp:v1.0.0",
+	}
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	// Verify job was created
+	allJobs := engine.Workspace().Jobs().Items()
+	if len(allJobs) != 1 {
+		t.Fatalf("expected 1 job, got %d", len(allJobs))
+	}
+
+	var job *oapi.Job
+	for _, j := range allJobs {
+		job = j
+		break
+	}
+
+	// Verify job has InvalidJobAgent status
+	if job.Status != oapi.InvalidJobAgent {
+		t.Errorf("expected job status InvalidJobAgent, got %v", job.Status)
+	}
+
+	// Verify job has empty job agent ID
+	if job.JobAgentId != "" {
+		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
+	}
+
+	// Verify job has empty config
+	if len(job.JobAgentConfig) != 0 {
+		t.Errorf("expected empty job agent config, got %v", job.JobAgentConfig)
+	}
+
+	// Verify job is NOT in pending state
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 0 {
+		t.Errorf("expected 0 pending jobs (InvalidJobAgent should not be pending), got %d", len(pendingJobs))
+	}
+
+	// Verify job is NOT in processing state
+	if job.IsInProcessingState() {
+		t.Errorf("expected job to not be in processing state, but IsInProcessingState() returned true")
+	}
+
+	// Verify release was created
+	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !exists {
+		t.Fatalf("expected release to exist for job %s", job.Id)
+	}
+
+	// Verify release properties
+	if release.ReleaseTarget.DeploymentId != deploymentId {
+		t.Errorf("release deployment_id = %s, want %s", release.ReleaseTarget.DeploymentId, deploymentId)
+	}
+	if release.ReleaseTarget.EnvironmentId != environmentId {
+		t.Errorf("release environment_id = %s, want %s", release.ReleaseTarget.EnvironmentId, environmentId)
+	}
+	if release.ReleaseTarget.ResourceId != resourceId {
+		t.Errorf("release resource_id = %s, want %s", release.ReleaseTarget.ResourceId, resourceId)
+	}
+	if release.Version.Tag != "v1.0.0" {
+		t.Errorf("release version tag = %s, want v1.0.0", release.Version.Tag)
+	}
+
+	// Verify redeploy also creates InvalidJobAgent job
+	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
+
+	// Should still have only 1 job (redeploy is blocked by InvalidJobAgent being in processing state)
+	// Actually, InvalidJobAgent is NOT in processing state, so redeploy should create a new job
+	allJobsAfterRedeploy := engine.Workspace().Jobs().Items()
+	if len(allJobsAfterRedeploy) != 2 {
+		t.Fatalf("expected 2 jobs after redeploy, got %d", len(allJobsAfterRedeploy))
+	}
+
+	// Verify both jobs have InvalidJobAgent status
+	invalidJobAgentCount := 0
+	for _, j := range allJobsAfterRedeploy {
+		if j.Status == oapi.InvalidJobAgent {
+			invalidJobAgentCount++
+		}
+	}
+	if invalidJobAgentCount != 2 {
+		t.Errorf("expected 2 jobs with InvalidJobAgent status, got %d", invalidJobAgentCount)
 	}
 }
 

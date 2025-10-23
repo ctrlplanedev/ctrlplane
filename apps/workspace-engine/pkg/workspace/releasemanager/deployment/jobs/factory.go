@@ -49,15 +49,36 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 		return nil, fmt.Errorf("deployment %s not found", releaseTarget.DeploymentId)
 	}
 
-	// Validate job agent exists
+	// Check if job agent is configured
 	jobAgentId := deployment.JobAgentId
 	if jobAgentId == nil || *jobAgentId == "" {
-		return nil, fmt.Errorf("deployment %s has no job agent configured", deployment.Id)
+		// Create job with InvalidJobAgent status when no job agent configured
+		return &oapi.Job{
+			Id:             uuid.New().String(),
+			ReleaseId:      release.ID(),
+			JobAgentId:     "",
+			JobAgentConfig: make(map[string]any),
+			Status:         oapi.InvalidJobAgent,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+			Metadata:       make(map[string]string),
+		}, nil
 	}
 
+	// Validate job agent exists
 	jobAgent, exists := f.store.JobAgents.Get(*jobAgentId)
 	if !exists {
-		return nil, fmt.Errorf("job agent %s not found", *jobAgentId)
+		// Create job with InvalidJobAgent status when job agent not found
+		return &oapi.Job{
+			Id:             uuid.New().String(),
+			ReleaseId:      release.ID(),
+			JobAgentId:     *jobAgentId,
+			JobAgentConfig: make(map[string]any),
+			Status:         oapi.InvalidJobAgent,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+			Metadata:       make(map[string]string),
+		}, nil
 	}
 
 	// Merge job agent config: deployment config overrides agent defaults
