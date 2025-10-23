@@ -153,6 +153,9 @@ func RunConsumer(ctx context.Context) error {
 			NumPartitions: numPartitions,
 		}
 
-		workspace.Save(ctx, storage, ws, snapshot)
+		if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
+			log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
+			continue
+		}
 	}
 }
