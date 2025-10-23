@@ -1341,10 +1341,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "items": {
-                                       "$ref": "#/components/schemas/Deployment"
-                                    },
-                                    "type": "array"
+                                    "$ref": "#/components/schemas/Deployment"
                                  },
                                  "type": "array"
                               },

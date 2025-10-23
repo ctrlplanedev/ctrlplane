@@ -73,6 +73,7 @@ const authzProcedure = authnProcedure.use(
       try {
         check = await authorizationCheck({ ctx, input, canUser });
       } catch (e: any) {
+        console.error(e);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "An internal error occurred during authorization check",

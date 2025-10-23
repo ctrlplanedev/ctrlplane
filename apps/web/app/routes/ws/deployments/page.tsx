@@ -9,8 +9,9 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
 
+import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
 import {
   Breadcrumb,
@@ -36,6 +37,7 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { CreateDeploymentDialog } from "./_components/CreateDeploymentDialog";
 
 export function meta() {
@@ -360,7 +362,11 @@ const getDeploymentHealth = (
 };
 
 export default function Deployments() {
-  const { workspaceSlug } = useParams();
+  const { workspace } = useWorkspace();
+  const deploymentsQuery = trpc.deployment.list.useQuery({
+    workspaceId: workspace.id,
+  });
+  const deployments = deploymentsQuery.data?.items ?? [];
   const [searchQuery, setSearchQuery] = useState("");
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -453,6 +459,12 @@ export default function Deployments() {
           </div>
         </div>
 
+        <div>
+          {deployments.map((deployment) => (
+            <div key={deployment.id}>{deployment.name}</div>
+          ))}
+        </div>
+
         {/* Deployments Grid/List */}
         <div
           className={"grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
@@ -462,7 +474,7 @@ export default function Deployments() {
             return (
               <Link
                 key={deployment.id}
-                to={`/${workspaceSlug}/deployments/${deployment.id}`}
+                to={`/${workspace.slug}/deployments/${deployment.id}`}
               >
                 <Card className="group cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg">
                   <CardHeader className="pb-3">

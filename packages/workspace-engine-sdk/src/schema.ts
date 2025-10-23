@@ -926,7 +926,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["Deployment"][][];
+                        items: components["schemas"]["Deployment"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

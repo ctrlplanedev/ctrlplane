@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -32,22 +31,24 @@ export const deploymentsRouter = router({
     }),
 
   list: protectedProcedure
+    .input(z.object({ workspaceId: z.string() }))
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(z.object({ workspaceId: z.string() }))
-    .query(({ input }) => {
-      return wsEngine.GET("/v1/workspaces/{workspaceId}/deployments", {
-        params: {
-          path: {
-            workspaceId: input.workspaceId,
+    .query(async ({ input }) => {
+      const response = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/deployments",
+        {
+          params: {
+            path: { workspaceId: input.workspaceId },
+            query: { limit: 1000, offset: 0 },
           },
-          query: { limit: 1_000, offset: 0 },
         },
-      });
+      );
+      return response.data;
     }),
 
   releaseTargets: protectedProcedure
@@ -59,18 +60,20 @@ export const deploymentsRouter = router({
     })
     .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
     .query(({ input }) => {
-      return wsEngine.GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-              deploymentId: input.deploymentId,
+      return wsEngine
+        .GET(
+          "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets",
+          {
+            params: {
+              path: {
+                workspaceId: input.workspaceId,
+                deploymentId: input.deploymentId,
+              },
+              query: { limit: 1_000, offset: 0 },
             },
-            query: { limit: 1_000, offset: 0 },
           },
-        },
-      );
+        )
+        .then((response) => response.data);
     }),
 
   versions: protectedProcedure
@@ -82,27 +85,23 @@ export const deploymentsRouter = router({
     })
     .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
     .query(({ input }) => {
-      return wsEngine.GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-              deploymentId: input.deploymentId,
+      return wsEngine
+        .GET(
+          "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+          {
+            params: {
+              path: {
+                workspaceId: input.workspaceId,
+                deploymentId: input.deploymentId,
+              },
+              query: { limit: 5_000, offset: 0 },
             },
-            query: { limit: 5_000, offset: 0 },
           },
-        },
-      );
+        )
+        .then((response) => response.data);
     }),
 
   create: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentCreate)
-          .on({ type: "system", id: input.systemId }),
-    })
     .input(
       z.object({
         workspaceId: z.string().uuid(),
@@ -112,19 +111,21 @@ export const deploymentsRouter = router({
         description: z.string().max(255).optional(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentCreate)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .mutation(async ({ input }) => {
       const { workspaceId: _, ...deploymentData } = input;
       const deployment = { id: uuidv4(), ...deploymentData };
-
-      await ctx.db
-        .insert(schema.deployment)
-        .values({ ...deployment, description: deployment.description ?? "" });
 
       await sendGoEvent({
         workspaceId: input.workspaceId,
         eventType: Event.DeploymentCreated,
-        data: { ...deployment, jobAgentConfig: {} },
         timestamp: Date.now(),
+        data: { ...deployment, jobAgentConfig: {} },
       });
 
       return deployment;

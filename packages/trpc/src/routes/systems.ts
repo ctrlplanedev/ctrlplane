@@ -15,13 +15,15 @@ export const systemsRouter = router({
     })
     .input(z.object({ workspaceId: z.string() }))
     .query(({ input }) => {
-      return wsEngine.GET("/v1/workspaces/{workspaceId}/systems", {
-        params: {
-          path: {
-            workspaceId: input.workspaceId,
+      return wsEngine
+        .GET("/v1/workspaces/{workspaceId}/systems", {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+            },
+            query: { limit: 1_000, offset: 0 },
           },
-          query: { limit: 1_000, offset: 0 },
-        },
-      });
+        })
+        .then((response) => response.data);
     }),
 });

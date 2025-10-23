@@ -1,8 +1,5 @@
 import type { EntityType, ScopeType } from "@ctrlplane/db/schema";
 import _ from "lodash";
-import { z } from "zod";
-
-import { logger } from "@ctrlplane/logger";
 
 import { checkEntityPermissionForResource } from "./rbac.js";
 
@@ -22,17 +19,8 @@ const createEntityPermissionChecker =
   (entityType: EntityType) =>
   (id: string): PermissionChecker => ({
     perform: (...permissions: string[]) => ({
-      on: (...scopes: Array<{ type: ScopeType; id: string }>) => {
-        const uuidSchema = z.string().uuid();
-        const isValidUuid = scopes.every(
-          (scope) => uuidSchema.safeParse(scope.id).success,
-        );
-        if (!isValidUuid) {
-          logger.error("All scope IDs must be valid UUIDs", { scopes });
-          throw new Error("All scope IDs must be valid UUIDs");
-        }
-
-        return _.chain(scopes)
+      on: async (...scopes: Array<{ type: ScopeType; id: string }>) => {
+        const results = await _.chain(scopes)
           .map((scope) =>
             checkEntityPermissionForResource(
               { type: entityType, id },
@@ -41,8 +29,9 @@ const createEntityPermissionChecker =
             ),
           )
           .thru((promises) => Promise.all(promises))
-          .value()
-          .then((results) => results.every(Boolean));
+          .value();
+
+        return results.every(Boolean);
       },
     }),
   });

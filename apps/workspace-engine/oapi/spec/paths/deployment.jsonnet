@@ -11,12 +11,9 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(
-        {
-          type: 'array',
-          items: openapi.schemaRef('Deployment'),
-        }
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.paginatedResponse(openapi.schemaRef('Deployment'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}': {
