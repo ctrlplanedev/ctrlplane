@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/db"
-
-	"github.com/charmbracelet/log"
 )
 
 func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snapshot *db.WorkspaceSnapshot) error {
@@ -13,8 +11,6 @@ func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snap
 	if err != nil {
 		return fmt.Errorf("failed to encode workspace: %w", err)
 	}
-
-	log.Info("Saving workspace", "workspaceID", workspace.ID, "path", snapshot.Path)
 	// Write to file with appropriate permissions
 	if err := storage.Put(ctx, snapshot.Path, data); err != nil {
 		return fmt.Errorf("failed to write workspace to disk: %w", err)
