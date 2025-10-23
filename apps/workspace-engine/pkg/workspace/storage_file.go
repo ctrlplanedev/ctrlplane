@@ -17,7 +17,7 @@ type FileStorage struct {
 }
 
 // NewFileStorage returns a FileStorage rooted at the given base directory.
-func NewFileStorage(baseDir string) *FileStorage {
+func NewFileStorage(baseDir string) StorageClient {
 	return &FileStorage{BaseDir: baseDir}
 }
 

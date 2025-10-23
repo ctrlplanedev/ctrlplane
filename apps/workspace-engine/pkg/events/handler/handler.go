@@ -83,6 +83,7 @@ type RawEvent struct {
 	EventType   EventType       `json:"eventType"`
 	WorkspaceID string          `json:"workspaceId"`
 	Data        json.RawMessage `json:"data,omitempty"`
+	Timestamp   int64           `json:"timestamp"`
 }
 
 // Handler defines the interface for processing events
@@ -93,7 +94,7 @@ type HandlerRegistry map[EventType]Handler
 
 // EventListener listens for events on the queue and routes them to appropriate handlers
 type EventListener struct {
-	handlers HandlerRegistry
+	handlers       HandlerRegistry
 }
 
 // NewEventListener creates a new event listener with the provided handlers
@@ -141,23 +142,13 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 
 	// Execute the handler
 	var ws *workspace.Workspace
-
-	wsExists := workspace.Exists(rawEvent.WorkspaceID)
-	if wsExists {
-		ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
-	}
 	changeSet := changeset.NewChangeSet[any]()
-	if !wsExists {
-		ws = workspace.New(rawEvent.WorkspaceID)
-		if err := workspace.PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "failed to load workspace")
-			log.Error("Failed to load workspace", "error", err, "workspaceID", rawEvent.WorkspaceID)
-			return nil, fmt.Errorf("failed to load workspace: %w", err)
-		}
-		workspace.Set(rawEvent.WorkspaceID, ws)
-		changeSet.IsInitialLoad = true
+
+	ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
+	if ws == nil {
+		return nil, fmt.Errorf("workspace not found: %s", rawEvent.WorkspaceID)
 	}
+	
 	ctx = changeset.WithChangeSet(ctx, changeSet)
 
 	if err := handler(ctx, ws, rawEvent); err != nil {

@@ -2,13 +2,10 @@ package workspace
 
 import (
 	"bytes"
-	"context"
 	"encoding/gob"
-	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/workspace/kafka"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -25,7 +22,6 @@ func New(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
-		KafkaProgress:     make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -39,7 +35,6 @@ func NewNoFlush(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
-		KafkaProgress:     make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -50,7 +45,6 @@ type Workspace struct {
 	store             *store.Store
 	releasemanager    *releasemanager.Manager
 	changesetConsumer changeset.ChangesetConsumer[any]
-	KafkaProgress     kafka.KafkaProgressMap
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -119,7 +113,6 @@ func (w *Workspace) GobEncode() ([]byte, error) {
 	// Create workspace data with ID and store
 	data := WorkspaceStorageObject{
 		ID:            w.ID,
-		KafkaProgress: w.KafkaProgress,
 		StoreData:     storeData,
 	}
 
@@ -144,8 +137,7 @@ func (w *Workspace) GobDecode(data []byte) error {
 	}
 
 	// Restore the workspace ID
-	w.ID = wsData.ID
-	w.KafkaProgress = wsData.KafkaProgress
+	w.ID = wsData.ID	
 
 	// Initialize store if needed
 	if w.store == nil {
@@ -222,87 +214,4 @@ func GetNoFlushWorkspace(id string) *Workspace {
 
 func GetAllWorkspaceIds() []string {
 	return workspaces.Keys()
-}
-
-// SaveToStorage serializes the workspace state and saves it to a storage client
-func (w *Workspace) SaveToStorage(ctx context.Context, storage StorageClient, path string) error {
-	// Encode the workspace using gob
-	data, err := w.GobEncode()
-	if err != nil {
-		return fmt.Errorf("failed to encode workspace: %w", err)
-	}
-
-	// Write to file with appropriate permissions
-	if err := storage.Put(ctx, path, data); err != nil {
-		return fmt.Errorf("failed to write workspace to disk: %w", err)
-	}
-
-	return nil
-}
-
-// LoadFromStorage deserializes the workspace state from a storage client
-func (w *Workspace) LoadFromStorage(ctx context.Context, storage StorageClient, path string) error {
-	// Read from file
-	data, err := storage.Get(ctx, path)
-	if err != nil {
-		return fmt.Errorf("failed to read workspace from disk: %w", err)
-	}
-
-	// Decode the workspace
-	if err := w.GobDecode(data); err != nil {
-		return fmt.Errorf("failed to decode workspace: %w", err)
-	}
-
-	return nil
-}
-
-type WorkspaceLoader func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error
-
-// CreateWorkspaceLoader creates a workspace loader function that:
-// 1. Discovers all available workspace IDs
-// 2. Determines which workspaces belong to which partitions
-// 3. Loads workspaces for the assigned partitions from storage
-func CreateWorkspaceLoader(
-	storage StorageClient,
-	discoverer kafka.WorkspaceIDDiscoverer,
-) WorkspaceLoader {
-	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
-		var allWorkspaceIDs []string
-		var err error
-
-		// Use discoverer if provided, otherwise use default implementation
-		if discoverer != nil {
-			// Collect workspace IDs for each assigned partition
-			workspaceIDSet := make(map[string]bool)
-			for _, partition := range assignedPartitions {
-				partitionWorkspaces, discErr := discoverer(ctx, partition, numPartitions)
-				if discErr != nil {
-					return fmt.Errorf("failed to discover workspace IDs for partition %d: %w", partition, discErr)
-				}
-				for _, wsID := range partitionWorkspaces {
-					workspaceIDSet[wsID] = true
-				}
-			}
-			// Convert set to slice
-			for wsID := range workspaceIDSet {
-				allWorkspaceIDs = append(allWorkspaceIDs, wsID)
-			}
-		} else {
-			allWorkspaceIDs, err = kafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
-			if err != nil {
-				return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
-			}
-		}
-
-		for _, workspaceID := range allWorkspaceIDs {
-			ws := GetWorkspace(workspaceID)
-			if err := ws.LoadFromStorage(ctx, storage, fmt.Sprintf("%s.gob", workspaceID)); err != nil {
-				return fmt.Errorf("failed to load workspace %s: %w", workspaceID, err)
-			}
-
-			Set(workspaceID, ws)
-		}
-
-		return nil
-	}
 }

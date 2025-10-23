@@ -1,9 +1,12 @@
 package workspace
 
-import "workspace-engine/pkg/workspace/kafka"
+import (
+	"errors"
+)
+
+var ErrWorkspaceSnapshotNotFound = errors.New("workspace snapshot not found")
 
 type WorkspaceStorageObject struct {
 	ID            string
-	KafkaProgress kafka.KafkaProgressMap
 	StoreData     []byte
 }

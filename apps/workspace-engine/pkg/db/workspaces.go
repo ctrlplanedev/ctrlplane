@@ -1,6 +1,11 @@
 package db
 
-import "context"
+import (
+	"context"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+)
 
 const WORKSPACE_SELECT_QUERY = `
 	SELECT id FROM workspace
@@ -81,4 +86,57 @@ func GetAllWorkspaceIDs(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	return workspaceIDs, nil
+}
+
+type WorkspaceSnapshot struct {
+	Path          string
+	Timestamp     time.Time
+	Partition     int32
+	NumPartitions int32
+}
+
+const WORKSPACE_SNAPSHOT_SELECT_QUERY = `
+	SELECT path, timestamp, partition, num_partitions FROM workspace_snapshot WHERE workspace_id = $1 ORDER BY timestamp DESC LIMIT 1
+`
+
+func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) (*WorkspaceSnapshot, error) {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Release()
+
+	workspaceSnapshot := &WorkspaceSnapshot{}
+	err = db.QueryRow(ctx, WORKSPACE_SNAPSHOT_SELECT_QUERY, workspaceID).Scan(
+		&workspaceSnapshot.Path,
+		&workspaceSnapshot.Timestamp,
+		&workspaceSnapshot.Partition,
+		&workspaceSnapshot.NumPartitions,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return workspaceSnapshot, nil
+}
+
+const WORKSPACE_SNAPSHOT_INSERT_QUERY = `
+	INSERT INTO workspace_snapshot (workspace_id, path, timestamp, partition, num_partitions)
+	VALUES ($1, $2, $3, $4, $5)
+`
+
+func WriteWorkspaceSnapshot(ctx context.Context, workspaceID string, snapshot *WorkspaceSnapshot) error {
+	db, err := GetDB(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.Release()
+
+	_, err = db.Exec(ctx, WORKSPACE_SNAPSHOT_INSERT_QUERY, workspaceID, snapshot.Path, snapshot.Timestamp, snapshot.Partition, snapshot.NumPartitions)
+	if err != nil {
+		return err
+	}
+	return nil
 }
