@@ -1,9 +1,21 @@
 package e2e
 
-// These tests validate GCS storage persistence
-// They automatically configure WORKSPACE_STATES_BUCKET_URL to gs://ctrlplane/workspace-states-testing
-// They require proper GCP authentication (gcloud auth application-default login --project=wandb-ctrlplane)
-// Helper functions are in engine_workspace_persistence_helpers_test.go
+// import (
+// 	"context"
+// 	"fmt"
+// 	"testing"
+// 	"time"
+// 	"workspace-engine/pkg/oapi"
+// 	"workspace-engine/pkg/workspace"
+// 	"workspace-engine/test/integration"
+
+// 	"github.com/google/uuid"
+// )
+
+// // These tests validate GCS storage persistence
+// // They automatically configure WORKSPACE_STATES_BUCKET_URL to gs://ctrlplane/workspace-states-testing
+// // They require proper GCP authentication (gcloud auth application-default login --project=wandb-ctrlplane)
+// // Helper functions are in engine_workspace_persistence_helpers_test.go
 
 // func setupGCSTest(t *testing.T, ctx context.Context) workspace.StorageClient {
 // 	t.Helper()
@@ -1035,6 +1047,201 @@ package e2e
 // 	}
 
 // 	t.Logf("Successfully verified complex entity graph in GCS at path: %s", testPath)
+// }
+
+// func TestEngine_GCS_WorkspaceStateOverwrite(t *testing.T) {
+// 	ctx := context.Background()
+// 	storage := setupGCSTest(t, ctx)
+
+// 	// Use a consistent workspace ID (simulating real-world usage)
+// 	workspaceID := uuid.New().String()
+// 	testPath := fmt.Sprintf("%s.gob", workspaceID) // Same path pattern as kafka.go
+
+// 	systemId := uuid.New().String()
+// 	resource1Id := uuid.New().String()
+// 	resource2Id := uuid.New().String()
+// 	resource3Id := uuid.New().String()
+// 	jobAgentId := uuid.New().String()
+// 	deploymentId := uuid.New().String()
+
+// 	// === STATE 1: Create initial workspace ===
+// 	engine1 := integration.NewTestWorkspace(t,
+// 		integration.WithResource(
+// 			integration.ResourceID(resource1Id),
+// 			integration.ResourceName("initial-resource-1"),
+// 			integration.ResourceConfig(map[string]interface{}{
+// 				"version": "1.0.0",
+// 				"status":  "active",
+// 			}),
+// 		),
+// 		integration.WithResource(
+// 			integration.ResourceID(resource2Id),
+// 			integration.ResourceName("initial-resource-2"),
+// 			integration.ResourceConfig(map[string]interface{}{
+// 				"version": "1.0.0",
+// 			}),
+// 		),
+// 		integration.WithJobAgent(
+// 			integration.JobAgentID(jobAgentId),
+// 			integration.JobAgentName("initial-agent"),
+// 		),
+// 		integration.WithSystem(
+// 			integration.SystemID(systemId),
+// 			integration.SystemName("test-system"),
+// 			integration.WithDeployment(
+// 				integration.DeploymentID(deploymentId),
+// 				integration.DeploymentName("initial-deployment"),
+// 				integration.DeploymentJobAgent(jobAgentId),
+// 			),
+// 		),
+// 	)
+
+// 	ws1 := engine1.Workspace()
+// 	ws1.ID = workspaceID // Set consistent ID
+
+// 	// Save initial state
+// 	data1, err := ws1.GobEncode()
+// 	if err != nil {
+// 		t.Fatalf("failed to encode initial workspace: %v", err)
+// 	}
+
+// 	if err := storage.Put(ctx, testPath, data1); err != nil {
+// 		t.Fatalf("failed to save initial workspace to GCS: %v", err)
+// 	}
+// 	defer cleanupGCSFile(t, ctx, storage, testPath)
+
+// 	t.Logf("Saved initial state with %d resources", len(ws1.Resources().Items()))
+
+// 	// === STATE 2: Create UPDATED workspace (simulating workspace evolution) ===
+// 	engine2 := integration.NewTestWorkspace(t,
+// 		integration.WithResource(
+// 			integration.ResourceID(resource1Id),
+// 			integration.ResourceName("updated-resource-1"),
+// 			integration.ResourceConfig(map[string]interface{}{
+// 				"version": "2.0.0", // Version updated
+// 				"status":  "upgraded",
+// 			}),
+// 		),
+// 		integration.WithResource(
+// 			integration.ResourceID(resource2Id),
+// 			integration.ResourceName("updated-resource-2"),
+// 			integration.ResourceConfig(map[string]interface{}{
+// 				"version": "2.0.0", // Version updated
+// 			}),
+// 		),
+// 		integration.WithResource(
+// 			integration.ResourceID(resource3Id),
+// 			integration.ResourceName("new-resource-3"), // New resource added
+// 			integration.ResourceConfig(map[string]interface{}{
+// 				"version": "1.0.0",
+// 				"new":     true,
+// 			}),
+// 		),
+// 		integration.WithJobAgent(
+// 			integration.JobAgentID(jobAgentId),
+// 			integration.JobAgentName("updated-agent"),
+// 		),
+// 		integration.WithSystem(
+// 			integration.SystemID(systemId),
+// 			integration.SystemName("test-system"),
+// 			integration.WithDeployment(
+// 				integration.DeploymentID(deploymentId),
+// 				integration.DeploymentName("updated-deployment"),
+// 				integration.DeploymentJobAgent(jobAgentId),
+// 			),
+// 		),
+// 	)
+
+// 	ws2 := engine2.Workspace()
+// 	ws2.ID = workspaceID // Same workspace ID
+
+// 	// Add metadata to distinguish states
+// 	res1Updated, _ := ws2.Resources().Get(resource1Id)
+// 	res1Updated.Metadata = map[string]string{
+// 		"state":      "updated",
+// 		"updated_at": "2024-10-23",
+// 	}
+
+// 	// Save updated state (should OVERWRITE initial state)
+// 	data2, err := ws2.GobEncode()
+// 	if err != nil {
+// 		t.Fatalf("failed to encode updated workspace: %v", err)
+// 	}
+
+// 	if err := storage.Put(ctx, testPath, data2); err != nil {
+// 		t.Fatalf("failed to overwrite workspace in GCS: %v", err)
+// 	}
+
+// 	t.Logf("Saved updated state with %d resources (overwrote initial state)", len(ws2.Resources().Items()))
+
+// 	// === VERIFICATION: Load from GCS and verify we get STATE 2, not STATE 1 ===
+// 	loadedWs := workspace.New(workspaceID)
+
+// 	loadedData, err := storage.Get(ctx, testPath)
+// 	if err != nil {
+// 		t.Fatalf("failed to load workspace from GCS: %v", err)
+// 	}
+
+// 	if err := loadedWs.GobDecode(loadedData); err != nil {
+// 		t.Fatalf("failed to decode workspace: %v", err)
+// 	}
+
+// 	// Verify workspace ID
+// 	if loadedWs.ID != workspaceID {
+// 		t.Errorf("workspace ID mismatch: expected %s, got %s", workspaceID, loadedWs.ID)
+// 	}
+
+// 	// Verify we have 3 resources (from STATE 2), not 2 (from STATE 1)
+// 	loadedResources := loadedWs.Resources().Items()
+// 	if len(loadedResources) != 3 {
+// 		t.Errorf("expected 3 resources (updated state), got %d", len(loadedResources))
+// 	}
+
+// 	// Verify resource 1 has UPDATED data, not initial data
+// 	loadedRes1, ok := loadedResources[resource1Id]
+// 	if !ok {
+// 		t.Fatal("resource 1 not found after load")
+// 	}
+
+// 	if loadedRes1.Name != "updated-resource-1" {
+// 		t.Errorf("resource 1 name should be 'updated-resource-1' (from state 2), got %s", loadedRes1.Name)
+// 	}
+
+// 	if loadedRes1.Config != nil {
+// 		if version, ok := loadedRes1.Config["version"].(string); ok {
+// 			if version != "2.0.0" {
+// 				t.Errorf("resource 1 version should be '2.0.0' (from state 2), got %s", version)
+// 			}
+// 		}
+// 	}
+
+// 	// Verify metadata from STATE 2 is present
+// 	if loadedRes1.Metadata == nil || loadedRes1.Metadata["state"] != "updated" {
+// 		t.Error("resource 1 should have metadata from updated state")
+// 	}
+
+// 	// Verify resource 3 exists (only in STATE 2)
+// 	loadedRes3, ok := loadedResources[resource3Id]
+// 	if !ok {
+// 		t.Error("resource 3 should exist (added in updated state)")
+// 	} else {
+// 		if loadedRes3.Name != "new-resource-3" {
+// 			t.Errorf("resource 3 name should be 'new-resource-3', got %s", loadedRes3.Name)
+// 		}
+// 	}
+
+// 	// Verify deployment has updated name
+// 	loadedDeployment, ok := loadedWs.Deployments().Get(deploymentId)
+// 	if !ok {
+// 		t.Fatal("deployment not found")
+// 	}
+// 	if loadedDeployment.Name != "updated-deployment" {
+// 		t.Errorf("deployment name should be 'updated-deployment' (from state 2), got %s", loadedDeployment.Name)
+// 	}
+
+// 	t.Logf("✓ Successfully verified that workspace state was correctly overwritten")
+// 	t.Logf("✓ Loaded state matches STATE 2 (updated) with 3 resources, not STATE 1 (initial) with 2 resources")
+// 	t.Logf("✓ Path: %s", testPath)
 // }
 
 // func TestEngine_GCS_RawBinaryDataIntegrity(t *testing.T) {
