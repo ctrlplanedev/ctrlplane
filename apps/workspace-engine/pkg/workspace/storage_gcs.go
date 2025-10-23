@@ -88,6 +88,18 @@ func (c *GCSStorageClient) Get(ctx context.Context, path string) ([]byte, error)
 	return data, nil
 }
 
+func (c *GCSStorageClient) Delete(ctx context.Context, path string) error {
+	path = filepath.Join(c.prefix, path)
+	obj := c.client.Bucket(c.bucket).Object(path)
+	if err := obj.Delete(ctx); err != nil {
+		if err == storage.ErrObjectNotExist {
+			return nil // Already deleted, no error
+		}
+		return fmt.Errorf("failed to delete object: %w", err)
+	}
+	return nil
+}
+
 func (c *GCSStorageClient) Close() error {
 	return c.client.Close()
 }
