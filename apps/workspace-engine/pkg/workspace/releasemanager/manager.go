@@ -21,7 +21,7 @@ import (
 )
 
 // Manager handles the business logic for release target changes and deployment decisions.
-// It orchestrates deployment planning, execution, and job management.
+// It orchestrates deployment planning, job eligibility checking, execution, and job management.
 type Manager struct {
 	store *store.Store
 
@@ -29,8 +29,9 @@ type Manager struct {
 	targetsManager *targets.Manager
 
 	// Deployment components
-	planner  *deployment.Planner
-	executor *deployment.Executor
+	planner              *deployment.Planner
+	jobEligibilityChecker *deployment.JobEligibilityChecker
+	executor             *deployment.Executor
 
 	// Concurrency control
 	releaseTargetLocks sync.Map
@@ -46,11 +47,12 @@ func New(store *store.Store) *Manager {
 	variableManager := variables.New(store)
 
 	return &Manager{
-		store:              store,
-		targetsManager:     targetsManager,
-		planner:            deployment.NewPlanner(policyManager, versionManager, variableManager),
-		executor:           deployment.NewExecutor(store),
-		releaseTargetLocks: sync.Map{},
+		store:                 store,
+		targetsManager:        targetsManager,
+		planner:               deployment.NewPlanner(store, policyManager, versionManager, variableManager),
+		jobEligibilityChecker: deployment.NewJobEligibilityChecker(store),
+		executor:              deployment.NewExecutor(store),
+		releaseTargetLocks:    sync.Map{},
 	}
 }
 
@@ -129,15 +131,24 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 }
 
 // reconcileTarget ensures a release target is in its desired state (WRITES TO STORE).
-// Uses the two-phase deployment pattern: planning (read-only) and execution (writes).
+// Uses a three-phase deployment pattern: planning, eligibility checking, and execution.
 //
-// Two-Phase Design:
+// Three-Phase Design:
 //
-//	Phase 1 (DECISION): planner.PlanDeployment() answers "What needs deploying?" (read-only)
-//	Phase 2 (ACTION):   executor.ExecuteRelease() creates the job and deploys (writes)
+//	Phase 1 (PLANNING): planner.PlanDeployment() - "What should be deployed?" (read-only)
+//	  Determines the desired release based on versions, variables, and user-defined policies.
+//	  User policies: approval requirements, environment progression, etc.
 //
-// If planning returns nil → Nothing to deploy (already deployed, no versions, or blocked)
-// If planning returns release → Deploy it (planning phase already validated everything)
+//	Phase 2 (ELIGIBILITY): jobEligibilityChecker.ShouldCreateJob() - "Should we create a job?" (read-only)
+//	  System-level checks for job creation: retry logic, duplicate prevention, etc.
+//	  This is separate from user policies - it's about when to create jobs.
+//
+//	Phase 3 (EXECUTION): executor.ExecuteRelease() - "Create the job" (writes)
+//	  Persists release, creates job, dispatches to integration.
+//
+// Returns early if:
+//   - No desired release (no versions available or blocked by user policies)
+//   - Job should not be created (already attempted, retry limit exceeded, etc.)
 func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error {
 	ctx, span := tracer.Start(ctx, "ReconcileTarget")
 	defer span.End()
@@ -150,18 +161,59 @@ func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	lock.Lock()
 	defer lock.Unlock()
 
-	// Phase 1: DECISION - What needs deploying? (READ-ONLY)
-	releaseToDeploy, err := m.planner.PlanDeployment(ctx, releaseTarget)
+	// Phase 1: PLANNING - What should be deployed? (READ-ONLY)
+	desiredRelease, err := m.planner.PlanDeployment(ctx, releaseTarget)
 	if err != nil {
 		span.RecordError(err)
 		return err
 	}
 
-	// Nothing to deploy
-	if releaseToDeploy == nil {
+	// No desired release (no versions or blocked by user policies)
+	if desiredRelease == nil {
 		return nil
 	}
 
-	// Phase 2: ACTION - Deploy it (WRITES)
-	return m.executor.ExecuteRelease(ctx, releaseToDeploy)
+	// Phase 2: ELIGIBILITY - Should we create a job for this release? (READ-ONLY)
+	shouldCreate, _, err := m.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Job should not be created (retry limit, already attempted, etc.)
+	if !shouldCreate {
+		return nil
+	}
+
+	// Phase 3: EXECUTION - Create the job (WRITES)
+	return m.executor.ExecuteRelease(ctx, desiredRelease)
+}
+
+type ReleaseTargetState struct {
+	DesiredRelease *oapi.Release
+	CurrentRelease *oapi.Release
+}
+
+func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*ReleaseTargetState, error) {
+	// Get current release (may be nil if no successful jobs exist)
+	currentRelease, _, err := m.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
+	if err != nil {
+		// No successful job found is not an error condition - it just means no current release
+		log.Debug("no current release for release target", "error", err.Error())
+		currentRelease = nil
+	}
+
+	// Get desired release (may be nil if no versions available or blocked by policies)
+	desiredRelease, err := m.planner.PlanDeployment(ctx, releaseTarget)
+	if err != nil {
+		log.Error("error planning deployment for release target", "error", err.Error())
+		return nil, err
+	}
+
+	rts := &ReleaseTargetState{
+		DesiredRelease: desiredRelease,
+		CurrentRelease: currentRelease,
+	}
+
+	return rts, nil
 }

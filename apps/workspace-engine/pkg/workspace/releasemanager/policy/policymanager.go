@@ -5,9 +5,6 @@ import (
 	"fmt"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deployableversions"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/skipdeployed"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 
@@ -16,14 +13,15 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager/policymanager")
 
-// Manager handles policy evaluation for release decisions.
+// Manager handles user-defined policy evaluation for release decisions.
+// User-defined policies include: approval requirements, environment progression, etc.
+//
+// Note: System-level job eligibility checks (retry logic, duplicate prevention)
+// are handled separately by deployment.JobEligibilityChecker.
 type Manager struct {
 	store *store.Store
 
 	evaluatorFactory *EvaluatorFactory
-
-	defaultVersionRuleEvaluators []evaluator.VersionScopedEvaluator
-	defaultReleaseRuleEvaluators []evaluator.ReleaseScopedEvaluator
 }
 
 // New creates a new policy manager.
@@ -31,12 +29,6 @@ func New(store *store.Store) *Manager {
 	return &Manager{
 		store:            store,
 		evaluatorFactory: NewEvaluatorFactory(store),
-		defaultVersionRuleEvaluators: []evaluator.VersionScopedEvaluator{
-			deployableversions.NewDeployableVersionStatusEvaluator(store),
-		},
-		defaultReleaseRuleEvaluators: []evaluator.ReleaseScopedEvaluator{
-			skipdeployed.NewSkipDeployedEvaluator(store),
-		},
 	}
 }
 
@@ -79,7 +71,8 @@ func (m *Manager) EvaluateWorkspace(
 	return decision, nil
 }
 
-// EvaluateVersion evaluates all applicable policies for a deployment version and returns a comprehensive decision.
+// EvaluateVersion evaluates user-defined policies for a deployment version.
+// User policies include: approval requirements, environment progression, etc.
 func (m *Manager) EvaluateVersion(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
@@ -96,25 +89,12 @@ func (m *Manager) EvaluateVersion(
 		return nil, fmt.Errorf("failed to get policies for release target: %w", err)
 	}
 
-	// Run default version rule evaluators (e.g., version status checks)
-	if len(m.defaultVersionRuleEvaluators) > 0 {
-		policyResult := results.NewPolicyEvaluation()
-		for _, evaluator := range m.defaultVersionRuleEvaluators {
-			ruleResult, err := evaluator.Evaluate(ctx, releaseTarget, version)
-			if err != nil {
-				return nil, err
-			}
-			policyResult.RuleResults = append(policyResult.RuleResults, *ruleResult)
-		}
-		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
-	}
-
 	// Fast path: no policies = allowed
 	if len(policies) == 0 {
 		return decision, nil
 	}
 
-	// Evaluate each policy using the factory
+	// Evaluate each user-defined policy using the factory
 	for _, policy := range policies {
 		policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
 
@@ -134,6 +114,11 @@ func (m *Manager) EvaluateVersion(
 	return decision, nil
 }
 
+// EvaluateRelease evaluates user-defined policies for a release.
+// User policies include: approval requirements, environment progression, etc.
+//
+// Note: This no longer includes system job eligibility checks (skip deployed, retry limits).
+// Those are handled by deployment.JobEligibilityChecker.
 func (m *Manager) EvaluateRelease(
 	ctx context.Context,
 	release *oapi.Release,
@@ -147,19 +132,6 @@ func (m *Manager) EvaluateRelease(
 	if err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("failed to get policies for release target: %w", err)
-	}
-
-	// Run default release rule evaluators (e.g., skip deployed checks)
-	if len(m.defaultReleaseRuleEvaluators) > 0 {
-		policyResult := results.NewPolicyEvaluation()
-		for _, evaluator := range m.defaultReleaseRuleEvaluators {
-			ruleResult, err := evaluator.Evaluate(ctx, release)
-			if err != nil {
-				return nil, err
-			}
-			policyResult.AddRuleResult(*ruleResult)
-		}
-		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
 	// Fast path: no policies = allowed

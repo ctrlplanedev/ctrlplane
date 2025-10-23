@@ -6,8 +6,11 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deployableversions"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
+	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -23,40 +26,53 @@ type DeploymentDecision interface {
 
 // Planner handles deployment planning (Phase 1: DECISION - Read-only operations).
 type Planner struct {
+	store           *store.Store
 	policyManager   *policy.Manager
 	versionManager  *versions.Manager
 	variableManager *variables.Manager
+
+	// System-level version evaluators (e.g., version status checks)
+	versionEvaluators []evaluator.VersionScopedEvaluator
 }
 
 // NewPlanner creates a new deployment planner.
 func NewPlanner(
+	store *store.Store,
 	policyManager *policy.Manager,
 	versionManager *versions.Manager,
 	variableManager *variables.Manager,
 ) *Planner {
 	return &Planner{
+		store:           store,
 		policyManager:   policyManager,
 		versionManager:  versionManager,
 		variableManager: variableManager,
+		versionEvaluators: []evaluator.VersionScopedEvaluator{
+			deployableversions.NewDeployableVersionStatusEvaluator(store),
+		},
 	}
 }
 
-// PlanDeployment determines what release (if any) should be deployed for a target (READ-ONLY).
+// PlanDeployment determines the desired release for a target based on user-defined policies (READ-ONLY).
 //
-// Planning Logic - Returns nil if ANY of these are true:
-//  1. No versions available for this deployment
-//  2. All versions are blocked by policies
-//  3. Latest passing version is already deployed (most recent successful job)
-//  4. Job already in progress for this release (pending/in-progress job exists)
+// This function focuses on determining WHAT should be deployed:
+//  1. Which version should be deployed (based on version availability and user policies)
+//  2. What variables should be used
+//
+// Returns nil if:
+//  - No versions available
+//  - All versions are blocked by user-defined policies (approval, environment progression, etc.)
+//
+// Note: This does NOT check job eligibility (retry logic, duplicate prevention, etc.)
+// Those checks are handled separately by JobEligibilityChecker.
 //
 // Returns:
-//   - *oapi.Release: This release should be deployed (caller should create a job for it)
-//   - nil: No deployment needed (see planning logic above)
+//   - *oapi.Release: The desired release to deploy
+//   - nil: No deployable release (no versions or all blocked by policies)
 //   - error: Planning failed
 //
-// Design Pattern: Two-Phase Deployment (DECISION Phase)
-// This function only READS state and makes decisions. No writes occur here.
-// If this returns a release, the executor will handle the actual deployment.
+// Design Pattern: Three-Phase Deployment (PLANNING Phase)
+// This function only READS state and determines the desired release. No writes occur here.
 func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Release, error) {
 	ctx, span := tracer.Start(ctx, "PlanDeployment",
 		trace.WithAttributes(
@@ -72,7 +88,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		return nil, nil
 	}
 
-	// Step 2: Find first version that passes ALL policies
+	// Step 2: Find first version that passes user-defined policies
 	deployableVersion := p.findDeployableVersion(ctx, candidateVersions, releaseTarget)
 	if deployableVersion == nil {
 		return nil, nil
@@ -88,25 +104,18 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 	// Step 4: Construct the desired release
 	desiredRelease := BuildRelease(ctx, releaseTarget, deployableVersion, resolvedVariables)
 
-	// Step 5: Evaluate the release against policies
-	policyDecision, err := p.policyManager.EvaluateRelease(ctx, desiredRelease)
-	if err != nil {
-		span.RecordError(err)
-		return nil, err
-	}
-
-	if !policyDecision.CanDeploy() {
-		return nil, nil
-	}
-
-	// This release needs to be deployed!
-	span.SetAttributes(attribute.Bool("needs_deployment", true))
+	// This is the desired release based on policies!
+	span.SetAttributes(attribute.Bool("has_desired_release", true))
 
 	return desiredRelease, nil
 }
 
-// findDeployableVersion finds the first version that passes all policies (READ-ONLY).
-// Returns nil if all versions are blocked by policies.
+// findDeployableVersion finds the first version that passes all checks (READ-ONLY).
+// Checks include:
+//   - System-level version checks (e.g., version status via evaluators)
+//   - User-defined policies (approval requirements, environment progression, etc.)
+//
+// Returns nil if all versions are blocked by policies or system checks.
 func (p *Planner) findDeployableVersion(
 	ctx context.Context,
 	candidateVersions []*oapi.DeploymentVersion,
@@ -132,6 +141,26 @@ func (p *Planner) findDeployableVersion(
 	}
 
 	for _, version := range candidateVersions {
+		// Step 1: Evaluate system-level version checks (e.g., version status)
+		eligible := true
+		for _, versionEvaluator := range p.versionEvaluators {
+			result, err := versionEvaluator.Evaluate(ctx, releaseTarget, version)
+			if err != nil {
+				span.RecordError(err)
+				eligible = false
+				break
+			}
+			if !result.Allowed {
+				eligible = false
+				break
+			}
+		}
+
+		if !eligible {
+			continue // Skip this version
+		}
+
+		// Step 2: Check user-defined policies
 		policyDecision, err := p.policyManager.EvaluateVersion(ctx, version, releaseTarget)
 		if err != nil {
 			span.RecordError(err)

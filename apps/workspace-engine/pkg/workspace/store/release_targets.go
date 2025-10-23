@@ -169,3 +169,45 @@ func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.Re
 func (r *ReleaseTargets) Get(key string) *oapi.ReleaseTarget {
 	return r.targets.Get()[key]
 }
+
+// type ReleaseTargetState struct {
+// 	DesiredRelease *oapi.Release
+// 	CurrentRelease *oapi.Release
+// 	LatestReportedRelease *ReportedRelease
+// }
+
+// type ReportedRelease struct {
+// 	VersionTag string
+// 	Variables map[string]oapi.LiteralValue
+// 	ReportedAt time.Time
+// 	ReportedBy string
+// }
+	
+func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Release, *oapi.Job, error) {
+	jobs := r.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+	var mostRecentJob *oapi.Job
+	
+	for _, job := range jobs {
+		if job.Status != oapi.Successful {
+			continue
+		}
+		
+		if job.CompletedAt == nil {
+			continue
+		}
+		
+		if mostRecentJob == nil || mostRecentJob.CompletedAt == nil || job.CompletedAt.After(*mostRecentJob.CompletedAt) {
+			mostRecentJob = job
+		}
+	}
+
+	if mostRecentJob == nil {
+		return nil, nil, fmt.Errorf("no successful job found")
+	}
+
+	release, ok := r.store.Releases.Get(mostRecentJob.ReleaseId)
+	if !ok {
+		return nil, nil, fmt.Errorf("release %s not found", mostRecentJob.ReleaseId)
+	}
+	return release, mostRecentJob, nil
+}
