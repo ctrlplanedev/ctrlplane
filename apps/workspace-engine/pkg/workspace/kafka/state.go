@@ -29,7 +29,7 @@ func FilterWorkspaceIDsForPartition(workspaceIDs []string, targetPartition int32
 
 type WorkspaceIDDiscoverer func(ctx context.Context, targetPartition int32, numPartitions int32) ([]string, error)
 
-func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, numPartitions int32) ([]string, error) {
+func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, numPartitions int32) (map[int32][]string, error) {
 	workspaceIDs, err := db.GetAllWorkspaceIDs(ctx)
 	if err != nil {
 		return nil, err
@@ -40,10 +40,11 @@ func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, nu
 		assignedSet[p] = true
 	}
 
-	var result []string
+	result := make(map[int32][]string)
 	for _, workspaceID := range workspaceIDs {
-		if assignedSet[PartitionForWorkspace(workspaceID, numPartitions)] {
-			result = append(result, workspaceID)
+		partition := PartitionForWorkspace(workspaceID, numPartitions)
+		if assignedSet[partition] {
+			result[partition] = append(result[partition], workspaceID)
 		}
 	}
 

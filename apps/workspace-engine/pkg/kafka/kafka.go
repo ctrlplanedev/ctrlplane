@@ -83,9 +83,27 @@ func RunConsumer(ctx context.Context) error {
 	}
 	log.Info("Partition assignment complete", "assigned", assignedPartitions)
 
-	allWorkspaceIDs, err := wskafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
+	partitionWorkspaceMap, err := wskafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
 	if err != nil {
 		return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
+	}
+
+	// Flatten the map to get all workspace IDs
+	var allWorkspaceIDs []string
+	for _, workspaceIDs := range partitionWorkspaceMap {
+		allWorkspaceIDs = append(allWorkspaceIDs, workspaceIDs...)
+	}
+
+	snapshots, err := db.GetLatestWorkspaceSnapshots(ctx, allWorkspaceIDs)
+	if err != nil {
+		return fmt.Errorf("failed to get latest workspace snapshots: %w", err)
+	}
+
+	earliestOffset := getEarliestOffset(snapshots)
+	log.Info("Seeking to earliest offset", "offset", earliestOffset)
+
+	for _, partition := range assignedPartitions {
+
 	}
 
 	storage := workspace.NewFileStorage("./state")
@@ -118,6 +136,8 @@ func RunConsumer(ctx context.Context) error {
 	// Start consuming messages
 	handler := events.NewEventHandler()
 
+	consumer.Seek()
+
 	for {
 		// Check for cancellation
 		select {
@@ -141,9 +161,11 @@ func RunConsumer(ctx context.Context) error {
 		}
 
 		snapshot := &db.WorkspaceSnapshot{
+			WorkspaceID:   ws.ID,
 			Path:          fmt.Sprintf("%s.gob", ws.ID),
 			Timestamp:     msg.Timestamp,
 			Partition:     int32(msg.TopicPartition.Partition),
+			Offset:        int64(msg.TopicPartition.Offset),
 			NumPartitions: numPartitions,
 		}
 
