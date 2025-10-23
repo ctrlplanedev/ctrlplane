@@ -177,11 +177,26 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		releaseTargetsList = append(releaseTargetsList, releaseTarget)
 	}
 
+	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, total)
+	for _, releaseTarget := range releaseTargetsList[start:end] {
+		state, err := ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), releaseTarget)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+		releaseTargetsWithState = append(releaseTargetsWithState, &oapi.ReleaseTargetWithState{
+			ReleaseTarget: *releaseTarget,
+			State:         *state,
+		})
+	}
+
+
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  releaseTargetsList[start:end],
+		"items":  releaseTargetsWithState,
 	})
 }
 

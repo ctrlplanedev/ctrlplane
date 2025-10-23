@@ -4,29 +4,25 @@ import { route } from "@react-router/dev/routes";
 export default [
   route("", "routes/protected.tsx", [
     route(":workspaceSlug", "routes/ws/_layout.tsx", [
-      route("deployments", "routes/ws/deployments/page.tsx", {
-        id: "deployments.page",
-      }),
-      route(
-        "deployments/:deploymentId",
-        "routes/ws/deployments/page.$deploymentId.tsx",
-      ),
-      route(
-        "deployments/:deploymentId/versions",
-        "routes/ws/deployments/page.$deploymentId.versions.tsx",
-      ),
+      route("deployments", "routes/ws/deployments.tsx"),
 
-      route(
-        "deployments/:deploymentId/settings",
-        "routes/ws/deployments/settings/_layout.tsx",
-        [
-          route(
-            "general",
-            "routes/ws/deployments/settings/page.$deploymentId.general.tsx",
-          ),
-        ],
-      ),
-
+      route("deployments", "routes/ws/deployments/_layout.tsx", [
+        route(":deploymentId", "routes/ws/deployments/page.$deploymentId.tsx"),
+        route(
+          "deployments/:deploymentId/versions",
+          "routes/ws/deployments/page.$deploymentId.versions.tsx",
+        ),
+        route(
+          "deployments/:deploymentId/settings",
+          "routes/ws/deployments/settings/_layout.tsx",
+          [
+            route(
+              "general",
+              "routes/ws/deployments/settings/page.$deploymentId.general.tsx",
+            ),
+          ],
+        ),
+      ]),
       route("resources", "routes/ws/resources.tsx"),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
       route("projects", "routes/ws/projects.tsx"),

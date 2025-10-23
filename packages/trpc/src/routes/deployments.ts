@@ -16,8 +16,8 @@ export const deploymentsRouter = router({
           .perform(Permission.DeploymentGet)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(({ input }) => {
-      return wsEngine.GET(
+    .query(async ({ input }) => {
+      const response = await wsEngine.GET(
         "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
         {
           params: {
@@ -28,6 +28,8 @@ export const deploymentsRouter = router({
           },
         },
       );
+      console.log(response.data);
+      return response.data;
     }),
 
   list: protectedProcedure

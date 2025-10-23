@@ -892,6 +892,32 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetState": {
+            "properties": {
+               "currentRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "desiredRelease": {
+                  "$ref": "#/components/schemas/Release"
+               }
+            },
+            "type": "object"
+         },
+         "ReleaseTargetWithState": {
+            "properties": {
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "state": {
+                  "$ref": "#/components/schemas/ReleaseTargetState"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "state"
+            ],
+            "type": "object"
+         },
          "Resource": {
             "properties": {
                "config": {
@@ -1523,7 +1549,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/ReleaseTarget"
+                                    "$ref": "#/components/schemas/ReleaseTargetWithState"
                                  },
                                  "type": "array"
                               },

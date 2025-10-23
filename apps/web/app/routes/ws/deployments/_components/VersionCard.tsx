@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "react-router";
 
-import type { ReleaseTarget } from "./types";
+import type { ReleaseTargetWithState } from "./types";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
@@ -26,8 +26,8 @@ type VersionCardProps = {
     status: DeploymentVersionStatus;
     createdAt: string;
   };
-  currentReleaseTargets: ReleaseTarget[];
-  desiredReleaseTargets: ReleaseTarget[];
+  currentReleaseTargets: ReleaseTargetWithState[];
+  desiredReleaseTargets: ReleaseTargetWithState[];
   isSelected?: boolean;
   onSelect?: () => void;
 };
@@ -65,7 +65,6 @@ const getVersionStatusIcon = (status: DeploymentVersionStatus) => {
 export const VersionCard: React.FC<VersionCardProps> = ({
   version,
   currentReleaseTargets,
-  desiredReleaseTargets: _desiredReleaseTargets,
   isSelected = false,
   onSelect,
 }) => {
@@ -74,9 +73,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
   const hasActiveDeployments =
     currentReleaseTargets.length > 0 || versionId === version.id;
 
-  const currentEnvironments = new Set(
-    currentReleaseTargets.map((rt) => rt.environment.name),
-  );
+  const currentEnvironments = new Set<string>();
 
   if (!hasActiveDeployments) {
     return (

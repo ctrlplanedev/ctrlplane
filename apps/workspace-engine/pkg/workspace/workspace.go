@@ -23,6 +23,7 @@ func New(id string) *Workspace {
 		releasemanager:    rm,
 		changesetConsumer: cc,
 	}
+
 	return ws
 }
 
@@ -112,8 +113,8 @@ func (w *Workspace) GobEncode() ([]byte, error) {
 
 	// Create workspace data with ID and store
 	data := WorkspaceStorageObject{
-		ID:            w.ID,
-		StoreData:     storeData,
+		ID:        w.ID,
+		StoreData: storeData,
 	}
 
 	// Encode the workspace data
@@ -137,7 +138,7 @@ func (w *Workspace) GobDecode(data []byte) error {
 	}
 
 	// Restore the workspace ID
-	w.ID = wsData.ID	
+	w.ID = wsData.ID
 
 	// Initialize store if needed
 	if w.store == nil {

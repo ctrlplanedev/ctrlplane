@@ -71,17 +71,29 @@ export type Job = {
 };
 
 export type ReleaseTarget = {
-  version: {
-    currentId: string;
-    desiredId: string; // Latest version that passes all policies
-    blockedVersions?: Array<{
-      versionId: string;
-      reason: string; // e.g., "Approval required", "Environment progression rule", "Time window"
-    }>;
+  state: {
+    currentRelease: {
+      version: { id: string };
+    };
+    desiredRelease: {
+      version: { id: string };
+    };
   };
   environment: { id: string; name: string };
   resource: { id: string; name: string; kind: string; identifier: string };
   jobs: Job[];
+};
+
+export type ReleaseTargetWithState = {
+  releaseTarget: {
+    deploymentId: string;
+    environmentId: string;
+    resourceId: string;
+  };
+  state: {
+    currentRelease?: { version: { tag: string } } | null;
+    desiredRelease?: { version: { tag: string } } | null;
+  };
 };
 
 export const rtid = (rt: ReleaseTarget) => {

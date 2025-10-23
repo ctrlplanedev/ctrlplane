@@ -240,7 +240,7 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceSta
 	ctx, span := tracer.Start(ctx, "LoadWorkspace")
 	defer span.End()
 
-	log.Info("Loading workspace", "workspaceID", workspaceID)
+	log.Info("Loading workspace from database", "workspaceID", workspaceID)
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -300,6 +300,8 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceSta
 	if initialWorkspaceState.jobs, err = loadJobs(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load jobs: %w", err)
 	}
+
+	log.Info("Workspace loaded from database", "workspaceID", workspaceID)
 
 	return initialWorkspaceState, nil
 }

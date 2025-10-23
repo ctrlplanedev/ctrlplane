@@ -73,4 +73,3 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 
 	return canCreate, decision, nil
 }
-

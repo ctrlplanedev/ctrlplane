@@ -1,7 +1,10 @@
 import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import _ from "lodash";
+import { PackagePlus } from "lucide-react";
+import { Link, useSearchParams } from "react-router";
 
+import { trpc } from "~/api/trpc";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,10 +12,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
+import { Button } from "~/components/ui/button";
 import { ResizablePanel, ResizablePanelGroup } from "~/components/ui/resizable";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
+import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
 import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
@@ -27,13 +33,28 @@ export function meta() {
 }
 
 export default function DeploymentDetail() {
-  const { workspaceSlug, deploymentId: _ } = useParams();
+  const { workspace } = useWorkspace();
+  const { deployment } = useDeployment();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedVersionId = searchParams.get("version");
   const selectedEnvironmentId = searchParams.get("env");
 
+  const versionsQuery = trpc.deployment.versions.useQuery({
+    workspaceId: workspace.id,
+    deploymentId: deployment.id,
+    limit: 1000,
+    offset: 0,
+  });
+
+  const releaseTargets = trpc.deployment.releaseTargets.useQuery({
+    workspaceId: workspace.id,
+    deploymentId: deployment.id,
+    limit: 1000,
+    offset: 0,
+  });
+
   // In a real app, fetch deployment data based on deploymentId
-  const deployment = mockDeploymentDetail;
+  const deploymentMock = mockDeploymentDetail;
   const environments = mockEnvironments;
 
   // Handle version selection
@@ -66,16 +87,16 @@ export default function DeploymentDetail() {
 
   // Create ReactFlow nodes for environments (left to right flow)
   const computedNodes: Node[] = useMemo(() => {
-    const version = deployment.versions[0];
+    const version = deploymentMock.versions[0];
 
     // Group release targets by environment to get version info
-    const releaseTargetsByEnv = deployment.releaseTargets.reduce(
+    const releaseTargetsByEnv = deploymentMock.releaseTargets.reduce(
       (acc, rt) => {
         const envId = rt.environment.id;
         (acc[envId] ??= []).push(rt);
         return acc;
       },
-      {} as Record<string, typeof deployment.releaseTargets>,
+      {} as Record<string, typeof deploymentMock.releaseTargets>,
     );
 
     const nodes: Node[] = [
@@ -89,50 +110,38 @@ export default function DeploymentDetail() {
         const envReleaseTargets = releaseTargetsByEnv[environment.id] ?? [];
 
         // Count resources per version (current)
-        const currentVersionCounts = envReleaseTargets.reduce(
-          (acc, rt) => {
-            acc[rt.version.currentId] = (acc[rt.version.currentId] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>,
-        );
+        const currentVersionCounts = {};
 
         // Count resources per version (desired)
-        const desiredVersionCounts = envReleaseTargets.reduce(
-          (acc, rt) => {
-            acc[rt.version.desiredId] = (acc[rt.version.desiredId] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>,
-        );
+        const desiredVersionCounts = {};
 
         // Collect ALL blocked versions for all versions
-        const blockedVersionsByVersionId: Record<
-          string,
-          Array<{ reason: string }>
-        > = {};
-        envReleaseTargets.forEach((rt) => {
-          rt.version.blockedVersions?.forEach((bv) => {
-            if (!(bv.versionId in blockedVersionsByVersionId)) {
-              blockedVersionsByVersionId[bv.versionId] = [];
-            }
-            blockedVersionsByVersionId[bv.versionId].push({
-              reason: bv.reason,
-            });
-          });
-        });
+        // const blockedVersionsByVersionId: Record<
+        //   string,
+        //   Array<{ reason: string }>
+        // > = {};
+        // envReleaseTargets.forEach((rt) => {
+        //   rt.state.desiredRelease.blockedVersions.forEach((bv) => {
+        //     if (!(bv.versionId in blockedVersionsByVersionId)) {
+        //       blockedVersionsByVersionId[bv.version.id] = [];
+        //     }
+        //     blockedVersionsByVersionId[bv.version.id].push({
+        //       reason: bv.reason,
+        //     });
+        //   });
+        // });
 
         // Map version IDs to tags with counts
         const currentVersionsWithCounts = Object.entries(currentVersionCounts)
           .map(([id, count]) => ({
-            tag: deployment.versions.find((v) => v.id === id)?.tag ?? id,
+            tag: deploymentMock.versions.find((v) => v.id === id)?.tag ?? id,
             count,
           }))
           .filter((v) => v.tag);
 
         const desiredVersionsWithCounts = Object.entries(desiredVersionCounts)
           .map(([id, count]) => ({
-            tag: deployment.versions.find((v) => v.id === id)?.tag ?? id,
+            tag: deploymentMock.versions.find((v) => v.id === id)?.tag ?? id,
             count,
           }))
           .filter((v) => v.tag);
@@ -148,7 +157,7 @@ export default function DeploymentDetail() {
             jobs: envReleaseTargets.flatMap((rt) => rt.jobs),
             currentVersionsWithCounts,
             desiredVersionsWithCounts,
-            blockedVersionsByVersionId,
+            // blockedVersionsByVersionId,
             onSelect: () => handleEnvironmentSelect(environment.id),
           },
         };
@@ -156,7 +165,7 @@ export default function DeploymentDetail() {
     ];
 
     return nodes;
-  }, [environments, deployment, handleEnvironmentSelect]);
+  }, [environments, deploymentMock, handleEnvironmentSelect]);
 
   // Create edges showing deployment progression (left to right)
   const computedEdges: Edge[] = useMemo(() => {
@@ -193,6 +202,8 @@ export default function DeploymentDetail() {
     return connections;
   }, [environments]);
 
+  const versions = versionsQuery.data?.items ?? [];
+  const noVersions = !versionsQuery.isLoading && versions.length === 0;
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
@@ -206,7 +217,7 @@ export default function DeploymentDetail() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbItem>
-                  <Link to={`/${workspaceSlug}/deployments`}>Deployments</Link>
+                  <Link to={`/${workspace.slug}/deployments`}>Deployments</Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
@@ -220,75 +231,114 @@ export default function DeploymentDetail() {
         </div>
       </header>
 
-      <div className="w-fit max-w-full shrink-0 overflow-clip border-b bg-accent/50">
-        <div className="flex gap-2 overflow-x-auto p-4">
-          {deployment.versions.map((version) => {
-            const currentReleaseTargets = deployment.releaseTargets.filter(
-              (rt) => rt.version.currentId === version.id,
-            );
-            const desiredReleaseTargets = deployment.releaseTargets.filter(
-              (rt) => rt.version.desiredId === version.id,
-            );
-            const isSelected = selectedVersionId === version.id;
-
-            return (
-              <VersionCard
-                key={version.id}
-                version={version}
-                currentReleaseTargets={currentReleaseTargets}
-                desiredReleaseTargets={desiredReleaseTargets}
-                isSelected={isSelected}
-                onSelect={() => handleVersionSelect(version.id)}
-              />
-            );
-          })}
+      {noVersions && (
+        <div className="flex h-full items-center justify-center">
+          <div className="gap-4text-center flex flex-col items-center space-y-4 text-center">
+            <div className="rounded-full bg-muted p-4">
+              <PackagePlus className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-semibold">No versions yet</h3>
+              <p className="text-sm text-muted-foreground">
+                Create your first version to start deploying
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                // TODO: Implement create version dialog
+                // Need to add trpc mutation for creating versions
+                console.log("Create version clicked");
+              }}
+            >
+              <PackagePlus className="mr-2 h-4 w-4" />
+              Create Version
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
+      {!noVersions && (
+        <>
+          <div className="w-fit min-w-full max-w-full shrink-0 overflow-clip border-b bg-accent/50">
+            {versions.length > 0 && (
+              <div className="flex min-h-[175px] min-w-full flex-grow gap-2 overflow-x-auto p-4">
+                {versions.map((version) => {
+                  const currentReleaseTargets =
+                    releaseTargets.data?.items.filter(
+                      (rt) =>
+                        rt.state.currentRelease?.version.id === version.id,
+                    );
+                  const desiredReleaseTargets =
+                    releaseTargets.data?.items.filter(
+                      (rt) =>
+                        rt.state.desiredRelease?.version.id === version.id,
+                    );
+                  const isSelected = selectedVersionId === version.id;
 
-      <div className="flex h-[calc(100vh-101px-207px-1rem)] min-h-0 flex-1 overflow-clip">
-        <ResizablePanelGroup direction="horizontal">
-          {/* Main ReactFlow Panel */}
-          <ResizablePanel
-            defaultSize={selectedVersionId || selectedEnvironmentId ? 70 : 100}
-            minSize={50}
-          >
-            <DeploymentFlow
-              computedNodes={computedNodes}
-              computedEdges={computedEdges}
-            />
-          </ResizablePanel>
+                  return (
+                    <VersionCard
+                      key={version.id}
+                      version={version}
+                      currentReleaseTargets={currentReleaseTargets ?? []}
+                      desiredReleaseTargets={desiredReleaseTargets ?? []}
+                      isSelected={isSelected}
+                      onSelect={() => handleVersionSelect(version.id)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-          {/* Version Actions Dialog */}
-          {selectedVersionId && (
-            <VersionActionsPanel
-              version={
-                deployment.versions.find((v) => v.id === selectedVersionId)!
-              }
-              environments={environments}
-              releaseTargets={deployment.releaseTargets}
-              open={!!selectedVersionId}
-              onOpenChange={(open) => {
-                if (!open) setSearchParams({});
-              }}
-            />
-          )}
+          <div className="flex min-h-0 flex-1 overflow-clip">
+            <ResizablePanelGroup direction="horizontal">
+              {/* Main ReactFlow Panel */}
+              <ResizablePanel
+                defaultSize={
+                  selectedVersionId || selectedEnvironmentId ? 70 : 100
+                }
+                minSize={50}
+              >
+                <DeploymentFlow
+                  computedNodes={computedNodes}
+                  computedEdges={computedEdges}
+                />
+              </ResizablePanel>
 
-          {/* Environment Actions Dialog */}
-          {selectedEnvironmentId && (
-            <EnvironmentActionsPanel
-              environment={
-                environments.find((e) => e.id === selectedEnvironmentId)!
-              }
-              versions={deployment.versions}
-              releaseTargets={deployment.releaseTargets}
-              open={!!selectedEnvironmentId}
-              onOpenChange={(open) => {
-                if (!open) setSearchParams({});
-              }}
-            />
-          )}
-        </ResizablePanelGroup>
-      </div>
+              {/* Version Actions Dialog */}
+              {selectedVersionId && (
+                <VersionActionsPanel
+                  version={
+                    deploymentMock.versions.find(
+                      (v) => v.id === selectedVersionId,
+                    )!
+                  }
+                  environments={environments}
+                  releaseTargets={deploymentMock.releaseTargets}
+                  open={!!selectedVersionId}
+                  onOpenChange={(open) => {
+                    if (!open) setSearchParams({});
+                  }}
+                />
+              )}
+
+              {/* Environment Actions Dialog */}
+              {selectedEnvironmentId && (
+                <EnvironmentActionsPanel
+                  environment={
+                    environments.find((e) => e.id === selectedEnvironmentId)!
+                  }
+                  versions={deploymentMock.versions}
+                  releaseTargets={deploymentMock.releaseTargets}
+                  open={!!selectedEnvironmentId}
+                  onOpenChange={(open) => {
+                    if (!open) setSearchParams({});
+                  }}
+                />
+              )}
+            </ResizablePanelGroup>
+          </div>
+        </>
+      )}
     </>
   );
 }

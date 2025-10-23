@@ -94,7 +94,7 @@ type HandlerRegistry map[EventType]Handler
 
 // EventListener listens for events on the queue and routes them to appropriate handlers
 type EventListener struct {
-	handlers       HandlerRegistry
+	handlers HandlerRegistry
 }
 
 // NewEventListener creates a new event listener with the provided handlers
@@ -148,7 +148,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	if ws == nil {
 		return nil, fmt.Errorf("workspace not found: %s", rawEvent.WorkspaceID)
 	}
-	
+
 	ctx = changeset.WithChangeSet(ctx, changeSet)
 
 	if err := handler(ctx, ws, rawEvent); err != nil {

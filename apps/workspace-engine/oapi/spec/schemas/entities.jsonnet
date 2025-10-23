@@ -193,6 +193,23 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  ReleaseTargetState: {
+    type: 'object',
+    properties: {
+      desiredRelease: openapi.schemaRef('Release'),
+      currentRelease: openapi.schemaRef('Release'),
+    },
+  },
+
+  ReleaseTargetWithState: {
+    type: 'object',
+    required: ['releaseTarget', 'state'],
+    properties: {
+      releaseTarget: openapi.schemaRef('ReleaseTarget'),
+      state: openapi.schemaRef('ReleaseTargetState'),
+    },
+  },
+
   Release: {
     type: 'object',
     required: ['version', 'variables', 'encryptedVariables', 'releaseTarget', 'createdAt'],

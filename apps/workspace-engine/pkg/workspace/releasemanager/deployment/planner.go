@@ -60,8 +60,8 @@ func NewPlanner(
 //  2. What variables should be used
 //
 // Returns nil if:
-//  - No versions available
-//  - All versions are blocked by user-defined policies (approval, environment progression, etc.)
+//   - No versions available
+//   - All versions are blocked by user-defined policies (approval, environment progression, etc.)
 //
 // Note: This does NOT check job eligibility (retry logic, duplicate prevention, etc.)
 // Those checks are handled separately by JobEligibilityChecker.

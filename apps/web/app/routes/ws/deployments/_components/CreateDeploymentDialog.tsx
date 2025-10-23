@@ -79,6 +79,7 @@ export function CreateDeploymentDialog({
   const { data: systemsData, isLoading: systemsLoading } =
     trpc.system.list.useQuery({ workspaceId: workspace.id });
 
+  console.log(systemsData);
   const form = useForm<CreateDeploymentFormData>({
     resolver: zodResolver(createDeploymentSchema),
     defaultValues: {
@@ -171,7 +172,7 @@ export function CreateDeploymentDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {systemsData?.data?.items.map(
+                        {systemsData?.items.map(
                           (system: { id: string; name: string }) => (
                             <SelectItem key={system.id} value={system.id}>
                               {system.name}

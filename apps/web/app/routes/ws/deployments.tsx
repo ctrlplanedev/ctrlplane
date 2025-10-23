@@ -21,8 +21,8 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { CreateDeploymentDialog } from "./_components/CreateDeploymentDialog";
-import { LazyLoadDeploymentCard } from "./_components/DeploymentCard";
+import { CreateDeploymentDialog } from "./deployments/_components/CreateDeploymentDialog";
+import { LazyLoadDeploymentCard } from "./deployments/_components/DeploymentCard";
 
 export function meta() {
   return [

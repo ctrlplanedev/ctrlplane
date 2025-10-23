@@ -397,6 +397,18 @@ type ReleaseTarget struct {
 	ResourceId    string `json:"resourceId"`
 }
 
+// ReleaseTargetState defines model for ReleaseTargetState.
+type ReleaseTargetState struct {
+	CurrentRelease *Release `json:"currentRelease,omitempty"`
+	DesiredRelease *Release `json:"desiredRelease,omitempty"`
+}
+
+// ReleaseTargetWithState defines model for ReleaseTargetWithState.
+type ReleaseTargetWithState struct {
+	ReleaseTarget ReleaseTarget      `json:"releaseTarget"`
+	State         ReleaseTargetState `json:"state"`
+}
+
 // Resource defines model for Resource.
 type Resource struct {
 	Config      map[string]interface{} `json:"config"`

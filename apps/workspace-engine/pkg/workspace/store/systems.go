@@ -7,16 +7,9 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"github.com/aws/smithy-go/ptr"
 )
 
 func NewSystems(store *Store) *Systems {
-	store.repo.Systems.Set("00000000-0000-0000-0000-000000000000", &oapi.System{
-		Id:          "00000000-0000-0000-0000-000000000000",
-		Name:        "Default",
-		Description: ptr.String("Default system"),
-	})
 	return &Systems{
 		repo:         store.repo,
 		store:        store,

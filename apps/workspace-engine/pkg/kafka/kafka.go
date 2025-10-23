@@ -8,9 +8,11 @@ import (
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/events"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 
+	"github.com/aws/smithy-go/ptr"
 	"github.com/charmbracelet/log"
 )
 
@@ -105,6 +107,12 @@ func RunConsumer(ctx context.Context) error {
 			log.Error("Failed to load workspace", "workspaceID", workspaceID, "error", err)
 			continue
 		}
+
+		ws.Systems().Upsert(ctx, &oapi.System{
+			Id:          "00000000-0000-0000-0000-000000000000",
+			Name:        "Default",
+			Description: ptr.String("Default system"),
+		})
 	}
 
 	// Start consuming messages

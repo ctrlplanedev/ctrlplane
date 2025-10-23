@@ -29,9 +29,9 @@ type Manager struct {
 	targetsManager *targets.Manager
 
 	// Deployment components
-	planner              *deployment.Planner
+	planner               *deployment.Planner
 	jobEligibilityChecker *deployment.JobEligibilityChecker
-	executor             *deployment.Executor
+	executor              *deployment.Executor
 
 	// Concurrency control
 	releaseTargetLocks sync.Map
@@ -189,12 +189,8 @@ func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	return m.executor.ExecuteRelease(ctx, desiredRelease)
 }
 
-type ReleaseTargetState struct {
-	DesiredRelease *oapi.Release
-	CurrentRelease *oapi.Release
-}
 
-func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*ReleaseTargetState, error) {
+func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
 	// Get current release (may be nil if no successful jobs exist)
 	currentRelease, _, err := m.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
 	if err != nil {
@@ -210,7 +206,7 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 		return nil, err
 	}
 
-	rts := &ReleaseTargetState{
+	rts := &oapi.ReleaseTargetState{
 		DesiredRelease: desiredRelease,
 		CurrentRelease: currentRelease,
 	}

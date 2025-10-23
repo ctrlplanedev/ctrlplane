@@ -732,6 +732,14 @@ export interface components {
             environmentId: string;
             resourceId: string;
         };
+        ReleaseTargetState: {
+            currentRelease?: components["schemas"]["Release"];
+            desiredRelease?: components["schemas"]["Release"];
+        };
+        ReleaseTargetWithState: {
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            state: components["schemas"]["ReleaseTargetState"];
+        };
         Resource: {
             config: {
                 [key: string]: unknown;
@@ -1029,7 +1037,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["ReleaseTarget"][];
+                        items: components["schemas"]["ReleaseTargetWithState"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

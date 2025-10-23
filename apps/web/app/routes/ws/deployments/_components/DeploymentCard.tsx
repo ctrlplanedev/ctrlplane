@@ -1,19 +1,12 @@
 import type { ReactNode } from "react";
 import { forwardRef } from "react";
 import { isAfter, subHours } from "date-fns";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Pause,
-  RefreshCw,
-  XCircle,
-} from "lucide-react";
+import { Check, X } from "lucide-react";
 import prettyMilliseconds from "pretty-ms";
 import { useInView } from "react-intersection-observer";
 import { Link } from "react-router";
 
 import { trpc } from "~/api/trpc";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -25,27 +18,6 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-
-// Types
-type DeploymentCardVersionStatus =
-  | "unspecified"
-  | "building"
-  | "ready"
-  | "failed"
-  | "rejected";
-
-type DeploymentCardJobStatusSummary = {
-  successful: number;
-  inProgress: number;
-  failed: number;
-  pending: number;
-  other: number;
-};
-
-type DeploymentCardHealthStatus = {
-  status: string;
-  color: string;
-};
 
 type DeploymentCardProps = {
   children: ReactNode;
@@ -96,68 +68,6 @@ function DeploymentCardContent({ children }: { children: ReactNode }) {
   return <CardContent className="space-y-3">{children}</CardContent>;
 }
 
-function DeploymentCardHealthBadge({
-  health,
-}: {
-  health: DeploymentCardHealthStatus;
-}) {
-  return (
-    <Badge className={health.color}>
-      {health.status === "Healthy" && <CheckCircle2 className="h-4 w-4" />}
-      {health.status === "Progressing" && <RefreshCw className="h-4 w-4" />}
-      {health.status === "Degraded" && <XCircle className="h-4 w-4" />}
-      <span className="ml-1">{health.status}</span>
-    </Badge>
-  );
-}
-
-function DeploymentCardVersionBadge({
-  status,
-}: {
-  status: DeploymentCardVersionStatus;
-}) {
-  const getStatusColor = () => {
-    switch (status) {
-      case "ready":
-        return "bg-green-500/10 text-green-600 border-green-500/20";
-      case "building":
-        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-      case "failed":
-        return "bg-red-500/10 text-red-600 border-red-500/20";
-      case "rejected":
-        return "bg-amber-500/10 text-amber-600 border-amber-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-600 border-gray-500/20";
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (status) {
-      case "ready":
-        return <CheckCircle2 className="h-4 w-4" />;
-      case "building":
-        return <RefreshCw className="h-4 w-4 animate-spin" />;
-      case "failed":
-        return <XCircle className="h-4 w-4" />;
-      case "rejected":
-        return <Pause className="h-4 w-4" />;
-      default:
-        return <AlertCircle className="h-4 w-4" />;
-    }
-  };
-
-  return (
-    <Badge className={getStatusColor()}>
-      {getStatusIcon()}
-      <span className="ml-1 capitalize">{status}</span>
-    </Badge>
-  );
-}
-
-function DeploymentCardBadges({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap gap-2">{children}</div>;
-}
-
 function DeploymentCardMetrics({ children }: { children: ReactNode }) {
   return <div className="space-y-2 text-sm">{children}</div>;
 }
@@ -205,7 +115,7 @@ function DeploymentCardVersionMetric({
 function DeploymentCardJobStatus({
   jobStatusSummary,
 }: {
-  jobStatusSummary: DeploymentCardJobStatusSummary;
+  jobStatusSummary: { inSync: number; outOfSync: number };
 }) {
   return (
     <div className="space-y-2">
@@ -213,47 +123,31 @@ function DeploymentCardJobStatus({
         Job Status
       </div>
       <div className="flex gap-1">
-        {jobStatusSummary.successful > 0 && (
+        {jobStatusSummary.inSync > 0 && (
           <div
             className="h-2 flex-1 rounded-sm bg-green-500"
-            style={{ flexGrow: jobStatusSummary.successful }}
-            title={`${jobStatusSummary.successful} successful`}
+            style={{ flexGrow: jobStatusSummary.inSync }}
+            title={`${jobStatusSummary.inSync} in sync`}
           />
         )}
-        {jobStatusSummary.inProgress > 0 && (
+        {jobStatusSummary.outOfSync > 0 && (
           <div
             className="h-2 flex-1 rounded-sm bg-blue-500"
-            style={{ flexGrow: jobStatusSummary.inProgress }}
-            title={`${jobStatusSummary.inProgress} in progress`}
-          />
-        )}
-        {jobStatusSummary.pending > 0 && (
-          <div
-            className="h-2 flex-1 rounded-sm bg-amber-500"
-            style={{ flexGrow: jobStatusSummary.pending }}
-            title={`${jobStatusSummary.pending} pending`}
-          />
-        )}
-        {jobStatusSummary.failed > 0 && (
-          <div
-            className="h-2 flex-1 rounded-sm bg-red-500"
-            style={{ flexGrow: jobStatusSummary.failed }}
-            title={`${jobStatusSummary.failed} failed`}
+            style={{ flexGrow: jobStatusSummary.outOfSync }}
+            title={`${jobStatusSummary.outOfSync} out of sync`}
           />
         )}
       </div>
       <div className="flex gap-2 text-xs text-muted-foreground">
-        {jobStatusSummary.successful > 0 && (
-          <span>{jobStatusSummary.successful} ✓</span>
+        {jobStatusSummary.inSync > 0 && (
+          <span>
+            {jobStatusSummary.inSync} <Check className="size-4" />
+          </span>
         )}
-        {jobStatusSummary.inProgress > 0 && (
-          <span>{jobStatusSummary.inProgress} ⟳</span>
-        )}
-        {jobStatusSummary.pending > 0 && (
-          <span>{jobStatusSummary.pending} ⋯</span>
-        )}
-        {jobStatusSummary.failed > 0 && (
-          <span>{jobStatusSummary.failed} ✗</span>
+        {jobStatusSummary.outOfSync > 0 && (
+          <span>
+            {jobStatusSummary.outOfSync} <X className="size-4" />
+          </span>
         )}
       </div>
     </div>
@@ -267,44 +161,6 @@ function DeploymentCardViewButton() {
     </Button>
   );
 }
-
-// Calculate overall health based on job statuses
-const getDeploymentHealth = (
-  jobSummary: DeploymentCardJobStatusSummary,
-): DeploymentCardHealthStatus => {
-  const total = Object.values(jobSummary).reduce(
-    (a, b) => Number(a) + Number(b),
-    0,
-  );
-  if (total === 0)
-    return {
-      status: "Unknown",
-      color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
-    };
-
-  if (jobSummary.failed > 0) {
-    return {
-      status: "Degraded",
-      color: "bg-red-500/10 text-red-600 border-red-500/20",
-    };
-  }
-  if (jobSummary.inProgress > 0 || jobSummary.pending > 0) {
-    return {
-      status: "Progressing",
-      color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    };
-  }
-  if (jobSummary.successful === total) {
-    return {
-      status: "Healthy",
-      color: "bg-green-500/10 text-green-600 border-green-500/20",
-    };
-  }
-  return {
-    status: "Unknown",
-    color: "bg-gray-500/10 text-gray-600 border-gray-500/20",
-  };
-};
 
 type LazyLoadDeploymentCardProps = {
   deployment: { id: string; name: string; description?: string };
@@ -337,13 +193,15 @@ export function LazyLoadDeploymentCard({
 
   const latestVersion = versions.data?.items[0];
   const deploymentsLast24h = last24hDeployments?.length ?? 0;
-  const jobStatusSummary = {
-    successful: 12,
-    inProgress: 0,
-    failed: 0,
-    pending: 0,
-    other: 0,
-  };
+  const totalReleaseTargets = rt.data?.total ?? 0;
+  const inSyncTargets =
+    rt.data?.items.filter(
+      (rt) =>
+        rt.state.desiredRelease?.version.tag ===
+        rt.state.currentRelease?.version.tag,
+    ).length ?? 0;
+  const outOfSyncTargets = totalReleaseTargets - inSyncTargets;
+
   return (
     <DeploymentCard
       ref={ref}
@@ -355,12 +213,6 @@ export function LazyLoadDeploymentCard({
         description={deployment.description}
       />
       <DeploymentCardContent>
-        <DeploymentCardBadges>
-          <DeploymentCardHealthBadge
-            health={getDeploymentHealth(jobStatusSummary)}
-          />
-          <DeploymentCardVersionBadge status={"ready"} />
-        </DeploymentCardBadges>
         <Separator />
         <DeploymentCardMetrics>
           {versions.isLoading ? (
@@ -394,8 +246,12 @@ export function LazyLoadDeploymentCard({
             <DeploymentCardMetricRow label={"Targets"} value={numTargets} />
           )}
         </DeploymentCardMetrics>
-        <DeploymentCardJobStatus jobStatusSummary={jobStatusSummary} />
-
+        <DeploymentCardJobStatus
+          jobStatusSummary={{
+            inSync: inSyncTargets,
+            outOfSync: outOfSyncTargets,
+          }}
+        />
         <DeploymentCardViewButton />
       </DeploymentCardContent>
     </DeploymentCard>
