@@ -18,7 +18,8 @@
     (import 'paths/environment.jsonnet') +
     (import 'paths/system.jsonnet') +
     (import 'paths/job-agents.jsonnet') +
-    (import 'paths/jobs.jsonnet'),
+    (import 'paths/jobs.jsonnet') +
+    (import 'paths/validate.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),

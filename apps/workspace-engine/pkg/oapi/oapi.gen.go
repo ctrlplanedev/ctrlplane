@@ -499,6 +499,11 @@ type Value struct {
 	union json.RawMessage
 }
 
+// ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
+type ValidateResourceSelectorJSONBody struct {
+	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
+}
+
 // ListDeploymentsParams defines parameters for ListDeployments.
 type ListDeploymentsParams struct {
 	// Limit Maximum number of items to return
@@ -605,6 +610,9 @@ type ListSystemsParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// ValidateResourceSelectorJSONRequestBody defines body for ValidateResourceSelector for application/json ContentType.
+type ValidateResourceSelectorJSONRequestBody ValidateResourceSelectorJSONBody
 
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
@@ -1231,6 +1239,9 @@ func (t *Value) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Validate a resource selector
+	// (POST /v1/validate/resource-selector)
+	ValidateResourceSelector(c *gin.Context)
 	// List workspace IDs
 	// (GET /v1/workspaces)
 	ListWorkspaceIds(c *gin.Context)
@@ -1316,6 +1327,19 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// ValidateResourceSelector operation middleware
+func (siw *ServerInterfaceWrapper) ValidateResourceSelector(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ValidateResourceSelector(c)
+}
 
 // ListWorkspaceIds operation middleware
 func (siw *ServerInterfaceWrapper) ListWorkspaceIds(c *gin.Context) {
@@ -2312,6 +2336,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-versions/:versionId/jobs-list", wrapper.GetDeploymentVersionJobsList)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments", wrapper.ListDeployments)

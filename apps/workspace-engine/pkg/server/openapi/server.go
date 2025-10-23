@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/server/openapi/releasetargets"
 	"workspace-engine/pkg/server/openapi/resources"
 	"workspace-engine/pkg/server/openapi/systems"
+	"workspace-engine/pkg/server/openapi/validators"
 )
 
 func New() *Server {
@@ -31,4 +32,5 @@ type Server struct {
 	relations.Relations
 	resources.Resources
 	systems.Systems
+	validators.Validator
 }

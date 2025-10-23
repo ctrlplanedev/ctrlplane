@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/v1/validate/resource-selector": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate a resource selector */
+        post: operations["validateResourceSelector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces": {
         parameters: {
             query?: never;
@@ -848,6 +865,35 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    validateResourceSelector: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    resourceSelector?: components["schemas"]["Selector"];
+                };
+            };
+        };
+        responses: {
+            /** @description The validated resource selector */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        errors: string[];
+                        valid: boolean;
+                    };
+                };
+            };
+        };
+    };
     listWorkspaceIds: {
         parameters: {
             query?: never;

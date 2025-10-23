@@ -1166,6 +1166,53 @@
    },
    "openapi": "3.0.0",
    "paths": {
+      "/v1/validate/resource-selector": {
+         "post": {
+            "operationId": "validateResourceSelector",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "resourceSelector": {
+                              "$ref": "#/components/schemas/Selector"
+                           }
+                        },
+                        "type": "object"
+                     }
+                  }
+               }
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "errors": {
+                                 "items": {
+                                    "type": "string"
+                                 },
+                                 "type": "array"
+                              },
+                              "valid": {
+                                 "type": "boolean"
+                              }
+                           },
+                           "required": [
+                              "valid",
+                              "errors"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "The validated resource selector"
+               }
+            },
+            "summary": "Validate a resource selector"
+         }
+      },
       "/v1/workspaces": {
          "get": {
             "description": "Returns a list of workspace that are in memory. These could be inactive.",
