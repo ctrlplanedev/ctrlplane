@@ -2,6 +2,7 @@ package releasemanager
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -135,9 +136,11 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 // regardless of retry limits, previous attempts, or other eligibility criteria.
 //
 // Unlike ProcessChanges which respects eligibility rules, Redeploy always attempts to create a new job
-// as long as there is a valid desired release (determined by planning phase).
+// as long as there is a valid desired release (determined by planning phase) AND no job is currently
+// in a processing state.
 //
 // Returns error if:
+//   - A job is already in progress for this release target
 //   - Planning fails
 //   - Execution fails (job creation, persistence, etc.)
 //
@@ -146,6 +149,28 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error {
 	ctx, span := tracer.Start(ctx, "Redeploy")
 	defer span.End()
+
+	// Check if there's already a job in progress for this release target
+	inProgressJobs := m.store.Jobs.GetJobsInProcessingStateForReleaseTarget(releaseTarget)
+	if len(inProgressJobs) > 0 {
+		// Get the first in-progress job for logging
+		var jobId string
+		var jobStatus oapi.JobStatus
+		for _, job := range inProgressJobs {
+			jobId = job.Id
+			jobStatus = job.Status
+			break
+		}
+		
+		err := fmt.Errorf("cannot redeploy: job %s already in progress (status: %s)", jobId, jobStatus)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "job in progress")
+		log.Warn("Redeploy blocked: job already in progress",
+			"releaseTargetKey", releaseTarget.Key(),
+			"jobId", jobId,
+			"jobStatus", jobStatus)
+		return err
+	}
 
 	return m.reconcileTarget(ctx, releaseTarget, true)
 }

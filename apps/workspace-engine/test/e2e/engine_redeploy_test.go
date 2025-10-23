@@ -601,7 +601,7 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 	}
 }
 
-// TestEngine_Redeploy_WithPendingJob tests that redeploy creates a new job even when one is already pending
+// TestEngine_Redeploy_WithPendingJob tests that redeploy is blocked when a job is pending
 func TestEngine_Redeploy_WithPendingJob(t *testing.T) {
 	jobAgentId := uuid.New().String()
 	deploymentId := uuid.New().String()
@@ -659,45 +659,225 @@ func TestEngine_Redeploy_WithPendingJob(t *testing.T) {
 		break
 	}
 
-	// Don't complete the job - trigger redeploy while it's still pending
+	// Trigger redeploy while job is still pending - should be blocked
 	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
 
-	// Get all jobs
+	// Verify no new job was created (redeploy was blocked)
 	allJobs := engine.Workspace().Jobs().Items()
-	
-	// Count how many jobs we have in total (may include cancelled ones)
-	if len(allJobs) < 1 {
-		t.Fatalf("expected at least 1 job after redeploy, got %d", len(allJobs))
+	if len(allJobs) != 1 {
+		t.Fatalf("expected only 1 job (pending), got %d", len(allJobs))
 	}
 
-	// After redeploy, we should have a pending job (the new one)
+	// Verify it's still the same job
 	pendingJobs = engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 1 {
-		t.Fatalf("expected 1 pending job after redeploy, got %d", len(pendingJobs))
+		t.Fatalf("expected 1 pending job (original), got %d", len(pendingJobs))
 	}
 
-	// Get the pending job
-	var newJob *oapi.Job
+	for _, job := range pendingJobs {
+		if job.Id != initialJob.Id {
+			t.Errorf("expected same job ID after blocked redeploy, got different ID")
+		}
+	}
+}
+
+// TestEngine_Redeploy_BlockedByInProgressJob tests that redeploy is blocked when a job is in progress
+func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	environmentId := uuid.New().String()
+	resourceId := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("api-service"),
+				integration.DeploymentJobAgent(jobAgentId),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("production"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId),
+			integration.ResourceName("server-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Get release target
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	var releaseTarget *oapi.ReleaseTarget
+	for _, rt := range releaseTargets {
+		releaseTarget = rt
+		break
+	}
+
+	// Create deployment version
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentId
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	// Verify initial job was created
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job, got %d", len(pendingJobs))
+	}
+
+	var initialJob *oapi.Job
 	for _, j := range pendingJobs {
+		initialJob = j
+		break
+	}
+
+	// Mark job as in-progress (not completed)
+	initialJob.Status = oapi.InProgress
+	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+
+	// Verify job is now in progress
+	allJobs := engine.Workspace().Jobs().Items()
+	inProgressJob, exists := allJobs[initialJob.Id]
+	if !exists || inProgressJob.Status != oapi.InProgress {
+		t.Fatalf("expected job to be in progress")
+	}
+
+	// Trigger redeploy while job is in progress - should be blocked
+	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
+
+	// Verify no new pending job was created (redeploy was blocked)
+	pendingJobsAfterBlockedRedeploy := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobsAfterBlockedRedeploy) != 0 {
+		t.Fatalf("expected 0 pending jobs after blocked redeploy, got %d", len(pendingJobsAfterBlockedRedeploy))
+	}
+
+	// Verify the in-progress job is still in progress
+	allJobs = engine.Workspace().Jobs().Items()
+	jobAfterRedeploy, exists := allJobs[initialJob.Id]
+	if !exists {
+		t.Fatalf("expected original job to still exist")
+	}
+	if jobAfterRedeploy.Status != oapi.InProgress {
+		t.Errorf("expected job to remain in progress, got %v", jobAfterRedeploy.Status)
+	}
+
+	// Now complete the job
+	initialJob.Status = oapi.Successful
+	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+
+	// Trigger redeploy again - should work now
+	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
+
+	// Verify new job was created after completion
+	pendingJobsAfterCompletion := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobsAfterCompletion) != 1 {
+		t.Fatalf("expected 1 pending job after redeploy following completion, got %d", len(pendingJobsAfterCompletion))
+	}
+
+	var newJob *oapi.Job
+	for _, j := range pendingJobsAfterCompletion {
 		newJob = j
 		break
 	}
 
-	// The new job should be different from the initial job
-	// (either the initial job was cancelled or we have a new job)
+	// Verify it's a different job
 	if newJob.Id == initialJob.Id {
-		// Same job ID could mean the job is still pending
-		// This is valid behavior - the redeploy might have reused the existing job
-		t.Logf("Redeploy reused the existing pending job (ID: %s)", newJob.Id)
-	} else {
-		// Different job ID means a new job was created
-		t.Logf("Redeploy created a new job (old ID: %s, new ID: %s)", initialJob.Id, newJob.Id)
-		
-		// Verify the old job was cancelled
-		oldJob, exists := engine.Workspace().Jobs().Get(initialJob.Id)
-		if exists && oldJob.Status == oapi.Pending {
-			t.Errorf("expected old job to be cancelled, but it's still pending")
-		}
+		t.Errorf("expected new job after redeploy following completion, got same job ID")
+	}
+	
+	// Verify we now have at least the original completed job plus the new pending job
+	allJobsAfterSuccess := engine.Workspace().Jobs().Items()
+	if len(allJobsAfterSuccess) < 2 {
+		t.Errorf("expected at least 2 jobs after successful redeploy, got %d", len(allJobsAfterSuccess))
+	}
+	
+	// Verify the original job is no longer pending or in progress
+	origJob, exists := allJobsAfterSuccess[initialJob.Id]
+	if exists && origJob.IsInProcessingState() {
+		t.Errorf("expected original job to be completed, got status %v", origJob.Status)
+	}
+}
+
+// TestEngine_Redeploy_BlockedByActionRequiredJob tests that redeploy is blocked when a job requires action
+func TestEngine_Redeploy_BlockedByActionRequiredJob(t *testing.T) {
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	environmentId := uuid.New().String()
+	resourceId := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("api-service"),
+				integration.DeploymentJobAgent(jobAgentId),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("production"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId),
+			integration.ResourceName("server-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Get release target
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	var releaseTarget *oapi.ReleaseTarget
+	for _, rt := range releaseTargets {
+		releaseTarget = rt
+		break
+	}
+
+	// Create deployment version
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentId
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	// Get the initial job
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	var initialJob *oapi.Job
+	for _, j := range pendingJobs {
+		initialJob = j
+		break
+	}
+
+	// Mark job as requiring action
+	initialJob.Status = oapi.ActionRequired
+	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
+
+	// Trigger redeploy - should be blocked
+	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
+
+	// Verify no new pending job was created (redeploy was blocked)
+	pendingJobsAfterBlockedRedeploy := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobsAfterBlockedRedeploy) != 0 {
+		t.Fatalf("expected 0 pending jobs after blocked redeploy, got %d", len(pendingJobsAfterBlockedRedeploy))
+	}
+
+	// Verify the job is still in action required state
+	allJobs := engine.Workspace().Jobs().Items()
+	job, exists := allJobs[initialJob.Id]
+	if !exists || job.Status != oapi.ActionRequired {
+		t.Errorf("expected job to remain in action required state")
 	}
 }
 
