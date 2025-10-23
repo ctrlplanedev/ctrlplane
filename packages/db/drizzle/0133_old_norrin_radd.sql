@@ -1,0 +1,1 @@
+ALTER TABLE "workspace_snapshot" ADD COLUMN "offset" integer DEFAULT 0 NOT NULL;

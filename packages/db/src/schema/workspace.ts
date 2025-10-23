@@ -104,5 +104,6 @@ export const workspaceSnapshot = pgTable("workspace_snapshot", {
   path: text("path").notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
   partition: integer("partition").notNull(),
+  offset: integer("offset").default(0).notNull(),
   numPartitions: integer("num_partitions").notNull(),
 });
