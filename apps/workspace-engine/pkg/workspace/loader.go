@@ -37,9 +37,7 @@ func Load(ctx context.Context, storage StorageClient, workspace *Workspace) erro
 		return nil
 	}
 
-	dbSnapshotPath := dbSnapshot.Path
-
-	data, err := storage.Get(ctx, dbSnapshotPath)
+	data, err := storage.Get(ctx, dbSnapshot.Path)
 	if err != nil {
 		return fmt.Errorf("failed to read workspace from disk: %w", err)
 	}
