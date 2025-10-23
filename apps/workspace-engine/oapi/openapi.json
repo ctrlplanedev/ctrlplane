@@ -1881,6 +1881,105 @@
             "summary": "Get related entities for a given entity"
          }
       },
+      "/v1/workspaces/{workspaceId}/environments": {
+         "get": {
+            "description": "Returns a list of environments for a workspace.",
+            "operationId": "listEnvironments",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/Environment"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of environments"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List environments"
+         }
+      },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
          "get": {
             "description": "Returns a specific environment by ID.",

@@ -64,7 +64,7 @@ type VersionCreateDialogProps = {
   onSuccess?: (version: { id: string; tag: string }) => void;
 };
 
-export function VersionCreateDialog({
+export function CreateVersionDialog({
   children,
   deploymentId,
   onSuccess,

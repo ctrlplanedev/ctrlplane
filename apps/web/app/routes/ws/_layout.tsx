@@ -12,6 +12,7 @@ import {
   Rocket,
   Server,
   ShieldCheck,
+  TreePine,
 } from "lucide-react";
 import {
   Navigate,
@@ -59,6 +60,7 @@ const navigationGroups = [
     items: [
       { title: "Projects", to: "/projects", icon: LayoutDashboard },
       { title: "Deployments", to: "/deployments", icon: Rocket },
+      { title: "Environments", to: "/environments", icon: TreePine },
       { title: "Runners", to: "/runners", icon: Cpu },
       { title: "Policies", to: "/policies", icon: ShieldCheck },
     ],

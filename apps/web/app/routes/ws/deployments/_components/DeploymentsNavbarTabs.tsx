@@ -11,11 +11,12 @@ export const DeploymentsNavbarTabs = ({
   const { workspace } = useWorkspace();
   const baseUrl = `/${workspace.slug}/deployments/${deploymentId}`;
   const path = useLocation();
-  const value = path.pathname.startsWith(`${baseUrl}/environments`)
-    ? "environments"
-    : path.pathname.startsWith(`${baseUrl}/settings`)
-      ? "settings"
-      : "versions";
+  const value =
+    path.pathname == `${baseUrl}`
+      ? "environments"
+      : path.pathname.startsWith(`${baseUrl}/settings`)
+        ? "settings"
+        : "versions";
 
   return (
     <Tabs value={value}>

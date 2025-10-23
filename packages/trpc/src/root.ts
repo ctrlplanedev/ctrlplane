@@ -1,4 +1,5 @@
 import { deploymentsRouter } from "./routes/deployments.js";
+import { environmentRouter } from "./routes/environments.js";
 import { resourcesRouter } from "./routes/resources.js";
 import { systemsRouter } from "./routes/systems.js";
 import { userRouter } from "./routes/user.js";
@@ -11,4 +12,5 @@ export const appRouter = router({
   workspace: workspaceRouter,
   deployment: deploymentsRouter,
   system: systemsRouter,
+  environment: environmentRouter,
 });

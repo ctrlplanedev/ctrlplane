@@ -1,7 +1,7 @@
 import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo } from "react";
 import _ from "lodash";
-import { PackagePlus } from "lucide-react";
+import { PackagePlus, TreePine } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
@@ -17,6 +17,8 @@ import { ResizablePanel, ResizablePanelGroup } from "~/components/ui/resizable";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { CreateEnvironmentDialog } from "./_components/CreateEnvironmentDialog";
+import { CreateVersionDialog } from "./_components/CreateVersionDialog";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
@@ -24,7 +26,6 @@ import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
 import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
-import { VersionCreateDialog } from "./_components/VersionCreateDialog";
 
 export function meta() {
   return [
@@ -232,12 +233,20 @@ export default function DeploymentDetail() {
 
         <div className="flex items-center gap-4">
           {!noVersions && (
-            <VersionCreateDialog deploymentId={deployment.id}>
+            <CreateEnvironmentDialog systemId={deployment.systemId}>
+              <Button variant="outline">
+                <TreePine className="mr-2 h-4 w-4" />
+                Create Environment
+              </Button>
+            </CreateEnvironmentDialog>
+          )}
+          {!noVersions && (
+            <CreateVersionDialog deploymentId={deployment.id}>
               <Button variant="outline">
                 <PackagePlus className="mr-2 h-4 w-4" />
                 Create Version
               </Button>
-            </VersionCreateDialog>
+            </CreateVersionDialog>
           )}
           <DeploymentsNavbarTabs deploymentId={deployment.id} />
         </div>
@@ -255,12 +264,12 @@ export default function DeploymentDetail() {
                 Create your first version to start deploying
               </p>
             </div>
-            <VersionCreateDialog deploymentId={deployment.id}>
+            <CreateVersionDialog deploymentId={deployment.id}>
               <Button>
                 <PackagePlus className="mr-2 h-4 w-4" />
                 Create Version
               </Button>
-            </VersionCreateDialog>
+            </CreateVersionDialog>
           </div>
         </div>
       )}

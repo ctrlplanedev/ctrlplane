@@ -24,9 +24,10 @@ export default [
         ),
       ]),
 
+      route("environments", "routes/ws/environments.tsx"),
       route("resources", "routes/ws/resources.tsx"),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
-      route("projects", "routes/ws/projects.tsx"),
+      route("systems", "routes/ws/systems.tsx"),
       route("runners", "routes/ws/runners.tsx"),
       route("providers", "routes/ws/providers.tsx"),
       route("policies", "routes/ws/policies.tsx"),

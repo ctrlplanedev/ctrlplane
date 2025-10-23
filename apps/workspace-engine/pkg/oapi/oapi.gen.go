@@ -535,6 +535,15 @@ type GetVersionsForDeploymentParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListEnvironmentsParams defines parameters for ListEnvironments.
+type ListEnvironmentsParams struct {
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // GetEnvironmentResourcesParams defines parameters for GetEnvironmentResources.
 type GetEnvironmentResourcesParams struct {
 	// Limit Maximum number of items to return
@@ -1246,6 +1255,9 @@ type ServerInterface interface {
 	// Get related entities for a given entity
 	// (GET /v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships)
 	GetRelatedEntities(c *gin.Context, workspaceId string, relatableEntityType RelatableEntityType, entityId string)
+	// List environments
+	// (GET /v1/workspaces/{workspaceId}/environments)
+	ListEnvironments(c *gin.Context, workspaceId string, params ListEnvironmentsParams)
 	// Get environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId})
 	GetEnvironment(c *gin.Context, workspaceId string, environmentId string)
@@ -1623,6 +1635,49 @@ func (siw *ServerInterfaceWrapper) GetRelatedEntities(c *gin.Context) {
 	}
 
 	siw.Handler.GetRelatedEntities(c, workspaceId, relatableEntityType, entityId)
+}
+
+// ListEnvironments operation middleware
+func (siw *ServerInterfaceWrapper) ListEnvironments(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListEnvironmentsParams
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListEnvironments(c, workspaceId, params)
 }
 
 // GetEnvironment operation middleware
@@ -2265,6 +2320,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/versions", wrapper.GetVersionsForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments", wrapper.ListEnvironments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents", wrapper.GetJobAgents)
