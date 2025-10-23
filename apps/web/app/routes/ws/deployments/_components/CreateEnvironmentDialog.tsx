@@ -50,6 +50,7 @@ const createEnvironmentSchema = z.object({
     .string()
     .max(500, { message: "Description must be at most 500 characters long" })
     .optional(),
+  celExpression: z.string().default("true"),
 });
 
 type CreateEnvironmentFormData = z.infer<typeof createEnvironmentSchema>;
@@ -211,6 +212,27 @@ export function CreateEnvironmentDialog({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="celExpression"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Condition</FormLabel>
+                  <FormControl>
+                    <div className="rounded-md border border-input p-2">
+                      <CelExpressionInput
+                        height="100px"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="resource.kind == 'KubernetesClusters'"
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <DialogFooter className="gap-2">
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={isSubmitting}>
@@ -224,13 +246,6 @@ export function CreateEnvironmentDialog({
                 Create Environment
               </Button>
             </DialogFooter>
-
-            <div className="rounded-md border border-input p-2">
-              <CelExpressionInput
-                height="100px"
-                placeholder="resource.kind == 'KubernetesClusters'"
-              />
-            </div>
           </form>
         </Form>
       </DialogContent>

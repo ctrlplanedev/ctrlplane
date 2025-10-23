@@ -15,7 +15,8 @@
         ".expo/**",
         ".output/**",
         ".vercel/output/**",
-        "dist/**"
+        "dist/**",
+        "build/**"
       ]
     },
     "dev": {

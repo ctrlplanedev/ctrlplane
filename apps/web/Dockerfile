@@ -1,22 +1,71 @@
-FROM node:22-alpine AS development-dependencies-env
-COPY . /app
-WORKDIR /app
-RUN npm ci
+ARG NODE_VERSION=22
+FROM node:${NODE_VERSION}-alpine AS base
 
-FROM node:22-alpine AS production-dependencies-env
-COPY ./package.json package-lock.json /app/
-WORKDIR /app
-RUN npm ci --omit=dev
+FROM base AS builder
 
-FROM node:22-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
-WORKDIR /app
-RUN npm run build
+RUN apk add --no-cache libc6-compat python3 make g++
 
-FROM node:22-alpine
-COPY ./package.json package-lock.json /app/
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN npm install -g turbo
+RUN npm install -g corepack@latest
+RUN corepack enable pnpm
+
+FROM builder AS installer
+
 WORKDIR /app
-CMD ["npm", "run", "start"]
+
+COPY .gitignore .gitignore
+COPY turbo.json turbo.json
+RUN pnpm add -g turbo
+
+COPY package.json package.json
+COPY .npmrc .npmrc
+COPY pnpm-*.yaml .
+
+COPY tooling/tailwind/package.json ./tooling/tailwind/package.json
+COPY tooling/prettier/package.json ./tooling/prettier/package.json
+COPY tooling/eslint/package.json ./tooling/eslint/package.json
+COPY tooling/typescript ./tooling/typescript
+
+COPY packages/api/package.json ./packages/api/package.json
+COPY packages/auth/package.json ./packages/auth/package.json
+COPY packages/db/package.json ./packages/db/package.json
+COPY packages/validators/package.json ./packages/validators/package.json
+COPY packages/trpc/package.json ./packages/trpc/package.json
+COPY packages/workspace-engine-sdk/package.json ./packages/workspace-engine-sdk/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
+COPY packages/secrets/package.json ./packages/secrets/package.json
+COPY packages/events/package.json ./packages/events/package.json
+COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
+COPY packages/rule-engine/package.json ./packages/rule-engine/package.json
+
+COPY apps/web/package.json ./apps/web/package.json
+
+RUN pnpm install --frozen-lockfile
+COPY . .
+
+RUN turbo build --filter=...web
+
+FROM base AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+COPY --from=installer --chown=nodejs:nodejs /app/apps/web/package.json ./apps/web/package.json
+COPY --from=installer --chown=nodejs:nodejs /app/apps/web/build ./apps/web/build
+COPY --from=installer --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+USER nodejs
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+
+WORKDIR /app/apps/web
+
+CMD ["node", "../../node_modules/.bin/react-router-serve", "./build/server/index.js"]

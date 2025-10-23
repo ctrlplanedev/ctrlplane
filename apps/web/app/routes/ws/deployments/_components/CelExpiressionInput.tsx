@@ -290,6 +290,13 @@ const COMPLETION_CONFIG: CompletionConfig = {
       detail: "duration(value) → duration",
     },
     {
+      label: "now",
+      kind: 2,
+      insertText: "now()",
+      documentation: "Returns the current timestamp",
+      detail: "now() → timestamp",
+    },
+    {
       label: "dyn",
       kind: 2,
       insertText: "dyn($0)",
@@ -358,6 +365,46 @@ const HOVER_CONFIG: HoverConfig = {
       word: "updatedAt",
       title: "updatedAt",
       description: "Timestamp when the resource was last updated (Timestamp)",
+    },
+    // String method keywords
+    {
+      word: "toInt",
+      title: "toInt",
+      description: "Converts the string to an integer (string.toInt() → int)",
+    },
+    {
+      word: "toDouble",
+      title: "toDouble",
+      description:
+        "Converts the string to a double (string.toDouble() → double)",
+    },
+    // CEL function keywords
+    {
+      word: "now",
+      title: "now",
+      description: "Returns the current timestamp (now() → timestamp)",
+    },
+    {
+      word: "size",
+      title: "size",
+      description: "Returns the size of a collection (size(collection) → int)",
+    },
+    {
+      word: "type",
+      title: "type",
+      description: "Returns the type of a value (type(value) → type)",
+    },
+    {
+      word: "duration",
+      title: "duration",
+      description:
+        "Creates a duration from a string (duration(string) → duration)",
+    },
+    {
+      word: "timestamp",
+      title: "timestamp",
+      description:
+        "Creates a timestamp from a string (timestamp(string) → timestamp)",
     },
   ],
 };
@@ -522,6 +569,23 @@ function generateStringMethods(
       insertText: "size()",
       documentation: "Returns the length of the string",
       detail: "string.size() → int",
+      range,
+    },
+    // Type conversion methods
+    {
+      label: "toInt",
+      kind: MethodKind,
+      insertText: "toInt()",
+      documentation: "Converts the string to an integer",
+      detail: "string.toInt() → int",
+      range,
+    },
+    {
+      label: "toDouble",
+      kind: MethodKind,
+      insertText: "toDouble()",
+      documentation: "Converts the string to a double (floating point number)",
+      detail: "string.toDouble() → double",
       range,
     },
   ];
@@ -815,6 +879,7 @@ function useEditorSetup() {
   const handleMount: OnMount = useCallback((editor, _monacoInstance) => {
     editor.updateOptions({
       minimap: { enabled: false },
+      lineNumbers: "off",
       // Enable suggestions for custom completions
       suggestOnTriggerCharacters: true,
       quickSuggestions: {
