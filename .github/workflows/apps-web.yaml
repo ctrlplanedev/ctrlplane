@@ -48,7 +48,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ctrlplane/webservice
+          images: ctrlplane/web
           tags: |
             type=sha,format=short,prefix=
 
@@ -75,6 +75,6 @@ jobs:
         if: github.ref == 'refs/heads/main' && env.DOCKERHUB_LOGIN == 'true'
         with:
           push: true
-          file: apps/webservice/Dockerfile
+          file: apps/web/Dockerfile
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
