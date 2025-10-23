@@ -25,13 +25,14 @@ export default function DeploymentsSettingsLayout() {
   const { deploymentId } = useParams();
   const { workspace } = useWorkspace();
   const path = useLocation();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const baseUrl = `/${workspace.slug}/deployments/${deploymentId}/settings`;
 
-  if (path.pathname === baseUrl) {
-    navigate(`${baseUrl}/general`);
-  }
+  // if (path.pathname === baseUrl) {
+  //   navigate(`${baseUrl}/general`);
+  // }
+  console.log(path.pathname === baseUrl);
 
   const isActive = (pathname: string) => path.pathname.startsWith(pathname);
 

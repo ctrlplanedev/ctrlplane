@@ -49,3 +49,40 @@ func (s *Systems) GetSystem(c *gin.Context, workspaceId string, systemId string)
 		"deployments":  deploymentsList,
 	})
 }
+
+func (s *Systems) ListSystems(c *gin.Context, workspaceId string, params oapi.ListSystemsParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	systems := ws.Systems().Items()
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(systems)
+	start := min(offset, total)
+	end := min(start+limit, total)
+
+	systemsList := make([]*oapi.System, 0, total)
+	for _, system := range systems {
+		systemsList = append(systemsList, system)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  systemsList[start:end],
+	})
+}

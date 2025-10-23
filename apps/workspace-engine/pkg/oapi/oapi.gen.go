@@ -570,6 +570,15 @@ type QueryResourcesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ListSystemsParams defines parameters for ListSystems.
+type ListSystemsParams struct {
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
 
@@ -1261,6 +1270,9 @@ type ServerInterface interface {
 	// Get resource by identifier
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
 	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
+	// List systems
+	// (GET /v1/workspaces/{workspaceId}/systems)
+	ListSystems(c *gin.Context, workspaceId string, params ListSystemsParams)
 	// Get system
 	// (GET /v1/workspaces/{workspaceId}/systems/{systemId})
 	GetSystem(c *gin.Context, workspaceId string, systemId string)
@@ -2124,6 +2136,49 @@ func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
 	siw.Handler.GetResourceByIdentifier(c, workspaceId, resourceIdentifier)
 }
 
+// ListSystems operation middleware
+func (siw *ServerInterfaceWrapper) ListSystems(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSystemsParams
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListSystems(c, workspaceId, params)
+}
+
 // GetSystem operation middleware
 func (siw *ServerInterfaceWrapper) GetSystem(c *gin.Context) {
 
@@ -2206,5 +2261,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
 }

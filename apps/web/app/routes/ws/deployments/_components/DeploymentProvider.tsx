@@ -1,19 +1,32 @@
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 
-import { mockDeploymentDetail } from "./mockData";
+type Deployment = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  jobAgentId?: string;
+  systemId: string;
+};
 
 type DeploymentContextType = {
-  deployment: { id: string; name: string; slug: string; description?: string };
+  deployment: Deployment;
 };
 
 const DeploymentContext = createContext<DeploymentContextType | undefined>(
   undefined,
 );
 
-export const DeploymentProvider = ({ children }: { children: ReactNode }) => {
+export const DeploymentProvider = ({
+  deployment,
+  children,
+}: {
+  deployment: Deployment;
+  children: ReactNode;
+}) => {
   return (
-    <DeploymentContext.Provider value={{ deployment: mockDeploymentDetail }}>
+    <DeploymentContext.Provider value={{ deployment }}>
       {children}
     </DeploymentContext.Provider>
   );

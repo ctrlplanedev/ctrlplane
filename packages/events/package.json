@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./kafka": {
+      "types": "./src/kafka/index.ts",
+      "default": "./dist/kafka/index.js"
     }
   },
   "license": "MIT",

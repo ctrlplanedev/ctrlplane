@@ -36,6 +36,7 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
+import { CreateDeploymentDialog } from "./_components/CreateDeploymentDialog";
 
 export function meta() {
   return [
@@ -386,8 +387,8 @@ export default function Deployments() {
 
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b">
-        <div className="flex items-center gap-2 px-4">
+      <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
+        <div className="flex items-center gap-2">
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
@@ -401,6 +402,9 @@ export default function Deployments() {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
+        <CreateDeploymentDialog>
+          <Button>Create Deployment</Button>
+        </CreateDeploymentDialog>
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">

@@ -28,7 +28,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('Deployment'), 'The requested deployment')
+      responses: openapi.okResponse(openapi.schemaRef('Deployment'), 'The requested deployment',)
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

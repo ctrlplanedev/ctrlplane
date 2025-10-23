@@ -1,6 +1,21 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  '/v1/workspaces/{workspaceId}/systems': {
+    get: {
+      summary: 'List systems',
+      operationId: 'listSystems',
+      description: 'Returns a list of systems for a workspace.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.offsetParam(),
+        openapi.limitParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('System'), 'A list of systems')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/systems/{systemId}': {
     get: {
       summary: 'Get system',

@@ -1,11 +1,36 @@
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import * as schema from "@ctrlplane/db/schema";
+import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
 import { wsEngine } from "../ws-engine.js";
 
 export const deploymentsRouter = router({
+  get: protectedProcedure
+    .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .query(({ input }) => {
+      return wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+              deploymentId: input.deploymentId,
+            },
+          },
+        },
+      );
+    }),
+
   list: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -69,5 +94,39 @@ export const deploymentsRouter = router({
           },
         },
       );
+    }),
+
+  create: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentCreate)
+          .on({ type: "system", id: input.systemId }),
+    })
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        systemId: z.string(),
+        name: z.string().min(3).max(255),
+        slug: z.string().min(3).max(255),
+        description: z.string().max(255).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { workspaceId: _, ...deploymentData } = input;
+      const deployment = { id: uuidv4(), ...deploymentData };
+
+      await ctx.db
+        .insert(schema.deployment)
+        .values({ ...deployment, description: deployment.description ?? "" });
+
+      await sendGoEvent({
+        workspaceId: input.workspaceId,
+        eventType: Event.DeploymentCreated,
+        data: { ...deployment, jobAgentConfig: {} },
+        timestamp: Date.now(),
+      });
+
+      return deployment;
     }),
 });
