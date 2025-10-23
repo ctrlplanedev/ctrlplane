@@ -62,7 +62,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 
 	// Step 4: Dispatch job to integration (ASYNC)
 	go func() {
-		if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, ErrUnsupportedJobAgent) {
+		if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
 			log.Error("error dispatching job to integration", "error", err.Error())
 			newJob.Status = oapi.InvalidIntegration
 			newJob.UpdatedAt = time.Now()
@@ -123,6 +123,3 @@ func BuildRelease(
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
 }
-
-// ErrUnsupportedJobAgent is returned when a job agent type is not supported.
-var ErrUnsupportedJobAgent = errors.New("job agent not supported")
