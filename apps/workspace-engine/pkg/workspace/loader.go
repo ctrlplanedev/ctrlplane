@@ -42,6 +42,7 @@ func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snap
 		return fmt.Errorf("failed to write workspace snapshot: %w", err)
 	}
 
+	log.Info("Workspace saved to storage", "workspaceID", workspace.ID)
 	return nil
 }
 

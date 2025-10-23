@@ -881,3 +881,90 @@ func TestEngine_Redeploy_BlockedByActionRequiredJob(t *testing.T) {
 	}
 }
 
+// TestEngine_Redeploy_WithInvalidJobAgent tests that redeploy works with InvalidJobAgent jobs
+// since they are not in a processing state
+func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
+	deploymentId := uuid.New().String()
+	environmentId := uuid.New().String()
+	resourceId := uuid.New().String()
+
+	// Create deployment WITHOUT job agent
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("no-agent-deployment"),
+				// No job agent configured
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("production"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId),
+			integration.ResourceName("server-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Get release target
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	var releaseTarget *oapi.ReleaseTarget
+	for _, rt := range releaseTargets {
+		releaseTarget = rt
+		break
+	}
+
+	// Create deployment version
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentId
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	// Verify job was created with InvalidJobAgent status
+	allJobs := engine.Workspace().Jobs().Items()
+	if len(allJobs) != 1 {
+		t.Fatalf("expected 1 job, got %d", len(allJobs))
+	}
+
+	var initialJob *oapi.Job
+	for _, j := range allJobs {
+		initialJob = j
+		break
+	}
+
+	if initialJob.Status != oapi.InvalidJobAgent {
+		t.Fatalf("expected initial job status InvalidJobAgent, got %v", initialJob.Status)
+	}
+
+	// Trigger redeploy - should work since InvalidJobAgent is NOT in processing state
+	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
+
+	// Verify new job was created (InvalidJobAgent doesn't block redeploy)
+	allJobsAfterRedeploy := engine.Workspace().Jobs().Items()
+	if len(allJobsAfterRedeploy) != 2 {
+		t.Fatalf("expected 2 jobs after redeploy, got %d", len(allJobsAfterRedeploy))
+	}
+
+	// Verify both jobs have InvalidJobAgent status
+	invalidJobAgentCount := 0
+	for _, j := range allJobsAfterRedeploy {
+		if j.Status == oapi.InvalidJobAgent {
+			invalidJobAgentCount++
+		}
+	}
+
+	if invalidJobAgentCount != 2 {
+		t.Errorf("expected 2 jobs with InvalidJobAgent status, got %d", invalidJobAgentCount)
+	}
+
+	// Verify no jobs are in pending state
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 0 {
+		t.Errorf("expected 0 pending jobs (InvalidJobAgent is not pending), got %d", len(pendingJobs))
+	}
+}
+

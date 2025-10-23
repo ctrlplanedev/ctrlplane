@@ -10,7 +10,7 @@ import { router } from "./trpc.js";
 
 export const appRouter = router({
   user: userRouter,
-  resources: resourcesRouter,
+  resource: resourcesRouter,
   workspace: workspaceRouter,
   deployment: deploymentsRouter,
   system: systemsRouter,
