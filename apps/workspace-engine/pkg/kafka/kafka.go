@@ -131,20 +131,20 @@ func RunConsumer(ctx context.Context) error {
 			log.Error("Failed to route message", "error", err)
 			continue
 		}
-	
+
 		// Commit offset to Kafka
 		if _, err := consumer.CommitMessage(msg); err != nil {
 			log.Error("Failed to commit message", "error", err)
 			continue
 		}
-	
+
 		snapshot := &db.WorkspaceSnapshot{
 			Path:          fmt.Sprintf("%s_%s.gob", ws.ID, msg.Timestamp.Format(time.RFC3339Nano)),
-			Timestamp:     msg.Timestamp.Format(time.RFC3339Nano),
+			Timestamp:     msg.Timestamp,
 			Partition:     int32(msg.TopicPartition.Partition),
 			NumPartitions: numPartitions,
 		}
-	
+
 		workspace.Save(ctx, storage, ws, snapshot)
 	}
 }

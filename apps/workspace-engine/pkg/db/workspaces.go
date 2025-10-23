@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -89,7 +90,7 @@ func GetAllWorkspaceIDs(ctx context.Context) ([]string, error) {
 
 type WorkspaceSnapshot struct {
 	Path          string
-	Timestamp     string
+	Timestamp     time.Time
 	Partition     int32
 	NumPartitions int32
 }
