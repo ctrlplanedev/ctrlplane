@@ -55,6 +55,8 @@ export enum Event {
   GithubEntityUpdated = "github-entity.updated",
   GithubEntityDeleted = "github-entity.deleted",
 
+  Redeploy = "release-target.deploy",
+
   // ReleaseCreated = "release.created",
   // ReleaseUpdated = "release.updated",
   // ReleaseDeleted = "release.deleted",
@@ -191,6 +193,7 @@ export type GoEventPayload = {
   [Event.GithubEntityCreated]: WorkspaceEngine["schemas"]["GithubEntity"];
   [Event.GithubEntityUpdated]: WorkspaceEngine["schemas"]["GithubEntity"];
   [Event.GithubEntityDeleted]: WorkspaceEngine["schemas"]["GithubEntity"];
+  [Event.Redeploy]: WorkspaceEngine["schemas"]["ReleaseTarget"];
 };
 
 export type Message<T extends keyof EventPayload> = {

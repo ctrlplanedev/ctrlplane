@@ -100,7 +100,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 		wg.Add(1)
 		go func(target *oapi.ReleaseTarget) {
 			defer wg.Done()
-			if err := m.reconcileTarget(ctx, target); err != nil {
+			if err := m.reconcileTarget(ctx, target, false); err != nil {
 				log.Warn("error reconciling release target", "error", err.Error())
 			}
 		}(rt)
@@ -130,6 +130,26 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 	return cancelledJobs, nil
 }
 
+// Redeploy forces a new deployment for a release target, skipping eligibility checks (WRITES TO STORE).
+// This is useful for manually triggered redeployments where you want to create a new job
+// regardless of retry limits, previous attempts, or other eligibility criteria.
+//
+// Unlike ProcessChanges which respects eligibility rules, Redeploy always attempts to create a new job
+// as long as there is a valid desired release (determined by planning phase).
+//
+// Returns error if:
+//   - Planning fails
+//   - Execution fails (job creation, persistence, etc.)
+//
+// Returns nil without error if:
+//   - No desired release (no versions available or blocked by user policies)
+func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error {
+	ctx, span := tracer.Start(ctx, "Redeploy")
+	defer span.End()
+
+	return m.reconcileTarget(ctx, releaseTarget, true)
+}
+
 // reconcileTarget ensures a release target is in its desired state (WRITES TO STORE).
 // Uses a three-phase deployment pattern: planning, eligibility checking, and execution.
 //
@@ -142,14 +162,18 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 //	Phase 2 (ELIGIBILITY): jobEligibilityChecker.ShouldCreateJob() - "Should we create a job?" (read-only)
 //	  System-level checks for job creation: retry logic, duplicate prevention, etc.
 //	  This is separate from user policies - it's about when to create jobs.
+//	  Can be skipped when forceRedeploy is true (e.g., for explicit redeploy operations).
 //
 //	Phase 3 (EXECUTION): executor.ExecuteRelease() - "Create the job" (writes)
 //	  Persists release, creates job, dispatches to integration.
 //
+// Parameters:
+//   - forceRedeploy: if true, skips eligibility checks and always creates a new job
+//
 // Returns early if:
 //   - No desired release (no versions available or blocked by user policies)
-//   - Job should not be created (already attempted, retry limit exceeded, etc.)
-func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error {
+//   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
+func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool) error {
 	ctx, span := tracer.Start(ctx, "ReconcileTarget")
 	defer span.End()
 
@@ -174,15 +198,18 @@ func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	}
 
 	// Phase 2: ELIGIBILITY - Should we create a job for this release? (READ-ONLY)
-	shouldCreate, _, err := m.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease)
-	if err != nil {
-		span.RecordError(err)
-		return err
-	}
+	// Skip eligibility check if this is a forced redeploy
+	if !forceRedeploy {
+		shouldCreate, _, err := m.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease)
+		if err != nil {
+			span.RecordError(err)
+			return err
+		}
 
-	// Job should not be created (retry limit, already attempted, etc.)
-	if !shouldCreate {
-		return nil
+		// Job should not be created (retry limit, already attempted, etc.)
+		if !shouldCreate {
+			return nil
+		}
 	}
 
 	// Phase 3: EXECUTION - Create the job (WRITES)

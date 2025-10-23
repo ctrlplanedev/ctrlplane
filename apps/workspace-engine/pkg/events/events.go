@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/events/handler/jobagents"
 	"workspace-engine/pkg/events/handler/jobs"
 	"workspace-engine/pkg/events/handler/policies"
+	"workspace-engine/pkg/events/handler/redeploy"
 	"workspace-engine/pkg/events/handler/relationshiprules"
 	"workspace-engine/pkg/events/handler/resources"
 	"workspace-engine/pkg/events/handler/resourcevariables"
@@ -74,6 +75,8 @@ var handlers = handler.HandlerRegistry{
 	handler.GithubEntityDelete: githubentities.HandleGithubEntityDeleted,
 
 	handler.WorkspaceTick: tick.HandleWorkspaceTick,
+
+	handler.ReleaseTargetDeploy: redeploy.HandleReleaseTargetDeploy,
 }
 
 func NewEventHandler() *handler.EventListener {

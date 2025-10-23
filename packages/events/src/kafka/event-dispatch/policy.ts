@@ -9,18 +9,6 @@ import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
 import { convertToOapiSelector } from "./util.js";
 
-const convertFullPolicyToNodeEvent = (
-  policy: FullPolicy,
-  eventType: Event,
-) => ({
-  workspaceId: policy.workspaceId,
-  eventType,
-  eventId: policy.id,
-  timestamp: Date.now(),
-  source: "api" as const,
-  payload: policy,
-});
-
 const getOapiPolicyTarget = (
   target: schema.PolicyTarget,
 ): WorkspaceEngine["schemas"]["PolicyTargetSelector"] => ({
@@ -77,7 +65,14 @@ export const dispatchPolicyCreated = createSpanWrapper(
     span.setAttribute("workspace.id", policy.workspaceId);
 
     const eventType = Event.PolicyCreated;
-    await sendNodeEvent(convertFullPolicyToNodeEvent(policy, eventType));
+    await sendNodeEvent({
+      workspaceId: policy.workspaceId,
+      eventType: Event.PolicyCreated,
+      eventId: policy.id,
+      timestamp: Date.now(),
+      source: "api",
+      payload: policy,
+    });
     await sendGoEvent(
       convertFullPolicyToGoEvent(policy, eventType as keyof GoEventPayload),
     );
