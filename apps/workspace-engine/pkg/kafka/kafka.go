@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/events"
-	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 
@@ -30,27 +30,6 @@ func getEnv(varName string, defaultValue string) string {
 	return v
 }
 
-func getEventHandler(numPartitions int32) *handler.EventListener {
-	if workspace.IsGCSStorageEnabled() {
-		return events.NewEventHandlerWithWorkspaceSaver(workspace.CreateGCSWorkspaceSaver(numPartitions))
-	}
-	return events.NewEventHandler()
-}
-
-// RunConsumer starts the Kafka consumer without offset resume
-// Uses default Kafka offsets (committed offsets or 'earliest')
-func RunConsumer(ctx context.Context) error {
-	if workspace.IsGCSStorageEnabled() {
-		return runConsumerWithGCSStore(ctx)
-	}
-	return RunConsumerWithWorkspaceLoader(ctx, nil)
-}
-
-func runConsumerWithGCSStore(ctx context.Context) error {
-	workspaceLoader := workspace.CreateGCSWorkspaceLoader(nil)
-	return RunConsumerWithWorkspaceLoader(ctx, workspaceLoader)
-}
-
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
 //
 // Flow:
@@ -59,7 +38,7 @@ func runConsumerWithGCSStore(ctx context.Context) error {
 //  3. Load workspaces for assigned partitions (if workspaceLoader provided)
 //  4. Seek to stored offsets per partition
 //  5. Start consuming and processing messages
-func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspace.WorkspaceLoader) error {
+func RunConsumer(ctx context.Context) error {
 	// Initialize Kafka consumer
 	consumer, err := createConsumer()
 	if err != nil {
@@ -107,21 +86,29 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 		return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
 	}
 
-	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
-
-	// Load workspaces and seek to stored offsets if workspace loader is provided
-	if workspaceLoader != nil {
-		if err := loadWorkspaces(ctx, consumer, assignedPartitions, workspaceLoader); err != nil {
-			return fmt.Errorf("failed to load workspaces: %w", err)
+	storage := workspace.NewFileStorage("./state")
+	if workspace.IsGCSStorageEnabled() {
+		storage, err = workspace.NewGCSStorageClient(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create GCS storage: %w", err)
 		}
-
-		applyOffsets(consumer, assignedPartitions)
 	}
 
-	log.Info("Started Kafka consumer for ctrlplane-events")
+	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
+	for _, workspaceID := range allWorkspaceIDs {
+		ws := workspace.GetWorkspace(workspaceID)
+		if ws == nil {
+			log.Error("Workspace not found", "workspaceID", workspaceID)
+			continue
+		}
+		if err := workspace.Load(ctx, storage, ws); err != nil {
+			log.Error("Failed to load workspace", "workspaceID", workspaceID, "error", err)
+			continue
+		}
+	}
 
 	// Start consuming messages
-	handler := getEventHandler(numPartitions)
+	handler := events.NewEventHandler()
 
 	for {
 		// Check for cancellation
@@ -139,10 +126,24 @@ func RunConsumerWithWorkspaceLoader(ctx context.Context, workspaceLoader workspa
 			continue
 		}
 
-		// Process message and update workspace state
-		if err := processMessage(ctx, consumer, handler, msg); err != nil {
-			log.Error("Failed to process message", "error", err)
+		ws, err := handler.ListenAndRoute(ctx, msg)
+		if err != nil {
+			log.Error("Failed to route message", "error", err)
 			continue
 		}
+	
+		// Commit offset to Kafka
+		if _, err := consumer.CommitMessage(msg); err != nil {
+			log.Error("Failed to commit message", "error", err)
+			continue
+		}
+	
+		snapshot := &db.WorkspaceSnapshot{
+			Timestamp:     time.Now().Format(time.RFC3339),
+			Partition:     int32(msg.TopicPartition.Partition),
+			NumPartitions: numPartitions,
+		}
+	
+		workspace.Save(ctx, storage, ws, snapshot)
 	}
 }

@@ -2,14 +2,10 @@ package workspace
 
 import (
 	"bytes"
-	"context"
 	"encoding/gob"
-	"errors"
-	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/workspace/kafka"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -26,7 +22,6 @@ func New(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
-		KafkaProgress:     make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -40,7 +35,6 @@ func NewNoFlush(id string) *Workspace {
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
-		KafkaProgress:     make(kafka.KafkaProgressMap),
 	}
 	return ws
 }
@@ -51,7 +45,6 @@ type Workspace struct {
 	store             *store.Store
 	releasemanager    *releasemanager.Manager
 	changesetConsumer changeset.ChangesetConsumer[any]
-	KafkaProgress     kafka.KafkaProgressMap
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -120,7 +113,6 @@ func (w *Workspace) GobEncode() ([]byte, error) {
 	// Create workspace data with ID and store
 	data := WorkspaceStorageObject{
 		ID:            w.ID,
-		KafkaProgress: w.KafkaProgress,
 		StoreData:     storeData,
 	}
 
@@ -145,8 +137,7 @@ func (w *Workspace) GobDecode(data []byte) error {
 	}
 
 	// Restore the workspace ID
-	w.ID = wsData.ID
-	w.KafkaProgress = wsData.KafkaProgress
+	w.ID = wsData.ID	
 
 	// Initialize store if needed
 	if w.store == nil {
@@ -223,195 +214,4 @@ func GetNoFlushWorkspace(id string) *Workspace {
 
 func GetAllWorkspaceIds() []string {
 	return workspaces.Keys()
-}
-
-// SaveToStorage serializes the workspace state and saves it to a storage client
-func (w *Workspace) SaveToStorage(ctx context.Context, storage StorageClient, path string) error {
-	// Encode the workspace using gob
-	data, err := w.GobEncode()
-	if err != nil {
-		return fmt.Errorf("failed to encode workspace: %w", err)
-	}
-
-	// Write to file with appropriate permissions
-	if err := storage.Put(ctx, path, data); err != nil {
-		return fmt.Errorf("failed to write workspace to disk: %w", err)
-	}
-
-	return nil
-}
-
-// LoadFromStorage deserializes the workspace state from a storage client
-func (w *Workspace) LoadFromStorage(ctx context.Context, storage StorageClient, path string) error {
-	// Read from file
-	data, err := storage.Get(ctx, path)
-	if err != nil {
-		return fmt.Errorf("failed to read workspace from disk: %w", err)
-	}
-
-	// Decode the workspace
-	if err := w.GobDecode(data); err != nil {
-		return fmt.Errorf("failed to decode workspace: %w", err)
-	}
-
-	return nil
-}
-
-func (w *Workspace) SaveToGCS(ctx context.Context, workspaceID string, timestamp string, partition int32, numPartitions int32) error {
-	if !IsGCSStorageEnabled() {
-		return nil
-	}
-
-	data, err := w.GobEncode()
-	if err != nil {
-		return fmt.Errorf("failed to encode workspace: %w", err)
-	}
-
-	if err := PutWorkspaceSnapshot(ctx, workspaceID, timestamp, partition, numPartitions, data); err != nil {
-		return fmt.Errorf("failed to put workspace snapshot: %w", err)
-	}
-
-	return nil
-}
-
-var ErrWorkspaceSnapshotNotFound = errors.New("workspace snapshot not found")
-
-func (w *Workspace) LoadFromGCS(ctx context.Context, workspaceID string) error {
-	if !IsGCSStorageEnabled() {
-		return nil
-	}
-
-	data, err := GetWorkspaceSnapshot(ctx, workspaceID)
-	if err != nil {
-		return fmt.Errorf("failed to get workspace snapshot: %w", err)
-	}
-
-	if data == nil {
-		return ErrWorkspaceSnapshotNotFound
-	}
-
-	if err := w.GobDecode(data); err != nil {
-		return fmt.Errorf("failed to decode workspace: %w", err)
-	}
-
-	return nil
-}
-
-// WorkspaceSaver is a function that saves workspace state to an external storage
-type WorkspaceSaver func(ctx context.Context, workspaceID string, timestamp string) error
-
-// CreateGCSWorkspaceSaver creates a new workspace saver that saves workspace state to GCS
-func CreateGCSWorkspaceSaver(numPartitions int32) WorkspaceSaver {
-	return func(ctx context.Context, workspaceID string, timestamp string) error {
-		ws := GetWorkspace(workspaceID)
-		partition := kafka.PartitionForWorkspace(workspaceID, numPartitions)
-		if err := ws.SaveToGCS(ctx, workspaceID, timestamp, partition, numPartitions); err != nil {
-			return fmt.Errorf("failed to save workspace %s to GCS: %w", workspaceID, err)
-		}
-		return nil
-	}
-}
-
-// WorkspaceLoader is a function that loads workspace state from an external storage
-type WorkspaceLoader func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error
-
-// getAssignedWorkspaceIDs retrieves workspace IDs for the assigned partitions.
-// Uses the provided discoverer if available, otherwise falls back to the default implementation.
-func getAssignedWorkspaceIDs(
-	ctx context.Context,
-	assignedPartitions []int32,
-	numPartitions int32,
-	discoverer kafka.WorkspaceIDDiscoverer,
-) ([]string, error) {
-	var allWorkspaceIDs []string
-
-	// Use discoverer if provided, otherwise use default implementation
-	if discoverer != nil {
-		// Collect workspace IDs for each assigned partition
-		workspaceIDSet := make(map[string]bool)
-		for _, partition := range assignedPartitions {
-			partitionWorkspaces, err := discoverer(ctx, partition, numPartitions)
-			if err != nil {
-				return nil, fmt.Errorf("failed to discover workspace IDs for partition %d: %w", partition, err)
-			}
-			for _, wsID := range partitionWorkspaces {
-				workspaceIDSet[wsID] = true
-			}
-		}
-		// Convert set to slice
-		for wsID := range workspaceIDSet {
-			allWorkspaceIDs = append(allWorkspaceIDs, wsID)
-		}
-	} else {
-		var err error
-		allWorkspaceIDs, err = kafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get assigned workspace IDs: %w", err)
-		}
-	}
-
-	return allWorkspaceIDs, nil
-}
-
-// CreateGCSWorkspaceLoader creates a workspace loader function that:
-// 1. Discovers all available workspace IDs
-// 2. Determines which workspaces belong to which partitions
-// 3. Loads workspaces for the assigned partitions from GCS
-func CreateGCSWorkspaceLoader(
-	discoverer kafka.WorkspaceIDDiscoverer,
-) WorkspaceLoader {
-	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
-		allWorkspaceIDs, err := getAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions, discoverer)
-		if err != nil {
-			return err
-		}
-
-		for _, workspaceID := range allWorkspaceIDs {
-			ws := GetWorkspace(workspaceID)
-			err := ws.LoadFromGCS(ctx, workspaceID)
-			if err == nil {
-				Set(workspaceID, ws)
-				continue
-			}
-
-			if err == ErrWorkspaceSnapshotNotFound {
-				if err := PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
-					return fmt.Errorf("failed to populate workspace %s with initial state: %w", workspaceID, err)
-				}
-				Set(workspaceID, ws)
-				continue
-			}
-
-			return fmt.Errorf("failed to load workspace %s from GCS: %w", workspaceID, err)
-		}
-
-		return nil
-	}
-}
-
-// CreateWorkspaceLoader creates a workspace loader function that:
-// 1. Discovers all available workspace IDs
-// 2. Determines which workspaces belong to which partitions
-// 3. Loads workspaces for the assigned partitions from storage
-func CreateWorkspaceLoader(
-	storage StorageClient,
-	discoverer kafka.WorkspaceIDDiscoverer,
-) WorkspaceLoader {
-	return func(ctx context.Context, assignedPartitions []int32, numPartitions int32) error {
-		allWorkspaceIDs, err := getAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions, discoverer)
-		if err != nil {
-			return err
-		}
-
-		for _, workspaceID := range allWorkspaceIDs {
-			ws := GetWorkspace(workspaceID)
-			if err := ws.LoadFromStorage(ctx, storage, fmt.Sprintf("%s.gob", workspaceID)); err != nil {
-				return fmt.Errorf("failed to load workspace %s: %w", workspaceID, err)
-			}
-
-			Set(workspaceID, ws)
-		}
-
-		return nil
-	}
 }

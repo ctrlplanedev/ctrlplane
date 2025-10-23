@@ -2,11 +2,12 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
-	"workspace-engine/pkg/db"
 
 	"cloud.google.com/go/storage"
 )
@@ -15,35 +16,64 @@ func IsGCSStorageEnabled() bool {
 	return strings.HasPrefix(os.Getenv("WORKSPACE_STATES_BUCKET_URL"), "gs://")
 }
 
-func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) ([]byte, error) {
-	snapshot, err := db.GetWorkspaceSnapshot(ctx, workspaceID)
-	if err != nil {
-		return nil, err
+var _ StorageClient = (*GCSStorageClient)(nil)
+
+type GCSStorageClient struct {
+	client *storage.Client
+	bucket string
+	prefix string
+}
+
+func NewGCSStorageClient(ctx context.Context) (StorageClient, error) {
+	if !IsGCSStorageEnabled() {
+		return nil, errors.New("gcs storage is not enabled")
 	}
 
-	if snapshot == nil {
-		return nil, nil
-	}
+	bucketURL := os.Getenv("WORKSPACE_STATES_BUCKET_URL")
 
-	if snapshot.Path == "" {
-		return nil, nil
-	}
-
-	// Parse bucket/object/path from stored path
-	parts := strings.SplitN(snapshot.Path, "/", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid GCS path: %s", snapshot.Path)
-	}
+	// Parse bucket and optional prefix
+	gsPath := strings.TrimPrefix(bucketURL, "gs://")
+	parts := strings.SplitN(gsPath, "/", 2)
 	bucket := parts[0]
-	objectPath := parts[1]
+	prefix := ""
+	if len(parts) > 1 {
+		prefix = parts[1]
+	}
 
 	client, err := storage.NewClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create GCS client: %w", err)
+		return nil, err
 	}
-	defer client.Close()
+	return &GCSStorageClient{client: client, bucket: bucket, prefix: prefix}, nil
+}
 
-	obj := client.Bucket(bucket).Object(objectPath)
+func (c *GCSStorageClient) Put(ctx context.Context, path string, data []byte) error {
+	path = filepath.Join(c.prefix, path)
+	obj := c.client.Bucket(c.bucket).Object(path)
+	writer := obj.NewWriter(ctx)
+	if _, err := writer.Write(data); err != nil {
+		writer.Close()
+		return fmt.Errorf("failed to write snapshot: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("failed to close writer: %w", err)
+	}
+	return nil
+}
+
+func (c *GCSStorageClient) Get(ctx context.Context, path string) ([]byte, error) {
+	path = filepath.Join(c.prefix, path)
+	obj := c.client.Bucket(c.bucket).Object(path)
+
+	// Check if the object exists before trying to read
+	_, err := obj.Attrs(ctx)
+	if err != nil {
+		if err == storage.ErrObjectNotExist {
+			return nil, ErrWorkspaceSnapshotNotFound
+		}
+		return nil, fmt.Errorf("failed to stat GCS object: %w", err)
+	}
+
 	reader, err := obj.NewReader(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read snapshot: %w", err)
@@ -58,58 +88,6 @@ func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) ([]byte, erro
 	return data, nil
 }
 
-// PutWorkspaceSnapshot writes a new timestamped snapshot for a workspace to GCS.
-func PutWorkspaceSnapshot(ctx context.Context, workspaceID string, timestamp string, partition int32, numPartitions int32, data []byte) error {
-	// Get bucket URL like "gs://bucket-name" or "gs://bucket-name/prefix"
-	bucketURL := os.Getenv("WORKSPACE_STATES_BUCKET_URL")
-	bucketURL = strings.TrimSuffix(bucketURL, "/")
-
-	// Parse bucket and optional prefix
-	gsPath := strings.TrimPrefix(bucketURL, "gs://")
-	parts := strings.SplitN(gsPath, "/", 2)
-	bucket := parts[0]
-	prefix := ""
-	if len(parts) > 1 {
-		prefix = parts[1]
-	}
-
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create GCS client: %w", err)
-	}
-	defer client.Close()
-
-	// Generate object path
-	objectName := fmt.Sprintf("%s_%s.gob", workspaceID, timestamp)
-	objectPath := objectName
-	if prefix != "" {
-		objectPath = prefix + "/" + objectName
-	}
-
-	obj := client.Bucket(bucket).Object(objectPath)
-	writer := obj.NewWriter(ctx)
-
-	if _, err := writer.Write(data); err != nil {
-		writer.Close()
-		return fmt.Errorf("failed to write snapshot: %w", err)
-	}
-
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("failed to close writer: %w", err)
-	}
-
-	// Store bucket/object/path in database (no gs:// prefix)
-	fullPath := fmt.Sprintf("%s/%s", bucket, objectPath)
-
-	snapshot := &db.WorkspaceSnapshot{
-		Path:          fullPath,
-		Timestamp:     timestamp,
-		Partition:     partition,
-		NumPartitions: numPartitions,
-	}
-	if err := db.WriteWorkspaceSnapshot(ctx, workspaceID, snapshot); err != nil {
-		return fmt.Errorf("failed to write snapshot: %w", err)
-	}
-
-	return nil
+func (c *GCSStorageClient) Close() error {
+	return c.client.Close()
 }
