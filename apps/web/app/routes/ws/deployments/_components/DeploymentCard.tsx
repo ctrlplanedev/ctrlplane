@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { forwardRef } from "react";
-import { subHours } from "date-fns";
+import { isAfter, subHours } from "date-fns";
 import {
   AlertCircle,
   CheckCircle2,
-  Clock,
   Pause,
   RefreshCw,
   XCircle,
@@ -13,6 +12,7 @@ import prettyMilliseconds from "pretty-ms";
 import { useInView } from "react-intersection-observer";
 import { Link } from "react-router";
 
+import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
+import { Skeleton } from "~/components/ui/skeleton";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 
 // Types
@@ -181,20 +182,21 @@ function DeploymentCardVersionMetric({
   createdAt,
 }: {
   tag: string;
-  createdAt: string;
+  createdAt: Date;
 }) {
+  const prettyCreatedAt = prettyMilliseconds(Date.now() - createdAt.getTime(), {
+    compact: true,
+    hideSeconds: true,
+  });
   return (
     <>
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground">Latest Version</span>
-        <span className="font-mono text-xs">{tag}</span>
+        <span className="font-mono">{tag}</span>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground">Created</span>
-        <span className="flex items-center gap-1 text-xs">
-          <Clock className="h-3 w-3" />
-          {createdAt}
-        </span>
+        <span className="flex items-center gap-1">{prettyCreatedAt}</span>
       </div>
     </>
   );
@@ -313,16 +315,28 @@ export function LazyLoadDeploymentCard({
   system,
 }: LazyLoadDeploymentCardProps) {
   const { workspace } = useWorkspace();
-  const { ref } = useInView();
+  const { ref, inView } = useInView();
 
-  const latestVersion = {
-    tag: "1.0.0",
-    createdAt: subHours(new Date(), 1),
-  };
-  const recentActivity = {
-    deploymentsLast24h: 48,
-    lastDeploymentTime: "2 minutes ago",
-  };
+  const rt = trpc.deployment.releaseTargets.useQuery(
+    { workspaceId: workspace.id, deploymentId: deployment.id, limit: 1 },
+    { enabled: inView },
+  );
+
+  const versions = trpc.deployment.versions.useQuery(
+    { workspaceId: workspace.id, deploymentId: deployment.id, limit: 1000 },
+    { enabled: inView },
+  );
+
+  const last24hDeployments = versions.data?.items.filter((version) => {
+    const createdAt = new Date(version.createdAt);
+    const twentyFourHoursAgo = subHours(new Date(), 24);
+    return isAfter(createdAt, twentyFourHoursAgo);
+  });
+
+  const numTargets = rt.data?.total ?? 0;
+
+  const latestVersion = versions.data?.items[0];
+  const deploymentsLast24h = last24hDeployments?.length ?? 0;
   const jobStatusSummary = {
     successful: 12,
     inProgress: 0,
@@ -349,26 +363,36 @@ export function LazyLoadDeploymentCard({
         </DeploymentCardBadges>
         <Separator />
         <DeploymentCardMetrics>
-          <DeploymentCardMetricRow
-            label={"Latest Version"}
-            value={latestVersion.tag}
-          />
-          <DeploymentCardMetricRow
-            label={"Created"}
-            value={`${prettyMilliseconds(
-              Date.now() - latestVersion.createdAt.getTime(),
-              { compact: true, hideSeconds: true },
-            )} ago`}
-          />
-
-          <DeploymentCardMetricRow
-            label={"Deployments (24h)"}
-            value={recentActivity.deploymentsLast24h}
-          />
-          <DeploymentCardVersionMetric
-            tag={"Dep Activity"}
-            createdAt={recentActivity.lastDeploymentTime}
-          />
+          {versions.isLoading ? (
+            <>
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </>
+          ) : (
+            <>
+              {latestVersion ? (
+                <DeploymentCardVersionMetric
+                  tag={latestVersion.tag}
+                  createdAt={new Date(latestVersion.createdAt)}
+                />
+              ) : (
+                <>
+                  <DeploymentCardMetricRow label={"Version"} value={"N/A"} />
+                  <DeploymentCardMetricRow label={"Created"} value={"N/A"} />
+                </>
+              )}
+              <DeploymentCardMetricRow
+                label={"Deployments (24h)"}
+                value={deploymentsLast24h}
+              />
+            </>
+          )}
+          {rt.isLoading ? (
+            <Skeleton className="h-6 w-full" />
+          ) : (
+            <DeploymentCardMetricRow label={"Targets"} value={numTargets} />
+          )}
         </DeploymentCardMetrics>
         <DeploymentCardJobStatus jobStatusSummary={jobStatusSummary} />
 

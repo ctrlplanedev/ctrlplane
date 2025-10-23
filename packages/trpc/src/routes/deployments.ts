@@ -58,22 +58,28 @@ export const deploymentsRouter = router({
           .perform(Permission.ReleaseTargetGet)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
-    .query(({ input }) => {
-      return wsEngine
-        .GET(
-          "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets",
-          {
-            params: {
-              path: {
-                workspaceId: input.workspaceId,
-                deploymentId: input.deploymentId,
-              },
-              query: { limit: 1_000, offset: 0 },
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        deploymentId: z.string(),
+        limit: z.number().min(1).max(1000).default(1000),
+        offset: z.number().min(0).default(0),
+      }),
+    )
+    .query(async ({ input }) => {
+      const response = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets",
+        {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+              deploymentId: input.deploymentId,
             },
+            query: { limit: input.limit, offset: input.offset },
           },
-        )
-        .then((response) => response.data);
+        },
+      );
+      return response.data;
     }),
 
   versions: protectedProcedure
@@ -83,7 +89,14 @@ export const deploymentsRouter = router({
           .perform(Permission.DeploymentVersionList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        deploymentId: z.string(),
+        limit: z.number().min(1).max(1000).default(1000),
+        offset: z.number().min(0).default(0),
+      }),
+    )
     .query(async ({ input }) => {
       const response = await wsEngine.GET(
         "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
