@@ -84,21 +84,18 @@ export const deploymentsRouter = router({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
-    .query(({ input }) => {
-      return wsEngine
-        .GET(
-          "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-          {
-            params: {
-              path: {
-                workspaceId: input.workspaceId,
-                deploymentId: input.deploymentId,
-              },
-              query: { limit: 5_000, offset: 0 },
-            },
+    .query(async ({ input }) => {
+      const response = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+        {
+          params: {
+            path: input,
+            query: { limit: 5_000, offset: 0 },
           },
-        )
-        .then((response) => response.data);
+        },
+      );
+
+      return response.data;
     }),
 
   create: protectedProcedure

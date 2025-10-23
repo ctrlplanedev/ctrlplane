@@ -516,6 +516,10 @@ export interface components {
             slug: string;
             systemId: string;
         };
+        DeploymentAndSystem: {
+            deployment: components["schemas"]["Deployment"];
+            system: components["schemas"]["System"];
+        };
         DeploymentVariable: {
             defaultValue?: components["schemas"]["LiteralValue"];
             deploymentId: string;
@@ -926,7 +930,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["Deployment"][];
+                        items: components["schemas"]["DeploymentAndSystem"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

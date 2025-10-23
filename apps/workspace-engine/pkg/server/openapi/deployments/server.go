@@ -95,8 +95,6 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 
 	deployments := ws.Deployments().Items()
 
-	c.JSON(http.StatusOK, deployments)
-
 	// Get pagination parameters with defaults
 	limit := 50
 	if params.Limit != nil {
@@ -118,11 +116,28 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 		deploymentsList = append(deploymentsList, deployment)
 	}
 
+	deploymentsWithSystem := make([]*oapi.DeploymentAndSystem, 0, total)
+	for _, deployment := range deploymentsList[start:end] {
+		system, ok := ws.Systems().Get(deployment.SystemId)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "System not found for deployment",
+			})
+			return
+		}
+		// Use struct literal yielding + anonymous struct literal for "System"
+		dws := &oapi.DeploymentAndSystem{
+			Deployment: *deployment,
+			System:     *system,
+		}
+		deploymentsWithSystem = append(deploymentsWithSystem, dws)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  deploymentsList[start:end],
+		"items":  deploymentsWithSystem,
 	})
 }
 

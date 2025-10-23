@@ -584,6 +584,9 @@ importers:
       openapi-fetch:
         specifier: ^0.13.8
         version: 0.13.8
+      pretty-ms:
+        specifier: ^9.2.0
+        version: 9.2.0
       react:
         specifier: catalog:react19
         version: 19.2.0
@@ -596,6 +599,9 @@ importers:
       react-hook-form:
         specifier: 'catalog:'
         version: 7.54.2(react@19.2.0)
+      react-intersection-observer:
+        specifier: ^9.16.0
+        version: 9.16.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react-resizable-panels:
         specifier: ^2.1.9
         version: 2.1.9(react-dom@19.2.0(react@19.2.0))(react@19.2.0)

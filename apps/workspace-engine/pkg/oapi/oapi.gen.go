@@ -130,6 +130,12 @@ type Deployment struct {
 	SystemId         string                 `json:"systemId"`
 }
 
+// DeploymentAndSystem defines model for DeploymentAndSystem.
+type DeploymentAndSystem struct {
+	Deployment Deployment `json:"deployment"`
+	System     System     `json:"system"`
+}
+
 // DeploymentVariable defines model for DeploymentVariable.
 type DeploymentVariable struct {
 	DefaultValue *LiteralValue `json:"defaultValue,omitempty"`

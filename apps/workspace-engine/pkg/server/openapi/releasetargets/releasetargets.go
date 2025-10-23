@@ -171,9 +171,9 @@ func (s *ReleaseTargets) GetJobsForReleaseTarget(c *gin.Context, workspaceId str
 	end := min(start+limit, total)
 
 	c.JSON(http.StatusOK, gin.H{
-		"items": items[start:end],
-		"total": total,
+		"items":  items[start:end],
+		"total":  total,
 		"offset": params.Offset,
-		"limit": params.Limit,
+		"limit":  params.Limit,
 	})
 }
