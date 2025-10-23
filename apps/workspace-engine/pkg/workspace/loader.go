@@ -3,36 +3,17 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"time"
 	"workspace-engine/pkg/db"
 )
 
-func getPath(workspaceID string, timestamp string) string {
-	return fmt.Sprintf("%s_%s.gob", workspaceID, timestamp)
-}
-
-func LoadAll(ctx context.Context, storage StorageClient) error {
-	workspaceIds := GetAllWorkspaceIds()
-	for _, workspaceID := range workspaceIds {
-		workspace := GetWorkspace(workspaceID)
-		err := Load(ctx, storage, workspace)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snapshot *db.WorkspaceSnapshot) error {
-	path := getPath(workspace.ID, time.Now().Format(time.RFC3339))
-
 	data, err := workspace.GobEncode()
 	if err != nil {
 		return fmt.Errorf("failed to encode workspace: %w", err)
 	}
 
 	// Write to file with appropriate permissions
-	if err := storage.Put(ctx, path, data); err != nil {
+	if err := storage.Put(ctx, snapshot.Path, data); err != nil {
 		return fmt.Errorf("failed to write workspace to disk: %w", err)
 	}
 

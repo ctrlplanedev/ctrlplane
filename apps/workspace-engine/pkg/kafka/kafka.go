@@ -139,7 +139,8 @@ func RunConsumer(ctx context.Context) error {
 		}
 	
 		snapshot := &db.WorkspaceSnapshot{
-			Timestamp:     time.Now().Format(time.RFC3339),
+			Path:          fmt.Sprintf("%s_%s.gob", ws.ID, msg.Timestamp.Format(time.RFC3339Nano)),
+			Timestamp:     msg.Timestamp.Format(time.RFC3339Nano),
 			Partition:     int32(msg.TopicPartition.Partition),
 			NumPartitions: numPartitions,
 		}
