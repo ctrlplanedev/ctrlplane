@@ -142,4 +142,44 @@ export const deploymentsRouter = router({
 
       return deployment;
     }),
+
+  createVersion: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        deploymentId: z.string().uuid(),
+        tag: z.string().min(1),
+        name: z.string().optional(),
+        status: z
+          .enum(["building", "ready", "failed", "rejected"])
+          .default("ready"),
+        message: z.string().optional(),
+        config: z.record(z.string(), z.any()).default({}),
+        jobAgentConfig: z.record(z.string(), z.any()).default({}),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentVersionCreate)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .mutation(async ({ input }) => {
+      const { workspaceId, ...versionData } = input;
+      const version = {
+        id: uuidv4(),
+        ...versionData,
+        name: versionData.name ?? versionData.tag,
+        createdAt: new Date().toISOString(),
+      };
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.DeploymentVersionCreated,
+        timestamp: Date.now(),
+        data: version,
+      });
+
+      return version;
+    }),
 });

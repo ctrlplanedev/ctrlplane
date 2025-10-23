@@ -191,7 +191,6 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		})
 	}
 
-
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
@@ -231,9 +230,9 @@ func (s *Deployments) GetVersionsForDeployment(c *gin.Context, workspaceId strin
 	start := min(offset, total)
 	end := min(start+limit, total)
 
-	// Sort versionsList by CreatedAt ascending
+	// Sort versionsList by CreatedAt descending (newest first)
 	sort.Slice(versionsList, func(i, j int) bool {
-		return versionsList[i].CreatedAt.Before(versionsList[j].CreatedAt)
+		return versionsList[j].CreatedAt.Before(versionsList[i].CreatedAt)
 	})
 
 	c.JSON(http.StatusOK, gin.H{

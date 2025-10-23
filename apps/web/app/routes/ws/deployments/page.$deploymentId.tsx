@@ -24,6 +24,7 @@ import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
 import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
+import { VersionCreateDialog } from "./_components/VersionCreateDialog";
 
 export function meta() {
   return [
@@ -39,12 +40,15 @@ export default function DeploymentDetail() {
   const selectedVersionId = searchParams.get("version");
   const selectedEnvironmentId = searchParams.get("env");
 
-  const versionsQuery = trpc.deployment.versions.useQuery({
-    workspaceId: workspace.id,
-    deploymentId: deployment.id,
-    limit: 1000,
-    offset: 0,
-  });
+  const versionsQuery = trpc.deployment.versions.useQuery(
+    {
+      workspaceId: workspace.id,
+      deploymentId: deployment.id,
+      limit: 1000,
+      offset: 0,
+    },
+    { refetchInterval: 5000 },
+  );
 
   const releaseTargets = trpc.deployment.releaseTargets.useQuery({
     workspaceId: workspace.id,
@@ -227,6 +231,14 @@ export default function DeploymentDetail() {
         </div>
 
         <div className="flex items-center gap-4">
+          {!noVersions && (
+            <VersionCreateDialog deploymentId={deployment.id}>
+              <Button variant="outline">
+                <PackagePlus className="mr-2 h-4 w-4" />
+                Create Version
+              </Button>
+            </VersionCreateDialog>
+          )}
           <DeploymentsNavbarTabs deploymentId={deployment.id} />
         </div>
       </header>
@@ -243,16 +255,12 @@ export default function DeploymentDetail() {
                 Create your first version to start deploying
               </p>
             </div>
-            <Button
-              onClick={() => {
-                // TODO: Implement create version dialog
-                // Need to add trpc mutation for creating versions
-                console.log("Create version clicked");
-              }}
-            >
-              <PackagePlus className="mr-2 h-4 w-4" />
-              Create Version
-            </Button>
+            <VersionCreateDialog deploymentId={deployment.id}>
+              <Button>
+                <PackagePlus className="mr-2 h-4 w-4" />
+                Create Version
+              </Button>
+            </VersionCreateDialog>
           </div>
         </div>
       )}

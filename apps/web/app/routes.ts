@@ -9,11 +9,11 @@ export default [
       route("deployments", "routes/ws/deployments/_layout.tsx", [
         route(":deploymentId", "routes/ws/deployments/page.$deploymentId.tsx"),
         route(
-          "deployments/:deploymentId/versions",
+          ":deploymentId/versions",
           "routes/ws/deployments/page.$deploymentId.versions.tsx",
         ),
         route(
-          "deployments/:deploymentId/settings",
+          ":deploymentId/settings",
           "routes/ws/deployments/settings/_layout.tsx",
           [
             route(
@@ -23,6 +23,7 @@ export default [
           ],
         ),
       ]),
+
       route("resources", "routes/ws/resources.tsx"),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
       route("projects", "routes/ws/projects.tsx"),
