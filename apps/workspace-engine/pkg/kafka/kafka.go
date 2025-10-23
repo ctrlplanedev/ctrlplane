@@ -2,18 +2,21 @@ package kafka
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/events"
+	eventHanlder "workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 
 	"github.com/aws/smithy-go/ptr"
 	"github.com/charmbracelet/log"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 // Configuration variables loaded from environment
@@ -30,6 +33,27 @@ func getEnv(varName string, defaultValue string) string {
 		return defaultValue
 	}
 	return v
+}
+
+func getLastWorkspaceOffset(ctx context.Context, msg *kafka.Message) int64 {
+	beginning := int64(kafka.OffsetBeginning)
+	var rawEvent eventHanlder.RawEvent
+	if err := json.Unmarshal(msg.Value, &rawEvent); err != nil {
+		log.Error("Failed to unmarshal event", "error", err, "message", string(msg.Value))
+		return beginning
+	}
+
+	lastSnapshot, err := db.GetWorkspaceSnapshot(ctx, rawEvent.WorkspaceID)
+	if err != nil {
+		log.Error("Failed to get workspace snapshot", "error", err)
+		return beginning
+	}
+
+	if lastSnapshot == nil {
+		return beginning
+	}
+
+	return lastSnapshot.Offset
 }
 
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
@@ -94,18 +118,6 @@ func RunConsumer(ctx context.Context) error {
 		allWorkspaceIDs = append(allWorkspaceIDs, workspaceIDs...)
 	}
 
-	snapshots, err := db.GetLatestWorkspaceSnapshots(ctx, allWorkspaceIDs)
-	if err != nil {
-		return fmt.Errorf("failed to get latest workspace snapshots: %w", err)
-	}
-
-	earliestOffset := getEarliestOffset(snapshots)
-	log.Info("Seeking to earliest offset", "offset", earliestOffset)
-
-	for _, partition := range assignedPartitions {
-
-	}
-
 	storage := workspace.NewFileStorage("./state")
 	if workspace.IsGCSStorageEnabled() {
 		storage, err = workspace.NewGCSStorageClient(ctx)
@@ -136,7 +148,7 @@ func RunConsumer(ctx context.Context) error {
 	// Start consuming messages
 	handler := events.NewEventHandler()
 
-	consumer.Seek()
+	setOffsets(ctx, consumer, partitionWorkspaceMap)
 
 	for {
 		// Check for cancellation
@@ -154,7 +166,17 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		ws, err := handler.ListenAndRoute(ctx, msg)
+		messageOffset := int64(msg.TopicPartition.Offset)
+		lastCommittedOffset, err := getCommittedOffset(consumer, msg.TopicPartition.Partition)
+		lastWorkspaceOffset := getLastWorkspaceOffset(ctx, msg)
+
+		offsetTracker := eventHanlder.OffsetTracker{
+			LastCommittedOffset: lastCommittedOffset,
+			LastWorkspaceOffset: lastWorkspaceOffset,
+			MessageOffset:       messageOffset,
+		}
+
+		ws, err := handler.ListenAndRoute(ctx, msg, offsetTracker)
 		if err != nil {
 			log.Error("Failed to route message", "error", err)
 			continue

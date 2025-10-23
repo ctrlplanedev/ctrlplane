@@ -139,3 +139,26 @@ func getTopicPartitionCount(c *kafka.Consumer) (int32, error) {
 
 	return numPartitions, nil
 }
+
+// getCommittedOffset retrieves the last committed offset for a partition
+func getCommittedOffset(consumer *kafka.Consumer, partition int32) (int64, error) {
+	partitions := []kafka.TopicPartition{
+		{
+			Topic:     &Topic,
+			Partition: partition,
+			Offset:    kafka.OffsetStored, // This fetches the committed offset
+		},
+	}
+
+	committed, err := consumer.Committed(partitions, 5000)
+	if err != nil {
+		return int64(kafka.OffsetInvalid), err
+	}
+
+	if len(committed) == 0 || committed[0].Offset == kafka.OffsetInvalid {
+		// No committed offset yet, this is the beginning
+		return int64(kafka.OffsetBeginning), nil
+	}
+
+	return int64(committed[0].Offset), nil
+}

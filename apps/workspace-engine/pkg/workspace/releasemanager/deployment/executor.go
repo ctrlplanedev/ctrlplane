@@ -60,6 +60,11 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		attribute.String("job.id", newJob.Id),
 	)
 
+	if e.store.IsReplay() {
+		log.Info("Skipping job dispatch in replay mode", "job.id", newJob.Id)
+		return nil
+	}
+
 	// Step 4: Dispatch job to integration (ASYNC)
 	go func() {
 		if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {

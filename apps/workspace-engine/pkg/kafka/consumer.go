@@ -1,6 +1,10 @@
 package kafka
 
 import (
+	"context"
+	"math"
+	"workspace-engine/pkg/db"
+
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -26,4 +30,42 @@ func createConsumer() (*kafka.Consumer, error) {
 	}
 
 	return c, nil
+}
+
+func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
+	beginning := int64(kafka.OffsetBeginning)
+	if len(snapshots) == 0 {
+		return beginning
+	}
+
+	earliestOffset := int64(math.MaxInt64)
+	for _, snapshot := range snapshots {
+		if snapshot.Offset < earliestOffset {
+			earliestOffset = snapshot.Offset
+		}
+	}
+	if earliestOffset == math.MaxInt64 {
+		return beginning
+	}
+	return earliestOffset
+}
+
+func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspaceMap map[int32][]string) {
+	for partition, workspaceIDs := range partitionWorkspaceMap {
+		snapshots, err := db.GetLatestWorkspaceSnapshots(ctx, workspaceIDs)
+		if err != nil {
+			log.Error("Failed to get latest workspace snapshots", "error", err)
+			continue
+		}
+
+		earliestOffset := getEarliestOffset(snapshots)
+		if err := consumer.Seek(kafka.TopicPartition{
+			Topic:     &Topic,
+			Partition: partition,
+			Offset:    kafka.Offset(earliestOffset),
+		}, 0); err != nil {
+			log.Error("Failed to seek to earliest offset", "error", err)
+			continue
+		}
+	}
 }

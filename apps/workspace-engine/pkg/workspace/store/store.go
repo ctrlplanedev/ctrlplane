@@ -12,7 +12,8 @@ var _ gob.GobDecoder = (*Store)(nil)
 func New() *Store {
 	repo := repository.New()
 	store := &Store{
-		repo: repo,
+		repo:     repo,
+		isReplay: false,
 	}
 
 	store.Deployments = NewDeployments(store)
@@ -56,6 +57,16 @@ type Store struct {
 	Relationships       *RelationshipRules
 	Variables           *Variables
 	GithubEntities      *GithubEntities
+
+	isReplay bool
+}
+
+func (s *Store) IsReplay() bool {
+	return s.isReplay
+}
+
+func (s *Store) SetIsReplay(isReplay bool) {
+	s.isReplay = isReplay
 }
 
 func (s *Store) Repo() *repository.Repository {
