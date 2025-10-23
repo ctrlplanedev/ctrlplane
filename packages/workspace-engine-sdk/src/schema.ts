@@ -301,6 +301,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List jobs
+         * @description Returns a list of jobs.
+         */
+        get: operations["getJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/jobs/{jobId}": {
         parameters: {
             query?: never;
@@ -672,6 +692,13 @@ export interface components {
             id?: string;
             job: components["schemas"]["Job"];
         } & (unknown | unknown);
+        JobWithRelease: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            job: components["schemas"]["Job"];
+            release: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+        };
         JsonSelector: {
             json: {
                 [key: string]: unknown;
@@ -1517,6 +1544,60 @@ export interface operations {
         };
         requestBody?: never;
         responses: never;
+    };
+    getJobs: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["JobWithRelease"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
     getJob: {
         parameters: {

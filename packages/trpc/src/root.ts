@@ -1,5 +1,6 @@
 import { deploymentsRouter } from "./routes/deployments.js";
 import { environmentRouter } from "./routes/environments.js";
+import { jobsRouter } from "./routes/jobs.js";
 import { resourcesRouter } from "./routes/resources.js";
 import { systemsRouter } from "./routes/systems.js";
 import { userRouter } from "./routes/user.js";
@@ -15,4 +16,5 @@ export const appRouter = router({
   system: systemsRouter,
   environment: environmentRouter,
   validate: validateRouter,
+  jobs: jobsRouter,
 });

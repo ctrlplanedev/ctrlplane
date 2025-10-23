@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  Briefcase,
   ChevronRight,
   ChevronsUpDown,
   Cpu,
@@ -63,6 +64,7 @@ const navigationGroups = [
       { title: "Environments", to: "/environments", icon: TreePine },
       { title: "Runners", to: "/runners", icon: Cpu },
       { title: "Policies", to: "/policies", icon: ShieldCheck },
+      { title: "Jobs", to: "/jobs", icon: Briefcase },
     ],
   },
   {
