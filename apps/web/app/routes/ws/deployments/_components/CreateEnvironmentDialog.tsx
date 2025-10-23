@@ -83,7 +83,6 @@ export function CreateEnvironmentDialog({
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   const createEnvironmentMutation = trpc.environment.create.useMutation({
     onSuccess: (environment) => {
       toast.success("Environment created successfully");
@@ -91,7 +90,6 @@ export function CreateEnvironmentDialog({
       form.reset();
 
       // Invalidate environments list to refetch
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       void utils.environment.list.invalidate();
 
       onSuccess?.({
@@ -110,8 +108,11 @@ export function CreateEnvironmentDialog({
 
   const onSubmit = form.handleSubmit(async (data) => {
     const workspaceId = workspace.id;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    await createEnvironmentMutation.mutateAsync({ workspaceId, ...data });
+    await createEnvironmentMutation.mutateAsync({
+      workspaceId,
+      ...data,
+      resourceSelectorCel: data.celExpression,
+    });
   });
 
   const isSubmitting = createEnvironmentMutation.isPending;

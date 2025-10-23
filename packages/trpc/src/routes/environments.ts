@@ -9,12 +9,43 @@ import { protectedProcedure, router } from "../trpc.js";
 import { wsEngine } from "../ws-engine.js";
 
 export const environmentRouter = router({
+  get: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        environmentId: z.uuid(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .query(async ({ input }) => {
+      const { workspaceId, environmentId } = input;
+      const result = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+        {
+          params: { path: { workspaceId, environmentId } },
+        },
+      );
+
+      return result.data;
+    }),
+
   list: protectedProcedure
     .input(
       z.object({
         workspaceId: z.string().uuid(),
       }),
     )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.EnvironmentList)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
     .query(async ({ input }) => {
       const { workspaceId } = input;
       const result = await wsEngine.GET(
@@ -30,19 +61,13 @@ export const environmentRouter = router({
   create: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string().uuid(),
-        systemId: z.string().uuid(),
+        workspaceId: z.uuid(),
+        systemId: z.uuid(),
         name: z.string().min(1).max(255),
         description: z.string().max(500).optional(),
         resourceSelectorCel: z.string().min(1).max(255),
       }),
     )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.EnvironmentCreate)
-          .on({ type: "workspace", id: input.workspaceId }),
-    })
     .mutation(async ({ input }) => {
       const validate = await wsEngine.POST("/v1/validate/resource-selector", {
         body: {
@@ -58,7 +83,7 @@ export const environmentRouter = router({
           message:
             Array.isArray(validate.data?.errors) &&
             validate.data.errors.length > 0
-              ? (validate.data.errors as string[]).join(", ")
+              ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });
       }

@@ -25,6 +25,17 @@ export default [
       ]),
 
       route("environments", "routes/ws/environments.tsx"),
+      route("environments", "routes/ws/environments/_layout.tsx", [
+        route(
+          ":environmentId",
+          "routes/ws/environments/page.$environmentId.tsx",
+        ),
+        route(
+          ":environmentId/resources",
+          "routes/ws/environments/page.$environmentId.resources.tsx",
+        ),
+      ]),
+
       route("resources", "routes/ws/resources.tsx"),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
       route("systems", "routes/ws/systems.tsx"),

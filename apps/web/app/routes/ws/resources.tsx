@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Edit,
-  MoreVertical,
-  Search,
-  Server,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { Search } from "lucide-react";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
@@ -16,36 +9,11 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "~/components/ui/breadcrumb";
-import { Button } from "~/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-
-type Resource = {
-  id: string;
-  name: string;
-  type: string;
-  status: "active" | "inactive" | "pending";
-  region: string;
-  lastUpdated: string;
-  description: string;
-};
+import { ResourceRow } from "./resources/_components/ResourceRow";
 
 export default function Resources() {
   const { workspace } = useWorkspace();
@@ -68,19 +36,6 @@ export default function Resources() {
   const filteredResources = resources?.items.filter((resource) =>
     resource.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-
-  const getStatusColor = (status: Resource["status"]) => {
-    switch (status) {
-      case "active":
-        return "bg-green-500/10 text-green-500 hover:bg-green-500/20";
-      case "inactive":
-        return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20";
-      case "pending":
-        return "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20";
-      default:
-        return "";
-    }
-  };
 
   return (
     <>
@@ -118,92 +73,9 @@ export default function Resources() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-4">
-        <div className="flex-1 space-y-4">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 text-sm">
-                <TableHead className="text-muted-foreground">Name</TableHead>
-                <TableHead className="text-muted-foreground">Type</TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-muted-foreground">Region</TableHead>
-                <TableHead className="text-muted-foreground">
-                  Last Updated
-                </TableHead>
-                <TableHead className="text-right text-muted-foreground">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredResources?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Server className="h-12 w-12 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        No resources found
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredResources?.map((resource) => (
-                  <TableRow key={resource.id}>
-                    <TableCell className="font-medium">
-                      {resource.name}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div>{resource.kind}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {resource.version}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={getStatusColor("active")}
-                      >
-                        Active
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{resource.workspaceId}</TableCell>
-                    <TableCell>
-                      {new Date(resource.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Upload className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      {filteredResources?.map((resource) => (
+        <ResourceRow key={resource.identifier} resource={resource} />
+      ))}
     </>
   );
 }

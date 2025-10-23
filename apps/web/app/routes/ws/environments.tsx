@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AlertCircle, Filter, Search } from "lucide-react";
 
+import { trpc } from "~/api/trpc";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,8 +20,8 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { EnvironmentCard } from "./environments/_components/EnvironmentCard";
-import { mockEnvironments } from "./environments/_mockData";
 
 export function meta() {
   return [
@@ -34,29 +35,17 @@ export default function Environments() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [systemFilter, setSystemFilter] = useState<string>("all");
 
-  // Get unique systems for filter
-  const systems = Array.from(
-    new Set(mockEnvironments.map((env) => env.systemName)),
-  );
+  const { workspace } = useWorkspace();
 
-  // Filter environments based on search and filters
-  const filteredEnvironments = useMemo(() => {
-    return mockEnvironments.filter((env) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        env.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        env.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        env.systemName.toLowerCase().includes(searchQuery.toLowerCase());
+  const environmentsQuery = trpc.environment.list.useQuery({
+    workspaceId: workspace.id,
+  });
+  const environments = environmentsQuery.data?.items ?? [];
 
-      const matchesStatus =
-        statusFilter === "all" || env.status === statusFilter;
-
-      const matchesSystem =
-        systemFilter === "all" || env.systemName === systemFilter;
-
-      return matchesSearch && matchesStatus && matchesSystem;
-    });
-  }, [searchQuery, statusFilter, systemFilter]);
+  const systemsQuery = trpc.system.list.useQuery({
+    workspaceId: workspace.id,
+  });
+  const systems = systemsQuery.data?.items ?? [];
 
   return (
     <>
@@ -100,8 +89,8 @@ export default function Environments() {
                 <SelectContent>
                   <SelectItem value="all">All Systems</SelectItem>
                   {systems.map((system) => (
-                    <SelectItem key={system} value={system}>
-                      {system}
+                    <SelectItem key={system.id} value={system.id}>
+                      {system.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -123,15 +112,22 @@ export default function Environments() {
           </div>
         </div>
 
-        {/* Environment Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredEnvironments.map((environment) => (
-            <EnvironmentCard key={environment.id} environment={environment} />
+          {environments.map((environment) => (
+            <EnvironmentCard
+              key={environment.id}
+              environment={environment}
+              system={
+                systems.find(
+                  (system) => system.id === environment.systemId,
+                ) ?? { id: "", name: "" }
+              }
+            />
           ))}
         </div>
 
         {/* Empty State */}
-        {filteredEnvironments.length === 0 && (
+        {environments.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <AlertCircle className="mb-4 h-12 w-12 text-muted-foreground" />

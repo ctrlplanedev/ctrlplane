@@ -35,4 +35,28 @@ export const resourcesRouter = router({
 
       return result.data;
     }),
+
+  relations: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        resourceId: z.uuid(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { workspaceId, resourceId } = input;
+      const result = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships",
+        {
+          params: {
+            path: {
+              workspaceId,
+              relatableEntityType: "resource",
+              entityId: resourceId,
+            },
+          },
+        },
+      );
+      return result.data;
+    }),
 });
