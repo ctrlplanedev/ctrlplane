@@ -168,6 +168,10 @@ func RunConsumer(ctx context.Context) error {
 
 		messageOffset := int64(msg.TopicPartition.Offset)
 		lastCommittedOffset, err := getCommittedOffset(consumer, msg.TopicPartition.Partition)
+		if err != nil {
+			log.Error("Failed to get committed offset", "error", err)
+			continue
+		}
 		lastWorkspaceOffset := getLastWorkspaceOffset(ctx, msg)
 
 		offsetTracker := eventHanlder.OffsetTracker{
