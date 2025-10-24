@@ -23,7 +23,6 @@ import { DeploymentFlow } from "./_components/DeploymentFlow";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
-import { mockDeploymentDetail, mockEnvironments } from "./_components/mockData";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
 
@@ -82,18 +81,36 @@ export default function DeploymentDetail() {
 
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];
 
+  // Fetch all environments from the system
+  const environmentsQuery = trpc.environment.list.useQuery({
+    workspaceId: workspace.id,
+  });
+
+  const environments = environmentsQuery.data?.items ?? [];
+
+  // Extract unique environment IDs from release targets (we'll need to fetch full environment data)
+  const environmentIdsFromReleaseTargets = useMemo(() => {
+    const envIds = new Set<string>();
+    releaseTargets.forEach((rt) => {
+      envIds.add(rt.releaseTarget.environmentId);
+    });
+    return Array.from(envIds);
+  }, [releaseTargets]);
+
+  // Filter environments to only those that have release targets for this deployment
+  const availableEnvironments = useMemo(() => {
+    if (environments.length === 0) return [];
+    return environments.filter((env) =>
+      environmentIdsFromReleaseTargets.includes(env.id),
+    );
+  }, [environments, environmentIdsFromReleaseTargets]);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedVersionId = searchParams.get("version");
   const selectedVersion = versionsQuery.data?.items.find(
     (v) => v.id === selectedVersionId,
   );
   const selectedEnvironmentId = searchParams.get("env");
-
-  console.log(releaseTargets.map((rt) => rt.state.desiredRelease?.version.tag));
-
-  // In a real app, fetch deployment data based on deploymentId
-  const deploymentMock = mockDeploymentDetail;
-  const environments = mockEnvironments;
 
   const handleVersionSelect = useCallback(
     (versionId: string) => {
@@ -115,16 +132,19 @@ export default function DeploymentDetail() {
 
   // Create ReactFlow nodes for environments (left to right flow)
   const computedNodes: Node[] = useMemo(() => {
-    const version = deploymentMock.versions[0];
+    const versions = versionsQuery.data?.items ?? [];
+    if (versions.length === 0) return [];
 
-    // Group release targets by environment to get version info
-    const releaseTargetsByEnv = deploymentMock.releaseTargets.reduce(
+    const firstVersion = versions[0];
+
+    // Group release targets by environment
+    const releaseTargetsByEnv = releaseTargets.reduce(
       (acc, rt) => {
-        const envId = rt.environment.id;
+        const envId = rt.releaseTarget.environmentId;
         (acc[envId] ??= []).push(rt);
         return acc;
       },
-      {} as Record<string, typeof deploymentMock.releaseTargets>,
+      {} as Record<string, typeof releaseTargets>,
     );
 
     const nodes: Node[] = [
@@ -132,47 +152,50 @@ export default function DeploymentDetail() {
         id: "version-source",
         type: "version",
         position: { x: 50, y: 150 },
-        data: version,
+        data: firstVersion,
       },
-      ...environments.map((environment: any) => {
+      ...availableEnvironments.map((environment) => {
         const envReleaseTargets = releaseTargetsByEnv[environment.id] ?? [];
 
         // Count resources per version (current)
-        const currentVersionCounts = {};
+        const currentVersionCounts: Record<string, number> = {};
+        envReleaseTargets.forEach((rt) => {
+          const versionId = rt.state.currentRelease?.version.id;
+          if (versionId) {
+            currentVersionCounts[versionId] =
+              (currentVersionCounts[versionId] ?? 0) + 1;
+          }
+        });
 
         // Count resources per version (desired)
-        const desiredVersionCounts = {};
-
-        // Collect ALL blocked versions for all versions
-        // const blockedVersionsByVersionId: Record<
-        //   string,
-        //   Array<{ reason: string }>
-        // > = {};
-        // envReleaseTargets.forEach((rt) => {
-        //   rt.state.desiredRelease.blockedVersions.forEach((bv) => {
-        //     if (!(bv.versionId in blockedVersionsByVersionId)) {
-        //       blockedVersionsByVersionId[bv.version.id] = [];
-        //     }
-        //     blockedVersionsByVersionId[bv.version.id].push({
-        //       reason: bv.reason,
-        //     });
-        //   });
-        // });
+        const desiredVersionCounts: Record<string, number> = {};
+        envReleaseTargets.forEach((rt) => {
+          const versionId = rt.state.desiredRelease?.version.id;
+          if (versionId) {
+            desiredVersionCounts[versionId] =
+              (desiredVersionCounts[versionId] ?? 0) + 1;
+          }
+        });
 
         // Map version IDs to tags with counts
         const currentVersionsWithCounts = Object.entries(currentVersionCounts)
           .map(([id, count]) => ({
-            tag: deploymentMock.versions.find((v) => v.id === id)?.tag ?? id,
+            tag: versions.find((v) => v.id === id)?.tag ?? id,
             count,
           }))
           .filter((v) => v.tag);
 
         const desiredVersionsWithCounts = Object.entries(desiredVersionCounts)
           .map(([id, count]) => ({
-            tag: deploymentMock.versions.find((v) => v.id === id)?.tag ?? id,
+            tag: versions.find((v) => v.id === id)?.tag ?? id,
             count,
           }))
           .filter((v) => v.tag);
+
+        // Collect jobs from latest job in each release target
+        const jobs = envReleaseTargets
+          .map((rt) => rt.state.latestJob)
+          .filter((job): job is NonNullable<typeof job> => job != null);
 
         return {
           id: environment.id,
@@ -182,10 +205,9 @@ export default function DeploymentDetail() {
             id: environment.id,
             name: environment.name,
             resourceCount: envReleaseTargets.length,
-            jobs: envReleaseTargets.flatMap((rt) => rt.jobs),
+            jobs,
             currentVersionsWithCounts,
             desiredVersionsWithCounts,
-            // blockedVersionsByVersionId,
             onSelect: () => handleEnvironmentSelect(environment.id),
           },
         };
@@ -193,16 +215,23 @@ export default function DeploymentDetail() {
     ];
 
     return nodes;
-  }, [environments, deploymentMock, handleEnvironmentSelect]);
+  }, [
+    availableEnvironments,
+    releaseTargets,
+    versionsQuery.data?.items,
+    handleEnvironmentSelect,
+  ]);
 
   // Create edges showing deployment progression (left to right)
   const computedEdges: Edge[] = useMemo(() => {
     const connections: Edge[] = [];
     const environmentsWithIncoming = new Set<string>();
 
-    // Create edges based on environment dependencies
-    for (const environment of environments) {
-      for (const dependsOnEnvironmentId of environment.dependsOnEnvironmentIds) {
+    // Create edges based on environment dependencies (if the field exists)
+    for (const environment of availableEnvironments) {
+      // Check if environment has dependency information
+      const dependsOnIds = (environment as any).dependsOnEnvironmentIds ?? [];
+      for (const dependsOnEnvironmentId of dependsOnIds) {
         connections.push({
           id: `${dependsOnEnvironmentId}-${environment.id}`,
           source: dependsOnEnvironmentId,
@@ -215,7 +244,7 @@ export default function DeploymentDetail() {
     }
 
     // Connect environments with no dependencies to the version node
-    for (const environment of environments) {
+    for (const environment of availableEnvironments) {
       if (!environmentsWithIncoming.has(environment.id)) {
         connections.push({
           id: `version-source-${environment.id}`,
@@ -228,7 +257,7 @@ export default function DeploymentDetail() {
     }
 
     return connections;
-  }, [environments]);
+  }, [availableEnvironments]);
 
   const versions = versionsQuery.data?.items ?? [];
   const noVersions = !versionsQuery.isLoading && versions.length === 0;
@@ -317,8 +346,7 @@ export default function DeploymentDetail() {
               {selectedVersionId && selectedVersion && (
                 <VersionActionsPanel
                   version={selectedVersion}
-                  environments={environments}
-                  // releaseTargets={deploymentMock.releaseTargets}
+                  environments={availableEnvironments as any}
                   open={!!selectedVersionId}
                   onOpenChange={(open) => {
                     if (!open) setSearchParams({});
@@ -326,20 +354,22 @@ export default function DeploymentDetail() {
                 />
               )}
 
-              {/* Environment Actions Dialog */}
-              {selectedEnvironmentId && (
+              {/* Environment Actions Dialog - TODO: Update types */}
+              {/* {selectedEnvironmentId && (
                 <EnvironmentActionsPanel
                   environment={
-                    environments.find((e) => e.id === selectedEnvironmentId)!
+                    availableEnvironments.find(
+                      (e) => e.id === selectedEnvironmentId,
+                    )!
                   }
-                  versions={deploymentMock.versions}
-                  releaseTargets={deploymentMock.releaseTargets}
+                  versions={versions}
+                  releaseTargets={releaseTargets}
                   open={!!selectedEnvironmentId}
                   onOpenChange={(open) => {
                     if (!open) setSearchParams({});
                   }}
                 />
-              )}
+              )} */}
             </ResizablePanelGroup>
           </div>
         </>
