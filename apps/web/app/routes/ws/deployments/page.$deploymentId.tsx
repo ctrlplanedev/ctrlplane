@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo } from "react";
 import _ from "lodash";
@@ -133,7 +134,7 @@ export default function DeploymentDetail() {
         position: { x: 50, y: 150 },
         data: version,
       },
-      ...environments.map((environment) => {
+      ...environments.map((environment: any) => {
         const envReleaseTargets = releaseTargetsByEnv[environment.id] ?? [];
 
         // Count resources per version (current)

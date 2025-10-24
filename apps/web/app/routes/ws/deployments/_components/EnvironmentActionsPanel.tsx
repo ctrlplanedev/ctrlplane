@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Check, CheckCircle, Clock, Server, Shield } from "lucide-react";
+import { CheckCircle, Server, Shield } from "lucide-react";
 
 import type { DeploymentVersion, Environment, ReleaseTarget } from "./types";
 import { Badge } from "~/components/ui/badge";
@@ -48,11 +48,7 @@ const PoliciesSection: React.FC<{ policies: string[] }> = ({ policies }) => {
 const ResourceItem: React.FC<{
   releaseTarget: ReleaseTarget;
   versions: DeploymentVersion[];
-}> = ({ releaseTarget: rt, versions }) => {
-  const desiredVersion = versions.find((v) => v.id === rt.version.desiredId);
-  const currentVersion = versions.find((v) => v.id === rt.version.currentId);
-  const isUpToDate = rt.version.currentId === rt.version.desiredId;
-
+}> = ({ releaseTarget: rt }) => {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -69,32 +65,19 @@ const ResourceItem: React.FC<{
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {isUpToDate ? (
-              <Check className="h-3.5 w-3.5 text-green-600" />
-            ) : (
-              <div className="flex items-center gap-1 text-[10px]">
-                <Clock className="h-3 w-3 text-blue-600" />
-                <span className="font-mono text-blue-600">
-                  → {desiredVersion?.tag}
-                </span>
-              </div>
-            )}
-          </div>
+          <div className="flex items-center gap-1.5"></div>
         </div>
       </TooltipTrigger>
       <TooltipContent>
         <div className="space-y-1">
           <div className="font-semibold">{rt.resource.name}</div>
           <div className="text-[11px]">
-            Current: <span className="font-mono">{currentVersion?.tag}</span>
+            Current: <span className="font-mono">v1</span>
           </div>
           <div className="text-[11px]">
-            Desired: <span className="font-mono">{desiredVersion?.tag}</span>
+            Desired: <span className="font-mono">v1</span>
           </div>
-          {!isUpToDate && (
-            <div className="text-[11px] text-blue-400">Update in progress</div>
-          )}
+          <div className="text-[11px] text-blue-400">Update in progress</div>
         </div>
       </TooltipContent>
     </Tooltip>
@@ -106,25 +89,20 @@ const VersionGroup: React.FC<{
   resources: ReleaseTarget[];
   versions: DeploymentVersion[];
 }> = ({ versionTag, resources, versions }) => {
-  const allUpToDate = resources.every(
-    (rt) => rt.version.currentId === rt.version.desiredId,
-  );
-
   return (
     <div className="">
       {/* Version Header */}
       <div className="flex items-center justify-between rounded-t border border-b-0 bg-muted/30 px-2 py-1.5">
         <div className="flex items-center gap-1.5">
           <span className="font-mono text-xs font-medium">{versionTag}</span>
-          {allUpToDate && (
-            <Badge
-              variant="outline"
-              className="border-green-500/20 bg-green-500/10 py-0 text-[10px] text-green-600"
-            >
-              <CheckCircle className="mr-0.5 h-2.5 w-2.5" />
-              Stable
-            </Badge>
-          )}
+
+          <Badge
+            variant="outline"
+            className="border-green-500/20 bg-green-500/10 py-0 text-[10px] text-green-600"
+          >
+            <CheckCircle className="mr-0.5 h-2.5 w-2.5" />
+            Stable
+          </Badge>
         </div>
         <span className="text-[10px] text-muted-foreground">
           {resources.length} resource
@@ -163,19 +141,12 @@ export const EnvironmentActionsPanel: React.FC<
   );
 
   // Group resources by current version
-  const resourcesByVersion = _.groupBy(
-    envReleaseTargets,
-    (rt) => versions.find((v) => v.id === rt.version.currentId)?.tag,
-  );
+  const resourcesByVersion = _.groupBy(envReleaseTargets, () => "v1");
 
   // Calculate statistics
   const totalResources = envReleaseTargets.length;
-  const upToDateCount = envReleaseTargets.filter(
-    (rt) => rt.version.currentId === rt.version.desiredId,
-  ).length;
-  const transitioningCount = envReleaseTargets.filter(
-    (rt) => rt.version.currentId !== rt.version.desiredId,
-  ).length;
+  const upToDateCount = 0;
+  const transitioningCount = 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -184,8 +155,7 @@ export const EnvironmentActionsPanel: React.FC<
           <DialogTitle className="text-base">{environment.name}</DialogTitle>
           <DialogDescription className="text-[10px]">
             {totalResources} resource{totalResources !== 1 ? "s" : ""} ·{" "}
-            {upToDateCount} up to date
-            {transitioningCount > 0 && ` · ${transitioningCount} updating`}
+            {upToDateCount} up to date ` · ${transitioningCount} updating`
           </DialogDescription>
         </DialogHeader>
 

@@ -44,6 +44,7 @@ import {
 } from "./resources.js";
 
 const workspaceHandlers: Record<Event, Handler<any>> = {
+  [Event.WorkspaceSave]: () => Promise.resolve(),
   [Event.ResourceCreated]: newResource,
   [Event.ResourceUpdated]: updatedResource,
   [Event.ResourceDeleted]: deletedResource,
@@ -82,6 +83,7 @@ const workspaceHandlers: Record<Event, Handler<any>> = {
   [Event.GithubEntityCreated]: () => Promise.resolve(),
   [Event.GithubEntityUpdated]: () => Promise.resolve(),
   [Event.GithubEntityDeleted]: () => Promise.resolve(),
+  [Event.Redeploy]: () => Promise.resolve(),
 };
 
 export type Handler<T extends keyof EventPayload> = (
