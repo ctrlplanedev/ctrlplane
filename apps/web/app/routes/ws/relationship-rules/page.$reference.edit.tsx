@@ -1,5 +1,5 @@
 import { Separator } from "@radix-ui/react-separator";
-import { Link } from "react-router";
+import { Link, useParams } from "react-router";
 
 import {
   Breadcrumb,
@@ -10,20 +10,26 @@ import {
 } from "~/components/ui/breadcrumb";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { CreateRelationshipRule } from "./_components/CreateRelationshipRule";
+import { EditRelationshipRule } from "./_components/EditRelationshipRule";
 
 export function meta() {
   return [
-    { title: "Create Relationship Rule - Ctrlplane" },
+    { title: "Edit Relationship Rule - Ctrlplane" },
     {
       name: "description",
-      content: "Create a new relationship rule",
+      content: "Edit an existing relationship rule",
     },
   ];
 }
 
-export default function PageCreate() {
+export default function PageEdit() {
   const { workspace } = useWorkspace();
+  const { reference } = useParams();
+
+  if (!reference) {
+    return <div>Invalid reference</div>;
+  }
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
@@ -36,14 +42,13 @@ export default function PageCreate() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbItem>
-                  <Link to={`/${workspace.slug}/relationship-rules`}>
-                    Relationship Rules
-                  </Link>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-
-                <BreadcrumbPage>Create</BreadcrumbPage>
+                <Link to={`/${workspace.slug}/relationship-rules`}>
+                  Relationship Rules
+                </Link>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Edit {reference}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -51,7 +56,7 @@ export default function PageCreate() {
       </header>
 
       <div className="container mx-auto max-w-3xl p-8">
-        <CreateRelationshipRule />
+        <EditRelationshipRule reference={reference} />
       </div>
     </>
   );

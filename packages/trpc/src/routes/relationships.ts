@@ -7,7 +7,7 @@ import { protectedProcedure, router } from "../trpc.js";
 import { wsEngine } from "../ws-engine.js";
 
 export const relationshipsRouter = router({
-  get: protectedProcedure
+  list: protectedProcedure
     .input(
       z.object({
         workspaceId: z.uuid(),

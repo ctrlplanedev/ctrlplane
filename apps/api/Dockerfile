@@ -45,7 +45,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/api
+RUN turbo build --filter=...@ctrlplane/web-api
 
 FROM base AS runner
 WORKDIR /app

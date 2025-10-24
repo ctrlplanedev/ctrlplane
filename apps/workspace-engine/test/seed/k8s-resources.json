@@ -38,7 +38,7 @@
       "workspaceId": "will-be-replaced",
       "name": "Azure Production Subscription",
       "kind": "AzureSubscription",
-      "version": "ctrlplane.dev/cloud/subscription/v1",
+      "version": "ctrlplane.dev/cloud/account/v1",
       "identifier": "/subscriptions/abcd1234-5678-90ef-ghij-klmnopqrstuv",
       "createdAt": "2025-10-24T11:59:10Z",
       "config": {
@@ -69,7 +69,7 @@
       "workspaceId": "will-be-replaced",
       "name": "GCP Production Project",
       "kind": "GoogleCloudProject",
-      "version": "ctrlplane.dev/cloud/project/v1",
+      "version": "ctrlplane.dev/cloud/account/v1",
       "identifier": "projects/my-project-123456",
       "createdAt": "2025-10-24T11:59:20Z",
       "config": {

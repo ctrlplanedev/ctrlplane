@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, Search } from "lucide-react";
+import { useSearchParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
@@ -21,23 +22,15 @@ export default function Resources() {
   const { workspace } = useWorkspace();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const cel = `resource.name.startsWith("${searchQuery}") 
-    || resource.name.endsWith("${searchQuery}") 
-    || resource.name.contains("${searchQuery}")
-    || resource.identifier.startsWith("${searchQuery}")
-    || resource.identifier.endsWith("${searchQuery}")
-    || resource.identifier.contains("${searchQuery}")`;
+  const [searchParams] = useSearchParams();
+  const cel = searchParams.get("cel");
 
   const { data: resources } = trpc.resource.list.useQuery({
     workspaceId: workspace.id,
-    selector: { cel },
-    limit: 10,
+    selector: { cel: cel ?? "true" },
+    limit: 200,
     offset: 0,
   });
-
-  const filteredResources = resources?.items.filter((resource) =>
-    resource.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   return (
     <>
@@ -82,8 +75,13 @@ export default function Resources() {
         </div>
       </header>
 
-      {filteredResources?.map((resource) => (
-        <ResourceRow key={resource.identifier} resource={resource} />
+      {resources?.items.map((resource) => (
+        <ResourceRow
+          key={
+            resource.identifier + resource.name + resource.kind + resource.id
+          }
+          resource={resource}
+        />
       ))}
     </>
   );
