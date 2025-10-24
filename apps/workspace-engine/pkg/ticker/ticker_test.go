@@ -32,8 +32,9 @@ func (m *MockEventProducer) Close() {
 func TestEmitTicks_NoWorkspaces(t *testing.T) {
 	mockProducer := new(MockEventProducer)
 	ticker := &Ticker{
-		producer: mockProducer,
-		interval: time.Minute,
+		producer:  mockProducer,
+		interval:  time.Minute,
+		eventType: WorkspaceTickEventType,
 	}
 
 	// Ensure no workspaces are registered
@@ -49,8 +50,9 @@ func TestEmitTicks_NoWorkspaces(t *testing.T) {
 func TestEmitTicks_MultipleWorkspaces(t *testing.T) {
 	mockProducer := new(MockEventProducer)
 	ticker := &Ticker{
-		producer: mockProducer,
-		interval: time.Minute,
+		producer:  mockProducer,
+		interval:  time.Minute,
+		eventType: WorkspaceTickEventType,
 	}
 
 	// Register test workspaces
@@ -80,8 +82,9 @@ func TestEmitTicks_MultipleWorkspaces(t *testing.T) {
 func TestEmitTickForWorkspace(t *testing.T) {
 	mockProducer := new(MockEventProducer)
 	ticker := &Ticker{
-		producer: mockProducer,
-		interval: time.Minute,
+		producer:  mockProducer,
+		interval:  time.Minute,
+		eventType: WorkspaceTickEventType,
 	}
 
 	workspaceID := "test-workspace"
@@ -133,8 +136,9 @@ func TestGetTickInterval_Zero(t *testing.T) {
 func TestTickerRun_Cancellation(t *testing.T) {
 	mockProducer := new(MockEventProducer)
 	ticker := &Ticker{
-		producer: mockProducer,
-		interval: 10 * time.Millisecond, // Short interval for testing
+		producer:  mockProducer,
+		interval:  10 * time.Millisecond, // Short interval for testing
+		eventType: WorkspaceTickEventType,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
@@ -145,10 +146,18 @@ func main() {
 	defer producer.Close()
 
 	// Start periodic ticker for time-sensitive policy evaluation
-	workspaceTicker := ticker.New(producer)
+	workspaceTicker := ticker.NewDefault(producer)
 	go func() {
 		log.Info("Workspace ticker started")
 		if err := workspaceTicker.Run(ctx); err != nil {
+			log.Error("Ticker error", "error", err)
+		}
+	}()
+
+	workspaceSaveTicker := ticker.New(producer, 1*time.Hour, string(handler.WorkspaceSave))
+	go func() {
+		log.Info("Workspace save ticker started")
+		if err := workspaceSaveTicker.Run(ctx); err != nil {
 			log.Error("Ticker error", "error", err)
 		}
 	}()
