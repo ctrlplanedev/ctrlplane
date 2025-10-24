@@ -502,42 +502,6 @@ func (env *testEnvironment) cleanup() {
 	kafkapkg.GroupID = "workspace-engine"
 }
 
-// createConsumer creates and configures a Kafka consumer for testing
-func (env *testEnvironment) createConsumer(groupID string) *kafka.Consumer {
-	env.t.Helper()
-
-	consumer := createTestConsumer(env.t, env.topicName, groupID)
-	env.consumer = consumer
-
-	// Subscribe to topic
-	if err := consumer.SubscribeTopics([]string{env.topicName}, nil); err != nil {
-		env.t.Fatalf("Failed to subscribe to topic: %v", err)
-	}
-
-	// Poll until we get assignment
-	for i := 0; i < 50; i++ {
-		event := consumer.Poll(100)
-		if event == nil {
-			continue
-		}
-
-		if _, ok := event.(kafka.AssignedPartitions); ok {
-			break
-		}
-	}
-
-	// Seek to beginning to read all messages
-	if err := consumer.Seek(kafka.TopicPartition{
-		Topic:     &env.topicName,
-		Partition: 0,
-		Offset:    kafka.Offset(0),
-	}, 0); err != nil {
-		env.t.Fatalf("Failed to seek: %v", err)
-	}
-
-	return consumer
-}
-
 // generateAlphanumeric generates a random alphanumeric string of specified length
 func generateAlphanumeric(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
