@@ -76,6 +76,7 @@ const (
 	GithubEntityDelete EventType = "github-entity.deleted"
 
 	WorkspaceTick EventType = "workspace.tick"
+	WorkspaceSave EventType = "workspace.save"
 
 	ReleaseTargetDeploy EventType = "release-target.deploy"
 )
@@ -104,8 +105,14 @@ func NewEventListener(handlers HandlerRegistry) *EventListener {
 	return &EventListener{handlers: handlers}
 }
 
+type OffsetTracker struct {
+	LastCommittedOffset int64
+	LastWorkspaceOffset int64
+	MessageOffset       int64
+}
+
 // ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler
-func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message) (*workspace.Workspace, error) {
+func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message, offsetTracker OffsetTracker) (*workspace.Workspace, error) {
 	ctx, span := tracer.Start(ctx, "ListenAndRoute",
 		trace.WithAttributes(
 			attribute.String("kafka.topic", *msg.TopicPartition.Topic),
@@ -149,6 +156,13 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message)
 	ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
 	if ws == nil {
 		return nil, fmt.Errorf("workspace not found: %s", rawEvent.WorkspaceID)
+	}
+
+	isReplay := offsetTracker.MessageOffset <= offsetTracker.LastCommittedOffset
+	ws.Store().SetIsReplay(isReplay)
+
+	if offsetTracker.MessageOffset <= offsetTracker.LastWorkspaceOffset {
+		return ws, nil
 	}
 
 	ctx = changeset.WithChangeSet(ctx, changeSet)

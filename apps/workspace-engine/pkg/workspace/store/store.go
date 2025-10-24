@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"encoding/gob"
+	"sync/atomic"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -11,9 +12,8 @@ var _ gob.GobDecoder = (*Store)(nil)
 
 func New() *Store {
 	repo := repository.New()
-	store := &Store{
-		repo: repo,
-	}
+	store := &Store{repo: repo}
+	store.isReplay.Store(false)
 
 	store.Deployments = NewDeployments(store)
 	store.Environments = NewEnvironments(store)
@@ -56,6 +56,16 @@ type Store struct {
 	Relationships       *RelationshipRules
 	Variables           *Variables
 	GithubEntities      *GithubEntities
+
+	isReplay atomic.Bool
+}
+
+func (s *Store) IsReplay() bool {
+	return s.isReplay.Load()
+}
+
+func (s *Store) SetIsReplay(isReplay bool) {
+	s.isReplay.Store(isReplay)
 }
 
 func (s *Store) Repo() *repository.Repository {

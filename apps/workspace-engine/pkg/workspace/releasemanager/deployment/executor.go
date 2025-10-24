@@ -61,6 +61,11 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		attribute.String("job.status", string(newJob.Status)),
 	)
 
+	if e.store.IsReplay() {
+		log.Info("Skipping job dispatch in replay mode", "job.id", newJob.Id)
+		return nil
+	}
+
 	// Step 4: Dispatch job to integration (ASYNC)
 	// Skip dispatch if job already has InvalidJobAgent status
 	if newJob.Status != oapi.InvalidJobAgent {

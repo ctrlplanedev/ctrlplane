@@ -2,18 +2,22 @@ package kafka
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/events"
+	eventHanlder "workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 
 	"github.com/aws/smithy-go/ptr"
 	"github.com/charmbracelet/log"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 // Configuration variables loaded from environment
@@ -30,6 +34,26 @@ func getEnv(varName string, defaultValue string) string {
 		return defaultValue
 	}
 	return v
+}
+
+func getLastSnapshot(ctx context.Context, msg *kafka.Message) (*db.WorkspaceSnapshot, error) {
+	var rawEvent eventHanlder.RawEvent
+	if err := json.Unmarshal(msg.Value, &rawEvent); err != nil {
+		log.Error("Failed to unmarshal event", "error", err, "message", string(msg.Value))
+		return nil, fmt.Errorf("failed to unmarshal event: %w", err)
+	}
+
+	return db.GetWorkspaceSnapshot(ctx, rawEvent.WorkspaceID)
+}
+
+func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
+	beginning := int64(kafka.OffsetBeginning)
+
+	if snapshot == nil {
+		return beginning
+	}
+
+	return snapshot.Offset
 }
 
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
@@ -83,9 +107,15 @@ func RunConsumer(ctx context.Context) error {
 	}
 	log.Info("Partition assignment complete", "assigned", assignedPartitions)
 
-	allWorkspaceIDs, err := wskafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
+	partitionWorkspaceMap, err := wskafka.GetAssignedWorkspaceIDs(ctx, assignedPartitions, numPartitions)
 	if err != nil {
 		return fmt.Errorf("failed to get assigned workspace IDs: %w", err)
+	}
+
+	// Flatten the map to get all workspace IDs
+	var allWorkspaceIDs []string
+	for _, workspaceIDs := range partitionWorkspaceMap {
+		allWorkspaceIDs = append(allWorkspaceIDs, workspaceIDs...)
 	}
 
 	storage := workspace.NewFileStorage("./state")
@@ -118,6 +148,8 @@ func RunConsumer(ctx context.Context) error {
 	// Start consuming messages
 	handler := events.NewEventHandler()
 
+	setOffsets(ctx, consumer, partitionWorkspaceMap)
+
 	for {
 		// Check for cancellation
 		select {
@@ -134,7 +166,27 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		ws, err := handler.ListenAndRoute(ctx, msg)
+		lastSnapshot, err := getLastSnapshot(ctx, msg)
+		if err != nil {
+			log.Error("Failed to get last snapshot", "error", err)
+			continue
+		}
+
+		messageOffset := int64(msg.TopicPartition.Offset)
+		lastCommittedOffset, err := getCommittedOffset(consumer, msg.TopicPartition.Partition)
+		if err != nil {
+			log.Error("Failed to get committed offset", "error", err)
+			continue
+		}
+		lastWorkspaceOffset := getLastWorkspaceOffset(lastSnapshot)
+
+		offsetTracker := eventHanlder.OffsetTracker{
+			LastCommittedOffset: lastCommittedOffset,
+			LastWorkspaceOffset: lastWorkspaceOffset,
+			MessageOffset:       messageOffset,
+		}
+
+		ws, err := handler.ListenAndRoute(ctx, msg, offsetTracker)
 		if err != nil {
 			log.Error("Failed to route message", "error", err)
 		}
@@ -150,15 +202,19 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		snapshot := &db.WorkspaceSnapshot{
-			Path:          fmt.Sprintf("%s.gob", ws.ID),
-			Timestamp:     msg.Timestamp,
-			Partition:     int32(msg.TopicPartition.Partition),
-			NumPartitions: numPartitions,
-		}
+		if workspacesave.IsWorkspaceSaveEvent(msg) {
+			snapshot := &db.WorkspaceSnapshot{
+				WorkspaceID:   ws.ID,
+				Path:          fmt.Sprintf("%s.gob", ws.ID),
+				Timestamp:     msg.Timestamp,
+				Partition:     int32(msg.TopicPartition.Partition),
+				Offset:        int64(msg.TopicPartition.Offset),
+				NumPartitions: numPartitions,
+			}
 
-		if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
-			log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
+			if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
+				log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
+			}
 		}
 	}
 }

@@ -36,7 +36,7 @@ func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snap
 		return fmt.Errorf("failed to write workspace to disk: %w", err)
 	}
 
-	if err := db.WriteWorkspaceSnapshot(ctx, workspace.ID, snapshot); err != nil {
+	if err := db.WriteWorkspaceSnapshot(ctx, snapshot); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "Failed to write workspace snapshot")
 		return fmt.Errorf("failed to write workspace snapshot: %w", err)

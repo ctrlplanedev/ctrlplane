@@ -1,6 +1,9 @@
 package kafka
 
 import (
+	"context"
+	"workspace-engine/pkg/db"
+
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -26,4 +29,51 @@ func createConsumer() (*kafka.Consumer, error) {
 	}
 
 	return c, nil
+}
+
+func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
+	beginning := int64(kafka.OffsetBeginning)
+	if len(snapshots) == 0 {
+		return beginning
+	}
+
+	var earliestOffset int64
+	has := false
+	for _, snapshot := range snapshots {
+		if snapshot == nil {
+			continue
+		}
+		if !has || snapshot.Offset < earliestOffset {
+			earliestOffset = snapshot.Offset
+			has = true
+		}
+	}
+	if !has {
+		return beginning
+	}
+	return earliestOffset
+}
+
+func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspaceMap map[int32][]string) {
+	for partition, workspaceIDs := range partitionWorkspaceMap {
+		snapshots, err := db.GetLatestWorkspaceSnapshots(ctx, workspaceIDs)
+		if err != nil {
+			log.Error("Failed to get latest workspace snapshots", "error", err)
+			continue
+		}
+
+		earliestOffset := getEarliestOffset(snapshots)
+		effectiveOffset := earliestOffset
+		if effectiveOffset > 0 {
+			effectiveOffset = effectiveOffset + 1
+		}
+		if err := consumer.Seek(kafka.TopicPartition{
+			Topic:     &Topic,
+			Partition: partition,
+			Offset:    kafka.Offset(effectiveOffset),
+		}, 0); err != nil {
+			log.Error("Failed to seek to earliest offset", "error", err)
+			continue
+		}
+	}
 }
