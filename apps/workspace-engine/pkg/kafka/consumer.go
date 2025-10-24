@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"math"
 	"workspace-engine/pkg/db"
 
 	"github.com/charmbracelet/log"
@@ -38,13 +37,18 @@ func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
 		return beginning
 	}
 
-	earliestOffset := int64(math.MaxInt64)
+	var earliestOffset int64
+	has := false
 	for _, snapshot := range snapshots {
-		if snapshot.Offset < earliestOffset {
+		if snapshot == nil {
+			continue
+		}
+		if !has || snapshot.Offset < earliestOffset {
 			earliestOffset = snapshot.Offset
+			has = true
 		}
 	}
-	if earliestOffset == math.MaxInt64 {
+	if !has {
 		return beginning
 	}
 	return earliestOffset
