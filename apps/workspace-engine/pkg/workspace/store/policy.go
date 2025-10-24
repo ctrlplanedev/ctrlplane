@@ -38,6 +38,10 @@ func (p *Policies) Has(id string) bool {
 
 func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 	p.repo.Policies.Set(policy.Id, policy)
+	if policy.Metadata == nil {
+		policy.Metadata = make(map[string]string)
+	}
+
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, policy)
 	}

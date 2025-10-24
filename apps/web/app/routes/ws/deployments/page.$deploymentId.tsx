@@ -33,12 +33,34 @@ export function meta() {
   ];
 }
 
+const NoVersions = () => {
+  const { deployment } = useDeployment();
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="gap-4text-center flex flex-col items-center space-y-4 text-center">
+        <div className="rounded-full bg-muted p-4">
+          <PackagePlus className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-semibold">No versions yet</h3>
+          <p className="text-sm text-muted-foreground">
+            Create your first version to start deploying
+          </p>
+        </div>
+        <CreateVersionDialog deploymentId={deployment.id}>
+          <Button>
+            <PackagePlus className="mr-2 h-4 w-4" />
+            Create Version
+          </Button>
+        </CreateVersionDialog>
+      </div>
+    </div>
+  );
+};
+
 export default function DeploymentDetail() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const selectedVersionId = searchParams.get("version");
-  const selectedEnvironmentId = searchParams.get("env");
 
   const versionsQuery = trpc.deployment.versions.useQuery(
     {
@@ -50,41 +72,42 @@ export default function DeploymentDetail() {
     { refetchInterval: 5000 },
   );
 
-  const releaseTargets = trpc.deployment.releaseTargets.useQuery({
+  const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
     workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 1000,
     offset: 0,
   });
 
+  const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedVersionId = searchParams.get("version");
+  const selectedVersion = versionsQuery.data?.items.find(
+    (v) => v.id === selectedVersionId,
+  );
+  const selectedEnvironmentId = searchParams.get("env");
+
+  console.log(releaseTargets.map((rt) => rt.state.desiredRelease?.version.tag));
+
   // In a real app, fetch deployment data based on deploymentId
   const deploymentMock = mockDeploymentDetail;
   const environments = mockEnvironments;
 
-  // Handle version selection
   const handleVersionSelect = useCallback(
     (versionId: string) => {
-      if (selectedVersionId === versionId) {
-        // Deselect if clicking same version
-        setSearchParams({});
-      } else {
-        // Only show one panel at a time
-        setSearchParams({ version: versionId });
-      }
+      setSearchParams(
+        selectedVersionId === versionId ? {} : { version: versionId },
+      );
     },
     [selectedVersionId, setSearchParams],
   );
 
-  // Handle environment selection
   const handleEnvironmentSelect = useCallback(
     (environmentId: string) => {
-      if (selectedEnvironmentId === environmentId) {
-        // Deselect if clicking same environment
-        setSearchParams({});
-      } else {
-        // Only show one panel at a time
-        setSearchParams({ env: environmentId });
-      }
+      setSearchParams(
+        selectedEnvironmentId === environmentId ? {} : { env: environmentId },
+      );
     },
     [selectedEnvironmentId, setSearchParams],
   );
@@ -243,51 +266,28 @@ export default function DeploymentDetail() {
         </div>
       </header>
 
-      {noVersions && (
-        <div className="flex h-full items-center justify-center">
-          <div className="gap-4text-center flex flex-col items-center space-y-4 text-center">
-            <div className="rounded-full bg-muted p-4">
-              <PackagePlus className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-semibold">No versions yet</h3>
-              <p className="text-sm text-muted-foreground">
-                Create your first version to start deploying
-              </p>
-            </div>
-            <CreateVersionDialog deploymentId={deployment.id}>
-              <Button>
-                <PackagePlus className="mr-2 h-4 w-4" />
-                Create Version
-              </Button>
-            </CreateVersionDialog>
-          </div>
-        </div>
-      )}
+      {noVersions && <NoVersions />}
+
       {!noVersions && (
         <>
           <div className="w-fit min-w-full max-w-full shrink-0 overflow-clip border-b bg-accent/50">
             {versions.length > 0 && (
               <div className="flex min-h-[175px] min-w-full flex-grow gap-2 overflow-x-auto p-4">
                 {versions.map((version) => {
-                  const currentReleaseTargets =
-                    releaseTargets.data?.items.filter(
-                      (rt) =>
-                        rt.state.currentRelease?.version.id === version.id,
-                    );
-                  const desiredReleaseTargets =
-                    releaseTargets.data?.items.filter(
-                      (rt) =>
-                        rt.state.desiredRelease?.version.id === version.id,
-                    );
+                  const currentReleaseTargets = releaseTargets.filter(
+                    (rt) => rt.state.currentRelease?.version.id === version.id,
+                  );
+                  const desiredReleaseTargets = releaseTargets.filter(
+                    (rt) => rt.state.desiredRelease?.version.id === version.id,
+                  );
                   const isSelected = selectedVersionId === version.id;
 
                   return (
                     <VersionCard
                       key={version.id}
                       version={version}
-                      currentReleaseTargets={currentReleaseTargets ?? []}
-                      desiredReleaseTargets={desiredReleaseTargets ?? []}
+                      currentReleaseTargets={currentReleaseTargets}
+                      desiredReleaseTargets={desiredReleaseTargets}
                       isSelected={isSelected}
                       onSelect={() => handleVersionSelect(version.id)}
                     />
@@ -313,15 +313,11 @@ export default function DeploymentDetail() {
               </ResizablePanel>
 
               {/* Version Actions Dialog */}
-              {selectedVersionId && (
+              {selectedVersionId && selectedVersion && (
                 <VersionActionsPanel
-                  version={
-                    deploymentMock.versions.find(
-                      (v) => v.id === selectedVersionId,
-                    )!
-                  }
+                  version={selectedVersion}
                   environments={environments}
-                  releaseTargets={deploymentMock.releaseTargets}
+                  // releaseTargets={deploymentMock.releaseTargets}
                   open={!!selectedVersionId}
                   onOpenChange={(open) => {
                     if (!open) setSearchParams({});

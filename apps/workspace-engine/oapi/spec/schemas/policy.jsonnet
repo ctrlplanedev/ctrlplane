@@ -3,7 +3,7 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   Policy: {
     type: 'object',
-    required: ['id', 'name', 'createdAt', 'workspaceId', 'selectors', 'rules'],
+    required: ['id', 'name', 'createdAt', 'workspaceId', 'selectors', 'rules', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
@@ -17,6 +17,11 @@ local openapi = import '../lib/openapi.libsonnet';
       rules: {
         type: 'array',
         items: openapi.schemaRef('PolicyRule'),
+      },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+        description: 'Arbitrary metadata for the policy (record<string, string>)',
       },
     },
   },

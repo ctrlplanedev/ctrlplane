@@ -586,6 +586,13 @@
                "id": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "Arbitrary metadata for the policy (record<string, string>)",
+                  "type": "object"
+               },
                "name": {
                   "type": "string"
                },
@@ -611,7 +618,8 @@
                "createdAt",
                "workspaceId",
                "selectors",
-               "rules"
+               "rules",
+               "metadata"
             ],
             "type": "object"
          },

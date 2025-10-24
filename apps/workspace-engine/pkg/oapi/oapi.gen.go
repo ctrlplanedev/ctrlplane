@@ -293,9 +293,12 @@ type ObjectValue struct {
 
 // Policy defines model for Policy.
 type Policy struct {
-	CreatedAt   string                 `json:"createdAt"`
-	Description *string                `json:"description,omitempty"`
-	Id          string                 `json:"id"`
+	CreatedAt   string  `json:"createdAt"`
+	Description *string `json:"description,omitempty"`
+	Id          string  `json:"id"`
+
+	// Metadata Arbitrary metadata for the policy (record<string, string>)
+	Metadata    map[string]string      `json:"metadata"`
 	Name        string                 `json:"name"`
 	Rules       []PolicyRule           `json:"rules"`
 	Selectors   []PolicyTargetSelector `json:"selectors"`
