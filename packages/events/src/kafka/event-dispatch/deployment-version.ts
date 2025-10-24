@@ -6,7 +6,12 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { GoEventPayload, GoMessage } from "../events.js";
+import type {
+  EventPayload,
+  GoEventPayload,
+  GoMessage,
+  Message,
+} from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -24,17 +29,17 @@ const getWorkspaceId = async (tx: Tx, deploymentVersionId: string) =>
     .then(takeFirst)
     .then((row) => row.system.workspaceId);
 
-const convertVersionToNodeEvent = (
+const convertVersionToNodeEvent = <T extends keyof EventPayload>(
   deploymentVersion: schema.DeploymentVersion,
   workspaceId: string,
-  eventType: Event,
-) => ({
+  eventType: T,
+): Message<T> => ({
   workspaceId,
   eventType,
   eventId: deploymentVersion.id,
   timestamp: Date.now(),
   source: "api" as const,
-  payload: deploymentVersion,
+  payload: deploymentVersion as EventPayload[T],
 });
 
 const getOapiDeploymentVersion = (

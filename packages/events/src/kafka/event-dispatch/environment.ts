@@ -6,7 +6,12 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db as dbClient } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
-import type { GoEventPayload, GoMessage } from "../events.js";
+import type {
+  EventPayload,
+  GoEventPayload,
+  GoMessage,
+  Message,
+} from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -19,17 +24,17 @@ const getSystem = async (tx: Tx, systemId: string) =>
     .where(eq(schema.system.id, systemId))
     .then(takeFirst);
 
-const convertEnvironmentToNodeEvent = (
+const convertEnvironmentToNodeEvent = <T extends keyof EventPayload>(
   environment: schema.Environment,
   workspaceId: string,
-  eventType: Event,
-) => ({
+  eventType: T,
+): Message<T> => ({
   workspaceId,
   eventType,
   eventId: environment.id,
   timestamp: Date.now(),
   source: "api" as const,
-  payload: environment,
+  payload: environment as EventPayload[T],
 });
 
 const getOapiEnvironment = (
@@ -102,7 +107,7 @@ export const dispatchEnvironmentUpdated = createSpanWrapper(
     span.setAttribute("workspace.id", system.workspaceId);
 
     const eventType = Event.EnvironmentUpdated;
-    await sendNodeEvent({
+    await sendNodeEvent<typeof eventType>({
       workspaceId: system.workspaceId,
       eventType,
       eventId: current.id,

@@ -6,7 +6,12 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatusOapi } from "@ctrlplane/validators/jobs";
 
-import type { GoEventPayload, GoMessage } from "../events.js";
+import type {
+  EventPayload,
+  GoEventPayload,
+  GoMessage,
+  Message,
+} from "../events.js";
 import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent, sendNodeEvent } from "../client.js";
 import { Event } from "../events.js";
@@ -59,18 +64,18 @@ const getWorkspaceId = async (job: schema.Job) => {
   throw new Error("Job not found");
 };
 
-const convertJobToNodeEvent = (
+const convertJobToNodeEvent = <T extends keyof EventPayload>(
   previous: schema.Job,
   current: schema.Job,
   workspaceId: string,
-  eventType: Event,
-) => ({
+  eventType: T,
+): Message<T> => ({
   workspaceId,
   eventType,
   eventId: current.id,
   timestamp: Date.now(),
   source: "api" as const,
-  payload: { previous, current },
+  payload: { previous, current } as EventPayload[T],
 });
 
 export const getOapiJob = async (

@@ -44,16 +44,16 @@ const getOapiResource = (
   config: resource.config,
 });
 
-const convertFullResourceToNodeEvent = (
+const convertFullResourceToNodeEvent = <T extends keyof import("../events.js").EventPayload>(
   fullResource: FullResource,
-  eventType: Event,
-) => ({
+  eventType: T,
+): Message<T> => ({
   workspaceId: fullResource.workspaceId,
   eventType,
   eventId: fullResource.id,
   timestamp: Date.now(),
   source: "api" as const,
-  payload: fullResource,
+  payload: fullResource as import("../events.js").EventPayload[T],
 });
 
 const convertFullResourceToGoEvent = (
