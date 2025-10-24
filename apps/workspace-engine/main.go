@@ -11,6 +11,7 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/kafka"
+	"workspace-engine/pkg/kafka/producer"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
 
@@ -139,7 +140,7 @@ func main() {
 	defer cancel()
 
 	// Initialize Kafka producer for ticker
-	producer, err := kafka.NewProducer()
+	producer, err := producer.NewProducer()
 	if err != nil {
 		log.Fatal("Failed to create Kafka producer", "error", err)
 	}

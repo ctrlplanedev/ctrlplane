@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"workspace-engine/pkg/kafka"
+	"workspace-engine/pkg/kafka/producer"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
@@ -27,13 +27,13 @@ var tracer = otel.Tracer("ticker")
 
 // Ticker periodically emits tick events for active workspaces
 type Ticker struct {
-	producer  kafka.EventProducer
+	producer  producer.EventProducer
 	interval  time.Duration
 	eventType string
 }
 
 // NewDefault creates a new ticker with the configured interval
-func NewDefault(producer kafka.EventProducer) *Ticker {
+func NewDefault(producer producer.EventProducer) *Ticker {
 	interval := getTickInterval()
 	log.Info("Ticker initialized", "interval", interval)
 
@@ -45,7 +45,7 @@ func NewDefault(producer kafka.EventProducer) *Ticker {
 }
 
 // New creates a new ticker with the configured interval and event type
-func New(producer kafka.EventProducer, interval time.Duration, eventType string) *Ticker {
+func New(producer producer.EventProducer, interval time.Duration, eventType string) *Ticker {
 	return &Ticker{
 		producer:  producer,
 		interval:  interval,

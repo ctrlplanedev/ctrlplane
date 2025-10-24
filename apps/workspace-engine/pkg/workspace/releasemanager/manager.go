@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
+	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/targets"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
@@ -268,4 +269,8 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 	}
 
 	return rts, nil
+}
+
+func (m *Manager) JobDispatcher() *jobs.Dispatcher {
+	return m.executor.JobDispatcher()
 }
