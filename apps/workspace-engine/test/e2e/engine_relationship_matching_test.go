@@ -1137,3 +1137,481 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 		t.Fatalf("expected empty results, got %d relationships", len(relatedEntities))
 	}
 }
+
+// TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison tests basic CEL expression matching
+func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("vpc-to-cluster-cel"),
+			integration.RelationshipRuleReference("contains"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "vpc",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "kubernetes-cluster",
+			}),
+			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+		),
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("vpc-us-west-2"),
+			integration.ResourceName("vpc-us-west-2"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-1"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-2"),
+			integration.ResourceName("cluster-east-2"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-west-1"),
+			integration.ResourceName("cluster-west-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+			}),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Test from VPC in us-east-1 to clusters
+	vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+	if !ok {
+		t.Fatalf("vpc-us-east-1 not found")
+	}
+
+	entity := relationships.NewResourceEntity(vpcEast)
+	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+	if err != nil {
+		t.Fatalf("GetRelatedEntities failed: %v", err)
+	}
+
+	// Should have 2 clusters in us-east-1
+	clusters, ok := relatedEntities["contains"]
+	if !ok {
+		t.Fatalf("'contains' relationship not found")
+	}
+
+	if len(clusters) != 2 {
+		t.Fatalf("expected 2 related clusters, got %d", len(clusters))
+	}
+
+	// Verify the correct clusters are returned
+	clusterIDs := make(map[string]bool)
+	for _, cluster := range clusters {
+		clusterIDs[cluster.EntityId] = true
+	}
+
+	if !clusterIDs["cluster-east-1"] {
+		t.Errorf("cluster-east-1 not in related entities")
+	}
+	if !clusterIDs["cluster-east-2"] {
+		t.Errorf("cluster-east-2 not in related entities")
+	}
+	if clusterIDs["cluster-west-1"] {
+		t.Errorf("cluster-west-1 should not be in related entities")
+	}
+}
+
+// TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression tests CEL with complex logic
+func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("service-to-dependency-cel"),
+			integration.RelationshipRuleReference("depends-on"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "service",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "database",
+			}),
+			// CEL expression with multiple conditions and string operations
+			integration.WithCelMatcher(`
+				from.metadata.region == to.metadata.region &&
+				to.metadata.tier == "critical" &&
+				from.config.database_name.startsWith(to.name)
+			`),
+		),
+		integration.WithResource(
+			integration.ResourceID("service-api"),
+			integration.ResourceName("api-service"),
+			integration.ResourceKind("service"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+			integration.ResourceConfig(map[string]interface{}{
+				"database_name": "postgres-prod-db",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("db-postgres"),
+			integration.ResourceName("postgres-prod"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+				"tier":   "critical",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("db-mysql"),
+			integration.ResourceName("mysql-prod"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+				"tier":   "standard",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("db-postgres-west"),
+			integration.ResourceName("postgres-west"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+				"tier":   "critical",
+			}),
+		),
+	)
+
+	ctx := context.Background()
+
+	apiService, ok := engine.Workspace().Resources().Get("service-api")
+	if !ok {
+		t.Fatalf("service-api not found")
+	}
+
+	entity := relationships.NewResourceEntity(apiService)
+	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+	if err != nil {
+		t.Fatalf("GetRelatedEntities failed: %v", err)
+	}
+
+	dependencies, ok := relatedEntities["depends-on"]
+	if !ok {
+		t.Fatalf("'depends-on' relationship not found")
+	}
+
+	// Should only find db-postgres (same region, tier=critical, name starts with "postgres-prod")
+	if len(dependencies) != 1 {
+		t.Fatalf("expected 1 dependency, got %d", len(dependencies))
+	}
+
+	if dependencies[0].EntityId != "db-postgres" {
+		t.Errorf("expected db-postgres, got %s", dependencies[0].EntityId)
+	}
+}
+
+// TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType tests CEL matching deployment to resource
+func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID("deployment-api"),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgentConfig(map[string]any{
+					"region":     "us-east-1",
+					"cluster_id": "cluster-123",
+				}),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID("deployment-worker"),
+				integration.DeploymentName("worker"),
+				integration.DeploymentJobAgentConfig(map[string]any{
+					"region":     "us-west-2",
+					"cluster_id": "cluster-456",
+				}),
+			),
+		),
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("deployment-to-cluster-cel"),
+			integration.RelationshipRuleReference("runs-on"),
+			integration.RelationshipRuleFromType("deployment"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "kubernetes-cluster",
+			}),
+			// CEL expression accessing deployment properties
+			integration.WithCelMatcher(`
+				from.jobAgentConfig.region == to.metadata.region &&
+				from.jobAgentConfig.cluster_id == to.id
+			`),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-123"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-456"),
+			integration.ResourceName("cluster-west-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+			}),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Test from deployment to resources
+	deployment, ok := engine.Workspace().Deployments().Get("deployment-api")
+	if !ok {
+		t.Fatalf("deployment-api not found")
+	}
+
+	entity := relationships.NewDeploymentEntity(deployment)
+	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+	if err != nil {
+		t.Fatalf("GetRelatedEntities failed: %v", err)
+	}
+
+	clusters, ok := relatedEntities["runs-on"]
+	if !ok {
+		t.Fatalf("'runs-on' relationship not found")
+	}
+
+	if len(clusters) != 1 {
+		t.Fatalf("expected 1 related cluster, got %d", len(clusters))
+	}
+
+	if clusters[0].EntityId != "cluster-123" {
+		t.Errorf("expected cluster-123, got %s", clusters[0].EntityId)
+	}
+}
+
+// TestEngine_GetRelatedEntities_CelMatcher_ListOperations tests CEL with list operations
+func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("service-to-allowed-regions"),
+			integration.RelationshipRuleReference("allowed-in"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "service",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "region",
+			}),
+			// CEL expression checking if to.name is in from's allowed_regions list
+			integration.WithCelMatcher(`
+				to.name in from.config.allowed_regions
+			`),
+		),
+		integration.WithResource(
+			integration.ResourceID("service-global"),
+			integration.ResourceName("global-service"),
+			integration.ResourceKind("service"),
+			integration.ResourceConfig(map[string]interface{}{
+				"allowed_regions": []string{"us-east-1", "eu-west-1", "ap-south-1"},
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("region-us-east-1"),
+			integration.ResourceName("us-east-1"),
+			integration.ResourceKind("region"),
+		),
+		integration.WithResource(
+			integration.ResourceID("region-eu-west-1"),
+			integration.ResourceName("eu-west-1"),
+			integration.ResourceKind("region"),
+		),
+		integration.WithResource(
+			integration.ResourceID("region-us-west-2"),
+			integration.ResourceName("us-west-2"),
+			integration.ResourceKind("region"),
+		),
+	)
+
+	ctx := context.Background()
+
+	service, ok := engine.Workspace().Resources().Get("service-global")
+	if !ok {
+		t.Fatalf("service-global not found")
+	}
+
+	entity := relationships.NewResourceEntity(service)
+	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+	if err != nil {
+		t.Fatalf("GetRelatedEntities failed: %v", err)
+	}
+
+	regions, ok := relatedEntities["allowed-in"]
+	if !ok {
+		t.Fatalf("'allowed-in' relationship not found")
+	}
+
+	// Should find us-east-1 and eu-west-1 (not us-west-2)
+	if len(regions) != 2 {
+		t.Fatalf("expected 2 related regions, got %d", len(regions))
+	}
+
+	regionIDs := make(map[string]bool)
+	for _, region := range regions {
+		regionIDs[region.EntityId] = true
+	}
+
+	if !regionIDs["region-us-east-1"] {
+		t.Errorf("region-us-east-1 not in related entities")
+	}
+	if !regionIDs["region-eu-west-1"] {
+		t.Errorf("region-eu-west-1 not in related entities")
+	}
+	if regionIDs["region-us-west-2"] {
+		t.Errorf("region-us-west-2 should not be in related entities")
+	}
+}
+
+// TestEngine_GetRelatedEntities_CelMatcher_NumericComparison tests CEL with numeric operations
+func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("service-to-sufficient-database"),
+			integration.RelationshipRuleReference("can-use"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "service",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "database",
+			}),
+			// CEL expression with numeric comparison
+			integration.WithCelMatcher(`
+				int(to.metadata.max_connections) >= int(from.metadata.required_connections) &&
+				from.metadata.region == to.metadata.region
+			`),
+		),
+		integration.WithResource(
+			integration.ResourceID("service-heavy"),
+			integration.ResourceName("heavy-service"),
+			integration.ResourceKind("service"),
+			integration.ResourceMetadata(map[string]string{
+				"required_connections": "500",
+				"region":               "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("db-small"),
+			integration.ResourceName("small-db"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"max_connections": "100",
+				"region":          "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("db-medium"),
+			integration.ResourceName("medium-db"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"max_connections": "500",
+				"region":          "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("db-large"),
+			integration.ResourceName("large-db"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"max_connections": "1000",
+				"region":          "us-east-1",
+			}),
+		),
+	)
+
+	ctx := context.Background()
+
+	service, ok := engine.Workspace().Resources().Get("service-heavy")
+	if !ok {
+		t.Fatalf("service-heavy not found")
+	}
+
+	entity := relationships.NewResourceEntity(service)
+	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+	if err != nil {
+		t.Fatalf("GetRelatedEntities failed: %v", err)
+	}
+
+	databases, ok := relatedEntities["can-use"]
+	if !ok {
+		t.Fatalf("'can-use' relationship not found")
+	}
+
+	// Should find medium and large databases (>= 500 connections)
+	if len(databases) != 2 {
+		t.Fatalf("expected 2 related databases, got %d", len(databases))
+	}
+
+	dbIDs := make(map[string]bool)
+	for _, db := range databases {
+		dbIDs[db.EntityId] = true
+	}
+
+	if dbIDs["db-small"] {
+		t.Errorf("db-small should not be in related entities")
+	}
+	if !dbIDs["db-medium"] {
+		t.Errorf("db-medium not in related entities")
+	}
+	if !dbIDs["db-large"] {
+		t.Errorf("db-large not in related entities")
+	}
+}

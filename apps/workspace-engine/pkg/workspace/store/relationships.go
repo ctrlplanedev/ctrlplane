@@ -168,29 +168,14 @@ func (r *RelationshipRules) findMatchingEntities(
 				}
 			}
 
-			pm, err := rule.Matcher.AsPropertiesMatcher()
-			if err != nil {
-				return nil, err
+			var matches bool
+			if evaluateFromTo {
+				matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, deploymentEntity)
+			} else {
+				matches = relationships.Matches(ctx, &rule.Matcher, deploymentEntity, sourceEntity)
 			}
-			// Apply property matchers if any
-			if len(pm.Properties) > 0 {
-				allMatch := true
-				for _, pm := range pm.Properties {
-					matcher := relationships.NewPropertyMatcher(&pm)
-					var matches bool
-					if evaluateFromTo {
-						matches = matcher.Evaluate(ctx, sourceEntity, deploymentEntity)
-					} else {
-						matches = matcher.Evaluate(ctx, deploymentEntity, sourceEntity)
-					}
-					if !matches {
-						allMatch = false
-						break
-					}
-				}
-				if !allMatch {
-					continue
-				}
+			if !matches {
+				continue
 			}
 
 			result = append(result, deploymentEntity)
@@ -208,29 +193,14 @@ func (r *RelationshipRules) findMatchingEntities(
 				}
 			}
 
-			pm, err := rule.Matcher.AsPropertiesMatcher()
-			if err != nil {
-				return nil, err
+			var matches bool
+			if evaluateFromTo {
+				matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, environmentEntity)
+			} else {
+				matches = relationships.Matches(ctx, &rule.Matcher, environmentEntity, sourceEntity)
 			}
-			// Apply property matchers if any
-			if len(pm.Properties) > 0 {
-				allMatch := true
-				for _, pm := range pm.Properties {
-					matcher := relationships.NewPropertyMatcher(&pm)
-					var matches bool
-					if evaluateFromTo {
-						matches = matcher.Evaluate(ctx, sourceEntity, environmentEntity)
-					} else {
-						matches = matcher.Evaluate(ctx, environmentEntity, sourceEntity)
-					}
-					if !matches {
-						allMatch = false
-						break
-					}
-				}
-				if !allMatch {
-					continue
-				}
+			if !matches {
+				continue
 			}
 
 			result = append(result, environmentEntity)
@@ -248,29 +218,15 @@ func (r *RelationshipRules) findMatchingEntities(
 				}
 			}
 
-			pm, err := rule.Matcher.AsPropertiesMatcher()
-			if err != nil {
-				return nil, err
-			}
 			// Apply property matchers if any
-			if len(pm.Properties) > 0 {
-				allMatch := true
-				for _, pm := range pm.Properties {
-					matcher := relationships.NewPropertyMatcher(&pm)
-					var matches bool
-					if evaluateFromTo {
-						matches = matcher.Evaluate(ctx, sourceEntity, resourceEntity)
-					} else {
-						matches = matcher.Evaluate(ctx, resourceEntity, sourceEntity)
-					}
-					if !matches {
-						allMatch = false
-						break
-					}
-				}
-				if !allMatch {
-					continue
-				}
+			var matches bool
+			if evaluateFromTo {
+				matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, resourceEntity)
+			} else {
+				matches = relationships.Matches(ctx, &rule.Matcher, resourceEntity, sourceEntity)
+			}
+			if !matches {
+				continue
 			}
 
 			result = append(result, relationships.NewResourceEntity(resource))
