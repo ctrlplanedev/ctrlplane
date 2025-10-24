@@ -8,6 +8,7 @@ type Deployment = {
   description?: string;
   jobAgentId?: string;
   systemId: string;
+  resourceSelector?: { cel?: string; json?: Record<string, unknown> };
 };
 
 type DeploymentContextType = {

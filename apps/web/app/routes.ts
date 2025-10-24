@@ -9,6 +9,10 @@ export default [
       route("deployments", "routes/ws/deployments/_layout.tsx", [
         route(":deploymentId", "routes/ws/deployments/page.$deploymentId.tsx"),
         route(
+          ":deploymentId/resources",
+          "routes/ws/deployments/page.$deploymentId.resources.tsx",
+        ),
+        route(
           ":deploymentId/versions",
           "routes/ws/deployments/page.$deploymentId.versions.tsx",
         ),
