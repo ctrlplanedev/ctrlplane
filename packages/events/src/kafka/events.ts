@@ -2,6 +2,8 @@ import type * as schema from "@ctrlplane/db/schema";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 export enum Event {
+  WorkspaceSave = "workspace.save",
+
   SystemCreated = "system.created",
   SystemUpdated = "system.updated",
   SystemDeleted = "system.deleted",
@@ -159,6 +161,7 @@ export type EventPayload = {
 };
 
 export type GoEventPayload = {
+  [Event.WorkspaceSave]: object;
   [Event.SystemCreated]: WorkspaceEngine["schemas"]["System"];
   [Event.SystemUpdated]: WorkspaceEngine["schemas"]["System"];
   [Event.SystemDeleted]: WorkspaceEngine["schemas"]["System"];

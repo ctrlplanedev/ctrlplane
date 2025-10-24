@@ -30,12 +30,20 @@ export default function GeneralSettingsPage() {
     slug?: string;
   }>({});
 
-  const utils = trpc.useUtils();
+  const saveWorkspace = trpc.workspace.save.useMutation({
+    onSuccess: () => {
+      toast.success("Workspace saved sucessfully");
+    },
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : "Failed to update workspace";
+      toast.error(message);
+    },
+  });
+
   const updateWorkspace = trpc.workspace.update.useMutation({
     onSuccess: () => {
       toast.success("Workspace updated successfully");
-      // Invalidate the user session to refetch the updated workspace info
-      void utils.user.session.invalidate();
     },
     onError: (error: unknown) => {
       const message =
@@ -165,6 +173,22 @@ export default function GeneralSettingsPage() {
               </div>
             </FieldGroup>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Workspace Information</CardTitle>
+          <CardDescription>
+            Update your workspace name and URL slug
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={() => saveWorkspace.mutate({ workspaceId: workspace.id })}
+          >
+            Force Save Workspace
+          </Button>
         </CardContent>
       </Card>
     </div>

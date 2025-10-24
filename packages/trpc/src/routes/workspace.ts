@@ -3,11 +3,24 @@ import { z } from "zod";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
 
 export const workspaceRouter = router({
+  save: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid() }))
+    .mutation(async ({ input }) => {
+      await sendGoEvent({
+        workspaceId: input.workspaceId,
+        eventType: Event.WorkspaceSave,
+        timestamp: Date.now(),
+        data: {},
+      });
+      return true;
+    }),
+
   get: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
