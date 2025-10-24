@@ -39,6 +39,7 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/node": "catalog:node22",
+    "@types/uuid": "^10.0.0",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
