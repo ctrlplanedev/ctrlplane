@@ -135,6 +135,7 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   if (jobId != null) {
     const workspaceIds = await getAllWorkspaceIds();
     const jobUpdateEvent: WorkspaceEngine["schemas"]["JobUpdateEvent"] = {
+      id: jobId,
       job: {
         id: jobId,
         externalId,
