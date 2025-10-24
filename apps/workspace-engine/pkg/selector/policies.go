@@ -33,20 +33,23 @@ func (b *BasicReleaseTarget) Resource() *oapi.Resource {
 
 func MatchPolicy(ctx context.Context, policy *oapi.Policy, releaseTarget *BasicReleaseTarget) bool {
 	for _, policyTarget := range policy.Selectors {
-		if policyTarget.EnvironmentSelector != nil {
-			if ok, _ := Match(ctx, policyTarget.EnvironmentSelector, releaseTarget.Environment()); !ok {
-				continue
-			}
+		if policyTarget.EnvironmentSelector == nil {
+			continue
 		}
-		if policyTarget.DeploymentSelector != nil {
-			if ok, _ := Match(ctx, policyTarget.DeploymentSelector, releaseTarget.Deployment()); !ok {
-				continue
-			}
+		if ok, _ := Match(ctx, policyTarget.EnvironmentSelector, releaseTarget.Environment()); !ok {
+			continue
 		}
-		if policyTarget.ResourceSelector != nil {
-			if ok, _ := Match(ctx, policyTarget.ResourceSelector, releaseTarget.Resource()); !ok {
-				continue
-			}
+		if policyTarget.DeploymentSelector == nil {
+			continue
+		}
+		if ok, _ := Match(ctx, policyTarget.DeploymentSelector, releaseTarget.Deployment()); !ok {
+			continue
+		}
+		if policyTarget.ResourceSelector == nil {
+			continue
+		}
+		if ok, _ := Match(ctx, policyTarget.ResourceSelector, releaseTarget.Resource()); !ok {
+			continue
 		}
 		return true
 	}

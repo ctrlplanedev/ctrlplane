@@ -194,7 +194,7 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 	}
 
 	release, ok := r.store.Releases.Get(mostRecentJob.ReleaseId)
-	if !ok {
+	if !ok || release == nil {
 		return nil, nil, fmt.Errorf("release %s not found", mostRecentJob.ReleaseId)
 	}
 	return release, mostRecentJob, nil

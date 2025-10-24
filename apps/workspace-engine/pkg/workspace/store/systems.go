@@ -99,7 +99,7 @@ func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
 
 func (s *Systems) Remove(ctx context.Context, id string) {
 	system, ok := s.repo.Systems.Get(id)
-	if !ok {
+	if !ok || system == nil {
 		return
 	}
 

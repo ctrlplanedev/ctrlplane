@@ -44,7 +44,11 @@ func TestEngine_PolicyVersionStatusReady(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -158,7 +162,11 @@ func TestEngine_PolicyVersionStatusReady_StatusUpdate(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -250,7 +258,11 @@ func TestEngine_PolicyVersionStatusReady_MultipleDeployments(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 

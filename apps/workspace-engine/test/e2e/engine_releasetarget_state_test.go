@@ -27,6 +27,7 @@ func TestEngine_ReleaseTargetState_NoCurrentNoDesired(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -94,6 +95,7 @@ func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -172,6 +174,7 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -277,6 +280,7 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -383,7 +387,8 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
-				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentJobAgent(jobAgentID),	
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -540,6 +545,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -658,6 +664,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),

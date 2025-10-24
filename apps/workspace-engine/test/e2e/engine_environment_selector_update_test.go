@@ -28,49 +28,43 @@ import (
 // 5. BUG: Jobs with InvalidJobAgent status are being marked as Cancelled
 // 6. EXPECTED: Jobs already in exited states should remain in their original state
 func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "test-system"
+	deploymentId := "deployment-no-agent"
+	environmentId := "environment-1"
+	resourceId1 := "resource-1"
+	resourceId2 := "resource-2"
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("deployment-no-agent"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("development"),
+				integration.EnvironmentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "dev",
+					"key":      "env",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId1),
+			integration.ResourceName("resource-1"),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId2),
+			integration.ResourceName("resource-2"),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+	)
 	ctx := context.Background()
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment WITHOUT a job agent (will create InvalidJobAgent jobs)
-	deployment := c.NewDeployment(sys.Id)
-	deployment.Name = "deployment-no-agent"
-	deployment.JobAgentId = nil // No job agent configured
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	// Create an environment with selector matching resources with env=dev
-	env := c.NewEnvironment(sys.Id)
-	env.Name = "development"
-	envSelector := &oapi.Selector{}
-	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	}})
-	env.ResourceSelector = envSelector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create resources - r1 and r2 match the environment selector, r3 does not
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "resource-1"
-	r1.Metadata = map[string]string{"env": "dev"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "resource-2"
-	r2.Metadata = map[string]string{"env": "dev"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
-
-	r3 := c.NewResource(workspaceID)
-	r3.Name = "resource-3"
-	r3.Metadata = map[string]string{"env": "prod"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r3)
 
 	// Verify release targets were created (2 resources matching the selector)
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
@@ -83,7 +77,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 
 	// Create a deployment version - this will create jobs with InvalidJobAgent status
 	version := c.NewDeploymentVersion()
-	version.DeploymentId = deployment.Id
+	version.DeploymentId = deploymentId
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
@@ -106,7 +100,9 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 
 	// Update the environment selector to match only r1 (exclude r2)
 	// This simulates removing resources from an environment
-	updatedEnv := env
+	updatedEnv := c.NewEnvironment(systemId)
+	updatedEnv.Id = environmentId
+	updatedEnv.Name = "development"
 	updatedSelector := &oapi.Selector{}
 	_ = updatedSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
@@ -124,6 +120,9 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 	if len(releaseTargetsAfter) != 1 {
 		t.Fatalf("expected 1 release target after selector update, got %d", len(releaseTargetsAfter))
 	}
+
+	r1, _ := engine.Workspace().Resources().Get(resourceId1)
+	r2, _ := engine.Workspace().Resources().Get(resourceId2)
 
 	// Verify the remaining release target is for r1
 	var remainingRT *oapi.ReleaseTarget
@@ -174,54 +173,60 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 // TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs verifies the CORRECT behavior:
 // Jobs in processing states (Pending, InProgress) SHOULD be cancelled when resources are removed
 func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "test-system"
+	deploymentId := "deployment-with-agent"
+	environmentId := "environment-1"
+	resourceId1 := "resource-1"
+	resourceId2 := "resource-2"
+	resourceId3 := "resource-3"
+	jobAgentId := "job-agent-1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("deployment-with-agent"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("development"),
+				integration.EnvironmentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "dev",
+					"key":      "env",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId1),
+			integration.ResourceName("resource-1"),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId2),
+			integration.ResourceName("resource-2"),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId3),
+			integration.ResourceName("resource-3"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+
+		),
+	)
 	ctx := context.Background()
-
-	// Create a job agent (so jobs will be in Pending state, not InvalidJobAgent)
-	jobAgent := c.NewJobAgent(workspaceID)
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment WITH a job agent
-	deployment := c.NewDeployment(sys.Id)
-	deployment.Name = "deployment-with-agent"
-	deployment.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	// Create an environment with selector matching resources with env=dev
-	env := c.NewEnvironment(sys.Id)
-	env.Name = "development"
-	envSelector := &oapi.Selector{}
-	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	}})
-	env.ResourceSelector = envSelector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create resources that match the environment selector
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "resource-1"
-	r1.Metadata = map[string]string{"env": "dev"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "resource-2"
-	r2.Metadata = map[string]string{"env": "dev"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
-
-	// Create a deployment version - this will create jobs in Pending status
-	version := c.NewDeploymentVersion()
-	version.DeploymentId = deployment.Id
-	version.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Verify jobs were created with Pending status
 	pendingJobs := engine.Workspace().Jobs().GetPending()
@@ -241,7 +246,9 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 	t.Logf("Created 2 jobs with Pending status: %v", jobIDs)
 
 	// Update the environment selector to match only r1 (exclude r2)
-	updatedEnv := env
+	updatedEnv := c.NewEnvironment(systemId)
+	updatedEnv.Id = environmentId
+	updatedEnv.Name = "development"
 	updatedSelector := &oapi.Selector{}
 	_ = updatedSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
@@ -253,6 +260,9 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 
 	// CORRECT BEHAVIOR: Jobs in Pending state SHOULD be cancelled
 	allJobsAfter := engine.Workspace().Jobs().Items()
+
+	r1, _ := engine.Workspace().Resources().Get(resourceId1)
+	r2, _ := engine.Workspace().Resources().Get(resourceId2)
 
 	for _, job := range allJobsAfter {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -298,54 +308,51 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 // TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs verifies that
 // jobs in Successful status are not cancelled when environment selectors change
 func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "test-system"
+	environmentId := "environment-1"
+	jobAgentId := "job-agent-1"
+	resourceId1 := "resource-1"
+	resourceId2 := "resource-2"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentName("deployment-with-agent"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("development"),
+				integration.EnvironmentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "dev",
+					"key":      "env",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId1),
+			integration.ResourceName("resource-1"),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId2),
+			integration.ResourceName("resource-2"),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+	)
 	ctx := context.Background()
-
-	// Create a job agent
-	jobAgent := c.NewJobAgent(workspaceID)
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment
-	deployment := c.NewDeployment(sys.Id)
-	deployment.Name = "deployment-with-agent"
-	deployment.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	// Create an environment
-	env := c.NewEnvironment(sys.Id)
-	env.Name = "development"
-	envSelector := &oapi.Selector{}
-	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	}})
-	env.ResourceSelector = envSelector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create resources
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "resource-1"
-	r1.Metadata = map[string]string{"env": "dev"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "resource-2"
-	r2.Metadata = map[string]string{"env": "dev"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
-
-	// Create a deployment version
-	version := c.NewDeploymentVersion()
-	version.DeploymentId = deployment.Id
-	version.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Get the jobs and mark them as Successful
 	allJobs := engine.Workspace().Jobs().Items()
@@ -369,7 +376,9 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 	t.Logf("Marked 2 jobs as Successful")
 
 	// Update the environment selector to match only r1
-	updatedEnv := env
+	updatedEnv := c.NewEnvironment(systemId)
+	updatedEnv.Id = environmentId
+	updatedEnv.Name = "development"
 	updatedSelector := &oapi.Selector{}
 	_ = updatedSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
@@ -381,6 +390,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 
 	// Jobs in Successful state should NOT be cancelled
 	allJobsAfterUpdate := engine.Workspace().Jobs().Items()
+	r2, _ := engine.Workspace().Resources().Get(resourceId2)
 
 	for _, job := range allJobsAfterUpdate {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -409,49 +419,47 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 //
 // This is the same bug but for deployment selectors instead of environment selectors.
 func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "test-system"
+	deploymentId := "deployment-no-agent"
+	resourceId1 := "app-1"
+	resourceId2 := "app-2"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("deployment-no-agent"),
+				integration.DeploymentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "app",
+					"key":      "type",
+				}),
+				// No job agent configured - will create InvalidJobAgent jobs
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId1),
+			integration.ResourceName("app-1"),
+			integration.ResourceMetadata(map[string]string{"type": "app"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId2),
+			integration.ResourceName("app-2"),
+			integration.ResourceMetadata(map[string]string{"type": "app"}),
+		),
+		integration.WithResource(
+			integration.ResourceName("database-1"),
+			integration.ResourceMetadata(map[string]string{"type": "database"}),
+		),
+	)
 	ctx := context.Background()
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment WITHOUT a job agent with a selector matching resources with type=app
-	deployment := c.NewDeployment(sys.Id)
-	deployment.Name = "deployment-no-agent"
-	deployment.JobAgentId = nil // No job agent configured
-	deploymentSelector := &oapi.Selector{}
-	_ = deploymentSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "app",
-		"key":      "type",
-	}})
-	deployment.ResourceSelector = deploymentSelector
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	// Create an environment (matches all resources)
-	env := c.NewEnvironment(sys.Id)
-	env.Name = "production"
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create resources - r1 and r2 match the deployment selector, r3 does not
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "app-1"
-	r1.Metadata = map[string]string{"type": "app"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "app-2"
-	r2.Metadata = map[string]string{"type": "app"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
-
-	r3 := c.NewResource(workspaceID)
-	r3.Name = "database-1"
-	r3.Metadata = map[string]string{"type": "database"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r3)
 
 	// Verify release targets were created (2 resources matching the deployment selector)
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
@@ -464,7 +472,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 
 	// Create a deployment version - this will create jobs with InvalidJobAgent status
 	version := c.NewDeploymentVersion()
-	version.DeploymentId = deployment.Id
+	version.DeploymentId = deploymentId
 	version.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
@@ -483,7 +491,9 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 	t.Logf("Created 2 jobs with InvalidJobAgent status")
 
 	// Update the deployment selector to match only app-1 (exclude app-2)
-	updatedDeployment := deployment
+	updatedDeployment := c.NewDeployment(systemId)
+	updatedDeployment.Id = deploymentId
+	updatedDeployment.Name = "deployment-no-agent"
 	updatedSelector := &oapi.Selector{}
 	_ = updatedSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
@@ -508,6 +518,9 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 	if len(allJobsAfter) != 2 {
 		t.Fatalf("expected 2 jobs to still exist after selector update, got %d", len(allJobsAfter))
 	}
+
+	r1, _ := engine.Workspace().Resources().Get(resourceId1)
+	r2, _ := engine.Workspace().Resources().Get(resourceId2)
 
 	for _, job := range allJobsAfter {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -540,54 +553,51 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 // TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs tests that
 // jobs in Failure status are not cancelled when deployment selectors change
 func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "test-system"
+	deploymentId := "deployment-with-agent"
+	jobAgentId := "job-agent-1"
+	resourceId1 := "app-1"
+	resourceId2 := "app-2"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentName("deployment-with-agent"),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "app",
+					"key":      "type",
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId1),
+			integration.ResourceName("app-1"),
+			integration.ResourceMetadata(map[string]string{"type": "app"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId2),
+			integration.ResourceName("app-2"),
+			integration.ResourceMetadata(map[string]string{"type": "app"}),
+		),
+	)
 	ctx := context.Background()
-
-	// Create a job agent
-	jobAgent := c.NewJobAgent(workspaceID)
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment with a selector
-	deployment := c.NewDeployment(sys.Id)
-	deployment.Name = "deployment-with-agent"
-	deployment.JobAgentId = &jobAgent.Id
-	deploymentSelector := &oapi.Selector{}
-	_ = deploymentSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "app",
-		"key":      "type",
-	}})
-	deployment.ResourceSelector = deploymentSelector
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	// Create an environment
-	env := c.NewEnvironment(sys.Id)
-	env.Name = "production"
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create resources
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "app-1"
-	r1.Metadata = map[string]string{"type": "app"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "app-2"
-	r2.Metadata = map[string]string{"type": "app"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
-
-	// Create a deployment version
-	version := c.NewDeploymentVersion()
-	version.DeploymentId = deployment.Id
-	version.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Get the jobs and mark them as Failure
 	allJobs := engine.Workspace().Jobs().Items()
@@ -603,7 +613,10 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
 	t.Logf("Marked 2 jobs as Failure")
 
 	// Update the deployment selector to match only app-1
-	updatedDeployment := deployment
+	updatedDeployment := c.NewDeployment(systemId)
+	updatedDeployment.Id = deploymentId
+	updatedDeployment.Name = "deployment-with-agent"
+	updatedDeployment.JobAgentId = &jobAgentId
 	updatedSelector := &oapi.Selector{}
 	_ = updatedSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
@@ -615,6 +628,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
 
 	// Jobs in Failure state should NOT be cancelled
 	allJobsAfterUpdate := engine.Workspace().Jobs().Items()
+	r2, _ := engine.Workspace().Resources().Get(resourceId2)
 
 	for _, job := range allJobsAfterUpdate {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -640,53 +654,55 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
 // TestEngine_MultipleExitedStates_NeverUpdated tests that ALL exited states
 // (InvalidJobAgent, Successful, Failure, Skipped, etc.) are preserved when selectors change
 func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "test-system"
+	environmentId := "environment-1"
+	jobAgentId := "job-agent-1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentName("deployment"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "prod",
+					"key":      "env",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-2"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-3"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-4"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+	)
 	ctx := context.Background()
-
-	// Create a job agent
-	jobAgent := c.NewJobAgent(workspaceID)
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment
-	deployment := c.NewDeployment(sys.Id)
-	deployment.Name = "deployment"
-	deployment.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	// Create an environment with a selector
-	env := c.NewEnvironment(sys.Id)
-	env.Name = "production"
-	envSelector := &oapi.Selector{}
-	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
-	env.ResourceSelector = envSelector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create 4 resources that match
-	resources := make([]*oapi.Resource, 4)
-	for i := 0; i < 4; i++ {
-		r := c.NewResource(workspaceID)
-		r.Name = "resource-" + string(rune('1'+i))
-		r.Metadata = map[string]string{"env": "prod"}
-		engine.PushEvent(ctx, handler.ResourceCreate, r)
-		resources[i] = r
-	}
-
-	// Create a deployment version
-	version := c.NewDeploymentVersion()
-	version.DeploymentId = deployment.Id
-	version.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Get all jobs
 	allJobs := engine.Workspace().Jobs().Items()
@@ -712,7 +728,9 @@ func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
 	t.Logf("Set jobs to different exited states: Successful, Failure, Skipped, Cancelled")
 
 	// Update environment selector to match only resource-1
-	updatedEnv := env
+	updatedEnv := c.NewEnvironment(systemId)
+	updatedEnv.Id = environmentId
+	updatedEnv.Name = "production"
 	updatedSelector := &oapi.Selector{}
 	_ = updatedSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
@@ -756,54 +774,51 @@ func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
 // TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs verifies that
 // jobs in InProgress status (a processing state) SHOULD be cancelled
 func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
+	systemId := "test-system"
+	environmentId := "environment-1"
+	jobAgentId := "job-agent-1"
+	resourceId1 := "resource-1"
+	resourceId2 := "resource-2"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentName("deployment-with-agent"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentId),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "prod",
+					"key":      "env",
+				}),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId1),
+			integration.ResourceName("resource-1"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId2),
+			integration.ResourceName("resource-2"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+	)
 	ctx := context.Background()
-
-	// Create a job agent
-	jobAgent := c.NewJobAgent(workspaceID)
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	sys.Name = "test-system"
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment
-	deployment := c.NewDeployment(sys.Id)
-	deployment.Name = "deployment-with-agent"
-	deployment.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	// Create an environment
-	env := c.NewEnvironment(sys.Id)
-	env.Name = "production"
-	envSelector := &oapi.Selector{}
-	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
-	env.ResourceSelector = envSelector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create resources
-	r1 := c.NewResource(workspaceID)
-	r1.Name = "resource-1"
-	r1.Metadata = map[string]string{"env": "prod"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
-
-	r2 := c.NewResource(workspaceID)
-	r2.Name = "resource-2"
-	r2.Metadata = map[string]string{"env": "prod"}
-	engine.PushEvent(ctx, handler.ResourceCreate, r2)
-
-	// Create a deployment version
-	version := c.NewDeploymentVersion()
-	version.DeploymentId = deployment.Id
-	version.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Get jobs and mark them as InProgress
 	allJobs := engine.Workspace().Jobs().Items()
@@ -819,7 +834,9 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 	t.Logf("Marked 2 jobs as InProgress")
 
 	// Update environment selector to match only r1
-	updatedEnv := env
+	updatedEnv := c.NewEnvironment(systemId)
+	updatedEnv.Id = environmentId
+	updatedEnv.Name = "production"
 	updatedSelector := &oapi.Selector{}
 	_ = updatedSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
 		"type":     "name",
@@ -831,6 +848,8 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 
 	// Jobs in InProgress state SHOULD be cancelled (it's a processing state)
 	allJobsAfter := engine.Workspace().Jobs().Items()
+	r1, _ := engine.Workspace().Resources().Get(resourceId1)
+	r2, _ := engine.Workspace().Resources().Get(resourceId2)
 
 	for _, job := range allJobsAfter {
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)

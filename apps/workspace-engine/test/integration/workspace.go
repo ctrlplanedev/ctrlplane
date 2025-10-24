@@ -13,8 +13,6 @@ import (
 	"workspace-engine/pkg/workspace"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 type PersistenceMode int
@@ -128,17 +126,7 @@ func (tw *TestWorkspace) LoadFromDisk() error {
 func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventType, data any) *TestWorkspace {
 	tw.t.Helper()
 
-	// Marshal the data payload
-	var dataBytes []byte
-	var err error
-
-	// Check if data is a protobuf message
-	if protoMsg, ok := data.(proto.Message); ok {
-		dataBytes, err = protojson.Marshal(protoMsg)
-	} else {
-		dataBytes, err = json.Marshal(data)
-	}
-
+	dataBytes, err := json.Marshal(data)
 	if err != nil {
 		tw.t.Fatalf("failed to marshal event data: %v", err)
 		return tw

@@ -102,7 +102,8 @@ type EventListener struct {
 
 // NewEventListener creates a new event listener with the provided handlers
 func NewEventListener(handlers HandlerRegistry) *EventListener {
-	return &EventListener{handlers: handlers}
+	el := &EventListener{handlers: handlers}
+	return el
 }
 
 type OffsetTracker struct {
@@ -191,12 +192,12 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message,
 
 	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
 
-	if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to flush changeset")
-		log.Error("Failed to flush changeset", "error", err)
-		return ws, fmt.Errorf("failed to flush changeset: %w", err)
-	}
+	// if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
+	// 	span.RecordError(err)
+	// 	span.SetStatus(codes.Error, "failed to flush changeset")
+	// 	log.Error("Failed to flush changeset", "error", err)
+	// 	return ws, fmt.Errorf("failed to flush changeset: %w", err)
+	// }
 
 	span.SetStatus(codes.Ok, "event processed successfully")
 	log.Debug("Successfully processed event",

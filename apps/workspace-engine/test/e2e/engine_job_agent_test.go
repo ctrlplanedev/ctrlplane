@@ -438,6 +438,7 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 				integration.DeploymentID(deploymentID1),
 				integration.DeploymentName("deployment-1"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -446,6 +447,7 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 				integration.DeploymentID(deploymentID2),
 				integration.DeploymentName("deployment-2"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -454,6 +456,7 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 				integration.DeploymentID(deploymentID3),
 				integration.DeploymentName("deployment-3"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),

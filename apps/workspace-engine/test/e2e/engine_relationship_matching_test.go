@@ -869,8 +869,8 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 	}
 }
 
-// TestEngine_GetRelatedEntities_NoSelectorMatchAll tests nil selectors that match all entities of that type
-func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
+// TestEngine_GetRelatedEntities_NoSelectorMatchNone tests nil selectors that match no entities
+func TestEngine_GetRelatedEntities_NoSelectorMatchNone(t *testing.T) {
 	engine := integration.NewTestWorkspace(
 		t,
 		integration.WithRelationshipRule(
@@ -879,7 +879,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 			integration.RelationshipRuleReference("in-region"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			// No selectors - matches all resources
+			// No selectors - matches no resources
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
@@ -926,29 +926,13 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 	}
 
 	related, ok := relatedEntities["in-region"]
-	if !ok {
-		t.Fatalf("'in-region' relationship not found")
+	if ok {
+		t.Fatalf("expected no 'in-region' relationship, but found %d related entities", len(related))
 	}
 
-	// Should find resource-2 (same region, but not resource-1 itself)
-	// Note: The current implementation includes the entity itself
-	if len(related) != 2 {
-		t.Fatalf("expected 2 related resources, got %d", len(related))
-	}
-
-	relatedIDs := make(map[string]bool)
-	for _, r := range related {
-		relatedIDs[r.RelatedEntity.Entity.GetID()] = true
-	}
-
-	if !relatedIDs["resource-1"] {
-		t.Errorf("resource-1 not in related entities")
-	}
-	if !relatedIDs["resource-2"] {
-		t.Errorf("resource-2 not in related entities")
-	}
-	if relatedIDs["resource-3"] {
-		t.Errorf("resource-3 should not be in related entities")
+	// With nil selectors, no entities should match
+	if len(relatedEntities) != 0 {
+		t.Fatalf("expected 0 relationships, got %d", len(relatedEntities))
 	}
 }
 

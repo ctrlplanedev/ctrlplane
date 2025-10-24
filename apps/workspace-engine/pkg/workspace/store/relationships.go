@@ -40,7 +40,7 @@ func (r *RelationshipRules) Has(id string) bool {
 
 func (r *RelationshipRules) Remove(ctx context.Context, id string) {
 	relationship, ok := r.repo.RelationshipRules.Get(id)
-	if !ok {
+	if !ok || relationship == nil {
 		return
 	}
 
@@ -76,7 +76,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 		fromMatches := false
 		if rule.FromType == entity.GetType() {
 			if rule.FromSelector == nil {
-				fromMatches = true
+				fromMatches = false
 			} else {
 				matched, err := selector.Match(ctx, rule.FromSelector, entity.Item())
 				if err != nil {
@@ -114,7 +114,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 		toMatches := false
 		if rule.ToType == entity.GetType() {
 			if rule.ToSelector == nil {
-				toMatches = true
+				toMatches = false
 			} else {
 				matched, err := selector.Match(ctx, rule.ToSelector, entity.Item())
 				if err != nil {
@@ -166,14 +166,15 @@ func (r *RelationshipRules) findMatchingEntities(
 	case "deployment":
 		for _, deployment := range r.store.Deployments.Items() {
 			deploymentEntity := relationships.NewDeploymentEntity(deployment)
-			if entitySelector != nil {
-				matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
-				if err != nil {
-					return nil, err
-				}
-				if !matched {
-					continue
-				}
+			if entitySelector == nil {
+				continue
+			}
+			matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
 			}
 
 			pm, err := rule.Matcher.AsPropertiesMatcher()
@@ -206,14 +207,15 @@ func (r *RelationshipRules) findMatchingEntities(
 	case "environment":
 		for _, environment := range r.store.Environments.Items() {
 			environmentEntity := relationships.NewEnvironmentEntity(environment)
-			if entitySelector != nil {
-				matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
-				if err != nil {
-					return nil, err
-				}
-				if !matched {
-					continue
-				}
+			if entitySelector == nil {
+				continue
+			}
+			matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
 			}
 
 			pm, err := rule.Matcher.AsPropertiesMatcher()
@@ -246,14 +248,15 @@ func (r *RelationshipRules) findMatchingEntities(
 	case "resource":
 		for _, resource := range r.store.Resources.Items() {
 			resourceEntity := relationships.NewResourceEntity(resource)
-			if entitySelector != nil {
-				matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
-				if err != nil {
-					return nil, err
-				}
-				if !matched {
-					continue
-				}
+			if entitySelector == nil {
+				continue
+			}
+			matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
 			}
 
 			pm, err := rule.Matcher.AsPropertiesMatcher()

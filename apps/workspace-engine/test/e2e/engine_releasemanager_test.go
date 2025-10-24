@@ -34,6 +34,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgentConfig(map[string]any{
 					"namespace": "production",
 					"replicas":  3,
@@ -42,6 +43,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -237,10 +239,12 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		// Database resource
@@ -409,10 +413,12 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

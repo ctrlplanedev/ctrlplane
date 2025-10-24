@@ -50,7 +50,7 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 		defer span.End()
 
 		environment, exists := e.repo.Environments.Get(environmentId)
-		if !exists {
+		if !exists || environment == nil {
 			return nil, fmt.Errorf("environment %s not found", environmentId)
 		}
 
@@ -140,6 +140,13 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 		previousSystemId = previous.SystemId
 	}
 
+	if environment.ResourceSelector == nil {
+		environment.ResourceSelector = &oapi.Selector{}
+		environment.ResourceSelector.FromCelSelector(oapi.CelSelector{
+			Cel: "false",
+		})
+	}
+
 	// Store the environment in the repository
 	e.repo.Environments.Set(environment.Id, environment)
 	e.store.Systems.ApplyEnvironmentUpdate(ctx, previousSystemId, environment)
@@ -175,7 +182,7 @@ func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId st
 
 func (e *Environments) Remove(ctx context.Context, id string) {
 	env, ok := e.Get(id)
-	if !ok {
+	if !ok || env == nil {
 		return
 	}
 

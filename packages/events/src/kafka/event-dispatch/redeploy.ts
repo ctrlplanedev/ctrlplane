@@ -1,6 +1,6 @@
 import type { Span } from "@ctrlplane/logger";
-import { createSpanWrapper } from "src/span";
 
+import { createSpanWrapper } from "../../span.js";
 import { sendGoEvent } from "../client.js";
 import { Event } from "../events.js";
 import { getFullReleaseTarget } from "./util.js";

@@ -210,7 +210,9 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 
 	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, total)
 	for _, releaseTarget := range releaseTargets {
-		releaseTargetsList = append(releaseTargetsList, releaseTarget)
+		if releaseTarget.DeploymentId == deploymentId {
+			releaseTargetsList = append(releaseTargetsList, releaseTarget)
+		}
 	}
 
 	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, total)

@@ -30,7 +30,7 @@ func (u *UserApprovalRecords) Get(versionId, userId string) (*oapi.UserApprovalR
 
 func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 	userApprovalRecord, ok := u.repo.UserApprovalRecords.Get(key)
-	if !ok {
+	if !ok || userApprovalRecord == nil {
 		return
 	}
 

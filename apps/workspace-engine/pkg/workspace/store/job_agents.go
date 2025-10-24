@@ -31,7 +31,7 @@ func (j *JobAgents) Get(id string) (*oapi.JobAgent, bool) {
 
 func (j *JobAgents) Remove(ctx context.Context, id string) {
 	jobAgent, ok := j.repo.JobAgents.Get(id)
-	if !ok {
+	if !ok || jobAgent == nil {
 		return
 	}
 

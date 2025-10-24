@@ -38,7 +38,7 @@ func (g *GithubEntities) Get(slug string, installationId int) (*oapi.GithubEntit
 func (g *GithubEntities) Remove(ctx context.Context, slug string, installationId int) {
 	key := g.key(slug, installationId)
 	githubEntity, ok := g.repo.GithubEntities.Get(key)
-	if !ok {
+	if !ok || githubEntity == nil {
 		return
 	}
 

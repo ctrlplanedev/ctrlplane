@@ -28,15 +28,12 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -45,7 +42,11 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approval"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -141,6 +142,7 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -158,7 +160,11 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approval"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -298,6 +304,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -315,7 +322,11 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approval"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -460,6 +471,7 @@ func TestEngine_ApprovalPolicy_ExactMinimum(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -477,7 +489,11 @@ func TestEngine_ApprovalPolicy_ExactMinimum(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approval"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -567,7 +583,11 @@ func TestEngine_ApprovalPolicy_ZeroApprovalsRequired(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approval"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -646,7 +666,11 @@ func TestEngine_ApprovalPolicy_PartialApprovalBlocks(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approval"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -738,7 +762,11 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approval"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 

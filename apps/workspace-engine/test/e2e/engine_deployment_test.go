@@ -30,6 +30,7 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID2),
 				integration.DeploymentName("deployment-has-no-filter"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 		),
 	)

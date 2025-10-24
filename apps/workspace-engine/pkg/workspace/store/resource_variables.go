@@ -35,7 +35,7 @@ func (r *ResourceVariables) Get(resourceId string, key string) (*oapi.ResourceVa
 
 func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key string) {
 	resourceVariable, ok := r.repo.ResourceVariables.Get(resourceId + "-" + key)
-	if !ok {
+	if !ok || resourceVariable == nil {
 		return
 	}
 

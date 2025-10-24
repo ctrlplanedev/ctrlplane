@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/db"
@@ -215,17 +214,11 @@ func HasWorkspace(id string) bool {
 	return workspaces.Has(id)
 }
 
+type GetWorkspaceOptions struct {
+	SkipDBExistCheck bool
+}
+
 func GetWorkspaceAndLoad(id string) (*Workspace, error) {
-	ctx := context.Background()
-	wsExistsInDB, err := db.WorkspaceExists(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	if !wsExistsInDB {
-		return nil, fmt.Errorf("workspace %s not found in database: %w", id, err)
-	}
-
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
 		workspace, err := NewAndLoad(context.Background(), id)

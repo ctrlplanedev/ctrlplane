@@ -87,10 +87,17 @@ const EnvironmentReleaseTargetsGroup: FC<
 > = ({ releaseTargets, environment }) => {
   const [open, setOpen] = useState(true);
 
-  const cel =
-    "cel" in (environment.resourceSelector ?? {})
-      ? (environment.resourceSelector as { cel: string }).cel
-      : undefined;
+  let cel: string | undefined = undefined;
+  let jsonSelector: string | undefined = undefined;
+
+  if (environment.resourceSelector) {
+    if ("cel" in environment.resourceSelector) {
+      cel = environment.resourceSelector.cel;
+    }
+    if ("json" in environment.resourceSelector) {
+      jsonSelector = JSON.stringify(environment.resourceSelector.json, null, 2);
+    }
+  }
 
   const rts = open ? releaseTargets : [];
 
@@ -110,7 +117,9 @@ const EnvironmentReleaseTargetsGroup: FC<
               />
             </Button>
             <div className="grow">{environment.name} </div>
-            <pre className="text-xs text-muted-foreground">{cel}</pre>
+            <pre className="text-xs text-muted-foreground">
+              {cel ?? jsonSelector}
+            </pre>
           </div>
         </TableCell>
       </TableRow>
@@ -207,22 +216,16 @@ export default function ReleaseTargetsPage() {
       <div>
         <Table className="border-b">
           <TableBody>
-            {Object.entries(groupByEnvironmentId).map(
-              ([environmentId, releaseTargetsGroup]) => {
-                const environment = environmentsQuery.data?.items.find(
-                  (e) => e.id === environmentId,
-                );
-                if (!environment) return null;
-
-                return (
-                  <EnvironmentReleaseTargetsGroup
-                    key={environmentId}
-                    releaseTargets={releaseTargetsGroup}
-                    environment={environment}
-                  />
-                );
-              },
-            )}
+            {environmentsQuery.data?.items.map((environment) => {
+              const releaseTargets = groupByEnvironmentId[environment.id] ?? [];
+              return (
+                <EnvironmentReleaseTargetsGroup
+                  key={environment.id}
+                  releaseTargets={releaseTargets}
+                  environment={environment}
+                />
+              );
+            })}
           </TableBody>
         </Table>
       </div>

@@ -15,6 +15,7 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
 				integration.DeploymentName("deployment-1"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("env-prod"),
@@ -30,7 +31,11 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-all"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -92,6 +97,8 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 					"operator": "contains",
 					"value":    "prod",
 				}),
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
 			),
 		),
 	)
@@ -134,44 +141,40 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 }
 
 func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
+	d1ID := "d1-1"
+	e1ID := "e1-1"
+	r1ID := "r1-1"
+	e2ID := "e2-2"
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.DeploymentID(d1ID),
+				integration.DeploymentName("deployment-prod"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e1ID),
+				integration.EnvironmentName("env-us-east"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(e2ID),
+				integration.EnvironmentName("env-us-west"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(r1ID),
+		),
+	)
+
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
 
-	// Create a system
-	sys := c.NewSystem(workspaceID)
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create a deployment
-	d1 := c.NewDeployment(sys.Id)
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
-
-	// Create two environments with different names
-	e1 := c.NewEnvironment(sys.Id)
-	e1.Name = "env-us-east"
-	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
-	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
-
-	e2 := c.NewEnvironment(sys.Id)
-	e2.Name = "env-us-west"
-	e2Selector := &oapi.Selector{}
-	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
-	e2.ResourceSelector = e2Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
-
-	// Create a resource
-	r1 := c.NewResource(workspaceID)
-	engine.PushEvent(ctx, handler.ResourceCreate, r1)
+	d1, _ := engine.Workspace().Deployments().Get(d1ID)
+	e1, _ := engine.Workspace().Environments().Get(e1ID)
+	e2, _ := engine.Workspace().Environments().Get(e2ID)
+	r1, _ := engine.Workspace().Resources().Get(r1ID)
 
 	// Verify 2 release targets were created
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
@@ -193,8 +196,14 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 		"value":    "east",
 	}})
 	selector.EnvironmentSelector = envSelector
+	selector.DeploymentSelector = &oapi.Selector{}
+	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+
+	selector.ResourceSelector = &oapi.Selector{}
+	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
+
 
 	// Check which release targets match the policy
 	rtEast := &oapi.ReleaseTarget{

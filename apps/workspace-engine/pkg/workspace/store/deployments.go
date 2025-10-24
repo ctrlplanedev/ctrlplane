@@ -48,28 +48,22 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 		defer span.End()
 
 		deployment, exists := e.repo.Deployments.Get(deploymentId)
-		if !exists {
+		if !exists || deployment == nil {
 			span.RecordError(fmt.Errorf("deployment %s not found", deploymentId))
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
+		}
+
+		if deployment.ResourceSelector == nil {
+			deployment.ResourceSelector = &oapi.Selector{}
+			deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{
+				Cel: "false",
+			})
 		}
 
 		span.SetAttributes(
 			attribute.String("deployment.id", deploymentId),
 			attribute.String("deployment.name", deployment.Name),
 		)
-
-		if deployment.ResourceSelector == nil {
-			allResources := make(map[string]*oapi.Resource, e.repo.Resources.Count())
-			resourceCount := 0
-			e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
-				allResources[key] = resource
-				resourceCount++
-			})
-			span.SetAttributes(
-				attribute.Int("deployment.resources.without_selector", resourceCount),
-			)
-			return allResources, nil
-		}
 
 		// Pre-allocate slice with exact capacity
 		resourceCount := e.repo.Resources.Count()
@@ -204,7 +198,7 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 
 func (e *Deployments) Remove(ctx context.Context, id string) {
 	deployment, ok := e.Get(id)
-	if !ok {
+	if !ok || deployment == nil {
 		return
 	}
 

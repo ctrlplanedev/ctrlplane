@@ -39,7 +39,7 @@ func (r *Releases) Items() map[string]*oapi.Release {
 
 func (r *Releases) Remove(ctx context.Context, id string) {
 	release, ok := r.repo.Releases.Get(id)
-	if !ok {
+	if !ok || release == nil {
 		return
 	}
 

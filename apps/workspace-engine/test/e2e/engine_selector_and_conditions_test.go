@@ -153,7 +153,9 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
-			integration.WithDeployment(),
+			integration.WithDeployment(
+				integration.DeploymentCelResourceSelector("true"),
+			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-prod-us-east"),
@@ -282,22 +284,21 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod-web"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-prod-api"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d3ID),
 				integration.DeploymentName("deployment-dev-web"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -306,6 +307,8 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-web-only"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
@@ -388,6 +391,7 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 		integration.WithSystem(
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
@@ -423,6 +427,8 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-east-only"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
@@ -438,6 +444,7 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 						},
 					},
 				}),
+				integration.PolicyTargetCelResourceSelector("true"),
 			),
 		),
 	)
@@ -506,14 +513,17 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod-web"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-prod-api"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d3ID),
 				integration.DeploymentName("deployment-dev-web"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
@@ -540,6 +550,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelResourceSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
@@ -562,6 +573,7 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 				}),
 			),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelResourceSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{

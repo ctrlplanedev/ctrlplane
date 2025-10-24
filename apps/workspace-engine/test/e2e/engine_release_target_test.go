@@ -236,10 +236,24 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 	d1, _ := engine.Workspace().Deployments().Get(d1Id)
 	r1, _ := engine.Workspace().Resources().Get(r1Id)
 
-	// Both resources should match - 2 release targets
+	// Without deployment selector (nil), no resources should match - 0 release targets
 	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets with nil deployment selector, got %d", len(releaseTargets))
+	}
+
+	// Update deployment to add a match-all selector
+	d1.ResourceSelector = c.NewJsonSelector(map[string]any{
+		"type":     "name",
+		"operator": "starts-with",
+		"value":    "",
+	})
+	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
+
+	// Both resources should match - 2 release targets
+	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
 	if len(releaseTargets) != 2 {
-		t.Fatalf("expected 2 release targets without selectors, got %d", len(releaseTargets))
+		t.Fatalf("expected 2 release targets with match-all deployment selector, got %d", len(releaseTargets))
 	}
 
 	// Update deployment to add a selector for prod only
@@ -267,14 +281,14 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 		t.Fatalf("expected release target for prod resource, got resource %s", rt.ResourceId)
 	}
 
-	// Remove the deployment selector
+	// Remove the deployment selector (set to nil)
 	d1.ResourceSelector = nil
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d1)
 
-	// Both resources should match again - 2 release targets
+	// With nil selector, no resources should match - 0 release targets
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
-	if len(releaseTargets) != 2 {
-		t.Fatalf("expected 2 release targets after removing deployment selector, got %d", len(releaseTargets))
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets after removing deployment selector, got %d", len(releaseTargets))
 	}
 }
 

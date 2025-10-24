@@ -3,6 +3,12 @@
   "scripts": {
     "dev": "air",
     "build": "go build -o ./bin/workspace-engine main.go",
-    "start": "./bin/workspace-engine"
+    "start": "./bin/workspace-engine",
+    "test": "go test ./...",
+    "generate": "go generate ./...",
+    "format": "go fmt ./...",
+    "lint": "go lint ./...",
+    "typecheck": "go typecheck ./...",
+    "clean": "go clean ./..."
   }
 }

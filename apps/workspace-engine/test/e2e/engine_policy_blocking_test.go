@@ -26,6 +26,7 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -34,6 +35,7 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-dev"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -54,7 +56,11 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("policy-initial"),
-			integration.WithPolicyTargetSelector(),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
 		),
 	)
 
@@ -87,6 +93,10 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 		"value":    "prod",
 	}})
 	selector.DeploymentSelector = depSelector
+	selector.EnvironmentSelector = &oapi.Selector{}
+	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector.ResourceSelector = &oapi.Selector{}
+	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 
 	// Update the policy

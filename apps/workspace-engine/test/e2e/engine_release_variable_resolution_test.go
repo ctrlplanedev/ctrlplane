@@ -32,10 +32,12 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -145,10 +147,12 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -259,10 +263,12 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithRelationshipRule(
@@ -408,10 +414,12 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithRelationshipRule(
@@ -551,10 +559,12 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -685,10 +695,12 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		// Pod -> Cluster relationship
@@ -833,10 +845,12 @@ func TestEngine_ReleaseVariableResolution_NoVariables(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -910,10 +924,12 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -1057,10 +1073,12 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithRelationshipRule(
@@ -1191,10 +1209,12 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		// App -> Database relationship
@@ -1401,6 +1421,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"app_port",
 					integration.DeploymentVariableIntValue(8080),
@@ -1417,6 +1438,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -1513,6 +1535,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"api_config",
 					integration.DeploymentVariableLiteralValue(map[string]any{
@@ -1528,6 +1551,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -1624,6 +1648,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"replicas",
 					integration.DeploymentVariableIntValue(3),
@@ -1636,6 +1661,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

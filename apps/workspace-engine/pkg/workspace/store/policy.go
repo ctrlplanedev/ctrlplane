@@ -50,7 +50,7 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 
 func (p *Policies) Remove(ctx context.Context, id string) {
 	policy, ok := p.repo.Policies.Get(id)
-	if !ok {
+	if !ok || policy == nil {
 		return
 	}
 

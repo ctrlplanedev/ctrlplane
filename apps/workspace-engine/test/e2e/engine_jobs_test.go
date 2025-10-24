@@ -33,13 +33,15 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
 	d1.JobAgentConfig = jobAgentConfig
-
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
-
+	e1.ResourceSelector = &oapi.Selector{}
+	_ = e1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	// Create a resource - this creates a release target
@@ -126,17 +128,21 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create two environments with selectors to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
-
+	e1.ResourceSelector = &oapi.Selector{}
+	_ = e1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
-
+	e2.ResourceSelector = &oapi.Selector{}
+	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 
 	// Create three resources

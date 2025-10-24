@@ -50,6 +50,7 @@ func TestEngine_Persistence_BasicSaveLoadRoundtrip(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("deployment-1"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 		),
 	)
@@ -518,6 +519,7 @@ func TestEngine_Persistence_JobsWithStatuses(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("test-deployment"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionID(deploymentVersionId),
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -526,6 +528,7 @@ func TestEngine_Persistence_JobsWithStatuses(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(envId),
 				integration.EnvironmentName("test-env"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -709,6 +712,7 @@ func TestEngine_Persistence_TimestampsAndTimeZones(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("test-deployment"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionID(deploymentVersionId),
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -717,6 +721,7 @@ func TestEngine_Persistence_TimestampsAndTimeZones(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(envId),
 				integration.EnvironmentName("test-env"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

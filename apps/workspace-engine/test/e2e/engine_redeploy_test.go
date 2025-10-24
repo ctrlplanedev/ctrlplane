@@ -34,6 +34,7 @@ func TestEngine_Redeploy_BasicFlow(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -148,6 +149,7 @@ func TestEngine_Redeploy_AfterFailedJob(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -240,6 +242,7 @@ func TestEngine_Redeploy_MultipleReleaseTargets(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -350,6 +353,7 @@ func TestEngine_Redeploy_WithNoVersion(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -405,7 +409,8 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
-				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentJobAgent(jobAgentId),	
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -518,6 +523,7 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -619,6 +625,7 @@ func TestEngine_Redeploy_WithPendingJob(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -699,6 +706,7 @@ func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -824,6 +832,7 @@ func TestEngine_Redeploy_BlockedByActionRequiredJob(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -895,7 +904,7 @@ func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("no-agent-deployment"),
-				// No job agent configured
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
