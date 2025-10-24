@@ -826,7 +826,10 @@ export interface components {
             latestJob?: components["schemas"]["Job"];
         };
         ReleaseTargetWithState: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
             releaseTarget: components["schemas"]["ReleaseTarget"];
+            resource?: components["schemas"]["Resource"];
             state: components["schemas"]["ReleaseTargetState"];
         };
         Resource: {

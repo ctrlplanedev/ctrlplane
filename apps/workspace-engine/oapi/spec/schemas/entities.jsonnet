@@ -207,6 +207,9 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['releaseTarget', 'state'],
     properties: {
       releaseTarget: openapi.schemaRef('ReleaseTarget'),
+      environment: openapi.schemaRef('Environment'),
+      resource: openapi.schemaRef('Resource'),
+      deployment: openapi.schemaRef('Deployment'),
       state: openapi.schemaRef('ReleaseTargetState'),
     },
   },

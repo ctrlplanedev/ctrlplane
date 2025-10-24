@@ -262,7 +262,7 @@ export default function DeploymentDetail() {
               </Button>
             </CreateVersionDialog>
           )}
-          <DeploymentsNavbarTabs deploymentId={deployment.id} />
+          <DeploymentsNavbarTabs />
         </div>
       </header>
 

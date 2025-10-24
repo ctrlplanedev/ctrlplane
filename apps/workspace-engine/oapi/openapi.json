@@ -940,8 +940,17 @@
          },
          "ReleaseTargetWithState": {
             "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
                "releaseTarget": {
                   "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/Resource"
                },
                "state": {
                   "$ref": "#/components/schemas/ReleaseTargetState"

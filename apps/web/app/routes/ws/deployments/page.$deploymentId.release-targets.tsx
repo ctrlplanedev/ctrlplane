@@ -1,3 +1,8 @@
+import type { FC } from "react";
+import { useState } from "react";
+import { Fragment } from "react/jsx-runtime";
+import _ from "lodash";
+import { ChevronRight } from "lucide-react";
 import { Link } from "react-router";
 
 import { trpc } from "~/api/trpc";
@@ -8,10 +13,145 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
+import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
+import { Table, TableBody, TableCell, TableRow } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { cn } from "~/lib/utils";
 import { useDeployment } from "./_components/DeploymentProvider";
+import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
+
+const JobStatusDisplayName: Record<string, string> = {
+  unknown: "Unknown",
+  cancelled: "Cancelled",
+  skipped: "Skipped",
+  inProgress: "In Progress",
+  actionRequired: "Action Required",
+  pending: "Pending",
+  failure: "Failure",
+  invalidJobAgent: "Invalid Job Agent",
+  invalidIntegration: "Invalid Integration",
+  externalRunNotFound: "External Run Not Found",
+  successful: "Successful",
+};
+
+type ReleaseTarget = {
+  releaseTarget: {
+    deploymentId: string;
+    environmentId: string;
+    resourceId: string;
+  };
+  resource?: { id: string; version: string; kind: string; identifier: string };
+  environment?: {
+    id: string;
+    name: string;
+    resourceSelector?: { json?: Record<string, unknown>; cel?: string };
+  };
+  state: {
+    latestJob?: {
+      status?: string;
+    };
+    currentRelease?: {
+      version: {
+        tag: string;
+      };
+    };
+    desiredRelease?: {
+      version: {
+        tag: string;
+      };
+    };
+  };
+};
+
+type Environment = {
+  id: string;
+  name: string;
+  resourceSelector?:
+    | {
+        json: Record<string, unknown>;
+      }
+    | {
+        cel: string;
+      };
+};
+
+type EnvironmentReleaseTargetsGroupProps = {
+  releaseTargets: ReleaseTarget[];
+  environment: Environment;
+};
+
+const EnvironmentReleaseTargetsGroup: FC<
+  EnvironmentReleaseTargetsGroupProps
+> = ({ releaseTargets, environment }) => {
+  const [open, setOpen] = useState(true);
+
+  const cel =
+    "cel" in (environment.resourceSelector ?? {})
+      ? (environment.resourceSelector as { cel: string }).cel
+      : undefined;
+
+  const rts = open ? releaseTargets : [];
+
+  return (
+    <Fragment key={environment.id}>
+      <TableRow key={environment.id}>
+        <TableCell colSpan={4} className="bg-muted/50">
+          <div className="flex items-center gap-2">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setOpen(!open)}
+              className="size-5"
+            >
+              <ChevronRight
+                className={cn("s-4 transition-transform", open && "rotate-90")}
+              />
+            </Button>
+            <div className="grow">{environment.name} </div>
+            <pre className="text-xs text-muted-foreground">{cel}</pre>
+          </div>
+        </TableCell>
+      </TableRow>
+      {rts.map(({ releaseTarget, state }) => {
+        const fromVersionRaw = state.currentRelease?.version.tag;
+        const toVersion = state.desiredRelease?.version.tag ?? "unknown";
+        const isInSync = !!fromVersionRaw && fromVersionRaw === toVersion;
+
+        let versionDisplay;
+        if (!fromVersionRaw) {
+          versionDisplay = (
+            <span className="italic text-neutral-500">
+              Not yet deployed → {toVersion}
+            </span>
+          );
+        } else if (isInSync) {
+          versionDisplay = toVersion;
+        } else {
+          versionDisplay = `${fromVersionRaw} → ${toVersion}`;
+        }
+
+        return (
+          <TableRow key={releaseTarget.resourceId}>
+            <TableCell>{releaseTarget.resourceId}</TableCell>
+            <TableCell>
+              {JobStatusDisplayName[state.latestJob?.status ?? "unknown"]}
+            </TableCell>
+            <TableCell
+              className={cn(
+                isInSync ? "text-green-500" : "text-blue-500",
+                "text-right font-mono text-sm",
+              )}
+            >
+              {versionDisplay}
+            </TableCell>
+          </TableRow>
+        );
+      })}
+    </Fragment>
+  );
+};
 
 export default function ReleaseTargetsPage() {
   const { workspace } = useWorkspace();
@@ -30,6 +170,10 @@ export default function ReleaseTargetsPage() {
 
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];
 
+  const groupByEnvironmentId = _.groupBy(
+    releaseTargets,
+    (rt) => rt.releaseTarget.environmentId,
+  );
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
@@ -57,25 +201,30 @@ export default function ReleaseTargetsPage() {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
+
+        <DeploymentsNavbarTabs />
       </header>
       <div>
-        {releaseTargets.map(({ releaseTarget }) => {
-          const environment = environmentsQuery.data?.items.find(
-            (e) => e.id === releaseTarget.environmentId,
-          );
-          return (
-            <div
-              key={releaseTarget.resourceId}
-              className="flex items-center gap-2"
-            >
-              <div></div>
-              <div>{releaseTarget.deploymentId}</div>
-              <div>
-                {releaseTarget.environmentId} {releaseTarget.resourceId}
-              </div>
-            </div>
-          );
-        })}
+        <Table className="border-b">
+          <TableBody>
+            {Object.entries(groupByEnvironmentId).map(
+              ([environmentId, releaseTargetsGroup]) => {
+                const environment = environmentsQuery.data?.items.find(
+                  (e) => e.id === environmentId,
+                );
+                if (!environment) return null;
+
+                return (
+                  <EnvironmentReleaseTargetsGroup
+                    key={environmentId}
+                    releaseTargets={releaseTargetsGroup}
+                    environment={environment}
+                  />
+                );
+              },
+            )}
+          </TableBody>
+        </Table>
       </div>
     </>
   );

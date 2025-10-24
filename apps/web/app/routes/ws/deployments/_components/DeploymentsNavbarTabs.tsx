@@ -2,14 +2,12 @@ import { Link, useLocation } from "react-router";
 
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { useDeployment } from "./DeploymentProvider";
 
-export const DeploymentsNavbarTabs = ({
-  deploymentId,
-}: {
-  deploymentId: string;
-}) => {
+export const DeploymentsNavbarTabs = () => {
+  const { deployment } = useDeployment();
   const { workspace } = useWorkspace();
-  const baseUrl = `/${workspace.slug}/deployments/${deploymentId}`;
+  const baseUrl = `/${workspace.slug}/deployments/${deployment.id}`;
   const path = useLocation();
   const value =
     path.pathname == `${baseUrl}`
@@ -24,26 +22,16 @@ export const DeploymentsNavbarTabs = ({
     <Tabs value={value}>
       <TabsList>
         <TabsTrigger value="environments" asChild>
-          <Link to={`/${workspace.slug}/deployments/${deploymentId}`}>
-            Environments
-          </Link>
+          <Link to={`${baseUrl}`}>Environments</Link>
         </TabsTrigger>
         <TabsTrigger value="versions" asChild>
-          <Link to={`/${workspace.slug}/deployments/${deploymentId}/versions`}>
-            Versions
-          </Link>
+          <Link to={`${baseUrl}/versions`}>Versions</Link>
         </TabsTrigger>
         <TabsTrigger value="release-targets" asChild>
-          <Link
-            to={`/${workspace.slug}/deployments/${deploymentId}/release-targets`}
-          >
-            Targets
-          </Link>
+          <Link to={`${baseUrl}/release-targets`}>Targets</Link>
         </TabsTrigger>
         <TabsTrigger value="settings" asChild>
-          <Link to={`/${workspace.slug}/deployments/${deploymentId}/settings`}>
-            Settings
-          </Link>
+          <Link to={`${baseUrl}/settings`}>Settings</Link>
         </TabsTrigger>
       </TabsList>
     </Tabs>

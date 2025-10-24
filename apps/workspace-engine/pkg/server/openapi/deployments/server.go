@@ -221,9 +221,33 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 				"error": err.Error(),
 			})
 		}
+		environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Environment not found for release target",
+			})
+			return
+		}
+		resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Resource not found for release target",
+			})
+			return
+		}
+		deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Deployment not found for release target",
+			})
+			return
+		}
 		releaseTargetsWithState = append(releaseTargetsWithState, &oapi.ReleaseTargetWithState{
 			ReleaseTarget: *releaseTarget,
 			State:         *state,
+			Environment:   environment,
+			Resource:      resource,
+			Deployment:    deployment,
 		})
 	}
 

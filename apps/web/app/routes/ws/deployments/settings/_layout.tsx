@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useLocation, useParams } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 
 import {
   Breadcrumb,
@@ -11,21 +11,15 @@ import { buttonVariants } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { useDeployment } from "../_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "../_components/DeploymentsNavbarTabs";
-import { mockDeploymentDetail } from "../_components/mockData";
 
 export default function DeploymentsSettingsLayout() {
-  const { deploymentId } = useParams();
+  const { deployment } = useDeployment();
   const { workspace } = useWorkspace();
   const path = useLocation();
-  // const navigate = useNavigate();
 
-  const baseUrl = `/${workspace.slug}/deployments/${deploymentId}/settings`;
-
-  // if (path.pathname === baseUrl) {
-  //   navigate(`${baseUrl}/general`);
-  // }
-  console.log(path.pathname === baseUrl);
+  const baseUrl = `/${workspace.slug}/deployments/${deployment.id}`;
 
   const isActive = (pathname: string) => path.pathname.startsWith(pathname);
 
@@ -38,8 +32,6 @@ export default function DeploymentsSettingsLayout() {
     variant: "ghost",
     className: "w-full justify-start bg-muted text-primary",
   });
-
-  const deployment = mockDeploymentDetail;
 
   return (
     <>
@@ -70,7 +62,7 @@ export default function DeploymentsSettingsLayout() {
         </div>
 
         <div className="flex items-center gap-4">
-          <DeploymentsNavbarTabs deploymentId={deployment.id} />
+          <DeploymentsNavbarTabs />
         </div>
       </header>
       <div className="container mx-auto flex max-w-6xl gap-8 py-20">
