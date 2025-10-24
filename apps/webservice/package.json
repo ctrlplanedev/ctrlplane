@@ -26,6 +26,7 @@
     "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/ui": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
+    "@ctrlplane/workspace-engine-sdk": "workspace:*",
     "@hookform/resolvers": "catalog:",
     "@icons-pack/react-simple-icons": "^10.2.0",
     "@monaco-editor/react": "^4.7.0",

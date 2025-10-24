@@ -1,8 +1,10 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
 import { buildConflictUpdateColumns, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { Event, sendGoEvent } from "@ctrlplane/events";
 import { updateJob } from "@ctrlplane/job-dispatch";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
@@ -16,6 +18,12 @@ const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
   if (conclusion === "skipped") return JobStatus.Skipped;
   return JobStatus.Failure;
 };
+
+const getAllWorkspaceIds = () =>
+  db
+    .select({ id: schema.workspace.id })
+    .from(schema.workspace)
+    .then((rows) => rows.map((row) => row.id));
 
 const convertStatus = (
   status: WorkflowRunEvent["workflow_run"]["status"],
@@ -64,6 +72,33 @@ const updateLinks = async (jobId: string, links: Record<string, string>) =>
       set: buildConflictUpdateColumns(schema.jobMetadata, ["value"]),
     });
 
+const convertStatusToOapiStatus = (
+  status: JobStatus,
+): WorkspaceEngine["schemas"]["JobStatus"] => {
+  switch (status) {
+    case JobStatus.Successful:
+      return "successful";
+    case JobStatus.Cancelled:
+      return "cancelled";
+    case JobStatus.Skipped:
+      return "skipped";
+    case JobStatus.Pending:
+      return "pending";
+    case JobStatus.InProgress:
+      return "inProgress";
+    case JobStatus.ActionRequired:
+      return "actionRequired";
+    case JobStatus.InvalidJobAgent:
+      return "invalidJobAgent";
+    case JobStatus.InvalidIntegration:
+      return "invalidIntegration";
+    case JobStatus.ExternalRunNotFound:
+      return "externalRunNotFound";
+    case JobStatus.Failure:
+      return "failure";
+  }
+};
+
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   const {
     id,
@@ -75,9 +110,7 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     updated_at,
   } = event.workflow_run;
 
-  const job = await getJob(id, name);
-  if (job == null)
-    throw new Error(`Job not found: externalId=${id} name=${name}`);
+  const jobId = extractUuid(name);
 
   const updatedAt = new Date(updated_at);
   const status =
@@ -92,11 +125,56 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   const externalId = id.toString();
   const Run = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
   const Workflow = `${Run}/workflow`;
+  const links = { Run, Workflow };
+  const linksStr = JSON.stringify(links);
+  const metadata = { [String(ReservedMetadataKey.Links)]: linksStr } as Record<
+    string,
+    string
+  >;
+
+  if (jobId != null) {
+    const workspaceIds = await getAllWorkspaceIds();
+    const jobUpdateEvent: WorkspaceEngine["schemas"]["JobUpdateEvent"] = {
+      job: {
+        id: jobId,
+        externalId,
+        createdAt: startedAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
+        completedAt: completedAt?.toISOString() ?? undefined,
+        startedAt: startedAt.toISOString(),
+        status: convertStatusToOapiStatus(status as JobStatus),
+        releaseId: "",
+        jobAgentConfig: {},
+        jobAgentId: "",
+        metadata,
+      },
+      fieldsToUpdate: [
+        "externalId",
+        "updatedAt",
+        "completedAt",
+        "startedAt",
+        "status",
+        "metadata",
+      ],
+    };
+
+    for (const workspaceId of workspaceIds) {
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.JobUpdated,
+        data: jobUpdateEvent,
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  const job = await getJob(id, name);
+  if (job == null)
+    throw new Error(`Job not found: externalId=${id} name=${name}`);
+
   const updates = { status, externalId, startedAt, completedAt, updatedAt };
   await updateJobInDb(job.id, updates);
 
-  const links = { Run, Workflow };
   await updateLinks(job.id, links);
-  const metadata = { [String(ReservedMetadataKey.Links)]: links };
   await updateJob(job.id, updates, metadata);
 };
