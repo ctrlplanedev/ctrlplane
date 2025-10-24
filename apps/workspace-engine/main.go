@@ -166,6 +166,7 @@ func main() {
 		log.Info("Kafka consumer started")
 		if err := kafka.RunConsumer(ctx); err != nil {
 			log.Error("received error from kafka consumer", "error", err)
+			panic(err)
 		}
 	}()
 
@@ -173,12 +174,15 @@ func main() {
 		log.Info("Workspace engine server started", "address", addr)
 		if err := router.Run(addr); err != nil {
 			log.Fatal("Failed to serve", "error", err)
+			panic(err)
 		}
 	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	
 	<-sigChan
 
+	producer.Close()
 	log.Info("Shutting down workspace engine...")
 }

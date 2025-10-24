@@ -51,12 +51,14 @@ export const sendGoEvent = createSpanWrapper(
           value: JSON.stringify(message),
         })),
       });
+      log.info("Sent event", { messages });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       span.setStatus({
         code: SpanStatusCode.ERROR,
         message: err.message,
       });
+      log.error("Failed to send event", { error });
       throw error;
     }
   },

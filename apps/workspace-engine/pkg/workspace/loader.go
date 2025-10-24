@@ -73,7 +73,13 @@ func Load(ctx context.Context, storage StorageClient, workspace *Workspace) erro
 
 	data, err := storage.Get(ctx, dbSnapshot.Path)
 	if err != nil {
-		return fmt.Errorf("failed to read workspace from disk: %w", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to read workspace from disk")
+		log.Warn("Failed to read workspace from disk, populating workspace with initial state", "workspaceID", workspace.ID, "error", err)
+		if err := PopulateWorkspaceWithInitialState(ctx, workspace); err != nil {
+			return fmt.Errorf("failed to populate workspace with initial state: %w", err)
+		}
+		return nil
 	}
 
 	span.AddEvent("loaded workspace from disk")

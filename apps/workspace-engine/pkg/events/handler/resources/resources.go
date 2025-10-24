@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"errors"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
@@ -20,9 +19,7 @@ func HandleResourceCreated(
 		return err
 	}
 
-	if resource.WorkspaceId != ws.ID {
-		return errors.New("resource workspace id does not match workspace id")
-	}
+	resource.WorkspaceId = ws.ID
 
 	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
 		return err
