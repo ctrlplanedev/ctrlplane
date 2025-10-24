@@ -158,7 +158,11 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message,
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}
 
-	isReplay := offsetTracker.MessageOffset <= offsetTracker.LastCommittedOffset
+	span.SetAttributes(attribute.Int64("message.offset", offsetTracker.MessageOffset))
+	span.SetAttributes(attribute.Int64("last.committed.offset", offsetTracker.LastCommittedOffset))
+	span.SetAttributes(attribute.Int64("last.workspace.offset", offsetTracker.LastWorkspaceOffset))
+
+	isReplay := offsetTracker.MessageOffset < offsetTracker.LastCommittedOffset
 	ws.Store().SetIsReplay(isReplay)
 
 	if offsetTracker.MessageOffset <= offsetTracker.LastWorkspaceOffset {
