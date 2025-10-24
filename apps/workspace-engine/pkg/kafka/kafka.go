@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/events"
 	eventHanlder "workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
@@ -22,10 +22,9 @@ import (
 
 // Configuration variables loaded from environment
 var (
-	Topic               = getEnv("KAFKA_TOPIC", "workspace-events")
-	GroupID             = getEnv("KAFKA_GROUP_ID", "workspace-engine")
-	Brokers             = getEnv("KAFKA_BROKERS", "localhost:9092")
-	MinSnapshotDistance = getEnvInt("SNAPSHOT_DISTANCE_MINUTES", 60)
+	Topic   = getEnv("KAFKA_TOPIC", "workspace-events")
+	GroupID = getEnv("KAFKA_GROUP_ID", "workspace-engine")
+	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
 )
 
 // getEnv retrieves an environment variable or returns a default value
@@ -35,20 +34,6 @@ func getEnv(varName string, defaultValue string) string {
 		return defaultValue
 	}
 	return v
-}
-
-// getEnvInt retrieves an integer environment variable or returns a default value
-func getEnvInt(varName string, defaultValue int64) int64 {
-	v := os.Getenv(varName)
-	if v == "" {
-		return defaultValue
-	}
-	i, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		log.Warn("Failed to parse environment variable as integer, using default", "var", varName, "value", v, "default", defaultValue)
-		return defaultValue
-	}
-	return i
 }
 
 func getLastSnapshot(ctx context.Context, msg *kafka.Message) (*db.WorkspaceSnapshot, error) {
@@ -207,8 +192,7 @@ func RunConsumer(ctx context.Context) error {
 			continue
 		}
 
-		shouldSaveSnapshot := lastSnapshot == nil || lastSnapshot.Timestamp.Before(msg.Timestamp.Add(-time.Duration(MinSnapshotDistance)*time.Minute))
-		if shouldSaveSnapshot {
+		if workspacesave.IsWorkspaceSaveEvent(msg) {
 			snapshot := &db.WorkspaceSnapshot{
 				WorkspaceID:   ws.ID,
 				Path:          fmt.Sprintf("%s.gob", ws.ID),

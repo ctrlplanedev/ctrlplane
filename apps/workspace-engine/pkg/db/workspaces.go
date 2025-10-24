@@ -104,10 +104,10 @@ const WORKSPACE_SNAPSHOT_SELECT_QUERY = `
 		timestamp, 
 		partition, 
 		num_partitions, 
-		offset 
+		"offset" 
 	FROM workspace_snapshot
 	WHERE workspace_id = $1
-	ORDER BY offset DESC, timestamp DESC
+	ORDER BY "offset" DESC, timestamp DESC
 	LIMIT 1
 `
 
@@ -148,10 +148,10 @@ func GetLatestWorkspaceSnapshots(ctx context.Context, workspaceIDs []string) (ma
 	defer db.Release()
 
 	const query = `
-		SELECT DISTINCT ON (workspace_id) workspace_id, path, timestamp, partition, num_partitions, offset 
+		SELECT DISTINCT ON (workspace_id) workspace_id, path, timestamp, partition, num_partitions, "offset" 
 		FROM workspace_snapshot 
 		WHERE workspace_id = ANY($1)
-		ORDER BY workspace_id, offset DESC, timestamp DESC
+		ORDER BY workspace_id, "offset" DESC, timestamp DESC
 	`
 	rows, err := db.Query(ctx, query, workspaceIDs)
 	if err != nil {
@@ -180,7 +180,7 @@ func GetLatestWorkspaceSnapshots(ctx context.Context, workspaceIDs []string) (ma
 }
 
 const WORKSPACE_SNAPSHOT_INSERT_QUERY = `
-	INSERT INTO workspace_snapshot (workspace_id, path, timestamp, partition, num_partitions, offset)
+	INSERT INTO workspace_snapshot (workspace_id, path, timestamp, partition, num_partitions, "offset")
 	VALUES ($1, $2, $3, $4, $5, $6)
 `
 
