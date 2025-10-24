@@ -59,10 +59,14 @@ func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspac
 		}
 
 		earliestOffset := getEarliestOffset(snapshots)
+		effectiveOffset := earliestOffset
+		if effectiveOffset > 0 {
+			effectiveOffset = effectiveOffset + 1
+		}
 		if err := consumer.Seek(kafka.TopicPartition{
 			Topic:     &Topic,
 			Partition: partition,
-			Offset:    kafka.Offset(earliestOffset),
+			Offset:    kafka.Offset(effectiveOffset),
 		}, 0); err != nil {
 			log.Error("Failed to seek to earliest offset", "error", err)
 			continue

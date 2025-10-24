@@ -161,7 +161,7 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 	// Create a mock Kafka message
 	topic := "test-topic"
 	partition := int32(0)
-	offset := kafka.Offset(0)
+	offset := kafka.Offset(1)
 
 	msg := &kafka.Message{
 		TopicPartition: kafka.TopicPartition{
@@ -175,7 +175,7 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 	offsetTracker := handler.OffsetTracker{
 		LastCommittedOffset: 0,
 		LastWorkspaceOffset: 0,
-		MessageOffset:       1,
+		MessageOffset:       int64(offset),
 	}
 
 	if _, err := tw.eventListener.ListenAndRoute(ctx, msg, offsetTracker); err != nil {

@@ -98,7 +98,16 @@ type WorkspaceSnapshot struct {
 }
 
 const WORKSPACE_SNAPSHOT_SELECT_QUERY = `
-	SELECT workspace_id, path, timestamp, partition, num_partitions, offset FROM workspace_snapshot WHERE workspace_id = $1 ORDER BY timestamp DESC LIMIT 1
+	SELECT 
+		workspace_id, 
+		path, 
+		timestamp, 
+		partition, 
+		num_partitions, 
+		offset 
+	FROM workspace_snapshot
+	WHERE workspace_id = $1
+	ORDER BY offset DESC LIMIT 1
 `
 
 func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) (*WorkspaceSnapshot, error) {
@@ -127,6 +136,10 @@ func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) (*WorkspaceSn
 }
 
 func GetLatestWorkspaceSnapshots(ctx context.Context, workspaceIDs []string) (map[string]*WorkspaceSnapshot, error) {
+	if len(workspaceIDs) == 0 {
+		return nil, nil
+	}
+
 	db, err := GetDB(ctx)
 	if err != nil {
 		return nil, err
@@ -137,7 +150,7 @@ func GetLatestWorkspaceSnapshots(ctx context.Context, workspaceIDs []string) (ma
 		SELECT DISTINCT ON (workspace_id) workspace_id, path, timestamp, partition, num_partitions, offset 
 		FROM workspace_snapshot 
 		WHERE workspace_id = ANY($1)
-		ORDER BY workspace_id, timestamp DESC
+		ORDER BY workspace_id, offset DESC
 	`
 	rows, err := db.Query(ctx, query, workspaceIDs)
 	if err != nil {
