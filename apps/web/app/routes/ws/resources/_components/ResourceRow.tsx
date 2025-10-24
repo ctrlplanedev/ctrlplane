@@ -79,7 +79,7 @@ export const ChildrenResources: React.FC<{ resourceId: string }> = ({
   resourceId,
 }) => {
   const { workspace } = useWorkspace();
-  const relationsQuery = trpc.resources.relations.useQuery({
+  const relationsQuery = trpc.resource.relations.useQuery({
     workspaceId: workspace.id,
     resourceId,
   });
