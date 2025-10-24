@@ -45,7 +45,6 @@ function SelectorWithResources() {
   const updateDeployment = trpc.deployment.update.useMutation();
   const onResourceSelectorChange = async (selector: string) => {
     setSelector(selector);
-    console.log("selector", selector);
     await updateDeployment.mutateAsync({
       workspaceId: workspace.id,
       deploymentId: deployment.id,

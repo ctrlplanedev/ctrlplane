@@ -154,6 +154,12 @@ export const deploymentsRouter = router({
         }),
       }),
     )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
     .mutation(async ({ input }) => {
       const { workspaceId, deploymentId, data } = input;
       const validate = await wsEngine.POST("/v1/validate/resource-selector", {
