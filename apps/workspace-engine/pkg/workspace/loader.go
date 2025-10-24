@@ -43,6 +43,7 @@ func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snap
 	}
 
 	log.Info("Workspace saved to storage", "workspaceID", workspace.ID)
+
 	return nil
 }
 
