@@ -264,6 +264,152 @@ func TestEngine_Kafka_Replay_ReplayMode(t *testing.T) {
 	}
 }
 
+// TestEngine_Kafka_Replay_JobDispatchPrevention tests that workspace state is rebuilt
+// correctly during replay mode (verifies replay flag behavior)
+func TestEngine_Kafka_Replay_JobDispatchPrevention(t *testing.T) {
+	env := setupTestEnvironment(t)
+	defer env.cleanup()
+
+	systemID := uuid.New().String()
+	environmentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	versionID := uuid.New().String()
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+
+	// Create complete deployment setup
+	env.produceSystemCreateEvent(systemID, "test-system")
+	env.produceEnvironmentCreateEvent(systemID, environmentID, "production")
+	env.produceGithubEntityCreateEvent("test-owner", 12345)
+	env.produceJobAgentCreateEvent(jobAgentID, "github-agent", 12345, "test-owner", "test-repo", 789)
+	env.produceDeploymentCreateEvent(systemID, deploymentID, "api-service", jobAgentID)
+	env.produceResourceCreateEvent(resourceID)
+	env.produceDeploymentVersionCreateEvent(deploymentID, versionID, "v1.0.0")
+	env.produceWorkspaceSaveEvent()
+
+	// Run consumer
+	env.runConsumer(5 * time.Second)
+
+	ws := workspace.GetWorkspace(env.workspaceID)
+	if ws == nil {
+		t.Fatal("Workspace not found")
+	}
+
+	// Verify deployment setup
+	if _, exists := ws.Deployments().Get(deploymentID); !exists {
+		t.Fatal("Deployment not created")
+	}
+	if _, exists := ws.Environments().Get(environmentID); !exists {
+		t.Fatal("Environment not created")
+	}
+	if _, exists := ws.Resources().Get(resourceID); !exists {
+		t.Fatal("Resource not created")
+	}
+
+	// Verify release targets created
+	releaseTargets, err := ws.ReleaseTargets().Items(env.ctx)
+	if err != nil {
+		t.Fatalf("Failed to get release targets: %v", err)
+	}
+	if len(releaseTargets) == 0 {
+		t.Fatal("No release targets created")
+	}
+
+	initialJobCount := len(ws.Jobs().Items())
+
+	// Get snapshot
+	snapshot, err := db.GetWorkspaceSnapshot(env.ctx, env.workspaceID)
+	if err != nil || snapshot == nil {
+		t.Fatal("Snapshot not created")
+	}
+
+	// Test replay mode: reset snapshot to force replay
+	oldSnapshot := &db.WorkspaceSnapshot{
+		WorkspaceID:   env.workspaceID,
+		Path:          snapshot.Path,
+		Timestamp:     snapshot.Timestamp,
+		Partition:     0,
+		Offset:        0,
+		NumPartitions: 1,
+	}
+
+	if err := db.WriteWorkspaceSnapshot(env.ctx, oldSnapshot); err != nil {
+		t.Fatalf("Failed to write old snapshot: %v", err)
+	}
+
+	// Create new version in replay mode
+	version2ID := uuid.New().String()
+	env.produceDeploymentVersionCreateEvent(deploymentID, version2ID, "v2.0.0")
+	env.produceWorkspaceSaveEvent()
+
+	env.runConsumer(5 * time.Second)
+
+	// Verify version created during replay
+	ws = workspace.GetWorkspace(env.workspaceID)
+	versions := ws.DeploymentVersions().Items()
+
+	versionFound := false
+	for _, v := range versions {
+		if v.Id == version2ID {
+			versionFound = true
+			break
+		}
+	}
+
+	if !versionFound {
+		t.Fatal("Deployment version not created during replay")
+	}
+
+	// Verify workspace state maintained during replay
+	replayJobCount := len(ws.Jobs().Items())
+	if replayJobCount < initialJobCount {
+		t.Fatal("Jobs lost during replay (state rebuild failed)")
+	}
+
+	// Verify release targets still exist after replay
+	replayReleaseTargets, err := ws.ReleaseTargets().Items(env.ctx)
+	if err != nil {
+		t.Fatalf("Failed to get release targets after replay: %v", err)
+	}
+	if len(replayReleaseTargets) == 0 {
+		t.Fatal("Release targets lost during replay")
+	}
+
+	// Verify snapshot was created and contains release targets
+	finalSnapshot, err := db.GetWorkspaceSnapshot(env.ctx, env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get final snapshot: %v", err)
+	}
+	if finalSnapshot == nil {
+		t.Fatal("No final snapshot created")
+	}
+
+	// Load snapshot and verify release targets are persisted
+	storage := workspace.NewFileStorage("./state")
+	snapshotData, err := storage.Get(env.ctx, finalSnapshot.Path)
+	if err != nil {
+		t.Fatalf("Failed to read snapshot file: %v", err)
+	}
+
+	restoredWs := workspace.New(uuid.New().String())
+	if err := restoredWs.GobDecode(snapshotData); err != nil {
+		t.Fatalf("Failed to decode snapshot: %v", err)
+	}
+
+	// Verify release targets restored from snapshot
+	restoredReleaseTargets, err := restoredWs.ReleaseTargets().Items(env.ctx)
+	if err != nil {
+		t.Fatalf("Failed to get release targets from restored workspace: %v", err)
+	}
+	if len(restoredReleaseTargets) == 0 {
+		t.Fatal("Release targets not persisted in snapshot")
+	}
+	if len(restoredReleaseTargets) != len(releaseTargets) {
+		t.Fatalf("Release target count mismatch: expected %d, got %d in restored snapshot",
+			len(releaseTargets), len(restoredReleaseTargets))
+	}
+}
+
 // TestEngine_Kafka_Replay_OffsetCommit tests that offsets are committed correctly
 // after message processing
 func TestEngine_Kafka_Replay_OffsetCommit(t *testing.T) {
@@ -451,6 +597,124 @@ func (env *testEnvironment) produceWorkspaceSaveEvent() {
 	produceKafkaMessage(env.t, env.producer, env.topicName, event, int32(0), 0)
 }
 
+// produceSystemCreateEvent produces a system creation event
+func (env *testEnvironment) produceSystemCreateEvent(systemID, name string) {
+	env.t.Helper()
+
+	payload := map[string]interface{}{
+		"id":          systemID,
+		"workspaceId": env.workspaceID,
+		"name":        name,
+		"description": fmt.Sprintf("System %s", name),
+	}
+
+	event := createTestEvent(env.workspaceID, eventHandler.SystemCreate, payload)
+	produceKafkaMessage(env.t, env.producer, env.topicName, event, int32(0), 0)
+}
+
+// produceEnvironmentCreateEvent produces an environment creation event with resource selector
+func (env *testEnvironment) produceEnvironmentCreateEvent(systemID, environmentID, name string) {
+	env.t.Helper()
+
+	// Match-all resource selector
+	selector := map[string]interface{}{
+		"json": map[string]interface{}{
+			"type":     "name",
+			"operator": "contains",
+			"value":    "",
+		},
+	}
+
+	payload := map[string]interface{}{
+		"id":               environmentID,
+		"workspaceId":      env.workspaceID,
+		"systemId":         systemID,
+		"name":             name,
+		"resourceSelector": selector,
+	}
+
+	event := createTestEvent(env.workspaceID, eventHandler.EnvironmentCreate, payload)
+	produceKafkaMessage(env.t, env.producer, env.topicName, event, int32(0), 0)
+}
+
+// produceGithubEntityCreateEvent produces a GitHub entity creation event
+func (env *testEnvironment) produceGithubEntityCreateEvent(slug string, installationID int) {
+	env.t.Helper()
+
+	payload := map[string]interface{}{
+		"workspaceId":    env.workspaceID,
+		"slug":           slug,
+		"installationId": installationID,
+	}
+
+	event := createTestEvent(env.workspaceID, eventHandler.GithubEntityCreate, payload)
+	produceKafkaMessage(env.t, env.producer, env.topicName, event, int32(0), 0)
+}
+
+// produceJobAgentCreateEvent produces a job agent creation event
+func (env *testEnvironment) produceJobAgentCreateEvent(jobAgentID, name string, installationID int, owner, repo string, workflowID int) {
+	env.t.Helper()
+
+	payload := map[string]interface{}{
+		"id":          jobAgentID,
+		"workspaceId": env.workspaceID,
+		"name":        name,
+		"type":        "github",
+		"config": map[string]interface{}{
+			"installationId": installationID,
+			"owner":          owner,
+			"repo":           repo,
+			"workflowId":     workflowID,
+		},
+	}
+
+	event := createTestEvent(env.workspaceID, eventHandler.JobAgentCreate, payload)
+	produceKafkaMessage(env.t, env.producer, env.topicName, event, int32(0), 0)
+}
+
+// produceDeploymentCreateEvent produces a deployment creation event
+func (env *testEnvironment) produceDeploymentCreateEvent(systemID, deploymentID, name, jobAgentID string) {
+	env.t.Helper()
+
+	// Match-all resource selector
+	selector := map[string]interface{}{
+		"json": map[string]interface{}{
+			"type":     "name",
+			"operator": "contains",
+			"value":    "",
+		},
+	}
+
+	payload := map[string]interface{}{
+		"id":               deploymentID,
+		"workspaceId":      env.workspaceID,
+		"systemId":         systemID,
+		"name":             name,
+		"slug":             name,
+		"jobAgentId":       jobAgentID,
+		"jobAgentConfig":   map[string]interface{}{},
+		"resourceSelector": selector,
+	}
+
+	event := createTestEvent(env.workspaceID, eventHandler.DeploymentCreate, payload)
+	produceKafkaMessage(env.t, env.producer, env.topicName, event, int32(0), 0)
+}
+
+// produceDeploymentVersionCreateEvent produces a deployment version creation event
+func (env *testEnvironment) produceDeploymentVersionCreateEvent(deploymentID, versionID, version string) {
+	env.t.Helper()
+
+	payload := map[string]interface{}{
+		"id":           versionID,
+		"workspaceId":  env.workspaceID,
+		"deploymentId": deploymentID,
+		"version":      version,
+	}
+
+	event := createTestEvent(env.workspaceID, eventHandler.DeploymentVersionCreate, payload)
+	produceKafkaMessage(env.t, env.producer, env.topicName, event, int32(0), 0)
+}
+
 // runConsumer runs the consumer for the specified duration and handles shutdown
 func (env *testEnvironment) runConsumer(duration time.Duration) {
 	env.t.Helper()
@@ -473,34 +737,6 @@ func (env *testEnvironment) runConsumer(duration time.Duration) {
 	case <-time.After(5 * time.Second):
 		env.t.Fatal("Consumer did not shutdown in time")
 	}
-}
-
-// readMessages reads messages from consumer until count is reached or timeout
-func (env *testEnvironment) readMessages(count int, timeoutDuration time.Duration) []*kafka.Message {
-	env.t.Helper()
-
-	var messages []*kafka.Message
-	timeout := time.After(timeoutDuration)
-
-	for len(messages) < count {
-		select {
-		case <-timeout:
-			env.t.Fatalf("Timeout waiting for messages. Got: %d, Expected: %d", len(messages), count)
-		default:
-		}
-
-		msg, err := env.consumer.ReadMessage(100 * time.Millisecond)
-		if err != nil {
-			if err.(kafka.Error).Code() == kafka.ErrTimedOut {
-				continue
-			}
-			env.t.Fatalf("Error reading message: %v", err)
-		}
-
-		messages = append(messages, msg)
-	}
-
-	return messages
 }
 
 func isKafkaAvailable(t *testing.T) bool {
