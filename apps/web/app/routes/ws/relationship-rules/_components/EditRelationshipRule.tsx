@@ -70,10 +70,10 @@ const relationshipRuleSchema = z.object({
 type RelationshipRuleFormData = z.infer<typeof relationshipRuleSchema>;
 
 type EditRelationshipRuleProps = {
-  reference: string;
+  ruleId: string;
 };
 
-export function EditRelationshipRule({ reference }: EditRelationshipRuleProps) {
+export function EditRelationshipRule({ ruleId }: EditRelationshipRuleProps) {
   const { workspace } = useWorkspace();
   const navigate = useNavigate();
   const utils = trpc.useUtils();
@@ -86,7 +86,7 @@ export function EditRelationshipRule({ reference }: EditRelationshipRuleProps) {
       offset: 0,
     });
 
-  const rule = relationshipRules?.items.find((r) => r.reference === reference);
+  const rule = relationshipRules?.items.find((r) => r.id === ruleId);
 
   const form = useForm<RelationshipRuleFormData>({
     resolver: zodResolver(relationshipRuleSchema),
@@ -208,7 +208,7 @@ export function EditRelationshipRule({ reference }: EditRelationshipRuleProps) {
       <div className="flex flex-col items-center justify-center gap-4 p-12">
         <h3 className="text-lg font-semibold">Relationship rule not found</h3>
         <p className="text-sm text-muted-foreground">
-          The relationship rule with reference "{reference}" could not be found.
+          The relationship rule with ID "{ruleId}" could not be found.
         </p>
         <Button
           onClick={() => navigate(`/${workspace.slug}/relationship-rules`)}

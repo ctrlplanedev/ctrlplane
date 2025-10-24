@@ -190,7 +190,7 @@ export default function RelationshipRules() {
                       </div>
                     </div>
                     <Link
-                      to={`/${workspace.slug}/relationship-rules/${rule.reference}/edit`}
+                      to={`/${workspace.slug}/relationship-rules/${rule.id}/edit`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button variant="ghost" size="icon" className="h-8 w-8">

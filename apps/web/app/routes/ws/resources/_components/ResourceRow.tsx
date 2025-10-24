@@ -85,14 +85,15 @@ export const ChildrenResources: React.FC<{ resourceId: string }> = ({
     resourceId,
   });
 
-  const relationships = relationsQuery.data?.relationships ?? {};
-  const resourceRelations = Object.values(relationships).flatMap((r) =>
-    r
-      .filter((r) => r.entityType === "resource")
-      .filter((r) => r.direction === "to")
-      .map((r) => r.entity),
-  );
+  const relationships = relationsQuery.data?.relations ?? {};
+  const resourceRelations = Object.values(relationships)
+    .flatMap((r) => r)
+    .filter((r) => r.direction === "to")
+    .filter((r) => r.entityType === "resource")
+    .map((r) => r.entity);
 
+  console.log(relationsQuery.data);
+  console.log(resourceRelations);
   return (
     <div className="ml-3 space-y-2 border-l py-2 pl-4">
       {resourceRelations.length === 0 && (

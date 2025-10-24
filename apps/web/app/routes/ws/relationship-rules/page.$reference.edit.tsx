@@ -24,10 +24,10 @@ export function meta() {
 
 export default function PageEdit() {
   const { workspace } = useWorkspace();
-  const { reference } = useParams();
+  const { ruleId } = useParams();
 
-  if (!reference) {
-    return <div>Invalid reference</div>;
+  if (!ruleId) {
+    return <div>Invalid rule ID</div>;
   }
 
   return (
@@ -48,7 +48,7 @@ export default function PageEdit() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Edit {reference}</BreadcrumbPage>
+                <BreadcrumbPage>Edit {ruleId}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -56,7 +56,7 @@ export default function PageEdit() {
       </header>
 
       <div className="container mx-auto max-w-3xl p-8">
-        <EditRelationshipRule reference={reference} />
+        <EditRelationshipRule ruleId={ruleId} />
       </div>
     </>
   );

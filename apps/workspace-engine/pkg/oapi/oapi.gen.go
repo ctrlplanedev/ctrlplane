@@ -170,6 +170,17 @@ type DeploymentVersion struct {
 // DeploymentVersionStatus defines model for DeploymentVersionStatus.
 type DeploymentVersionStatus string
 
+// EntityRelation defines model for EntityRelation.
+type EntityRelation struct {
+	Direction RelationDirection `json:"direction"`
+	Entity    RelatableEntity   `json:"entity"`
+
+	// EntityId ID of the related entity
+	EntityId   string              `json:"entityId"`
+	EntityType RelatableEntityType `json:"entityType"`
+	Rule       *RelationshipRule   `json:"rule,omitempty"`
+}
+
 // Environment defines model for Environment.
 type Environment struct {
 	CreatedAt        string    `json:"createdAt"`
@@ -357,17 +368,6 @@ type RelatableEntity struct {
 
 // RelatableEntityType defines model for RelatableEntityType.
 type RelatableEntityType string
-
-// RelatedEntityGroup defines model for RelatedEntityGroup.
-type RelatedEntityGroup struct {
-	Direction RelationDirection `json:"direction"`
-	Entity    RelatableEntity   `json:"entity"`
-
-	// EntityId ID of the related entity
-	EntityId   string              `json:"entityId"`
-	EntityType RelatableEntityType `json:"entityType"`
-	Rule       *RelationshipRule   `json:"rule,omitempty"`
-}
 
 // RelationDirection defines model for RelationDirection.
 type RelationDirection string
@@ -1298,7 +1298,7 @@ type ServerInterface interface {
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions)
 	GetVersionsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params GetVersionsForDeploymentParams)
 	// Get related entities for a given entity
-	// (GET /v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships)
+	// (GET /v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations)
 	GetRelatedEntities(c *gin.Context, workspaceId string, relatableEntityType RelatableEntityType, entityId string)
 	// List environments
 	// (GET /v1/workspaces/{workspaceId}/environments)
@@ -2470,7 +2470,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/release-targets", wrapper.GetReleaseTargetsForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/versions", wrapper.GetVersionsForDeployment)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relationships", wrapper.GetRelatedEntities)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relations", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments", wrapper.ListEnvironments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)

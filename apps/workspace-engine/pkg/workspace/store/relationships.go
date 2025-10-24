@@ -54,29 +54,25 @@ func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
 	return r.repo.RelationshipRules.Items()
 }
 
-type RelatedEntities struct {
-	RelationshipRule *oapi.RelationshipRule
-	Entities         []*oapi.RelatableEntity
-}
-
 // GetRelatedEntities returns all entities related to the given entity, grouped by relationship reference.
 // This includes relationships where the entity is the "from" side (outgoing) or "to" side (incoming).
 func (r *RelationshipRules) GetRelatedEntities(
 	ctx context.Context,
 	entity *oapi.RelatableEntity,
 ) (
-	map[string][]*relationships.ComputeEntityRelationship,
+	map[string][]*oapi.EntityRelation,
 	error,
 ) {
-	result := make(map[string][]*relationships.ComputeEntityRelationship)
+	result := make(map[string][]*oapi.EntityRelation)
 
 	// Find all relationship rules where this entity matches
 	for _, rule := range r.repo.RelationshipRules.Items() {
+
 		// Check if this entity matches the "from" selector
 		fromMatches := false
 		if rule.FromType == entity.GetType() {
 			if rule.FromSelector == nil {
-				fromMatches = false
+				fromMatches = true
 			} else {
 				matched, err := selector.Match(ctx, rule.FromSelector, entity.Item())
 				if err != nil {
@@ -93,16 +89,14 @@ func (r *RelationshipRules) GetRelatedEntities(
 				return nil, err
 			}
 			if len(toEntities) > 0 {
-				relatedEntities := make([]*relationships.ComputeEntityRelationship, 0)
+				relatedEntities := make([]*oapi.EntityRelation, 0)
 				for _, toEntity := range toEntities {
-					relatedEntities = append(relatedEntities, &relationships.ComputeEntityRelationship{
-						Relationship: rule,
-						Direction:    oapi.To,
-						RelatedEntity: &relationships.RelatedEntity[*oapi.RelatableEntity]{
-							EntityType: toEntity.GetType(),
-							EntityID:   toEntity.GetID(),
-							Entity:     toEntity,
-						},
+					relatedEntities = append(relatedEntities, &oapi.EntityRelation{
+						Rule:       rule,
+						Direction:  oapi.To,
+						EntityType: toEntity.GetType(),
+						EntityId:   toEntity.GetID(),
+						Entity:     *toEntity,
 					})
 				}
 
@@ -114,7 +108,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 		toMatches := false
 		if rule.ToType == entity.GetType() {
 			if rule.ToSelector == nil {
-				toMatches = false
+				toMatches = true
 			} else {
 				matched, err := selector.Match(ctx, rule.ToSelector, entity.Item())
 				if err != nil {
@@ -131,16 +125,14 @@ func (r *RelationshipRules) GetRelatedEntities(
 				return nil, err
 			}
 			if len(fromEntities) > 0 {
-				relatedEntities := make([]*relationships.ComputeEntityRelationship, 0)
+				relatedEntities := make([]*oapi.EntityRelation, 0)
 				for _, fromEntity := range fromEntities {
-					relatedEntities = append(relatedEntities, &relationships.ComputeEntityRelationship{
-						Relationship: rule,
-						Direction:    oapi.From,
-						RelatedEntity: &relationships.RelatedEntity[*oapi.RelatableEntity]{
-							EntityType: rule.FromType,
-							EntityID:   fromEntity.GetID(),
-							Entity:     fromEntity,
-						},
+					relatedEntities = append(relatedEntities, &oapi.EntityRelation{
+						Rule:       rule,
+						Direction:  oapi.From,
+						EntityType: rule.FromType,
+						EntityId:   fromEntity.GetID(),
+						Entity:     *fromEntity,
 					})
 				}
 				result[rule.Reference] = append(result[rule.Reference], relatedEntities...)
@@ -166,15 +158,14 @@ func (r *RelationshipRules) findMatchingEntities(
 	case "deployment":
 		for _, deployment := range r.store.Deployments.Items() {
 			deploymentEntity := relationships.NewDeploymentEntity(deployment)
-			if entitySelector == nil {
-				continue
-			}
-			matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
-			if err != nil {
-				return nil, err
-			}
-			if !matched {
-				continue
+			if entitySelector != nil {
+				matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
+				if err != nil {
+					return nil, err
+				}
+				if !matched {
+					continue
+				}
 			}
 
 			pm, err := rule.Matcher.AsPropertiesMatcher()
@@ -207,15 +198,14 @@ func (r *RelationshipRules) findMatchingEntities(
 	case "environment":
 		for _, environment := range r.store.Environments.Items() {
 			environmentEntity := relationships.NewEnvironmentEntity(environment)
-			if entitySelector == nil {
-				continue
-			}
-			matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
-			if err != nil {
-				return nil, err
-			}
-			if !matched {
-				continue
+			if entitySelector != nil {
+				matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
+				if err != nil {
+					return nil, err
+				}
+				if !matched {
+					continue
+				}
 			}
 
 			pm, err := rule.Matcher.AsPropertiesMatcher()
@@ -248,15 +238,14 @@ func (r *RelationshipRules) findMatchingEntities(
 	case "resource":
 		for _, resource := range r.store.Resources.Items() {
 			resourceEntity := relationships.NewResourceEntity(resource)
-			if entitySelector == nil {
-				continue
-			}
-			matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
-			if err != nil {
-				return nil, err
-			}
-			if !matched {
-				continue
+			if entitySelector != nil {
+				matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
+				if err != nil {
+					return nil, err
+				}
+				if !matched {
+					continue
+				}
 			}
 
 			pm, err := rule.Matcher.AsPropertiesMatcher()

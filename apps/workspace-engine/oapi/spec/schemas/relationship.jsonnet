@@ -57,7 +57,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  RelatedEntityGroup: {
+  EntityRelation: {
     type: 'object',
     required: ['relationshipRule', 'direction', 'entityType', 'entityId', 'entity'],
     properties: {

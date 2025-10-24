@@ -16,8 +16,6 @@ type ComputedRelationship[E any] struct {
 	RelatedEntity *RelatedEntity[E]
 }
 
-type ComputeEntityRelationship = ComputedRelationship[*oapi.RelatableEntity]
-
 // Relationship represents a single relationship between two entities
 type Relationship struct {
 	From *oapi.RelatableEntity // The source entity (can be *oapi.Resource, *oapi.Deployment, *oapi.Environment, etc.)

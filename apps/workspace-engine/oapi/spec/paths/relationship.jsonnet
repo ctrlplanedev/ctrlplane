@@ -16,7 +16,7 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships': {
+  '/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations': {
     get: {
       summary: 'Get related entities for a given entity',
       operationId: 'getRelatedEntities',
@@ -30,11 +30,11 @@ local openapi = import '../lib/openapi.libsonnet';
         {
           type: 'object',
           properties: {
-            relationships: {
+            relations: {
               type: 'object',
               additionalProperties: {
                 type: 'array',
-                items: openapi.schemaRef('RelatedEntityGroup'),
+                items: openapi.schemaRef('EntityRelation'),
               },
             },
           },

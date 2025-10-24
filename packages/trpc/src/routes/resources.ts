@@ -77,7 +77,7 @@ export const resourcesRouter = router({
     .query(async ({ input }) => {
       const { workspaceId, resourceId } = input;
       const result = await wsEngine.GET(
-        "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships",
+        "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations",
         {
           params: {
             path: {

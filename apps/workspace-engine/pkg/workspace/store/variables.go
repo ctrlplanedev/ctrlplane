@@ -44,7 +44,7 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *oapi.RelatableEnti
 		}
 
 		computeEntityRelationship := refEntities[0]
-		value, err := relationships.GetPropertyValue(computeEntityRelationship.RelatedEntity.Entity, rv.Path)
+		value, err := relationships.GetPropertyValue(&computeEntityRelationship.Entity, rv.Path)
 		if err != nil {
 			return nil, err
 		}

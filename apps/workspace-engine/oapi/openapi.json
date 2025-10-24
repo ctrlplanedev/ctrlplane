@@ -229,6 +229,34 @@
             ],
             "type": "string"
          },
+         "EntityRelation": {
+            "properties": {
+               "direction": {
+                  "$ref": "#/components/schemas/RelationDirection"
+               },
+               "entity": {
+                  "$ref": "#/components/schemas/RelatableEntity"
+               },
+               "entityId": {
+                  "description": "ID of the related entity",
+                  "type": "string"
+               },
+               "entityType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "rule": {
+                  "$ref": "#/components/schemas/RelationshipRule"
+               }
+            },
+            "required": [
+               "relationshipRule",
+               "direction",
+               "entityType",
+               "entityId",
+               "entity"
+            ],
+            "type": "object"
+         },
          "Environment": {
             "properties": {
                "createdAt": {
@@ -774,34 +802,6 @@
                "resource"
             ],
             "type": "string"
-         },
-         "RelatedEntityGroup": {
-            "properties": {
-               "direction": {
-                  "$ref": "#/components/schemas/RelationDirection"
-               },
-               "entity": {
-                  "$ref": "#/components/schemas/RelatableEntity"
-               },
-               "entityId": {
-                  "description": "ID of the related entity",
-                  "type": "string"
-               },
-               "entityType": {
-                  "$ref": "#/components/schemas/RelatableEntityType"
-               },
-               "rule": {
-                  "$ref": "#/components/schemas/RelationshipRule"
-               }
-            },
-            "required": [
-               "relationshipRule",
-               "direction",
-               "entityType",
-               "entityId",
-               "entity"
-            ],
-            "type": "object"
          },
          "RelationDirection": {
             "enum": [
@@ -1899,7 +1899,7 @@
             "summary": "Get versions for a deployment"
          }
       },
-      "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships": {
+      "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations": {
          "get": {
             "description": "Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.",
             "operationId": "getRelatedEntities",
@@ -1932,10 +1932,10 @@
                      "application/json": {
                         "schema": {
                            "properties": {
-                              "relationships": {
+                              "relations": {
                                  "additionalProperties": {
                                     "items": {
-                                       "$ref": "#/components/schemas/RelatedEntityGroup"
+                                       "$ref": "#/components/schemas/EntityRelation"
                                     },
                                     "type": "array"
                                  },

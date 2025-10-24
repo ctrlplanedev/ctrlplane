@@ -32,7 +32,7 @@ func (s *Relations) GetRelatedEntities(c *gin.Context, workspaceId string, entit
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"relationships": relatedEntities})
+	c.JSON(http.StatusOK, gin.H{"relations": relatedEntities})
 }
 
 func (s *Relations) getEntityByType(ws *workspace.Workspace, entityType oapi.RelatableEntityType, entityId string) (*oapi.RelatableEntity, error) {

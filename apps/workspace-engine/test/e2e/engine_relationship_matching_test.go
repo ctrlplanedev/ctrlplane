@@ -104,7 +104,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 	// Verify the correct clusters are returned
 	clusterIDs := make(map[string]bool)
 	for _, cluster := range clusters {
-		clusterIDs[cluster.RelatedEntity.Entity.GetID()] = true
+		clusterIDs[cluster.EntityId] = true
 	}
 
 	if !clusterIDs["cluster-east-1"] {
@@ -186,8 +186,8 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 		t.Fatalf("expected 1 related VPC, got %d", len(vpcs))
 	}
 
-	if vpcs[0].RelatedEntity.Entity.GetID() != "vpc-us-east-1" {
-		t.Errorf("expected vpc-us-east-1, got %s", vpcs[0].RelatedEntity.Entity.GetID())
+	if vpcs[0].EntityId != "vpc-us-east-1" {
+		t.Errorf("expected vpc-us-east-1, got %s", vpcs[0].EntityId)
 	}
 }
 
@@ -270,8 +270,8 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 		t.Fatalf("expected 1 related cluster, got %d", len(clusters))
 	}
 
-	if clusters[0].RelatedEntity.Entity.GetID() != "cluster-east-1" {
-		t.Errorf("expected cluster-east-1, got %s", clusters[0].RelatedEntity.Entity.GetID())
+	if clusters[0].EntityId != "cluster-east-1" {
+		t.Errorf("expected cluster-east-1, got %s", clusters[0].EntityId)
 	}
 }
 
@@ -359,7 +359,7 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 
 	resourceIDs := make(map[string]bool)
 	for _, resource := range resources {
-		resourceIDs[resource.RelatedEntity.Entity.GetID()] = true
+		resourceIDs[resource.EntityId] = true
 	}
 
 	if !resourceIDs["db-prod"] {
@@ -572,8 +572,8 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 		t.Fatalf("expected 1 replica, got %d", len(replicas))
 	}
 
-	if replicas[0].RelatedEntity.Entity.GetID() != "db-west" {
-		t.Errorf("expected db-west, got %s", replicas[0].RelatedEntity.Entity.GetID())
+	if replicas[0].EntityId != "db-west" {
+		t.Errorf("expected db-west, got %s", replicas[0].EntityId)
 	}
 }
 
@@ -653,7 +653,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 
 	endpointIDs := make(map[string]bool)
 	for _, endpoint := range endpoints {
-		endpointIDs[endpoint.RelatedEntity.Entity.GetID()] = true
+		endpointIDs[endpoint.EntityId] = true
 	}
 
 	if !endpointIDs["endpoint-1"] {
@@ -752,7 +752,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 
 	dcIDs := make(map[string]bool)
 	for _, dc := range datacenters {
-		dcIDs[dc.RelatedEntity.Entity.GetID()] = true
+		dcIDs[dc.EntityId] = true
 	}
 
 	if !dcIDs["dc-1"] {
@@ -848,14 +848,14 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 	if len(logs) != 2 {
 		var ids []string
 		for _, log := range logs {
-			ids = append(ids, log.RelatedEntity.Entity.GetID())
+			ids = append(ids, log.EntityId)
 		}
 		t.Fatalf("expected 2 logs, got %d: %v", len(logs), ids)
 	}
 
 	logIDs := make(map[string]bool)
 	for _, log := range logs {
-		logIDs[log.RelatedEntity.Entity.GetID()] = true
+		logIDs[log.EntityId] = true
 	}
 
 	if !logIDs["log-1"] {
@@ -869,8 +869,8 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 	}
 }
 
-// TestEngine_GetRelatedEntities_NoSelectorMatchNone tests nil selectors that match no entities
-func TestEngine_GetRelatedEntities_NoSelectorMatchNone(t *testing.T) {
+// TestEngine_GetRelatedEntities_NoSelectorMatchNone tests nil selectors that match all entities of that type
+func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 	engine := integration.NewTestWorkspace(
 		t,
 		integration.WithRelationshipRule(
@@ -879,7 +879,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchNone(t *testing.T) {
 			integration.RelationshipRuleReference("in-region"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			// No selectors - matches no resources
+			// No selectors - matches all resources of the specified types
 			integration.WithPropertyMatcher(
 				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
 				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
@@ -926,13 +926,27 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchNone(t *testing.T) {
 	}
 
 	related, ok := relatedEntities["in-region"]
-	if ok {
-		t.Fatalf("expected no 'in-region' relationship, but found %d related entities", len(related))
+	if !ok {
+		t.Fatalf("'in-region' relationship not found")
 	}
 
-	// With nil selectors, no entities should match
-	if len(relatedEntities) != 0 {
-		t.Fatalf("expected 0 relationships, got %d", len(relatedEntities))
+	// With nil selectors, all resources with matching properties should match
+	// resource-1 (us-east-1) should match itself and resource-2 (us-east-1) but not resource-3 (us-west-2)
+	if len(related) != 2 {
+		t.Fatalf("expected 2 related entities, got %d", len(related))
+	}
+
+	// Verify the correct resources are returned
+	resourceIDs := make(map[string]bool)
+	for _, res := range related {
+		resourceIDs[res.EntityId] = true
+	}
+
+	if !resourceIDs["resource-1"] {
+		t.Errorf("resource-1 not in related entities (self-relationship)")
+	}
+	if !resourceIDs["resource-2"] {
+		t.Errorf("resource-2 not in related entities")
 	}
 }
 
@@ -1008,8 +1022,8 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 		t.Fatalf("expected 1 dependency, got %d", len(dependencies))
 	}
 
-	if dependencies[0].RelatedEntity.Entity.GetID() != "service-postgres" {
-		t.Errorf("expected service-postgres, got %s", dependencies[0].RelatedEntity.Entity.GetID())
+	if dependencies[0].EntityId != "service-postgres" {
+		t.Errorf("expected service-postgres, got %s", dependencies[0].EntityId)
 	}
 }
 
