@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
@@ -141,6 +142,62 @@ export const deploymentsRouter = router({
       });
 
       return deployment;
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        deploymentId: z.string(),
+        data: z.object({
+          resourceSelectorCel: z.string().min(1).max(255),
+        }),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .mutation(async ({ input }) => {
+      const { workspaceId, deploymentId, data } = input;
+      const validate = await wsEngine.POST("/v1/validate/resource-selector", {
+        body: { resourceSelector: { cel: data.resourceSelectorCel } },
+      });
+
+      if (!validate.data?.valid)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            Array.isArray(validate.data?.errors) &&
+            validate.data.errors.length > 0
+              ? validate.data.errors.join(", ")
+              : "Invalid resource selector",
+        });
+
+      const deployment = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId, deploymentId } } },
+      );
+
+      if (!deployment.data)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment not found",
+        });
+
+      const resourceSelector = { cel: data.resourceSelectorCel };
+      const updateData = { ...deployment.data, resourceSelector };
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.DeploymentUpdated,
+        timestamp: Date.now(),
+        data: updateData,
+      });
+
+      return deployment.data;
     }),
 
   createVersion: protectedProcedure
