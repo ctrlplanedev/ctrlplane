@@ -4,21 +4,28 @@ import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "./DeploymentProvider";
 
+type DeploymentTab =
+  | "environments"
+  | "resources"
+  | "settings"
+  | "release-targets"
+  | "versions";
+
+const useDeploymentTab = (baseUrl: string): DeploymentTab => {
+  const { pathname } = useLocation();
+  if (pathname === baseUrl) return "environments";
+  if (pathname.startsWith(`${baseUrl}/resources`)) return "resources";
+  if (pathname.startsWith(`${baseUrl}/settings`)) return "settings";
+  if (pathname.startsWith(`${baseUrl}/release-targets`))
+    return "release-targets";
+  return "versions";
+};
+
 export const DeploymentsNavbarTabs = () => {
   const { deployment } = useDeployment();
   const { workspace } = useWorkspace();
   const baseUrl = `/${workspace.slug}/deployments/${deployment.id}`;
-  const path = useLocation();
-  const value =
-    path.pathname == `${baseUrl}`
-      ? "environments"
-      : path.pathname.startsWith(`${baseUrl}/resources`)
-        ? "resources"
-        : path.pathname.startsWith(`${baseUrl}/settings`)
-          ? "settings"
-          : path.pathname.startsWith(`${baseUrl}/release-targets`)
-            ? "release-targets"
-            : "versions";
+  const value = useDeploymentTab(baseUrl);
 
   return (
     <Tabs value={value}>
