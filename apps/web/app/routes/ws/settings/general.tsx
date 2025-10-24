@@ -1,4 +1,5 @@
 import { useState } from "react";
+import prettyMilliseconds from "pretty-ms";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -19,6 +20,14 @@ import {
   FieldLabel,
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 
 export default function GeneralSettingsPage() {
@@ -30,10 +39,19 @@ export default function GeneralSettingsPage() {
     slug?: string;
   }>({});
 
+  const utils = trpc.useUtils();
+  const saveHistoryQuery = trpc.workspace.saveHistory.useQuery({
+    workspaceId: workspace.id,
+  });
+
   const saveWorkspace = trpc.workspace.save.useMutation({
     onSuccess: () => {
       toast.success("Workspace saved sucessfully");
+      void utils.workspace.saveHistory.invalidate({
+        workspaceId: workspace.id,
+      });
     },
+
     onError: (error: unknown) => {
       const message =
         error instanceof Error ? error.message : "Failed to update workspace";
@@ -178,7 +196,7 @@ export default function GeneralSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Workspace Information</CardTitle>
+          <CardTitle>State</CardTitle>
           <CardDescription>
             Update your workspace name and URL slug
           </CardDescription>
@@ -189,6 +207,35 @@ export default function GeneralSettingsPage() {
           >
             Force Save Workspace
           </Button>
+
+          <div className="mt-5 max-h-[500px] overflow-y-auto rounded-md border bg-muted/50">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>Partition</TableHead>
+                  <TableHead>Offset</TableHead>
+                  <TableHead>Num Partitions</TableHead>
+                  <TableHead>Path</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="font-mono text-xs">
+                {saveHistoryQuery.data?.map(({ workspace_snapshot }) => (
+                  <TableRow key={workspace_snapshot.id}>
+                    <TableCell>
+                      {prettyMilliseconds(
+                        Date.now() - workspace_snapshot.timestamp.getTime(),
+                      )}
+                    </TableCell>
+                    <TableCell>{workspace_snapshot.partition}</TableCell>
+                    <TableCell>{workspace_snapshot.offset}</TableCell>
+                    <TableCell>{workspace_snapshot.numPartitions}</TableCell>
+                    <TableCell>{workspace_snapshot.path}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

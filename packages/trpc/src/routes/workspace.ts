@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -9,6 +9,23 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { protectedProcedure, router } from "../trpc.js";
 
 export const workspaceRouter = router({
+  saveHistory: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const snapshots = await ctx.db
+        .select()
+        .from(schema.workspace)
+        .innerJoin(
+          schema.workspaceSnapshot,
+          eq(schema.workspace.id, schema.workspaceSnapshot.workspaceId),
+        )
+        .where(eq(schema.workspace.id, input.workspaceId))
+        .limit(500)
+        .orderBy(desc(schema.workspaceSnapshot.timestamp));
+
+      return snapshots;
+    }),
+
   save: protectedProcedure
     .input(z.object({ workspaceId: z.uuid() }))
     .mutation(async ({ input }) => {
