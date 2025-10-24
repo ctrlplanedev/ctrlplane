@@ -6,7 +6,12 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("kafka/consumer")
 
 // createConsumer initializes a new Kafka consumer with the configured settings
 func createConsumer() (*kafka.Consumer, error) {
@@ -55,6 +60,9 @@ func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
 }
 
 func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspaceMap map[int32][]string) error {
+	ctx, span := tracer.Start(ctx, "setOffsets")
+	defer span.End()
+
 	for partition, workspaceIDs := range partitionWorkspaceMap {
 		snapshots, err := db.GetLatestWorkspaceSnapshots(ctx, workspaceIDs)
 		if err != nil {
@@ -67,6 +75,14 @@ func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspac
 		if effectiveOffset > 0 {
 			effectiveOffset = effectiveOffset + 1
 		}
+
+		span.AddEvent(
+			"seeking to earliest offset for partition",
+			trace.WithAttributes(
+				attribute.Int("partition", int(partition)),
+				attribute.Int("effective_offset", int(effectiveOffset)),
+			),
+		)
 		if err := consumer.Seek(kafka.TopicPartition{
 			Topic:     &Topic,
 			Partition: partition,
