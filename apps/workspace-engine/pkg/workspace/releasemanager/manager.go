@@ -259,9 +259,12 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 		return nil, err
 	}
 
+	latestJob, _ := m.store.ReleaseTargets.GetLatestJob(ctx, releaseTarget)
+
 	rts := &oapi.ReleaseTargetState{
 		DesiredRelease: desiredRelease,
 		CurrentRelease: currentRelease,
+		LatestJob:      latestJob,
 	}
 
 	return rts, nil

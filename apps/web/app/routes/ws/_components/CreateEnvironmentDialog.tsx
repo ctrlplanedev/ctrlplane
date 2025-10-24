@@ -37,7 +37,7 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import CelExpressionInput from "../../_components/CelExpiressionInput";
+import CelExpressionInput from "./CelExpiressionInput";
 
 // Validation schema for environment creation
 const createEnvironmentSchema = z.object({

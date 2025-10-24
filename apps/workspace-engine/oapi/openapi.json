@@ -923,6 +923,9 @@
                },
                "desiredRelease": {
                   "$ref": "#/components/schemas/Release"
+               },
+               "latestJob": {
+                  "$ref": "#/components/schemas/Job"
                }
             },
             "type": "object"

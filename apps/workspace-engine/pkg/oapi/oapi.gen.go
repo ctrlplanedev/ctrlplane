@@ -410,6 +410,7 @@ type ReleaseTarget struct {
 type ReleaseTargetState struct {
 	CurrentRelease *Release `json:"currentRelease,omitempty"`
 	DesiredRelease *Release `json:"desiredRelease,omitempty"`
+	LatestJob      *Job     `json:"latestJob,omitempty"`
 }
 
 // ReleaseTargetWithState defines model for ReleaseTargetWithState.

@@ -799,6 +799,7 @@ export interface components {
         ReleaseTargetState: {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
+            latestJob?: components["schemas"]["Job"];
         };
         ReleaseTargetWithState: {
             releaseTarget: components["schemas"]["ReleaseTarget"];

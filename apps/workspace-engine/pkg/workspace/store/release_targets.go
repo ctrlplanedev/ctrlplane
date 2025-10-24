@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -197,4 +198,27 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 		return nil, nil, fmt.Errorf("release %s not found", mostRecentJob.ReleaseId)
 	}
 	return release, mostRecentJob, nil
+}
+
+func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Job, error) {
+	jobs := r.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
+	if len(jobs) == 0 {
+		return nil, fmt.Errorf("no jobs found for release target")
+	}
+	
+	jobsList := make([]*oapi.Job, 0, len(jobs))
+	for _, job := range jobs {
+		jobsList = append(jobsList, job)
+	}
+
+	// Sort jobs by CreatedAt in descending order (newest first)
+	sort.Slice(jobsList, func(i, j int) bool {
+		return jobsList[i].CreatedAt.After(jobsList[j].CreatedAt)
+	})
+
+	if len(jobsList) == 0 {
+		return nil, fmt.Errorf("no jobs found for release target")
+	}
+
+	return jobsList[0], nil
 }

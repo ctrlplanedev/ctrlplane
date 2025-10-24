@@ -59,11 +59,11 @@ const navigationGroups = [
   {
     label: "Orchestration",
     items: [
-      { title: "Projects", to: "/projects", icon: LayoutDashboard },
       { title: "Deployments", to: "/deployments", icon: Rocket },
       { title: "Environments", to: "/environments", icon: TreePine },
       { title: "Runners", to: "/runners", icon: Cpu },
       { title: "Policies", to: "/policies", icon: ShieldCheck },
+      { title: "Systems", to: "/systems", icon: LayoutDashboard },
       { title: "Jobs", to: "/jobs", icon: Briefcase },
     ],
   },
