@@ -27,18 +27,29 @@ var tracer = otel.Tracer("ticker")
 
 // Ticker periodically emits tick events for active workspaces
 type Ticker struct {
-	producer kafka.EventProducer
-	interval time.Duration
+	producer  kafka.EventProducer
+	interval  time.Duration
+	eventType string
 }
 
-// New creates a new ticker with the configured interval
-func New(producer kafka.EventProducer) *Ticker {
+// NewDefault creates a new ticker with the configured interval
+func NewDefault(producer kafka.EventProducer) *Ticker {
 	interval := getTickInterval()
 	log.Info("Ticker initialized", "interval", interval)
 
 	return &Ticker{
-		producer: producer,
-		interval: interval,
+		producer:  producer,
+		interval:  interval,
+		eventType: WorkspaceTickEventType,
+	}
+}
+
+// New creates a new ticker with the configured interval and event type
+func New(producer kafka.EventProducer, interval time.Duration, eventType string) *Ticker {
+	return &Ticker{
+		producer:  producer,
+		interval:  interval,
+		eventType: eventType,
 	}
 }
 
@@ -148,7 +159,7 @@ func (t *Ticker) emitTickForWorkspace(ctx context.Context, workspaceID string) e
 
 	span.SetAttributes(attribute.String("workspace.id", workspaceID))
 
-	err := t.producer.ProduceEvent(WorkspaceTickEventType, workspaceID, nil)
+	err := t.producer.ProduceEvent(t.eventType, workspaceID, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to produce tick event")
