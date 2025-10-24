@@ -409,7 +409,7 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
-				integration.DeploymentJobAgent(jobAgentId),	
+				integration.DeploymentJobAgent(jobAgentId),
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(

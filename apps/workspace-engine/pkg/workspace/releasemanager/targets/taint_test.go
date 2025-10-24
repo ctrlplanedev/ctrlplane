@@ -34,9 +34,9 @@ func createTestDeployment(id, systemID, name string) *oapi.Deployment {
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	return &oapi.Deployment{
-		Id:             id,
-		SystemId:       systemID,
-		Name:           name,
+		Id:               id,
+		SystemId:         systemID,
+		Name:             name,
 		ResourceSelector: selector,
 	}
 }

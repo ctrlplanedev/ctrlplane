@@ -204,7 +204,6 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
-
 	// Check which release targets match the policy
 	rtEast := &oapi.ReleaseTarget{
 		DeploymentId:  d1.Id,

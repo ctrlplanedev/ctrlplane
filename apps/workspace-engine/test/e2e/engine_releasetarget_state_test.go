@@ -387,7 +387,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
-				integration.DeploymentJobAgent(jobAgentID),	
+				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(

@@ -612,7 +612,7 @@ func PolicyTargetCelEnvironmentSelector(cel string) PolicyTargetSelectorOption {
 		_ = sel.FromCelSelector(oapi.CelSelector{Cel: cel})
 		s.EnvironmentSelector = sel
 	}
-}	
+}
 
 func PolicyTargetJsonEnvironmentSelector(selector map[string]any) PolicyTargetSelectorOption {
 	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {

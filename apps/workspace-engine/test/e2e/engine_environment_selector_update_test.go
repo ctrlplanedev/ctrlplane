@@ -223,7 +223,6 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 			integration.ResourceID(resourceId3),
 			integration.ResourceName("resource-3"),
 			integration.ResourceMetadata(map[string]string{"env": "prod"}),
-
 		),
 	)
 	ctx := context.Background()

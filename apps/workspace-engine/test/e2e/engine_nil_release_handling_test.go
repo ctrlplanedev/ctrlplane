@@ -97,7 +97,7 @@ func TestEngine_JobsWithNilReleaseReference(t *testing.T) {
 
 	// Test GetJobsForReleaseTarget with missing release
 	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	
+
 	// The job should be filtered out because its release doesn't exist
 	if len(jobsForTarget) != 0 {
 		t.Fatalf("expected 0 jobs for release target (release doesn't exist), got %d", len(jobsForTarget))
@@ -185,7 +185,7 @@ func TestEngine_JobsWithNilReleaseInMap(t *testing.T) {
 
 	// This should handle the nil release gracefully
 	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	
+
 	// The job should be filtered out because its release is nil
 	if len(jobsForTarget) != 0 {
 		t.Fatalf("expected 0 jobs for release target (release is nil), got %d", len(jobsForTarget))
@@ -257,13 +257,13 @@ func TestEngine_ReleaseTargetStateWithNilRelease(t *testing.T) {
 
 	// CRITICAL: GetReleaseTargetState should handle missing/nil releases
 	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
-	
+
 	// It should return an error or empty state, but NOT panic
 	if err != nil {
 		// This is acceptable - we expect an error when release is missing
 		t.Logf("Got expected error: %v", err)
 	}
-	
+
 	if state == nil {
 		t.Fatalf("state should not be nil even if there's an error")
 	}
@@ -338,7 +338,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	if !ok {
 		t.Fatalf("release should exist")
 	}
-	
+
 	releaseIdToDelete := release.ID()
 	engine.Workspace().Releases().Remove(ctx, releaseIdToDelete)
 
@@ -350,7 +350,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 
 	// Get jobs for release target - should only return jobs with valid releases
 	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	
+
 	// Should have at least one job (the one with valid release)
 	// The corrupted job should be filtered out
 	if len(jobsForTarget) < 1 {
@@ -415,7 +415,7 @@ func TestEngine_DeploymentDeletionLeavesOrphanedJobs(t *testing.T) {
 	// Jobs might still exist (depending on cleanup logic)
 	// But accessing them should not panic
 	remainingJobs := engine.Workspace().Jobs().Items()
-	
+
 	// Try to get jobs for a release target - should not panic
 	releaseTarget := &oapi.ReleaseTarget{
 		ResourceId:    resource.Id,
@@ -425,9 +425,8 @@ func TestEngine_DeploymentDeletionLeavesOrphanedJobs(t *testing.T) {
 
 	// This should not panic even with orphaned data
 	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	
+
 	// Log the result (could be 0 or some jobs depending on cleanup logic)
-	t.Logf("Found %d jobs for release target after deployment deletion (remaining jobs: %d)", 
+	t.Logf("Found %d jobs for release target after deployment deletion (remaining jobs: %d)",
 		len(jobsForTarget), len(remainingJobs))
 }
-
