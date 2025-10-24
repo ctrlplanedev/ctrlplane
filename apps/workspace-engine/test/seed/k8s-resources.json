@@ -1,0 +1,658 @@
+[
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800100000,
+    "data": {
+      "id": "eks-prod-us-east-1",
+      "workspaceId": "will-be-replaced",
+      "name": "eks-production-us-east-1",
+      "kind": "AmazonElasticKubernetesService",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "arn:aws:eks:us-east-1:123456789012:cluster/production",
+      "createdAt": "2025-10-24T12:00:00Z",
+      "config": {
+        "endpoint": "https://ABCD1234.gr7.us-east-1.eks.amazonaws.com",
+        "certificateAuthority": "LS0tLS1CRUdJTi...",
+        "vpcId": "vpc-0abc123def456",
+        "subnetIds": ["subnet-0abc123", "subnet-0def456", "subnet-0ghi789"],
+        "securityGroupIds": ["sg-0abc123def"],
+        "nodeGroups": [
+          {
+            "name": "general-purpose",
+            "instanceTypes": ["t3.xlarge"],
+            "minSize": 3,
+            "maxSize": 10,
+            "desiredSize": 5
+          },
+          {
+            "name": "compute-optimized",
+            "instanceTypes": ["c5.2xlarge"],
+            "minSize": 2,
+            "maxSize": 8,
+            "desiredSize": 3
+          }
+        ],
+        "addons": ["vpc-cni", "kube-proxy", "coredns", "aws-ebs-csi-driver"]
+      },
+      "metadata": {
+        "cloud": "aws",
+        "provider": "eks",
+        "region": "us-east-1",
+        "environment": "production",
+        "kubernetes-version": "1.28",
+        "cluster-name": "production",
+        "account-id": "123456789012",
+        "platform-version": "eks.3",
+        "managed": "true",
+        "tier": "production",
+        "team": "platform",
+        "cost-center": "infrastructure"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800101000,
+    "data": {
+      "id": "eks-staging-us-east-1",
+      "workspaceId": "will-be-replaced",
+      "name": "eks-staging-us-east-1",
+      "kind": "AmazonElasticKubernetesService",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "arn:aws:eks:us-east-1:123456789012:cluster/staging",
+      "createdAt": "2025-10-24T12:00:10Z",
+      "config": {
+        "endpoint": "https://EFGH5678.gr7.us-east-1.eks.amazonaws.com",
+        "certificateAuthority": "LS0tLS1CRUdJTi...",
+        "vpcId": "vpc-0abc123def789",
+        "subnetIds": ["subnet-0jkl012", "subnet-0mno345"],
+        "securityGroupIds": ["sg-0def456ghi"],
+        "nodeGroups": [
+          {
+            "name": "general-purpose",
+            "instanceTypes": ["t3.large"],
+            "minSize": 2,
+            "maxSize": 6,
+            "desiredSize": 3
+          }
+        ],
+        "addons": ["vpc-cni", "kube-proxy", "coredns"]
+      },
+      "metadata": {
+        "cloud": "aws",
+        "provider": "eks",
+        "region": "us-east-1",
+        "environment": "staging",
+        "kubernetes-version": "1.28",
+        "cluster-name": "staging",
+        "account-id": "123456789012",
+        "platform-version": "eks.3",
+        "managed": "true",
+        "tier": "non-production",
+        "team": "platform",
+        "cost-center": "infrastructure"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800102000,
+    "data": {
+      "id": "eks-prod-us-west-2",
+      "workspaceId": "will-be-replaced",
+      "name": "eks-production-us-west-2",
+      "kind": "AmazonElasticKubernetesService",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "arn:aws:eks:us-west-2:123456789012:cluster/production-west",
+      "createdAt": "2025-10-24T12:00:20Z",
+      "config": {
+        "endpoint": "https://IJKL9012.gr7.us-west-2.eks.amazonaws.com",
+        "certificateAuthority": "LS0tLS1CRUdJTi...",
+        "vpcId": "vpc-0pqr456stu789",
+        "subnetIds": ["subnet-0pqr123", "subnet-0stu456", "subnet-0vwx789"],
+        "securityGroupIds": ["sg-0ghi789jkl"],
+        "nodeGroups": [
+          {
+            "name": "general-purpose",
+            "instanceTypes": ["t3.xlarge"],
+            "minSize": 4,
+            "maxSize": 12,
+            "desiredSize": 6
+          },
+          {
+            "name": "memory-optimized",
+            "instanceTypes": ["r5.2xlarge"],
+            "minSize": 2,
+            "maxSize": 6,
+            "desiredSize": 3
+          }
+        ],
+        "addons": [
+          "vpc-cni",
+          "kube-proxy",
+          "coredns",
+          "aws-ebs-csi-driver",
+          "snapshot-controller"
+        ]
+      },
+      "metadata": {
+        "cloud": "aws",
+        "provider": "eks",
+        "region": "us-west-2",
+        "environment": "production",
+        "kubernetes-version": "1.29",
+        "cluster-name": "production-west",
+        "account-id": "123456789012",
+        "platform-version": "eks.4",
+        "managed": "true",
+        "tier": "production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "disaster-recovery": "primary"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800200000,
+    "data": {
+      "id": "aks-prod-eastus",
+      "workspaceId": "will-be-replaced",
+      "name": "aks-production-eastus",
+      "kind": "AzureKubernetesService",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "/subscriptions/abcd1234-5678-90ef-ghij-klmnopqrstuv/resourceGroups/production-rg/providers/Microsoft.ContainerService/managedClusters/aks-prod-eastus",
+      "createdAt": "2025-10-24T12:00:30Z",
+      "config": {
+        "fqdn": "aks-prod-eastus-dns-12345678.hcp.eastus.azmk8s.io",
+        "kubernetesVersion": "1.28.3",
+        "dnsPrefix": "aks-prod-eastus-dns",
+        "enableRBAC": true,
+        "networkProfile": {
+          "networkPlugin": "azure",
+          "networkPolicy": "calico",
+          "serviceCidr": "10.0.0.0/16",
+          "dnsServiceIP": "10.0.0.10",
+          "loadBalancerSku": "standard"
+        },
+        "agentPools": [
+          {
+            "name": "system",
+            "vmSize": "Standard_D4s_v3",
+            "count": 3,
+            "minCount": 3,
+            "maxCount": 5,
+            "mode": "System",
+            "osType": "Linux"
+          },
+          {
+            "name": "user",
+            "vmSize": "Standard_D8s_v3",
+            "count": 5,
+            "minCount": 3,
+            "maxCount": 10,
+            "mode": "User",
+            "osType": "Linux"
+          }
+        ],
+        "addons": {
+          "azureKeyvaultSecretsProvider": true,
+          "azurePolicy": true,
+          "omsAgent": true
+        }
+      },
+      "metadata": {
+        "cloud": "azure",
+        "provider": "aks",
+        "region": "eastus",
+        "environment": "production",
+        "kubernetes-version": "1.28.3",
+        "cluster-name": "aks-prod-eastus",
+        "subscription-id": "abcd1234-5678-90ef-ghij-klmnopqrstuv",
+        "resource-group": "production-rg",
+        "managed": "true",
+        "tier": "production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "sku-tier": "Standard"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800201000,
+    "data": {
+      "id": "aks-staging-eastus",
+      "workspaceId": "will-be-replaced",
+      "name": "aks-staging-eastus",
+      "kind": "AzureKubernetesService",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "/subscriptions/abcd1234-5678-90ef-ghij-klmnopqrstuv/resourceGroups/staging-rg/providers/Microsoft.ContainerService/managedClusters/aks-staging-eastus",
+      "createdAt": "2025-10-24T12:00:40Z",
+      "config": {
+        "fqdn": "aks-staging-eastus-dns-87654321.hcp.eastus.azmk8s.io",
+        "kubernetesVersion": "1.28.3",
+        "dnsPrefix": "aks-staging-eastus-dns",
+        "enableRBAC": true,
+        "networkProfile": {
+          "networkPlugin": "azure",
+          "networkPolicy": "calico",
+          "serviceCidr": "10.1.0.0/16",
+          "dnsServiceIP": "10.1.0.10",
+          "loadBalancerSku": "standard"
+        },
+        "agentPools": [
+          {
+            "name": "system",
+            "vmSize": "Standard_D2s_v3",
+            "count": 2,
+            "minCount": 2,
+            "maxCount": 4,
+            "mode": "System",
+            "osType": "Linux"
+          },
+          {
+            "name": "user",
+            "vmSize": "Standard_D4s_v3",
+            "count": 3,
+            "minCount": 2,
+            "maxCount": 6,
+            "mode": "User",
+            "osType": "Linux"
+          }
+        ],
+        "addons": {
+          "azurePolicy": true,
+          "omsAgent": true
+        }
+      },
+      "metadata": {
+        "cloud": "azure",
+        "provider": "aks",
+        "region": "eastus",
+        "environment": "staging",
+        "kubernetes-version": "1.28.3",
+        "cluster-name": "aks-staging-eastus",
+        "subscription-id": "abcd1234-5678-90ef-ghij-klmnopqrstuv",
+        "resource-group": "staging-rg",
+        "managed": "true",
+        "tier": "non-production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "sku-tier": "Free"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800202000,
+    "data": {
+      "id": "aks-prod-westeurope",
+      "workspaceId": "will-be-replaced",
+      "name": "aks-production-westeurope",
+      "kind": "AzureKubernetesService",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "/subscriptions/abcd1234-5678-90ef-ghij-klmnopqrstuv/resourceGroups/production-eu-rg/providers/Microsoft.ContainerService/managedClusters/aks-prod-westeurope",
+      "createdAt": "2025-10-24T12:00:50Z",
+      "config": {
+        "fqdn": "aks-prod-westeurope-dns-11223344.hcp.westeurope.azmk8s.io",
+        "kubernetesVersion": "1.29.0",
+        "dnsPrefix": "aks-prod-westeurope-dns",
+        "enableRBAC": true,
+        "networkProfile": {
+          "networkPlugin": "azure",
+          "networkPolicy": "azure",
+          "serviceCidr": "10.2.0.0/16",
+          "dnsServiceIP": "10.2.0.10",
+          "loadBalancerSku": "standard"
+        },
+        "agentPools": [
+          {
+            "name": "system",
+            "vmSize": "Standard_D4s_v3",
+            "count": 3,
+            "minCount": 3,
+            "maxCount": 6,
+            "mode": "System",
+            "osType": "Linux",
+            "availabilityZones": ["1", "2", "3"]
+          },
+          {
+            "name": "user",
+            "vmSize": "Standard_D8s_v3",
+            "count": 4,
+            "minCount": 3,
+            "maxCount": 12,
+            "mode": "User",
+            "osType": "Linux",
+            "availabilityZones": ["1", "2", "3"]
+          }
+        ],
+        "addons": {
+          "azureKeyvaultSecretsProvider": true,
+          "azurePolicy": true,
+          "omsAgent": true,
+          "ingressApplicationGateway": true
+        }
+      },
+      "metadata": {
+        "cloud": "azure",
+        "provider": "aks",
+        "region": "westeurope",
+        "environment": "production",
+        "kubernetes-version": "1.29.0",
+        "cluster-name": "aks-prod-westeurope",
+        "subscription-id": "abcd1234-5678-90ef-ghij-klmnopqrstuv",
+        "resource-group": "production-eu-rg",
+        "managed": "true",
+        "tier": "production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "sku-tier": "Standard",
+        "availability-zones": "1,2,3"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800300000,
+    "data": {
+      "id": "gke-prod-us-central1",
+      "workspaceId": "will-be-replaced",
+      "name": "gke-production-us-central1",
+      "kind": "GoogleKubernetesEngine",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "projects/my-project-123456/locations/us-central1/clusters/production-cluster",
+      "createdAt": "2025-10-24T12:01:00Z",
+      "config": {
+        "endpoint": "35.184.123.45",
+        "clusterIpv4Cidr": "10.48.0.0/14",
+        "servicesIpv4Cidr": "10.52.0.0/20",
+        "masterAuth": {
+          "clusterCaCertificate": "LS0tLS1CRUdJTi..."
+        },
+        "network": "projects/my-project-123456/global/networks/prod-vpc",
+        "subnetwork": "projects/my-project-123456/regions/us-central1/subnetworks/gke-subnet",
+        "nodePools": [
+          {
+            "name": "default-pool",
+            "machineType": "n2-standard-4",
+            "diskSizeGb": 100,
+            "diskType": "pd-standard",
+            "minNodeCount": 3,
+            "maxNodeCount": 10,
+            "initialNodeCount": 5,
+            "autoscaling": true,
+            "management": {
+              "autoUpgrade": true,
+              "autoRepair": true
+            }
+          },
+          {
+            "name": "high-mem-pool",
+            "machineType": "n2-highmem-4",
+            "diskSizeGb": 100,
+            "diskType": "pd-ssd",
+            "minNodeCount": 2,
+            "maxNodeCount": 8,
+            "initialNodeCount": 3,
+            "autoscaling": true,
+            "management": {
+              "autoUpgrade": true,
+              "autoRepair": true
+            }
+          }
+        ],
+        "addonsConfig": {
+          "httpLoadBalancing": true,
+          "horizontalPodAutoscaling": true,
+          "networkPolicyConfig": true,
+          "gcePersistentDiskCsiDriver": true,
+          "gcpFilestoreCsiDriver": true
+        },
+        "releaseChannel": "REGULAR",
+        "workloadIdentityConfig": {
+          "workloadPool": "my-project-123456.svc.id.goog"
+        }
+      },
+      "metadata": {
+        "cloud": "gcp",
+        "provider": "gke",
+        "region": "us-central1",
+        "zone": "us-central1-a",
+        "environment": "production",
+        "kubernetes-version": "1.28.3-gke.1098000",
+        "cluster-name": "production-cluster",
+        "project-id": "my-project-123456",
+        "project-number": "123456789012",
+        "managed": "true",
+        "tier": "production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "release-channel": "REGULAR",
+        "cluster-type": "zonal"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800301000,
+    "data": {
+      "id": "gke-staging-us-central1",
+      "workspaceId": "will-be-replaced",
+      "name": "gke-staging-us-central1",
+      "kind": "GoogleKubernetesEngine",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "projects/my-project-123456/locations/us-central1/clusters/staging-cluster",
+      "createdAt": "2025-10-24T12:01:10Z",
+      "config": {
+        "endpoint": "35.184.234.56",
+        "clusterIpv4Cidr": "10.56.0.0/14",
+        "servicesIpv4Cidr": "10.60.0.0/20",
+        "masterAuth": {
+          "clusterCaCertificate": "LS0tLS1CRUdJTi..."
+        },
+        "network": "projects/my-project-123456/global/networks/staging-vpc",
+        "subnetwork": "projects/my-project-123456/regions/us-central1/subnetworks/gke-staging-subnet",
+        "nodePools": [
+          {
+            "name": "default-pool",
+            "machineType": "n2-standard-2",
+            "diskSizeGb": 50,
+            "diskType": "pd-standard",
+            "minNodeCount": 2,
+            "maxNodeCount": 6,
+            "initialNodeCount": 3,
+            "autoscaling": true,
+            "management": {
+              "autoUpgrade": true,
+              "autoRepair": true
+            }
+          }
+        ],
+        "addonsConfig": {
+          "httpLoadBalancing": true,
+          "horizontalPodAutoscaling": true,
+          "networkPolicyConfig": true,
+          "gcePersistentDiskCsiDriver": true
+        },
+        "releaseChannel": "REGULAR",
+        "workloadIdentityConfig": {
+          "workloadPool": "my-project-123456.svc.id.goog"
+        }
+      },
+      "metadata": {
+        "cloud": "gcp",
+        "provider": "gke",
+        "region": "us-central1",
+        "zone": "us-central1-b",
+        "environment": "staging",
+        "kubernetes-version": "1.28.3-gke.1098000",
+        "cluster-name": "staging-cluster",
+        "project-id": "my-project-123456",
+        "project-number": "123456789012",
+        "managed": "true",
+        "tier": "non-production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "release-channel": "REGULAR",
+        "cluster-type": "zonal"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800302000,
+    "data": {
+      "id": "gke-prod-europe-west1",
+      "workspaceId": "will-be-replaced",
+      "name": "gke-production-europe-west1",
+      "kind": "GoogleKubernetesEngine",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "projects/my-project-123456/locations/europe-west1/clusters/production-eu-cluster",
+      "createdAt": "2025-10-24T12:01:20Z",
+      "config": {
+        "endpoint": "34.76.123.78",
+        "clusterIpv4Cidr": "10.64.0.0/14",
+        "servicesIpv4Cidr": "10.68.0.0/20",
+        "masterAuth": {
+          "clusterCaCertificate": "LS0tLS1CRUdJTi..."
+        },
+        "network": "projects/my-project-123456/global/networks/prod-eu-vpc",
+        "subnetwork": "projects/my-project-123456/regions/europe-west1/subnetworks/gke-eu-subnet",
+        "nodePools": [
+          {
+            "name": "default-pool",
+            "machineType": "n2-standard-4",
+            "diskSizeGb": 100,
+            "diskType": "pd-ssd",
+            "minNodeCount": 3,
+            "maxNodeCount": 12,
+            "initialNodeCount": 5,
+            "autoscaling": true,
+            "management": {
+              "autoUpgrade": true,
+              "autoRepair": true
+            },
+            "locations": ["europe-west1-b", "europe-west1-c", "europe-west1-d"]
+          },
+          {
+            "name": "compute-pool",
+            "machineType": "c2-standard-8",
+            "diskSizeGb": 100,
+            "diskType": "pd-ssd",
+            "minNodeCount": 2,
+            "maxNodeCount": 10,
+            "initialNodeCount": 4,
+            "autoscaling": true,
+            "management": {
+              "autoUpgrade": true,
+              "autoRepair": true
+            },
+            "locations": ["europe-west1-b", "europe-west1-c", "europe-west1-d"]
+          }
+        ],
+        "addonsConfig": {
+          "httpLoadBalancing": true,
+          "horizontalPodAutoscaling": true,
+          "networkPolicyConfig": true,
+          "gcePersistentDiskCsiDriver": true,
+          "gcpFilestoreCsiDriver": true,
+          "configConnectorConfig": true
+        },
+        "releaseChannel": "REGULAR",
+        "workloadIdentityConfig": {
+          "workloadPool": "my-project-123456.svc.id.goog"
+        },
+        "binaryAuthorization": {
+          "enabled": true
+        }
+      },
+      "metadata": {
+        "cloud": "gcp",
+        "provider": "gke",
+        "region": "europe-west1",
+        "environment": "production",
+        "kubernetes-version": "1.29.0-gke.1234000",
+        "cluster-name": "production-eu-cluster",
+        "project-id": "my-project-123456",
+        "project-number": "123456789012",
+        "managed": "true",
+        "tier": "production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "release-channel": "REGULAR",
+        "cluster-type": "regional",
+        "availability-zones": "b,c,d",
+        "disaster-recovery": "secondary"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800303000,
+    "data": {
+      "id": "gke-prod-asia-southeast1",
+      "workspaceId": "will-be-replaced",
+      "name": "gke-production-asia-southeast1",
+      "kind": "GoogleKubernetesEngine",
+      "version": "ctrlplane.dev/kubernetes/cluster/v1",
+      "identifier": "projects/my-project-123456/locations/asia-southeast1/clusters/production-apac-cluster",
+      "createdAt": "2025-10-24T12:01:30Z",
+      "config": {
+        "endpoint": "34.87.145.92",
+        "clusterIpv4Cidr": "10.72.0.0/14",
+        "servicesIpv4Cidr": "10.76.0.0/20",
+        "masterAuth": {
+          "clusterCaCertificate": "LS0tLS1CRUdJTi..."
+        },
+        "network": "projects/my-project-123456/global/networks/prod-apac-vpc",
+        "subnetwork": "projects/my-project-123456/regions/asia-southeast1/subnetworks/gke-apac-subnet",
+        "nodePools": [
+          {
+            "name": "default-pool",
+            "machineType": "n2-standard-4",
+            "diskSizeGb": 100,
+            "diskType": "pd-standard",
+            "minNodeCount": 3,
+            "maxNodeCount": 9,
+            "initialNodeCount": 4,
+            "autoscaling": true,
+            "management": {
+              "autoUpgrade": true,
+              "autoRepair": true
+            }
+          }
+        ],
+        "addonsConfig": {
+          "httpLoadBalancing": true,
+          "horizontalPodAutoscaling": true,
+          "networkPolicyConfig": true,
+          "gcePersistentDiskCsiDriver": true
+        },
+        "releaseChannel": "REGULAR",
+        "workloadIdentityConfig": {
+          "workloadPool": "my-project-123456.svc.id.goog"
+        }
+      },
+      "metadata": {
+        "cloud": "gcp",
+        "provider": "gke",
+        "region": "asia-southeast1",
+        "zone": "asia-southeast1-a",
+        "environment": "production",
+        "kubernetes-version": "1.28.3-gke.1098000",
+        "cluster-name": "production-apac-cluster",
+        "project-id": "my-project-123456",
+        "project-number": "123456789012",
+        "managed": "true",
+        "tier": "production",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "release-channel": "REGULAR",
+        "cluster-type": "zonal",
+        "geo": "apac"
+      }
+    }
+  }
+]

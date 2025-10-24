@@ -145,7 +145,7 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 
 	// Apply pagination
 	start := min(offset, total)
-	end := min(start + limit, total)
+	end := min(start+limit, total)
 	paginatedResources := resourceList[start:end]
 
 	c.JSON(http.StatusOK, gin.H{

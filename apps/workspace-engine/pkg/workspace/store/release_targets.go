@@ -205,7 +205,7 @@ func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.R
 	if len(jobs) == 0 {
 		return nil, fmt.Errorf("no jobs found for release target")
 	}
-	
+
 	jobsList := make([]*oapi.Job, 0, len(jobs))
 	for _, job := range jobs {
 		jobsList = append(jobsList, job)

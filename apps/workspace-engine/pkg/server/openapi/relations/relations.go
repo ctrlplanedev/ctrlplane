@@ -69,7 +69,7 @@ func (s *Relations) GetRelationshipRules(c *gin.Context, workspaceId string, par
 	for _, relationshipRule := range relationshipRules {
 		relationshipRulesList = append(relationshipRulesList, relationshipRule)
 	}
-	
+
 	limit := 50
 	if params.Limit != nil {
 		limit = *params.Limit

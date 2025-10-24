@@ -1,0 +1,90 @@
+[
+  {
+    "eventType": "system.created",
+    "timestamp": 1729800000000,
+    "data": {
+      "id": "system-001",
+      "workspaceId": "will-be-replaced",
+      "name": "ecommerce-platform",
+      "description": "E-commerce platform system"
+    }
+  },
+  {
+    "eventType": "deployment.created",
+    "timestamp": 1729800001000,
+    "data": {
+      "id": "deploy-api",
+      "name": "api-service",
+      "slug": "api-service",
+      "description": "Main API service",
+      "systemId": "system-001",
+      "jobAgentConfig": {
+        "namespace": "production",
+        "replicas": 3
+      }
+    }
+  },
+  {
+    "eventType": "deployment.created",
+    "timestamp": 1729800002000,
+    "data": {
+      "id": "deploy-worker",
+      "name": "background-worker",
+      "slug": "background-worker",
+      "description": "Background job processor",
+      "systemId": "system-001",
+      "jobAgentConfig": {
+        "namespace": "production",
+        "replicas": 5
+      }
+    }
+  },
+  {
+    "eventType": "deployment.created",
+    "timestamp": 1729800003000,
+    "data": {
+      "id": "deploy-frontend",
+      "name": "web-frontend",
+      "slug": "web-frontend",
+      "description": "Web frontend application",
+      "systemId": "system-001",
+      "jobAgentConfig": {
+        "namespace": "production",
+        "cdn_enabled": true
+      }
+    }
+  },
+  {
+    "eventType": "environment.created",
+    "timestamp": 1729800004000,
+    "data": {
+      "id": "env-production",
+      "name": "production",
+      "description": "Production environment",
+      "systemId": "system-001",
+      "createdAt": "2025-10-24T12:00:00Z"
+    }
+  },
+  {
+    "eventType": "environment.created",
+    "timestamp": 1729800005000,
+    "data": {
+      "id": "env-staging",
+      "name": "staging",
+      "description": "Staging environment",
+      "systemId": "system-001",
+      "createdAt": "2025-10-24T12:00:01Z"
+    }
+  },
+  {
+    "eventType": "environment.created",
+    "timestamp": 1729800006000,
+    "data": {
+      "id": "env-development",
+      "name": "development",
+      "description": "Development environment",
+      "systemId": "system-001",
+      "createdAt": "2025-10-24T12:00:02Z"
+    }
+  }
+]

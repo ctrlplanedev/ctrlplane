@@ -62,7 +62,7 @@ func main() {
 
 	for _, event := range dataJSON {
 		event.WorkspaceID = workspaceID
-		
+
 		eventJSON, err := json.Marshal(event)
 		if err != nil {
 			log.Fatalf("Failed to marshal event: %v", err)
