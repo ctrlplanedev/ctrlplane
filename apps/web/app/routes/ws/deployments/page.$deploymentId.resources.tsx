@@ -6,6 +6,7 @@ import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import CelExpressionInput from "../_components/CelExpiressionInput";
+import { ResourceRow } from "../resources/_components/ResourceRow";
 import { DeploymentPageHeader } from "./_components/DeploymentPageHeader";
 import { useDeployment } from "./_components/DeploymentProvider";
 
@@ -70,10 +71,18 @@ function SelectorWithResources() {
               ),
             )
           }
+          disabled={
+            updateDeployment.isPending ||
+            deployment.resourceSelector?.cel === selector
+          }
         >
           Save
         </Button>
       </div>
+
+      {resources.map((resource) => (
+        <ResourceRow key={resource.identifier} resource={resource} />
+      ))}
     </>
   );
 }
