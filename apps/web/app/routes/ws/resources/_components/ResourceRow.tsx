@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { NavLink } from "react-router";
+import { Link, NavLink } from "react-router";
 
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
@@ -89,8 +89,7 @@ export const ChildrenResources: React.FC<{ resourceId: string }> = ({
   const resourceRelations = Object.values(relationships)
     .flatMap((r) => r)
     .filter((r) => r.direction === "to")
-    .filter((r) => r.entityType === "resource")
-    .map((r) => r.entity);
+    .filter((r) => r.entityType === "resource");
 
   console.log(relationsQuery.data);
   console.log(resourceRelations);
@@ -108,17 +107,29 @@ export const ChildrenResources: React.FC<{ resourceId: string }> = ({
         </div>
       )}
 
-      {resourceRelations.map((resource) => (
-        <ChildResourceRow
-          key={resource.id}
-          resource={resource as ResourceRowProps["resource"]}
-        />
-      ))}
+      {resourceRelations
+        .sort((a, b) => {
+          const ruleNameA = a.rule?.name ?? "";
+          const ruleNameB = b.rule?.name ?? "";
+          const ruleComparison = ruleNameA.localeCompare(ruleNameB);
+          if (ruleComparison !== 0) return ruleComparison;
+          const resourceNameA = (a.entity as { name?: string }).name ?? "";
+          const resourceNameB = (b.entity as { name?: string }).name ?? "";
+          return resourceNameA.localeCompare(resourceNameB);
+        })
+        .map((resource) => (
+          <ChildResourceRow
+            key={resource.entityId}
+            rule={resource.rule}
+            resource={resource.entity as ResourceRowProps["resource"]}
+          />
+        ))}
     </div>
   );
 };
 
 const ChildResourceRow: React.FC<{
+  rule?: { id: string; name: string; reference: string };
   resource: {
     id: string;
     name: string;
@@ -126,7 +137,8 @@ const ChildResourceRow: React.FC<{
     version: string;
     metadata: Record<string, string>;
   };
-}> = ({ resource }) => {
+}> = ({ rule, resource }) => {
+  const { workspace } = useWorkspace();
   const [showChildren, setShowChildren] = useState(false);
   return (
     <div>
@@ -149,7 +161,13 @@ const ChildResourceRow: React.FC<{
           version={resource.version}
           className="size-3"
         />
-        <div className="text-sm">{resource.name}</div>
+        <Link
+          to={`/${workspace.slug}/relationship-rules/${rule?.id}/edit`}
+          className="text-xs text-muted-foreground hover:underline"
+        >
+          {rule?.name}
+        </Link>
+        .<div className="text-sm">{resource.name}</div>
       </div>
 
       {showChildren && <ChildrenResources resourceId={resource.id} />}
