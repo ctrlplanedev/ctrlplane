@@ -2,14 +2,13 @@ package deployment
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
+	"workspace-engine/pkg/kafka/producer"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/store"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -28,6 +27,15 @@ func NewExecutor(store *store.Store) *Executor {
 		jobFactory:    jobs.NewFactory(store),
 		jobDispatcher: jobs.NewDispatcher(store),
 	}
+}
+
+func (e *Executor) getWorkspaceID(releaseToDeploy *oapi.Release) (string, error) {
+	resourceID := releaseToDeploy.ReleaseTarget.ResourceId
+	resource, ok := e.store.Resources.Get(resourceID)
+	if !ok {
+		return "", fmt.Errorf("resource not found: %s", resourceID)
+	}
+	return resource.WorkspaceId, nil
 }
 
 // ExecuteRelease performs all write operations to deploy a release (WRITES TO STORE).
@@ -54,29 +62,23 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		return err
 	}
 
-	e.store.Jobs.Upsert(ctx, newJob)
-	span.SetAttributes(
-		attribute.Bool("job.created", true),
-		attribute.String("job.id", newJob.Id),
-		attribute.String("job.status", string(newJob.Status)),
-	)
-
-	if e.store.IsReplay() {
-		log.Info("Skipping job dispatch in replay mode", "job.id", newJob.Id)
-		return nil
+	workspaceID, err := e.getWorkspaceID(releaseToDeploy)
+	if err != nil {
+		span.RecordError(err)
+		return err
 	}
 
-	// Step 4: Dispatch job to integration (ASYNC)
-	// Skip dispatch if job already has InvalidJobAgent status
-	if newJob.Status != oapi.InvalidJobAgent {
-		go func() {
-			if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
-				log.Error("error dispatching job to integration", "error", err.Error())
-				newJob.Status = oapi.InvalidIntegration
-				newJob.UpdatedAt = time.Now()
-				e.store.Jobs.Upsert(ctx, newJob)
-			}
-		}()
+	kafkaProducer, err := producer.NewProducer()
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+	defer kafkaProducer.Close()
+
+	err = kafkaProducer.ProduceEvent("job.created", workspaceID, newJob)
+	if err != nil {
+		span.RecordError(err)
+		return err
 	}
 
 	return nil
@@ -131,4 +133,8 @@ func BuildRelease(
 		EncryptedVariables: []string{}, // TODO: Handle encrypted variables
 		CreatedAt:          time.Now().Format(time.RFC3339),
 	}
+}
+
+func (e *Executor) JobDispatcher() *jobs.Dispatcher {
+	return e.jobDispatcher
 }

@@ -1,12 +1,29 @@
-package kafka
+package producer
 
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
+
+// Configuration variables loaded from environment
+var (
+	Topic   = getEnv("KAFKA_TOPIC", "workspace-events")
+	GroupID = getEnv("KAFKA_GROUP_ID", "workspace-engine")
+	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
+)
+
+// getEnv retrieves an environment variable or returns a default value
+func getEnv(varName string, defaultValue string) string {
+	v := os.Getenv(varName)
+	if v == "" {
+		return defaultValue
+	}
+	return v
+}
 
 // EventProducer defines the interface for producing events to Kafka
 type EventProducer interface {
