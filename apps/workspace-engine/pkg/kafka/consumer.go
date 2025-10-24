@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/db"
 
 	"github.com/charmbracelet/log"
@@ -62,6 +63,8 @@ func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
 func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspaceMap map[int32][]string) error {
 	ctx, span := tracer.Start(ctx, "setOffsets")
 	defer span.End()
+
+	span.SetAttributes(attribute.String("partition_workspace_map", fmt.Sprintf("%+v", partitionWorkspaceMap)))
 
 	for partition, workspaceIDs := range partitionWorkspaceMap {
 		snapshots, err := db.GetLatestWorkspaceSnapshots(ctx, workspaceIDs)
