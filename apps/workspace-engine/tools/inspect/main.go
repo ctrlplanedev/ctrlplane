@@ -13,6 +13,7 @@ import (
 var (
 	snapshotFile string
 	verbose      bool
+	outputFile   string
 )
 
 func main() {
@@ -30,6 +31,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
+	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Output file path (if not specified, prints to stdout)")
 
 	rootCmd.AddCommand(allCmd)
 	rootCmd.AddCommand(systemsCmd)
@@ -70,9 +72,35 @@ func loadWorkspace(filePath string) (*workspace.Workspace, error) {
 }
 
 func printJSON(items interface{}) error {
-	encoder := json.NewEncoder(os.Stdout)
+	var output *os.File
+	var err error
+
+	if outputFile != "" {
+		// Create or overwrite the output file
+		output, err = os.Create(outputFile)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %w", err)
+		}
+		defer output.Close()
+
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Writing output to: %s\n", outputFile)
+		}
+	} else {
+		output = os.Stdout
+	}
+
+	encoder := json.NewEncoder(output)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(items)
+	if err := encoder.Encode(items); err != nil {
+		return err
+	}
+
+	if outputFile != "" && verbose {
+		fmt.Fprintf(os.Stderr, "Successfully wrote to: %s\n", outputFile)
+	}
+
+	return nil
 }
 
 func printCount(name string, count int) {

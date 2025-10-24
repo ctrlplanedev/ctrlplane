@@ -95,6 +95,24 @@ Show additional information like file size, item counts:
 go run tools/inspect/main.go deployments ~/Downloads/snapshot.gob -v
 ```
 
+### `--output` or `-o`
+
+Write output to a file instead of stdout:
+
+```bash
+# Save deployments to a file
+go run tools/inspect/main.go deployments ~/Downloads/snapshot.gob -o deployments.json
+
+# Save resources to a file
+go run tools/inspect/main.go resources ~/Downloads/snapshot.gob -o resources.json
+
+# Save release targets to a file
+go run tools/inspect/main.go release-targets ~/Downloads/snapshot.gob -o release-targets.json
+
+# Combine with verbose to see progress
+go run tools/inspect/main.go deployments ~/Downloads/snapshot.gob -o deployments.json -v
+```
+
 ## Building
 
 To build a standalone binary:
@@ -126,8 +144,11 @@ go run tools/inspect/main.go resources ~/Downloads/prod-snapshot.gob | jq '.[] |
 # Count resources
 go run tools/inspect/main.go resources ~/Downloads/prod-snapshot.gob | jq 'length'
 
-# Save output to file
-go run tools/inspect/main.go deployments ~/Downloads/prod-snapshot.gob > deployments.json
+# Save output to file using -o flag
+go run tools/inspect/main.go deployments ~/Downloads/prod-snapshot.gob -o deployments.json
+
+# Save and see progress
+go run tools/inspect/main.go resources ~/Downloads/prod-snapshot.gob -o resources.json -v
 ```
 
 ## Output Format
