@@ -53,6 +53,27 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 		resourceList = append(resourceList, resource)
 	}
 
+	// Sort the resourceList by resource.Name (nil-safe, ascending); if Name is the same, sort by CreatedAt
+	sort.Slice(resourceList, func(i, j int) bool {
+		if resourceList[i] == nil && resourceList[j] == nil {
+			return false
+		}
+		if resourceList[i] == nil {
+			return false
+		}
+		if resourceList[j] == nil {
+			return true
+		}
+		if resourceList[i].Name < resourceList[j].Name {
+			return true
+		}
+		if resourceList[i].Name > resourceList[j].Name {
+			return false
+		}
+		// Names are equal; compare CreatedAt
+		return resourceList[i].CreatedAt.Before(resourceList[j].CreatedAt)
+	})
+
 	// Get pagination parameters with defaults
 	limit := 50
 	if params.Limit != nil {
@@ -109,6 +130,27 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 	for _, deployment := range deployments {
 		deploymentsList = append(deploymentsList, deployment)
 	}
+
+	// Sort the deploymentsList by deployment.Name (nil-safe, ascending); if Name is the same, sort by CreatedAt
+	sort.Slice(deploymentsList, func(i, j int) bool {
+		if deploymentsList[i] == nil && deploymentsList[j] == nil {
+			return false
+		}
+		if deploymentsList[i] == nil {
+			return false
+		}
+		if deploymentsList[j] == nil {
+			return true
+		}
+		if deploymentsList[i].Name < deploymentsList[j].Name {
+			return true
+		}
+		if deploymentsList[i].Name > deploymentsList[j].Name {
+			return false
+		}
+		// Names are equal; compare CreatedAt
+		return deploymentsList[i].Id < deploymentsList[j].Id
+	})
 
 	deploymentsWithSystem := make([]*oapi.DeploymentAndSystem, 0, total)
 	for _, deployment := range deploymentsList[start:end] {

@@ -2,6 +2,7 @@ package environments
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/gin-gonic/gin"
 
@@ -60,6 +61,26 @@ func (s *Environments) ListEnvironments(c *gin.Context, workspaceId string, para
 		environmentsList = append(environmentsList, environment)
 	}
 
+	sort.Slice(environmentsList, func(i, j int) bool {
+		if environmentsList[i] == nil && environmentsList[j] == nil {
+			return false
+		}
+		if environmentsList[i] == nil {
+			return false
+		}
+		if environmentsList[j] == nil {
+			return true
+		}
+		if environmentsList[i].Name < environmentsList[j].Name {
+			return true
+		}
+		if environmentsList[i].Name > environmentsList[j].Name {
+			return false
+		}
+		// Names are equal; compare Id
+		return environmentsList[i].Id < environmentsList[j].Id
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
@@ -90,6 +111,26 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 		resourceList = append(resourceList, resource)
 	}
 
+	sort.Slice(resourceList, func(i, j int) bool {
+		if resourceList[i] == nil && resourceList[j] == nil {
+			return false
+		}
+		if resourceList[i] == nil {
+			return false
+		}
+		if resourceList[j] == nil {
+			return true
+		}
+		if resourceList[i].Name < resourceList[j].Name {
+			return true
+		}
+		if resourceList[i].Name > resourceList[j].Name {
+			return false
+		}
+		// Names are equal; compare Id
+		return resourceList[i].Id < resourceList[j].Id
+	})
+
 	// Get pagination parameters with defaults
 	limit := 50
 	if params.Limit != nil {
@@ -103,14 +144,8 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 	total := len(resourceList)
 
 	// Apply pagination
-	start := offset
-	if start > total {
-		start = total
-	}
-	end := start + limit
-	if end > total {
-		end = total
-	}
+	start := min(offset, total)
+	end := min(start + limit, total)
 	paginatedResources := resourceList[start:end]
 
 	c.JSON(http.StatusOK, gin.H{
