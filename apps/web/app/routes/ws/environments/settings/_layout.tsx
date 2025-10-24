@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useLocation, useParams } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 
 import {
   Breadcrumb,
@@ -11,21 +11,13 @@ import { buttonVariants } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { DeploymentsNavbarTabs } from "../_components/DeploymentsNavbarTabs";
-import { mockDeploymentDetail } from "../_components/mockData";
+import { useEnvironment } from "../_components/EnvironmentProvider";
 
-export default function DeploymentsSettingsLayout() {
-  const { deploymentId } = useParams();
+export default function EnvironmentsSettingsLayout() {
   const { workspace } = useWorkspace();
+  const { environment } = useEnvironment();
   const path = useLocation();
-  // const navigate = useNavigate();
-
-  const baseUrl = `/${workspace.slug}/deployments/${deploymentId}/settings`;
-
-  // if (path.pathname === baseUrl) {
-  //   navigate(`${baseUrl}/general`);
-  // }
-  console.log(path.pathname === baseUrl);
+  const baseUrl = `/${workspace.slug}/environments/${environment.id}/settings`;
 
   const isActive = (pathname: string) => path.pathname.startsWith(pathname);
 
@@ -38,8 +30,6 @@ export default function DeploymentsSettingsLayout() {
     variant: "ghost",
     className: "w-full justify-start bg-muted text-primary",
   });
-
-  const deployment = mockDeploymentDetail;
 
   return (
     <>
@@ -54,12 +44,16 @@ export default function DeploymentsSettingsLayout() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbItem>
-                  <Link to={`/${workspace.slug}/deployments`}>Deployments</Link>
+                  <Link to={`/${workspace.slug}/environments`}>
+                    Environments
+                  </Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <Link to={`/${workspace.slug}/deployments/${deployment.id}`}>
-                    {deployment.name}
+                  <Link
+                    to={`/${workspace.slug}/environments/${environment.id}`}
+                  >
+                    {environment.name}
                   </Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -70,17 +64,15 @@ export default function DeploymentsSettingsLayout() {
         </div>
 
         <div className="flex items-center gap-4">
-          <DeploymentsNavbarTabs deploymentId={deployment.id} />
+          {/* <DeploymentsNavbarTabs deploymentId={deployment.id} /> */}
         </div>
       </header>
       <div className="container mx-auto flex max-w-6xl gap-8 py-20">
         <div className="flex flex-shrink-0 flex-col gap-2">
           <NavLink
-            to={`${baseUrl}/general`}
+            to={`${baseUrl}`}
             className={
-              isActive(`${baseUrl}/general`)
-                ? activeLinkStyle
-                : defaultLinkStyle
+              isActive(`${baseUrl}`) ? activeLinkStyle : defaultLinkStyle
             }
           >
             General

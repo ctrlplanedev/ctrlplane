@@ -108,12 +108,14 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 	}
 
 	// Cancel jobs for removed release targets
+	// Only cancel jobs that are in processing states (Pending, InProgress, ActionRequired)
+	// Jobs in exited states (Successful, Failure, InvalidJobAgent, etc.) should never be modified
 	for _, rt := range removed {
 		wg.Add(1)
 		go func(target *oapi.ReleaseTarget) {
 			defer wg.Done()
 			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(target) {
-				if job != nil {
+				if job != nil && job.IsInProcessingState() {
 					job.Status = oapi.Cancelled
 					job.UpdatedAt = time.Now()
 					cancelledJobs.Set(job.Id, job)
@@ -161,7 +163,7 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 			jobStatus = job.Status
 			break
 		}
-		
+
 		err := fmt.Errorf("cannot redeploy: job %s already in progress (status: %s)", jobId, jobStatus)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "job in progress")
@@ -240,7 +242,6 @@ func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	// Phase 3: EXECUTION - Create the job (WRITES)
 	return m.executor.ExecuteRelease(ctx, desiredRelease)
 }
-
 
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
 	// Get current release (may be nil if no successful jobs exist)

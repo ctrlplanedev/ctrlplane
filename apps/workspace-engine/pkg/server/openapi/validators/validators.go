@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Validator struct {}
+type Validator struct{}
 
 func (v *Validator) ValidateResourceSelector(c *gin.Context) {
 	var req oapi.ValidateResourceSelectorJSONBody
@@ -29,7 +29,6 @@ func (v *Validator) ValidateResourceSelector(c *gin.Context) {
 		return
 	}
 
-
 	condition, err := celSelector.Compile(cel.Cel)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"valid": false, "errors": []string{err.Error()}})
@@ -43,10 +42,10 @@ func (v *Validator) ValidateResourceSelector(c *gin.Context) {
 		Metadata: map[string]string{
 			"env": "production",
 		},
-		CreatedAt: time.Now(),
+		CreatedAt:   time.Now(),
 		WorkspaceId: "1",
-		ProviderId: nil,
-		Version: "1",
+		ProviderId:  nil,
+		Version:     "1",
 		Config: map[string]interface{}{
 			"env": "production",
 		},

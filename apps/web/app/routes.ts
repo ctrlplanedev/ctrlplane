@@ -36,6 +36,11 @@ export default [
           ":environmentId/resources",
           "routes/ws/environments/page.$environmentId.resources.tsx",
         ),
+        route(
+          ":environmentId/settings",
+          "routes/ws/environments/settings/_layout.tsx",
+          [route("", "routes/ws/environments/settings/general.tsx")],
+        ),
       ]),
 
       route("resources", "routes/ws/resources.tsx"),

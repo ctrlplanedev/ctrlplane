@@ -792,13 +792,13 @@ func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
 	if newJob.Id == initialJob.Id {
 		t.Errorf("expected new job after redeploy following completion, got same job ID")
 	}
-	
+
 	// Verify we now have at least the original completed job plus the new pending job
 	allJobsAfterSuccess := engine.Workspace().Jobs().Items()
 	if len(allJobsAfterSuccess) < 2 {
 		t.Errorf("expected at least 2 jobs after successful redeploy, got %d", len(allJobsAfterSuccess))
 	}
-	
+
 	// Verify the original job is no longer pending or in progress
 	origJob, exists := allJobsAfterSuccess[initialJob.Id]
 	if exists && origJob.IsInProcessingState() {
@@ -967,4 +967,3 @@ func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
 		t.Errorf("expected 0 pending jobs (InvalidJobAgent is not pending), got %d", len(pendingJobs))
 	}
 }
-
