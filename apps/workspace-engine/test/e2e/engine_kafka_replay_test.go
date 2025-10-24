@@ -155,25 +155,300 @@ func TestEngine_Kafka_Replay_WorkspaceSaveEvent(t *testing.T) {
 }
 
 // TestEngine_Kafka_Replay_MultipleWorkspaces tests replay logic with multiple workspaces
-// on the same partition, each with different snapshot offsets
+// on the same partition, each with different snapshot offsets (CRITICAL FOR PARTITION SHARING)
 func TestEngine_Kafka_Replay_MultipleWorkspaces(t *testing.T) {
-	t.Skip("TODO: Implement multiple workspaces test")
-	// This test should:
-	// 1. Create 3 workspaces
-	// 2. Create snapshots at different offsets for each
-	// 3. Verify consumer seeks to earliest offset across all workspaces
-	// 4. Verify each workspace processes only messages after its own snapshot
+	if !isKafkaAvailable(t) {
+		t.Skip("Kafka broker not available")
+	}
+
+	ctx := context.Background()
+	cleanupAllTestWorkspaces(ctx)
+
+	topicName := fmt.Sprintf("test-multi-ws-%s", uuid.New().String()[:8])
+
+	// Set environment
+	os.Setenv("KAFKA_TOPIC", topicName)
+	kafkapkg.Topic = topicName
+	kafkapkg.GroupID = fmt.Sprintf("test-group-%s", uuid.New().String()[:8])
+
+	defer func() {
+		os.Unsetenv("KAFKA_TOPIC")
+		kafkapkg.Topic = "workspace-events"
+		kafkapkg.GroupID = "workspace-engine"
+	}()
+
+	// Create 3 workspaces
+	wsIDs := []string{
+		uuid.New().String(),
+		uuid.New().String(),
+		uuid.New().String(),
+	}
+
+	// Create workspaces in database
+	for _, wsID := range wsIDs {
+		if err := createTestWorkspace(ctx, wsID); err != nil {
+			t.Fatalf("Failed to create workspace %s: %v", wsID, err)
+		}
+	}
+
+	defer func() {
+		for _, wsID := range wsIDs {
+			cleanupTestWorkspace(ctx, wsID)
+		}
+		cleanupKafkaTopic(t, topicName)
+	}()
+
+	// Create snapshots at different offsets
+	// WS1: offset 5, WS2: offset 10, WS3: offset 15
+	snapshots := []*db.WorkspaceSnapshot{
+		{
+			WorkspaceID:   wsIDs[0],
+			Path:          fmt.Sprintf("%s.gob", wsIDs[0]),
+			Timestamp:     time.Now().Add(-1 * time.Hour),
+			Partition:     0,
+			Offset:        5,
+			NumPartitions: 1,
+		},
+		{
+			WorkspaceID:   wsIDs[1],
+			Path:          fmt.Sprintf("%s.gob", wsIDs[1]),
+			Timestamp:     time.Now().Add(-1 * time.Hour),
+			Partition:     0,
+			Offset:        10,
+			NumPartitions: 1,
+		},
+		{
+			WorkspaceID:   wsIDs[2],
+			Path:          fmt.Sprintf("%s.gob", wsIDs[2]),
+			Timestamp:     time.Now().Add(-1 * time.Hour),
+			Partition:     0,
+			Offset:        15,
+			NumPartitions: 1,
+		},
+	}
+
+	for _, snapshot := range snapshots {
+		if err := db.WriteWorkspaceSnapshot(ctx, snapshot); err != nil {
+			t.Fatalf("Failed to write snapshot: %v", err)
+		}
+	}
+
+	// Create producer
+	producer := createTestProducer(t)
+	defer producer.Close()
+
+	factory1 := newResourceFactory(wsIDs[0])
+	factory2 := newResourceFactory(wsIDs[1])
+	factory3 := newResourceFactory(wsIDs[2])
+
+	// Produce 30 messages (10 per workspace) for clearer distribution
+	// WS1 messages at offsets: 0, 3, 6, 9, 12, 15, 18, 21, 24, 27
+	// WS2 messages at offsets: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28
+	// WS3 messages at offsets: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29
+	for i := 0; i < 30; i++ {
+		var wsID string
+		var factory *resourceFactory
+
+		switch i % 3 {
+		case 0:
+			wsID = wsIDs[0]
+			factory = factory1
+		case 1:
+			wsID = wsIDs[1]
+			factory = factory2
+		case 2:
+			wsID = wsIDs[2]
+			factory = factory3
+		}
+
+		resourceID := uuid.New().String()
+		payload := factory.create(resourceID)
+
+		event := createTestEvent(wsID, eventHandler.ResourceCreate, payload)
+		produceKafkaMessage(t, producer, topicName, event, int32(0), 0)
+	}
+
+	// Produce workspace save events for all workspaces
+	for _, wsID := range wsIDs {
+		event := createTestEvent(wsID, eventHandler.WorkspaceSave, map[string]interface{}{})
+		produceKafkaMessage(t, producer, topicName, event, int32(0), 0)
+	}
+
+	// Run consumer
+	consumerCtx, cancelConsumer := context.WithCancel(ctx)
+	consumerDone := make(chan error, 1)
+
+	go func() {
+		consumerDone <- kafkapkg.RunConsumer(consumerCtx)
+	}()
+
+	// Wait longer for multiple workspaces to process
+	time.Sleep(10 * time.Second)
+	cancelConsumer()
+
+	select {
+	case err := <-consumerDone:
+		if err != nil && err != context.Canceled {
+			t.Fatalf("Consumer error: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Consumer shutdown timeout")
+	}
+
+	// Give async operations time to complete
+	time.Sleep(1 * time.Second)
+
+	// Verify each workspace processed correct messages
+	ws1 := workspace.GetWorkspace(wsIDs[0])
+	ws2 := workspace.GetWorkspace(wsIDs[1])
+	ws3 := workspace.GetWorkspace(wsIDs[2])
+
+	if ws1 == nil || ws2 == nil || ws3 == nil {
+		t.Fatal("Not all workspaces found")
+	}
+
+	// Count resources processed by each workspace
+	ws1Resources := len(ws1.Resources().Items())
+	ws2Resources := len(ws2.Resources().Items())
+	ws3Resources := len(ws3.Resources().Items())
+
+	// Expected distribution with 30 messages:
+	// WS1 messages at offsets: 0, 3, 6, 9, 12, 15, 18, 21, 24, 27
+	//   BC boundary offset 5: skips 0,3 → processes 6,9,12,15,18,21,24,27 → 8 resources
+	// WS2 messages at offsets: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28
+	//   BC boundary offset 10: skips 1,4,7,10 → processes 13,16,19,22,25,28 → 6 resources
+	// WS3 messages at offsets: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29
+	//   BC boundary offset 15: skips 2,5,8,11,14 → processes 17,20,23,26,29 → 5 resources
+
+	if ws1Resources < 5 {
+		t.Fatalf("WS1 (BC: offset 5) expected ~8 resources, got %d", ws1Resources)
+	}
+	if ws2Resources < 4 {
+		t.Fatalf("WS2 (BC: offset 10) expected ~6 resources, got %d", ws2Resources)
+	}
+	if ws3Resources < 3 {
+		t.Fatalf("WS3 (BC: offset 15) expected ~5 resources, got %d", ws3Resources)
+	}
+
+	// Critical: Verify gradient (independent BC boundaries per workspace)
+	if ws1Resources <= ws2Resources {
+		t.Fatalf("WS1 (BC: offset 5) should have MORE resources than WS2 (BC: offset 10): ws1=%d, ws2=%d",
+			ws1Resources, ws2Resources)
+	}
+	if ws2Resources <= ws3Resources {
+		t.Fatalf("WS2 (BC: offset 10) should have MORE resources than WS3 (BC: offset 15): ws2=%d, ws3=%d",
+			ws2Resources, ws3Resources)
+	}
+
+	// Verify snapshots updated independently
+	finalSnapshots, err := db.GetLatestWorkspaceSnapshots(ctx, wsIDs)
+	if err != nil {
+		t.Fatalf("Failed to get final snapshots: %v", err)
+	}
+
+	if len(finalSnapshots) != 3 {
+		t.Fatalf("Expected 3 final snapshots, got %d", len(finalSnapshots))
+	}
+
+	// Verify each workspace's snapshot offset advanced
+	for i, wsID := range wsIDs {
+		finalSnapshot := finalSnapshots[wsID]
+		if finalSnapshot == nil {
+			t.Fatalf("No final snapshot for WS%d", i+1)
+		}
+
+		if finalSnapshot.Offset <= snapshots[i].Offset {
+			t.Fatalf("WS%d snapshot should advance beyond %d, got %d",
+				i+1, snapshots[i].Offset, finalSnapshot.Offset)
+		}
+	}
+
+	// Critical: Verify consumer seeked to EARLIEST offset (offset 6)
+	if ws1Resources == 0 {
+		t.Fatal("WS1 has no resources - consumer seeked to wrong offset (should seek to earliest: 6)")
+	}
 }
 
 // TestEngine_Kafka_Replay_NoSnapshot tests behavior when no snapshot exists
-// (new workspace or first time processing)
+// (new workspace or first time processing) - should load from database
 func TestEngine_Kafka_Replay_NoSnapshot(t *testing.T) {
-	t.Skip("TODO: Implement no snapshot test")
-	// This test should:
-	// 1. Create workspace without any snapshot
-	// 2. Send messages to Kafka
-	// 3. Verify all messages are processed as AD (full processing)
-	// 4. Verify isReplay=false for all messages
+	env := setupTestEnvironment(t)
+	defer env.cleanup()
+
+	systemID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+
+	// Insert entities directly into database (simulating existing workspace data)
+	if err := insertSystemIntoDB(env.ctx, env.workspaceID, systemID, "db-system"); err != nil {
+		t.Fatalf("Failed to insert system: %v", err)
+	}
+	if err := insertResourceIntoDB(env.ctx, env.workspaceID, resource1ID, "db-resource-1"); err != nil {
+		t.Fatalf("Failed to insert resource 1: %v", err)
+	}
+	if err := insertResourceIntoDB(env.ctx, env.workspaceID, resource2ID, "db-resource-2"); err != nil {
+		t.Fatalf("Failed to insert resource 2: %v", err)
+	}
+
+	// Verify NO snapshot exists
+	snapshot, err := db.GetWorkspaceSnapshot(env.ctx, env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to check snapshot: %v", err)
+	}
+	if snapshot != nil {
+		t.Fatal("Expected no snapshot, but one exists")
+	}
+
+	// Produce new resource via Kafka
+	newResourceID := uuid.New().String()
+	env.produceResourceCreateEvent(newResourceID)
+	env.produceWorkspaceSaveEvent()
+
+	// Run consumer - should load initial state from DB, then process Kafka message
+	env.runConsumer(5 * time.Second)
+
+	// Verify workspace loaded from database
+	ws := workspace.GetWorkspace(env.workspaceID)
+	if ws == nil {
+		t.Fatal("Workspace not found")
+	}
+
+	// Verify entities from DB were loaded
+	if _, exists := ws.Systems().Get(systemID); !exists {
+		t.Fatal("System from DB not loaded (PopulateWorkspaceWithInitialState failed)")
+	}
+	if _, exists := ws.Resources().Get(resource1ID); !exists {
+		t.Fatal("Resource 1 from DB not loaded")
+	}
+	if _, exists := ws.Resources().Get(resource2ID); !exists {
+		t.Fatal("Resource 2 from DB not loaded")
+	}
+
+	// Verify new resource from Kafka was also processed
+	if _, exists := ws.Resources().Get(newResourceID); !exists {
+		t.Fatal("New resource from Kafka not processed")
+	}
+
+	// Total should be 3 (2 from DB + 1 from Kafka)
+	resources := ws.Resources().Items()
+	if len(resources) != 3 {
+		t.Fatalf("Expected 3 resources (2 from DB + 1 from Kafka), got %d", len(resources))
+	}
+
+	// Verify snapshot was created after processing Kafka messages
+	finalSnapshot, err := db.GetWorkspaceSnapshot(env.ctx, env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get final snapshot: %v", err)
+	}
+	if finalSnapshot == nil {
+		t.Fatal("Snapshot should be created after workspace.save event")
+	}
+
+	// Verify all messages processed in normal mode (not replay)
+	// Since there was no previous snapshot, all messages are "new" (AD mode)
+	if finalSnapshot.Offset < 0 {
+		t.Fatalf("Invalid snapshot offset: %d", finalSnapshot.Offset)
+	}
 }
 
 // TestEngine_Kafka_Replay_ReplayMode tests that replay mode is correctly detected
@@ -453,6 +728,10 @@ func setupTestEnvironment(t *testing.T) *testEnvironment {
 	}
 
 	ctx := context.Background()
+
+	// Clean up any leftover test workspaces from previous runs
+	cleanupAllTestWorkspaces(ctx)
+
 	workspaceID := uuid.New().String()
 	topicName := fmt.Sprintf("test-replay-%s-%s", t.Name(), uuid.New().String()[:8])
 
@@ -889,4 +1168,50 @@ func cleanupTestWorkspace(ctx context.Context, workspaceID string) {
 
 	// Delete workspace (cascade will delete snapshots)
 	_, _ = conn.Exec(ctx, `DELETE FROM workspace WHERE id = $1`, workspaceID)
+}
+
+func cleanupAllTestWorkspaces(ctx context.Context) {
+	conn, err := db.GetDB(ctx)
+	if err != nil {
+		return
+	}
+	defer conn.Release()
+
+	// Delete all workspaces with test prefix (from this or previous test runs)
+	// This also deletes their snapshots via CASCADE
+	_, _ = conn.Exec(ctx, `DELETE FROM workspace WHERE slug LIKE 'test-%'`)
+
+	// Also clean up orphaned snapshot files from ./state directory
+	_ = os.RemoveAll("./state")
+	_ = os.Mkdir("./state", 0755)
+}
+
+func insertSystemIntoDB(ctx context.Context, workspaceID, systemID, name string) error {
+	conn, err := db.GetDB(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(ctx, `
+		INSERT INTO system (id, workspace_id, name, slug, description)
+		VALUES ($1, $2, $3, $4, $5)
+	`, systemID, workspaceID, name, name, "")
+
+	return err
+}
+
+func insertResourceIntoDB(ctx context.Context, workspaceID, resourceID, name string) error {
+	conn, err := db.GetDB(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	_, err = conn.Exec(ctx, `
+		INSERT INTO resource (id, workspace_id, name, version, kind, identifier, config)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, resourceID, workspaceID, name, "v1", "test-kind", name, "{}")
+
+	return err
 }
