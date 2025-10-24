@@ -346,7 +346,9 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemID(systemId),
-			integration.WithDeployment(),
+			integration.WithDeployment(
+				integration.DeploymentCelResourceSelector("true"),
+			),
 			integration.WithDeployment(
 				integration.DeploymentJsonResourceSelector(map[string]any{
 					"type":     "metadata",
