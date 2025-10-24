@@ -13,6 +13,10 @@ export default [
           "routes/ws/deployments/page.$deploymentId.versions.tsx",
         ),
         route(
+          ":deploymentId/release-targets",
+          "routes/ws/deployments/page.$deploymentId.release-targets.tsx",
+        ),
+        route(
           ":deploymentId/settings",
           "routes/ws/deployments/settings/_layout.tsx",
           [

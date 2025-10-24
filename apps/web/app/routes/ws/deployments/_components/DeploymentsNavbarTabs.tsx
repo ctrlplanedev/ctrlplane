@@ -16,7 +16,9 @@ export const DeploymentsNavbarTabs = ({
       ? "environments"
       : path.pathname.startsWith(`${baseUrl}/settings`)
         ? "settings"
-        : "versions";
+        : path.pathname.startsWith(`${baseUrl}/release-targets`)
+          ? "release-targets"
+          : "versions";
 
   return (
     <Tabs value={value}>
@@ -29,6 +31,13 @@ export const DeploymentsNavbarTabs = ({
         <TabsTrigger value="versions" asChild>
           <Link to={`/${workspace.slug}/deployments/${deploymentId}/versions`}>
             Versions
+          </Link>
+        </TabsTrigger>
+        <TabsTrigger value="release-targets" asChild>
+          <Link
+            to={`/${workspace.slug}/deployments/${deploymentId}/release-targets`}
+          >
+            Targets
           </Link>
         </TabsTrigger>
         <TabsTrigger value="settings" asChild>
