@@ -45,7 +45,10 @@ func TestEngine_Kafka_Replay_BasicFlow(t *testing.T) {
 	env.runConsumer(5 * time.Second)
 
 	// Verify workspace state was updated
-	ws := workspace.GetWorkspace(env.workspaceID)
+	ws, err := workspace.GetWorkspaceAndLoad(env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
 	if ws == nil {
 		t.Fatal("Workspace not found in memory")
 	}
@@ -299,9 +302,18 @@ func TestEngine_Kafka_Replay_MultipleWorkspaces(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// Verify each workspace processed correct messages
-	ws1 := workspace.GetWorkspace(wsIDs[0])
-	ws2 := workspace.GetWorkspace(wsIDs[1])
-	ws3 := workspace.GetWorkspace(wsIDs[2])
+	ws1, err := workspace.GetWorkspaceAndLoad(wsIDs[0])
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
+	ws2, err := workspace.GetWorkspaceAndLoad(wsIDs[1])
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
+	ws3, err := workspace.GetWorkspaceAndLoad(wsIDs[2])
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
 
 	if ws1 == nil || ws2 == nil || ws3 == nil {
 		t.Fatal("Not all workspaces found")
@@ -408,7 +420,10 @@ func TestEngine_Kafka_Replay_NoSnapshot(t *testing.T) {
 	env.runConsumer(5 * time.Second)
 
 	// Verify workspace loaded from database
-	ws := workspace.GetWorkspace(env.workspaceID)
+	ws, err := workspace.GetWorkspaceAndLoad(env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
 	if ws == nil {
 		t.Fatal("Workspace not found")
 	}
@@ -477,7 +492,10 @@ func TestEngine_Kafka_Replay_ReplayMode(t *testing.T) {
 	}
 
 	// Verify resources exist
-	ws := workspace.GetWorkspace(env.workspaceID)
+	ws, err := workspace.GetWorkspaceAndLoad(env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
 	if len(ws.Resources().Items()) != len(resourceIDs) {
 		t.Fatalf("Expected %d resources, got %d", len(resourceIDs), len(ws.Resources().Items()))
 	}
@@ -510,7 +528,10 @@ func TestEngine_Kafka_Replay_ReplayMode(t *testing.T) {
 	env.runConsumer(5 * time.Second)
 
 	// Verify workspace state was rebuilt
-	ws = workspace.GetWorkspace(env.workspaceID)
+	ws, err = workspace.GetWorkspaceAndLoad(env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
 	if ws == nil {
 		t.Fatal("Workspace not found after replay")
 	}
@@ -565,7 +586,10 @@ func TestEngine_Kafka_Replay_JobDispatchPrevention(t *testing.T) {
 	// Run consumer
 	env.runConsumer(5 * time.Second)
 
-	ws := workspace.GetWorkspace(env.workspaceID)
+	ws, err := workspace.GetWorkspaceAndLoad(env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
 	if ws == nil {
 		t.Fatal("Workspace not found")
 	}
@@ -620,7 +644,10 @@ func TestEngine_Kafka_Replay_JobDispatchPrevention(t *testing.T) {
 	env.runConsumer(5 * time.Second)
 
 	// Verify version created during replay
-	ws = workspace.GetWorkspace(env.workspaceID)
+	ws, err = workspace.GetWorkspaceAndLoad(env.workspaceID)
+	if err != nil {
+		t.Fatalf("Failed to get workspace: %v", err)
+	}
 	versions := ws.DeploymentVersions().Items()
 
 	versionFound := false

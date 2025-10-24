@@ -13,7 +13,7 @@ import (
 
 var tracer = otel.Tracer("workspace/loader")
 
-func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snapshot *db.WorkspaceSnapshot) error {
+func Save(ctx context.Context, workspace *Workspace, snapshot *db.WorkspaceSnapshot) error {
 	ctx, span := tracer.Start(ctx, "SaveWorkspace")
 	defer span.End()
 
@@ -30,7 +30,7 @@ func Save(ctx context.Context, storage StorageClient, workspace *Workspace, snap
 	}
 
 	// Write to file with appropriate permissions
-	if err := storage.Put(ctx, snapshot.Path, data); err != nil {
+	if err := Storage.Put(ctx, snapshot.Path, data); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "Failed to write workspace to disk")
 		return fmt.Errorf("failed to write workspace to disk: %w", err)

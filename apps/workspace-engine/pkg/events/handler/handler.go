@@ -153,9 +153,9 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message,
 	var ws *workspace.Workspace
 	changeSet := changeset.NewChangeSet[any]()
 
-	ws = workspace.GetWorkspace(rawEvent.WorkspaceID)
+	ws, err := workspace.GetWorkspaceAndLoad(rawEvent.WorkspaceID)
 	if ws == nil {
-		return nil, fmt.Errorf("workspace not found: %s", rawEvent.WorkspaceID)
+		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}
 
 	isReplay := offsetTracker.MessageOffset <= offsetTracker.LastCommittedOffset

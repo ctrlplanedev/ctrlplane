@@ -54,12 +54,12 @@ func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
 	return earliestOffset
 }
 
-func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspaceMap map[int32][]string) {
+func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspaceMap map[int32][]string) error {
 	for partition, workspaceIDs := range partitionWorkspaceMap {
 		snapshots, err := db.GetLatestWorkspaceSnapshots(ctx, workspaceIDs)
 		if err != nil {
 			log.Error("Failed to get latest workspace snapshots", "error", err)
-			continue
+			return err
 		}
 
 		earliestOffset := getEarliestOffset(snapshots)
@@ -73,7 +73,8 @@ func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspac
 			Offset:    kafka.Offset(effectiveOffset),
 		}, 0); err != nil {
 			log.Error("Failed to seek to earliest offset", "error", err)
-			continue
+			return err
 		}
 	}
+	return nil
 }

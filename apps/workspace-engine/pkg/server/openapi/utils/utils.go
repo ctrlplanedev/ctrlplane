@@ -18,13 +18,8 @@ func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, err
 	}
 
 	if workspace.Exists(workspaceId) {
-		return workspace.GetWorkspace(workspaceId), nil
+		return workspace.GetWorkspaceAndLoad(workspaceId)
 	}
 
-	ws := workspace.New(workspaceId)
-	if err := workspace.PopulateWorkspaceWithInitialState(c.Request.Context(), ws); err != nil {
-		return nil, fmt.Errorf("failed to populate workspace with initial state: %w", err)
-	}
-	workspace.Set(workspaceId, ws)
-	return ws, nil
+	return nil, fmt.Errorf("workspace %s not found", workspaceId)
 }

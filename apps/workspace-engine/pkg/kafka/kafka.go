@@ -11,11 +11,9 @@ import (
 	"workspace-engine/pkg/events"
 	eventHanlder "workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/events/handler/workspacesave"
-	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 
-	"github.com/aws/smithy-go/ptr"
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -118,37 +116,21 @@ func RunConsumer(ctx context.Context) error {
 		allWorkspaceIDs = append(allWorkspaceIDs, workspaceIDs...)
 	}
 
-	storage := workspace.NewFileStorage("./state")
-	if workspace.IsGCSStorageEnabled() {
-		storage, err = workspace.NewGCSStorageClient(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to create GCS storage: %w", err)
+	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
+	for _, workspaceID := range allWorkspaceIDs {
+		ws, err := workspace.GetWorkspaceAndLoad(workspaceID)
+		if ws == nil {
+			log.Error("Workspace not found", "workspaceID", workspaceID, "error", err)
+			continue
 		}
 	}
 
-	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
-	for _, workspaceID := range allWorkspaceIDs {
-		ws := workspace.GetWorkspace(workspaceID)
-		if ws == nil {
-			log.Error("Workspace not found", "workspaceID", workspaceID)
-			continue
-		}
-		if err := workspace.Load(ctx, storage, ws); err != nil {
-			log.Error("Failed to load workspace", "workspaceID", workspaceID, "error", err)
-			continue
-		}
-
-		ws.Systems().Upsert(ctx, &oapi.System{
-			Id:          "00000000-0000-0000-0000-000000000000",
-			Name:        "Default",
-			Description: ptr.String("Default system"),
-		})
+	if err := setOffsets(ctx, consumer, partitionWorkspaceMap); err != nil {
+		return fmt.Errorf("failed to set offsets: %w", err)
 	}
 
 	// Start consuming messages
 	handler := events.NewEventHandler()
-
-	setOffsets(ctx, consumer, partitionWorkspaceMap)
 
 	for {
 		// Check for cancellation
@@ -212,7 +194,7 @@ func RunConsumer(ctx context.Context) error {
 				NumPartitions: numPartitions,
 			}
 
-			if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
+			if err := workspace.Save(ctx, ws, snapshot); err != nil {
 				log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
 			}
 		}
