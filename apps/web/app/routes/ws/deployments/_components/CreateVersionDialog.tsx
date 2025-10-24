@@ -40,7 +40,7 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 
 // Validation schema for version creation
 const createVersionSchema = z.object({
-  deploymentId: z.string().uuid({ message: "Valid deployment ID is required" }),
+  deploymentId: z.string(),
   tag: z
     .string()
     .min(1, { message: "Tag is required" })
@@ -88,7 +88,6 @@ export function CreateVersionDialog({
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   const createVersionMutation = trpc.deployment.createVersion.useMutation({
     onSuccess: async (version) => {
       toast.success("Version created successfully");
@@ -115,7 +114,6 @@ export function CreateVersionDialog({
   const onSubmit = form.handleSubmit(async (data) => {
     try {
       const workspaceId = workspace.id;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await createVersionMutation.mutateAsync({
         workspaceId,
         ...data,

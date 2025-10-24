@@ -13,7 +13,7 @@ export const environmentRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        environmentId: z.uuid(),
+        environmentId: z.string(),
         limit: z.number().min(1).max(1000).default(50),
         offset: z.number().min(0).default(0),
       }),
@@ -37,7 +37,7 @@ export const environmentRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        environmentId: z.uuid(),
+        environmentId: z.string(),
       }),
     )
     .meta({
@@ -61,7 +61,7 @@ export const environmentRouter = router({
   list: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string().uuid(),
+        workspaceId: z.uuid(),
       }),
     )
     .meta({
@@ -86,7 +86,7 @@ export const environmentRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        environmentId: z.uuid(),
+        environmentId: z.string(),
         data: z.object({
           resourceSelectorCel: z.string().min(1).max(255),
         }),
@@ -146,7 +146,7 @@ export const environmentRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        systemId: z.uuid(),
+        systemId: z.string(),
         name: z.string().min(1).max(255),
         description: z.string().max(500).optional(),
         resourceSelectorCel: z.string().min(1).max(255),

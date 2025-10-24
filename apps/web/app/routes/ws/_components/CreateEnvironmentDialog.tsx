@@ -41,7 +41,7 @@ import CelExpressionInput from "./CelExpiressionInput";
 
 // Validation schema for environment creation
 const createEnvironmentSchema = z.object({
-  systemId: z.string().uuid({ message: "Valid system ID is required" }),
+  systemId: z.string().min(2, { message: "System ID is required" }),
   name: z
     .string()
     .min(1, { message: "Name is required" })

@@ -116,7 +116,7 @@ export const deploymentsRouter = router({
   create: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string().uuid(),
+        workspaceId: z.uuid(),
         systemId: z.string(),
         name: z.string().min(3).max(255),
         slug: z.string().min(3).max(255),
@@ -146,8 +146,8 @@ export const deploymentsRouter = router({
   createVersion: protectedProcedure
     .input(
       z.object({
-        workspaceId: z.string().uuid(),
-        deploymentId: z.string().uuid(),
+        workspaceId: z.uuid(),
+        deploymentId: z.string(),
         tag: z.string().min(1),
         name: z.string().optional(),
         status: z

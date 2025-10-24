@@ -45,7 +45,7 @@ export const workspaceRouter = router({
           .perform(Permission.WorkspaceGet)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(z.object({ workspaceId: z.string().uuid() }))
+    .input(z.object({ workspaceId: z.uuid() }))
     .query(async ({ ctx, input }) => {
       const workspace = await ctx.db
         .select()
@@ -72,7 +72,7 @@ export const workspaceRouter = router({
     })
     .input(
       z.object({
-        workspaceId: z.string().uuid(),
+        workspaceId: z.uuid(),
         data: z.object({
           name: z
             .string()

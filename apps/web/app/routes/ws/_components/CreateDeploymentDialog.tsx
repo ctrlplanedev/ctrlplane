@@ -40,7 +40,7 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 
 // Validation schema for deployment creation
 const createDeploymentSchema = z.object({
-  systemId: z.string().uuid({ message: "Valid system ID is required" }),
+  systemId: z.string().min(2, { message: "System ID is required" }),
   name: z
     .string()
     .min(3, { message: "Name must be at least 3 characters long" })

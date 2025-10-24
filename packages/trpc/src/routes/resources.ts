@@ -71,7 +71,7 @@ export const resourcesRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        resourceId: z.uuid(),
+        resourceId: z.string(),
       }),
     )
     .query(async ({ input }) => {
