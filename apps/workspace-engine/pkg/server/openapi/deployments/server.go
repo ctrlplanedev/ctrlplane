@@ -66,14 +66,8 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 	total := len(resourceList)
 
 	// Apply pagination
-	start := offset
-	if start > total {
-		start = total
-	}
-	end := start + limit
-	if end > total {
-		end = total
-	}
+	start := min(offset, total)
+	end := min(start + limit, total)
 	paginatedResources := resourceList[start:end]
 
 	c.JSON(http.StatusOK, gin.H{

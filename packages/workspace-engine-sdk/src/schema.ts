@@ -401,6 +401,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/relationship-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get relationship rules for a given workspace
+         * @description Returns all relationship rules for the specified workspace.
+         */
+        get: operations["getRelationshipRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/release-targets/evaluate": {
         parameters: {
             query?: never;
@@ -717,6 +737,10 @@ export interface components {
             createdAt: string;
             description?: string;
             id: string;
+            /** @description Arbitrary metadata for the policy (record<string, string>) */
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             rules: components["schemas"]["PolicyRule"][];
             selectors: components["schemas"]["PolicyTargetSelector"][];
@@ -1743,6 +1767,60 @@ export interface operations {
                     "application/json": {
                         releaseTargets?: components["schemas"]["ReleaseTarget"][];
                     };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRelationshipRules: {
+        parameters: {
+            query?: {
+                /** @description Number of items to skip */
+                offset?: number;
+                /** @description Maximum number of items to return */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["RelationshipRule"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Resource not found */

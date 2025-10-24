@@ -598,6 +598,15 @@ type GetJobsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// GetRelationshipRulesParams defines parameters for GetRelationshipRules.
+type GetRelationshipRulesParams struct {
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // GetJobsForReleaseTargetParams defines parameters for GetJobsForReleaseTarget.
 type GetJobsForReleaseTargetParams struct {
 	// Limit Maximum number of items to return
@@ -1321,6 +1330,9 @@ type ServerInterface interface {
 	// Get release targets for a policy
 	// (GET /v1/workspaces/{workspaceId}/policies/{policyId}/release-targets)
 	GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string, policyId string)
+	// Get relationship rules for a given workspace
+	// (GET /v1/workspaces/{workspaceId}/relationship-rules)
+	GetRelationshipRules(c *gin.Context, workspaceId string, params GetRelationshipRulesParams)
 	// Evaluate policies for a release target
 	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
 	EvaluateReleaseTarget(c *gin.Context, workspaceId string)
@@ -2108,6 +2120,49 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForPolicy(c *gin.Context) {
 	siw.Handler.GetReleaseTargetsForPolicy(c, workspaceId, policyId)
 }
 
+// GetRelationshipRules operation middleware
+func (siw *ServerInterfaceWrapper) GetRelationshipRules(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRelationshipRulesParams
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRelationshipRules(c, workspaceId, params)
+}
+
 // EvaluateReleaseTarget operation middleware
 func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 
@@ -2424,6 +2479,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies", wrapper.ListPolicies)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.GetRelationshipRules)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)

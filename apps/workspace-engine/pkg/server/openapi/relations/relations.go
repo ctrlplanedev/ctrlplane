@@ -56,3 +56,41 @@ func (s *Relations) getEntityByType(ws *workspace.Workspace, entityType oapi.Rel
 		return nil, fmt.Errorf("invalid entity type: %s", entityType)
 	}
 }
+
+func (s *Relations) GetRelationshipRules(c *gin.Context, workspaceId string, params oapi.GetRelationshipRulesParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	relationshipRules := ws.RelationshipRules().Items()
+	relationshipRulesList := make([]*oapi.RelationshipRule, 0, len(relationshipRules))
+	for _, relationshipRule := range relationshipRules {
+		relationshipRulesList = append(relationshipRulesList, relationshipRule)
+	}
+	
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	total := len(relationshipRules)
+	start := min(offset, total)
+	end := min(start+limit, total)
+	paginatedRelationshipRules := relationshipRulesList[start:end]
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  paginatedRelationshipRules,
+	})
+}

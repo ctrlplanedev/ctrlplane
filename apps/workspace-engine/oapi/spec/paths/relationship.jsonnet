@@ -1,6 +1,21 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  '/v1/workspaces/{workspaceId}/relationship-rules': {
+    get: {
+      summary: 'Get relationship rules for a given workspace',
+      operationId: 'getRelationshipRules',
+      description: 'Returns all relationship rules for the specified workspace.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.offsetParam(),
+        openapi.limitParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('RelationshipRule'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relationships': {
     get: {
       summary: 'Get related entities for a given entity',
