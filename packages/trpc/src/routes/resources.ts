@@ -1,11 +1,42 @@
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
 import { wsEngine } from "../ws-engine.js";
 
 export const resourcesRouter = router({
+  create: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        name: z.string(),
+        kind: z.string(),
+        version: z.string(),
+        identifier: z.string(),
+        config: z.record(z.string(), z.unknown()),
+        metadata: z.record(z.string(), z.string()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const data = {
+        id: uuidv4(),
+        ...input,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        workspaceId: input.workspaceId,
+      };
+      await sendGoEvent({
+        workspaceId: input.workspaceId,
+        eventType: Event.ResourceCreated,
+        timestamp: Date.now(),
+        data,
+      });
+      return data;
+    }),
+
   list: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

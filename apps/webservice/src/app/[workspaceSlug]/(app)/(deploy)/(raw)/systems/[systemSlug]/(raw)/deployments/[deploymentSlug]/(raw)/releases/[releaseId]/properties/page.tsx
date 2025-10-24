@@ -88,16 +88,6 @@ export default async function PropertiesPage(props: {
                 </tr>
               </tbody>
             </table>
-
-            <table
-              width="100%"
-              className="text-xs"
-              style={{ tableLayout: "fixed" }}
-            >
-              <tbody>
-                <tr></tr>
-              </tbody>
-            </table>
           </div>
         </div>
 

@@ -77,6 +77,8 @@ const (
 
 	WorkspaceTick EventType = "workspace.tick"
 	WorkspaceSave EventType = "workspace.save"
+
+	ReleaseTargetDeploy EventType = "release-target.deploy"
 )
 
 // RawEvent represents the raw event data received from Kafka messages
@@ -171,7 +173,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message,
 		log.Error("Handler failed to process event",
 			"eventType", rawEvent.EventType,
 			"error", err)
-		return nil, fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
+		return ws, fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
 	releaseTargetChanges, err := ws.ReleaseManager().ProcessChanges(ctx, changeSet)
@@ -179,7 +181,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message,
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to process target changes")
 		log.Error("Failed to process target changes", "error", err)
-		return nil, fmt.Errorf("failed to process target changes: %w", err)
+		return ws, fmt.Errorf("failed to process target changes: %w", err)
 	}
 
 	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
@@ -188,7 +190,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message,
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to flush changeset")
 		log.Error("Failed to flush changeset", "error", err)
-		return nil, fmt.Errorf("failed to flush changeset: %w", err)
+		return ws, fmt.Errorf("failed to flush changeset: %w", err)
 	}
 
 	span.SetStatus(codes.Ok, "event processed successfully")

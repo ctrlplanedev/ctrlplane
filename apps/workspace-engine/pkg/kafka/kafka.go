@@ -189,6 +189,16 @@ func RunConsumer(ctx context.Context) error {
 		ws, err := handler.ListenAndRoute(ctx, msg, offsetTracker)
 		if err != nil {
 			log.Error("Failed to route message", "error", err)
+		}
+
+		// Commit offset to Kafka
+		if _, err := consumer.CommitMessage(msg); err != nil {
+			log.Error("Failed to commit message", "error", err)
+			continue
+		}
+
+		if ws == nil {
+			log.Error("Workspace not found", "workspaceID", msg.Key)
 			continue
 		}
 
@@ -205,12 +215,6 @@ func RunConsumer(ctx context.Context) error {
 			if err := workspace.Save(ctx, storage, ws, snapshot); err != nil {
 				log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
 			}
-		}
-
-		// Commit offset to Kafka
-		if _, err := consumer.CommitMessage(msg); err != nil {
-			log.Error("Failed to commit message", "error", err)
-			continue
 		}
 	}
 }

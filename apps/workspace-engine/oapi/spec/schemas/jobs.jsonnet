@@ -54,6 +54,18 @@ local JobPropertyKeys = std.objectFields(Job.properties);
     ],
   },
 
+  JobWithRelease: {
+    type: 'object',
+    required: ['job', 'release'],
+    properties: {
+      job: openapi.schemaRef('Job'),
+      release: openapi.schemaRef('Release'),
+      environment: openapi.schemaRef('Environment'),
+      deployment: openapi.schemaRef('Deployment'),
+      resource: openapi.schemaRef('Resource'),
+    },
+  },
+
   JobUpdateEvent: {
     type: 'object',
     required: ['job'],

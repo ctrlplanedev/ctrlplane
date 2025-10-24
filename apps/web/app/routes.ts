@@ -24,6 +24,8 @@ export default [
         ),
       ]),
 
+      route("jobs", "routes/ws/jobs.tsx"),
+
       route("environments", "routes/ws/environments.tsx"),
       route("environments", "routes/ws/environments/_layout.tsx", [
         route(
@@ -33,6 +35,11 @@ export default [
         route(
           ":environmentId/resources",
           "routes/ws/environments/page.$environmentId.resources.tsx",
+        ),
+        route(
+          ":environmentId/settings",
+          "routes/ws/environments/settings/_layout.tsx",
+          [route("", "routes/ws/environments/settings/general.tsx")],
         ),
       ]),
 

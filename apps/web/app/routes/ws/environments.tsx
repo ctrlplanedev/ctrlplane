@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertCircle, Filter, Search } from "lucide-react";
+import { AlertCircle, Filter, Search, TreePine } from "lucide-react";
 
 import { trpc } from "~/api/trpc";
 import {
@@ -21,6 +21,7 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { CreateEnvironmentDialog } from "./_components/CreateEnvironmentDialog";
 import { EnvironmentCard } from "./environments/_components/EnvironmentCard";
 
 export function meta() {
@@ -64,7 +65,13 @@ export default function Environments() {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <Button disabled>Create Environment</Button>
+
+        <CreateEnvironmentDialog>
+          <Button variant="outline">
+            <TreePine className="mr-2 h-4 w-4" />
+            Create Environment
+          </Button>
+        </CreateEnvironmentDialog>
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">

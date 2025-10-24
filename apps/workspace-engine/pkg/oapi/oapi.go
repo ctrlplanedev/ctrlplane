@@ -81,6 +81,10 @@ func (j *Job) IsInProcessingState() bool {
 	return j.Status == InProgress || j.Status == ActionRequired || j.Status == Pending
 }
 
+func (j *Job) IsInTerminalState() bool {
+	return j.Status == Cancelled || j.Status == Skipped || j.Status == Successful || j.Status == Failure || j.Status == InvalidJobAgent || j.Status == InvalidIntegration || j.Status == ExternalRunNotFound
+}
+
 func (v *Value) GetType() (string, error) {
 	// Try ReferenceValue - check that required fields are present
 	if rv, err := v.AsReferenceValue(); err == nil {

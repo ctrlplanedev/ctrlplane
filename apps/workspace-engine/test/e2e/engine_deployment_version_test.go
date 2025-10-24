@@ -345,7 +345,7 @@ func TestEngine_MultipleDeploymentsIndependentVersions(t *testing.T) {
 }
 
 // TestEngine_DeploymentVersionWithNoJobAgent verifies that deployment versions
-// for deployments without job agents don't create jobs
+// for deployments without job agents create jobs with InvalidJobAgent status
 func TestEngine_DeploymentVersionWithNoJobAgent(t *testing.T) {
 	deploymentId := uuid.New().String()
 
@@ -369,10 +369,30 @@ func TestEngine_DeploymentVersionWithNoJobAgent(t *testing.T) {
 	dv.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
-	// Verify NO jobs were created (no job agent)
+	// Verify job was created with InvalidJobAgent status
+	allJobs := engine.Workspace().Jobs().Items()
+	if len(allJobs) != 1 {
+		t.Fatalf("expected 1 job without job agent, got %d", len(allJobs))
+	}
+
+	var job *oapi.Job
+	for _, j := range allJobs {
+		job = j
+		break
+	}
+
+	if job.Status != oapi.InvalidJobAgent {
+		t.Errorf("expected job status InvalidJobAgent, got %v", job.Status)
+	}
+
+	if job.JobAgentId != "" {
+		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
+	}
+
+	// Verify no pending jobs (InvalidJobAgent jobs are not pending)
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 0 {
-		t.Fatalf("expected 0 jobs without job agent, got %d", len(pendingJobs))
+		t.Errorf("expected 0 pending jobs, got %d", len(pendingJobs))
 	}
 }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
@@ -9,10 +9,12 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "~/components/ui/breadcrumb";
+import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { CreateResourceDialog } from "./_components/CreateResourceDialog";
 import { ResourceRow } from "./resources/_components/ResourceRow";
 
 export default function Resources() {
@@ -26,7 +28,7 @@ export default function Resources() {
     || resource.identifier.endsWith("${searchQuery}")
     || resource.identifier.contains("${searchQuery}")`;
 
-  const { data: resources } = trpc.resources.list.useQuery({
+  const { data: resources } = trpc.resource.list.useQuery({
     workspaceId: workspace.id,
     selector: { cel },
     limit: 10,
@@ -56,6 +58,13 @@ export default function Resources() {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <CreateResourceDialog>
+            <Button variant="outline" className="h-9">
+              <Plus className="h-4 w-4" />
+              Create Resource
+            </Button>
+          </CreateResourceDialog>
+
           <Badge variant="outline" className="h-9">
             {resources?.total} resource{resources?.total === 1 ? "" : "s"}
           </Badge>

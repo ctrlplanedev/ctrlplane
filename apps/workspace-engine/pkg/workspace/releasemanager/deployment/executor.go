@@ -58,6 +58,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	span.SetAttributes(
 		attribute.Bool("job.created", true),
 		attribute.String("job.id", newJob.Id),
+		attribute.String("job.status", string(newJob.Status)),
 	)
 
 	if e.store.IsReplay() {
@@ -66,14 +67,17 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	}
 
 	// Step 4: Dispatch job to integration (ASYNC)
-	go func() {
-		if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
-			log.Error("error dispatching job to integration", "error", err.Error())
-			newJob.Status = oapi.InvalidIntegration
-			newJob.UpdatedAt = time.Now()
-			e.store.Jobs.Upsert(ctx, newJob)
-		}
-	}()
+	// Skip dispatch if job already has InvalidJobAgent status
+	if newJob.Status != oapi.InvalidJobAgent {
+		go func() {
+			if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
+				log.Error("error dispatching job to integration", "error", err.Error())
+				newJob.Status = oapi.InvalidIntegration
+				newJob.UpdatedAt = time.Now()
+				e.store.Jobs.Upsert(ctx, newJob)
+			}
+		}()
+	}
 
 	return nil
 }

@@ -99,6 +99,7 @@ export const ChildrenResources: React.FC<{ resourceId: string }> = ({
           No children resources
         </div>
       )}
+
       {resourceRelations.map((resource) => (
         <ChildResourceRow
           key={resource.id}

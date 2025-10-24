@@ -60,6 +60,12 @@ const CEL_OBJECTS: CELObject[] = [
     documentation: "Target resource for deployment operations",
     fields: [
       {
+        label: "name",
+        type: "string",
+        documentation: "The name of the resource",
+        isString: true,
+      },
+      {
         label: "kind",
         type: "string",
         documentation: "The kind/type of the resource",

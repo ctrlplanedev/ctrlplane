@@ -9,6 +9,30 @@ import { protectedProcedure, router } from "../trpc.js";
 import { wsEngine } from "../ws-engine.js";
 
 export const environmentRouter = router({
+  resources: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        environmentId: z.uuid(),
+        limit: z.number().min(1).max(1000).default(50),
+        offset: z.number().min(0).default(0),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { workspaceId, environmentId, limit, offset } = input;
+      const result = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources",
+        {
+          params: {
+            path: { workspaceId, environmentId },
+            query: { limit, offset },
+          },
+        },
+      );
+
+      return result.data;
+    }),
+
   get: protectedProcedure
     .input(
       z.object({
@@ -56,6 +80,66 @@ export const environmentRouter = router({
       );
 
       return result.data;
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        environmentId: z.uuid(),
+        data: z.object({
+          resourceSelectorCel: z.string().min(1).max(255),
+        }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, environmentId, data } = input;
+      const validate = await wsEngine.POST("/v1/validate/resource-selector", {
+        body: {
+          resourceSelector: {
+            cel: data.resourceSelectorCel,
+          },
+        },
+      });
+
+      if (!validate.data?.valid) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            Array.isArray(validate.data?.errors) &&
+            validate.data.errors.length > 0
+              ? validate.data.errors.join(", ")
+              : "Invalid resource selector",
+        });
+      }
+
+      const env = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+        { params: { path: { workspaceId, environmentId } } },
+      );
+
+      if (!env.data) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Environment not found",
+        });
+      }
+
+      const updateData = {
+        ...env.data,
+        resourceSelector: {
+          cel: data.resourceSelectorCel,
+        },
+      };
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.EnvironmentUpdated,
+        timestamp: Date.now(),
+        data: updateData,
+      });
+
+      return env.data;
     }),
 
   create: protectedProcedure
