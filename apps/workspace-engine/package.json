@@ -7,8 +7,6 @@
     "test": "go test ./...",
     "generate": "go generate ./...",
     "format": "go fmt ./...",
-    "lint": "go lint ./...",
-    "typecheck": "go typecheck ./...",
     "clean": "go clean ./..."
   }
 }

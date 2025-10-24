@@ -44,7 +44,9 @@ const getOapiResource = (
   config: resource.config,
 });
 
-const convertFullResourceToNodeEvent = <T extends keyof import("../events.js").EventPayload>(
+const convertFullResourceToNodeEvent = <
+  T extends keyof import("../events.js").EventPayload,
+>(
   fullResource: FullResource,
   eventType: T,
 ): Message<T> => ({
