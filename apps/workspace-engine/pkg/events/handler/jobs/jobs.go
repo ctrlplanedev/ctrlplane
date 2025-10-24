@@ -28,11 +28,14 @@ func isStringUUID(s string) bool {
 }
 
 func dispatchAndNotifyJob(ctx context.Context, ws *workspace.Workspace, job *oapi.Job) {
-	if err := ws.ReleaseManager().JobDispatcher().DispatchJob(ctx, job); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
-		log.Error("error dispatching job to integration", "error", err.Error())
-		job.Status = oapi.InvalidIntegration
-		job.UpdatedAt = time.Now()
+	err := ws.ReleaseManager().JobDispatcher().DispatchJob(ctx, job)
+	if err == nil || errors.Is(err, jobs.ErrUnsupportedJobAgent) {
+		return
 	}
+
+	log.Error("error dispatching job to integration", "error", err.Error())
+	job.Status = oapi.InvalidIntegration
+	job.UpdatedAt = time.Now()
 
 	kafkaProducer, err := producer.NewProducer()
 	if err != nil {
