@@ -9,6 +9,7 @@ import * as githubEntityDispatch from "./github-entities.js";
 import * as jobAgentDispatch from "./job-agent.js";
 import * as jobDispatch from "./job.js";
 import * as policyDispatch from "./policy.js";
+import * as redeployDispatch from "./redeploy.js";
 import * as releaseTargetDispatch from "./release-target.js";
 import * as resourceDispatch from "./resource.js";
 import * as systemDispatch from "./system.js";
@@ -219,6 +220,10 @@ export class KafkaEventDispatcher implements EventDispatcher {
       releaseTarget,
       opts,
     );
+  }
+
+  async dispatchRedeploy(releaseTargetId: string): Promise<void> {
+    await redeployDispatch.dispatchRedeploy(releaseTargetId);
   }
 
   async dispatchUserApprovalRecordCreated(

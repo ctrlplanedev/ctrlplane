@@ -57,11 +57,12 @@ const handleDeployment = async (
   }
 
   await Promise.all(
-    releaseTargets.map((releaseTarget) =>
-      eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget, {
+    releaseTargets.map(async (releaseTarget) => {
+      await eventDispatcher.dispatchRedeploy(releaseTarget.id);
+      await eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget, {
         skipDuplicateCheck: true,
-      }),
-    ),
+      });
+    }),
   );
 };
 
