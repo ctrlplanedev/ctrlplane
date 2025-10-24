@@ -1,6 +1,115 @@
 [
   {
     "eventType": "resource.created",
+    "timestamp": 1729800000000,
+    "data": {
+      "id": "aws-account-123456789012",
+      "workspaceId": "will-be-replaced",
+      "name": "AWS Production Account",
+      "kind": "AmazonWebServicesAccount",
+      "version": "ctrlplane.dev/cloud/account/v1",
+      "identifier": "arn:aws:organizations::123456789012:account/o-exampleorgid/123456789012",
+      "createdAt": "2025-10-24T11:59:00Z",
+      "config": {
+        "accountId": "123456789012",
+        "accountName": "production-account",
+        "email": "aws-production@example.com",
+        "status": "ACTIVE",
+        "organizationId": "o-exampleorgid",
+        "joinedMethod": "CREATED",
+        "regions": ["us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1"]
+      },
+      "metadata": {
+        "cloud": "aws",
+        "account-id": "123456789012",
+        "account-name": "production-account",
+        "organization-id": "o-exampleorgid",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "managed": "true"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800010000,
+    "data": {
+      "id": "azure-subscription-abcd1234",
+      "workspaceId": "will-be-replaced",
+      "name": "Azure Production Subscription",
+      "kind": "AzureSubscription",
+      "version": "ctrlplane.dev/cloud/subscription/v1",
+      "identifier": "/subscriptions/abcd1234-5678-90ef-ghij-klmnopqrstuv",
+      "createdAt": "2025-10-24T11:59:10Z",
+      "config": {
+        "subscriptionId": "abcd1234-5678-90ef-ghij-klmnopqrstuv",
+        "displayName": "Production Subscription",
+        "state": "Enabled",
+        "tenantId": "efgh5678-90ab-cdef-1234-567890abcdef",
+        "managementGroupId": "production-mg",
+        "resourceGroups": ["production-rg", "staging-rg", "production-eu-rg"],
+        "regions": ["eastus", "westeurope", "northeurope", "southeastasia"]
+      },
+      "metadata": {
+        "cloud": "azure",
+        "subscription-id": "abcd1234-5678-90ef-ghij-klmnopqrstuv",
+        "tenant-id": "efgh5678-90ab-cdef-1234-567890abcdef",
+        "subscription-name": "Production Subscription",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "managed": "true"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
+    "timestamp": 1729800020000,
+    "data": {
+      "id": "gcp-project-my-project-123456",
+      "workspaceId": "will-be-replaced",
+      "name": "GCP Production Project",
+      "kind": "GoogleCloudProject",
+      "version": "ctrlplane.dev/cloud/project/v1",
+      "identifier": "projects/my-project-123456",
+      "createdAt": "2025-10-24T11:59:20Z",
+      "config": {
+        "projectId": "my-project-123456",
+        "projectNumber": "123456789012",
+        "projectName": "Production Project",
+        "state": "ACTIVE",
+        "organizationId": "123456789",
+        "folderId": "987654321",
+        "billingAccountId": "01234-56789-ABCDE",
+        "regions": [
+          "us-central1",
+          "us-east1",
+          "europe-west1",
+          "asia-southeast1",
+          "asia-northeast1"
+        ],
+        "enabledApis": [
+          "compute.googleapis.com",
+          "container.googleapis.com",
+          "storage-component.googleapis.com",
+          "cloudresourcemanager.googleapis.com",
+          "iam.googleapis.com"
+        ]
+      },
+      "metadata": {
+        "cloud": "gcp",
+        "project-id": "my-project-123456",
+        "project-number": "123456789012",
+        "project-name": "Production Project",
+        "organization-id": "123456789",
+        "billing-account": "01234-56789-ABCDE",
+        "team": "platform",
+        "cost-center": "infrastructure",
+        "managed": "true"
+      }
+    }
+  },
+  {
+    "eventType": "resource.created",
     "timestamp": 1729800100000,
     "data": {
       "id": "eks-prod-us-east-1",

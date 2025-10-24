@@ -11,16 +11,16 @@ export const ResourceIcon: React.FC<{
   if (version.includes("kubernetes"))
     return (
       <SiKubernetes
-        className={cn("size-4 shrink-0 text-blue-300", className)}
+        className={cn(
+          "size-4 shrink-0 text-blue-500 dark:text-blue-300",
+          className,
+        )}
       />
     );
 
   return (
     <Package
-      className={cn(
-        "size-4 shrink-0 text-muted-foreground dark:text-neutral-300",
-        className,
-      )}
+      className={cn("size-4 shrink-0 text-muted-foreground", className)}
     />
   );
 };

@@ -1,8 +1,8 @@
 package resources
 
 import (
-	"fmt"
 	"net/http"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
@@ -60,8 +60,6 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		resourceSlice = append(resourceSlice, resource)
 	}
 
-	fmt.Println(allResources)
-
 	var matchedResourcesMap map[string]*oapi.Resource
 	if body.Filter != nil {
 		// Filter resources using the selector
@@ -84,6 +82,15 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 	for _, resource := range matchedResourcesMap {
 		matchedResources = append(matchedResources, resource)
 	}
+
+	// Sort resourceSlice by Name, then CreatedAt
+	sort.Slice(matchedResources, func(i, j int) bool {
+		if matchedResources[i].Name == matchedResources[j].Name {
+			// Fallback to CreatedAt comparison
+			return matchedResources[i].CreatedAt.Before(matchedResources[j].CreatedAt)
+		}
+		return matchedResources[i].Name < matchedResources[j].Name
+	})
 
 	// Get pagination parameters with defaults
 	limit := 50

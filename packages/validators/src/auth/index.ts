@@ -73,6 +73,11 @@ export enum Permission {
   ResourceRelationshipRuleDelete = "resourceRelationshipRule.delete",
   ResourceRelationshipRuleList = "resourceRelationshipRule.list",
 
+  RelationshipRuleCreate = "relationshipRule.create",
+  RelationshipRuleUpdate = "relationshipRule.update",
+  RelationshipRuleDelete = "relationshipRule.delete",
+  RelationshipRuleList = "relationshipRule.list",
+
   DeploymentCreate = "deployment.create",
   DeploymentUpdate = "deployment.update",
   DeploymentGet = "deployment.get",

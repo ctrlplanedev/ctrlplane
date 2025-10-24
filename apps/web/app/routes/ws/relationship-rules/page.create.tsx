@@ -1,4 +1,4 @@
-import { PlusIcon } from "lucide-react";
+import { Separator } from "@radix-ui/react-separator";
 import { Link } from "react-router";
 
 import {
@@ -6,23 +6,13 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
-import { buttonVariants } from "~/components/ui/button";
-import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { CreateRelationshipRule } from "./_components/CreateRelationshipRule";
 
-export function meta() {
-  return [
-    { title: "Relationship Rules - Ctrlplane" },
-    {
-      name: "description",
-      content: "Define how resources are related to each other",
-    },
-  ];
-}
-
-export default function RelationshipRules() {
+export default function PageCreate() {
   const { workspace } = useWorkspace();
   return (
     <>
@@ -36,24 +26,23 @@ export default function RelationshipRules() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>Relationship Rules</BreadcrumbPage>
+                <BreadcrumbItem>
+                  <Link to={`/${workspace.slug}/relationship-rules`}>
+                    Relationship Rules
+                  </Link>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+
+                <BreadcrumbPage>Create</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <Link
-          to={`/${workspace.slug}/relationship-rules/create`}
-          className={buttonVariants({
-            variant: "outline",
-            size: "sm",
-            className: "flex items-center gap-2",
-          })}
-        >
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Create
-        </Link>
       </header>
-      <div className="container mx-auto max-w-3xl p-8"></div>
+
+      <div className="container mx-auto max-w-3xl p-8">
+        <CreateRelationshipRule />
+      </div>
     </>
   );
 }

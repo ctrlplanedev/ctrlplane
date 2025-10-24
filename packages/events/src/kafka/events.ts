@@ -44,6 +44,10 @@ export enum Event {
   PolicyUpdated = "policy.updated",
   PolicyDeleted = "policy.deleted",
 
+  RelationshipRuleCreated = "relationship-rule.created",
+  RelationshipRuleUpdated = "relationship-rule.updated",
+  RelationshipRuleDeleted = "relationship-rule.deleted",
+
   // JobCreated = "job.created",
   JobUpdated = "job.updated",
   // JobDeleted = "job.deleted",
@@ -196,6 +200,9 @@ export type GoEventPayload = {
   [Event.GithubEntityCreated]: WorkspaceEngine["schemas"]["GithubEntity"];
   [Event.GithubEntityUpdated]: WorkspaceEngine["schemas"]["GithubEntity"];
   [Event.GithubEntityDeleted]: WorkspaceEngine["schemas"]["GithubEntity"];
+  [Event.RelationshipRuleCreated]: WorkspaceEngine["schemas"]["RelationshipRule"];
+  [Event.RelationshipRuleUpdated]: WorkspaceEngine["schemas"]["RelationshipRule"];
+  [Event.RelationshipRuleDeleted]: WorkspaceEngine["schemas"]["RelationshipRule"];
   [Event.Redeploy]: WorkspaceEngine["schemas"]["ReleaseTarget"];
 };
 

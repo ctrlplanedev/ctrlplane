@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo } from "react";
 import _ from "lodash";
@@ -22,7 +21,6 @@ import { CreateVersionDialog } from "./_components/CreateVersionDialog";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
-import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
 
@@ -79,14 +77,20 @@ export default function DeploymentDetail() {
     offset: 0,
   });
 
-  const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+  const releaseTargets = useMemo(
+    () => releaseTargetsQuery.data?.items ?? [],
+    [releaseTargetsQuery.data?.items],
+  );
 
   // Fetch all environments from the system
   const environmentsQuery = trpc.environment.list.useQuery({
     workspaceId: workspace.id,
   });
 
-  const environments = environmentsQuery.data?.items ?? [];
+  const environments = useMemo(
+    () => environmentsQuery.data?.items ?? [],
+    [environmentsQuery.data?.items],
+  );
 
   // Extract unique environment IDs from release targets (we'll need to fetch full environment data)
   const environmentIdsFromReleaseTargets = useMemo(() => {

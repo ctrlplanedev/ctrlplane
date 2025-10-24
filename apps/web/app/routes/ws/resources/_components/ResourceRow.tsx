@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
+import { NavLink } from "react-router";
 
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
@@ -7,7 +8,7 @@ import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
-import { ResourceIcon } from "./ResourceIcon";
+import { ResourceIcon } from "../../../../components/ui/resource-icon";
 
 type ResourceRowProps = {
   resource: {
@@ -96,7 +97,13 @@ export const ChildrenResources: React.FC<{ resourceId: string }> = ({
     <div className="ml-3 space-y-2 border-l py-2 pl-4">
       {resourceRelations.length === 0 && (
         <div className="text-xs text-muted-foreground">
-          No children resources
+          No child resources found.{" "}
+          <NavLink
+            className="text-blue-500 hover:text-blue-600 hover:underline"
+            to={`/${workspace.slug}/resources/${resourceId}/relationships`}
+          >
+            Add a relationship
+          </NavLink>
         </div>
       )}
 

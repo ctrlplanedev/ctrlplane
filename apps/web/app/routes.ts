@@ -49,6 +49,11 @@ export default [
 
       route("resources", "routes/ws/resources.tsx"),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
+      route(
+        "relationship-rules/create",
+        "routes/ws/relationship-rules/page.create.tsx",
+      ),
+
       route("systems", "routes/ws/systems.tsx"),
       route("runners", "routes/ws/runners.tsx"),
       route("providers", "routes/ws/providers.tsx"),
