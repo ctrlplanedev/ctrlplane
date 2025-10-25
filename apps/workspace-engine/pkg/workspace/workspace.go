@@ -14,25 +14,32 @@ import (
 	"github.com/aws/smithy-go/ptr"
 )
 
+// EventProducer defines the interface for producing events.
+// This interface is defined here to avoid circular dependencies.
+type EventProducer interface {
+	ProduceEvent(eventType string, workspaceID string, data any) error
+}
+
 var _ gob.GobEncoder = (*Workspace)(nil)
 var _ gob.GobDecoder = (*Workspace)(nil)
 
-func New(id string) *Workspace {
-	s := store.New()
-	rm := releasemanager.New(s)
+func New(id string, eventProducer EventProducer) *Workspace {
+	s := store.New(id)
+	rm := releasemanager.New(s, eventProducer)
 	cc := db.NewChangesetConsumer(id, s)
 	ws := &Workspace{
 		ID:                id,
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
+		eventProducer:     eventProducer,
 	}
 
 	return ws
 }
 
-func NewAndLoad(ctx context.Context, id string) (*Workspace, error) {
-	ws := New(id)
+func NewAndLoad(ctx context.Context, id string, eventProducer EventProducer) (*Workspace, error) {
+	ws := New(id, eventProducer)
 	if err := Load(ctx, Storage, ws); err != nil {
 		return nil, err
 	}
@@ -46,15 +53,16 @@ func NewAndLoad(ctx context.Context, id string) (*Workspace, error) {
 	return ws, nil
 }
 
-func NewNoFlush(id string) *Workspace {
-	s := store.New()
-	rm := releasemanager.New(s)
+func NewNoFlush(id string, eventProducer EventProducer) *Workspace {
+	s := store.New(id)
+	rm := releasemanager.New(s, eventProducer)
 	cc := changeset.NewNoopChangesetConsumer()
 	ws := &Workspace{
 		ID:                id,
 		store:             s,
 		releasemanager:    rm,
 		changesetConsumer: cc,
+		eventProducer:     eventProducer,
 	}
 	return ws
 }
@@ -65,6 +73,7 @@ type Workspace struct {
 	store             *store.Store
 	releasemanager    *releasemanager.Manager
 	changesetConsumer changeset.ChangesetConsumer[any]
+	eventProducer     EventProducer
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -170,7 +179,10 @@ func (w *Workspace) GobDecode(data []byte) error {
 	}
 
 	// Reinitialize release manager with the decoded store
-	w.releasemanager = releasemanager.New(w.store)
+	// Use the workspace's existing event producer
+	if w.eventProducer != nil {
+		w.releasemanager = releasemanager.New(w.store, w.eventProducer)
+	}
 
 	return nil
 }
@@ -218,25 +230,29 @@ type GetWorkspaceOptions struct {
 	SkipDBExistCheck bool
 }
 
-func GetWorkspaceAndLoad(id string) (*Workspace, error) {
+func GetWorkspaceAndLoad(id string, eventProducer EventProducer) (*Workspace, error) {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
-		workspace, err := NewAndLoad(context.Background(), id)
+		workspace, err := NewAndLoad(context.Background(), id, eventProducer)
 		if workspace == nil {
 			return nil, err
 		}
 		workspaces.Set(id, workspace)
 		return workspace, err
 	}
+	
 	return workspace, nil
 }
 
-func GetNoFlushWorkspace(id string) *Workspace {
+func GetNoFlushWorkspace(id string, eventProducer EventProducer) *Workspace {
 	workspace, _ := workspaces.Get(id)
 	if workspace == nil {
-		workspace = NewNoFlush(id)
+		workspace = NewNoFlush(id, eventProducer)
 		workspaces.Set(id, workspace)
-	}
+
+		return workspace
+	} 
+
 	return workspace
 }
 

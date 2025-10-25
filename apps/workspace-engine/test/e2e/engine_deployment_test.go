@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestEngine_DeploymentCreation(t *testing.T) {
@@ -34,6 +36,9 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 			),
 		),
 	)
+
+	// Wait for all events to be processed
+	engine.Flush()
 
 	engineD1, _ := engine.Workspace().Deployments().Get(deploymentID1)
 	engineD2, _ := engine.Workspace().Deployments().Get(deploymentID2)
@@ -67,6 +72,9 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 	r2.Name = "r2"
 	r2.Metadata = map[string]string{"env": "qa"}
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
+
+	// Wait for resource events to be processed
+	engine.Flush()
 
 	releaseTargets, err = engine.Workspace().ReleaseTargets().Items(ctx)
 	if err != nil {
@@ -135,6 +143,9 @@ func TestEngine_DeploymentJobAgentConfiguration(t *testing.T) {
 		),
 	)
 
+	// Wait for all events to be processed
+	engine.Flush()
+
 	// Verify job agent assignments
 	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
 	if *d1.JobAgentId != jobAgentID1 {
@@ -186,6 +197,7 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 				integration.DeploymentID(deploymentIDWithAgent),
 				integration.DeploymentName("deployment-with-agent"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -193,6 +205,7 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentIDNoAgent),
 				integration.DeploymentName("deployment-no-agent"),
+				integration.DeploymentCelResourceSelector("true"),
 				// No job agent configured
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -200,12 +213,21 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
 			integration.ResourceName("resource-1"),
 		),
 	)
+
+	// Wait for all events to be processed
+	engine.Flush()
+
+	ctx := context.Background()
+    rt, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(rt), "should have 2 release targets (one per deployment)")
 
 	// Get pending jobs
 	pendingJobs := engine.Workspace().Jobs().GetPending()
@@ -258,6 +280,7 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("deployment-1"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgentConfig(map[string]any{
 					"namespace": "custom-namespace",
 					"timeout":   300,
@@ -268,12 +291,16 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
 			integration.ResourceName("resource-1"),
 		),
 	)
+
+	// Wait for all events to be processed
+	engine.Flush()
 
 	// Verify deployment has job agent config
 	d, _ := engine.Workspace().Deployments().Get(deploymentID)
@@ -335,6 +362,9 @@ func TestEngine_DeploymentJobAgentUpdate(t *testing.T) {
 		),
 	)
 
+	// Wait for all events to be processed
+	engine.Flush()
+
 	ctx := context.Background()
 
 	// Verify initial job agent assignment
@@ -346,6 +376,9 @@ func TestEngine_DeploymentJobAgentUpdate(t *testing.T) {
 	// Update deployment to use different job agent
 	*d.JobAgentId = jobAgentID2
 	engine.PushEvent(ctx, handler.DeploymentUpdate, d)
+
+	// Wait for update event to be processed
+	engine.Flush()
 
 	// Verify job agent was updated
 	d, _ = engine.Workspace().Deployments().Get(deploymentID)
@@ -380,6 +413,7 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 				integration.DeploymentID(deploymentK8s),
 				integration.DeploymentName("k8s-deployment"),
 				integration.DeploymentJobAgent(jobAgentK8s),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -388,18 +422,23 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 				integration.DeploymentID(deploymentDocker),
 				integration.DeploymentName("docker-deployment"),
 				integration.DeploymentJobAgent(jobAgentDocker),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
 			integration.ResourceName("resource-1"),
 		),
 	)
+
+	// Wait for all events to be processed
+	engine.Flush()
 
 	// Should have 2 jobs (one for each deployment)
 	pendingJobs := engine.Workspace().Jobs().GetPending()

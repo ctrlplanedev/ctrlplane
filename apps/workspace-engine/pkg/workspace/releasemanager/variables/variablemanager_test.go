@@ -11,7 +11,7 @@ import (
 
 // Helper function to create a test store with a resource
 func setupStoreWithResource(resourceID string, metadata map[string]string) *store.Store {
-	st := store.New()
+	st := store.New("test-workspace")
 	ctx := context.Background()
 
 	resource := &oapi.Resource{
@@ -387,7 +387,7 @@ func TestEvaluate_DeploymentVariableDefaultValue(t *testing.T) {
 
 func TestEvaluate_ResourceNotFound(t *testing.T) {
 	// Setup: Store without the resource
-	st := store.New()
+	st := store.New("test-workspace")
 	ctx := context.Background()
 
 	// Add deployment

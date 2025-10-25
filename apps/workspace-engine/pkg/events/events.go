@@ -57,6 +57,7 @@ var handlers = handler.HandlerRegistry{
 	handler.JobAgentUpdate: jobagents.HandleJobAgentUpdated,
 	handler.JobAgentDelete: jobagents.HandleJobAgentDeleted,
 
+	handler.JobCreate: jobs.HandleJobCreated,
 	handler.JobUpdate: jobs.HandleJobUpdated,
 
 	handler.PolicyCreate: policies.HandlePolicyCreated,
@@ -81,6 +82,6 @@ var handlers = handler.HandlerRegistry{
 	handler.ReleaseTargetDeploy: redeploy.HandleReleaseTargetDeploy,
 }
 
-func NewEventHandler() *handler.EventListener {
-	return handler.NewEventListener(handlers)
+func NewEventHandler(eventProducer EventProducer) *handler.EventListener {
+	return handler.NewEventListener(handlers, eventProducer)
 }

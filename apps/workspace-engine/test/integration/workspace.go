@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,9 +24,9 @@ const (
 type TestWorkspace struct {
 	t               *testing.T
 	workspace       *workspace.Workspace
-	eventListener   *handler.EventListener
 	persistenceMode PersistenceMode
 	tempDir         string
+	eventProducer   events.EventProducer
 }
 
 func NewTestWorkspace(
@@ -40,13 +39,30 @@ func NewTestWorkspace(
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
-	ws := workspace.GetNoFlushWorkspace(workspaceID)
-
+	
 	tw := &TestWorkspace{}
 	tw.t = t
-	tw.workspace = ws
-	tw.eventListener = events.NewEventHandler()
 	tw.persistenceMode = InMemoryOnly // Default to in-memory
+
+	ctx := t.Context()
+
+	// Create a handler function that will route to the event listener
+	var eventListener *handler.EventListener
+	memoryEventHandler := func(ctx context.Context, msg *kafka.Message, offsetTracker handler.OffsetTracker) error {
+		if eventListener == nil {
+			return fmt.Errorf("event listener not initialized")
+		}
+		_, err := eventListener.ListenAndRoute(ctx, msg, offsetTracker)
+		return err
+	}
+
+	eventProducer := events.NewInMemoryProducer(ctx, memoryEventHandler)
+	eventListener = events.NewEventHandler(eventProducer)
+	
+	// Create workspace with the event producer
+	ws := workspace.GetNoFlushWorkspace(workspaceID, eventProducer)
+	tw.workspace = ws
+	tw.eventProducer = eventProducer
 
 	for _, option := range options {
 		if err := option(tw); err != nil {
@@ -126,48 +142,8 @@ func (tw *TestWorkspace) LoadFromDisk() error {
 func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventType, data any) *TestWorkspace {
 	tw.t.Helper()
 
-	dataBytes, err := json.Marshal(data)
-	if err != nil {
-		tw.t.Fatalf("failed to marshal event data: %v", err)
-		return tw
-	}
-
-	// Create raw event
-	rawEvent := handler.RawEvent{
-		EventType:   eventType,
-		WorkspaceID: tw.workspace.ID,
-		Data:        dataBytes,
-	}
-
-	// Marshal the full event
-	eventBytes, err := json.Marshal(rawEvent)
-	if err != nil {
-		tw.t.Fatalf("failed to marshal raw event: %v", err)
-		return tw
-	}
-
-	// Create a mock Kafka message
-	topic := "test-topic"
-	partition := int32(0)
-	offset := kafka.Offset(1)
-
-	msg := &kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &topic,
-			Partition: partition,
-			Offset:    offset,
-		},
-		Value: eventBytes,
-	}
-
-	offsetTracker := handler.OffsetTracker{
-		LastCommittedOffset: 0,
-		LastWorkspaceOffset: 0,
-		MessageOffset:       int64(offset),
-	}
-
-	if _, err := tw.eventListener.ListenAndRoute(ctx, msg, offsetTracker); err != nil {
-		tw.t.Fatalf("failed to listen and route event: %v", err)
+	if err := tw.eventProducer.ProduceEvent(string(eventType), tw.workspace.ID, data); err != nil {
+		tw.t.Fatalf("failed to produce event: %v", err)
 	}
 
 	// In persistence mode, save and reload state to test serialization
@@ -181,4 +157,18 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 	}
 
 	return tw
+}
+
+// Flush waits for all queued events to be processed and materialized views to be computed.
+// Call this before making assertions in tests.
+func (tw *TestWorkspace) Flush() {
+	tw.t.Helper()
+	if producer, ok := tw.eventProducer.(*events.InMemoryProducer); ok {
+		producer.Flush()
+		
+		// Also wait for materialized view computations to complete
+		// by calling Items() which will wait if a recomputation is in progress
+		ctx := context.Background()
+		_, _ = tw.workspace.Store().ReleaseTargets.Items(ctx)
+	}
 }
