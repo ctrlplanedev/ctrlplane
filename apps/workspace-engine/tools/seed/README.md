@@ -17,6 +17,42 @@ Or run directly:
 go run seed.go [command]
 ```
 
+## Configuration
+
+### Environment Variables
+
+The CLI automatically loads environment variables from a `.env` file in the current directory if it exists.
+
+Create a `.env` file:
+
+```bash
+# Copy the example file
+cp env.example .env
+
+# Edit with your values
+BOOTSTRAP_SERVER=localhost:9092
+WORKSPACE_ID=my-workspace
+```
+
+**Supported environment variables:**
+
+- `BOOTSTRAP_SERVER`: Kafka bootstrap server
+- `WORKSPACE_ID`: Target workspace ID
+
+**Priority order (highest to lowest):**
+
+1. Command-line flags
+2. Environment variables
+3. Default values
+
+### Custom .env File
+
+Use a custom .env file location:
+
+```bash
+seed random resources 100 --env-file /path/to/custom.env
+```
+
 ## Commands
 
 ### Global Flags
@@ -24,7 +60,8 @@ go run seed.go [command]
 All commands support these flags:
 
 - `--bootstrap-server`: Kafka bootstrap server (default: `localhost:9092`)
-- `--workspace-id`: Target workspace ID (required)
+- `--workspace-id`: Target workspace ID (required, can be set via `WORKSPACE_ID` env var)
+- `--env-file`: Path to .env file (default: `.env` in current directory)
 
 ### `seed file [path]`
 
@@ -103,6 +140,25 @@ Seed from a file:
 
 ```bash
 seed file example.json --workspace-id my-workspace
+```
+
+### Using .env File
+
+Create a `.env` file with your configuration:
+
+```bash
+echo "WORKSPACE_ID=my-workspace" > .env
+echo "BOOTSTRAP_SERVER=localhost:9092" >> .env
+```
+
+Then run commands without flags:
+
+```bash
+# No need to specify --workspace-id or --bootstrap-server
+seed random resources 100
+
+# Or with a custom env file
+seed random resources 100 --env-file config/.env
 ```
 
 ### Load Testing
