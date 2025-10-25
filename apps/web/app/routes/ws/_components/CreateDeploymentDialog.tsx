@@ -79,7 +79,6 @@ export function CreateDeploymentDialog({
   const { data: systemsData, isLoading: systemsLoading } =
     trpc.system.list.useQuery({ workspaceId: workspace.id });
 
-  console.log(systemsData);
   const form = useForm<CreateDeploymentFormData>({
     resolver: zodResolver(createDeploymentSchema),
     defaultValues: {

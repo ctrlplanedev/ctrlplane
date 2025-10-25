@@ -19,6 +19,7 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
+import { CreateSystemDialog } from "./_components/CreateSystemDialog";
 import { SystemCard } from "./systems/_components/SystemCard";
 import { mockSystems } from "./systems/_mockData";
 
@@ -95,7 +96,9 @@ export default function Systems() {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <Button disabled>Create System</Button>
+        <CreateSystemDialog>
+          <Button>Create System</Button>
+        </CreateSystemDialog>
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
