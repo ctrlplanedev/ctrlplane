@@ -27,15 +27,12 @@ func TestEngine_PolicyVersionStatusReady(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -145,15 +142,12 @@ func TestEngine_PolicyVersionStatusReady_StatusUpdate(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -236,20 +230,18 @@ func TestEngine_PolicyVersionStatusReady_MultipleDeployments(t *testing.T) {
 				integration.DeploymentID(deployment1ID),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deployment2ID),
 				integration.DeploymentName("worker-service"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -352,20 +344,18 @@ func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
 				integration.DeploymentID(deploymentProdID),
 				integration.DeploymentName("api-service-prod"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentDevID),
 				integration.DeploymentName("api-service-dev"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -376,6 +366,8 @@ func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only-prod"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
