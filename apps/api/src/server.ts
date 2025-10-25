@@ -13,6 +13,8 @@ import helmet from "helmet";
 import { auth } from "@ctrlplane/auth/server";
 import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
+import { createGithubRouter } from "./routes/github/index.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -44,7 +46,7 @@ app.use(
     apiSpec: join(__dirname, "../openapi/openapi.json"),
     validateRequests: true,
     validateResponses: true,
-    ignorePaths: /\/api\/(auth|internal|trpc)/,
+    ignorePaths: /\/api\/(auth|internal|trpc|github)/,
   }),
 );
 
@@ -53,6 +55,9 @@ app.use("/api/v1", requireAuth);
 
 // Register v1 API routes
 app.use("/api/v1", createV1Router());
+
+// Register github webhook routes
+app.use("/api/github", createGithubRouter());
 
 app.use(
   "/api/trpc",

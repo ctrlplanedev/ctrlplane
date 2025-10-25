@@ -158,6 +158,18 @@ importers:
       '@ctrlplane/workspace-engine-sdk':
         specifier: workspace:*
         version: link:../../packages/workspace-engine-sdk
+      '@octokit/auth-app':
+        specifier: 'catalog:'
+        version: 7.1.5
+      '@octokit/rest':
+        specifier: 'catalog:'
+        version: 20.1.1
+      '@octokit/webhooks':
+        specifier: ^13.7.4
+        version: 13.9.0
+      '@octokit/webhooks-types':
+        specifier: ^7.5.1
+        version: 7.6.1
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@3.24.2)
