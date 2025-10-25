@@ -51,9 +51,16 @@ func TestEngine_DeploymentVersionCreatesJobsForAllReleaseTargets(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("staging")),
-			integration.WithEnvironment(integration.EnvironmentName("production")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("staging"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 		integration.WithResource(integration.ResourceName("server-2")),
@@ -120,8 +127,12 @@ func TestEngine_SequentialDeploymentVersionsCreateCorrectJobs(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("production")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 		integration.WithResource(integration.ResourceName("server-2")),
@@ -187,8 +198,12 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("prod")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 	)
@@ -261,13 +276,18 @@ func TestEngine_MultipleDeploymentsIndependentVersions(t *testing.T) {
 				integration.DeploymentID(deployment1Id),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deployment2Id),
 				integration.DeploymentName("worker-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("production")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 		integration.WithResource(integration.ResourceName("server-2")),
@@ -354,9 +374,13 @@ func TestEngine_DeploymentVersionWithNoJobAgent(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("manual-deployment"),
+				integration.DeploymentCelResourceSelector("true"),
 				// No job agent specified
 			),
-			integration.WithEnvironment(integration.EnvironmentName("production")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 	)
@@ -415,7 +439,10 @@ func TestEngine_DeploymentVersionWithFilteredReleaseTargets(t *testing.T) {
 					"value":    "production",
 				}),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("prod")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(
 			integration.ResourceName("prod-server-1"),
@@ -484,6 +511,7 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(envDevId),
@@ -593,9 +621,13 @@ func TestEngine_DeploymentVersionJobsWithJobAgentConfig(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgentConfig(jobAgentConfig),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("prod")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 	)
@@ -648,8 +680,12 @@ func TestEngine_ConcurrentDeploymentVersionCreation(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("prod")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 		integration.WithResource(integration.ResourceName("server-2")),
@@ -731,8 +767,12 @@ func TestEngine_LatestWins(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("production")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 	)
@@ -876,8 +916,12 @@ func TestEngine_LatestWins_MultipleReleaseTargets(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("production")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceName("server-1")),
 		integration.WithResource(integration.ResourceName("server-2")),

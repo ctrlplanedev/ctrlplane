@@ -186,6 +186,7 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 				integration.DeploymentID(deploymentIDWithAgent),
 				integration.DeploymentName("deployment-with-agent"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -193,6 +194,7 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentIDNoAgent),
 				integration.DeploymentName("deployment-no-agent"),
+				integration.DeploymentCelResourceSelector("true"),
 				// No job agent configured
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -200,6 +202,7 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -258,6 +261,7 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("deployment-1"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.DeploymentJobAgentConfig(map[string]any{
 					"namespace": "custom-namespace",
 					"timeout":   300,
@@ -268,6 +272,7 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -380,6 +385,7 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 				integration.DeploymentID(deploymentK8s),
 				integration.DeploymentName("k8s-deployment"),
 				integration.DeploymentJobAgent(jobAgentK8s),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -388,12 +394,14 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 				integration.DeploymentID(deploymentDocker),
 				integration.DeploymentName("docker-deployment"),
 				integration.DeploymentJobAgent(jobAgentDocker),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
