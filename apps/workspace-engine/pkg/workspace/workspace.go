@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
@@ -11,7 +12,7 @@ import (
 var _ gob.GobEncoder = (*Workspace)(nil)
 var _ gob.GobDecoder = (*Workspace)(nil)
 
-func New(id string, options ...WorkspaceOption) *Workspace {
+func Load(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
 	cs := statechange.NewChangeSet[any]()
 	s := store.New(cs)
 	rm := releasemanager.New(s)
@@ -163,4 +164,9 @@ func (w *Workspace) DeploymentVariables() *store.DeploymentVariables {
 
 func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
+}
+
+
+func (w *Workspace) Changeset() *statechange.ChangeSet[any] {
+	return w.changeset
 }

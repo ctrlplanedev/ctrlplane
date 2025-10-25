@@ -40,7 +40,7 @@ func NewTestWorkspace(
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
-	ws, err := registry.Workspaces.GetOrCreate(context.Background(), workspaceID)
+	ws, err := registry.Workspaces.GetOrLoad(context.Background(), workspaceID)
 	if err != nil {
 		t.Fatalf("failed to get or create workspace: %v", err)
 	}
@@ -160,13 +160,7 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 		Offset:    int64(1),
 	}
 
-	offsetTracker := handler.OffsetTracker{
-		LastCommittedOffset: 0,
-		LastWorkspaceOffset: 0,
-		MessageOffset:       1,
-	}
-
-	if _, err := tw.eventListener.ListenAndRoute(ctx, msg, offsetTracker); err != nil {
+	if _, err := tw.eventListener.ListenAndRoute(ctx, msg); err != nil {
 		tw.t.Fatalf("failed to listen and route event: %v", err)
 	}
 

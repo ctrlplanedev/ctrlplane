@@ -54,27 +54,23 @@ func NewRegistry(options ...RegistryOption) *Registry {
 	return reg
 }
 
-func (r *Registry) Get(id string) (*workspace.Workspace, bool) {
+func (r *Registry) get(id string) (*workspace.Workspace, bool) {
 	return r.workspaces.Get(id)
 }
 
-func (r *Registry) Set(id string, workspace *workspace.Workspace) {
+func (r *Registry) set(id string, workspace *workspace.Workspace) {
 	r.workspaces.Set(id, workspace)
-}
-
-func (r *Registry) Has(id string) bool {
-	return r.workspaces.Has(id)
 }
 
 func (r *Registry) Keys() []string {
 	return r.workspaces.Keys()
 }
 
-func (r *Registry) GetOrCreate(ctx context.Context, id string, workspaceOptions ...workspace.WorkspaceOption) (*workspace.Workspace, error) {
-	ws, ok := r.Get(id)
+func (r *Registry) GetOrLoad(ctx context.Context, id string, workspaceOptions ...workspace.WorkspaceOption) (*workspace.Workspace, error) {
+	ws, ok := r.get(id)
 	if !ok {
-		ws = workspace.New(id, workspaceOptions...)
-		r.Set(id, ws)
+		ws = workspace.Load(ctx, id, workspaceOptions...)
+		r.set(id, ws)
 	}
 	return ws, nil
 }

@@ -86,7 +86,7 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 
 	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
 	for _, workspaceID := range allWorkspaceIDs {
-		ws, err := registry.Workspaces.GetOrCreate(ctx, workspaceID)
+		ws, err := registry.Workspaces.GetOrLoad(ctx, workspaceID)
 		if ws == nil {
 			log.Error("Workspace not found", "workspaceID", workspaceID, "error", err)
 			continue

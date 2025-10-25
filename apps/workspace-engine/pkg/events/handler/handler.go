@@ -152,7 +152,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 
 	changeSet := changeset.NewChangeSet[any]()
 
-	ws, err := registry.Workspaces.GetOrCreate(ctx, rawEvent.WorkspaceID)
+	ws, err := registry.Workspaces.GetOrLoad(ctx, rawEvent.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}
@@ -177,14 +177,9 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return ws, fmt.Errorf("failed to process target changes: %w", err)
 	}
 
-	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
+	ws.Changeset().Clear()
 
-	// if err := ws.ChangesetConsumer().FlushChangeset(ctx, changeSet); err != nil {
-	// 	span.RecordError(err)
-	// 	span.SetStatus(codes.Error, "failed to flush changeset")
-	// 	log.Error("Failed to flush changeset", "error", err)
-	// 	return ws, fmt.Errorf("failed to flush changeset: %w", err)
-	// }
+	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
 
 	span.SetStatus(codes.Ok, "event processed successfully")
 	log.Debug("Successfully processed event",

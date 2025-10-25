@@ -69,26 +69,10 @@ func (cs *ChangeSet[T]) Changes() []StateChange[T] {
 	return result
 }
 
-// Count returns the number of changes recorded
-func (cs *ChangeSet[T]) Count() int {
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-
-	return len(cs.changes)
-}
-
 // Clear removes all recorded changes
 func (cs *ChangeSet[T]) Clear() {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
 
 	cs.changes = make([]StateChange[T], 0)
-}
-
-// IsEmpty returns true if no changes have been recorded
-func (cs *ChangeSet[T]) IsEmpty() bool {
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-
-	return len(cs.changes) == 0
 }
