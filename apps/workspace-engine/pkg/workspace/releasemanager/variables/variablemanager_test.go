@@ -6,12 +6,14 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 )
 
 // Helper function to create a test store with a resource
 func setupStoreWithResource(resourceID string, metadata map[string]string) *store.Store {
-	st := store.New()
+	cs := statechange.NewChangeSet[any]()
+	st := store.New(cs)
 	ctx := context.Background()
 
 	resource := &oapi.Resource{
@@ -387,7 +389,8 @@ func TestEvaluate_DeploymentVariableDefaultValue(t *testing.T) {
 
 func TestEvaluate_ResourceNotFound(t *testing.T) {
 	// Setup: Store without the resource
-	st := store.New()
+	cs := statechange.NewChangeSet[any]()
+	st := store.New(cs)
 	ctx := context.Background()
 
 	// Add deployment

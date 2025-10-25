@@ -3,7 +3,7 @@ package workspace
 import (
 	"bytes"
 	"encoding/gob"
-	"workspace-engine/pkg/changeset"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -12,13 +12,14 @@ var _ gob.GobEncoder = (*Workspace)(nil)
 var _ gob.GobDecoder = (*Workspace)(nil)
 
 func New(id string, options ...WorkspaceOption) *Workspace {
-	s := store.New()
+	cs := statechange.NewChangeSet[any]()
+	s := store.New(cs)
 	rm := releasemanager.New(s)
 	ws := &Workspace{
-		ID:                id,
-		store:             s,
-		releasemanager:    rm,
-		changesetConsumer: changeset.NewNoopChangesetConsumer(),
+		ID:             id,
+		store:          s,
+		releasemanager: rm,
+		changeset:      cs,
 	}
 
 	for _, option := range options {
@@ -31,9 +32,9 @@ func New(id string, options ...WorkspaceOption) *Workspace {
 type Workspace struct {
 	ID string
 
-	store             *store.Store
-	releasemanager    *releasemanager.Manager
-	changesetConsumer changeset.ChangesetConsumer[any]
+	changeset      *statechange.ChangeSet[any]
+	store          *store.Store
+	releasemanager *releasemanager.Manager
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -162,8 +163,4 @@ func (w *Workspace) DeploymentVariables() *store.DeploymentVariables {
 
 func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
-}
-
-func (w *Workspace) ChangesetConsumer() changeset.ChangesetConsumer[any] {
-	return w.changesetConsumer
 }

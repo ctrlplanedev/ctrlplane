@@ -2,18 +2,13 @@ package kafka
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
-	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/events"
-	eventHanlder "workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
-	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 	"workspace-engine/pkg/workspace/registry"
 
@@ -35,26 +30,6 @@ func getEnv(varName string, defaultValue string) string {
 		return defaultValue
 	}
 	return v
-}
-
-func getLastSnapshot(ctx context.Context, msg *messaging.Message) (*db.WorkspaceSnapshot, error) {
-	var rawEvent eventHanlder.RawEvent
-	if err := json.Unmarshal(msg.Value, &rawEvent); err != nil {
-		log.Error("Failed to unmarshal event", "error", err, "message", string(msg.Value))
-		return nil, fmt.Errorf("failed to unmarshal event: %w", err)
-	}
-
-	return db.GetWorkspaceSnapshot(ctx, rawEvent.WorkspaceID)
-}
-
-func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
-	beginning := int64(kafka.OffsetBeginning)
-
-	if snapshot == nil {
-		return beginning
-	}
-
-	return snapshot.Offset
 }
 
 func NewConsumer(brokers string) (messaging.Consumer, error) {
@@ -150,27 +125,7 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 			log.Error("This should not happen, topic is subscribed and we are waiting for a message")
 		}
 
-		lastSnapshot, err := getLastSnapshot(ctx, msg)
-		if err != nil {
-			log.Error("Failed to get last snapshot", "error", err)
-			continue
-		}
-
-		messageOffset := msg.Offset
-		lastCommittedOffset, err := consumer.GetCommittedOffset(msg.Partition)
-		if err != nil {
-			log.Error("Failed to get committed offset", "error", err)
-			continue
-		}
-		lastWorkspaceOffset := getLastWorkspaceOffset(lastSnapshot)
-
-		offsetTracker := eventHanlder.OffsetTracker{
-			LastCommittedOffset: lastCommittedOffset,
-			LastWorkspaceOffset: lastWorkspaceOffset,
-			MessageOffset:       messageOffset,
-		}
-
-		ws, err := handler.ListenAndRoute(ctx, msg, offsetTracker)
+		ws, err := handler.ListenAndRoute(ctx, msg)
 		if err != nil {
 			log.Error("Failed to route message", "error", err)
 		}
@@ -184,21 +139,6 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 		if ws == nil {
 			log.Error("Workspace not found", "workspaceID", msg.Key)
 			continue
-		}
-
-		if workspacesave.IsWorkspaceSaveEvent(msg) {
-			snapshot := &db.WorkspaceSnapshot{
-				WorkspaceID:   ws.ID,
-				Path:          fmt.Sprintf("%s.gob", ws.ID),
-				Timestamp:     msg.Timestamp,
-				Partition:     msg.Partition,
-				Offset:        msg.Offset,
-				NumPartitions: numPartitions,
-			}
-
-			if err := workspace.Save(ctx, ws, snapshot); err != nil {
-				log.Error("Failed to save workspace", "workspaceID", ws.ID, "snapshotPath", snapshot.Path, "error", err)
-			}
 		}
 	}
 }

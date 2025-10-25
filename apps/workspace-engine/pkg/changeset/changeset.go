@@ -105,3 +105,16 @@ func (cs *ChangeSet[T]) Count() int {
 	}
 	return len(cs.Changes)
 }
+
+// Clear resets the changeset, removing all recorded changes
+func (cs *ChangeSet[T]) Clear() {
+	cs.mutex.Lock()
+	defer cs.mutex.Unlock()
+
+	cs.Changes = make([]Change[T], 0)
+	cs.IsInitialLoad = false
+
+	if cs.keyFunc != nil {
+		cs.changeMap = make(map[string]Change[T])
+	}
+}

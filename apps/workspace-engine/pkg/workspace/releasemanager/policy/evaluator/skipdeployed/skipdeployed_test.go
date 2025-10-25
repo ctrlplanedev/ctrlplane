@@ -5,12 +5,14 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 )
 
 // Helper function to create a test store with a resource
 func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	ctx := context.Background()
 
 	resource := &oapi.Resource{

@@ -114,7 +114,7 @@ type OffsetTracker struct {
 }
 
 // ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler
-func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Message, offsetTracker OffsetTracker) (*workspace.Workspace, error) {
+func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Message) (*workspace.Workspace, error) {
 	ctx, span := tracer.Start(ctx, "ListenAndRoute",
 		trace.WithAttributes(
 			attribute.Int("kafka.partition", int(msg.Partition)),
@@ -155,17 +155,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 	ws, err := registry.Workspaces.GetOrCreate(ctx, rawEvent.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
-	}
-
-	span.SetAttributes(attribute.Int64("message.offset", offsetTracker.MessageOffset))
-	span.SetAttributes(attribute.Int64("last.committed.offset", offsetTracker.LastCommittedOffset))
-	span.SetAttributes(attribute.Int64("last.workspace.offset", offsetTracker.LastWorkspaceOffset))
-
-	isReplay := offsetTracker.MessageOffset < offsetTracker.LastCommittedOffset
-	ws.Store().SetIsReplay(isReplay)
-
-	if offsetTracker.MessageOffset <= offsetTracker.LastWorkspaceOffset {
-		return ws, nil
 	}
 
 	ctx = changeset.WithChangeSet(ctx, changeSet)

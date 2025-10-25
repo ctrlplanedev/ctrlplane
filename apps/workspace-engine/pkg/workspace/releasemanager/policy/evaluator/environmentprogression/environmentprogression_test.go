@@ -5,12 +5,14 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 )
 
 // setupTestStore creates a test store with environments, jobs, and releases
 func setupTestStore() *store.Store {
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	ctx := context.Background()
 
 	// Create system

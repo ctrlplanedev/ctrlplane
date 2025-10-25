@@ -6,6 +6,7 @@ import (
 	"testing"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -21,7 +22,8 @@ func getReleaseTargetsByType(changes *changeset.ChangeSet[*oapi.ReleaseTarget], 
 // setupTestStore creates a store with test data
 func setupTestStore(t *testing.T) (*store.Store, string, string, string, string) {
 	ctx := context.Background()
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 
 	workspaceID := uuid.New().String()
 	systemID := uuid.New().String()
@@ -72,7 +74,8 @@ func setupTestStore(t *testing.T) (*store.Store, string, string, string, string)
 }
 
 func TestNew(t *testing.T) {
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	manager := New(st)
 
 	assert.NotNil(t, manager)
@@ -97,7 +100,8 @@ func TestManager_GetTargets(t *testing.T) {
 
 func TestManager_GetTargets_Empty(t *testing.T) {
 	ctx := context.Background()
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	manager := New(st)
 
 	// Get targets from empty store
@@ -131,7 +135,8 @@ func TestManager_DetectChanges_NewTargets(t *testing.T) {
 
 func TestManager_DetectChanges_DeletedTargets(t *testing.T) {
 	ctx := context.Background()
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	manager := New(st)
 
 	// Setup current state with a target
@@ -228,7 +233,8 @@ func TestManager_RefreshTargets(t *testing.T) {
 
 func TestManager_RefreshTargets_Empty(t *testing.T) {
 	ctx := context.Background()
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	manager := New(st)
 
 	// Refresh with empty store
@@ -391,7 +397,8 @@ func TestManager_DetectChanges_IgnoresIrrelevantChanges(t *testing.T) {
 func BenchmarkManager_DetectChanges_SmallChangeset(b *testing.B) {
 	ctx := context.Background()
 	// This is a simplified benchmark - in reality would need proper store setup
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	manager := New(st)
 
 	// Set empty targets for benchmark
@@ -414,7 +421,8 @@ func BenchmarkManager_DetectChanges_SmallChangeset(b *testing.B) {
 func BenchmarkManager_DetectChanges_LargeChangeset(b *testing.B) {
 	ctx := context.Background()
 	// This is a simplified benchmark - in reality would need proper store setup
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 	manager := New(st)
 
 	// Set empty targets for benchmark

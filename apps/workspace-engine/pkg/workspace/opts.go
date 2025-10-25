@@ -2,20 +2,12 @@ package workspace
 
 import (
 	"context"
-	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/aws/smithy-go/ptr"
 )
 
 type WorkspaceOption func(*Workspace)
-
-func WithDatabseChangesetConsumer() WorkspaceOption {
-	return func(ws *Workspace) {
-		cc := db.NewChangesetConsumer(ws.ID, ws.store)
-		ws.changesetConsumer = cc
-	}
-}
 
 func WithDefaultSystem() WorkspaceOption {
 	return func(ws *Workspace) {

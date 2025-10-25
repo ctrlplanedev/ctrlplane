@@ -4,12 +4,14 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
 )
 
 // setupStore creates a test store with approval records.
 func setupStore(versionId string, approvers []string) *store.Store {
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 
 	for _, userId := range approvers {
 		record := &oapi.UserApprovalRecord{
@@ -189,7 +191,8 @@ func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
 
 func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 	// Setup: Different approval counts for different versions
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 
 	// Version 1: 2 approvals
 	ctx := context.Background()
@@ -244,7 +247,8 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 
 func TestAnyApprovalEvaluator_EmptyVersionId(t *testing.T) {
 	// Setup: Version with empty ID
-	st := store.New()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
 	evaluator := NewAnyApprovalEvaluator(st, rule)

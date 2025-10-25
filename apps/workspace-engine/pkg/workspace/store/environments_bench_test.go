@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
 
 	"github.com/google/uuid"
 )
@@ -65,7 +66,8 @@ func createTestSystem(workspaceID, systemID, name string) *oapi.System {
 // setupBenchmarkStore creates a store with the specified number of resources
 // It directly populates the repository to avoid triggering recomputes during setup
 func setupBenchmarkStore(b *testing.B, workspaceID string, numResources int) (*Store, string) {
-	st := New()
+	cs := statechange.NewChangeSet[any]()
+	st := New(cs)
 
 	// Create system
 	systemID := uuid.New().String()
@@ -166,7 +168,8 @@ func BenchmarkEnvironmentResourceRecomputeFunc_SelectiveSelector(b *testing.B) {
 	ctx := context.Background()
 	resourceCount := 1000
 
-	st := New()
+	cs := statechange.NewChangeSet[any]()
+	st := New(cs)
 
 	// Create system
 	systemID := uuid.New().String()
@@ -235,7 +238,8 @@ func BenchmarkEnvironmentResourceRecomputeFunc_ComplexSelector(b *testing.B) {
 	ctx := context.Background()
 	resourceCount := 1000
 
-	st := New()
+	cs := statechange.NewChangeSet[any]()
+	st := New(cs)
 
 	// Create system
 	systemID := uuid.New().String()
