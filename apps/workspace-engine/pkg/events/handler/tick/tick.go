@@ -2,9 +2,12 @@ package tick
 
 import (
 	"context"
+	"encoding/json"
+	"time"
 
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
@@ -14,6 +17,21 @@ import (
 )
 
 var tracer = otel.Tracer("events/handler/tick")
+
+func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId string) error {
+	event := map[string]any{
+		"eventType":   handler.WorkspaceTick,
+		"workspaceId": wsId,
+		"timestamp":   time.Now().Unix(),
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	return producer.Publish([]byte(wsId), eventBytes)
+}
 
 // HandleWorkspaceTick handles periodic workspace tick events by marking all release targets
 // as tainted to trigger re-evaluation. This is needed for time-sensitive policies like:

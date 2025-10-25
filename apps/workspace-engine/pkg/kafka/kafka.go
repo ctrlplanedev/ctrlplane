@@ -12,6 +12,7 @@ import (
 	eventHanlder "workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
 
@@ -55,6 +56,16 @@ func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
 	return snapshot.Offset
 }
 
+func NewConsumer(brokers string) (messaging.Consumer, error) {
+	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, &kafka.ConfigMap{
+		"bootstrap.servers":               Brokers,
+		"group.id":                        GroupID,
+		"auto.offset.reset":               "earliest",
+		"enable.auto.commit":              false,
+		"partition.assignment.strategy":   "cooperative-sticky",
+	})
+}
+
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
 //
 // Flow:
@@ -63,14 +74,7 @@ func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
 //  3. Load workspaces for assigned partitions (if workspaceLoader provided)
 //  4. Seek to stored offsets per partition
 //  5. Start consuming and processing messages
-func RunConsumer(ctx context.Context) error {
-	// Initialize Kafka consumer
-	consumer, err := createConsumer()
-	if err != nil {
-		return err
-	}
-	defer consumer.Close()
-
+func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 	// Subscribe to topic
 	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID)
 	if err := consumer.Subscribe(Topic); err != nil {

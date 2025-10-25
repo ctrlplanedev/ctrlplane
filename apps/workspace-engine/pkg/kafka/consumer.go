@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/messaging/confluent"
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -16,29 +15,6 @@ import (
 
 var tracer = otel.Tracer("kafka/consumer")
 
-// createConsumer initializes a new Kafka consumer with the configured settings
-func createConsumer() (messaging.Consumer, error) {
-	log.Info("Connecting to Kafka", "brokers", Brokers)
-
-	cfg := &kafka.ConfigMap{
-		"bootstrap.servers":               Brokers,
-		"group.id":                        GroupID,
-		"auto.offset.reset":               "earliest",
-		"enable.auto.commit":              false,
-		"partition.assignment.strategy":   "cooperative-sticky",
-		"session.timeout.ms":              10000,
-		"heartbeat.interval.ms":           3000,
-		"go.application.rebalance.enable": true, // Enable rebalance callbacks
-	}
-
-	consumer, err := confluent.NewConfluent(Brokers).CreateConsumer(GroupID, cfg)
-	if err != nil {
-		log.Error("Failed to create consumer", "error", err)
-		return nil, err
-	}
-
-	return consumer, nil
-}
 
 func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
 	beginning := int64(kafka.OffsetBeginning)

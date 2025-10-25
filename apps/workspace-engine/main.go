@@ -9,10 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/events/handler/tick"
+	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
+	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
@@ -139,32 +141,43 @@ func main() {
 	defer cancel()
 
 	// Initialize Kafka producer for ticker
-	producer, err := kafka.NewProducer()
+	producer, err := kafka.NewProducer(kafka.Brokers)
 	if err != nil {
 		log.Fatal("Failed to create Kafka producer", "error", err)
+		panic(err)
 	}
 	defer producer.Close()
 
-	// Start periodic ticker for time-sensitive policy evaluation
-	workspaceTicker := ticker.NewDefault(producer)
-	go func() {
-		log.Info("Workspace ticker started")
-		if err := workspaceTicker.Run(ctx); err != nil {
-			log.Error("Ticker error", "error", err)
-		}
-	}()
+	consumer, err := kafka.NewConsumer(kafka.Brokers)
+	if err != nil {
+		log.Fatal("Failed to create Kafka consumer", "error", err)
+		panic(err)
+	}
+	defer consumer.Close()
 
-	workspaceSaveTicker := ticker.New(producer, 1*time.Hour, string(handler.WorkspaceSave))
-	go func() {
-		log.Info("Workspace save ticker started")
-		if err := workspaceSaveTicker.Run(ctx); err != nil {
-			log.Error("Ticker error", "error", err)
+	go ticker.Every(ctx, time.Hour, func(ctx context.Context) {
+		ids := workspace.GetAllWorkspaceIds()
+		log.Info("Sending workspace save event", "count", len(ids))
+		for _, id := range ids {
+			if err := workspacesave.SendWorkspaceSave(ctx, producer, id); err != nil {
+				log.Error("Failed to send workspace save", "error", err)
+			}	
 		}
-	}()
+	})
+
+	go ticker.Every(ctx, time.Minute, func(ctx context.Context) {
+		ids := workspace.GetAllWorkspaceIds()
+		log.Info("Sending workspace ticks", "count", len(ids))
+		for _, id := range ids {
+			if err := tick.SendWorkspaceTick(ctx, producer, id); err != nil {
+				log.Error("Failed to send workspace tick", "error", err)
+			}
+		}
+	})
 
 	go func() {
 		log.Info("Kafka consumer started")
-		if err := kafka.RunConsumer(ctx); err != nil {
+		if err := kafka.RunConsumer(ctx, consumer); err != nil {
 			log.Error("received error from kafka consumer", "error", err)
 			panic(err)
 		}
