@@ -27,8 +27,7 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 		}
 		return true
 	}
-	
-	
+
 	cm, err := matcher.AsCelMatcher()
 	if err != nil {
 		log.Warn("failed to get cel matcher", "error", err)
@@ -42,7 +41,7 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 		}
 		return matcher.Evaluate(ctx, from, to)
 	}
-	
+
 	// No matcher specified - match by selectors only
 	return true
 }
@@ -121,13 +120,13 @@ func (m *CelMatcher) Evaluate(ctx context.Context, from *oapi.RelatableEntity, t
 		log.Warn("Failed to convert from entity to map", "error", err)
 		return false
 	}
-	
+
 	toMap, err := entityToMap(to.Item())
 	if err != nil {
 		log.Warn("Failed to convert to entity to map", "error", err)
 		return false
 	}
-	
+
 	celCtx := map[string]any{
 		"from": fromMap,
 		"to":   toMap,
@@ -153,11 +152,11 @@ func entityToMap(entity any) (map[string]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal entity: %w", err)
 	}
-	
+
 	var result map[string]any
 	if err := json.Unmarshal(jsonBytes, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal entity: %w", err)
 	}
-	
+
 	return result, nil
 }

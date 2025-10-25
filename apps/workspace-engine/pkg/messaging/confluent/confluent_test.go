@@ -20,10 +20,10 @@ func TestProducerCreation(t *testing.T) {
 
 	c := NewConfluent("localhost:9092")
 	producer, err := c.CreateProducer("test-topic", nil)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, producer)
-	
+
 	if producer != nil {
 		producer.Close()
 	}
@@ -35,10 +35,10 @@ func TestConsumerCreation(t *testing.T) {
 
 	c := NewConfluent("localhost:9092")
 	consumer, err := c.CreateConsumer("test-group", nil)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, consumer)
-	
+
 	if consumer != nil {
 		consumer.Close()
 	}
@@ -51,13 +51,13 @@ func TestProducerWithConfig(t *testing.T) {
 	c := NewConfluent("localhost:9092")
 	config := &kafka.ConfigMap{
 		"compression.type": "lz4",
-	}	
-	
+	}
+
 	producer, err := c.CreateProducer("test-topic", config)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, producer)
-	
+
 	if producer != nil {
 		producer.Close()
 	}
@@ -71,12 +71,12 @@ func TestConsumerWithConfig(t *testing.T) {
 	config := &kafka.ConfigMap{
 		"auto.offset.reset": "latest",
 	}
-	
+
 	consumer, err := c.CreateConsumer("test-group", config)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, consumer)
-	
+
 	if consumer != nil {
 		consumer.Close()
 	}
@@ -119,14 +119,13 @@ func TestProducerConsumerIntegration(t *testing.T) {
 	msg, err := consumer.ReadMessage(5 * time.Second)
 	assert.NoError(t, err)
 	assert.NotNil(t, msg)
-	
+
 	if msg != nil {
 		assert.Equal(t, testKey, msg.Key)
 		assert.Equal(t, testValue, msg.Value)
-		
+
 		// Commit message
 		err = consumer.CommitMessage(msg)
 		assert.NoError(t, err)
 	}
 }
-

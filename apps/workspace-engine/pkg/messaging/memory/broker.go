@@ -99,7 +99,7 @@ func (b *Broker) GetTopic(name string) (*Topic, error) {
 // The partition is determined by hashing the key
 func (t *Topic) Publish(key, value []byte) error {
 	partition := t.getPartitionForKey(key)
-	
+
 	partition.mu.Lock()
 	defer partition.mu.Unlock()
 
@@ -293,4 +293,3 @@ func (cg *ConsumerGroup) GetReadPosition(topic string, partition int32) int64 {
 	}
 	return 0
 }
-

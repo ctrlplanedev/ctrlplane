@@ -336,4 +336,3 @@ func (c *Consumer) Close() error {
 	log.Info("Confluent Kafka consumer closed")
 	return nil
 }
-

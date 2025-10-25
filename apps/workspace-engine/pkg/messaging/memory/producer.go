@@ -85,4 +85,3 @@ func (p *Producer) Close() error {
 	log.Info("Memory producer closed")
 	return nil
 }
-

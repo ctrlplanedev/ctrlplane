@@ -15,7 +15,6 @@ import (
 
 var tracer = otel.Tracer("kafka/consumer")
 
-
 func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
 	beginning := int64(kafka.OffsetBeginning)
 	if len(snapshots) == 0 {

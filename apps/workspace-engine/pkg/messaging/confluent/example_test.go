@@ -100,4 +100,3 @@ func Example_advancedConsumer() {
 		log.Printf("Failed to seek: %v", err)
 	}
 }
-

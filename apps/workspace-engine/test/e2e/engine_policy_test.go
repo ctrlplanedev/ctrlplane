@@ -506,7 +506,7 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 				}),
 			),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
@@ -658,6 +658,8 @@ func TestEngine_PolicyDelete(t *testing.T) {
 
 	// Create a deployment
 	d1 := c.NewDeployment(sys.Id)
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment
@@ -678,6 +680,12 @@ func TestEngine_PolicyDelete(t *testing.T) {
 	// Create a policy
 	policy := c.NewPolicy(workspaceID)
 	selector := c.NewPolicyTargetSelector()
+	selector.DeploymentSelector = &oapi.Selector{}
+	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector.EnvironmentSelector = &oapi.Selector{}
+	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector.ResourceSelector = &oapi.Selector{}
+	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
@@ -935,14 +943,17 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod-web"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-prod-api"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d3ID),
 				integration.DeploymentName("deployment-dev-web"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
@@ -959,6 +970,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelResourceSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
@@ -984,6 +996,7 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelResourceSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"operator": "and",
 					"conditions": []any{
@@ -1065,6 +1078,8 @@ func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-or-staging"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelResourceSelector("true"),
+				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
@@ -1072,6 +1087,8 @@ func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
 				}),
 			),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelResourceSelector("true"),
+				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
@@ -1083,10 +1100,12 @@ func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-staging"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),

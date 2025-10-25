@@ -9,9 +9,9 @@ import (
 
 func NewProducer(brokers string) (messaging.Producer, error) {
 	return confluent.NewConfluent(brokers).CreateProducer(Topic, &kafka.ConfigMap{
-		"bootstrap.servers": Brokers,
-		"enable.idempotence": true,
-		"compression.type": "snappy",
+		"bootstrap.servers":        Brokers,
+		"enable.idempotence":       true,
+		"compression.type":         "snappy",
 		"message.send.max.retries": 10,
 		"retry.backoff.ms":         100,
 	})

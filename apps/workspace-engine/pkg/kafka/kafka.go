@@ -58,11 +58,11 @@ func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
 
 func NewConsumer(brokers string) (messaging.Consumer, error) {
 	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, &kafka.ConfigMap{
-		"bootstrap.servers":               Brokers,
-		"group.id":                        GroupID,
-		"auto.offset.reset":               "earliest",
-		"enable.auto.commit":              false,
-		"partition.assignment.strategy":   "cooperative-sticky",
+		"bootstrap.servers":             Brokers,
+		"group.id":                      GroupID,
+		"auto.offset.reset":             "earliest",
+		"enable.auto.commit":            false,
+		"partition.assignment.strategy": "cooperative-sticky",
 	})
 }
 

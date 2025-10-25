@@ -12,15 +12,15 @@ import (
 
 // Consumer is an in-memory implementation of messaging.Consumer
 type Consumer struct {
-	mu              sync.RWMutex
-	broker          *Broker
-	groupID         string
-	topic           *Topic
-	topicName       string
-	consumerGroup   *ConsumerGroup
-	assignedParts   []int32
-	closed          bool
-	currentPartIdx  int // For round-robin reading across partitions
+	mu             sync.RWMutex
+	broker         *Broker
+	groupID        string
+	topic          *Topic
+	topicName      string
+	consumerGroup  *ConsumerGroup
+	assignedParts  []int32
+	closed         bool
+	currentPartIdx int // For round-robin reading across partitions
 }
 
 // Ensure Consumer implements messaging.Consumer
@@ -70,7 +70,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 		c.mu.Unlock()
 		return nil, fmt.Errorf("consumer is closed")
 	}
-	
+
 	if c.topic == nil {
 		c.mu.Unlock()
 		return nil, fmt.Errorf("consumer not subscribed to any topic")
@@ -78,7 +78,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 	c.mu.Unlock()
 
 	startTime := time.Now()
-	
+
 	for {
 		// Check timeout
 		if time.Since(startTime) >= timeout {
@@ -86,7 +86,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 		}
 
 		c.mu.Lock()
-		
+
 		// Try to read from each partition in round-robin fashion
 		partitionsChecked := 0
 		for partitionsChecked < len(c.assignedParts) {
@@ -98,7 +98,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 			// Get current partition
 			partIdx := c.currentPartIdx % len(c.assignedParts)
 			partID := c.assignedParts[partIdx]
-			
+
 			// Move to next partition for next read
 			c.currentPartIdx = (c.currentPartIdx + 1) % len(c.assignedParts)
 			partitionsChecked++
@@ -142,7 +142,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 			// If no message at this offset, we already incremented the group position
 			// but that's ok - we just skip this offset
 		}
-		
+
 		c.mu.Unlock()
 
 		// No messages available in any partition, sleep briefly before retrying
@@ -165,7 +165,7 @@ func (c *Consumer) CommitMessage(msg *messaging.Message) error {
 
 	// Commit the offset for this partition in the consumer group
 	c.consumerGroup.CommitOffset(c.topicName, msg.Partition, msg.Offset)
-	
+
 	log.Debug("Offset committed", "partition", msg.Partition, "offset", msg.Offset)
 	return nil
 }
@@ -208,7 +208,7 @@ func (c *Consumer) SeekToOffset(partition int32, offset int64) error {
 
 	// Set read position for this partition in the consumer group
 	c.consumerGroup.SetReadPosition(c.topicName, partition, offset)
-	
+
 	log.Debug("Seeked to offset", "partition", partition, "offset", offset)
 	return nil
 }
@@ -258,4 +258,3 @@ func (c *Consumer) Close() error {
 	log.Info("Memory consumer closed", "groupID", c.groupID)
 	return nil
 }
-

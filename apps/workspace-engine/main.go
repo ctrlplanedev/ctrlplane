@@ -161,7 +161,7 @@ func main() {
 		for _, id := range ids {
 			if err := workspacesave.SendWorkspaceSave(ctx, producer, id); err != nil {
 				log.Error("Failed to send workspace save", "error", err)
-			}	
+			}
 		}
 	})
 

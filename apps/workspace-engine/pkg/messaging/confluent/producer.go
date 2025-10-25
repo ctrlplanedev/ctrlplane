@@ -118,4 +118,3 @@ func (p *Producer) Close() error {
 	log.Info("Confluent Kafka producer closed")
 	return nil
 }
-
