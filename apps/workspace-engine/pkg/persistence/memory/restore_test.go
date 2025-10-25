@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"workspace-engine/pkg/workspace/persistence"
-	"workspace-engine/pkg/workspace/persistence/memory"
+	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/persistence/memory"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -442,7 +442,7 @@ func TestRestore_CompleteIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Simulate a series of operations over time
-	
+
 	// Day 1: Initial setup
 	day1Changes := persistence.NewChangelogBuilder(workspaceID).
 		Create(&Environment{ID: "prod", Name: "Production"}).
@@ -527,4 +527,3 @@ func TestRestore_MultipleRestores(t *testing.T) {
 	assert.Len(t, deployRepo.Creates, 1)
 	assert.Len(t, deployRepo.Updates, 1)
 }
-

@@ -2,10 +2,9 @@ package repository
 
 import (
 	"encoding/gob"
-	"encoding/json"
-	"os"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/persistence"
 )
 
 func EncodeGob(r *Repository) ([]byte, error) {
@@ -17,30 +16,6 @@ func EncodeGob(r *Repository) ([]byte, error) {
 		return nil, err
 	}
 	return buf, nil
-}
-
-// WriteToJSONFile writes the Repository data to a JSON file at the specified path.
-func WriteToJSONFile(r *Repository, filePath string) error {
-	// Marshal the repository struct into JSON.
-	data, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	// Create or truncate the file.
-	f, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := f.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
-	}()
-
-	// Write JSON data to file.
-	_, err = f.Write(data)
-	return err
 }
 
 // BufferWriter implements io.Writer for a byte slice pointer
@@ -57,27 +32,39 @@ func (w *BufferWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// registerEntity creates a cmap and registers it with the apply registry
+func registerEntity[E any](registry *persistence.ApplyRegistry, entityType string) cmap.ConcurrentMap[string, E] {
+	cm := cmap.New[E]()
+	registry.Register(entityType, &RepositoryAdapter[E]{cm: &cm})
+	return cm
+}
+
 func New() *Repository {
+	registry := persistence.NewApplyRegistry()
+	
 	return &Repository{
-		Resources:           cmap.New[*oapi.Resource](),
-		ResourceProviders:   cmap.New[*oapi.ResourceProvider](),
-		ResourceVariables:   cmap.New[*oapi.ResourceVariable](),
-		Deployments:         cmap.New[*oapi.Deployment](),
-		DeploymentVersions:  cmap.New[*oapi.DeploymentVersion](),
-		DeploymentVariables: cmap.New[*oapi.DeploymentVariable](),
-		Environments:        cmap.New[*oapi.Environment](),
-		Policies:            cmap.New[*oapi.Policy](),
-		Systems:             cmap.New[*oapi.System](),
-		Releases:            cmap.New[*oapi.Release](),
-		Jobs:                cmap.New[*oapi.Job](),
-		JobAgents:           cmap.New[*oapi.JobAgent](),
-		UserApprovalRecords: cmap.New[*oapi.UserApprovalRecord](),
-		RelationshipRules:   cmap.New[*oapi.RelationshipRule](),
-		GithubEntities:      cmap.New[*oapi.GithubEntity](),
+		applyRegistry:       registry,
+		Resources:           registerEntity[*oapi.Resource](registry, "resource"),
+		ResourceProviders:   registerEntity[*oapi.ResourceProvider](registry, "resource_provider"),
+		ResourceVariables:   registerEntity[*oapi.ResourceVariable](registry, "resource_variable"),
+		Deployments:         registerEntity[*oapi.Deployment](registry, "deployment"),
+		DeploymentVersions:  registerEntity[*oapi.DeploymentVersion](registry, "deployment_version"),
+		DeploymentVariables: registerEntity[*oapi.DeploymentVariable](registry, "deployment_variable"),
+		Environments:        registerEntity[*oapi.Environment](registry, "environment"),
+		Policies:            registerEntity[*oapi.Policy](registry, "policy"),
+		Systems:             registerEntity[*oapi.System](registry, "system"),
+		Releases:            registerEntity[*oapi.Release](registry, "release"),
+		Jobs:                registerEntity[*oapi.Job](registry, "job"),
+		JobAgents:           registerEntity[*oapi.JobAgent](registry, "job_agent"),
+		UserApprovalRecords: registerEntity[*oapi.UserApprovalRecord](registry, "user_approval_record"),
+		RelationshipRules:   registerEntity[*oapi.RelationshipRule](registry, "relationship_rule"),
+		GithubEntities:      registerEntity[*oapi.GithubEntity](registry, "github_entity"),
 	}
 }
 
 type Repository struct {
+	applyRegistry *persistence.ApplyRegistry
+
 	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
 	ResourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
@@ -98,4 +85,9 @@ type Repository struct {
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 
 	GithubEntities cmap.ConcurrentMap[string, *oapi.GithubEntity]
+}
+
+
+func (r *Repository) ApplyRegistry() *persistence.ApplyRegistry {
+	return r.applyRegistry
 }

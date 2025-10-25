@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/registry"
 )
 
 type PersistenceMode int
@@ -39,7 +40,7 @@ func NewTestWorkspace(
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
-	ws := workspace.GetNoFlushWorkspace(workspaceID)
+	ws := registry.Workspaces.GetOrCreate(ctx, workspaceID)
 
 	tw := &TestWorkspace{}
 	tw.t = t

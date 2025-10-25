@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"workspace-engine/pkg/workspace/persistence"
+	"workspace-engine/pkg/persistence"
 )
 
 // Store is an in-memory implementation of ChangelogStore

@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/workspace"
 	wskafka "workspace-engine/pkg/workspace/kafka"
+	"workspace-engine/pkg/workspace/registry"
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -110,7 +111,7 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 
 	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
 	for _, workspaceID := range allWorkspaceIDs {
-		ws, err := workspace.GetWorkspaceAndLoad(workspaceID)
+		ws, err := registry.Workspaces.GetOrCreate(ctx, workspaceID)
 		if ws == nil {
 			log.Error("Workspace not found", "workspaceID", workspaceID, "error", err)
 			continue

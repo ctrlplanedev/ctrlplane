@@ -99,7 +99,7 @@ func TestConcurrentReadWrite(t *testing.T) {
 
 	// Start writes
 	go func() {
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			_ = mv.RunRecompute(context.Background())
 		}
 	}()

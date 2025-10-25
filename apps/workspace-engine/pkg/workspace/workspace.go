@@ -2,60 +2,29 @@ package workspace
 
 import (
 	"bytes"
-	"context"
 	"encoding/gob"
 	"workspace-engine/pkg/changeset"
-	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/db"
-	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
-
-	"github.com/aws/smithy-go/ptr"
 )
 
 var _ gob.GobEncoder = (*Workspace)(nil)
 var _ gob.GobDecoder = (*Workspace)(nil)
 
-func New(id string) *Workspace {
+func New(id string, options ...WorkspaceOption) *Workspace {
 	s := store.New()
 	rm := releasemanager.New(s)
-	cc := db.NewChangesetConsumer(id, s)
 	ws := &Workspace{
 		ID:                id,
 		store:             s,
 		releasemanager:    rm,
-		changesetConsumer: cc,
+		changesetConsumer: changeset.NewNoopChangesetConsumer(),
 	}
 
-	return ws
-}
-
-func NewAndLoad(ctx context.Context, id string) (*Workspace, error) {
-	ws := New(id)
-	if err := Load(ctx, Storage, ws); err != nil {
-		return nil, err
+	for _, option := range options {
+		option(ws)
 	}
 
-	ws.Systems().Upsert(ctx, &oapi.System{
-		Id:          "00000000-0000-0000-0000-000000000000",
-		Name:        "Default",
-		Description: ptr.String("Default system"),
-	})
-
-	return ws, nil
-}
-
-func NewNoFlush(id string) *Workspace {
-	s := store.New()
-	rm := releasemanager.New(s)
-	cc := changeset.NewNoopChangesetConsumer()
-	ws := &Workspace{
-		ID:                id,
-		store:             s,
-		releasemanager:    rm,
-		changesetConsumer: cc,
-	}
 	return ws
 }
 
@@ -197,49 +166,4 @@ func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 
 func (w *Workspace) ChangesetConsumer() changeset.ChangesetConsumer[any] {
 	return w.changesetConsumer
-}
-
-var workspaces = cmap.New[*Workspace]()
-
-func Exists(id string) bool {
-	_, ok := workspaces.Get(id)
-	return ok
-}
-
-func Set(id string, workspace *Workspace) {
-	workspaces.Set(id, workspace)
-}
-
-func HasWorkspace(id string) bool {
-	return workspaces.Has(id)
-}
-
-type GetWorkspaceOptions struct {
-	SkipDBExistCheck bool
-}
-
-func GetWorkspaceAndLoad(id string) (*Workspace, error) {
-	workspace, _ := workspaces.Get(id)
-	if workspace == nil {
-		workspace, err := NewAndLoad(context.Background(), id)
-		if workspace == nil {
-			return nil, err
-		}
-		workspaces.Set(id, workspace)
-		return workspace, err
-	}
-	return workspace, nil
-}
-
-func GetNoFlushWorkspace(id string) *Workspace {
-	workspace, _ := workspaces.Get(id)
-	if workspace == nil {
-		workspace = NewNoFlush(id)
-		workspaces.Set(id, workspace)
-	}
-	return workspace
-}
-
-func GetAllWorkspaceIds() []string {
-	return workspaces.Keys()
 }

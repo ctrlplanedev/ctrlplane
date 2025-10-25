@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/workspace/persistence"
-	"workspace-engine/pkg/workspace/persistence/memory"
+	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/persistence/memory"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -198,4 +198,3 @@ func TestStore_Close(t *testing.T) {
 	err := store.Close()
 	assert.NoError(t, err, "Close should not return an error")
 }
-
