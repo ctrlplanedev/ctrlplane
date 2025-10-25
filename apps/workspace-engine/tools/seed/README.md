@@ -2,12 +2,28 @@
 
 A CLI tool for seeding workspaces with test data using Cobra.
 
+## Quick Start
+
+```bash
+# 1. Build the tool
+cd apps/workspace-engine/tools/seed
+go build -o seed seed.go
+
+# 2. Set up environment (optional but recommended)
+cp example.env .env
+# Edit .env and set your WORKSPACE_ID
+
+# 3. Seed data
+./seed random resources 20              # Generate 20 random resources
+./seed file example.json                 # Or load from a JSON file
+```
+
 ## Installation
 
 Build the CLI:
 
 ```bash
-cd apps/workspace-engine/test/seed
+cd apps/workspace-engine/tools/seed
 go build -o seed seed.go
 ```
 
@@ -17,33 +33,45 @@ Or run directly:
 go run seed.go [command]
 ```
 
+Or from the workspace-engine directory:
+
+```bash
+cd apps/workspace-engine
+go run tools/seed/seed.go [command]
+```
+
 ## Configuration
 
 ### Environment Variables
 
-The CLI automatically loads environment variables from a `.env` file in the current directory if it exists.
+The CLI automatically loads environment variables from a `.env` file in the current directory if it exists. This allows you to avoid specifying `--workspace-id` and `--bootstrap-server` on every command.
 
-Create a `.env` file:
+**Quick Start:**
 
 ```bash
 # Copy the example file
-cp env.example .env
+cp example.env .env
 
 # Edit with your values
+cat > .env << EOF
 BOOTSTRAP_SERVER=localhost:9092
 WORKSPACE_ID=my-workspace
+EOF
+
+# Now run commands without flags!
+seed random resources 20
 ```
 
 **Supported environment variables:**
 
-- `BOOTSTRAP_SERVER`: Kafka bootstrap server
-- `WORKSPACE_ID`: Target workspace ID
+- `BOOTSTRAP_SERVER`: Kafka bootstrap server address
+- `WORKSPACE_ID`: Target workspace ID (required if not provided via flag)
 
 **Priority order (highest to lowest):**
 
-1. Command-line flags
-2. Environment variables
-3. Default values
+1. Command-line flags (always override environment variables)
+2. Environment variables (from `.env` file or shell environment)
+3. Default values (only for `BOOTSTRAP_SERVER`)
 
 ### Custom .env File
 
@@ -223,8 +251,55 @@ seed random resources --help
 
 ## Tips
 
-- Start small (100-1000 resources) to test your workspace
-- Use `--seed` for reproducible test data
-- Monitor Kafka and workspace-engine logs during seeding
-- For very large datasets (>10k resources), consider batching or rate limiting
-- The `--workspace-id` flag is required for all commands
+- **Use .env files**: Set `WORKSPACE_ID` in a `.env` file to avoid typing it on every command
+- **Start small**: Test with 100-1000 resources before generating large datasets
+- **Reproducible data**: Use `--seed` flag for consistent test data across runs
+- **Monitor logs**: Watch Kafka and workspace-engine logs during seeding
+- **Large datasets**: For >10k resources, consider batching or rate limiting
+- **Command-line overrides**: Flags always take precedence over environment variables
+
+## Troubleshooting
+
+### "workspace-id is required" error
+
+Make sure you've either:
+
+- Set `WORKSPACE_ID` in your `.env` file, or
+- Provide `--workspace-id` flag
+
+```bash
+# Check if .env file exists and contains WORKSPACE_ID
+cat .env | grep WORKSPACE_ID
+
+# Or use the flag directly
+seed random resources 20 --workspace-id my-workspace
+```
+
+### .env file not being loaded
+
+The CLI looks for `.env` in the **current directory** where you run the command, not where the binary is located.
+
+```bash
+# Wrong: .env is in tools/seed but you're running from elsewhere
+cd apps/workspace-engine
+./tools/seed/seed random resources 20  # Won't find tools/seed/.env
+
+# Right: Run from the directory with .env
+cd apps/workspace-engine/tools/seed
+./seed random resources 20  # Will find ./.env
+
+# Or: Specify custom env file path
+./seed random resources 20 --env-file /path/to/.env
+```
+
+### Connection errors
+
+Verify Kafka is running and accessible:
+
+```bash
+# Check if Kafka is running on default port
+nc -zv localhost 9092
+
+# Or specify a different server
+seed random resources 20 --bootstrap-server kafka.example.com:9092
+```

@@ -437,20 +437,6 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 	}
 }
 
-func TestGithubDispatcher_GetEnv(t *testing.T) {
-	dispatcher := &GithubDispatcher{}
-
-	testKey := "TEST_GITHUB_VAR"
-	testValue := "test-value-123"
-	os.Setenv(testKey, testValue)
-	defer os.Unsetenv(testKey)
-
-	result := dispatcher.getEnv(testKey)
-	if result != testValue {
-		t.Errorf("Expected %s, got %s", testValue, result)
-	}
-}
-
 func TestGithubDispatcher_CreateGithubClient_MissingEnvVars(t *testing.T) {
 	oldAppID := os.Getenv("GITHUB_BOT_APP_ID")
 	oldPrivateKey := os.Getenv("GITHUB_BOT_PRIVATE_KEY")

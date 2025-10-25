@@ -2,10 +2,9 @@ package db
 
 import (
 	"context"
-	"os"
-	"strconv"
 	"sync"
 	"time"
+	"workspace-engine/pkg/env"
 
 	"github.com/charmbracelet/log"
 	"github.com/exaring/otelpgx"
@@ -15,38 +14,22 @@ import (
 var (
 	pool        *pgxpool.Pool
 	once        sync.Once
-	postgresURL = getEnv("POSTGRES_URL", "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane")
 )
-
-func getEnv(varName string, defaultValue string) string {
-	v := os.Getenv(varName)
-	if v == "" {
-		return defaultValue
-	}
-	return v
-}
 
 // GetPool returns the singleton database connection pool
 func GetPool(ctx context.Context) *pgxpool.Pool {
 	once.Do(func() {
-		config, err := pgxpool.ParseConfig(postgresURL)
+		config, err := pgxpool.ParseConfig(env.Config.PostgresURL)
 		if err != nil {
 			log.Fatal("Failed to parse database config:", err)
 		}
 
-		if maxConns := os.Getenv("POSTGRES_MAX_POOL_SIZE"); maxConns != "" {
-			if max, err := strconv.Atoi(maxConns); err == nil {
-				config.MaxConns = int32(max)
-			}
-		}
-
+		config.MaxConns = int32(env.Config.PostgresMaxPoolSize)
 		config.MinConns = 1
 		config.HealthCheckPeriod = 30 * time.Second
 		config.ConnConfig.Tracer = otelpgx.NewTracer()
 
-		if appName := os.Getenv("POSTGRES_APPLICATION_NAME"); appName != "" {
-			config.ConnConfig.RuntimeParams["application_name"] = appName
-		}
+		config.ConnConfig.RuntimeParams["application_name"] = env.Config.PostgresApplicationName
 
 		pool, err = pgxpool.NewWithConfig(ctx, config)
 		if err != nil {

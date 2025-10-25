@@ -50,6 +50,10 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 			return nil, err
 		}
 
+		if err := workspace.PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
+			return nil, err
+		}
+
 		if err := ws.Store().Restore(ctx, changes); err != nil {
 			return nil, err
 		}

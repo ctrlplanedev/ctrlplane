@@ -3,9 +3,9 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
+	"workspace-engine/pkg/env"
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
@@ -18,19 +18,10 @@ import (
 
 // Configuration variables loaded from environment
 var (
-	Topic   = getEnv("KAFKA_TOPIC", "workspace-events")
-	GroupID = getEnv("KAFKA_GROUP_ID", "workspace-engine")
-	Brokers = getEnv("KAFKA_BROKERS", "localhost:9092")
+	Topic   = env.Config.KafkaTopic
+	GroupID = env.Config.KafkaGroupID
+	Brokers = env.Config.KafkaBrokers
 )
-
-// getEnv retrieves an environment variable or returns a default value
-func getEnv(varName string, defaultValue string) string {
-	v := os.Getenv(varName)
-	if v == "" {
-		return defaultValue
-	}
-	return v
-}
 
 func NewConsumer(brokers string) (messaging.Consumer, error) {
 	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, &kafka.ConfigMap{

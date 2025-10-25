@@ -93,16 +93,17 @@ newStore := kafka.NewStore("new-topic")
 // Union store reads from both during migration
 migrationStore := union.New(oldStore, newStore)
 
-// Application continues working
-manager := persistence.NewManagerBuilder().
-    WithStore(migrationStore).
-    Build()
+// Configure workspace manager with union store
+manager.Configure(
+    manager.WithPersistentStore(migrationStore),
+)
 
-// Restore gets data from both stores (merged)
-manager.Restore(ctx, "workspace-1")
+// Load workspace - gets data from both stores (merged)
+ws, err := manager.GetOrLoad(ctx, "workspace-1")
 
 // Saves go to both stores (redundant during migration)
-manager.Persist(ctx, changes)
+// When workspace processes events, changes are saved to migrationStore
+// which replicates to both oldStore and newStore
 ```
 
 ## Example: Redundancy

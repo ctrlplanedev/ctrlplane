@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
+	"workspace-engine/pkg/env"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 
@@ -93,9 +93,6 @@ func (d *GithubDispatcher) parseConfig(job *oapi.Job) (githubJobConfig, error) {
 	return parsed, nil
 }
 
-func (d *GithubDispatcher) getEnv(key string) string {
-	return os.Getenv(key)
-}
 
 // generateJWT creates a JWT token for GitHub App authentication
 // This matches what Node.js createAppAuth does internally
@@ -161,8 +158,8 @@ func (d *GithubDispatcher) getInstallationToken(jwtToken string, installationID 
 }
 
 func (d *GithubDispatcher) createGithubClient(installationID int) (GithubClient, error) {
-	appIDStr := d.getEnv("GITHUB_BOT_APP_ID")
-	privateKey := d.getEnv("GITHUB_BOT_PRIVATE_KEY")
+	appIDStr := env.Config.GithubBotAppID
+	privateKey := env.Config.GithubBotPrivateKey
 	// Note: clientID and clientSecret are available but not needed for GitHub App auth
 	// They're used in Node.js but the actual authentication uses JWT + installation token
 

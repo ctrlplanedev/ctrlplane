@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"workspace-engine/test/seed/cmd"
+	"workspace-engine/tools/seed/cmd"
 
 	"github.com/charmbracelet/log"
 )
