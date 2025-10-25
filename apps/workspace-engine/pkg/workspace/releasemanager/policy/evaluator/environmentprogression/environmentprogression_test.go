@@ -10,7 +10,7 @@ import (
 
 // setupTestStore creates a test store with environments, jobs, and releases
 func setupTestStore() *store.Store {
-	st := store.New()
+	st := store.New("test-workspace")
 	ctx := context.Background()
 
 	// Create system

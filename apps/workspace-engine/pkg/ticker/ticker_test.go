@@ -56,9 +56,9 @@ func TestEmitTicks_MultipleWorkspaces(t *testing.T) {
 	}
 
 	// Register test workspaces
-	workspace.Set("ws-1", workspace.New("ws-1"))
-	workspace.Set("ws-2", workspace.New("ws-2"))
-	workspace.Set("ws-3", workspace.New("ws-3"))
+	workspace.Set("ws-1", workspace.New("ws-1", nil))
+	workspace.Set("ws-2", workspace.New("ws-2", nil))
+	workspace.Set("ws-3", workspace.New("ws-3", nil))
 
 	// Clean up after test
 	defer func() {

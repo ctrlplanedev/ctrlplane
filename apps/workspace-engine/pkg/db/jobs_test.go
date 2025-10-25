@@ -237,7 +237,7 @@ func TestDBJobs_BasicWrite(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -308,7 +308,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -392,7 +392,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -495,7 +495,7 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -577,7 +577,7 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -656,7 +656,7 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -722,7 +722,7 @@ func TestDBJobs_AllJobStatuses(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -807,7 +807,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	releaseID1, jobAgentID1 := createJobPrerequisites(t, workspaceID1, conn1, &release1)
 
 	// Create store for workspace 1 (indexed by both hash ID and UUID)
-	testStore1 := wsStore.New()
+	testStore1 := wsStore.New(workspaceID1)
 	testStore1.Releases.Upsert(t.Context(), &release1)
 	// Also index by UUID for job lookup
 	testStore1.Repo().Releases.Set(releaseID1, &release1)
@@ -817,7 +817,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	releaseID2, jobAgentID2 := createJobPrerequisites(t, workspaceID2, conn2, &release2)
 
 	// Create store for workspace 2 (indexed by both hash ID and UUID)
-	testStore2 := wsStore.New()
+	testStore2 := wsStore.New(workspaceID2)
 	testStore2.Releases.Upsert(t.Context(), &release2)
 	// Also index by UUID for job lookup
 	testStore2.Repo().Releases.Set(releaseID2, &release2)
@@ -943,7 +943,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -1106,7 +1106,7 @@ func TestDBJobs_BasicMetadata(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1183,7 +1183,7 @@ func TestDBJobs_EmptyMetadata(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1242,7 +1242,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1347,7 +1347,7 @@ func TestDBJobs_MetadataRemoval(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1444,7 +1444,7 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 	releaseID, jobAgentID := createJobPrerequisites(t, workspaceID, conn, &release)
 
 	// Create store and add release to it
-	testStore := wsStore.New()
+	testStore := wsStore.New(workspaceID)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 

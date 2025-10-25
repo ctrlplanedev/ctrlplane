@@ -86,7 +86,7 @@ func TestEngine_Persistence_BasicSaveLoadRoundtrip(t *testing.T) {
 	}
 
 	// Create a new workspace and load from storage
-	newWs := workspace.New(workspaceID)
+	newWs := workspace.New(workspaceID, nil)
 
 	// Read from storage
 	loadedData, err := storage.Get(ctx, "workspace.gob")
@@ -194,7 +194,7 @@ func TestEngine_Persistence_EmptyWorkspace(t *testing.T) {
 	}
 
 	// Load into new workspace
-	newWs := workspace.New(workspaceID)
+	newWs := workspace.New(workspaceID, nil)
 
 	// Read from storage
 	loadedData, err := storage.Get(ctx, "empty.gob")
@@ -286,7 +286,7 @@ func TestEngine_Persistence_MultipleResources(t *testing.T) {
 	}
 
 	// Load into new workspace
-	newWs := workspace.New(workspaceID)
+	newWs := workspace.New(workspaceID, nil)
 
 	// Read from storage
 	loadedData, err := storage.Get(ctx, "workspace.gob")
@@ -398,7 +398,7 @@ func TestEngine_Persistence_ComplexEntities(t *testing.T) {
 	}
 
 	// Load into new workspace
-	newWs := workspace.New(workspaceID)
+	newWs := workspace.New(workspaceID, nil)
 
 	// Read from storage
 	loadedData, err := storage.Get(ctx, "workspace.gob")
@@ -612,7 +612,7 @@ func TestEngine_Persistence_JobsWithStatuses(t *testing.T) {
 	}
 
 	// Load into new workspace
-	newWs := workspace.New(workspaceID)
+	newWs := workspace.New(workspaceID, nil)
 
 	// Read from storage
 	loadedData, err := storage.Get(ctx, "workspace.gob")
@@ -654,7 +654,7 @@ func TestEngine_Persistence_MultipleWorkspaces(t *testing.T) {
 	workspaceIDs := []string{uuid.New().String(), uuid.New().String(), uuid.New().String()}
 
 	for i, wsID := range workspaceIDs {
-		ws := workspace.NewNoFlush(wsID)
+		ws := workspace.NewNoFlush(wsID, nil)
 
 		// Encode and save
 		data, err := ws.GobEncode()
@@ -670,7 +670,7 @@ func TestEngine_Persistence_MultipleWorkspaces(t *testing.T) {
 
 	// Load each workspace and verify they're distinct
 	for i, wsID := range workspaceIDs {
-		newWs := workspace.NewNoFlush("temp")
+		newWs := workspace.NewNoFlush("temp", nil)
 
 		filename := fmt.Sprintf("workspace-%d.gob", i)
 		loadedData, err := storage.Get(ctx, filename)
@@ -841,7 +841,7 @@ func TestEngine_Persistence_TimestampsAndTimeZones(t *testing.T) {
 	}
 
 	// Load into new workspace
-	newWs := workspace.New(workspaceID)
+	newWs := workspace.New(workspaceID, nil)
 
 	loadedData, err := storage.Get(ctx, "workspace.gob")
 	if err != nil {
@@ -934,7 +934,7 @@ func TestEngine_Persistence_ConcurrentWrites(t *testing.T) {
 
 	// Create workspace with known state (using NewNoFlush to avoid DB interaction)
 	workspaceID := uuid.New().String()
-	ws := workspace.NewNoFlush(workspaceID)
+	ws := workspace.NewNoFlush(workspaceID, nil)
 
 	// Create temporary directory for storage
 	tempDir, err := os.MkdirTemp("", "workspace-persistence-test-*")
@@ -978,7 +978,7 @@ func TestEngine_Persistence_ConcurrentWrites(t *testing.T) {
 	}
 
 	// Load workspace and verify it's valid (not corrupted)
-	newWs := workspace.NewNoFlush("temp")
+	newWs := workspace.NewNoFlush("temp", nil)
 
 	loadedData, err := storage.Get(ctx, "concurrent.gob")
 	if err != nil {

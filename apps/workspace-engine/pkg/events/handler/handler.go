@@ -57,6 +57,7 @@ const (
 	JobAgentUpdate EventType = "job-agent.updated"
 	JobAgentDelete EventType = "job-agent.deleted"
 
+	JobCreate EventType = "job.created"
 	JobUpdate EventType = "job.updated"
 
 	PolicyCreate EventType = "policy.created"
@@ -97,12 +98,21 @@ type HandlerRegistry map[EventType]Handler
 
 // EventListener listens for events on the queue and routes them to appropriate handlers
 type EventListener struct {
-	handlers HandlerRegistry
+	handlers      HandlerRegistry
+	eventProducer EventProducer
+}
+
+// EventProducer defines the interface for producing events (imported to avoid circular deps)
+type EventProducer interface {
+	ProduceEvent(eventType string, workspaceID string, data any) error
 }
 
 // NewEventListener creates a new event listener with the provided handlers
-func NewEventListener(handlers HandlerRegistry) *EventListener {
-	el := &EventListener{handlers: handlers}
+func NewEventListener(handlers HandlerRegistry, eventProducer EventProducer) *EventListener {
+	el := &EventListener{
+		handlers:      handlers,
+		eventProducer: eventProducer,
+	}
 	return el
 }
 
@@ -154,7 +164,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message,
 	var ws *workspace.Workspace
 	changeSet := changeset.NewChangeSet[any]()
 
-	ws, err := workspace.GetWorkspaceAndLoad(rawEvent.WorkspaceID)
+	ws, err := workspace.GetWorkspaceAndLoad(rawEvent.WorkspaceID, el.eventProducer)
 	if ws == nil {
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}

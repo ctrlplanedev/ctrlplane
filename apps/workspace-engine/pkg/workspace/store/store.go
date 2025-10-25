@@ -10,9 +10,9 @@ import (
 var _ gob.GobEncoder = (*Store)(nil)
 var _ gob.GobDecoder = (*Store)(nil)
 
-func New() *Store {
+func New(wsId string) *Store {
 	repo := repository.New()
-	store := &Store{repo: repo}
+	store := &Store{repo: repo, workspaceID: wsId}
 	store.isReplay.Store(false)
 
 	store.Deployments = NewDeployments(store)
@@ -37,7 +37,8 @@ func New() *Store {
 }
 
 type Store struct {
-	repo *repository.Repository
+	repo        *repository.Repository
+	workspaceID string
 
 	Policies            *Policies
 	Resources           *Resources
@@ -66,6 +67,10 @@ func (s *Store) IsReplay() bool {
 
 func (s *Store) SetIsReplay(isReplay bool) {
 	s.isReplay.Store(isReplay)
+}
+
+func (s *Store) WorkspaceID() string {
+	return s.workspaceID
 }
 
 func (s *Store) Repo() *repository.Repository {

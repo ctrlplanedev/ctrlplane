@@ -18,7 +18,9 @@ func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, err
 	}
 
 	if workspace.Exists(workspaceId) {
-		return workspace.GetWorkspaceAndLoad(workspaceId)
+		// TODO: Server should have its own event producer instance
+		// Passing nil for now as server operations are primarily read-only
+		return workspace.GetWorkspaceAndLoad(workspaceId, nil)
 	}
 
 	return nil, fmt.Errorf("workspace %s not found", workspaceId)

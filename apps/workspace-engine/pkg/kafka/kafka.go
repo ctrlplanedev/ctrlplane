@@ -54,6 +54,17 @@ func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
 	return snapshot.Offset
 }
 
+type TopicInfo struct {
+	Paritions int
+}
+
+type Consumer interface {
+	Close() error
+	GetNumberOfPartitions(string) (int, error)
+	SubscribeTopics([]string) error
+	Assignment() ([]kafka.TopicPartition, error)
+}
+
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume
 //
 // Flow:
@@ -62,7 +73,7 @@ func getLastWorkspaceOffset(snapshot *db.WorkspaceSnapshot) int64 {
 //  3. Load workspaces for assigned partitions (if workspaceLoader provided)
 //  4. Seek to stored offsets per partition
 //  5. Start consuming and processing messages
-func RunConsumer(ctx context.Context) error {
+func RunConsumer(ctx context.Context, eventProducer EventProducer) error {
 	// Initialize Kafka consumer
 	consumer, err := createConsumer()
 	if err != nil {
@@ -118,7 +129,7 @@ func RunConsumer(ctx context.Context) error {
 
 	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
 	for _, workspaceID := range allWorkspaceIDs {
-		ws, err := workspace.GetWorkspaceAndLoad(workspaceID)
+		ws, err := workspace.GetWorkspaceAndLoad(workspaceID, eventProducer)
 		if ws == nil {
 			log.Error("Workspace not found", "workspaceID", workspaceID, "error", err)
 			continue
@@ -130,7 +141,7 @@ func RunConsumer(ctx context.Context) error {
 	}
 
 	// Start consuming messages
-	handler := events.NewEventHandler()
+	handler := events.NewEventHandler(eventProducer)
 
 	for {
 		// Check for cancellation

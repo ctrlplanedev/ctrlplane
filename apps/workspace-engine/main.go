@@ -164,7 +164,7 @@ func main() {
 
 	go func() {
 		log.Info("Kafka consumer started")
-		if err := kafka.RunConsumer(ctx); err != nil {
+		if err := kafka.RunConsumer(ctx, producer); err != nil {
 			log.Error("received error from kafka consumer", "error", err)
 			panic(err)
 		}

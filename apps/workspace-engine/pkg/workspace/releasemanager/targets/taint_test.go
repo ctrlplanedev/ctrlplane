@@ -141,7 +141,7 @@ func TestBuildTargetIndex(t *testing.T) {
 
 // Test taint on Policy change (should taint all targets)
 func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -174,7 +174,7 @@ func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
 
 // Test taint on System change (should taint all targets)
 func TestTaintProcessor_SystemChange_TaintsAll(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -207,7 +207,7 @@ func TestTaintProcessor_SystemChange_TaintsAll(t *testing.T) {
 
 // Test taint on Environment change
 func TestTaintProcessor_EnvironmentChange_TaintsEnvironmentTargets(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets across different environments
 	envID1 := uuid.New().String()
@@ -241,7 +241,7 @@ func TestTaintProcessor_EnvironmentChange_TaintsEnvironmentTargets(t *testing.T)
 
 // Test taint on Deployment change
 func TestTaintProcessor_DeploymentChange_TaintsDeploymentTargets(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets across different deployments
 	envID := uuid.New().String()
@@ -274,7 +274,7 @@ func TestTaintProcessor_DeploymentChange_TaintsDeploymentTargets(t *testing.T) {
 
 // Test taint on DeploymentVersion change
 func TestTaintProcessor_DeploymentVersionChange_TaintsDeploymentTargets(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -307,7 +307,7 @@ func TestTaintProcessor_DeploymentVersionChange_TaintsDeploymentTargets(t *testi
 
 // Test taint on Resource change
 func TestTaintProcessor_ResourceChange_TaintsResourceTargets(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets across different resources
 	envID := uuid.New().String()
@@ -341,7 +341,7 @@ func TestTaintProcessor_ResourceChange_TaintsResourceTargets(t *testing.T) {
 // Test taint on Job change
 func TestTaintProcessor_JobChange_TaintsJobReleaseTarget(t *testing.T) {
 	ctx := context.Background()
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -382,7 +382,7 @@ func TestTaintProcessor_JobChange_TaintsJobReleaseTarget(t *testing.T) {
 
 // Test taint with job that has non-existent release
 func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -409,7 +409,7 @@ func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
 
 // Test multiple changes in single pass
 func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets across different dimensions
 	envID1 := uuid.New().String()
@@ -452,7 +452,7 @@ func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
 
 // Test empty changeset
 func TestTaintProcessor_EmptyChangeset(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -477,7 +477,7 @@ func TestTaintProcessor_EmptyChangeset(t *testing.T) {
 
 // Test that Policy change short-circuits (taints all and returns early)
 func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -513,7 +513,7 @@ func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
 
 // Test with no targets
 func TestTaintProcessor_NoTargets(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 	targets := map[string]*oapi.ReleaseTarget{}
 
 	// Create changeset with changes
@@ -531,7 +531,7 @@ func TestTaintProcessor_NoTargets(t *testing.T) {
 
 // Test taint deduplication (same target tainted by multiple changes)
 func TestTaintProcessor_Deduplication(t *testing.T) {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Setup a single target
 	envID := uuid.New().String()

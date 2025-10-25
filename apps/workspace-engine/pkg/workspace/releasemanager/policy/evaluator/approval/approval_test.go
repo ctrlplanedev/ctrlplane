@@ -9,7 +9,7 @@ import (
 
 // setupStore creates a test store with approval records.
 func setupStore(versionId string, approvers []string) *store.Store {
-	st := store.New()
+	st := store.New("test-workspace")
 
 	for _, userId := range approvers {
 		record := &oapi.UserApprovalRecord{
@@ -189,7 +189,7 @@ func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
 
 func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 	// Setup: Different approval counts for different versions
-	st := store.New()
+	st := store.New("test-workspace")
 
 	// Version 1: 2 approvals
 	ctx := context.Background()
@@ -244,7 +244,7 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 
 func TestAnyApprovalEvaluator_EmptyVersionId(t *testing.T) {
 	// Setup: Version with empty ID
-	st := store.New()
+	st := store.New("test-workspace")
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
 	evaluator := NewAnyApprovalEvaluator(st, rule)

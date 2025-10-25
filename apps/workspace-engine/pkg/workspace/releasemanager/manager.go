@@ -21,6 +21,11 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
+// EventProducer defines the interface for producing events.
+type EventProducer interface {
+	ProduceEvent(eventType string, workspaceID string, data any) error
+}
+
 // Manager handles the business logic for release target changes and deployment decisions.
 // It orchestrates deployment planning, job eligibility checking, execution, and job management.
 type Manager struct {
@@ -32,7 +37,7 @@ type Manager struct {
 	// Deployment components
 	planner               *deployment.Planner
 	jobEligibilityChecker *deployment.JobEligibilityChecker
-	executor              *deployment.Executor
+	jobCreator            *deployment.JobCreator
 
 	// Concurrency control
 	releaseTargetLocks sync.Map
@@ -41,18 +46,23 @@ type Manager struct {
 var tracer = otel.Tracer("workspace/releasemanager")
 
 // New creates a new release manager for a workspace.
-func New(store *store.Store) *Manager {
+func New(store *store.Store, eventProducer EventProducer) *Manager {
 	targetsManager := targets.New(store)
 	policyManager := policy.New(store)
 	versionManager := versions.New(store)
 	variableManager := variables.New(store)
+
+	var jobCreator *deployment.JobCreator
+	if eventProducer != nil {
+		jobCreator = deployment.NewJobCreator(store, eventProducer)
+	}
 
 	return &Manager{
 		store:                 store,
 		targetsManager:        targetsManager,
 		planner:               deployment.NewPlanner(store, policyManager, versionManager, variableManager),
 		jobEligibilityChecker: deployment.NewJobEligibilityChecker(store),
-		executor:              deployment.NewExecutor(store),
+		jobCreator:            jobCreator,
 		releaseTargetLocks:    sync.Map{},
 	}
 }
@@ -239,8 +249,11 @@ func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 		}
 	}
 
-	// Phase 3: EXECUTION - Create the job (WRITES)
-	return m.executor.ExecuteRelease(ctx, desiredRelease)
+	// Phase 3: EXECUTION - Create the job and send event
+	if m.jobCreator == nil {
+		return fmt.Errorf("job creator not initialized - event producer required")
+	}
+	return m.jobCreator.CreateJobForRelease(ctx, desiredRelease)
 }
 
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
