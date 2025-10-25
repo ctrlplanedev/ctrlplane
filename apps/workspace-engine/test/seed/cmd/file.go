@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"encoding/json"
@@ -6,31 +6,23 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	// Parse command-line arguments to get bootstrap server URI, workspace ID, and file path
-	var bootstrapServer, workspaceID, filePath string
-	for i, arg := range os.Args {
-		if arg == "--bootstrap-server" && i+1 < len(os.Args) {
-			bootstrapServer = os.Args[i+1]
-		}
-		if arg == "--workspace-id" && i+1 < len(os.Args) {
-			workspaceID = os.Args[i+1]
-		}
-		if arg == "--file" && i+1 < len(os.Args) {
-			filePath = os.Args[i+1]
-		}
-	}
-	if bootstrapServer == "" {
-		bootstrapServer = "localhost:9092"
-	}
-	if workspaceID == "" {
-		log.Fatalf("Must provide --workspace-id")
-	}
-	if filePath == "" {
-		log.Fatalf("Must provide --file (path to file to seed from)")
-	}
+var fileCmd = &cobra.Command{
+	Use:   "file [path]",
+	Short: "Seed workspace from a JSON file",
+	Long:  `Seeds a workspace with events from a JSON file containing event data.`,
+	Args:  cobra.ExactArgs(1),
+	Run:   runFileSeed,
+}
+
+func init() {
+	rootCmd.AddCommand(fileCmd)
+}
+
+func runFileSeed(cmd *cobra.Command, args []string) {
+	filePath := args[0]
 
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": bootstrapServer,
@@ -90,3 +82,4 @@ func main() {
 
 	log.Infof("Successfully seeded workspace [%s] with %d events from file [%s]", workspaceID, len(dataJSON), filePath)
 }
+
