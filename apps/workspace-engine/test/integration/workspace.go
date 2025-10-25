@@ -24,9 +24,9 @@ func init() {
 }
 
 type TestWorkspace struct {
-	t               *testing.T
-	workspace       *workspace.Workspace
-	eventListener   *handler.EventListener
+	t             *testing.T
+	workspace     *workspace.Workspace
+	eventListener *handler.EventListener
 }
 
 func NewTestWorkspace(

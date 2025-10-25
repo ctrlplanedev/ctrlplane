@@ -178,7 +178,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return ws, fmt.Errorf("failed to process target changes: %w", err)
 	}
 
-
 	changes := make([]persistence.Change, 0)
 	for _, change := range ws.Changeset().Changes() {
 		entity, ok := change.Entity.(persistence.Entity)

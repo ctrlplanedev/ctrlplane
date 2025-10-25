@@ -44,7 +44,7 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 	ws, ok := globalManager.workspaces.Get(id)
 	if !ok {
 		ws = workspace.New(ctx, id, globalManager.workspaceCreateOptions...)
-		
+
 		changes, err := globalManager.persistentStore.Load(ctx, id)
 		if err != nil {
 			return nil, err

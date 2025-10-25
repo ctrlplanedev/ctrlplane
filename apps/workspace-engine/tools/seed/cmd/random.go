@@ -281,4 +281,3 @@ func runRandomResources(cmd *cobra.Command, args []string) {
 	log.Infof("Successfully seeded workspace [%s] with %d/%d random resources (%d failed)",
 		workspaceID, successCount, count, failCount)
 }
-

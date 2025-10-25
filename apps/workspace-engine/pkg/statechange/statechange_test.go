@@ -223,4 +223,3 @@ func TestTimestampOrdering(t *testing.T) {
 	assert.True(t, changes[1].Timestamp.Before(changes[2].Timestamp),
 		"Expected second change timestamp to be before third")
 }
-

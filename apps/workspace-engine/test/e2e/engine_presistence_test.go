@@ -531,4 +531,3 @@ func TestEngine_Persistence_MultipleWorkspaces(t *testing.T) {
 	_, ok = ws2.Systems().Get(sys1ID)
 	assert.False(t, ok, "Workspace 2 should not have workspace 1's system")
 }
-

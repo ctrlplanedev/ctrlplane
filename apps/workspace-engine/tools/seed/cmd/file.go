@@ -82,4 +82,3 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 
 	log.Infof("Successfully seeded workspace [%s] with %d events from file [%s]", workspaceID, len(dataJSON), filePath)
 }
-

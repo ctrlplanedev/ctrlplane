@@ -71,4 +71,3 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&workspaceID, "workspace-id", "", "Workspace ID (required)")
 	rootCmd.PersistentFlags().StringVar(&envFile, "env-file", "", "Path to .env file (default: .env in current directory)")
 }
-

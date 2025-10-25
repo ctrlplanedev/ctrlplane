@@ -34,11 +34,12 @@ func getEnv(varName string, defaultValue string) string {
 
 func NewConsumer(brokers string) (messaging.Consumer, error) {
 	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, &kafka.ConfigMap{
-		"bootstrap.servers":             Brokers,
-		"group.id":                      GroupID,
-		"auto.offset.reset":             "earliest",
-		"enable.auto.commit":            false,
-		"partition.assignment.strategy": "cooperative-sticky",
+		"bootstrap.servers":               Brokers,
+		"group.id":                        GroupID,
+		"auto.offset.reset":               "latest",
+		"enable.auto.commit":              false,
+		"partition.assignment.strategy":   "cooperative-sticky",
+		"go.application.rebalance.enable": true,
 	})
 }
 
