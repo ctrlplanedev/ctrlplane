@@ -76,10 +76,12 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-dev"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
@@ -240,6 +242,8 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 
 	// Create a deployment
 	d1 := c.NewDeployment(sys.Id)
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment
@@ -285,6 +289,10 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 		"value":    "critical",
 	}})
 	selector.ResourceSelector = resSelector
+	selector.DeploymentSelector = &oapi.Selector{}
+	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector.EnvironmentSelector = &oapi.Selector{}
+	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
@@ -326,10 +334,14 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	// Create two deployments
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-prod"
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-dev"
+	d2.ResourceSelector = &oapi.Selector{}
+	_ = d2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
 
 	// Create two environments
@@ -463,10 +475,12 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-staging"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
@@ -483,6 +497,8 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-or-staging"),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelResourceSelector("true"),
+				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
@@ -490,6 +506,8 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 				}),
 			),
 			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
 					"type":     "name",
 					"operator": "contains",
@@ -546,10 +564,14 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 	// Create two deployments
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-prod"
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-dev"
+	d2.ResourceSelector = &oapi.Selector{}
+	_ = d2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
 
 	// Create an environment
@@ -571,6 +593,12 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-all"
 	selector := c.NewPolicyTargetSelector()
+	selector.DeploymentSelector = &oapi.Selector{}
+	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector.EnvironmentSelector = &oapi.Selector{}
+	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector.ResourceSelector = &oapi.Selector{}
+	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
@@ -692,6 +720,8 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 	// Create a deployment
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-prod-high"
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment
@@ -720,6 +750,10 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 		"value":    "prod",
 	}})
 	selector1.DeploymentSelector = dep1Selector
+	selector1.EnvironmentSelector = &oapi.Selector{}
+	_ = selector1.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector1.ResourceSelector = &oapi.Selector{}
+	_ = selector1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy1.Selectors = []oapi.PolicyTargetSelector{*selector1}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy1)
 
@@ -734,6 +768,10 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 		"value":    "high",
 	}})
 	selector2.DeploymentSelector = dep2Selector
+	selector2.EnvironmentSelector = &oapi.Selector{}
+	_ = selector2.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector2.ResourceSelector = &oapi.Selector{}
+	_ = selector2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy2.Selectors = []oapi.PolicyTargetSelector{*selector2}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy2)
 
@@ -741,6 +779,12 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 	policy3 := c.NewPolicy(workspaceID)
 	policy3.Name = "policy-all"
 	selector3 := c.NewPolicyTargetSelector()
+	selector3.DeploymentSelector = &oapi.Selector{}
+	_ = selector3.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector3.EnvironmentSelector = &oapi.Selector{}
+	_ = selector3.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	selector3.ResourceSelector = &oapi.Selector{}
+	_ = selector3.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	policy3.Selectors = []oapi.PolicyTargetSelector{*selector3}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy3)
 

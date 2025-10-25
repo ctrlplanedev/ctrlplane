@@ -68,6 +68,10 @@ func NewProducer(brokers string, topic string, config *kafka.ConfigMap) (*Produc
 
 // Publish publishes a message to the topic
 func (p *Producer) Publish(key []byte, value []byte) error {
+	return p.PublishToPartition(key, value, kafka.PartitionAny)
+}
+
+func (p *Producer) PublishToPartition(key []byte, value []byte, partition int32) error {
 	if p.closed {
 		return fmt.Errorf("producer is closed")
 	}
@@ -75,7 +79,7 @@ func (p *Producer) Publish(key []byte, value []byte) error {
 	err := p.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &p.topic,
-			Partition: kafka.PartitionAny,
+			Partition: partition,
 		},
 		Key:   key,
 		Value: value,

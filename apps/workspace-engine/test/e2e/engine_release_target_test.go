@@ -20,6 +20,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1Id),
 				integration.DeploymentName("deployment-1"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
@@ -91,7 +92,9 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
-			integration.WithDeployment(),
+			integration.WithDeployment(
+				integration.DeploymentCelResourceSelector("true"),
+			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
 				integration.EnvironmentJsonResourceSelector(map[string]any{
@@ -127,7 +130,9 @@ func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
-			integration.WithDeployment(),
+			integration.WithDeployment(
+				integration.DeploymentCelResourceSelector("true"),
+			),
 			integration.WithEnvironment(
 				integration.EnvironmentJsonResourceSelector(map[string]any{
 					"type":     "name",
@@ -305,6 +310,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1Id),
 				integration.DeploymentName("deployment-sys1"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
@@ -370,10 +376,12 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1Id),
 				integration.DeploymentName("deployment-1"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2Id),
 				integration.DeploymentName("deployment-2"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
@@ -541,7 +549,9 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 	envId := "env-1"
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
-			integration.WithDeployment(),
+			integration.WithDeployment(
+				integration.DeploymentCelResourceSelector("true"),
+			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(envId),
 				integration.EnvironmentNoResourceSelector(),
@@ -586,7 +596,10 @@ func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
 		integration.WithSystem(
 			integration.SystemID(sysId),
 			integration.SystemName("test-system"),
-			integration.WithDeployment(integration.DeploymentID(d1Id)),
+			integration.WithDeployment(
+				integration.DeploymentID(d1Id),
+				integration.DeploymentCelResourceSelector("true"),
+			),
 			integration.WithEnvironment(integration.EnvironmentID(e1Id)),
 		),
 		integration.WithResource(),
@@ -637,10 +650,12 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1Id),
 				integration.DeploymentName("deployment-1"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2Id),
 				integration.DeploymentName("deployment-2"),
+				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1Id),
@@ -734,6 +749,8 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	// Recreate deployment
 	d3 := c.NewDeployment(sys.Id)
 	d3.Name = "deployment-3"
+	d3.ResourceSelector = &oapi.Selector{}
+	_ = d3.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d3)
 
 	// Should have 1 release target now (d3 × e1 × r1)

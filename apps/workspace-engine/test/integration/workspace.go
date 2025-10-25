@@ -10,9 +10,8 @@ import (
 	"time"
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
-
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type PersistenceMode int
@@ -149,21 +148,18 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 	// Create a mock Kafka message
 	topic := "test-topic"
 	partition := int32(0)
-	offset := kafka.Offset(1)
 
-	msg := &kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &topic,
-			Partition: partition,
-			Offset:    offset,
-		},
-		Value: eventBytes,
+	msg := &messaging.Message{
+		Key:       []byte(topic),
+		Value:     eventBytes,
+		Partition: partition,
+		Offset:    int64(1),
 	}
 
 	offsetTracker := handler.OffsetTracker{
 		LastCommittedOffset: 0,
 		LastWorkspaceOffset: 0,
-		MessageOffset:       int64(offset),
+		MessageOffset:       1,
 	}
 
 	if _, err := tw.eventListener.ListenAndRoute(ctx, msg, offsetTracker); err != nil {

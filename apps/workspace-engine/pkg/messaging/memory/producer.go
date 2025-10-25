@@ -31,6 +31,10 @@ func NewProducer(broker *Broker, topic string) *Producer {
 	}
 }
 
+func (p *Producer) PublishToPartition(key []byte, value []byte, partition int32) error {
+	return p.Publish(key, value)
+}
+
 // Publish publishes a message to the topic
 func (p *Producer) Publish(key []byte, value []byte) error {
 	p.mu.Lock()
