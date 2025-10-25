@@ -40,7 +40,10 @@ func NewTestWorkspace(
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
-	ws := registry.Workspaces.GetOrCreate(ctx, workspaceID)
+	ws, err := registry.Workspaces.GetOrCreate(context.Background(), workspaceID)
+	if err != nil {
+		t.Fatalf("failed to get or create workspace: %v", err)
+	}
 
 	tw := &TestWorkspace{}
 	tw.t = t

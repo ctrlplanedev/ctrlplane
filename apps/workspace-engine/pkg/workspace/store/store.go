@@ -2,8 +2,10 @@ package store
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"sync/atomic"
+	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -124,4 +126,8 @@ func (s *Store) GobDecode(data []byte) error {
 	s.ReleaseTargets = NewReleaseTargets(s)
 
 	return nil
+}
+
+func (s *Store) Restore(ctx context.Context, changes persistence.Changes) error {
+	return s.repo.ApplyRegistry().Apply(ctx, changes)
 }

@@ -15,9 +15,17 @@ type Registry struct {
 
 type RegistryOption func(*Registry)
 
-func WithPersistence(pm *persistence.Manager) RegistryOption {
+func WithPersistence(store persistence.Store) RegistryOption {
 	return func(r *Registry) {
-		r.persistence = pm
+		registry := r.persistence.ApplyRegistry()
+		r.persistence = persistence.NewManager(store, registry)
+	}
+}
+
+func WithApplyRegistry(registry *persistence.ApplyRegistry) RegistryOption {
+	return func(r *Registry) {
+		store := r.persistence.Store()
+		r.persistence = persistence.NewManager(store, registry)
 	}
 }
 

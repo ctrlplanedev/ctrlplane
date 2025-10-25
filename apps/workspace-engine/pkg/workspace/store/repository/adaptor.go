@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/persistence"
 )
 
+var _ persistence.Repository[any] = &RepositoryAdapter[any]{}
+
 // RepositoryAdapter bridges typed ConcurrentMap to Repository[any]
 type RepositoryAdapter[E any] struct {
 	cm *cmap.ConcurrentMap[string, E]
@@ -23,11 +25,11 @@ func (r *RepositoryAdapter[E]) typeAndKey(entity any) (typed E, key string, err 
 	if !ok {
 		return typed, "", fmt.Errorf("entity does not implement persistence.Entity interface")
 	}
-	_, key = keyer.ChangelogKey()
+	_, key = keyer.CompactionKey()
 	return typed, key, nil
 }
 
-func (r *RepositoryAdapter[E]) Create(ctx context.Context, entity any) error {
+func (r *RepositoryAdapter[E]) Set(ctx context.Context, entity any) error {
 	typed, key, err := r.typeAndKey(entity)
 	if err != nil {
 		return err
@@ -36,16 +38,7 @@ func (r *RepositoryAdapter[E]) Create(ctx context.Context, entity any) error {
 	return nil
 }
 
-func (r *RepositoryAdapter[E]) Update(ctx context.Context, entity any) error {
-	typed, key, err := r.typeAndKey(entity)
-	if err != nil {
-		return err
-	}
-	r.cm.Set(key, typed)
-	return nil
-}
-
-func (r *RepositoryAdapter[E]) Delete(ctx context.Context, entity any) error {
+func (r *RepositoryAdapter[E]) Unset(ctx context.Context, entity any) error {
 	_, key, err := r.typeAndKey(entity)
 	if err != nil {
 		return err

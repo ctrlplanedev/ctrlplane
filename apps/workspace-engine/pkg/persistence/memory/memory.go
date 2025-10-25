@@ -8,22 +8,24 @@ import (
 	"workspace-engine/pkg/persistence"
 )
 
-// Store is an in-memory implementation of ChangelogStore
-// Thread-safe and suitable for testing or development
+// Store is an in-memory implementation of persistence.Store
+// Thread-safe and suitable for testing or development.
+// This implementation performs topic compaction: only the latest state per entity is stored.
 type Store struct {
 	mu      sync.RWMutex
-	changes map[string]persistence.Changelog // workspaceID -> changes
+	// Maps namespace -> (entityType:entityID) -> latest change
+	snapshots map[string]map[string]persistence.Change
 }
 
-// NewStore creates a new in-memory changelog store
+// NewStore creates a new in-memory snapshot store
 func NewStore() *Store {
 	return &Store{
-		changes: make(map[string]persistence.Changelog),
+		snapshots: make(map[string]map[string]persistence.Change),
 	}
 }
 
-// Append adds changes to the in-memory store
-func (s *Store) Append(ctx context.Context, changes persistence.Changelog) error {
+// Save adds changes to the in-memory store, compacting per entity
+func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 	if len(changes) == 0 {
 		return nil
 	}
@@ -39,24 +41,39 @@ func (s *Store) Append(ctx context.Context, changes persistence.Changelog) error
 	}
 
 	for _, change := range changes {
-		s.changes[change.WorkspaceID] = append(s.changes[change.WorkspaceID], change)
+		// Ensure namespace map exists
+		if s.snapshots[change.Namespace] == nil {
+			s.snapshots[change.Namespace] = make(map[string]persistence.Change)
+		}
+
+		// Get entity key for compaction
+		entityType, entityID := change.Entity.CompactionKey()
+		key := entityType + ":" + entityID
+
+		// Compact: store only latest change per entity
+		// If ChangeType is Delete, we still store it (to track deletion state)
+		s.snapshots[change.Namespace][key] = change
 	}
 	return nil
 }
 
-// LoadAll retrieves all changes for a workspace
-func (s *Store) LoadAll(ctx context.Context, workspaceID string) (persistence.Changelog, error) {
+// Load retrieves the compacted snapshot for a namespace
+// Returns only the latest change per entity
+func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	changes := s.changes[workspaceID]
-	if changes == nil {
-		return persistence.Changelog{}, nil
+	entityMap := s.snapshots[namespace]
+	if entityMap == nil {
+		return persistence.Changes{}, nil
 	}
 
-	// Return a copy to prevent external modifications
-	result := make(persistence.Changelog, len(changes))
-	copy(result, changes)
+	// Convert map to slice
+	result := make(persistence.Changes, 0, len(entityMap))
+	for _, change := range entityMap {
+		result = append(result, change)
+	}
+
 	return result, nil
 }
 
@@ -65,23 +82,26 @@ func (s *Store) Close() error {
 	return nil
 }
 
-// Clear removes all changes (useful for testing)
+// Clear removes all snapshots (useful for testing)
 func (s *Store) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.changes = make(map[string]persistence.Changelog)
+	s.snapshots = make(map[string]map[string]persistence.Change)
 }
 
-// WorkspaceCount returns the number of workspaces in the store
-func (s *Store) WorkspaceCount() int {
+// NamespaceCount returns the number of namespaces in the store
+func (s *Store) NamespaceCount() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return len(s.changes)
+	return len(s.snapshots)
 }
 
-// ChangeCount returns the total number of changes for a workspace
-func (s *Store) ChangeCount(workspaceID string) int {
+// EntityCount returns the total number of entities (compacted) for a namespace
+func (s *Store) EntityCount(namespace string) int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return len(s.changes[workspaceID])
+	if s.snapshots[namespace] == nil {
+		return 0
+	}
+	return len(s.snapshots[namespace])
 }

@@ -20,37 +20,34 @@ type mockEntity struct {
 	name string
 }
 
-func (m *mockEntity) ChangelogKey() (string, string) {
+func (m *mockEntity) CompactionKey() (string, string) {
 	return "entity", m.id
 }
 
-func TestStore_AppendAndLoad(t *testing.T) {
+func TestStore_SaveAndLoad(t *testing.T) {
 	ctx := context.Background()
 	store := memory.NewStore()
-	workspaceID := "workspace-123"
+	namespace := "workspace-123"
 
 	// Create some changes using fluent API
-	changes := persistence.NewChangelogBuilder(workspaceID).
-		Create(&mockEntity{id: "entity-1", name: "Test Entity 1"}).
-		Update(&mockEntity{id: "entity-1", name: "Test Entity 1 Updated"}).
+	changes := persistence.NewChangesBuilder(namespace).
+		Set(&mockEntity{id: "entity-1", name: "Test Entity 1"}).
+		Set(&mockEntity{id: "entity-1", name: "Test Entity 1 Updated"}).
 		Build()
 
-	// Append changes
-	err := store.Append(ctx, changes)
+	// Save changes
+	err := store.Save(ctx, changes)
 	require.NoError(t, err)
 
-	// Load changes back
-	loaded, err := store.LoadAll(ctx, workspaceID)
+	// Load snapshot back
+	loaded, err := store.Load(ctx, namespace)
 	require.NoError(t, err)
 
-	// Verify count
-	assert.Len(t, loaded, 2)
+	// Verify count - should be 1 due to compaction (same entity, latest change)
+	assert.Len(t, loaded, 1, "Should only have 1 entity after compaction")
 
-	// Verify first change
-	assert.Equal(t, persistence.ChangeTypeCreate, loaded[0].ChangeType)
-
-	// Verify second change
-	assert.Equal(t, persistence.ChangeTypeUpdate, loaded[1].ChangeType)
+	// Verify it's the set (latest change for entity-1)
+	assert.Equal(t, persistence.ChangeTypeSet, loaded[0].ChangeType)
 }
 
 func TestStore_MultipleWorkspaces(t *testing.T) {
@@ -58,30 +55,30 @@ func TestStore_MultipleWorkspaces(t *testing.T) {
 	store := memory.NewStore()
 
 	// Add changes for workspace 1 using fluent API
-	changes1 := persistence.NewChangelogBuilder("workspace-1").
-		Create(&mockEntity{id: "e1", name: "Entity 1"}).
+	changes1 := persistence.NewChangesBuilder("workspace-1").
+		Set(&mockEntity{id: "e1", name: "Entity 1"}).
 		Build()
-	store.Append(ctx, changes1)
+	store.Save(ctx, changes1)
 
 	// Add changes for workspace 2 using fluent API
-	changes2 := persistence.NewChangelogBuilder("workspace-2").
-		Create(&mockEntity{id: "e2", name: "Entity 2"}).
-		Update(&mockEntity{id: "e2", name: "Entity 2 Updated"}).
+	changes2 := persistence.NewChangesBuilder("workspace-2").
+		Set(&mockEntity{id: "e2", name: "Entity 2"}).
+		Set(&mockEntity{id: "e2", name: "Entity 2 Updated"}).
 		Build()
-	store.Append(ctx, changes2)
+	store.Save(ctx, changes2)
 
-	// Verify workspace 1 has 1 change
-	loaded1, err := store.LoadAll(ctx, "workspace-1")
+	// Verify workspace 1 has 1 entity
+	loaded1, err := store.Load(ctx, "workspace-1")
 	require.NoError(t, err)
 	assert.Len(t, loaded1, 1)
 
-	// Verify workspace 2 has 2 changes
-	loaded2, err := store.LoadAll(ctx, "workspace-2")
+	// Verify workspace 2 has 1 entity (compacted from 2 changes)
+	loaded2, err := store.Load(ctx, "workspace-2")
 	require.NoError(t, err)
-	assert.Len(t, loaded2, 2)
+	assert.Len(t, loaded2, 1, "Should only have 1 entity after compaction")
 
 	// Verify workspace count
-	assert.Equal(t, 2, store.WorkspaceCount())
+	assert.Equal(t, 2, store.NamespaceCount())
 }
 
 func TestStore_EmptyWorkspace(t *testing.T) {
@@ -89,7 +86,7 @@ func TestStore_EmptyWorkspace(t *testing.T) {
 	store := memory.NewStore()
 
 	// Load from non-existent workspace
-	loaded, err := store.LoadAll(ctx, "non-existent")
+	loaded, err := store.Load(ctx, "non-existent")
 	require.NoError(t, err)
 	assert.Empty(t, loaded)
 }
@@ -99,16 +96,16 @@ func TestStore_AutoTimestamp(t *testing.T) {
 	store := memory.NewStore()
 
 	// Create change using fluent API (timestamp set automatically)
-	changes := persistence.NewChangelogBuilder("workspace-123").
-		Create(&mockEntity{id: "e1", name: "Entity 1"}).
+	changes := persistence.NewChangesBuilder("workspace-123").
+		Set(&mockEntity{id: "e1", name: "Entity 1"}).
 		Build()
 
 	before := time.Now().Add(-1 * time.Second) // Account for builder creation time
-	store.Append(ctx, changes)
+	store.Save(ctx, changes)
 	after := time.Now()
 
 	// Load back and verify timestamp was set
-	loaded, _ := store.LoadAll(ctx, "workspace-123")
+	loaded, _ := store.Load(ctx, "workspace-123")
 	if loaded[0].Timestamp.IsZero() {
 		t.Error("Timestamp was not set automatically")
 	}
@@ -123,46 +120,56 @@ func TestStore_Clear(t *testing.T) {
 	store := memory.NewStore()
 
 	// Add some changes using fluent API
-	changes := persistence.NewChangelogBuilder("workspace-123").
-		Create(&mockEntity{id: "e1", name: "Entity 1"}).
+	changes := persistence.NewChangesBuilder("workspace-123").
+		Set(&mockEntity{id: "e1", name: "Entity 1"}).
 		Build()
-	err := store.Append(ctx, changes)
+	err := store.Save(ctx, changes)
 	require.NoError(t, err)
 
 	// Verify changes exist
-	assert.Equal(t, 1, store.WorkspaceCount(), "Changes should be added")
+	assert.Equal(t, 1, store.NamespaceCount(), "Changes should be added")
 
 	// Clear the store
 	store.Clear()
 
 	// Verify store is empty
-	assert.Equal(t, 0, store.WorkspaceCount(), "Store should be cleared")
+	assert.Equal(t, 0, store.NamespaceCount(), "Store should be cleared")
 
-	loaded, err := store.LoadAll(ctx, "workspace-123")
+	loaded, err := store.Load(ctx, "workspace-123")
 	require.NoError(t, err)
 	assert.Empty(t, loaded, "Changes should be cleared")
 }
 
-func TestStore_ChangeCount(t *testing.T) {
+func TestStore_EntityCount(t *testing.T) {
 	ctx := context.Background()
 	store := memory.NewStore()
 
-	workspaceID := "workspace-123"
+	namespace := "workspace-123"
 
 	// Initially should be 0
-	assert.Equal(t, 0, store.ChangeCount(workspaceID), "Initial change count should be 0")
+	assert.Equal(t, 0, store.EntityCount(namespace), "Initial entity count should be 0")
 
-	// Add 3 changes using fluent API
+	// Add 3 changes for the SAME entity (should be compacted to 1)
 	for range 3 {
-		changes := persistence.NewChangelogBuilder(workspaceID).
-			Create(&mockEntity{id: "e1", name: "Entity"}).
+		changes := persistence.NewChangesBuilder(namespace).
+			Set(&mockEntity{id: "e1", name: "Entity"}).
 			Build()
-		err := store.Append(ctx, changes)
+		err := store.Save(ctx, changes)
 		require.NoError(t, err)
 	}
 
-	// Verify count
-	assert.Equal(t, 3, store.ChangeCount(workspaceID))
+	// Verify count - should be 1 due to compaction
+	assert.Equal(t, 1, store.EntityCount(namespace), "Should only have 1 entity after compaction")
+
+	// Add a change for a different entity
+	changes := persistence.NewChangesBuilder(namespace).
+		Set(&mockEntity{id: "e2", name: "Entity 2"}).
+		Build()
+	err := store.Save(ctx, changes)
+	require.NoError(t, err)
+
+	// Now should have 2 entities
+	assert.Equal(t, 2, store.EntityCount(namespace), "Should have 2 distinct entities")
 }
 
 func TestStore_ConcurrentAccess(t *testing.T) {
@@ -174,11 +181,11 @@ func TestStore_ConcurrentAccess(t *testing.T) {
 
 	for i := range 10 {
 		go func(id int) {
-			workspaceID := "workspace-" + string(rune(id))
-			changes := persistence.NewChangelogBuilder(workspaceID).
-				Create(&mockEntity{id: "e1", name: "Entity"}).
+			namespace := "workspace-" + string(rune(id))
+			changes := persistence.NewChangesBuilder(namespace).
+				Set(&mockEntity{id: "e1", name: "Entity"}).
 				Build()
-			store.Append(ctx, changes)
+			store.Save(ctx, changes)
 			done <- true
 		}(i)
 	}
@@ -189,7 +196,7 @@ func TestStore_ConcurrentAccess(t *testing.T) {
 	}
 
 	// Store should be in a valid state (no race conditions)
-	assert.Greater(t, store.WorkspaceCount(), 0, "Concurrent writes should succeed")
+	assert.Greater(t, store.NamespaceCount(), 0, "Concurrent writes should succeed")
 }
 
 func TestStore_Close(t *testing.T) {

@@ -2,25 +2,32 @@ package persistence
 
 import (
 	"context"
-	"errors"
 )
 
-// Manager orchestrates loading changesets and applying them
+// Manager orchestrates loading snapshots and applying them
 type Manager struct {
-	store    ChangelogStore
+	store    Store
 	registry *ApplyRegistry
 }
 
-func NewManager(store ChangelogStore, registry *ApplyRegistry) *Manager {
+func NewManager(store Store, registry *ApplyRegistry) *Manager {
 	return &Manager{
 		store:    store,
 		registry: registry,
 	}
 }
 
-// Restore loads and applies all changes for a workspace
-func (m *Manager) Restore(ctx context.Context, workspaceID string) error {
-	changes, err := m.store.LoadAll(ctx, workspaceID)
+func (m *Manager) ApplyRegistry() *ApplyRegistry {
+	return m.registry
+}
+
+func (m *Manager) Store() Store {
+	return m.store
+}
+
+// Restore loads and applies the current state snapshot for a namespace
+func (m *Manager) Restore(ctx context.Context, namespace string) error {
+	changes, err := m.store.Load(ctx, namespace)
 	if err != nil {
 		return err
 	}
@@ -28,14 +35,14 @@ func (m *Manager) Restore(ctx context.Context, workspaceID string) error {
 	return m.registry.Apply(ctx, changes)
 }
 
-// Persist appends new changes to the store
-func (m *Manager) Persist(ctx context.Context, changes Changelog) error {
-	return m.store.Append(ctx, changes)
+// Persist saves new changes to the store (will be compacted per entity)
+func (m *Manager) Persist(ctx context.Context, changes Changes) error {
+	return m.store.Save(ctx, changes)
 }
 
 // ManagerBuilder builds a manager fluently
 type ManagerBuilder struct {
-	store    ChangelogStore
+	store    Store
 	registry *ApplyRegistry
 }
 
@@ -47,7 +54,7 @@ func NewManagerBuilder() *ManagerBuilder {
 }
 
 // WithStore sets the store
-func (b *ManagerBuilder) WithStore(store ChangelogStore) *ManagerBuilder {
+func (b *ManagerBuilder) WithStore(store Store) *ManagerBuilder {
 	b.store = store
 	return b
 }
@@ -59,9 +66,6 @@ func (b *ManagerBuilder) RegisterRepository(entityType string, repo Repository[a
 }
 
 // Build creates the manager
-func (b *ManagerBuilder) Build() (*Manager, error) {
-	if b.store == nil {
-		return nil, errors.New("store is required")
-	}
-	return NewManager(b.store, b.registry), nil
+func (b *ManagerBuilder) Build() *Manager {
+	return NewManager(b.store, b.registry)
 }

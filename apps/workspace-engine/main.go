@@ -12,9 +12,10 @@ import (
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/kafka"
+	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
-	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/registry"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
@@ -120,7 +121,6 @@ func main() {
 		log.Fatal("Failed to bind flags", "error", err)
 	}
 
-	viper.SetEnvPrefix("WORKSPACE_ENGINE")
 	viper.AutomaticEnv()
 
 	// Initialize OpenTelemetry
@@ -140,6 +140,11 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	workspaceRegistry := registry.NewRegistry(
+		registry.WithPersistence(memory.NewStore()),
+	)
+	registry.SetRegistry(workspaceRegistry)
+
 	// Initialize Kafka producer for ticker
 	producer, err := kafka.NewProducer(kafka.Brokers)
 	if err != nil {
@@ -156,7 +161,7 @@ func main() {
 	defer consumer.Close()
 
 	go ticker.Every(ctx, time.Hour, func(ctx context.Context) {
-		ids := workspace.GetAllWorkspaceIds()
+		ids := registry.Workspaces.Keys()
 		log.Info("Sending workspace save event", "count", len(ids))
 		for _, id := range ids {
 			if err := workspacesave.SendWorkspaceSave(ctx, producer, id); err != nil {
@@ -166,7 +171,7 @@ func main() {
 	})
 
 	go ticker.Every(ctx, time.Minute, func(ctx context.Context) {
-		ids := workspace.GetAllWorkspaceIds()
+		ids := registry.Workspaces.Keys()
 		log.Info("Sending workspace ticks", "count", len(ids))
 		for _, id := range ids {
 			if err := tick.SendWorkspaceTick(ctx, producer, id); err != nil {

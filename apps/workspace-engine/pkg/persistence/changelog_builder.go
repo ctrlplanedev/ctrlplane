@@ -2,17 +2,17 @@ package persistence
 
 import "time"
 
-// ChangelogBuilder builds a changelog fluently
-type ChangelogBuilder struct {
-	workspaceID string
-	changes     Changelog
+// ChangesBuilder builds a changes collection fluently
+type ChangesBuilder struct {
+	namespace string
+	changes   Changes
 }
 
-// NewChangelogBuilder creates a new changelog builder
-func NewChangelogBuilder(workspaceID string) *ChangelogBuilder {
-	return &ChangelogBuilder{
-		workspaceID: workspaceID,
-		changes:     make(Changelog, 0),
+// NewChangesBuilder creates a new changes builder
+func NewChangesBuilder(namespace string) *ChangesBuilder {
+	return &ChangesBuilder{
+		namespace: namespace,
+		changes:   make(Changes, 0),
 	}
 }
 
@@ -25,13 +25,13 @@ func WithTimestamp(timestamp time.Time) ChangeOptions {
 	}
 }
 
-// Create adds a create change
-func (b *ChangelogBuilder) Create(entity Entity, options ...ChangeOptions) *ChangelogBuilder {
+// Set adds a set change (creates or updates an entity)
+func (b *ChangesBuilder) Set(entity Entity, options ...ChangeOptions) *ChangesBuilder {
 	change := &Change{
-		WorkspaceID: b.workspaceID,
-		ChangeType:  ChangeTypeCreate,
-		Entity:      entity,
-		Timestamp:   time.Now(),
+		Namespace:  b.namespace,
+		ChangeType: ChangeTypeSet,
+		Entity:     entity,
+		Timestamp:  time.Now(),
 	}
 	for _, option := range options {
 		option(change)
@@ -40,13 +40,13 @@ func (b *ChangelogBuilder) Create(entity Entity, options ...ChangeOptions) *Chan
 	return b
 }
 
-// Update adds an update change
-func (b *ChangelogBuilder) Update(entity Entity, options ...ChangeOptions) *ChangelogBuilder {
+// Unset adds an unset change (deletes an entity)
+func (b *ChangesBuilder) Unset(entity Entity, options ...ChangeOptions) *ChangesBuilder {
 	change := &Change{
-		WorkspaceID: b.workspaceID,
-		ChangeType:  ChangeTypeUpdate,
-		Entity:      entity,
-		Timestamp:   time.Now(),
+		Namespace:  b.namespace,
+		ChangeType: ChangeTypeUnset,
+		Entity:     entity,
+		Timestamp:  time.Now(),
 	}
 	for _, option := range options {
 		option(change)
@@ -55,22 +55,7 @@ func (b *ChangelogBuilder) Update(entity Entity, options ...ChangeOptions) *Chan
 	return b
 }
 
-// Delete adds a delete change
-func (b *ChangelogBuilder) Delete(entity Entity, options ...ChangeOptions) *ChangelogBuilder {
-	change := &Change{
-		WorkspaceID: b.workspaceID,
-		ChangeType:  ChangeTypeDelete,
-		Entity:      entity,
-		Timestamp:   time.Now(),
-	}
-	for _, option := range options {
-		option(change)
-	}
-	b.changes = append(b.changes, *change)
-	return b
-}
-
-// Build returns the built changelog
-func (b *ChangelogBuilder) Build() Changelog {
+// Build returns the built changes
+func (b *ChangesBuilder) Build() Changes {
 	return b.changes
 }

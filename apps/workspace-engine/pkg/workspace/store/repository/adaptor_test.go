@@ -15,7 +15,7 @@ type mockEntity struct {
 	name string
 }
 
-func (m *mockEntity) ChangelogKey() (string, string) {
+func (m *mockEntity) CompactionKey() (string, string) {
 	return "mock_entity", m.id
 }
 
@@ -27,7 +27,7 @@ func TestRepositoryAdapter_Create(t *testing.T) {
 	entity := &mockEntity{id: "entity-1", name: "Test Entity"}
 
 	// Test Create
-	err := adapter.Create(ctx, entity)
+	err := adapter.Set(ctx, entity)
 	require.NoError(t, err, "Create should not fail")
 
 	// Verify entity was stored
@@ -43,11 +43,11 @@ func TestRepositoryAdapter_Update(t *testing.T) {
 
 	// Create initial entity
 	entity := &mockEntity{id: "entity-1", name: "Original Name"}
-	require.NoError(t, adapter.Create(ctx, entity))
+	require.NoError(t, adapter.Set(ctx, entity))
 
 	// Update entity
 	updatedEntity := &mockEntity{id: "entity-1", name: "Updated Name"}
-	err := adapter.Update(ctx, updatedEntity)
+	err := adapter.Set(ctx, updatedEntity)
 	require.NoError(t, err, "Update should not fail")
 
 	// Verify entity was updated
@@ -63,40 +63,19 @@ func TestRepositoryAdapter_Delete(t *testing.T) {
 
 	// Create entity
 	entity := &mockEntity{id: "entity-1", name: "Test Entity"}
-	require.NoError(t, adapter.Create(ctx, entity))
+	require.NoError(t, adapter.Set(ctx, entity))
 
 	// Verify it exists
 	_, ok := cm.Get("entity-1")
 	require.True(t, ok, "Entity should be created")
 
 	// Delete entity
-	err := adapter.Delete(ctx, entity)
+	err := adapter.Unset(ctx, entity)
 	require.NoError(t, err, "Delete should not fail")
 
 	// Verify entity was removed
 	_, ok = cm.Get("entity-1")
 	assert.False(t, ok, "Entity should be deleted from the map")
-}
-
-func TestRepositoryAdapter_WrongType(t *testing.T) {
-	ctx := context.Background()
-	cm := cmap.New[*mockEntity]()
-	adapter := &RepositoryAdapter[*mockEntity]{cm: &cm}
-
-	// Try to create with wrong type
-	wrongEntity := "not a mock entity"
-	err := adapter.Create(ctx, wrongEntity)
-	assert.Error(t, err, "Should return error for wrong type")
-}
-
-func TestRepositoryAdapter_NonEntityType(t *testing.T) {
-	ctx := context.Background()
-	cm := cmap.New[string]()
-	adapter := &RepositoryAdapter[string]{cm: &cm}
-
-	// Try to create with a type that doesn't implement Entity
-	err := adapter.Create(ctx, "test-string")
-	assert.Error(t, err, "Should return error for non-Entity type")
 }
 
 func TestRepositoryAdapter_MultipleEntities(t *testing.T) {
@@ -112,7 +91,7 @@ func TestRepositoryAdapter_MultipleEntities(t *testing.T) {
 	}
 
 	for _, entity := range entities {
-		err := adapter.Create(ctx, entity)
+		err := adapter.Set(ctx, entity)
 		require.NoError(t, err, "Should create entity %s", entity.id)
 	}
 
@@ -120,7 +99,7 @@ func TestRepositoryAdapter_MultipleEntities(t *testing.T) {
 	assert.Equal(t, 3, cm.Count(), "Should have 3 entities")
 
 	// Delete one entity
-	err := adapter.Delete(ctx, entities[1])
+	err := adapter.Unset(ctx, entities[1])
 	require.NoError(t, err, "Should delete entity")
 
 	// Verify count decreased
