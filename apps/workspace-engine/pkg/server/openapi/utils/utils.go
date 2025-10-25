@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/registry"
+	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +18,7 @@ func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, err
 		return nil, fmt.Errorf("workspace %s not found in database", workspaceId)
 	}
 
-	if exists, ok := registry.Workspaces.Get(workspaceId); ok {
+	if exists, ok := manager.Workspaces().Get(workspaceId); ok {
 		return exists, nil
 	}
 
