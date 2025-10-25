@@ -18,66 +18,51 @@ import { createGithubRouter } from "./routes/github/index.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const app = express();
-
-// Set the application to trust the reverse proxy
-app.set("trust proxy", true);
-
-// Middleware
-app.use(cors({ credentials: true }));
-app.use(helmet());
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(cookieParser());
-
-app.use((req, res, next) => {
-  res.on("finish", () => {
-    console.log(`${res.statusCode} - ${req.method} ${req.originalUrl}`);
-  });
-  next();
+const oapiValidatorMiddleware = OpenApiValidator.middleware({
+  apiSpec: join(__dirname, "../openapi/openapi.json"),
+  validateRequests: true,
+  validateResponses: true,
+  ignorePaths: /\/api\/(auth|internal|trpc|github)/,
 });
 
-app.all("/api/auth/*splat", toNodeHandler(auth));
+const trpcMiddleware = trpcExpress.createExpressMiddleware({
+  router: appRouter,
+  createContext: async (opts) => {
+    const headers = Object.fromEntries(
+      Object.entries(opts.req.headers)
+        .filter(([_, v]) => typeof v === "string")
+        .map(([k, v]) => [k, v as string]),
+    );
 
-// Optional: OpenAPI validation middleware
-app.use(
-  OpenApiValidator.middleware({
-    apiSpec: join(__dirname, "../openapi/openapi.json"),
-    validateRequests: true,
-    validateResponses: true,
-    ignorePaths: /\/api\/(auth|internal|trpc|github)/,
-  }),
-);
+    const session =
+      (await auth.api.getSession({
+        headers: new Headers(headers),
+      })) ?? null;
 
-// Apply authentication middleware to all /api/v1 routes
-app.use("/api/v1", requireAuth);
+    return createTRPCContext(session);
+  },
+});
 
-// Register v1 API routes
-app.use("/api/v1", createV1Router());
+const loggerMiddleware: express.RequestHandler = (req, res, next) => {
+  res.on("finish", () =>
+    console.log(`${res.statusCode} - ${req.method} ${req.originalUrl}`),
+  );
+  next();
+};
 
-// Register github webhook routes
-app.use("/api/github", createGithubRouter());
-
-app.use(
-  "/api/trpc",
-  trpcExpress.createExpressMiddleware({
-    router: appRouter,
-    createContext: async (opts) => {
-      const headers = Object.fromEntries(
-        Object.entries(opts.req.headers)
-          .filter(([_, v]) => typeof v === "string")
-          .map(([k, v]) => [k, v as string]),
-      );
-
-      const session =
-        (await auth.api.getSession({
-          headers: new Headers(headers),
-        })) ?? null;
-
-      return createTRPCContext(session);
-    },
-  }),
-);
+const app = express()
+  .set("trust proxy", true)
+  .use(cors({ credentials: true }))
+  .use(helmet())
+  .use(express.urlencoded({ extended: true }))
+  .use(express.json())
+  .use(cookieParser())
+  .use(loggerMiddleware)
+  .all("/api/auth/*splat", toNodeHandler(auth))
+  .use(oapiValidatorMiddleware)
+  .use("/api/v1", requireAuth)
+  .use("/api/v1", createV1Router())
+  .use("/api/github", createGithubRouter())
+  .use("/api/trpc", trpcMiddleware);
 
 export { app };
