@@ -63,7 +63,7 @@ func (c *Consumer) Subscribe(topicName string) error {
 }
 
 // ReadMessage reads the next message with a timeout
-// Returns nil message and nil error on timeout
+// Returns ErrTimeout if no message is available within the timeout duration
 func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error) {
 	c.mu.Lock()
 	if c.closed {
@@ -82,7 +82,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 	for {
 		// Check timeout
 		if time.Since(startTime) >= timeout {
-			return nil, nil // Timeout - no message available
+			return nil, messaging.ErrTimeout
 		}
 
 		c.mu.Lock()
@@ -92,7 +92,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 		for partitionsChecked < len(c.assignedParts) {
 			if len(c.assignedParts) == 0 {
 				c.mu.Unlock()
-				return nil, nil
+				return nil, messaging.ErrTimeout
 			}
 
 			// Get current partition

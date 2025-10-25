@@ -2,8 +2,17 @@ package messaging
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 )
+
+// ErrTimeout is returned when ReadMessage times out waiting for a message
+var ErrTimeout = errors.New("timeout waiting for message")
+
+// IsTimeout checks if an error is a timeout error
+func IsTimeout(err error) bool {
+	return errors.Is(err, ErrTimeout)
+}
 
 // Message represents a consumed message, abstracted from any specific messaging library
 type Message struct {
@@ -34,7 +43,7 @@ type Consumer interface {
 	Subscribe(topic string) error
 
 	// ReadMessage reads the next message with a timeout
-	// Returns nil message and nil error on timeout
+	// Returns ErrTimeout if no message is available within the timeout duration
 	ReadMessage(timeout time.Duration) (*Message, error)
 
 	// CommitMessage commits the offset for a message

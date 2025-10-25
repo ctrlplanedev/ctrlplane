@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"workspace-engine/pkg/changeset"
+	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -113,12 +113,11 @@ type OffsetTracker struct {
 }
 
 // ListenAndRoute processes incoming Kafka messages and routes them to the appropriate handler
-func (el *EventListener) ListenAndRoute(ctx context.Context, msg *kafka.Message, offsetTracker OffsetTracker) (*workspace.Workspace, error) {
+func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Message, offsetTracker OffsetTracker) (*workspace.Workspace, error) {
 	ctx, span := tracer.Start(ctx, "ListenAndRoute",
 		trace.WithAttributes(
-			attribute.String("kafka.topic", *msg.TopicPartition.Topic),
-			attribute.Int("kafka.partition", int(msg.TopicPartition.Partition)),
-			attribute.Int64("kafka.offset", int64(msg.TopicPartition.Offset)),
+			attribute.Int("kafka.partition", int(msg.Partition)),
+			attribute.Int64("kafka.offset", msg.Offset),
 			attribute.String("event.data", string(msg.Value)),
 		))
 	defer span.End()

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"workspace-engine/pkg/messaging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -80,7 +82,8 @@ func TestProducerAndConsumer(t *testing.T) {
 
 	// Try to read when no messages available (should timeout)
 	msg3, err := consumer.ReadMessage(100 * time.Millisecond)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, messaging.IsTimeout(err))
 	assert.Nil(t, msg3)
 }
 
@@ -355,7 +358,8 @@ func TestE2E_BasicWorkflow(t *testing.T) {
 
 	// Verify no more messages
 	msg, err := consumer.ReadMessage(100 * time.Millisecond)
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	assert.True(t, messaging.IsTimeout(err), "should timeout when no more messages")
 	assert.Nil(t, msg, "should not have any more messages")
 }
 
@@ -637,10 +641,11 @@ func TestE2E_ConcurrentConsumers(t *testing.T) {
 			for {
 				msg, err := consumer.ReadMessage(200 * time.Millisecond)
 				if err != nil {
+					if messaging.IsTimeout(err) {
+						break // Timeout - no more messages for us
+					}
+					t.Errorf("unexpected error: %v", err)
 					break
-				}
-				if msg == nil {
-					break // Timeout - no more messages for us
 				}
 
 				var event map[string]any
@@ -733,9 +738,10 @@ func TestE2E_DifferentConsumerGroups(t *testing.T) {
 			for range messageCount {
 				msg, err := consumer.ReadMessage(time.Second)
 				if err != nil {
-					break
-				}
-				if msg == nil {
+					if messaging.IsTimeout(err) {
+						break
+					}
+					t.Errorf("unexpected error: %v", err)
 					break
 				}
 				messagesRead++

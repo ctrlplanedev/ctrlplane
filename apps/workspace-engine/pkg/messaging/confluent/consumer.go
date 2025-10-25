@@ -187,7 +187,7 @@ func extractPartitionNumbers(assignment []kafka.TopicPartition) []int32 {
 }
 
 // ReadMessage reads the next message with a timeout
-// Returns nil message and nil error on timeout
+// Returns ErrTimeout if no message is available within the timeout duration
 func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error) {
 	if c.closed {
 		return nil, fmt.Errorf("consumer is closed")
@@ -198,7 +198,7 @@ func (c *Consumer) ReadMessage(timeout time.Duration) (*messaging.Message, error
 		// Check if it's a timeout error
 		if kafkaErr, ok := err.(kafka.Error); ok {
 			if kafkaErr.Code() == kafka.ErrTimedOut {
-				return nil, nil // Timeout - no message available
+				return nil, messaging.ErrTimeout
 			}
 		}
 		return nil, fmt.Errorf("error reading message: %w", err)

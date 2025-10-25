@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/messaging/confluent"
 
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -15,10 +17,10 @@ import (
 var tracer = otel.Tracer("kafka/consumer")
 
 // createConsumer initializes a new Kafka consumer with the configured settings
-func createConsumer() (*kafka.Consumer, error) {
+func createConsumer() (messaging.Consumer, error) {
 	log.Info("Connecting to Kafka", "brokers", Brokers)
 
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
+	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":               Brokers,
 		"group.id":                        GroupID,
 		"auto.offset.reset":               "earliest",
@@ -27,14 +29,15 @@ func createConsumer() (*kafka.Consumer, error) {
 		"session.timeout.ms":              10000,
 		"heartbeat.interval.ms":           3000,
 		"go.application.rebalance.enable": true, // Enable rebalance callbacks
-	})
+	}
 
+	consumer, err := confluent.NewConfluent(Brokers).CreateConsumer(GroupID, cfg)
 	if err != nil {
 		log.Error("Failed to create consumer", "error", err)
 		return nil, err
 	}
 
-	return c, nil
+	return consumer, nil
 }
 
 func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
@@ -60,7 +63,7 @@ func getEarliestOffset(snapshots map[string]*db.WorkspaceSnapshot) int64 {
 	return earliestOffset
 }
 
-func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspaceMap map[int32][]string) error {
+func setOffsets(ctx context.Context, consumer messaging.Consumer, partitionWorkspaceMap map[int32][]string) error {
 	ctx, span := tracer.Start(ctx, "setOffsets")
 	defer span.End()
 
@@ -86,11 +89,7 @@ func setOffsets(ctx context.Context, consumer *kafka.Consumer, partitionWorkspac
 				attribute.Int("effective_offset", int(effectiveOffset)),
 			),
 		)
-		if err := consumer.Seek(kafka.TopicPartition{
-			Topic:     &Topic,
-			Partition: partition,
-			Offset:    kafka.Offset(effectiveOffset),
-		}, 0); err != nil {
+		if err := consumer.SeekToOffset(partition, effectiveOffset); err != nil {
 			log.Error("Failed to seek to earliest offset", "error", err)
 			return err
 		}
