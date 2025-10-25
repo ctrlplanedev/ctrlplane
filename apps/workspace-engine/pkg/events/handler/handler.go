@@ -7,7 +7,7 @@ import (
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/registry"
+	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
@@ -152,7 +152,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 
 	changeSet := changeset.NewChangeSet[any]()
 
-	ws, err := registry.Workspaces.GetOrLoad(ctx, rawEvent.WorkspaceID)
+	ws, err := manager.GetOrLoad(ctx, rawEvent.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}

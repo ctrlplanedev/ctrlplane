@@ -156,7 +156,7 @@ func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
 
 	targets := map[string]*oapi.ReleaseTarget{
 		target1.Key(): target1,
-		target2.Key(): target2,	
+		target2.Key(): target2,
 	}
 
 	// Create changeset with policy change

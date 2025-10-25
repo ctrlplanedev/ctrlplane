@@ -10,13 +10,13 @@ import (
 
 func NewDeploymentVariables(store *Store) *DeploymentVariables {
 	return &DeploymentVariables{
-		repo: store.repo,
+		repo:  store.repo,
 		store: store,
 	}
 }
 
 type DeploymentVariables struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 }
 

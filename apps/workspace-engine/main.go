@@ -15,7 +15,8 @@ import (
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
-	"workspace-engine/pkg/workspace/registry"
+	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
@@ -110,6 +111,13 @@ func initTracer() (func(), error) {
 	}, nil
 }
 
+func init() {
+	manager.Configure(
+		manager.WithPersistentStore(memory.NewStore()),
+		manager.WithWorkspaceCreateOptions(workspace.WithDefaultSystem()),
+	)
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -140,11 +148,6 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	workspaceRegistry := registry.NewRegistry(
-		registry.WithPersistence(memory.NewStore()),
-	)
-	registry.SetRegistry(workspaceRegistry)
-
 	// Initialize Kafka producer for ticker
 	producer, err := kafka.NewProducer(kafka.Brokers)
 	if err != nil {
@@ -161,7 +164,7 @@ func main() {
 	defer consumer.Close()
 
 	go ticker.Every(ctx, time.Hour, func(ctx context.Context) {
-		ids := registry.Workspaces.Keys()
+		ids := manager.Workspaces().Keys()
 		log.Info("Sending workspace save event", "count", len(ids))
 		for _, id := range ids {
 			if err := workspacesave.SendWorkspaceSave(ctx, producer, id); err != nil {
@@ -171,7 +174,7 @@ func main() {
 	})
 
 	go ticker.Every(ctx, time.Minute, func(ctx context.Context) {
-		ids := registry.Workspaces.Keys()
+		ids := manager.Workspaces().Keys()
 		log.Info("Sending workspace ticks", "count", len(ids))
 		for _, id := range ids {
 			if err := tick.SendWorkspaceTick(ctx, producer, id); err != nil {

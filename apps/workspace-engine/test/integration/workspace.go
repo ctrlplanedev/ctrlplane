@@ -12,7 +12,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/registry"
+	"workspace-engine/pkg/workspace/manager"
 )
 
 type PersistenceMode int
@@ -40,7 +40,7 @@ func NewTestWorkspace(
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())
-	ws, err := registry.Workspaces.GetOrLoad(context.Background(), workspaceID)
+	ws, err := manager.GetOrLoad(context.Background(), workspaceID)
 	if err != nil {
 		t.Fatalf("failed to get or create workspace: %v", err)
 	}

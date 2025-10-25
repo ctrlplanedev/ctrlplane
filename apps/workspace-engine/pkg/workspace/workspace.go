@@ -12,7 +12,7 @@ import (
 var _ gob.GobEncoder = (*Workspace)(nil)
 var _ gob.GobDecoder = (*Workspace)(nil)
 
-func Load(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
+func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
 	cs := statechange.NewChangeSet[any]()
 	s := store.New(cs)
 	rm := releasemanager.New(s)
@@ -165,7 +165,6 @@ func (w *Workspace) DeploymentVariables() *store.DeploymentVariables {
 func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
 }
-
 
 func (w *Workspace) Changeset() *statechange.ChangeSet[any] {
 	return w.changeset

@@ -10,14 +10,14 @@ import (
 type ResourceProviders struct {
 	repo      *repository.Repository
 	resources *Resources
-	store *Store
+	store     *Store
 }
 
 func NewResourceProviders(store *Store) *ResourceProviders {
 	return &ResourceProviders{
 		repo:      store.repo,
 		resources: store.Resources,
-		store: store,
+		store:     store,
 	}
 }
 

@@ -8,13 +8,13 @@ import (
 )
 
 type UserApprovalRecords struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 }
 
 func NewUserApprovalRecords(store *Store) *UserApprovalRecords {
 	return &UserApprovalRecords{
-		repo: store.repo,
+		repo:  store.repo,
 		store: store,
 	}
 }

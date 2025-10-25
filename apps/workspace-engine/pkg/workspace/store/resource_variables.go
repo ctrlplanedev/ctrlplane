@@ -10,13 +10,13 @@ import (
 
 func NewResourceVariables(store *Store) *ResourceVariables {
 	return &ResourceVariables{
-		repo: store.repo,
+		repo:  store.repo,
 		store: store,
 	}
 }
 
 type ResourceVariables struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 }
 

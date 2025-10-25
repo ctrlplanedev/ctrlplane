@@ -9,13 +9,13 @@ import (
 
 func NewJobs(store *Store) *Jobs {
 	return &Jobs{
-		repo: store.repo,
+		repo:  store.repo,
 		store: store,
 	}
 }
 
 type Jobs struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 }
 

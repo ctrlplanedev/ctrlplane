@@ -9,13 +9,13 @@ import (
 )
 
 type GithubEntities struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 }
 
 func NewGithubEntities(store *Store) *GithubEntities {
 	return &GithubEntities{
-		repo: store.repo,
+		repo:  store.repo,
 		store: store,
 	}
 }

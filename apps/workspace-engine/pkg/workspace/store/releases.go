@@ -9,13 +9,13 @@ import (
 
 func NewReleases(store *Store) *Releases {
 	return &Releases{
-		repo: store.repo,
+		repo:  store.repo,
 		store: store,
 	}
 }
 
 type Releases struct {
-	repo *repository.Repository
+	repo  *repository.Repository
 	store *Store
 }
 
