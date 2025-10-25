@@ -299,12 +299,14 @@ func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
 				integration.DeploymentID(deploymentID),
 				integration.DeploymentName("test-deployment"),
 				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

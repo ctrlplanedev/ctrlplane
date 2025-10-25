@@ -365,17 +365,15 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
@@ -423,6 +421,8 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	// Create a deployment WITHOUT a job agent
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	// No JobAgentId set
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
@@ -430,11 +430,7 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
@@ -498,11 +494,13 @@ func TestEngine_JobCreatedWithInvalidJobAgent(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("no-agent-deployment"),
+				integration.DeploymentCelResourceSelector("true"),
 				// No job agent specified - this is the key test condition
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -631,22 +629,22 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-2"
 	d2.JobAgentId = &jobAgent.Id
+	d2.ResourceSelector = &oapi.Selector{}
+	_ = d2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
@@ -743,6 +741,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -750,6 +749,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID("env-prod"),
 				integration.EnvironmentName("env-prod"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -857,6 +857,7 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1Id),
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionID(dv1Id),
 					integration.DeploymentVersionTag("v1.0.0"),
@@ -958,12 +959,16 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
 				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionID(dv1Id),
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
 			),
-			integration.WithEnvironment(integration.EnvironmentName("env-prod")),
+			integration.WithEnvironment(
+				integration.EnvironmentName("env-prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
 		),
 		integration.WithResource(integration.ResourceID(r1Id)),
 		integration.WithResource(integration.ResourceID(r2Id)),
@@ -1056,6 +1061,8 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
+	d1.ResourceSelector = &oapi.Selector{}
+	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
 	// Create two environments
