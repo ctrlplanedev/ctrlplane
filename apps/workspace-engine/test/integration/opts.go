@@ -74,13 +74,6 @@ func newEventsBuilder() *eventsBuilder {
 
 // ===== Workspace Options =====
 
-func WithWorkspaceID(id string) WorkspaceOption {
-	return func(ws *TestWorkspace) error {
-		ws.workspace.ID = id
-		return nil
-	}
-}
-
 func WithSystem(options ...SystemOption) WorkspaceOption {
 	return func(ws *TestWorkspace) error {
 		s := c.NewSystem(ws.workspace.ID)
