@@ -84,6 +84,9 @@ const workspaceHandlers: Record<Event, Handler<any>> = {
   [Event.GithubEntityUpdated]: () => Promise.resolve(),
   [Event.GithubEntityDeleted]: () => Promise.resolve(),
   [Event.Redeploy]: () => Promise.resolve(),
+  [Event.RelationshipRuleCreated]: () => Promise.resolve(),
+  [Event.RelationshipRuleUpdated]: () => Promise.resolve(),
+  [Event.RelationshipRuleDeleted]: () => Promise.resolve(),
 };
 
 export type Handler<T extends keyof EventPayload> = (
