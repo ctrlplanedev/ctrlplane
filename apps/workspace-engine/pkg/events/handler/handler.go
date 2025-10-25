@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 
@@ -175,6 +176,27 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		span.SetStatus(codes.Error, "failed to process target changes")
 		log.Error("Failed to process target changes", "error", err)
 		return ws, fmt.Errorf("failed to process target changes: %w", err)
+	}
+
+
+	changes := make([]persistence.Change, 0)
+	for _, change := range ws.Changeset().Changes() {
+		entity, ok := change.Entity.(persistence.Entity)
+		if !ok {
+			continue
+		}
+		changes = append(changes, persistence.Change{
+			Namespace:  ws.ID,
+			ChangeType: persistence.ChangeTypeSet,
+			Entity:     entity,
+			Timestamp:  change.Timestamp,
+		})
+	}
+
+	if err := manager.PersistenceStore().Save(ctx, changes); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to save changes")
+		log.Error("Failed to save changes", "error", err)
 	}
 
 	ws.Changeset().Clear()

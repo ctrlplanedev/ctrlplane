@@ -9,7 +9,7 @@ import (
 
 type WorkspaceOption func(*Workspace)
 
-func WithDefaultSystem() WorkspaceOption {
+func AddDefaultSystem() WorkspaceOption {
 	return func(ws *Workspace) {
 		ws.Systems().Upsert(context.Background(), &oapi.System{
 			Id:          "00000000-0000-0000-0000-000000000000",

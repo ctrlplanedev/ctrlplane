@@ -114,7 +114,7 @@ func initTracer() (func(), error) {
 func init() {
 	manager.Configure(
 		manager.WithPersistentStore(memory.NewStore()),
-		manager.WithWorkspaceCreateOptions(workspace.WithDefaultSystem()),
+		manager.WithWorkspaceCreateOptions(workspace.AddDefaultSystem()),
 	)
 }
 
