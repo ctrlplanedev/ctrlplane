@@ -1,7 +1,7 @@
 CREATE TABLE "changelog_entry" (
 	"workspace_id" uuid NOT NULL,
 	"entity_type" text NOT NULL,
-	"entity_id" uuid NOT NULL,
+	"entity_id" text NOT NULL,
 	"entity_data" jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "changelog_entry_workspace_id_entity_type_entity_id_pk" PRIMARY KEY("workspace_id","entity_type","entity_id")

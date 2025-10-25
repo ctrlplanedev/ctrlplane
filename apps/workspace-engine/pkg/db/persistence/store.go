@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 	"workspace-engine/pkg/db"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 
 	"github.com/jackc/pgx/v5"
@@ -161,7 +163,162 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 }
 
 func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes, error) {
-	return nil, nil
+	sql := `
+		SELECT entity_type, entity_id, entity_data, created_at
+		FROM changelog_entry
+		WHERE workspace_id = $1
+		ORDER BY created_at ASC
+	`
+
+	rows, err := s.conn.Query(ctx, sql, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query changelog entries: %w", err)
+	}
+	defer rows.Close()
+
+	var changes persistence.Changes
+
+	for rows.Next() {
+		var entityType, entityID string
+		var entityData []byte
+		var createdAt time.Time
+
+		if err := rows.Scan(&entityType, &entityID, &entityData, &createdAt); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		// Unmarshal based on entity type
+		entity, err := unmarshalEntity(entityType, entityData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal entity type %s with id %s: %w", entityType, entityID, err)
+		}
+
+		changes = append(changes, persistence.Change{
+			Namespace:  namespace,
+			ChangeType: persistence.ChangeTypeSet, // All loaded entities are "set" type
+			Entity:     entity,
+			Timestamp:  createdAt,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return changes, nil
+}
+
+// unmarshalEntity unmarshals entity data based on entity type
+func unmarshalEntity(entityType string, data []byte) (persistence.Entity, error) {
+	switch entityType {
+	case "resource":
+		var entity oapi.Resource
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "resource_provider":
+		var entity oapi.ResourceProvider
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "resource_variable":
+		var entity oapi.ResourceVariable
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "deployment":
+		var entity oapi.Deployment
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "deployment_version":
+		var entity oapi.DeploymentVersion
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "deployment_variable":
+		var entity oapi.DeploymentVariable
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "environment":
+		var entity oapi.Environment
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "policy":
+		var entity oapi.Policy
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "system":
+		var entity oapi.System
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "release":
+		var entity oapi.Release
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "job":
+		var entity oapi.Job
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "job_agent":
+		var entity oapi.JobAgent
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "user_approval_record":
+		var entity oapi.UserApprovalRecord
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "relationship_rule":
+		var entity oapi.RelationshipRule
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	case "github_entity":
+		var entity oapi.GithubEntity
+		if err := json.Unmarshal(data, &entity); err != nil {
+			return nil, err
+		}
+		return &entity, nil
+
+	default:
+		return nil, fmt.Errorf("unknown entity type: %s", entityType)
+	}
 }
 
 func (s *Store) Close() error {
