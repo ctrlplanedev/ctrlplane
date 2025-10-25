@@ -10,11 +10,13 @@ import (
 func NewJobAgents(store *Store) *JobAgents {
 	return &JobAgents{
 		repo: store.repo,
+		store: store,
 	}
 }
 
 type JobAgents struct {
 	repo *repository.Repository
+	store *Store
 }
 
 func (j *JobAgents) Upsert(ctx context.Context, jobAgent *oapi.JobAgent) {

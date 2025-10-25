@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"sync/atomic"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store/repository"
@@ -16,7 +15,6 @@ var _ gob.GobDecoder = (*Store)(nil)
 func New(changeset *statechange.ChangeSet[any]) *Store {
 	repo := repository.New()
 	store := &Store{repo: repo, changeset: changeset}
-	store.isReplay.Store(false)
 
 	store.Deployments = NewDeployments(store)
 	store.Environments = NewEnvironments(store)
@@ -60,8 +58,6 @@ type Store struct {
 	Relationships       *RelationshipRules
 	Variables           *Variables
 	GithubEntities      *GithubEntities
-
-	isReplay atomic.Bool
 }
 
 func (s *Store) Repo() *repository.Repository {

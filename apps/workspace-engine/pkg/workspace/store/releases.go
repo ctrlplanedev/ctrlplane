@@ -10,11 +10,13 @@ import (
 func NewReleases(store *Store) *Releases {
 	return &Releases{
 		repo: store.repo,
+		store: store,
 	}
 }
 
 type Releases struct {
 	repo *repository.Repository
+	store *Store
 }
 
 func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {

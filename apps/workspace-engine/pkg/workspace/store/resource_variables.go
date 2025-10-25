@@ -11,11 +11,13 @@ import (
 func NewResourceVariables(store *Store) *ResourceVariables {
 	return &ResourceVariables{
 		repo: store.repo,
+		store: store,
 	}
 }
 
 type ResourceVariables struct {
 	repo *repository.Repository
+	store *Store
 }
 
 func (r *ResourceVariables) IterBuffered() <-chan cmap.Tuple[string, *oapi.ResourceVariable] {

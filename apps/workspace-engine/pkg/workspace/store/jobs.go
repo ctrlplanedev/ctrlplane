@@ -10,11 +10,13 @@ import (
 func NewJobs(store *Store) *Jobs {
 	return &Jobs{
 		repo: store.repo,
+		store: store,
 	}
 }
 
 type Jobs struct {
 	repo *repository.Repository
+	store *Store
 }
 
 func (j *Jobs) Items() map[string]*oapi.Job {

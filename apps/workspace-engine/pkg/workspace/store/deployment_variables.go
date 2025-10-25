@@ -11,11 +11,13 @@ import (
 func NewDeploymentVariables(store *Store) *DeploymentVariables {
 	return &DeploymentVariables{
 		repo: store.repo,
+		store: store,
 	}
 }
 
 type DeploymentVariables struct {
 	repo *repository.Repository
+	store *Store
 }
 
 func (d *DeploymentVariables) IterBuffered() <-chan cmap.Tuple[string, *oapi.DeploymentVariable] {
