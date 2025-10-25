@@ -33,6 +33,8 @@ func (s *Systems) Upsert(ctx context.Context, system *oapi.System) error {
 		cs.Record(changeset.ChangeTypeUpsert, system)
 	}
 
+	s.store.changeset.RecordUpsert(system)
+
 	if _, ok := s.deployments.Get(system.Id); !ok {
 		s.deployments.Set(system.Id,
 			materialized.New(s.computeDeployments(system.Id)),
@@ -118,6 +120,8 @@ func (s *Systems) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, system)
 	}
+
+	s.store.changeset.RecordDelete(system)
 }
 
 // ApplyDeploymentUpdate triggers a recompute of deployments for the affected systems

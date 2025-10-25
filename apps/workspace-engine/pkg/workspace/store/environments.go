@@ -155,6 +155,8 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 		cs.Record(changeset.ChangeTypeUpsert, environment)
 	}
 
+	e.store.changeset.RecordUpsert(environment)
+
 	// Create materialized view with immediate computation of environment resources
 	mv := materialized.New(
 		e.environmentResourceRecomputeFunc(environment.Id),
@@ -189,6 +191,8 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, env)
 	}
+
+	e.store.changeset.RecordDelete(env)
 
 	e.repo.Environments.Remove(id)
 	e.resources.Remove(id)

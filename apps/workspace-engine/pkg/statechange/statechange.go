@@ -9,8 +9,7 @@ import (
 type StateChangeType string
 
 const (
-	StateChangeCreate StateChangeType = "create"
-	StateChangeUpdate StateChangeType = "update"
+	StateChangeUpsert StateChangeType = "upsert"
 	StateChangeDelete StateChangeType = "delete"
 )
 
@@ -36,25 +35,13 @@ func NewChangeSet[T any]() *ChangeSet[T] {
 	}
 }
 
-// RecordCreate records that an entity was created
-func (cs *ChangeSet[T]) RecordCreate(entity T) {
+// RecordUpsert records that an entity was upserted
+func (cs *ChangeSet[T]) RecordUpsert(entity T) {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
 
 	cs.changes = append(cs.changes, StateChange[T]{
-		Type:      StateChangeCreate,
-		Entity:    entity,
-		Timestamp: time.Now(),
-	})
-}
-
-// RecordUpdate records that an entity was updated
-func (cs *ChangeSet[T]) RecordUpdate(entity T) {
-	cs.mutex.Lock()
-	defer cs.mutex.Unlock()
-
-	cs.changes = append(cs.changes, StateChange[T]{
-		Type:      StateChangeUpdate,
+		Type:      StateChangeUpsert,
 		Entity:    entity,
 		Timestamp: time.Now(),
 	})

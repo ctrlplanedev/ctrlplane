@@ -34,6 +34,8 @@ func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvi
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, resourceProvider)
 	}
+
+	r.store.changeset.RecordUpsert(resourceProvider)
 }
 
 func (r *ResourceProviders) Remove(ctx context.Context, id string) error {
@@ -54,5 +56,7 @@ func (r *ResourceProviders) Remove(ctx context.Context, id string) error {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, resourceProvider)
 	}
+
+	r.store.changeset.RecordDelete(resourceProvider)
 	return nil
 }

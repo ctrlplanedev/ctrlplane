@@ -29,6 +29,8 @@ func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, job)
 	}
+
+	j.store.changeset.RecordUpsert(job)
 }
 
 func (j *Jobs) Get(id string) (*oapi.Job, bool) {

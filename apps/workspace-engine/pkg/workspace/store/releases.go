@@ -24,6 +24,8 @@ func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, release)
 	}
+
+	r.store.changeset.RecordUpsert(release)
 	return nil
 }
 
@@ -49,6 +51,8 @@ func (r *Releases) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, release)
 	}
+
+	r.store.changeset.RecordDelete(release)
 }
 
 func (r *Releases) Jobs(releaseId string) map[string]*oapi.Job {

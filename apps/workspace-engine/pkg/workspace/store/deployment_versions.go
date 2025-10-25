@@ -43,6 +43,8 @@ func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oap
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, version)
 	}
+
+	d.store.changeset.RecordUpsert(version)
 }
 
 func (d *DeploymentVersions) Remove(ctx context.Context, id string) {
@@ -57,4 +59,6 @@ func (d *DeploymentVersions) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, version)
 	}
+
+	d.store.changeset.RecordDelete(version)
 }

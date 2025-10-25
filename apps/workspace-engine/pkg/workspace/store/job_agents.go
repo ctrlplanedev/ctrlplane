@@ -25,6 +25,8 @@ func (j *JobAgents) Upsert(ctx context.Context, jobAgent *oapi.JobAgent) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, jobAgent)
 	}
+
+	j.store.changeset.RecordUpsert(jobAgent)
 }
 
 func (j *JobAgents) Get(id string) (*oapi.JobAgent, bool) {
@@ -42,6 +44,8 @@ func (j *JobAgents) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, jobAgent)
 	}
+
+	j.store.changeset.RecordDelete(jobAgent)
 }
 
 func (j *JobAgents) Items() map[string]*oapi.JobAgent {

@@ -38,6 +38,8 @@ func (d *DeploymentVariables) Upsert(ctx context.Context, id string, deploymentV
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, deploymentVariable)
 	}
+
+	d.store.changeset.RecordUpsert(deploymentVariable)
 }
 
 func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
@@ -49,4 +51,6 @@ func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, deploymentVariable)
 	}
+
+	d.store.changeset.RecordDelete(deploymentVariable)
 }

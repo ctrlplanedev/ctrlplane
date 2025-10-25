@@ -29,6 +29,8 @@ func (r *ResourceVariables) Upsert(ctx context.Context, resourceVariable *oapi.R
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, resourceVariable)
 	}
+
+	r.store.changeset.RecordUpsert(resourceVariable)
 }
 
 func (r *ResourceVariables) Get(resourceId string, key string) (*oapi.ResourceVariable, bool) {
@@ -45,4 +47,6 @@ func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key s
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, resourceVariable)
 	}
+
+	r.store.changeset.RecordDelete(resourceVariable)
 }

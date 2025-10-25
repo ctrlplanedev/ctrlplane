@@ -27,6 +27,8 @@ func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.Relat
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, relationship)
 	}
+
+	r.store.changeset.RecordUpsert(relationship)
 	return nil
 }
 
@@ -48,6 +50,8 @@ func (r *RelationshipRules) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, relationship)
 	}
+
+	r.store.changeset.RecordDelete(relationship)
 }
 
 func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {

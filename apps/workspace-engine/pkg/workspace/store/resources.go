@@ -75,6 +75,8 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		cs.Record(changeset.ChangeTypeUpsert, resource)
 	}
 
+	r.store.changeset.RecordUpsert(resource)
+
 	return resource, nil
 }
 
@@ -125,6 +127,8 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, resource)
 	}
+
+	r.store.changeset.RecordDelete(resource)
 }
 
 func (r *Resources) Items() map[string]*oapi.Resource {

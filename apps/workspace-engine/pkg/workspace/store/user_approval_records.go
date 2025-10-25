@@ -24,6 +24,8 @@ func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oa
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, userApprovalRecord)
 	}
+
+	u.store.changeset.RecordUpsert(userApprovalRecord)
 }
 
 func (u *UserApprovalRecords) Get(versionId, userId string) (*oapi.UserApprovalRecord, bool) {
@@ -40,6 +42,8 @@ func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, userApprovalRecord)
 	}
+
+	u.store.changeset.RecordDelete(userApprovalRecord)
 }
 
 func (u *UserApprovalRecords) GetApprovers(versionId string) []string {

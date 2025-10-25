@@ -45,6 +45,8 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, policy)
 	}
+
+	p.store.changeset.RecordUpsert(policy)
 	return nil
 }
 
@@ -58,4 +60,6 @@ func (p *Policies) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, policy)
 	}
+
+	p.store.changeset.RecordDelete(policy)
 }

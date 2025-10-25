@@ -30,6 +30,8 @@ func (g *GithubEntities) Upsert(ctx context.Context, githubEntity *oapi.GithubEn
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, githubEntity)
 	}
+
+	g.store.changeset.RecordUpsert(githubEntity)
 }
 
 func (g *GithubEntities) Get(slug string, installationId int) (*oapi.GithubEntity, bool) {
@@ -48,6 +50,8 @@ func (g *GithubEntities) Remove(ctx context.Context, slug string, installationId
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, githubEntity)
 	}
+
+	g.store.changeset.RecordDelete(githubEntity)
 }
 
 func (g *GithubEntities) Items() map[string]*oapi.GithubEntity {

@@ -193,6 +193,8 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 		cs.Record(changeset.ChangeTypeUpsert, deployment)
 	}
 
+	e.store.changeset.RecordUpsert(deployment)
+
 	return nil
 }
 
@@ -211,6 +213,8 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, deployment)
 	}
+
+	e.store.changeset.RecordDelete(deployment)
 }
 
 func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {
