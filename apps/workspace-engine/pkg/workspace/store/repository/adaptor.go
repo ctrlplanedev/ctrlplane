@@ -20,7 +20,7 @@ func (r *RepositoryAdapter[E]) typeAndKey(entity any) (typed E, key string, err 
 	if !ok {
 		return typed, "", fmt.Errorf("expected %T, got %T", *new(E), entity)
 	}
-	
+
 	keyer, ok := any(typed).(persistence.Entity)
 	if !ok {
 		return typed, "", fmt.Errorf("entity does not implement persistence.Entity interface")

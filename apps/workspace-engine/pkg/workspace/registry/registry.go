@@ -9,8 +9,9 @@ import (
 )
 
 type Registry struct {
-	persistence *persistence.Manager
-	workspaces  cmap.ConcurrentMap[string, *workspace.Workspace]
+	persistence            *persistence.Manager
+	workspaces             cmap.ConcurrentMap[string, *workspace.Workspace]
+	workspaceCreateOptions []workspace.WorkspaceOption
 }
 
 type RegistryOption func(*Registry)
@@ -29,14 +30,21 @@ func WithApplyRegistry(registry *persistence.ApplyRegistry) RegistryOption {
 	}
 }
 
+func WithWorkspaceCreateOptions(options ...workspace.WorkspaceOption) RegistryOption {
+	return func(r *Registry) {
+		r.workspaceCreateOptions = options
+	}
+}
+
 func NewRegistry(options ...RegistryOption) *Registry {
 	memoryStore := memory.NewStore()
 	memoryRegistry := persistence.NewApplyRegistry()
 	pm := persistence.NewManager(memoryStore, memoryRegistry)
 
 	reg := &Registry{
-		persistence: pm,
-		workspaces:  cmap.New[*workspace.Workspace](),
+		persistence:            pm,
+		workspaces:             cmap.New[*workspace.Workspace](),
+		workspaceCreateOptions: []workspace.WorkspaceOption{},
 	}
 
 	for _, option := range options {

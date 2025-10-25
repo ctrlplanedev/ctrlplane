@@ -16,7 +16,7 @@ type Entity interface {
 type ChangeType string
 
 const (
-	ChangeTypeSet    ChangeType = "set"
+	ChangeTypeSet   ChangeType = "set"
 	ChangeTypeUnset ChangeType = "unset"
 )
 
@@ -43,7 +43,7 @@ type Store interface {
 	// Load retrieves the current state for a namespace.
 	// NOTE: May contain duplicates if using async compaction (e.g., Kafka).
 	// Consumers should keep only the latest change per entity (by timestamp).
-	// This is NOT reading from "the beginning of time" - the store uses topic 
+	// This is NOT reading from "the beginning of time" - the store uses topic
 	// compaction to minimize storage and only returns recent state per entity.
 	Load(ctx context.Context, namespace string) (Changes, error)
 

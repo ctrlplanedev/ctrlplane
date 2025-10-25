@@ -150,12 +150,10 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return nil, err
 	}
 
-	// Execute the handler
-	var ws *workspace.Workspace
 	changeSet := changeset.NewChangeSet[any]()
 
 	ws, err := registry.Workspaces.GetOrCreate(ctx, rawEvent.WorkspaceID)
-	if ws == nil {
+	if err != nil {
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}
 

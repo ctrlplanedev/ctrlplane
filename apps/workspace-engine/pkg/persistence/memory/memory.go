@@ -12,7 +12,7 @@ import (
 // Thread-safe and suitable for testing or development.
 // This implementation performs topic compaction: only the latest state per entity is stored.
 type Store struct {
-	mu      sync.RWMutex
+	mu sync.RWMutex
 	// Maps namespace -> (entityType:entityID) -> latest change
 	snapshots map[string]map[string]persistence.Change
 }

@@ -8,7 +8,6 @@ import (
 	"sync"
 )
 
-
 var _ gob.GobEncoder = (*ConcurrentMap[string, any])(nil)
 var _ gob.GobDecoder = (*ConcurrentMap[string, any])(nil)
 

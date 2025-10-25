@@ -29,9 +29,11 @@ func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error
 	for _, deploymentVersion := range initialWorkspaceState.DeploymentVersions() {
 		ws.DeploymentVersions().Upsert(ctx, deploymentVersion.Id, deploymentVersion)
 	}
+
 	for _, deploymentVariable := range initialWorkspaceState.DeploymentVariables() {
 		ws.DeploymentVariables().Upsert(ctx, deploymentVariable.Id, deploymentVariable)
 	}
+
 	for _, environment := range initialWorkspaceState.Environments() {
 		if err := ws.Environments().Upsert(ctx, environment); err != nil {
 			return err

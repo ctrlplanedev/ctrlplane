@@ -41,7 +41,7 @@ func registerEntity[E any](registry *persistence.ApplyRegistry, entityType strin
 
 func New() *Repository {
 	registry := persistence.NewApplyRegistry()
-	
+
 	return &Repository{
 		applyRegistry:       registry,
 		Resources:           registerEntity[*oapi.Resource](registry, "resource"),
@@ -86,7 +86,6 @@ type Repository struct {
 
 	GithubEntities cmap.ConcurrentMap[string, *oapi.GithubEntity]
 }
-
 
 func (r *Repository) ApplyRegistry() *persistence.ApplyRegistry {
 	return r.applyRegistry

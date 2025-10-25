@@ -34,7 +34,7 @@ func (d *Deployment) CompactionKey() (string, string) {
 
 // Mock repositories for testing
 type MockDeploymentRepo struct {
-	Sets []*Deployment
+	Sets   []*Deployment
 	Unsets []*Deployment
 }
 
@@ -91,7 +91,7 @@ func TestRestore_Basic(t *testing.T) {
 	require.NoError(t, err)
 
 	// Restore state
-	err 	= manager.Restore(ctx, namespace)
+	err = manager.Restore(ctx, namespace)
 	require.NoError(t, err)
 
 	// Verify repository received correct operations

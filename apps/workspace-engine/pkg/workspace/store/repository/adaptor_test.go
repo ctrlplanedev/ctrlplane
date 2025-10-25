@@ -105,4 +105,3 @@ func TestRepositoryAdapter_MultipleEntities(t *testing.T) {
 	// Verify count decreased
 	assert.Equal(t, 2, cm.Count(), "Should have 2 entities after deletion")
 }
-
