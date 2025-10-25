@@ -2,8 +2,8 @@ package changelog
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"workspace-engine/pkg/messaging"
@@ -12,24 +12,6 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// ChangelogEntry represents a single entry loaded from the changelog
-type ChangelogEntry struct {
-	Key         string
-	Value       []byte
-	Partition   int32
-	Offset      int64
-	Timestamp   time.Time
-	IsTombstone bool
-}
-
-// UnmarshalInto unmarshals the value into the provided object
-func (e *ChangelogEntry) UnmarshalInto(v interface{}) error {
-	if e.IsTombstone {
-		return fmt.Errorf("cannot unmarshal tombstone entry")
-	}
-	return json.Unmarshal(e.Value, v)
-}
-
 // ChangelogReader reads entries from a changelog topic
 type ChangelogReader struct {
 	consumer   messaging.Consumer
@@ -37,12 +19,10 @@ type ChangelogReader struct {
 	partitions []int32 // specific partitions to read, nil means subscribe to topic
 }
 
-// NewReader creates a new changelog reader that subscribes to all partitions via consumer group
 func NewReader(consumer messaging.Consumer, topic string) *ChangelogReader {
 	return &ChangelogReader{
-		consumer:   consumer,
-		topic:      topic,
-		partitions: nil,
+		consumer: consumer,
+		topic:    topic,
 	}
 }
 
@@ -70,16 +50,16 @@ func NewReaderForWorkspace(consumer messaging.Consumer, topic string, workspaceI
 // entryHandler is called for each entry, return an error to stop loading
 func (r *ChangelogReader) LoadAll(ctx context.Context, entryHandler func(*ChangelogEntry) error) error {
 	// If specific partitions are set, use AssignPartitions, otherwise Subscribe
-	if r.partitions == nil || len(r.partitions) <= 0 {
-		if err := r.consumer.Subscribe(r.topic); err != nil {
-			return fmt.Errorf("failed to subscribe to changelog topic: %w", err)
-		}
-		log.Info("Subscribed to topic", "topic", r.topic)
-	} else {
+	if len(r.partitions) > 0 {
 		if err := r.assignPartitions(); err != nil {
 			return fmt.Errorf("failed to assign partitions: %w", err)
 		}
 		log.Info("Assigned specific partitions", "topic", r.topic, "partitions", r.partitions)
+	} else {
+		if err := r.consumer.Subscribe(r.topic); err != nil {
+			return fmt.Errorf("failed to subscribe to changelog topic: %w", err)
+		}
+		log.Info("Subscribed to topic", "topic", r.topic)
 	}
 
 	timeout := 5 * time.Second
@@ -111,14 +91,8 @@ func (r *ChangelogReader) LoadAll(ctx context.Context, entryHandler func(*Change
 		consecutiveTimeouts = 0
 
 		// If specific partitions are configured, skip messages from other partitions
-		if r.partitions != nil && len(r.partitions) > 0 {
-			shouldProcess := false
-			for _, partition := range r.partitions {
-				if msg.Partition == partition {
-					shouldProcess = true
-					break
-				}
-			}
+		if len(r.partitions) > 0 {
+			shouldProcess := slices.Contains(r.partitions, msg.Partition)
 			if !shouldProcess {
 				// Skip this message, it's not from a partition we care about
 				if err := r.consumer.CommitMessage(msg); err != nil {
@@ -148,33 +122,6 @@ func (r *ChangelogReader) LoadAll(ctx context.Context, entryHandler func(*Change
 	}
 }
 
-// LoadAllIntoMap loads all entries into a map keyed by changelogID
-// Tombstoned entries are removed from the map
-// This is useful for building an in-memory snapshot of the changelog
-func (r *ChangelogReader) LoadAllIntoMap(ctx context.Context) (map[string]*ChangelogEntry, error) {
-	entries := make(map[string]*ChangelogEntry)
-
-	err := r.LoadAll(ctx, func(entry *ChangelogEntry) error {
-		if entry.IsTombstone {
-			// Remove tombstoned entries
-			delete(entries, entry.Key)
-			log.Debug("Removed tombstoned entry", "key", entry.Key)
-		} else {
-			// Add or update entry
-			entries[entry.Key] = entry
-			log.Debug("Loaded entry", "key", entry.Key, "size", len(entry.Value))
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	log.Info("Loaded changelog into map", "topic", r.topic, "entries", len(entries))
-	return entries, nil
-}
-
 // LoadForWorkspace loads all entries for a specific workspace
 // workspaceID is the workspace ID to filter by
 func (r *ChangelogReader) LoadForWorkspace(ctx context.Context, workspaceID string) (map[string]*ChangelogEntry, error) {
@@ -182,12 +129,7 @@ func (r *ChangelogReader) LoadForWorkspace(ctx context.Context, workspaceID stri
 
 	err := r.LoadAll(ctx, func(entry *ChangelogEntry) error {
 		// Extract workspace ID from the key
-		entryWorkspaceID, err := ExtractWorkspaceID(entry.Key)
-		if err != nil {
-			log.Warn("Invalid changelog entry key", "key", entry.Key, "error", err)
-			return nil // Skip invalid entries
-		}
-
+		entryWorkspaceID := entry.WorkspaceID()
 		// Only process entries for this workspace
 		if entryWorkspaceID != workspaceID {
 			return nil

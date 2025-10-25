@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"workspace-engine/pkg/messaging"
 	wskafka "workspace-engine/pkg/workspace/kafka"
@@ -97,21 +96,4 @@ func (w *ChangelogWriter) Flush(timeoutMs int) int {
 // Close closes the changelog writer
 func (w *ChangelogWriter) Close() error {
 	return w.producer.Close()
-}
-
-// ExtractWorkspaceID extracts the workspace ID (first UUID) from a changelogID
-// Expected format: "{workspaceID}/{entityType}/{entityID}"
-// Returns the workspace ID which will be used for partitioning
-func ExtractWorkspaceID(changelogID string) (string, error) {
-	parts := strings.Split(changelogID, "/")
-	if len(parts) == 0 {
-		return "", fmt.Errorf("invalid changelogID format: %s", changelogID)
-	}
-
-	workspaceID := parts[0]
-	if workspaceID == "" {
-		return "", fmt.Errorf("workspace ID is empty in changelogID: %s", changelogID)
-	}
-
-	return workspaceID, nil
 }
