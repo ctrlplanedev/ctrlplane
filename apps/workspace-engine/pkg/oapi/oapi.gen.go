@@ -1351,6 +1351,9 @@ type ServerInterface interface {
 	// Get resource by identifier
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
 	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
+	// Get engine status
+	// (GET /v1/workspaces/{workspaceId}/status)
+	GetEngineStatus(c *gin.Context, workspaceId string)
 	// List systems
 	// (GET /v1/workspaces/{workspaceId}/systems)
 	ListSystems(c *gin.Context, workspaceId string, params ListSystemsParams)
@@ -2359,6 +2362,30 @@ func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
 	siw.Handler.GetResourceByIdentifier(c, workspaceId, resourceIdentifier)
 }
 
+// GetEngineStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetEngineStatus(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetEngineStatus(c, workspaceId)
+}
+
 // ListSystems operation middleware
 func (siw *ServerInterfaceWrapper) ListSystems(c *gin.Context) {
 
@@ -2488,6 +2515,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
 }

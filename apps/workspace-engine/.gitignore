@@ -47,3 +47,5 @@ tmp/
 
 workspace-engine
 engine
+
+pebble.db/

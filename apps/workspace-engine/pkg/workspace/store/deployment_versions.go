@@ -16,7 +16,7 @@ func NewDeploymentVersions(store *Store) *DeploymentVersions {
 }
 
 type DeploymentVersions struct {
-	repo  *repository.Repository
+	repo  *repository.InMemoryStore
 	store *Store
 
 	deployableVersions cmap.ConcurrentMap[string, *oapi.DeploymentVersion]

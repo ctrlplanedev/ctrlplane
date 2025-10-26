@@ -25,14 +25,15 @@ func TestPebbleStore_SaveAndLoad(t *testing.T) {
 	// Create temp directory
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	// Register entity type
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -51,27 +52,36 @@ func TestPebbleStore_SaveAndLoad(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, loaded, 2)
 
-	// Verify entities
+	// Verify entities - check IDs, names, and values are preserved
 	entities := make(map[string]*testEntity)
 	for _, change := range loaded {
 		e := change.Entity.(*testEntity)
 		entities[e.ID] = e
 	}
 
-	assert.Equal(t, "Entity 1", entities["e1"].Name)
-	assert.Equal(t, "Entity 2", entities["e2"].Name)
+	// Verify Entity 1
+	require.NotNil(t, entities["e1"], "Entity e1 should exist")
+	assert.Equal(t, "e1", entities["e1"].ID, "Entity ID should be preserved")
+	assert.Equal(t, "Entity 1", entities["e1"].Name, "Entity name should be preserved")
+
+	// Verify Entity 2
+	require.NotNil(t, entities["e2"], "Entity e2 should exist")
+	assert.Equal(t, "e2", entities["e2"].ID, "Entity ID should be preserved")
+	assert.Equal(t, "Entity 2", entities["e2"].Name, "Entity name should be preserved")
 }
 
 func TestPebbleStore_Compaction(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -106,20 +116,23 @@ func TestPebbleStore_Compaction(t *testing.T) {
 	assert.Len(t, loaded, 1)
 
 	entity := loaded[0].Entity.(*testEntity)
-	assert.Equal(t, "Version 3", entity.Name)
+	assert.Equal(t, "e1", entity.ID, "Entity ID should be preserved")
+	assert.Equal(t, "Version 3", entity.Name, "Latest version name should be preserved")
 	assert.True(t, time3.Equal(loaded[0].Timestamp), "timestamps should be equal")
 }
 
 func TestPebbleStore_MultipleNamespaces(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -142,18 +155,27 @@ func TestPebbleStore_MultipleNamespaces(t *testing.T) {
 	loaded1, err := store.Load(ctx, "workspace-1")
 	require.NoError(t, err)
 	assert.Len(t, loaded1, 1)
-	assert.Equal(t, "Workspace 1 Entity", loaded1[0].Entity.(*testEntity).Name)
+	entity1 := loaded1[0].Entity.(*testEntity)
+	assert.Equal(t, "e1", entity1.ID, "Workspace 1 entity ID should be preserved")
+	assert.Equal(t, "Workspace 1 Entity", entity1.Name, "Workspace 1 entity name should be preserved")
+	assert.Equal(t, "workspace-1", loaded1[0].Namespace, "Namespace should match")
 
 	loaded2, err := store.Load(ctx, "workspace-2")
 	require.NoError(t, err)
 	assert.Len(t, loaded2, 1)
-	assert.Equal(t, "Workspace 2 Entity", loaded2[0].Entity.(*testEntity).Name)
+	entity2 := loaded2[0].Entity.(*testEntity)
+	assert.Equal(t, "e1", entity2.ID, "Workspace 2 entity ID should be preserved")
+	assert.Equal(t, "Workspace 2 Entity", entity2.Name, "Workspace 2 entity name should be preserved")
+	assert.Equal(t, "workspace-2", loaded2[0].Namespace, "Namespace should match")
 }
 
 func TestPebbleStore_EmptyNamespace(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
+	// Create registry
+	registry := persistence.NewJSONEntityRegistry()
+
+	store, err := NewStore(tempDir, registry)
 	require.NoError(t, err)
 	defer store.Close()
 
@@ -168,13 +190,15 @@ func TestPebbleStore_EmptyNamespace(t *testing.T) {
 func TestPebbleStore_ListNamespaces(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -204,13 +228,15 @@ func TestPebbleStore_ListNamespaces(t *testing.T) {
 func TestPebbleStore_DeleteNamespace(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -230,14 +256,30 @@ func TestPebbleStore_DeleteNamespace(t *testing.T) {
 	err = store.Save(ctx, changes2)
 	require.NoError(t, err)
 
-	// Verify both namespaces exist
+	// Verify both namespaces exist with correct data
 	loaded1, err := store.Load(ctx, "workspace-1")
 	require.NoError(t, err)
 	assert.Len(t, loaded1, 2)
+	
+	// Verify workspace-1 entities
+	ws1Entities := make(map[string]*testEntity)
+	for _, change := range loaded1 {
+		e := change.Entity.(*testEntity)
+		ws1Entities[e.ID] = e
+	}
+	assert.Equal(t, "e1", ws1Entities["e1"].ID)
+	assert.Equal(t, "Entity 1", ws1Entities["e1"].Name)
+	assert.Equal(t, "e2", ws1Entities["e2"].ID)
+	assert.Equal(t, "Entity 2", ws1Entities["e2"].Name)
 
 	loaded2, err := store.Load(ctx, "workspace-2")
 	require.NoError(t, err)
 	assert.Len(t, loaded2, 1)
+	
+	// Verify workspace-2 entity
+	entity2 := loaded2[0].Entity.(*testEntity)
+	assert.Equal(t, "e1", entity2.ID)
+	assert.Equal(t, "Entity 1", entity2.Name)
 
 	// Delete workspace-1
 	err = store.DeleteNamespace("workspace-1")
@@ -257,13 +299,15 @@ func TestPebbleStore_DeleteNamespace(t *testing.T) {
 func TestPebbleStore_UnsetChangeType(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -289,18 +333,24 @@ func TestPebbleStore_UnsetChangeType(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, loaded, 1)
 	assert.Equal(t, persistence.ChangeTypeUnset, loaded[0].ChangeType)
+	
+	// Verify the entity ID is preserved in the unset change
+	unsetEntity := loaded[0].Entity.(*testEntity)
+	assert.Equal(t, "e1", unsetEntity.ID, "Entity ID should be preserved in unset change")
 }
 
 func TestPebbleStore_ConcurrentAccess(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -321,10 +371,15 @@ func TestPebbleStore_ConcurrentAccess(t *testing.T) {
 		<-done
 	}
 
-	// Should be able to load
+	// Should be able to load - verify concurrent writes resulted in one entity
 	loaded, err := store.Load(ctx, "workspace-1")
 	require.NoError(t, err)
 	assert.Len(t, loaded, 1)
+	
+	// Verify the entity has correct ID and name
+	entity := loaded[0].Entity.(*testEntity)
+	assert.Equal(t, "concurrent", entity.ID, "Entity ID should be 'concurrent'")
+	assert.Equal(t, "Entity", entity.Name, "Entity name should be preserved")
 }
 
 // otherEntity is a second test entity type
@@ -340,18 +395,18 @@ func (e *otherEntity) CompactionKey() (string, string) {
 func TestPebbleStore_MultipleEntityTypes(t *testing.T) {
 	tempDir := t.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(t, err)
-	defer store.Close()
-
-	// Register both entity types
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register both entity types
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
-
-	store.RegisterEntityType("other-entity", func() persistence.Entity {
+	registry.Register("other-entity", func() persistence.Entity {
 		return &otherEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(t, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -377,31 +432,42 @@ func TestPebbleStore_MultipleEntityTypes(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, loaded, 2)
 
-	// Count entity types
-	var testCount, otherCount int
+	// Verify both entity types and their values
+	var loadedTestEntity *testEntity
+	var loadedOtherEntity *otherEntity
+	
 	for _, change := range loaded {
-		switch change.Entity.(type) {
+		switch e := change.Entity.(type) {
 		case *testEntity:
-			testCount++
+			loadedTestEntity = e
 		case *otherEntity:
-			otherCount++
+			loadedOtherEntity = e
 		}
 	}
 
-	assert.Equal(t, 1, testCount)
-	assert.Equal(t, 1, otherCount)
+	// Verify testEntity was loaded with correct values
+	require.NotNil(t, loadedTestEntity, "testEntity should be loaded")
+	assert.Equal(t, "e1", loadedTestEntity.ID, "testEntity ID should be preserved")
+	assert.Equal(t, "Test Entity", loadedTestEntity.Name, "testEntity name should be preserved")
+
+	// Verify otherEntity was loaded with correct values
+	require.NotNil(t, loadedOtherEntity, "otherEntity should be loaded")
+	assert.Equal(t, "o1", loadedOtherEntity.ID, "otherEntity ID should be preserved")
+	assert.Equal(t, 42, loadedOtherEntity.Value, "otherEntity value should be preserved")
 }
 
 func BenchmarkPebbleStore_Save(b *testing.B) {
 	tempDir := b.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(b, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(b, err)
+	defer store.Close()
 
 	ctx := context.Background()
 
@@ -417,13 +483,15 @@ func BenchmarkPebbleStore_Save(b *testing.B) {
 func BenchmarkPebbleStore_Load(b *testing.B) {
 	tempDir := b.TempDir()
 
-	store, err := NewStore(tempDir)
-	require.NoError(b, err)
-	defer store.Close()
-
-	store.RegisterEntityType("test-entity", func() persistence.Entity {
+	// Create registry and register entity type
+	registry := persistence.NewJSONEntityRegistry()
+	registry.Register("test-entity", func() persistence.Entity {
 		return &testEntity{}
 	})
+
+	store, err := NewStore(tempDir, registry)
+	require.NoError(b, err)
+	defer store.Close()
 
 	ctx := context.Background()
 

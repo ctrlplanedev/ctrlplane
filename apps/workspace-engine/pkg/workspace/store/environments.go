@@ -22,7 +22,7 @@ func NewEnvironments(store *Store) *Environments {
 }
 
 type Environments struct {
-	repo  *repository.Repository
+	repo  *repository.InMemoryStore
 	store *Store
 
 	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Resource]]

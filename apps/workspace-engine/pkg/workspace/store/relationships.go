@@ -18,7 +18,7 @@ func NewRelationshipRules(store *Store) *RelationshipRules {
 }
 
 type RelationshipRules struct {
-	repo  *repository.Repository
+	repo  *repository.InMemoryStore
 	store *Store
 }
 

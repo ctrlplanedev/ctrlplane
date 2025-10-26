@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -15,9 +16,9 @@ import (
 
 // Store is a Pebble-based implementation of persistence.Store
 // Uses an embedded key-value store for efficient persistence with automatic compaction.
-type Store struct {
+type Store struct {	
 	db       *pebble.DB
-	registry *EntityRegistry
+	registry *persistence.JSONEntityRegistry
 	mu       sync.RWMutex
 }
 
@@ -32,7 +33,7 @@ type storedChange struct {
 }
 
 // NewStore creates a new Pebble-based persistence store
-func NewStore(dbPath string) (*Store, error) {
+func NewStore(dbPath string, registry *persistence.JSONEntityRegistry) (*Store, error) {
 	db, err := pebble.Open(dbPath, &pebble.Options{
 		// Enable automatic compaction
 		DisableAutomaticCompactions: false,
@@ -42,16 +43,11 @@ func NewStore(dbPath string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open pebble database: %w", err)
 	}
-
+	
 	return &Store{
 		db:       db,
-		registry: NewEntityRegistry(),
+		registry: registry,
 	}, nil
-}
-
-// RegisterEntityType registers an entity type with its factory function
-func (s *Store) RegisterEntityType(entityType string, factory EntityFactory) {
-	s.registry.Register(entityType, factory)
 }
 
 // Save persists changes to the Pebble database
@@ -211,6 +207,9 @@ func (s *Store) ListNamespaces() ([]string, error) {
 	for ns := range namespaces {
 		result = append(result, ns)
 	}
+
+	// Sort for deterministic output
+	sort.Strings(result)
 
 	return result, nil
 }

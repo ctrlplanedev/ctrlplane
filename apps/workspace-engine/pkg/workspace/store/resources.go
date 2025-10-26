@@ -22,7 +22,7 @@ func NewResources(store *Store) *Resources {
 }
 
 type Resources struct {
-	repo  *repository.Repository
+	repo  *repository.InMemoryStore
 	store *Store
 }
 

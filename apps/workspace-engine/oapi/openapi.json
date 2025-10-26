@@ -3309,6 +3309,44 @@
             "summary": "Get resource by identifier"
          }
       },
+      "/v1/workspaces/{workspaceId}/status": {
+         "get": {
+            "description": "Returns the status of the engine.",
+            "operationId": "getEngineStatus",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "healthy": {
+                                 "type": "boolean"
+                              },
+                              "message": {
+                                 "type": "string"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "The status of the engine"
+               }
+            },
+            "summary": "Get engine status"
+         }
+      },
       "/v1/workspaces/{workspaceId}/systems": {
          "get": {
             "description": "Returns a list of systems for a workspace.",

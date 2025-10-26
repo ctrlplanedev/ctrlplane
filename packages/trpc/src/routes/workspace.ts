@@ -7,8 +7,26 @@ import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { protectedProcedure, router } from "../trpc.js";
+import { wsEngine } from "../ws-engine.js";
 
 export const workspaceRouter = router({
+  engineStatus: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid() }))
+    .query(async ({ input }) => {
+      const response = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/status",
+        {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+            },
+          },
+        },
+      );
+
+      return response.data ?? { healthy: false, message: "Engine not found" };
+    }),
+
   saveHistory: protectedProcedure
     .input(z.object({ workspaceId: z.uuid() }))
     .query(async ({ ctx, input }) => {

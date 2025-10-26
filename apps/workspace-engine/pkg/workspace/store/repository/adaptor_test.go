@@ -22,7 +22,7 @@ func (m *mockEntity) CompactionKey() (string, string) {
 func TestRepositoryAdapter_Create(t *testing.T) {
 	ctx := context.Background()
 	cm := cmap.New[*mockEntity]()
-	adapter := &RepositoryAdapter[*mockEntity]{cm: &cm}
+	adapter := &TypedStoreAdapter[*mockEntity]{store: &cm}
 
 	entity := &mockEntity{id: "entity-1", name: "Test Entity"}
 
@@ -39,7 +39,7 @@ func TestRepositoryAdapter_Create(t *testing.T) {
 func TestRepositoryAdapter_Update(t *testing.T) {
 	ctx := context.Background()
 	cm := cmap.New[*mockEntity]()
-	adapter := &RepositoryAdapter[*mockEntity]{cm: &cm}
+	adapter := &TypedStoreAdapter[*mockEntity]{store: &cm}
 
 	// Create initial entity
 	entity := &mockEntity{id: "entity-1", name: "Original Name"}
@@ -59,7 +59,7 @@ func TestRepositoryAdapter_Update(t *testing.T) {
 func TestRepositoryAdapter_Delete(t *testing.T) {
 	ctx := context.Background()
 	cm := cmap.New[*mockEntity]()
-	adapter := &RepositoryAdapter[*mockEntity]{cm: &cm}
+	adapter := &TypedStoreAdapter[*mockEntity]{store: &cm}
 
 	// Create entity
 	entity := &mockEntity{id: "entity-1", name: "Test Entity"}
@@ -81,7 +81,7 @@ func TestRepositoryAdapter_Delete(t *testing.T) {
 func TestRepositoryAdapter_MultipleEntities(t *testing.T) {
 	ctx := context.Background()
 	cm := cmap.New[*mockEntity]()
-	adapter := &RepositoryAdapter[*mockEntity]{cm: &cm}
+	adapter := &TypedStoreAdapter[*mockEntity]{store: &cm}
 
 	// Create multiple entities
 	entities := []*mockEntity{

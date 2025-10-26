@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
+import { EngineProvider } from "~/components/EngineProvider";
 import { WorkspaceProvider } from "~/components/WorkspaceProvider";
 
 function LoadingScreen() {
@@ -33,7 +34,9 @@ export default function ProtectedLayout() {
 
   return (
     <WorkspaceProvider workspace={activeWorkspace}>
-      <Outlet />
+      <EngineProvider>
+        <Outlet />
+      </EngineProvider>
     </WorkspaceProvider>
   );
 }

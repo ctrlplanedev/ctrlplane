@@ -25,7 +25,7 @@ func NewDeployments(store *Store) *Deployments {
 }
 
 type Deployments struct {
-	repo  *repository.Repository
+	repo  *repository.InMemoryStore
 	store *Store
 
 	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Resource]]

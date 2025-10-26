@@ -33,11 +33,11 @@ func TestNew_AllFieldsInitialized(t *testing.T) {
 	}
 }
 
-func TestApplyRegistry(t *testing.T) {
+func TestRouter(t *testing.T) {
 	repo := New()
 
-	registry := repo.ApplyRegistry()
-	assert.NotNil(t, registry, "ApplyRegistry() returned nil")
+	router := repo.Router()
+	assert.NotNil(t, router, "Router() returned nil")
 }
 
 func TestRepositoryFields_NotNil(t *testing.T) {

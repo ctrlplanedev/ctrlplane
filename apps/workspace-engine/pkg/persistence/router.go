@@ -5,25 +5,27 @@ import (
 	"fmt"
 )
 
-// ApplyRegistry manages repositories for different entity types
-type ApplyRegistry struct {
+// RepositoryRouter routes entity changes to the appropriate repository based on entity type.
+// It acts as a dispatcher that maps entity types to their corresponding repositories.
+type RepositoryRouter struct {
 	repositories map[string]Repository[any]
 }
 
-func NewApplyRegistry() *ApplyRegistry {
-	return &ApplyRegistry{
+func NewRepositoryRouter() *RepositoryRouter {
+	return &RepositoryRouter{
 		repositories: make(map[string]Repository[any]),
 	}
 }
 
-func (r *ApplyRegistry) Register(entityType string, repo Repository[any]) {
+func (r *RepositoryRouter) Register(entityType string, repo Repository[any]) {
 	r.repositories[entityType] = repo
 }
 
-// Apply applies a snapshot to the registered repositories.
+// Apply applies changes to the registered repositories by routing each change
+// to its corresponding repository based on entity type.
 // Deduplicates changes per entity, keeping only the latest change (by timestamp).
 // This handles cases where the underlying store (e.g., Kafka) hasn't compacted yet.
-func (r *ApplyRegistry) Apply(ctx context.Context, changes Changes) error {
+func (r *RepositoryRouter) Apply(ctx context.Context, changes Changes) error {
 	// Deduplicate: keep only the latest change per entity
 	latestChanges := make(map[string]Change)
 	for _, change := range changes {

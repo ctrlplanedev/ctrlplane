@@ -77,8 +77,9 @@ func (c *Consumer) Subscribe(topic string) error {
 
 	log.Info("Successfully subscribed to topic", "topic", topic)
 
-	// Wait for partition assignment
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Wait for partition assignment with extended timeout
+	// Kafka coordinator election and initial rebalance can take time
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
 	partitions, err := c.waitForPartitionAssignment(ctx)
@@ -94,7 +95,9 @@ func (c *Consumer) Subscribe(topic string) error {
 
 // waitForPartitionAssignment blocks until Kafka assigns partitions to this consumer
 func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, error) {
-	log.Info("Waiting for partition assignment...")
+	startTime := time.Now()
+	log.Info("Waiting for partition assignment from Kafka coordinator...")
+	log.Info("This process involves: 1) Joining consumer group, 2) Coordinator election (if first consumer), 3) Partition rebalance")
 
 	// Check current assignment
 	assignment, err := c.consumer.Assignment()
@@ -102,29 +105,43 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 		log.Error("Failed to get assignment", "error", err)
 	} else if len(assignment) > 0 {
 		partitions := extractPartitionNumbers(assignment)
-		log.Info("Partitions already assigned", "partitions", partitions)
+		log.Info("Partitions already assigned", "partitions", partitions, "duration", time.Since(startTime))
 		return partitions, nil
 	}
 
 	pollCount := 0
 	var assignedPartitions []int32
+	lastLogTime := time.Now()
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Error("Context cancelled while waiting for partition assignment")
+			log.Error("Context cancelled while waiting for partition assignment", 
+				"duration", time.Since(startTime), 
+				"pollCount", pollCount,
+				"error", ctx.Err())
+			log.Error("Partition assignment timeout - possible causes: 1) Kafka broker unreachable, 2) Network issues, 3) Slow coordinator election")
 			return nil, fmt.Errorf("timeout waiting for partition assignment: %w", ctx.Err())
 		default:
 			ev := c.consumer.Poll(200)
 			pollCount++
-			if pollCount%40 == 0 { // Every ~8s
-				log.Info("Polling for partition assignment...", "iteration", pollCount)
+			
+			// Log progress every 5 seconds
+			if time.Since(lastLogTime) >= 5*time.Second {
+				elapsed := time.Since(startTime)
+				log.Info("Still waiting for partition assignment...", 
+					"elapsed", elapsed.Round(time.Second), 
+					"polls", pollCount,
+					"status", "waiting_for_coordinator")
+				lastLogTime = time.Now()
 			}
 
 			if ev == nil {
 				// If we have partitions assigned and waited a few polls, we're done
 				if len(assignedPartitions) > 0 && pollCount > 5 {
-					log.Info("Assignment stable, proceeding", "partitions", assignedPartitions)
+					log.Info("Assignment stable, proceeding", 
+						"partitions", assignedPartitions,
+						"duration", time.Since(startTime).Round(time.Second))
 					return assignedPartitions, nil
 				}
 
@@ -140,14 +157,21 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 
 			switch e := ev.(type) {
 			case kafka.AssignedPartitions:
-				log.Info("Received AssignedPartitions event", "partitions", extractPartitionNumbers(e.Partitions))
+				elapsed := time.Since(startTime)
+				log.Info("✓ Received AssignedPartitions event", 
+					"partitions", extractPartitionNumbers(e.Partitions),
+					"timeToAssign", elapsed.Round(time.Second))
+				
 				if err := c.consumer.IncrementalAssign(e.Partitions); err != nil {
 					log.Error("IncrementalAssign failed", "error", err)
 					return nil, fmt.Errorf("incremental assign failed: %w", err)
 				}
 
 				assignedPartitions = append(assignedPartitions, extractPartitionNumbers(e.Partitions)...)
-				log.Info("Partitions assigned so far", "partitions", assignedPartitions)
+				log.Info("Partitions assigned successfully", 
+					"total_partitions", len(assignedPartitions),
+					"partitions", assignedPartitions,
+					"duration", elapsed.Round(time.Second))
 
 			case kafka.RevokedPartitions:
 				log.Warn("Received RevokedPartitions event", "partitions", extractPartitionNumbers(e.Partitions))

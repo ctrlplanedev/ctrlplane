@@ -12,11 +12,12 @@ import (
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/kafka"
-	"workspace-engine/pkg/persistence/memory"
+	"workspace-engine/pkg/persistence/pebble"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
+	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
@@ -112,8 +113,14 @@ func initTracer() (func(), error) {
 }
 
 func init() {
+	store, err := pebble.NewStore("pebble.db", repository.GlobalRegistry())
+	if err != nil {
+		log.Fatal("Failed to create Pebble store", "error", err)
+		panic(err)
+	}
+
 	manager.Configure(
-		manager.WithPersistentStore(memory.NewStore()),
+		manager.WithPersistentStore(store),
 		manager.WithWorkspaceCreateOptions(workspace.AddDefaultSystem()),
 	)
 }

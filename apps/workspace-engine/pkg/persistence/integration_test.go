@@ -83,7 +83,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	require.Len(t, loadedChanges, 4)
 
 	// Apply changes to a fresh store
-	err = testStore.Repo().ApplyRegistry().Apply(ctx, loadedChanges)
+	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
 	// Verify entities were restored correctly
@@ -170,7 +170,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 
 	// Apply to store and check it's the updated version
 	testStore := store.New(statechange.NewChangeSet[any]())
-	err = testStore.Repo().ApplyRegistry().Apply(ctx, loadedChanges)
+	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
 	restoredResource, ok := testStore.Repo().Resources.Get(resourceIdentifier)
@@ -229,7 +229,7 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	require.True(t, testStore.Repo().Resources.Has(resourceIdentifier))
 
 	// Now apply the unset change
-	err = testStore.Repo().ApplyRegistry().Apply(ctx, loadedChanges)
+	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
 	// Resource should be removed
@@ -287,7 +287,7 @@ func TestPersistence_MultipleNamespaces(t *testing.T) {
 
 	// Verify correct entities in each namespace
 	testStore1 := store.New(statechange.NewChangeSet[any]())
-	err = testStore1.Repo().ApplyRegistry().Apply(ctx, loaded1)
+	err = testStore1.Repo().Router().Apply(ctx, loaded1)
 	require.NoError(t, err)
 
 	restoredSystem1, ok := testStore1.Repo().Systems.Get(system1.Id)
@@ -295,7 +295,7 @@ func TestPersistence_MultipleNamespaces(t *testing.T) {
 	assert.Equal(t, "system-1", restoredSystem1.Name)
 
 	testStore2 := store.New(statechange.NewChangeSet[any]())
-	err = testStore2.Repo().ApplyRegistry().Apply(ctx, loaded2)
+	err = testStore2.Repo().Router().Apply(ctx, loaded2)
 	require.NoError(t, err)
 
 	restoredSystem2, ok := testStore2.Repo().Systems.Get(system2.Id)
@@ -459,7 +459,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 
 	// Apply to fresh store
 	testStore := store.New(statechange.NewChangeSet[any]())
-	err = testStore.Repo().ApplyRegistry().Apply(ctx, loadedChanges)
+	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
 	// Verify each entity type was restored
@@ -640,7 +640,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 
 	// Apply to a new store
 	newStore := store.New(statechange.NewChangeSet[any]())
-	err = newStore.Repo().ApplyRegistry().Apply(ctx, loadedChanges)
+	err = newStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
 	// Verify all base entities are restored

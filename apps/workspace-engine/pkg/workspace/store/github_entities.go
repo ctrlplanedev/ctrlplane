@@ -9,7 +9,7 @@ import (
 )
 
 type GithubEntities struct {
-	repo  *repository.Repository
+	repo  *repository.InMemoryStore
 	store *Store
 }
 

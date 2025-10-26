@@ -44,7 +44,9 @@ func NewConsumer(brokers string) (messaging.Consumer, error) {
 //  5. Start consuming and processing messages
 func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 	// Subscribe to topic
-	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID)
+	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID, "brokers", Brokers)
+	log.Info("Waiting for Kafka partition assignment - this may take 30-120 seconds on first startup")
+	
 	if err := consumer.Subscribe(Topic); err != nil {
 		log.Error("Failed to subscribe", "error", err)
 		return err
@@ -79,6 +81,10 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 	log.Info("All workspace IDs", "workspaceIDs", allWorkspaceIDs)
 	for _, workspaceID := range allWorkspaceIDs {
 		ws, err := manager.GetOrLoad(ctx, workspaceID)
+		if err != nil {
+			log.Error("Failed to get or load workspace", "workspaceID", workspaceID, "error", err)
+			continue
+		}
 		if ws == nil {
 			log.Error("Workspace not found", "workspaceID", workspaceID, "error", err)
 			continue

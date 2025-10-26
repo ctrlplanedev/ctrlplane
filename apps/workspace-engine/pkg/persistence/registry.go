@@ -1,38 +1,38 @@
-package pebble
+package persistence
 
 import (
 	"encoding/json"
 	"fmt"
 	"sync"
-
-	"workspace-engine/pkg/persistence"
 )
 
 // EntityFactory is a function that creates a new instance of an entity
-type EntityFactory func() persistence.Entity
+type EntityFactory func() Entity
 
-// EntityRegistry manages entity type registrations for marshaling/unmarshaling
-type EntityRegistry struct {
+// JSONEntityRegistry manages entity type registrations for JSON marshaling/unmarshaling.
+// It maps entity type names to factory functions that create empty instances,
+// enabling deserialization of persisted JSON entities back into their concrete types.
+type JSONEntityRegistry struct {
 	mu        sync.RWMutex
 	factories map[string]EntityFactory
 }
 
-// NewEntityRegistry creates a new entity registry
-func NewEntityRegistry() *EntityRegistry {
-	return &EntityRegistry{
+// NewJSONEntityRegistry creates a new JSON entity registry
+func NewJSONEntityRegistry() *JSONEntityRegistry {
+	return &JSONEntityRegistry{
 		factories: make(map[string]EntityFactory),
 	}
 }
 
 // Register registers an entity type with its factory function
-func (r *EntityRegistry) Register(entityType string, factory EntityFactory) {
+func (r *JSONEntityRegistry) Register(entityType string, factory EntityFactory) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.factories[entityType] = factory
 }
 
 // Unmarshal unmarshals JSON data into the appropriate entity type
-func (r *EntityRegistry) Unmarshal(entityType string, data json.RawMessage) (persistence.Entity, error) {
+func (r *JSONEntityRegistry) Unmarshal(entityType string, data json.RawMessage) (Entity, error) {
 	r.mu.RLock()
 	factory, exists := r.factories[entityType]
 	r.mu.RUnlock()
@@ -50,7 +50,7 @@ func (r *EntityRegistry) Unmarshal(entityType string, data json.RawMessage) (per
 }
 
 // IsRegistered checks if an entity type is registered
-func (r *EntityRegistry) IsRegistered(entityType string) bool {
+func (r *JSONEntityRegistry) IsRegistered(entityType string) bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	_, exists := r.factories[entityType]

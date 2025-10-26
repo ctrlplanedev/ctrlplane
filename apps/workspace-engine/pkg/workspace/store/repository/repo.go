@@ -1,69 +1,47 @@
 package repository
 
 import (
-	"encoding/gob"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 )
 
-func EncodeGob(r *Repository) ([]byte, error) {
-	var buf []byte
-	writer := NewBufferWriter(&buf)
-	encoder := gob.NewEncoder(writer)
-	err := encoder.Encode(r)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
+// createTypedStore creates an in-memory store and registers it with the persistence router.
+// Returns the store for direct type-safe access while enabling generic persistence updates.
+func createTypedStore[E any](router *persistence.RepositoryRouter, entityType string) cmap.ConcurrentMap[string, E] {
+	store := cmap.New[E]()
+	router.Register(entityType, &TypedStoreAdapter[E]{store: &store})
+	return store
 }
 
-// BufferWriter implements io.Writer for a byte slice pointer
-type BufferWriter struct {
-	buf *[]byte
-}
+func New() *InMemoryStore {
+	router := persistence.NewRepositoryRouter()
 
-func NewBufferWriter(b *[]byte) *BufferWriter {
-	return &BufferWriter{buf: b}
-}
-
-func (w *BufferWriter) Write(p []byte) (int, error) {
-	*w.buf = append(*w.buf, p...)
-	return len(p), nil
-}
-
-// registerEntity creates a cmap and registers it with the apply registry
-func registerEntity[E any](registry *persistence.ApplyRegistry, entityType string) cmap.ConcurrentMap[string, E] {
-	cm := cmap.New[E]()
-	registry.Register(entityType, &RepositoryAdapter[E]{cm: &cm})
-	return cm
-}
-
-func New() *Repository {
-	registry := persistence.NewApplyRegistry()
-
-	return &Repository{
-		applyRegistry:       registry,
-		Resources:           registerEntity[*oapi.Resource](registry, "resource"),
-		ResourceProviders:   registerEntity[*oapi.ResourceProvider](registry, "resource_provider"),
-		ResourceVariables:   registerEntity[*oapi.ResourceVariable](registry, "resource_variable"),
-		Deployments:         registerEntity[*oapi.Deployment](registry, "deployment"),
-		DeploymentVersions:  registerEntity[*oapi.DeploymentVersion](registry, "deployment_version"),
-		DeploymentVariables: registerEntity[*oapi.DeploymentVariable](registry, "deployment_variable"),
-		Environments:        registerEntity[*oapi.Environment](registry, "environment"),
-		Policies:            registerEntity[*oapi.Policy](registry, "policy"),
-		Systems:             registerEntity[*oapi.System](registry, "system"),
-		Releases:            registerEntity[*oapi.Release](registry, "release"),
-		Jobs:                registerEntity[*oapi.Job](registry, "job"),
-		JobAgents:           registerEntity[*oapi.JobAgent](registry, "job_agent"),
-		UserApprovalRecords: registerEntity[*oapi.UserApprovalRecord](registry, "user_approval_record"),
-		RelationshipRules:   registerEntity[*oapi.RelationshipRule](registry, "relationship_rule"),
-		GithubEntities:      registerEntity[*oapi.GithubEntity](registry, "github_entity"),
+	return &InMemoryStore{
+		router:              router,
+		Resources:           createTypedStore[*oapi.Resource](router, "resource"),
+		ResourceProviders:   createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
+		ResourceVariables:   createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
+		Deployments:         createTypedStore[*oapi.Deployment](router, "deployment"),
+		DeploymentVersions:  createTypedStore[*oapi.DeploymentVersion](router, "deployment_version"),
+		DeploymentVariables: createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
+		Environments:        createTypedStore[*oapi.Environment](router, "environment"),
+		Policies:            createTypedStore[*oapi.Policy](router, "policy"),
+		Systems:             createTypedStore[*oapi.System](router, "system"),
+		Releases:            createTypedStore[*oapi.Release](router, "release"),
+		Jobs:                createTypedStore[*oapi.Job](router, "job"),
+		JobAgents:           createTypedStore[*oapi.JobAgent](router, "job_agent"),
+		UserApprovalRecords: createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
+		RelationshipRules:   createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
+		GithubEntities:      createTypedStore[*oapi.GithubEntity](router, "github_entity"),
 	}
 }
 
-type Repository struct {
-	applyRegistry *persistence.ApplyRegistry
+// InMemoryStore provides type-safe access to workspace entities stored in memory.
+// It exposes typed concurrent maps for direct access while maintaining a router
+// for receiving generic persistence updates from Kafka/Pebble.
+type InMemoryStore struct {
+	router *persistence.RepositoryRouter
 
 	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
@@ -87,6 +65,6 @@ type Repository struct {
 	GithubEntities cmap.ConcurrentMap[string, *oapi.GithubEntity]
 }
 
-func (r *Repository) ApplyRegistry() *persistence.ApplyRegistry {
-	return r.applyRegistry
+func (s *InMemoryStore) Router() *persistence.RepositoryRouter {
+	return s.router
 }

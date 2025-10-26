@@ -38,7 +38,7 @@ func New(changeset *statechange.ChangeSet[any]) *Store {
 }
 
 type Store struct {
-	repo      *repository.Repository
+	repo      *repository.InMemoryStore
 	changeset *statechange.ChangeSet[any]
 
 	Policies            *Policies
@@ -60,7 +60,7 @@ type Store struct {
 	GithubEntities      *GithubEntities
 }
 
-func (s *Store) Repo() *repository.Repository {
+func (s *Store) Repo() *repository.InMemoryStore {
 	return s.repo
 }
 
@@ -119,5 +119,5 @@ func (s *Store) GobDecode(data []byte) error {
 }
 
 func (s *Store) Restore(ctx context.Context, changes persistence.Changes) error {
-	return s.repo.ApplyRegistry().Apply(ctx, changes)
+	return s.repo.Router().Apply(ctx, changes)
 }

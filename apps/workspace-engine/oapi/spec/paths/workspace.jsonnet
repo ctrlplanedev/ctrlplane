@@ -20,4 +20,23 @@ local openapi = import '../lib/openapi.libsonnet';
       ),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/status': {
+    get: {
+      summary: 'Get engine status',
+      operationId: 'getEngineStatus',
+      description: 'Returns the status of the engine.',
+      parameters: [openapi.workspaceIdParam()],
+      responses: openapi.okResponse(
+        {
+          type: 'object',
+          properties: {
+            healthy: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        'The status of the engine'
+      ),
+    },
+  },
 }

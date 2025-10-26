@@ -17,6 +17,7 @@ import (
 func init() {
 	manager.Configure(
 		manager.WithPersistentStore(memory.NewStore()),
+		manager.WithSkipInitialStatePopulation(),
 		manager.WithWorkspaceCreateOptions(
 			workspace.AddDefaultSystem(),
 		),

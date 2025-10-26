@@ -15,7 +15,7 @@ func NewReleases(store *Store) *Releases {
 }
 
 type Releases struct {
-	repo  *repository.Repository
+	repo  *repository.InMemoryStore
 	store *Store
 }
 
