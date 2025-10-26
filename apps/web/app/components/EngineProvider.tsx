@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 
+import "ldrs/react/Grid.css";
+
+import { Grid } from "ldrs/react";
+
 import { trpc } from "~/api/trpc";
 import { useWorkspace } from "./WorkspaceProvider";
 
@@ -20,13 +24,24 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     { workspaceId: workspace.id },
     { refetchInterval: 1000 },
   );
+  const status = engine ?? { healthy: false, message: "Engine reloading" };
   return (
-    <EngineContext.Provider
-      value={{
-        status: engine ?? { healthy: false, message: "Engine not found" },
-      }}
-    >
-      {children}
+    <EngineContext.Provider value={{ status }}>
+      {status.healthy ? (
+        children
+      ) : (
+        <div className="fixed inset-0 flex items-center justify-center bg-background">
+          <div className="flex flex-col items-center gap-4 space-y-8 rounded-lg bg-card p-12">
+            <Grid size={100} speed={3} />
+            <div className="flex flex-col items-center gap-1 text-center">
+              <p className="font-medium text-foreground">
+                Waiting for workspace engine...
+              </p>
+              <p className="text-sm text-muted-foreground">{status.message}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </EngineContext.Provider>
   );
 }

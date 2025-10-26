@@ -71,6 +71,7 @@ export default [
         route("general", "routes/ws/settings/general.tsx"),
         route("members", "routes/ws/settings/members.tsx"),
         route("api-keys", "routes/ws/settings/api-keys.tsx"),
+        route("delete-workspace", "routes/ws/settings/delete-workspace.tsx"),
       ]),
     ]),
   ]),

@@ -50,6 +50,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "isbot": "^5.1.31",
+    "ldrs": "^1.1.9",
     "lucide-react": "^0.441.0",
     "next-themes": "^0.3.0",
     "openapi-fetch": "^0.13.8",

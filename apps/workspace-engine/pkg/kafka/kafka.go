@@ -105,6 +105,7 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 
 		// Read message from Kafka
 		msg, err := consumer.ReadMessage(time.Second)
+		start := time.Now()
 		if err != nil {
 			if messaging.IsTimeout(err) {
 				continue
@@ -119,9 +120,7 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 			log.Error("This should not happen, topic is subscribed and we are waiting for a message")
 		}
 
-		start := time.Now()
 		ws, err := handler.ListenAndRoute(ctx, msg)
-		duration := time.Since(start)
 		if err != nil {
 			log.Error("Failed to route message", "error", err)
 		}
@@ -132,8 +131,9 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 			continue
 		}
 
+		duration := time.Since(start)
 		// Print performance duration after processing
-		log.Info("Message processed", "duration_us", duration.Microseconds(), "workspaceID", msg.Key)
+		log.Info("Message processed", "duration_ms", duration.Milliseconds())
 
 		if ws == nil {
 			log.Error("Workspace not found", "workspaceID", msg.Key)

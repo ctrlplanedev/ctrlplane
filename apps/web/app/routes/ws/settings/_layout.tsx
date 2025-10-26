@@ -25,7 +25,7 @@ export default function SettingsLayout() {
   });
 
   return (
-    <div className="container mx-auto flex max-w-6xl gap-8 py-20">
+    <div className="container mx-auto flex max-w-4xl gap-8 py-20">
       <div className="flex flex-shrink-0 flex-col gap-2">
         <NavLink
           to={`/${workspace.slug}/settings/general`}

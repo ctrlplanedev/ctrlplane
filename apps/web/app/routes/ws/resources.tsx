@@ -25,12 +25,15 @@ export default function Resources() {
   const [searchParams] = useSearchParams();
   const cel = searchParams.get("cel");
 
-  const { data: resources } = trpc.resource.list.useQuery({
-    workspaceId: workspace.id,
-    selector: { cel: cel ?? "true" },
-    limit: 200,
-    offset: 0,
-  });
+  const { data: resources } = trpc.resource.list.useQuery(
+    {
+      workspaceId: workspace.id,
+      selector: { cel: cel ?? "true" },
+      limit: 200,
+      offset: 0,
+    },
+    { refetchInterval: 30_000 },
+  );
 
   return (
     <>
