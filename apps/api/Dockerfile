@@ -45,10 +45,10 @@ COPY . .
 RUN turbo build --filter=...@ctrlplane/web-api
 
 # Debug: Verify the build output exists
-RUN ls -la /app/apps/api/ && \
-    if [ ! -f /app/apps/api/dist/index.js ]; then \
-      echo "ERROR: Build failed - index.js not found!" && \
-      ls -la /app/apps/api/dist/ || echo "dist directory does not exist" && \
+RUN ls -la /app/apps/api/dist/ && \
+    if [ ! -f /app/apps/api/dist/src/index.js ]; then \
+      echo "ERROR: Build failed - src/index.js not found!" && \
+      ls -la /app/apps/api/dist/src/ || echo "dist/src directory does not exist" && \
       exit 1; \
     fi
 
@@ -65,6 +65,6 @@ ENV HOSTNAME=0.0.0.0
 ENV AUTH_TRUST_HOST=true
 ENV PORT=8081
 
-WORKDIR /app/apps/api/dist/
+WORKDIR /app/apps/api/dist/src/
 
 CMD ["node", "index.js"]
