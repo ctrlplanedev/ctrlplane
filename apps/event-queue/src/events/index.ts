@@ -51,6 +51,7 @@ const workspaceHandlers: Record<Event, Handler<any>> = {
   [Event.ResourceVariableCreated]: newResourceVariable,
   [Event.ResourceVariableUpdated]: updatedResourceVariable,
   [Event.ResourceVariableDeleted]: deletedResourceVariable,
+  [Event.ResourceProviderSetResources]: () => Promise.resolve(),
   [Event.EnvironmentCreated]: newEnvironment,
   [Event.EnvironmentUpdated]: updatedEnvironment,
   [Event.EnvironmentDeleted]: deletedEnvironment,

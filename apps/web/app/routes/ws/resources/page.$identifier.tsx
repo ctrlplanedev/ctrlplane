@@ -315,7 +315,9 @@ export default function ResourceDetail() {
                     Last Updated
                   </div>
                   <div className="col-span-2 text-sm">
-                    {new Date(resource.updatedAt).toLocaleString()}
+                    {resource.updatedAt != null
+                      ? new Date(resource.updatedAt).toLocaleString()
+                      : "-"}
                   </div>
                 </div>
               </div>

@@ -121,7 +121,7 @@ export function CreateRelationshipRule({
       form.reset();
 
       // Invalidate relationship rules list to refetch
-      void utils.relationships.get.invalidate();
+      void utils.relationships.list.invalidate();
 
       onSuccess?.();
     },

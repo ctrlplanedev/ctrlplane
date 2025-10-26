@@ -11,7 +11,7 @@ type Resource = {
   config: Record<string, unknown>;
   workspaceId: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 };
 
 type ResourceContextType = {
@@ -43,5 +43,3 @@ export const useResource = (): ResourceContextType => {
   }
   return context;
 };
-
-
