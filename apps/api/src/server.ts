@@ -19,11 +19,14 @@ import { createGithubRouter } from "./routes/github/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const specFile = join(__dirname, "../openapi/openapi.json");
+
+console.log("specFile", specFile);
 
 const oapiValidatorMiddleware = OpenApiValidator.middleware({
-  apiSpec: join(__dirname, "../openapi/openapi.json"),
+  apiSpec: specFile,
   validateRequests: true,
-  ignorePaths: /\/api\/(auth|trpc|github|ui)/,
+  ignorePaths: /\/api\/(auth|trpc|github|ui|healthz)/,
 });
 
 const trpcMiddleware = trpcExpress.createExpressMiddleware({
@@ -59,12 +62,13 @@ const app = express()
   .use(express.json())
   .use(cookieParser())
   .use(loggerMiddleware)
-  .use(oapiValidatorMiddleware)
 
-  // Health check endpoint
+  // Health check endpoint (before OpenAPI validator)
   .get("/api/healthz", (req, res) => {
     res.status(200).send({ status: "ok" });
   })
+
+  .use(oapiValidatorMiddleware)
 
   .all("/api/auth/*splat", toNodeHandler(auth))
 
