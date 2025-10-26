@@ -31,11 +31,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy binary from builder
-COPY --from=builder /app/engine .
+COPY --from=builder /app/router .
 
 # Create non-root user
 RUN groupadd -r router && useradd -r -g router router
-USER engine
+USER router
 
 # Expose HTTP API port
 EXPOSE 9091
@@ -44,4 +44,4 @@ EXPOSE 9090
 ENV GIN_MODE=release
 
 # Run the binary
-CMD ["./engine"]
+CMD ["./router"]
