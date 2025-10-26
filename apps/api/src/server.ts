@@ -14,7 +14,7 @@ import swaggerUi from "swagger-ui-express";
 import { auth } from "@ctrlplane/auth/server";
 import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
-import swaggerDocument from "../openapi/openapi.json";
+import swaggerDocument from "../openapi/openapi.json" with { type: "json" };
 import { createGithubRouter } from "./routes/github/index.js";
 
 const __filename = fileURLToPath(import.meta.url);

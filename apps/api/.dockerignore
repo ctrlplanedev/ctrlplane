@@ -1,0 +1,68 @@
+node_modules
+.pnp
+.pnp.js
+.pnpm
+
+coverage
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# nitro
+.nitro/
+.output/
+
+# expo
+.expo/
+expo-env.d.ts
+apps/expo/.gitignore
+apps/expo/ios
+apps/expo/android
+
+# production
+build
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# typescript
+*.tsbuildinfo
+dist/
+
+# turbo
+.turbo
+
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.env*
+
+Dockerfile
+.dockerignore
+
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+.github
+.vscode
+.turbo
+.swc
+
+# Exclude deeply nested
+**/node_modules
+**/.next
+**/out/
+**/Dockerfile
