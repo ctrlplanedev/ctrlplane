@@ -91,9 +91,9 @@ export interface paths {
         };
         /** List deployments */
         get: operations["listDeployments"];
-        put?: never;
-        /** Create deployment */
-        post: operations["createDeployment"];
+        /** Upsert deployment */
+        put: operations["upsertDeployment"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -272,17 +272,6 @@ export interface components {
         BooleanValue: boolean;
         CelSelector: {
             cel: string;
-        };
-        CreateDeploymentRequest: {
-            description?: string;
-            jobAgentConfig?: {
-                [key: string]: unknown;
-            };
-            jobAgentId?: string;
-            name: string;
-            resourceSelector?: components["schemas"]["Selector"];
-            slug: string;
-            systemId: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -495,6 +484,17 @@ export interface components {
             name?: string;
             /** @description URL-friendly unique identifier (lowercase, no spaces) */
             slug?: string;
+        };
+        UpsertDeploymentRequest: {
+            description?: string;
+            jobAgentConfig?: {
+                [key: string]: unknown;
+            };
+            jobAgentId?: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            slug: string;
+            systemId: string;
         };
         UpsertDeploymentVersionRequest: {
             config?: {
@@ -918,7 +918,7 @@ export interface operations {
             };
         };
     };
-    createDeployment: {
+    upsertDeployment: {
         parameters: {
             query?: never;
             header?: never;
@@ -927,7 +927,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateDeploymentRequest"];
+                "application/json": components["schemas"]["UpsertDeploymentRequest"];
             };
         };
         responses: {

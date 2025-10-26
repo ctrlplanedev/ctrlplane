@@ -52,9 +52,9 @@ const getExistingDeployment = async (
   return deployments.find((deployment) => deployment.slug === slug) ?? null;
 };
 
-const createDeployment: AsyncTypedHandler<
+const putDeployment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments",
-  "post"
+  "put"
 > = async (req, res) => {
   const { workspaceId } = req.params;
   const { body } = req;
@@ -72,7 +72,11 @@ const createDeployment: AsyncTypedHandler<
   };
 
   if (existingDeployment != null) {
-    const mergedDeployment = { ...existingDeployment, ...deployment };
+    const mergedDeployment = {
+      ...existingDeployment,
+      ...deployment,
+      id: existingDeployment.id,
+    };
     sendGoEvent({
       workspaceId,
       eventType: Event.DeploymentUpdated,
@@ -118,5 +122,5 @@ export const deploymentIdRouter = Router({ mergeParams: true })
 
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
-  .post("/", asyncHandler(createDeployment))
+  .post("/", asyncHandler(putDeployment))
   .use("/:deploymentId", deploymentIdRouter);

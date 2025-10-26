@@ -28,38 +28,6 @@
             ],
             "type": "object"
          },
-         "CreateDeploymentRequest": {
-            "properties": {
-               "description": {
-                  "type": "string"
-               },
-               "jobAgentConfig": {
-                  "additionalProperties": true,
-                  "type": "object"
-               },
-               "jobAgentId": {
-                  "type": "string"
-               },
-               "name": {
-                  "type": "string"
-               },
-               "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               },
-               "slug": {
-                  "type": "string"
-               },
-               "systemId": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "systemId",
-               "slug",
-               "name"
-            ],
-            "type": "object"
-         },
          "CreateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -740,6 +708,38 @@
             },
             "type": "object"
          },
+         "UpsertDeploymentRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "slug": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "slug",
+               "name"
+            ],
+            "type": "object"
+         },
          "UpsertDeploymentVersionRequest": {
             "properties": {
                "config": {
@@ -1368,13 +1368,13 @@
             },
             "summary": "List deployments"
          },
-         "post": {
-            "operationId": "createDeployment",
+         "put": {
+            "operationId": "upsertDeployment",
             "requestBody": {
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/CreateDeploymentRequest"
+                        "$ref": "#/components/schemas/UpsertDeploymentRequest"
                      }
                   }
                },
@@ -1392,7 +1392,7 @@
                   "description": "Resource created successfully"
                }
             },
-            "summary": "Create deployment"
+            "summary": "Upsert deployment"
          }
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {

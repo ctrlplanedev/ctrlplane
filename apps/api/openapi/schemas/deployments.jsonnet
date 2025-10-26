@@ -1,7 +1,7 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  CreateDeploymentRequest: {
+  UpsertDeploymentRequest: {
     type: 'object',
     required: ['systemId', 'slug', 'name'],
     properties: {
