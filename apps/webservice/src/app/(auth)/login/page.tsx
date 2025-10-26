@@ -11,7 +11,6 @@ import {
   isGoogleAuthEnabled,
   isOIDCAuthEnabled,
 } from "@ctrlplane/auth/server";
-import { Button } from "@ctrlplane/ui/button";
 
 import { LoginCard } from "./LoginCard";
 
@@ -51,7 +50,7 @@ export default async function LoginPage() {
           </Link>
 
           {/* Only show signup button if credentials auth is enabled AND we're not exclusively using identity providers */}
-          {isCredentialsAuthEnabled && (
+          {/* {isCredentialsAuthEnabled && (
             <Link href="/sign-up" passHref>
               <Button
                 variant="outline"
@@ -61,7 +60,7 @@ export default async function LoginPage() {
                 Create account
               </Button>
             </Link>
-          )}
+          )} */}
         </div>
       </header>
 

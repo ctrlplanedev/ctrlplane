@@ -69,10 +69,6 @@ export const resourcesRouter = router({
         );
       }
 
-      if (!result.data) {
-        throw new Error(`Resource not found with identifier: ${identifier}`);
-      }
-
       return result.data;
     }),
 

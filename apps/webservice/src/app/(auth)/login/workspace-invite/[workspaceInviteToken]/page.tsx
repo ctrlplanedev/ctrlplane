@@ -35,11 +35,11 @@ export default async function WorkflowInvitePage() {
             Contact
           </Button>
         </Link>
-        {isCredentialsAuthEnabled && (
+        {/* {isCredentialsAuthEnabled && (
           <Link href="/sign-up" passHref>
             <Button variant="outline">Sign up</Button>
           </Link>
-        )}
+        )} */}
       </div>
       <div className="flex h-[100vh] flex-col items-center justify-center">
         <LoginCard

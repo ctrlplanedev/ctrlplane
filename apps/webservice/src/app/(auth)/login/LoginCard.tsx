@@ -79,7 +79,7 @@ export const LoginCard: React.FC<{
       });
       const redirectUrl = acceptToken ? `/join/${acceptToken}` : "/";
       router.push(redirectUrl);
-    } catch (error) {
+    } catch {
       form.setError("root", {
         message: "Sign in failed. Please check your credentials and try again.",
       });
