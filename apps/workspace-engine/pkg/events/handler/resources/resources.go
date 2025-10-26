@@ -38,6 +38,8 @@ func HandleResourceUpdated(
 		return err
 	}
 
+	ws.Resources().Has(resource.Id)
+
 	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
 		return err
 	}
@@ -56,6 +58,31 @@ func HandleResourceDeleted(
 	}
 
 	ws.Resources().Remove(ctx, resource.Id)
+
+	return nil
+}
+
+func HandleResourceProviderSetResources(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	var payload struct {
+		ProviderId string           `json:"providerId"`
+		Resources  []*oapi.Resource `json:"resources"`
+	}
+	if err := json.Unmarshal(event.Data, &payload); err != nil {
+		return err
+	}
+
+	// Ensure all resources have the correct workspace ID
+	for _, resource := range payload.Resources {
+		resource.WorkspaceId = ws.ID
+	}
+
+	if err := ws.Resources().Set(ctx, payload.ProviderId, payload.Resources); err != nil {
+		return err
+	}
 
 	return nil
 }

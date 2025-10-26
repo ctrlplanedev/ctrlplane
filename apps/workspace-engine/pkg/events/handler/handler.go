@@ -31,9 +31,10 @@ const (
 	ResourceVariableUpdate EventType = "resource-variable.updated"
 	ResourceVariableDelete EventType = "resource-variable.deleted"
 
-	ResourceProviderCreate EventType = "resource-provider.created"
-	ResourceProviderUpdate EventType = "resource-provider.updated"
-	ResourceProviderDelete EventType = "resource-provider.deleted"
+	ResourceProviderCreate      EventType = "resource-provider.created"
+	ResourceProviderUpdate      EventType = "resource-provider.updated"
+	ResourceProviderDelete      EventType = "resource-provider.deleted"
+	ResourceProviderSetResources EventType = "resource-provider.set-resources"
 
 	DeploymentCreate EventType = "deployment.created"
 	DeploymentUpdate EventType = "deployment.updated"
