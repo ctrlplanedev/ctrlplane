@@ -1,7 +1,7 @@
 {
   "extends": "@ctrlplane/tsconfig/internal-package.json",
   "compilerOptions": {
-    "strict": false,
+    "strict": true,
     "lib": ["ES2015", "DOM"],
     "outDir": "./dist",
     "rootDir": "./src",
