@@ -12,7 +12,6 @@ import (
 	dbpersistence "workspace-engine/pkg/db/persistence"
 	"workspace-engine/pkg/env"
 	"workspace-engine/pkg/events/handler/tick"
-	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/registry"
 	"workspace-engine/pkg/server"
@@ -172,16 +171,6 @@ func init() {
 		panic(err)
 	}
 	defer consumer.Close()
-
-	go ticker.Every(ctx, time.Hour, func(ctx context.Context) {
-		ids := manager.Workspaces().Keys()
-		log.Info("Sending workspace save event", "count", len(ids))
-		for _, id := range ids {
-			if err := workspacesave.SendWorkspaceSave(ctx, producer, id); err != nil {
-				log.Error("Failed to send workspace save", "error", err)
-			}
-		}
-	})
 
 	go ticker.Every(ctx, time.Minute, func(ctx context.Context) {
 		ids := manager.Workspaces().Keys()
