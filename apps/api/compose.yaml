@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: api:latest2
+    restart: unless-stopped
+    environment:
+      - AUTH_SECRET=test
+      - VARIABLES_AES_256_KEY=0000000000000000000000000000000000000000000000000000000000000000
+      - PORT=8081
+    ports:
+      - "8082:8081"

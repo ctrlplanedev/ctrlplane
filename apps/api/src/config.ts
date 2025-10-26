@@ -18,7 +18,10 @@ export const env = createEnv({
       .or(z.literal("test"))
       .default("development"),
 
-    PORT: z.number().default(3001),
+    PORT: z
+      .string()
+      .default("8080")
+      .transform((val) => parseInt(val)),
     AUTH_URL: z.string().default("http://localhost:3000"),
 
     OPENAI_API_KEY: z.string().optional(),
