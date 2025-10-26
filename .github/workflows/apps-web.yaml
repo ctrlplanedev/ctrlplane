@@ -57,7 +57,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: apps/webservice/Dockerfile
+          file: apps/web/Dockerfile
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
 
