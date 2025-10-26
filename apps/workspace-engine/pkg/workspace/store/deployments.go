@@ -10,8 +10,11 @@ import (
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
+
+var deploymentsTracer = otel.Tracer("workspace/store/deployments")
 
 func NewDeployments(store *Store) *Deployments {
 	deployments := &Deployments{
@@ -165,6 +168,12 @@ func (e *Deployments) Resources(deploymentId string) (map[string]*oapi.Resource,
 }
 
 func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) error {
+	ctx, span := deploymentsTracer.Start(ctx, "UpsertDeployment")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("deployment.id", deployment.Id))
+	span.SetAttributes(attribute.String("deployment.name", deployment.Name))
+
 	previous, _ := e.repo.Deployments.Get(deployment.Id)
 	previousSystemId := ""
 	if previous != nil {
@@ -173,27 +182,35 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 
 	// Store the deployment in the repository
 	e.repo.Deployments.Set(deployment.Id, deployment)
+	span.AddEvent("Set deployment in repository")
 	e.store.Systems.ApplyDeploymentUpdate(ctx, previousSystemId, deployment)
+	span.AddEvent("Applied deployment update")
 
 	// Create materialized view with immediate computation of deployment resources
 	mv := materialized.New(
 		e.deploymentResourceRecomputeFunc(deployment.Id),
 	)
+	span.AddEvent("Created materialized view for deployment resources")
 
 	versionsMv := materialized.New(
 		e.deploymentVersionRecomputeFunc(deployment.Id),
 	)
+	span.AddEvent("Created materialized view for deployment versions")
 
 	e.resources.Set(deployment.Id, mv)
+	span.AddEvent("Set deployment resources materialized view")
 	e.versions.Set(deployment.Id, versionsMv)
+	span.AddEvent("Set deployment versions materialized view")
 
 	e.store.ReleaseTargets.Recompute(ctx)
+	span.AddEvent("Recomputed release targets")
 
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, deployment)
 	}
 
 	e.store.changeset.RecordUpsert(deployment)
+	span.AddEvent("Recorded deployment upsert in changeset")
 
 	return nil
 }
