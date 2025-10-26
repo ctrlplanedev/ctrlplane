@@ -9,14 +9,19 @@ export const setResourceProviderResources: AsyncTypedHandler<
   const { workspaceId, providerId } = req.params;
   const { resources } = req.body;
 
-  for (const resource of resources) {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.ResourceUpdated,
-      timestamp: Date.now(),
-      data: { id: "", ...resource, providerId, workspaceId },
-    });
-  }
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.ResourceProviderSetResources,
+    timestamp: Date.now(),
+    data: {
+      providerId,
+      resources: resources.map((r) => ({
+        id: "",
+        ...r,
+        workspaceId,
+      })),
+    },
+  });
 
-  res.status(202).json({});
+  res.status(202).json({ ok: true });
 };

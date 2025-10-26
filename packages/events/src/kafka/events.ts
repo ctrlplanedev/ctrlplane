@@ -63,6 +63,8 @@ export enum Event {
 
   Redeploy = "release-target.deploy",
 
+  ResourceProviderSetResources = "resource-provider.set-resources",
+
   // ReleaseCreated = "release.created",
   // ReleaseUpdated = "release.updated",
   // ReleaseDeleted = "release.deleted",
@@ -204,6 +206,10 @@ export type GoEventPayload = {
   [Event.RelationshipRuleUpdated]: WorkspaceEngine["schemas"]["RelationshipRule"];
   [Event.RelationshipRuleDeleted]: WorkspaceEngine["schemas"]["RelationshipRule"];
   [Event.Redeploy]: WorkspaceEngine["schemas"]["ReleaseTarget"];
+  [Event.ResourceProviderSetResources]: {
+    providerId: string;
+    resources: WorkspaceEngine["schemas"]["Resource"][];
+  };
 };
 
 export type Message<T extends keyof EventPayload> = {
