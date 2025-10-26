@@ -44,11 +44,11 @@ COPY . .
 
 RUN turbo build --filter=...@ctrlplane/web-api
 
+COPY apps/api/openapi/openapi.json /app/apps/api/dist/openapi/openapi.json
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
-
-COPY apps/api/openapi/openapi.json /app/apps/api/dist/openapi/openapi.json
 
 EXPOSE 8081
 

@@ -48,14 +48,11 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-WORKDIR /app
+WORKDIR /app/apps/web
 
 EXPOSE 3000
 
 ENV PORT=3000
 ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
 
-WORKDIR /app/apps/web
-
-CMD ["node", "../../node_modules/.bin/react-router-serve", "./build/server/index.js"]
+CMD ["serve", "-s", "build/client", "-l", "3000"]
