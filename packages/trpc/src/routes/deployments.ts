@@ -124,12 +124,6 @@ export const deploymentsRouter = router({
         description: z.string().max(255).optional(),
       }),
     )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentCreate)
-          .on({ type: "workspace", id: input.workspaceId }),
-    })
     .mutation(async ({ input }) => {
       const { workspaceId: _, ...deploymentData } = input;
       const deployment = { id: uuidv4(), ...deploymentData };
@@ -154,12 +148,6 @@ export const deploymentsRouter = router({
         }),
       }),
     )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentUpdate)
-          .on({ type: "deployment", id: input.deploymentId }),
-    })
     .mutation(async ({ input }) => {
       const { workspaceId, deploymentId, data } = input;
       const validate = await wsEngine.POST("/v1/validate/resource-selector", {
