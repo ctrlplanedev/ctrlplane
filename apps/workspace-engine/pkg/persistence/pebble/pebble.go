@@ -16,7 +16,7 @@ import (
 
 // Store is a Pebble-based implementation of persistence.Store
 // Uses an embedded key-value store for efficient persistence with automatic compaction.
-type Store struct {	
+type Store struct {
 	db       *pebble.DB
 	registry *persistence.JSONEntityRegistry
 	mu       sync.RWMutex
@@ -43,7 +43,7 @@ func NewStore(dbPath string, registry *persistence.JSONEntityRegistry) (*Store, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open pebble database: %w", err)
 	}
-	
+
 	return &Store{
 		db:       db,
 		registry: registry,
@@ -120,7 +120,7 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 
 	// Create prefix for namespace
 	prefix := []byte(namespace + ":")
-	
+
 	// Use prefix iterator
 	iter, err := s.db.NewIter(&pebble.IterOptions{
 		LowerBound: prefix,
@@ -132,7 +132,7 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 	defer iter.Close()
 
 	var result persistence.Changes
-	
+
 	// Iterate through all keys with the namespace prefix
 	for iter.First(); iter.Valid(); iter.Next() {
 		// Deserialize the stored change
@@ -188,7 +188,7 @@ func (s *Store) ListNamespaces() ([]string, error) {
 	defer iter.Close()
 
 	namespaces := make(map[string]struct{})
-	
+
 	for iter.First(); iter.Valid(); iter.Next() {
 		key := string(iter.Key())
 		// Extract namespace (first part before ':')
@@ -220,7 +220,7 @@ func (s *Store) DeleteNamespace(namespace string) error {
 	defer s.mu.Unlock()
 
 	prefix := []byte(namespace + ":")
-	
+
 	// Delete all keys with this prefix
 	return s.db.DeleteRange(prefix, prefixUpperBound(prefix), pebble.Sync)
 }

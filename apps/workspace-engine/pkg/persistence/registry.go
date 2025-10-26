@@ -56,4 +56,3 @@ func (r *JSONEntityRegistry) IsRegistered(entityType string) bool {
 	_, exists := r.factories[entityType]
 	return exists
 }
-

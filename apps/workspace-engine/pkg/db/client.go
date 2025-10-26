@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	pool        *pgxpool.Pool
-	once        sync.Once
+	pool *pgxpool.Pool
+	once sync.Once
 )
 
 // GetPool returns the singleton database connection pool

@@ -6,4 +6,3 @@ import "workspace-engine/pkg/workspace/status"
 func StatusTracker() *status.Tracker {
 	return status.Global()
 }
-

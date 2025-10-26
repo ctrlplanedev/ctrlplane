@@ -260,7 +260,7 @@ func TestPebbleStore_DeleteNamespace(t *testing.T) {
 	loaded1, err := store.Load(ctx, "workspace-1")
 	require.NoError(t, err)
 	assert.Len(t, loaded1, 2)
-	
+
 	// Verify workspace-1 entities
 	ws1Entities := make(map[string]*testEntity)
 	for _, change := range loaded1 {
@@ -275,7 +275,7 @@ func TestPebbleStore_DeleteNamespace(t *testing.T) {
 	loaded2, err := store.Load(ctx, "workspace-2")
 	require.NoError(t, err)
 	assert.Len(t, loaded2, 1)
-	
+
 	// Verify workspace-2 entity
 	entity2 := loaded2[0].Entity.(*testEntity)
 	assert.Equal(t, "e1", entity2.ID)
@@ -333,7 +333,7 @@ func TestPebbleStore_UnsetChangeType(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, loaded, 1)
 	assert.Equal(t, persistence.ChangeTypeUnset, loaded[0].ChangeType)
-	
+
 	// Verify the entity ID is preserved in the unset change
 	unsetEntity := loaded[0].Entity.(*testEntity)
 	assert.Equal(t, "e1", unsetEntity.ID, "Entity ID should be preserved in unset change")
@@ -375,7 +375,7 @@ func TestPebbleStore_ConcurrentAccess(t *testing.T) {
 	loaded, err := store.Load(ctx, "workspace-1")
 	require.NoError(t, err)
 	assert.Len(t, loaded, 1)
-	
+
 	// Verify the entity has correct ID and name
 	entity := loaded[0].Entity.(*testEntity)
 	assert.Equal(t, "concurrent", entity.ID, "Entity ID should be 'concurrent'")
@@ -435,7 +435,7 @@ func TestPebbleStore_MultipleEntityTypes(t *testing.T) {
 	// Verify both entity types and their values
 	var loadedTestEntity *testEntity
 	var loadedOtherEntity *otherEntity
-	
+
 	for _, change := range loaded {
 		switch e := change.Entity.(type) {
 		case *testEntity:
@@ -508,4 +508,3 @@ func BenchmarkPebbleStore_Load(b *testing.B) {
 		store.Load(ctx, "workspace-1")
 	}
 }
-

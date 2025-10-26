@@ -1,16 +1,11 @@
 package workspace
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/store"
 )
-
-var _ gob.GobEncoder = (*Workspace)(nil)
-var _ gob.GobDecoder = (*Workspace)(nil)
 
 func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
 	cs := statechange.NewChangeSet[any]()
@@ -92,58 +87,6 @@ func (w *Workspace) GithubEntities() *store.GithubEntities {
 
 func (w *Workspace) UserApprovalRecords() *store.UserApprovalRecords {
 	return w.store.UserApprovalRecords
-}
-
-func (w *Workspace) GobEncode() ([]byte, error) {
-	// Encode the store
-	storeData, err := w.store.GobEncode()
-	if err != nil {
-		return nil, err
-	}
-
-	// Create workspace data with ID and store
-	data := WorkspaceStorageObject{
-		ID:        w.ID,
-		StoreData: storeData,
-	}
-
-	// Encode the workspace data
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(data); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (w *Workspace) GobDecode(data []byte) error {
-	// Decode the workspace data
-	var wsData WorkspaceStorageObject
-
-	buf := bytes.NewReader(data)
-	dec := gob.NewDecoder(buf)
-	if err := dec.Decode(&wsData); err != nil {
-		return err
-	}
-
-	// Restore the workspace ID
-	w.ID = wsData.ID
-
-	// Initialize store if needed
-	if w.store == nil {
-		w.store = &store.Store{}
-	}
-
-	// Decode the store
-	if err := w.store.GobDecode(wsData.StoreData); err != nil {
-		return err
-	}
-
-	// Reinitialize release manager with the decoded store
-	w.releasemanager = releasemanager.New(w.store)
-
-	return nil
 }
 
 func (w *Workspace) RelationshipRules() *store.RelationshipRules {

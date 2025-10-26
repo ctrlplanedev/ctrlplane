@@ -46,7 +46,7 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 	// Subscribe to topic
 	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID, "brokers", Brokers)
 	log.Info("Waiting for Kafka partition assignment - this may take 30-120 seconds on first startup")
-	
+
 	if err := consumer.Subscribe(Topic); err != nil {
 		log.Error("Failed to subscribe", "error", err)
 		return err
@@ -91,10 +91,6 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 		}
 	}
 
-	if err := setOffsets(ctx, consumer, partitionWorkspaceMap); err != nil {
-		return fmt.Errorf("failed to set offsets: %w", err)
-	}
-
 	// Start consuming messages
 	handler := events.NewEventHandler()
 
@@ -123,7 +119,9 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 			log.Error("This should not happen, topic is subscribed and we are waiting for a message")
 		}
 
+		start := time.Now()
 		ws, err := handler.ListenAndRoute(ctx, msg)
+		duration := time.Since(start)
 		if err != nil {
 			log.Error("Failed to route message", "error", err)
 		}
@@ -133,6 +131,9 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 			log.Error("Failed to commit message", "error", err)
 			continue
 		}
+
+		// Print performance duration after processing
+		log.Info("Message processed", "duration_us", duration.Microseconds(), "workspaceID", msg.Key)
 
 		if ws == nil {
 			log.Error("Workspace not found", "workspaceID", msg.Key)

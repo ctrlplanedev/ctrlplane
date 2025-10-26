@@ -19,7 +19,7 @@ func (s *Server) ListWorkspaceIds(c *gin.Context) {
 // GetEngineStatus returns the current status of a workspace
 func (s *Server) GetEngineStatus(c *gin.Context, workspaceId string) {
 	statusSnapshot, exists := manager.StatusTracker().GetSnapshot(workspaceId)
-	
+
 	if !exists {
 		// Workspace not tracked - check if it exists in memory
 		_, loaded := manager.Workspaces().Get(workspaceId)
@@ -33,7 +33,7 @@ func (s *Server) GetEngineStatus(c *gin.Context, workspaceId string) {
 			})
 			return
 		}
-		
+
 		// Workspace doesn't exist
 		c.JSON(http.StatusNotFound, gin.H{
 			"workspaceId": workspaceId,
@@ -46,27 +46,27 @@ func (s *Server) GetEngineStatus(c *gin.Context, workspaceId string) {
 
 	// Return full status information
 	healthy := statusSnapshot.State == status.StateReady
-	
+
 	response := gin.H{
-		"workspaceId":    statusSnapshot.WorkspaceID,
-		"state":          string(statusSnapshot.State),
-		"healthy":        healthy,
-		"message":        statusSnapshot.Message,
-		"stateEntered":   statusSnapshot.StateEntered,
-		"lastUpdated":    statusSnapshot.LastUpdated,
-		"timeInState":    statusSnapshot.TimeInCurrentState().String(),
+		"workspaceId":  statusSnapshot.WorkspaceID,
+		"state":        string(statusSnapshot.State),
+		"healthy":      healthy,
+		"message":      statusSnapshot.Message,
+		"stateEntered": statusSnapshot.StateEntered,
+		"lastUpdated":  statusSnapshot.LastUpdated,
+		"timeInState":  statusSnapshot.TimeInCurrentState().String(),
 	}
-	
+
 	// Add error message if present
 	if statusSnapshot.ErrorMessage != "" {
 		response["errorMessage"] = statusSnapshot.ErrorMessage
 	}
-	
+
 	// Add metadata if present
 	if len(statusSnapshot.Metadata) > 0 {
 		response["metadata"] = statusSnapshot.Metadata
 	}
-	
+
 	// Add recent state history (last 5 transitions)
 	if len(statusSnapshot.StateHistory) > 0 {
 		historyLimit := 5
@@ -87,10 +87,10 @@ func (s *Server) GetEngineStatus(c *gin.Context, workspaceId string) {
 // ListWorkspaceStatuses returns status for all workspaces
 func (s *Server) ListWorkspaceStatuses(c *gin.Context) {
 	statuses := manager.StatusTracker().ListAll()
-	
+
 	// Get state counts
 	stateCounts := manager.StatusTracker().CountByState()
-	
+
 	c.JSON(http.StatusOK, gin.H{
 		"workspaces":  statuses,
 		"totalCount":  len(statuses),

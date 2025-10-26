@@ -21,11 +21,11 @@ func NewTracker() *Tracker {
 func (t *Tracker) GetOrCreate(workspaceID string) *WorkspaceStatus {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	
+
 	if status, exists := t.statuses[workspaceID]; exists {
 		return status
 	}
-	
+
 	status := NewWorkspaceStatus(workspaceID)
 	t.statuses[workspaceID] = status
 	return status
@@ -35,7 +35,7 @@ func (t *Tracker) GetOrCreate(workspaceID string) *WorkspaceStatus {
 func (t *Tracker) Get(workspaceID string) (*WorkspaceStatus, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	status, exists := t.statuses[workspaceID]
 	return status, exists
 }
@@ -44,12 +44,12 @@ func (t *Tracker) Get(workspaceID string) (*WorkspaceStatus, bool) {
 func (t *Tracker) GetSnapshot(workspaceID string) (WorkspaceStatus, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	status, exists := t.statuses[workspaceID]
 	if !exists {
 		return WorkspaceStatus{}, false
 	}
-	
+
 	return status.GetSnapshot(), true
 }
 
@@ -57,12 +57,12 @@ func (t *Tracker) GetSnapshot(workspaceID string) (WorkspaceStatus, bool) {
 func (t *Tracker) ListAll() []WorkspaceStatus {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	snapshots := make([]WorkspaceStatus, 0, len(t.statuses))
 	for _, status := range t.statuses {
 		snapshots = append(snapshots, status.GetSnapshot())
 	}
-	
+
 	return snapshots
 }
 
@@ -70,7 +70,7 @@ func (t *Tracker) ListAll() []WorkspaceStatus {
 func (t *Tracker) Remove(workspaceID string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	
+
 	delete(t.statuses, workspaceID)
 }
 
@@ -78,7 +78,7 @@ func (t *Tracker) Remove(workspaceID string) {
 func (t *Tracker) Count() int {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	return len(t.statuses)
 }
 
@@ -86,13 +86,13 @@ func (t *Tracker) Count() int {
 func (t *Tracker) CountByState() map[WorkspaceState]int {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	counts := make(map[WorkspaceState]int)
 	for _, status := range t.statuses {
 		state := status.GetState()
 		counts[state]++
 	}
-	
+
 	return counts
 }
 
@@ -103,4 +103,3 @@ var globalTracker = NewTracker()
 func Global() *Tracker {
 	return globalTracker
 }
-

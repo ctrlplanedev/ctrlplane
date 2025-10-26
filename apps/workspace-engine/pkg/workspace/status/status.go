@@ -11,46 +11,46 @@ type WorkspaceState string
 const (
 	// StateUnknown indicates the workspace state is unknown
 	StateUnknown WorkspaceState = "unknown"
-	
+
 	// StateInitializing indicates the workspace is being created
 	StateInitializing WorkspaceState = "initializing"
-	
+
 	// StateLoadingFromPersistence indicates loading from persistent store
 	StateLoadingFromPersistence WorkspaceState = "loading_from_persistence"
-	
+
 	// StateLoadingKafkaPartitions indicates Kafka partition assignment in progress
 	StateLoadingKafkaPartitions WorkspaceState = "loading_kafka_partitions"
-	
+
 	// StateReplayingEvents indicates replaying events from Kafka
 	StateReplayingEvents WorkspaceState = "replaying_events"
-	
+
 	// StatePopulatingInitialState indicates populating initial state
 	StatePopulatingInitialState WorkspaceState = "populating_initial_state"
-	
+
 	// StateRestoringFromSnapshot indicates restoring from persistence snapshot
 	StateRestoringFromSnapshot WorkspaceState = "restoring_from_snapshot"
-	
+
 	// StateReady indicates the workspace is fully loaded and ready
 	StateReady WorkspaceState = "ready"
-	
+
 	// StateError indicates the workspace encountered an error
 	StateError WorkspaceState = "error"
-	
+
 	// StateUnloading indicates the workspace is being removed from memory
 	StateUnloading WorkspaceState = "unloading"
 )
 
 // WorkspaceStatus tracks the current status of a workspace
 type WorkspaceStatus struct {
-	WorkspaceID   string                 `json:"workspaceId"`
-	State         WorkspaceState         `json:"state"`
-	Message       string                 `json:"message,omitempty"`
-	StateEntered  time.Time              `json:"stateEntered"`
-	LastUpdated   time.Time              `json:"lastUpdated"`
-	ErrorMessage  string                 `json:"errorMessage,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	StateHistory  []StateTransition      `json:"stateHistory,omitempty"`
-	
+	WorkspaceID  string                 `json:"workspaceId"`
+	State        WorkspaceState         `json:"state"`
+	Message      string                 `json:"message,omitempty"`
+	StateEntered time.Time              `json:"stateEntered"`
+	LastUpdated  time.Time              `json:"lastUpdated"`
+	ErrorMessage string                 `json:"errorMessage,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	StateHistory []StateTransition      `json:"stateHistory,omitempty"`
+
 	mu sync.RWMutex
 }
 
@@ -79,7 +79,7 @@ func NewWorkspaceStatus(workspaceID string) *WorkspaceStatus {
 func (s *WorkspaceStatus) SetState(state WorkspaceState, message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	// Record state transition
 	transition := StateTransition{
 		FromState: s.State,
@@ -88,12 +88,12 @@ func (s *WorkspaceStatus) SetState(state WorkspaceState, message string) {
 		Message:   message,
 	}
 	s.StateHistory = append(s.StateHistory, transition)
-	
+
 	// Limit history to last 20 transitions
 	if len(s.StateHistory) > 20 {
 		s.StateHistory = s.StateHistory[len(s.StateHistory)-20:]
 	}
-	
+
 	s.State = state
 	s.Message = message
 	s.StateEntered = time.Now()
@@ -104,7 +104,7 @@ func (s *WorkspaceStatus) SetState(state WorkspaceState, message string) {
 func (s *WorkspaceStatus) SetError(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	transition := StateTransition{
 		FromState: s.State,
 		ToState:   StateError,
@@ -112,11 +112,11 @@ func (s *WorkspaceStatus) SetError(err error) {
 		Message:   err.Error(),
 	}
 	s.StateHistory = append(s.StateHistory, transition)
-	
+
 	if len(s.StateHistory) > 20 {
 		s.StateHistory = s.StateHistory[len(s.StateHistory)-20:]
 	}
-	
+
 	s.State = StateError
 	s.ErrorMessage = err.Error()
 	s.StateEntered = time.Now()
@@ -127,7 +127,7 @@ func (s *WorkspaceStatus) SetError(err error) {
 func (s *WorkspaceStatus) UpdateMetadata(key string, value interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	s.Metadata[key] = value
 	s.LastUpdated = time.Now()
 }
@@ -136,16 +136,16 @@ func (s *WorkspaceStatus) UpdateMetadata(key string, value interface{}) {
 func (s *WorkspaceStatus) GetSnapshot() WorkspaceStatus {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	// Create a deep copy
 	metadata := make(map[string]interface{})
 	for k, v := range s.Metadata {
 		metadata[k] = v
 	}
-	
+
 	history := make([]StateTransition, len(s.StateHistory))
 	copy(history, s.StateHistory)
-	
+
 	return WorkspaceStatus{
 		WorkspaceID:  s.WorkspaceID,
 		State:        s.State,
@@ -185,4 +185,3 @@ func (s *WorkspaceStatus) TimeInCurrentState() time.Duration {
 	defer s.mu.RUnlock()
 	return time.Since(s.StateEntered)
 }
-

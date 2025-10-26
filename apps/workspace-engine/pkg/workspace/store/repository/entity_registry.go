@@ -42,4 +42,3 @@ func GlobalRegistry() *persistence.JSONEntityRegistry {
 	initGlobalRegistry()
 	return globalRegistry
 }
-

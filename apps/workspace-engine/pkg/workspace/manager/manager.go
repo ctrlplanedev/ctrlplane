@@ -16,9 +16,9 @@ var globalManager = &manager{
 }
 
 type manager struct {
-	persistentStore           persistence.Store
-	workspaces                cmap.ConcurrentMap[string, *workspace.Workspace]
-	workspaceCreateOptions    []workspace.WorkspaceOption
+	persistentStore            persistence.Store
+	workspaces                 cmap.ConcurrentMap[string, *workspace.Workspace]
+	workspaceCreateOptions     []workspace.WorkspaceOption
 	skipInitialStatePopulation bool
 }
 
@@ -56,7 +56,7 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		// Track workspace loading status
 		workspaceStatus := status.Global().GetOrCreate(id)
 		workspaceStatus.SetState(status.StateInitializing, "Creating workspace instance")
-		
+
 		ws = workspace.New(ctx, id, globalManager.workspaceCreateOptions...)
 
 		// Load from persistence
@@ -85,7 +85,7 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		}
 
 		globalManager.workspaces.Set(id, ws)
-		
+
 		// Mark as ready
 		workspaceStatus.SetState(status.StateReady, "Workspace loaded and ready")
 	}

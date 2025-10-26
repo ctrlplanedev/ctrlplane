@@ -93,7 +93,6 @@ func (d *GithubDispatcher) parseConfig(job *oapi.Job) (githubJobConfig, error) {
 	return parsed, nil
 }
 
-
 // generateJWT creates a JWT token for GitHub App authentication
 // This matches what Node.js createAppAuth does internally
 func (d *GithubDispatcher) generateJWT(appID int64, privateKey []byte) (string, error) {

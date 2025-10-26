@@ -99,6 +99,17 @@ func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
 	return mv.Get()
 }
 
+// ReinitializeMaterializedViews recreates all materialized views after deserialization
+func (s *Systems) ReinitializeMaterializedViews() {
+	for item := range s.repo.Systems.IterBuffered() {
+		system := item.Val
+		deploymentsMv := materialized.New(s.computeDeployments(system.Id))
+		environmentsMv := materialized.New(s.computeEnvironments(system.Id))
+		s.deployments.Set(system.Id, deploymentsMv)
+		s.environments.Set(system.Id, environmentsMv)
+	}
+}
+
 func (s *Systems) Remove(ctx context.Context, id string) {
 	system, ok := s.repo.Systems.Get(id)
 	if !ok || system == nil {

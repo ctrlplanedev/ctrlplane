@@ -26,7 +26,7 @@ type config struct {
 	GithubBotAppID      string `envconfig:"GITHUB_BOT_APP_ID" default:""`
 	GithubBotPrivateKey string `envconfig:"GITHUB_BOT_PRIVATE_KEY" default:""`
 
-	PostgresURL string `envconfig:"POSTGRES_URL" default:"postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"`
-	PostgresMaxPoolSize int `envconfig:"POSTGRES_MAX_POOL_SIZE" default:"50"`
+	PostgresURL             string `envconfig:"POSTGRES_URL" default:"postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"`
+	PostgresMaxPoolSize     int    `envconfig:"POSTGRES_MAX_POOL_SIZE" default:"50"`
 	PostgresApplicationName string `envconfig:"POSTGRES_APPLICATION_NAME" default:"workspace-engine"`
 }

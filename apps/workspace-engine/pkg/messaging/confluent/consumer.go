@@ -116,8 +116,8 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 	for {
 		select {
 		case <-ctx.Done():
-			log.Error("Context cancelled while waiting for partition assignment", 
-				"duration", time.Since(startTime), 
+			log.Error("Context cancelled while waiting for partition assignment",
+				"duration", time.Since(startTime),
 				"pollCount", pollCount,
 				"error", ctx.Err())
 			log.Error("Partition assignment timeout - possible causes: 1) Kafka broker unreachable, 2) Network issues, 3) Slow coordinator election")
@@ -125,12 +125,12 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 		default:
 			ev := c.consumer.Poll(200)
 			pollCount++
-			
+
 			// Log progress every 5 seconds
 			if time.Since(lastLogTime) >= 5*time.Second {
 				elapsed := time.Since(startTime)
-				log.Info("Still waiting for partition assignment...", 
-					"elapsed", elapsed.Round(time.Second), 
+				log.Info("Still waiting for partition assignment...",
+					"elapsed", elapsed.Round(time.Second),
 					"polls", pollCount,
 					"status", "waiting_for_coordinator")
 				lastLogTime = time.Now()
@@ -139,7 +139,7 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 			if ev == nil {
 				// If we have partitions assigned and waited a few polls, we're done
 				if len(assignedPartitions) > 0 && pollCount > 5 {
-					log.Info("Assignment stable, proceeding", 
+					log.Info("Assignment stable, proceeding",
 						"partitions", assignedPartitions,
 						"duration", time.Since(startTime).Round(time.Second))
 					return assignedPartitions, nil
@@ -158,17 +158,17 @@ func (c *Consumer) waitForPartitionAssignment(ctx context.Context) ([]int32, err
 			switch e := ev.(type) {
 			case kafka.AssignedPartitions:
 				elapsed := time.Since(startTime)
-				log.Info("✓ Received AssignedPartitions event", 
+				log.Info("✓ Received AssignedPartitions event",
 					"partitions", extractPartitionNumbers(e.Partitions),
 					"timeToAssign", elapsed.Round(time.Second))
-				
+
 				if err := c.consumer.IncrementalAssign(e.Partitions); err != nil {
 					log.Error("IncrementalAssign failed", "error", err)
 					return nil, fmt.Errorf("incremental assign failed: %w", err)
 				}
 
 				assignedPartitions = append(assignedPartitions, extractPartitionNumbers(e.Partitions)...)
-				log.Info("Partitions assigned successfully", 
+				log.Info("Partitions assigned successfully",
 					"total_partitions", len(assignedPartitions),
 					"partitions", assignedPartitions,
 					"duration", elapsed.Round(time.Second))
