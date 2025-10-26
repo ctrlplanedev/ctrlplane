@@ -66,4 +66,4 @@ ENV AUTH_TRUST_HOST=true
 
 WORKDIR /app/apps/api/dist/
 
-CMD ["node", "apps/api/dist/index.js"]
+CMD ["node", "index.js"]
