@@ -92,7 +92,8 @@ export interface paths {
         /** List deployments */
         get: operations["listDeployments"];
         put?: never;
-        post?: never;
+        /** Create deployment */
+        post: operations["createDeployment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -180,6 +181,17 @@ export interface components {
         CelSelector: {
             cel: string;
         };
+        CreateDeploymentRequest: {
+            description?: string;
+            jobAgentConfig?: {
+                [key: string]: unknown;
+            };
+            jobAgentId?: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            slug: string;
+            systemId: string;
+        };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
             name: string;
@@ -189,7 +201,9 @@ export interface components {
         Deployment: {
             description?: string;
             id: string;
-            jobAgentConfig: Record<string, unknown>;
+            jobAgentConfig: {
+                [key: string]: unknown;
+            };
             jobAgentId?: string;
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
@@ -214,14 +228,18 @@ export interface components {
         };
         IntegerValue: number;
         JsonSelector: {
-            json: Record<string, unknown>;
+            json: {
+                [key: string]: unknown;
+            };
         };
-        LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"]   | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
+        LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
         /** @enum {boolean} */
         NullValue: true;
         NumberValue: number;
         ObjectValue: {
-            object: Record<string, unknown>;
+            object: {
+                [key: string]: unknown;
+            };
         };
         PropertyMatcher: {
             fromProperty: string[];
@@ -234,7 +252,9 @@ export interface components {
             reference: string;
         };
         Resource: {
-            config: Record<string, unknown>;
+            config: {
+                [key: string]: unknown;
+            };
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -243,7 +263,9 @@ export interface components {
             kind: string;
             /** Format: date-time */
             lockedAt?: string;
-            metadata: Record<string, string>;
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             providerId?: string;
             /** Format: date-time */
@@ -255,13 +277,17 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             id: string;
-            metadata: Record<string, string>;
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             /** Format: uuid */
             workspaceId: string;
         };
         ResourceProviderResource: {
-            config: Record<string, unknown>;
+            config: {
+                [key: string]: unknown;
+            };
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -270,7 +296,9 @@ export interface components {
             kind: string;
             /** Format: date-time */
             lockedAt?: string;
-            metadata: Record<string, string>;
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             /** Format: date-time */
             updatedAt?: string;
@@ -342,21 +370,27 @@ export interface operations {
         responses: {
             /** @description List of workspaces */
             200: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkspaceList"];
                 };
             };
             /** @description Unauthorized */
             401: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Internal server error */
             500: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
@@ -378,35 +412,45 @@ export interface operations {
         responses: {
             /** @description Workspace created successfully */
             201: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
             /** @description Invalid request */
             400: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Unauthorized */
             401: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Workspace slug already exists */
             409: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Internal server error */
             500: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
@@ -427,28 +471,36 @@ export interface operations {
         responses: {
             /** @description Workspace details */
             200: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
             /** @description Unauthorized */
             401: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Workspace not found */
             404: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Internal server error */
             500: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
@@ -469,28 +521,36 @@ export interface operations {
         responses: {
             /** @description Workspace details */
             200: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
             /** @description Unauthorized */
             401: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Workspace not found */
             404: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Internal server error */
             500: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
@@ -511,26 +571,34 @@ export interface operations {
         responses: {
             /** @description Workspace deleted successfully */
             204: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content?: never;
             };
             /** @description Unauthorized */
             401: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Workspace not found */
             404: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Internal server error */
             500: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
@@ -555,42 +623,54 @@ export interface operations {
         responses: {
             /** @description Workspace updated successfully */
             200: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Workspace"];
                 };
             };
             /** @description Invalid request */
             400: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Unauthorized */
             401: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Workspace not found */
             404: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Workspace slug already exists */
             409: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Internal server error */
             500: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
@@ -616,7 +696,9 @@ export interface operations {
         responses: {
             /** @description Paginated list of items */
             200: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
                         items: components["schemas"]["DeploymentAndSystem"][];
@@ -627,6 +709,30 @@ export interface operations {
                         /** @description Total number of items available */
                         total: number;
                     };
+                };
+            };
+        };
+    };
+    createDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDeploymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Resource created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Deployment"];
                 };
             };
         };
@@ -648,7 +754,9 @@ export interface operations {
         responses: {
             /** @description Accepted response */
             202: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": Record<string, never>;
                 };
@@ -676,7 +784,9 @@ export interface operations {
         responses: {
             /** @description Paginated list of items */
             200: {
-                headers: Record<string, unknown>;
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
                         items: components["schemas"]["Resource"][];

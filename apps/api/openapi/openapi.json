@@ -16,6 +16,38 @@
             ],
             "type": "object"
          },
+         "CreateDeploymentRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "slug": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "slug",
+               "name"
+            ],
+            "type": "object"
+         },
          "CreateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -973,6 +1005,32 @@
                }
             },
             "summary": "List deployments"
+         },
+         "post": {
+            "operationId": "createDeployment",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateDeploymentRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "201": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Deployment"
+                        }
+                     }
+                  },
+                  "description": "Resource created successfully"
+               }
+            },
+            "summary": "Create deployment"
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers": {

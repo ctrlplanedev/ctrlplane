@@ -12,5 +12,18 @@ local openapi = import '../lib/openapi.libsonnet';
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentAndSystem')),
     },
+    post: {
+      summary: "Create deployment",
+      operationId: "createDeployment",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: openapi.schemaRef('CreateDeploymentRequest'),
+          },
+        },
+      },
+      responses: openapi.createdResponse(openapi.schemaRef('Deployment')),
+    },
   },
 }

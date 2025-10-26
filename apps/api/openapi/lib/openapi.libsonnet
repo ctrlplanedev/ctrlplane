@@ -84,6 +84,17 @@
     },
   },
 
+  createdResponse(schema, description = "Resource created successfully"):: {
+    '201': {
+      description: description,
+      content: {
+        'application/json': {
+          schema: schema,
+        },
+      },
+    },
+  },
+
   notFoundResponse():: {
     '404': {
       description: 'Resource not found',
