@@ -91,6 +91,31 @@ const createDeployment: AsyncTypedHandler<
   return;
 };
 
+const getDeployment: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, deploymentId } = req.params;
+  const response = await wsEngine.GET(
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+    { params: { path: { workspaceId, deploymentId } } },
+  );
+
+  if (response.error?.error != null)
+    throw new ApiError(response.error.error, 500);
+
+  if (response.data == null) throw new ApiError("Deployment not found", 404);
+
+  res.json(response.data);
+  return;
+};
+
+export const deploymentIdRouter = Router({ mergeParams: true }).get(
+  "/",
+  asyncHandler(getDeployment),
+);
+
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
-  .post("/", asyncHandler(createDeployment));
+  .post("/", asyncHandler(createDeployment))
+  .use("/:deploymentId", deploymentIdRouter);

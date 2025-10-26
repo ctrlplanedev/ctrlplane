@@ -1033,6 +1033,44 @@
             "summary": "Create deployment"
          }
       },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {
+         "get": {
+            "operationId": "getDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Deployment"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               }
+            },
+            "summary": "Get deployment"
+         }
+      },
       "/v1/workspaces/{workspaceId}/resource-providers": {
          "parameters": [
             {
