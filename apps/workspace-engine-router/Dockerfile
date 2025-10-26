@@ -1,41 +1,47 @@
-# Multi-stage build for workspace-engine-router
-
-# Stage 1: Build
-FROM golang:1.23-alpine AS builder
-
-# Install build dependencies
-RUN apk add --no-cache git make gcc musl-dev
+# Build stage - use Debian-based image for newer librdkafka
+FROM golang:1.25 AS builder
 
 WORKDIR /app
 
-# Copy go mod files
-COPY apps/workspace-engine-router/go.mod apps/workspace-engine-router/go.sum ./
+# Install build dependencies including gcc and librdkafka
+RUN apt-get update && apt-get install -y \
+    git \
+    librdkafka-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-# Download dependencies
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
-COPY apps/workspace-engine-router/ ./
+# Copy rest of source code
+COPY . .
 
-# Build the binary
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o router-service main.go
+# Build the binary with CGO enabled (required for confluent-kafka-go)
+# The vendored librdkafka will be statically linked
+RUN CGO_ENABLED=1 GOOS=linux go build -o router .
 
-# Stage 2: Runtime
-FROM alpine:latest
+# Final stage - use Debian slim for glibc compatibility
+FROM debian:bookworm-slim
 
-# Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata
+WORKDIR /app
 
-WORKDIR /root/
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy binary from builder
-COPY --from=builder /app/router-service .
+COPY --from=builder /app/engine .
 
-# Expose ports
-EXPOSE 8080 9090
+# Create non-root user
+RUN groupadd -r router && useradd -r -g router router
+USER engine
+
+# Expose HTTP API port
+EXPOSE 9091
+EXPOSE 9090
 
 ENV GIN_MODE=release
 
-# Run the service
-CMD ["./router-service"]
-
+# Run the binary
+CMD ["./engine"]
