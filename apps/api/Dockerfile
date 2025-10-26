@@ -56,6 +56,8 @@ USER nodejs
 
 COPY --from=installer --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist
 
+COPY apps/api/openapi/openapi.json /app/apps/api/dist/openapi/openapi.json
+
 EXPOSE 8081
 
 ENV NODE_ENV=production
