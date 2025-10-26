@@ -38,7 +38,8 @@ local securitySchemes = {
          (import 'paths/resource-providers.jsonnet') +
          (import 'paths/resources.jsonnet') +
          (import 'paths/deployments.jsonnet') +
-         (import 'paths/deploymentversions.jsonnet'),
+         (import 'paths/deploymentversions.jsonnet') +
+         (import 'paths/policies.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
@@ -49,6 +50,8 @@ local securitySchemes = {
              (import 'schemas/resources.jsonnet') +
              (import 'schemas/deployments.jsonnet') +
              (import 'schemas/deploymentversions.jsonnet') +
-             (import 'schemas/systems.jsonnet'),
+             (import 'schemas/systems.jsonnet') +
+             (import 'schemas/policies.jsonnet') +
+             (import 'schemas/jobs.jsonnet'),
   },
 }

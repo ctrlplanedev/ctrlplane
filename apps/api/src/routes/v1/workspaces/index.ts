@@ -11,6 +11,7 @@ import {
   listWorkspaces,
   updateWorkspace,
 } from "./handlers.js";
+import { policiesRouter } from "./policies.js";
 import { setResourceProviderResources } from "./resource-provider.js";
 
 /**
@@ -29,4 +30,5 @@ export const createWorkspacesRouter = (): Router =>
       "/:workspaceId/resource-providers/:providerId/set",
       asyncHandler(setResourceProviderResources),
     )
-    .use("/:workspaceId/deployments", deploymentsRouter);
+    .use("/:workspaceId/deployments", deploymentsRouter)
+    .use("/:workspaceId/policies", policiesRouter);

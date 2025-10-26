@@ -135,6 +135,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List policies */
+        get: operations["listPolicies"];
+        /** Upsert a policy */
+        put: operations["upsertPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/resource-providers": {
         parameters: {
             query?: never;
@@ -212,6 +230,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AnyApprovalRule: {
+            /** Format: int32 */
+            minApprovals: number;
+        };
         BooleanValue: boolean;
         CelSelector: {
             cel: string;
@@ -267,6 +289,28 @@ export interface components {
         };
         /** @enum {string} */
         DeploymentVersionStatus: "unspecified" | "building" | "ready" | "failed" | "rejected";
+        EnvironmentProgressionRule: {
+            dependsOnEnvironmentSelector: components["schemas"]["Selector"];
+            id: string;
+            /**
+             * Format: int32
+             * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
+             */
+            maximumAgeHours?: number;
+            /**
+             * Format: int32
+             * @description Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
+             * @default 0
+             */
+            minimumSockTimeMinutes: number;
+            /**
+             * Format: float
+             * @default 100
+             */
+            minimumSuccessPercentage: number;
+            policyId: string;
+            successStatuses?: components["schemas"]["JobStatus"][];
+        };
         Error: {
             /** @description Error code */
             code?: string;
@@ -280,6 +324,8 @@ export interface components {
             error?: string;
         };
         IntegerValue: number;
+        /** @enum {string} */
+        JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
         JsonSelector: {
             json: {
                 [key: string]: unknown;
@@ -293,6 +339,34 @@ export interface components {
             object: {
                 [key: string]: unknown;
             };
+        };
+        Policy: {
+            createdAt: string;
+            description?: string;
+            enabled: boolean;
+            id: string;
+            /** @description Arbitrary metadata for the policy (record<string, string>) */
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            priority: number;
+            rules: components["schemas"]["PolicyRule"][];
+            selectors: components["schemas"]["PolicyTargetSelector"][];
+            workspaceId: string;
+        };
+        PolicyRule: {
+            anyApproval?: components["schemas"]["AnyApprovalRule"];
+            createdAt: string;
+            environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
+            id: string;
+            policyId: string;
+        };
+        PolicyTargetSelector: {
+            deploymentSelector?: components["schemas"]["Selector"];
+            environmentSelector?: components["schemas"]["Selector"];
+            id: string;
+            resourceSelector?: components["schemas"]["Selector"];
         };
         PropertyMatcher: {
             fromProperty: string[];
@@ -385,6 +459,18 @@ export interface components {
             name?: string;
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
+        };
+        UpsertPolicyRequest: {
+            description?: string;
+            enabled?: boolean;
+            /** @description Arbitrary metadata for the policy (record<string, string>) */
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            priority?: number;
+            rules?: components["schemas"]["PolicyRule"][];
+            selectors?: components["schemas"]["PolicyTargetSelector"][];
         };
         Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
         Workspace: {
@@ -943,6 +1029,79 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A list of policies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        policies?: components["schemas"]["Policy"][];
+                    };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    upsertPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Policy"];
+                };
+            };
+            /** @description Resource created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Policy"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
