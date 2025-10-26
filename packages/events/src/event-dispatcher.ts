@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 export type FullPolicy = schema.Policy & {
   targets: schema.PolicyTarget[];
@@ -103,7 +104,10 @@ export interface EventDispatcher {
     opts?: { skipDuplicateCheck?: boolean },
   ): Promise<void>;
 
-  dispatchRedeploy(workspaceId: string, releaseTargetId: string): Promise<void>;
+  dispatchRedeploy(
+    workspaceId: string,
+    releaseTarget: WorkspaceEngine["schemas"]["ReleaseTarget"],
+  ): Promise<void>;
 
   dispatchUserApprovalRecordCreated(
     userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,

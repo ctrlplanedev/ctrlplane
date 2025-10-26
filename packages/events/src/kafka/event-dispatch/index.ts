@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 import type { EventDispatcher, FullPolicy } from "../../event-dispatcher.js";
 import * as deploymentVariableDispatch from "./deployment-variable.js";
@@ -224,9 +225,9 @@ export class KafkaEventDispatcher implements EventDispatcher {
 
   async dispatchRedeploy(
     workspaceId: string,
-    releaseTargetId: string,
+    releaseTarget: WorkspaceEngine["schemas"]["ReleaseTarget"],
   ): Promise<void> {
-    await redeployDispatch.dispatchRedeploy(workspaceId, releaseTargetId);
+    await redeployDispatch.dispatchRedeploy(workspaceId, releaseTarget);
   }
 
   async dispatchUserApprovalRecordCreated(

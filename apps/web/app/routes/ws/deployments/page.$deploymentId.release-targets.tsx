@@ -21,6 +21,7 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
+import { RedeployDialog } from "./_components/RedeployDialog";
 
 const JobStatusDisplayName: Record<string, string> = {
   unknown: "Unknown",
@@ -154,6 +155,9 @@ const EnvironmentReleaseTargetsGroup: FC<
               )}
             >
               {versionDisplay}
+            </TableCell>
+            <TableCell className="text-right">
+              <RedeployDialog releaseTarget={releaseTarget} />
             </TableCell>
           </TableRow>
         );

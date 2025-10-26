@@ -205,7 +205,7 @@ export type GoEventPayload = {
   [Event.RelationshipRuleCreated]: WorkspaceEngine["schemas"]["RelationshipRule"];
   [Event.RelationshipRuleUpdated]: WorkspaceEngine["schemas"]["RelationshipRule"];
   [Event.RelationshipRuleDeleted]: WorkspaceEngine["schemas"]["RelationshipRule"];
-  [Event.Redeploy]: string; // release target id
+  [Event.Redeploy]: WorkspaceEngine["schemas"]["ReleaseTarget"];
   [Event.ResourceProviderSetResources]: {
     providerId: string;
     resources: WorkspaceEngine["schemas"]["Resource"][];
