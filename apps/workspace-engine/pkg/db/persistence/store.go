@@ -11,7 +11,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("persistence/store")
 
 var _ persistence.Store = (*Store)(nil)
 
@@ -28,6 +33,13 @@ func NewStore(ctx context.Context) (*Store, error) {
 }
 
 func (s *Store) upsertChangelogEntry(ctx context.Context, tx pgx.Tx, change persistence.Change) error {
+	ctx, span := tracer.Start(ctx, "upsertChangelogEntry")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("change.type", string(change.ChangeType)))
+	span.SetAttributes(attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)))
+	span.SetAttributes(attribute.Int64("change.timestamp", change.Timestamp.Unix()))
+
 	entityType, entityID := change.Entity.CompactionKey()
 
 	entityData, err := json.Marshal(change.Entity)
@@ -53,10 +65,21 @@ func (s *Store) upsertChangelogEntry(ctx context.Context, tx pgx.Tx, change pers
 		entityData,
 		change.Timestamp,
 	)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upsert changelog entry")
+	}
 	return err
 }
 
 func (s *Store) deleteChangelogEntry(ctx context.Context, tx pgx.Tx, change persistence.Change) error {
+	ctx, span := tracer.Start(ctx, "deleteChangelogEntry")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("change.type", string(change.ChangeType)))
+	span.SetAttributes(attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)))
+	span.SetAttributes(attribute.Int64("change.timestamp", change.Timestamp.Unix()))
+
 	entityType, entityID := change.Entity.CompactionKey()
 
 	sql := `
@@ -69,10 +92,18 @@ func (s *Store) deleteChangelogEntry(ctx context.Context, tx pgx.Tx, change pers
 		entityType,
 		entityID,
 	)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to delete changelog entry")
+	}
 	return err
 }
 
 func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
+	ctx, span := tracer.Start(ctx, "Save")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int("changes.count", len(changes)))
 	if len(changes) == 0 {
 		return nil
 	}
@@ -87,18 +118,26 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 		switch change.ChangeType {
 		case persistence.ChangeTypeSet:
 			if err := s.upsertChangelogEntry(ctx, tx, change); err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "failed to upsert change")
 				return fmt.Errorf("failed to upsert change: %w", err)
 			}
 		case persistence.ChangeTypeUnset:
 			if err := s.deleteChangelogEntry(ctx, tx, change); err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "failed to delete change")
 				return fmt.Errorf("failed to delete change: %w", err)
 			}
 		default:
+			span.RecordError(fmt.Errorf("unknown change type: %s", change.ChangeType))
+			span.SetStatus(codes.Error, "unknown change type")
 			return fmt.Errorf("unknown change type: %s", change.ChangeType)
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to commit transaction")
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 

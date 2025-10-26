@@ -31,9 +31,9 @@ const (
 	ResourceVariableUpdate EventType = "resource-variable.updated"
 	ResourceVariableDelete EventType = "resource-variable.deleted"
 
-	ResourceProviderCreate      EventType = "resource-provider.created"
-	ResourceProviderUpdate      EventType = "resource-provider.updated"
-	ResourceProviderDelete      EventType = "resource-provider.deleted"
+	ResourceProviderCreate       EventType = "resource-provider.created"
+	ResourceProviderUpdate       EventType = "resource-provider.updated"
+	ResourceProviderDelete       EventType = "resource-provider.deleted"
 	ResourceProviderSetResources EventType = "resource-provider.set-resources"
 
 	DeploymentCreate EventType = "deployment.created"
@@ -179,6 +179,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 	}
 
 	changes := make([]persistence.Change, 0)
+	span.SetAttributes(attribute.Int("changeset.count", len(ws.Changeset().Changes())))
 	for _, change := range ws.Changeset().Changes() {
 		entity, ok := change.Entity.(persistence.Entity)
 		if !ok {
@@ -190,6 +191,11 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 			Entity:     entity,
 			Timestamp:  change.Timestamp,
 		})
+		span.AddEvent("change", trace.WithAttributes(
+			attribute.String("change.type", string(change.Type)),
+			attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)),
+			attribute.Int64("change.timestamp", change.Timestamp.Unix()),
+		))
 	}
 
 	if err := manager.PersistenceStore().Save(ctx, changes); err != nil {
