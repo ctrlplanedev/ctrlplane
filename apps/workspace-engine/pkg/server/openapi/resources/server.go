@@ -24,7 +24,7 @@ func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, 
 		})
 		return
 	}
-	
+
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

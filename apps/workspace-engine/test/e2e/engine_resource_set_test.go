@@ -141,7 +141,7 @@ func TestEngine_ResourceProviderSetResources_OnlyDeletesProviderResources(t *tes
 	ws := engine.Workspace()
 	_, exists := ws.Resources().Get("p1-resource-1")
 	require.True(t, exists, "p1-resource-1 should exist")
-	
+
 	_, exists = ws.Resources().Get("p2-resource-1")
 	require.True(t, exists, "p2-resource-1 should exist")
 
@@ -202,7 +202,7 @@ func TestEngine_ResourceProviderSetResources_CannotStealFromOtherProvider(t *tes
 	// Provider 2 tries to create a resource with the same identifier
 	// This should be ignored because the resource already belongs to provider1
 	provider2Resource := &oapi.Resource{
-		Id:         "p2-res-1", // Different ID
+		Id:         "p2-res-1",        // Different ID
 		Identifier: "shared-resource", // Same identifier
 		Name:       "Provider 2 Resource",
 		Kind:       "TestKind",
@@ -245,7 +245,7 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 	)
 
 	ws := engine.Workspace()
-	
+
 	// Verify the resource exists but has no provider
 	unownedRes, exists := ws.Resources().Get("unowned-res")
 	require.True(t, exists, "unowned-res should exist")
@@ -253,7 +253,7 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 
 	// Provider claims the resource by using the same identifier in SET
 	claimedResource := &oapi.Resource{
-		Id:         "claimed-res", // Different ID initially
+		Id:         "claimed-res",      // Different ID initially
 		Identifier: "unowned-resource", // Same identifier
 		Name:       "Now Owned Resource",
 		Kind:       "TestKind",
@@ -274,4 +274,3 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 	require.Equal(t, providerID, *claimedRes.ProviderId, "resource should now belong to provider")
 	require.Equal(t, "Now Owned Resource", claimedRes.Name, "resource name should be updated")
 }
-

@@ -199,7 +199,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, resources []*oap
 	for _, resource := range resources {
 		// Check if a resource with this identifier already exists
 		existingResource, exists := r.GetByIdentifier(resource.Identifier)
-		
+
 		if exists {
 			// If it belongs to a different provider, skip it
 			if existingResource.ProviderId != nil && *existingResource.ProviderId != providerId {
