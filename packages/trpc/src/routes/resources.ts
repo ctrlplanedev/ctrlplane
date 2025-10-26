@@ -37,6 +37,45 @@ export const resourcesRouter = router({
       return data;
     }),
 
+  get: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceGet)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        identifier: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { workspaceId, identifier } = input;
+      // URL encode the identifier to handle special characters like slashes
+      const encodedIdentifier = encodeURIComponent(identifier);
+      const result = await wsEngine.GET(
+        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
+        {
+          params: {
+            path: { workspaceId, resourceIdentifier: encodedIdentifier },
+          },
+        },
+      );
+
+      if (result.error) {
+        throw new Error(
+          `Failed to fetch resource: ${JSON.stringify(result.error)}`,
+        );
+      }
+
+      if (!result.data) {
+        throw new Error(`Resource not found with identifier: ${identifier}`);
+      }
+
+      return result.data;
+    }),
+
   list: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

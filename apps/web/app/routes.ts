@@ -52,6 +52,9 @@ export default [
       ]),
 
       route("resources", "routes/ws/resources.tsx"),
+      route("resources", "routes/ws/resources/_layout.tsx", [
+        route(":identifier", "routes/ws/resources/page.$identifier.tsx"),
+      ]),
       route("relationship-rules", "routes/ws/relationship-rules.tsx"),
       route(
         "relationship-rules/create",

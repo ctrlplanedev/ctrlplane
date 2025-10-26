@@ -23,6 +23,7 @@ type ResourceRowProps = {
 
 export const ResourceRow: React.FC<ResourceRowProps> = ({ resource }) => {
   const [showChildren, setShowChildren] = useState(false);
+  const { workspace } = useWorkspace();
 
   const links =
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -54,9 +55,12 @@ export const ResourceRow: React.FC<ResourceRowProps> = ({ resource }) => {
           version={resource.version}
           className="size-4"
         />
-        <div className="flex items-center gap-2">
+        <Link
+          to={`/${workspace.slug}/resources/${encodeURIComponent(resource.identifier)}`}
+          className="flex items-center gap-2 hover:underline"
+        >
           <div className="text-sm font-medium">{resource.name}</div>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-1">
           {Object.entries(links).map(([name, url]) => (
@@ -132,6 +136,7 @@ const ChildResourceRow: React.FC<{
   rule?: { id: string; name: string; reference: string };
   resource: {
     id: string;
+    identifier: string;
     name: string;
     kind: string;
     version: string;
@@ -167,7 +172,13 @@ const ChildResourceRow: React.FC<{
         >
           {rule?.name}
         </Link>
-        .<div className="text-sm">{resource.name}</div>
+        .
+        <Link
+          to={`/${workspace.slug}/resources/${encodeURIComponent(resource.identifier)}`}
+          className="text-sm hover:underline"
+        >
+          {resource.name}
+        </Link>
       </div>
 
       {showChildren && <ChildrenResources resourceId={resource.id} />}

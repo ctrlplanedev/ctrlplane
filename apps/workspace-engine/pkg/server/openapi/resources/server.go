@@ -1,7 +1,9 @@
 package resources
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -13,6 +15,16 @@ import (
 type Resources struct{}
 
 func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string) {
+	// URL decode the identifier (in case it contains special characters like slashes)
+	decodedIdentifier, err := url.PathUnescape(resourceIdentifier)
+	if err != nil {
+		fmt.Println("Failed to decode resourceIdentifier:", resourceIdentifier, "error:", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid resource identifier: " + err.Error(),
+		})
+		return
+	}
+	
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -24,7 +36,8 @@ func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, 
 	// Iterate through resources to find by identifier
 	resources := ws.Resources().Items()
 	for _, resource := range resources {
-		if resource.Identifier == resourceIdentifier {
+		if resource.Identifier == decodedIdentifier {
+			fmt.Println("Found matching resource:", resource.Identifier)
 			c.JSON(http.StatusOK, resource)
 			return
 		}

@@ -1,6 +1,7 @@
 import { deploymentsRouter } from "./routes/deployments.js";
 import { environmentRouter } from "./routes/environments.js";
 import { jobsRouter } from "./routes/jobs.js";
+import { policiesRouter } from "./routes/policies.js";
 import { relationshipsRouter } from "./routes/relationships.js";
 import { resourcesRouter } from "./routes/resources.js";
 import { systemsRouter } from "./routes/systems.js";
@@ -19,4 +20,5 @@ export const appRouter = router({
   validate: validateRouter,
   jobs: jobsRouter,
   relationships: relationshipsRouter,
+  policies: policiesRouter,
 });
