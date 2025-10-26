@@ -193,7 +193,7 @@ func main() {
 		registryClient = registry.NewClient(config.Global.RouterURL, workerID)
 		log.Info("Router registration enabled", "router_url", config.Global.RouterURL, "worker_id", workerID)
 	}
-		
+
 	// Get assigned partitions from consumer
 	assignedPartitions, err := consumer.GetAssignedPartitions()
 	if err != nil {
@@ -202,7 +202,7 @@ func main() {
 		log.Warn("Assigned partitions for router registration", "partitions", assignedPartitions)
 		// Build HTTP address for this worker
 		httpAddress := fmt.Sprintf("http://%s", addr)
-		
+
 		// Register with router
 		if err := registryClient.Register(ctx, httpAddress, assignedPartitions); err != nil {
 			log.Error("Failed to register with router", "error", err)
@@ -226,7 +226,7 @@ func main() {
 	log.Info("Waiting for consumer to finish...")
 	shutdownTimeout := time.NewTimer(10 * time.Second)
 	defer shutdownTimeout.Stop()
-	
+
 	select {
 	case <-consumerDone:
 		log.Info("Consumer finished gracefully")

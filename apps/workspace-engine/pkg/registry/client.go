@@ -167,4 +167,3 @@ func (c *Client) StartHeartbeat(ctx context.Context, interval time.Duration) {
 		}
 	}
 }
-

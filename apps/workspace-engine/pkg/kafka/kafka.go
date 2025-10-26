@@ -31,6 +31,8 @@ func NewConsumer(brokers string) (messaging.Consumer, error) {
 		"enable.auto.commit":              false,
 		"partition.assignment.strategy":   "cooperative-sticky",
 		"go.application.rebalance.enable": true,
+
+		// "debug":                      "cgrp,broker,protocol",
 	})
 }
 

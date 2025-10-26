@@ -16,8 +16,8 @@ func init() {
 
 type Config struct {
 	// Server configuration
-	Host           string `envconfig:"HOST" default:"0.0.0.0"`
-	Port           int    `envconfig:"PORT" default:"8081"`
+	Host string `envconfig:"HOST" default:"0.0.0.0"`
+	Port int    `envconfig:"PORT" default:"8081"`
 
 	// Kafka configuration
 	KafkaBrokers       string `envconfig:"KAFKA_BROKERS" default:"localhost:9092"`
