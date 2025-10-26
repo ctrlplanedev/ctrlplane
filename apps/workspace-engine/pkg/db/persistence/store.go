@@ -54,8 +54,7 @@ func (s *Store) upsertChangelogEntry(ctx context.Context, tx pgx.Tx, change pers
 			($1, $2, $3, $4, $5)
 		ON CONFLICT (workspace_id, entity_type, entity_id)
 		DO UPDATE SET 
-			entity_data = EXCLUDED.entity_data,
-			created_at = EXCLUDED.created_at
+			entity_data = EXCLUDED.entity_data
 	`
 
 	_, err = tx.Exec(ctx, sql,
