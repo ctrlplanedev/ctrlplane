@@ -7,7 +7,6 @@ local lib = import '../lib/openapi.libsonnet';
       description: 'Get all workspaces accessible to the authenticated user',
       operationId: 'listWorkspaces',
       tags: ['Workspaces'],
-      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
       responses: {
         '200': {
           description: 'List of workspaces',
@@ -40,7 +39,6 @@ local lib = import '../lib/openapi.libsonnet';
       description: 'Create a new workspace and assign creator as owner',
       operationId: 'createWorkspace',
       tags: ['Workspaces'],
-      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
       requestBody: {
         required: true,
         content: {
@@ -108,7 +106,6 @@ local lib = import '../lib/openapi.libsonnet';
       description: 'Get a specific workspace by ID',
       operationId: 'getWorkspace',
       tags: ['Workspaces'],
-      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
       responses: {
         '200': {
           description: 'Workspace details',
@@ -149,7 +146,6 @@ local lib = import '../lib/openapi.libsonnet';
       description: 'Update workspace properties',
       operationId: 'updateWorkspace',
       tags: ['Workspaces'],
-      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
       requestBody: {
         required: true,
         content: {
@@ -214,7 +210,6 @@ local lib = import '../lib/openapi.libsonnet';
       description: 'Delete a workspace and all associated data',
       operationId: 'deleteWorkspace',
       tags: ['Workspaces'],
-      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
       responses: {
         '204': {
           description: 'Workspace deleted successfully',
@@ -261,7 +256,6 @@ local lib = import '../lib/openapi.libsonnet';
       description: 'Get a specific workspace by its slug',
       operationId: 'getWorkspaceBySlug',
       tags: ['Workspaces'],
-      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
       responses: {
         '200': {
           description: 'Workspace details',

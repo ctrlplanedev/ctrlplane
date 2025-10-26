@@ -1,11 +1,11 @@
 local securitySchemes = {
-  bearerAuth: {
+  BearerAuth: {
     type: 'http',
     scheme: 'bearer',
     bearerFormat: 'JWT',
     description: 'Session-based authentication using Better Auth',
   },
-  apiKeyAuth: {
+  ApiKeyAuth: {
     type: 'apiKey',
     'in': 'header',
     name: 'X-API-Key',
@@ -22,14 +22,26 @@ local securitySchemes = {
   },
   servers: [
     {
-      url: 'http://localhost:3001',
+      url: 'http://localhost:3001/api',
       description: 'Development server',
     },
   ],
-  paths: (import 'paths/workspaces.jsonnet'),
+  security: [
+    {
+      ApiKeyAuth: [],
+    },
+    {
+      BearerAuth: [],
+    }
+  ],
+  paths: (import 'paths/workspaces.jsonnet') +
+         (import 'paths/resource-providers.jsonnet') +
+         (import 'paths/resources.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
-    schemas: (import 'schemas/errors.jsonnet') + (import 'schemas/workspace.jsonnet'),
+    schemas: (import 'schemas/errors.jsonnet') +
+             (import 'schemas/workspace.jsonnet') +
+             (import 'schemas/resources.jsonnet'),
   },
 }

@@ -9,10 +9,12 @@ import cors from "cors";
 import express from "express";
 import * as OpenApiValidator from "express-openapi-validator";
 import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
 
 import { auth } from "@ctrlplane/auth/server";
 import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
+import swaggerDocument from "../openapi/openapi.json";
 import { createGithubRouter } from "./routes/github/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,8 +23,7 @@ const __dirname = dirname(__filename);
 const oapiValidatorMiddleware = OpenApiValidator.middleware({
   apiSpec: join(__dirname, "../openapi/openapi.json"),
   validateRequests: true,
-  validateResponses: true,
-  ignorePaths: /\/api\/(auth|internal|trpc|github)/,
+  ignorePaths: /\/api\/(auth|trpc|github|ui)/,
 });
 
 const trpcMiddleware = trpcExpress.createExpressMiddleware({
@@ -58,8 +59,11 @@ const app = express()
   .use(express.json())
   .use(cookieParser())
   .use(loggerMiddleware)
-  .all("/api/auth/*splat", toNodeHandler(auth))
   .use(oapiValidatorMiddleware)
+
+  .all("/api/auth/*splat", toNodeHandler(auth))
+
+  .use("/api/ui", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
   .use("/api/v1", requireAuth)
   .use("/api/v1", createV1Router())
   .use("/api/github", createGithubRouter())

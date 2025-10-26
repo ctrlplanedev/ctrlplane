@@ -40,6 +40,7 @@
     "helmet": "^7.1.0",
     "ms": "catalog:",
     "next-auth": "catalog:",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^10.0.0",
     "zod": "catalog:"
   },
@@ -54,6 +55,7 @@
     "@types/lodash": "catalog:",
     "@types/ms": "catalog:",
     "@types/node": "catalog:node22",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.10",
     "eslint": "catalog:",

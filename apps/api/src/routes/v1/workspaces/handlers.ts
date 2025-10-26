@@ -1,4 +1,5 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
+import { wsEngine } from "@/engine.js";
 import { ApiError, NotFoundError } from "@/types/api.js";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
@@ -292,4 +293,34 @@ export const deleteWorkspace: AsyncTypedHandler<
   await db.delete(workspace).where(eq(workspace.id, workspaceId));
 
   res.status(204).send();
+};
+
+export const listResources: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources",
+  "get"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const { limit, offset, cel } = req.query;
+
+  console.log("Listing resources for workspace", req.params, req.query);
+
+  const result = await wsEngine.POST(
+    "/v1/workspaces/{workspaceId}/resources/query",
+    {
+      body: {
+        filter: cel != null ? { cel } : undefined,
+      },
+      params: {
+        path: { workspaceId },
+        query: { limit, offset },
+      },
+    },
+  );
+
+  if (result.error?.error) {
+    res.status(500).json({ error: result.error.error });
+    return;
+  }
+
+  res.status(200).json(result.data);
 };

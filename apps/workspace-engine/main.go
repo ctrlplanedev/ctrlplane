@@ -112,20 +112,22 @@ func initTracer() (func(), error) {
 	}, nil
 }
 
-func init() {
+func main() {
 	store, err := pebble.NewStore("pebble.db", repository.GlobalRegistry())
 	if err != nil {
 		log.Fatal("Failed to create Pebble store", "error", err)
 		panic(err)
 	}
 
+	defer store.Close()
+
 	manager.Configure(
 		manager.WithPersistentStore(store),
-		manager.WithWorkspaceCreateOptions(workspace.AddDefaultSystem()),
+		manager.WithWorkspaceCreateOptions(
+			workspace.AddDefaultSystem(),
+		),
 	)
-}
 
-func main() {
 	ctx := context.Background()
 
 	pflag.String("host", "0.0.0.0", "Host to listen on")
