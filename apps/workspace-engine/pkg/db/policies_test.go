@@ -40,6 +40,12 @@ func validateRetrievedPolicies(t *testing.T, actualPolicies []*oapi.Policy, expe
 		if actual.CreatedAt == "" {
 			t.Fatalf("expected policy created_at to be set")
 		}
+		if actual.Enabled != expected.Enabled {
+			t.Fatalf("expected policy enabled %v, got %v", expected.Enabled, actual.Enabled)
+		}
+		if actual.Priority != expected.Priority {
+			t.Fatalf("expected policy priority %d, got %d", expected.Priority, actual.Priority)
+		}
 
 		// Validate selectors
 		if len(actual.Selectors) != len(expected.Selectors) {
@@ -110,6 +116,9 @@ func TestDBPolicies_BasicWrite(t *testing.T) {
 		Description: &description,
 		WorkspaceId: workspaceID,
 		CreatedAt:   time.Now().Format(time.RFC3339),
+		Enabled:     true,
+		Priority:    0,
+		Metadata:    map[string]string{},
 		Selectors:   []oapi.PolicyTargetSelector{},
 		Rules:       []oapi.PolicyRule{},
 	}
@@ -1188,3 +1197,178 @@ func TestDBPolicies_WithJsonResourceSelectorContent(t *testing.T) {
 
 // TODO: Add mixed JSON and CEL selector tests when CEL support is implemented
 // func TestDBPolicies_WithMixedJsonAndCelSelectors(t *testing.T) { ... }
+
+func TestDBPolicies_EnabledAndPriorityFields(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	// Create policies with different enabled and priority values
+	policies := []*oapi.Policy{
+		{
+			Id:          uuid.New().String(),
+			Name:        "disabled-low-priority",
+			WorkspaceId: workspaceID,
+			CreatedAt:   time.Now().Format(time.RFC3339),
+			Enabled:     false,
+			Priority:    1,
+			Metadata:    map[string]string{},
+			Selectors:   []oapi.PolicyTargetSelector{},
+			Rules:       []oapi.PolicyRule{},
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "enabled-high-priority",
+			WorkspaceId: workspaceID,
+			CreatedAt:   time.Now().Format(time.RFC3339),
+			Enabled:     true,
+			Priority:    100,
+			Metadata:    map[string]string{},
+			Selectors:   []oapi.PolicyTargetSelector{},
+			Rules:       []oapi.PolicyRule{},
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "enabled-zero-priority",
+			WorkspaceId: workspaceID,
+			CreatedAt:   time.Now().Format(time.RFC3339),
+			Enabled:     true,
+			Priority:    0,
+			Metadata:    map[string]string{},
+			Selectors:   []oapi.PolicyTargetSelector{},
+			Rules:       []oapi.PolicyRule{},
+		},
+		{
+			Id:          uuid.New().String(),
+			Name:        "disabled-negative-priority",
+			WorkspaceId: workspaceID,
+			CreatedAt:   time.Now().Format(time.RFC3339),
+			Enabled:     false,
+			Priority:    -10,
+			Metadata:    map[string]string{},
+			Selectors:   []oapi.PolicyTargetSelector{},
+			Rules:       []oapi.PolicyRule{},
+		},
+	}
+
+	for _, policy := range policies {
+		err = writePolicy(t.Context(), policy, tx)
+		if err != nil {
+			t.Fatalf("expected no errors, got %v", err)
+		}
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Read back and verify
+	actualPolicies, err := getPolicies(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	validateRetrievedPolicies(t, actualPolicies, policies)
+
+	// Additional specific checks for the enabled and priority fields
+	for _, expected := range policies {
+		var actual *oapi.Policy
+		for _, ap := range actualPolicies {
+			if ap.Id == expected.Id {
+				actual = ap
+				break
+			}
+		}
+
+		if actual == nil {
+			t.Fatalf("expected policy with id %s not found", expected.Id)
+		}
+
+		if actual.Enabled != expected.Enabled {
+			t.Errorf("policy %s: expected enabled=%v, got enabled=%v", expected.Name, expected.Enabled, actual.Enabled)
+		}
+
+		if actual.Priority != expected.Priority {
+			t.Errorf("policy %s: expected priority=%d, got priority=%d", expected.Name, expected.Priority, actual.Priority)
+		}
+	}
+}
+
+func TestDBPolicies_UpdateEnabledAndPriority(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+
+	tx, err := conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	policyID := uuid.New().String()
+	policy := &oapi.Policy{
+		Id:          policyID,
+		Name:        fmt.Sprintf("test-policy-%s", policyID[:8]),
+		WorkspaceId: workspaceID,
+		CreatedAt:   time.Now().Format(time.RFC3339),
+		Enabled:     false,
+		Priority:    10,
+		Metadata:    map[string]string{},
+		Selectors:   []oapi.PolicyTargetSelector{},
+		Rules:       []oapi.PolicyRule{},
+	}
+
+	err = writePolicy(t.Context(), policy, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify initial state
+	actualPolicies, err := getPolicies(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	validateRetrievedPolicies(t, actualPolicies, []*oapi.Policy{policy})
+
+	// Update enabled and priority
+	tx, err = conn.Begin(t.Context())
+	if err != nil {
+		t.Fatalf("failed to begin tx: %v", err)
+	}
+	defer tx.Rollback(t.Context())
+
+	policy.Enabled = true
+	policy.Priority = 50
+
+	err = writePolicy(t.Context(), policy, tx)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	err = tx.Commit(t.Context())
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Verify updated state
+	actualPolicies, err = getPolicies(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+	validateRetrievedPolicies(t, actualPolicies, []*oapi.Policy{policy})
+
+	if actualPolicies[0].Enabled != true {
+		t.Errorf("expected enabled=true after update, got enabled=%v", actualPolicies[0].Enabled)
+	}
+	if actualPolicies[0].Priority != 50 {
+		t.Errorf("expected priority=50 after update, got priority=%d", actualPolicies[0].Priority)
+	}
+}

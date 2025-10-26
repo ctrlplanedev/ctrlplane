@@ -17,34 +17,33 @@ const POLICY_SELECT_QUERY = `
 		p.description,
 		p.workspace_id,
 		p.created_at,
-	COALESCE(
-		json_agg(
-			jsonb_build_object(
-				'id', pt.id,
-				'deploymentSelector', pt.deployment_selector,
-				'environmentSelector', pt.environment_selector,
-				'resourceSelector', pt.resource_selector
-			)
-		) FILTER (WHERE pt.id IS NOT NULL),
-		'[]'
-	) AS targets
-
-	, 
-	COALESCE(
-		(
-			SELECT jsonb_build_object(
-				'id', pra.id,
-				'policyId', pra.policy_id,
-				'createdAt', pra.created_at,
-				'minApprovals', pra.required_approvals_count
-			)
-			FROM policy_rule_any_approval pra
-			WHERE pra.policy_id = p.id
-			LIMIT 1
-		),
-		NULL
-	) AS any_approval_rule
-
+		COALESCE(
+			json_agg(
+				jsonb_build_object(
+					'id', pt.id,
+					'deploymentSelector', pt.deployment_selector,
+					'environmentSelector', pt.environment_selector,
+					'resourceSelector', pt.resource_selector
+				)
+			) FILTER (WHERE pt.id IS NOT NULL),
+			'[]'
+		) AS targets,
+		COALESCE(
+			(
+				SELECT jsonb_build_object(
+					'id', pra.id,
+					'policyId', pra.policy_id,
+					'createdAt', pra.created_at,
+					'minApprovals', pra.required_approvals_count
+				)
+				FROM policy_rule_any_approval pra
+				WHERE pra.policy_id = p.id
+				LIMIT 1
+			),
+			NULL
+		) AS any_approval_rule,
+		p.priority,
+		p.enabled
 	FROM policy p
 	LEFT JOIN policy_target pt ON pt.policy_id = p.id
 	LEFT JOIN policy_rule_any_approval pra ON pra.policy_id = p.id
@@ -96,6 +95,8 @@ type dbPolicyTargetSelector struct {
 func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 	policy := &oapi.Policy{}
 	var createdAt time.Time
+	var priority int32
+	var enabled bool
 	var anyApprovalRuleRaw *dbAnyApprovalRule
 	var description *string
 	var dbSelectors []dbPolicyTargetSelector
@@ -108,6 +109,8 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 		&createdAt,
 		&dbSelectors,
 		&anyApprovalRuleRaw,
+		&priority,
+		&enabled,
 	)
 	if err != nil {
 		return nil, err
@@ -150,16 +153,23 @@ func scanPolicyRow(rows pgx.Rows) (*oapi.Policy, error) {
 		})
 	}
 
+	// Assign priority and enabled fields
+	policy.Priority = int(priority)
+	policy.Enabled = enabled
+	policy.Metadata = map[string]string{}
+
 	return policy, nil
 }
 
 const POLICY_UPSERT_QUERY = `
-	INSERT INTO policy (id, name, description, workspace_id, created_at)
-	VALUES ($1, $2, $3, $4, $5)
+	INSERT INTO policy (id, name, description, workspace_id, created_at, enabled, priority)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	ON CONFLICT (id) DO UPDATE SET
 		name = EXCLUDED.name,
 		description = EXCLUDED.description,
-		workspace_id = EXCLUDED.workspace_id
+		workspace_id = EXCLUDED.workspace_id,
+		enabled = EXCLUDED.enabled,
+		priority = EXCLUDED.priority
 `
 
 func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
@@ -176,6 +186,8 @@ func writePolicy(ctx context.Context, policy *oapi.Policy, tx pgx.Tx) error {
 		policy.Description,
 		policy.WorkspaceId,
 		createdAt,
+		policy.Enabled,
+		policy.Priority,
 	); err != nil {
 		return err
 	}
