@@ -9,15 +9,14 @@ import (
 	"syscall"
 	"time"
 
+	dbpersistence "workspace-engine/pkg/db/persistence"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/kafka"
-	"workspace-engine/pkg/persistence/pebble"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
-	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/pflag"
@@ -112,8 +111,9 @@ func initTracer() (func(), error) {
 	}, nil
 }
 
-func main() {
-	store, err := pebble.NewStore("pebble.db", repository.GlobalRegistry())
+func init() {
+	ctx := context.Background()
+	store, err := dbpersistence.NewStore(ctx)
 	if err != nil {
 		log.Fatal("Failed to create Pebble store", "error", err)
 		panic(err)
@@ -127,8 +127,6 @@ func main() {
 			workspace.AddDefaultSystem(),
 		),
 	)
-
-	ctx := context.Background()
 
 	pflag.String("host", "0.0.0.0", "Host to listen on")
 	pflag.Int("port", 8081, "Port to listen on")
