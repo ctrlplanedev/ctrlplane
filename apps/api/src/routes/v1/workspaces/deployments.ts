@@ -7,6 +7,8 @@ import { v4 as uuidv4 } from "uuid";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
 
+import { deploymentVersionsRouter } from "./deployment-versions.js";
+
 const listDeployments: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments",
   "get"
@@ -110,10 +112,9 @@ const getDeployment: AsyncTypedHandler<
   return;
 };
 
-export const deploymentIdRouter = Router({ mergeParams: true }).get(
-  "/",
-  asyncHandler(getDeployment),
-);
+export const deploymentIdRouter = Router({ mergeParams: true })
+  .get("/", asyncHandler(getDeployment))
+  .use("/versions", deploymentVersionsRouter);
 
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
