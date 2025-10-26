@@ -939,6 +939,13 @@
       "when": 1761254548805,
       "tag": "0133_old_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 134,
+      "version": "7",
+      "when": 1761435242473,
+      "tag": "0134_lowly_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }
