@@ -1,0 +1,12 @@
+{
+  "name": "@ctrlplane/workspace-engine-router",
+  "scripts": {
+    "dev": "air",
+    "build": "go build -o ./bin/workspace-engine-router main.go",
+    "start": "./bin/workspace-engine-router",
+    "test": "go test ./...",
+    "generate": "go generate ./...",
+    "format": "go fmt ./...",
+    "clean": "go clean ./..."
+  }
+}

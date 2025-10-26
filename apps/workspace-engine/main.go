@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"workspace-engine/pkg/config"
 	dbpersistence "workspace-engine/pkg/db/persistence"
-	"workspace-engine/pkg/env"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/kafka"
 	"workspace-engine/pkg/registry"
@@ -50,15 +50,8 @@ func stripScheme(endpoint string) string {
 func initTracer() (func(), error) {
 	ctx := context.Background()
 
-	// Get service name from environment variable, default to "workspace-engine"
-	serviceName := os.Getenv("OTEL_SERVICE_NAME")
-	if serviceName == "" {
-		serviceName = "ctrlplane/workspace-engine"
-	}
-
-	// Get OTLP endpoint from environment variable
-	// If not set, the exporter will use the default: http://localhost:4318
-	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	serviceName := config.Global.OTELServiceName
+	endpoint := config.Global.OTELExporterOTLPEndpoint
 
 	// Strip http:// or https:// prefix if present, as WithEndpoint() expects just host:port
 	endpoint = stripScheme(endpoint)
@@ -147,8 +140,8 @@ func init() {
 	}
 	defer cleanup()
 
-	host := viper.GetString("host")
-	port := viper.GetInt("port")
+	host := config.Global.Host
+	port := config.Global.Port
 	addr := fmt.Sprintf("%s:%d", host, port)
 
 	server := server.New()
@@ -182,14 +175,6 @@ func init() {
 		}
 	})
 
-	// Initialize router registration client if configured
-	var registryClient *registry.Client
-	if env.Config.RouterURL != "" {
-		workerID := uuid.New().String()
-		registryClient = registry.NewClient(env.Config.RouterURL, workerID)
-		log.Info("Router registration enabled", "router_url", env.Config.RouterURL, "worker_id", workerID)
-	}
-
 	go func() {
 		log.Info("Kafka consumer started")
 		if err := kafka.RunConsumer(ctx, consumer); err != nil {
@@ -205,6 +190,14 @@ func init() {
 			panic(err)
 		}
 	}()
+
+	// Initialize router registration client if configured
+	var registryClient *registry.Client
+	if config.Global.RouterURL != "" {
+		workerID := uuid.New().String()
+		registryClient = registry.NewClient(config.Global.RouterURL, workerID)
+		log.Info("Router registration enabled", "router_url", config.Global.RouterURL, "worker_id", workerID)
+	}
 
 	// Register with router after server is ready
 	if registryClient != nil {

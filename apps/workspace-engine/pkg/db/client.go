@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 	"time"
-	"workspace-engine/pkg/env"
+	"workspace-engine/pkg/config"
 
 	"github.com/charmbracelet/log"
 	"github.com/exaring/otelpgx"
@@ -19,19 +19,19 @@ var (
 // GetPool returns the singleton database connection pool
 func GetPool(ctx context.Context) *pgxpool.Pool {
 	once.Do(func() {
-		config, err := pgxpool.ParseConfig(env.Config.PostgresURL)
+		cfg, err := pgxpool.ParseConfig(config.Global.PostgresURL)
 		if err != nil {
 			log.Fatal("Failed to parse database config:", err)
 		}
 
-		config.MaxConns = int32(env.Config.PostgresMaxPoolSize)
-		config.MinConns = 1
-		config.HealthCheckPeriod = 30 * time.Second
-		config.ConnConfig.Tracer = otelpgx.NewTracer()
+		cfg.MaxConns = int32(config.Global.PostgresMaxPoolSize)
+		cfg.MinConns = 1
+		cfg.HealthCheckPeriod = 30 * time.Second
+		cfg.ConnConfig.Tracer = otelpgx.NewTracer()
 
-		config.ConnConfig.RuntimeParams["application_name"] = env.Config.PostgresApplicationName
+		cfg.ConnConfig.RuntimeParams["application_name"] = config.Global.PostgresApplicationName
 
-		pool, err = pgxpool.NewWithConfig(ctx, config)
+		pool, err = pgxpool.NewWithConfig(ctx, cfg)
 		if err != nil {
 			log.Fatal("Failed to create database pool:", err)
 		}

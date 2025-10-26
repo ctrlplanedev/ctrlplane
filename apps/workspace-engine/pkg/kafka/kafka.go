@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"workspace-engine/pkg/env"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
@@ -18,9 +18,9 @@ import (
 
 // Configuration variables loaded from environment
 var (
-	Topic   = env.Config.KafkaTopic
-	GroupID = env.Config.KafkaGroupID
-	Brokers = env.Config.KafkaBrokers
+	Topic   = config.Global.KafkaTopic
+	GroupID = config.Global.KafkaGroupID
+	Brokers = config.Global.KafkaBrokers
 )
 
 func NewConsumer(brokers string) (messaging.Consumer, error) {

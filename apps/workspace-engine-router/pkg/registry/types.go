@@ -12,8 +12,7 @@ type WorkerInfo struct {
 }
 
 // IsHealthy checks if the worker's heartbeat is within the timeout
-func (w *WorkerInfo) IsHealthy(timeoutSeconds int) bool {
-	timeout := time.Duration(timeoutSeconds) * time.Second
+func (w *WorkerInfo) IsHealthy(timeout time.Duration) bool {
 	return time.Since(w.LastHeartbeat) < timeout
 }
 

@@ -35,8 +35,8 @@ Proxies ALL incoming requests to workers:
                              [Worker Registry]
                                     │
 Client Request ──> Routing Server :8080
-                        │
-                        ├─ Extract workspace ID
+ (X-Workspace-ID)        │
+                        ├─ Extract workspace ID from header
                         ├─ Calculate partition (Murmur2)
                         ├─ Lookup worker
                         └─ Proxy to worker
@@ -47,6 +47,7 @@ Client Request ──> Routing Server :8080
 - ✅ **Zero conflicts**: Management and routing are completely isolated
 - ✅ **Security**: Management port can be internal-only in Kubernetes
 - ✅ **Proxy everything**: All paths are forwarded to workers, not just specific routes
+- ✅ **Header-based routing**: Clean separation of routing concerns via `X-Workspace-ID` header
 
 ## Features
 
@@ -160,17 +161,24 @@ Returns router health status and number of registered workers.
 
 **All requests are proxied to workers.**
 
-The router extracts the workspace ID from the path (looking for `/workspaces/{workspaceId}/...` pattern), calculates the partition, and forwards the request to the appropriate worker.
+The router extracts the workspace ID from the `X-Workspace-ID` header, calculates the partition, and forwards the request to the appropriate worker.
 
 Examples:
 
 ```http
-GET http://router:8080/v1/workspaces/my-workspace-id/deployments
-POST http://router:8080/v1/workspaces/my-workspace-id/jobs
-GET http://router:8080/any/path/with/workspaces/workspace-123/anything
+GET http://router:8080/v1/deployments
+X-Workspace-ID: my-workspace-id
+
+POST http://router:8080/api/jobs
+X-Workspace-ID: my-workspace-id
+
+GET http://router:8080/any/path/you/want
+X-Workspace-ID: workspace-123
 ```
 
-All paths containing a workspace ID are automatically routed to the correct worker.
+**Header-based routing**: Include `X-Workspace-ID` header in all requests. The router will automatically forward to the correct worker based on the workspace's partition.
+
+**Backward compatibility**: If the header is not present, the router will attempt to extract the workspace ID from the path (looking for `/workspaces/{workspaceId}/...` pattern).
 
 ## Worker Integration
 

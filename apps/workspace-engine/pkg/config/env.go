@@ -1,4 +1,4 @@
-package env
+package config
 
 import (
 	"log"
@@ -6,15 +6,20 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-var Config = config{}
+var Global = Config{}
 
 func init() {
-	if err := envconfig.Process("", &Config); err != nil {
+	if err := envconfig.Process("", &Global); err != nil {
 		log.Fatal(err)
 	}
 }
 
-type config struct {
+type Config struct {
+	// Server configuration
+	Host           string `envconfig:"HOST" default:"0.0.0.0"`
+	Port           int    `envconfig:"PORT" default:"8081"`
+
+	// Kafka configuration
 	KafkaBrokers       string `envconfig:"KAFKA_BROKERS" default:"localhost:9092"`
 	KafkaGroupID       string `envconfig:"KAFKA_GROUP_ID" default:"workspace-engine"`
 	KafkaTopic         string `envconfig:"KAFKA_TOPIC" default:"workspace-events"`
@@ -31,5 +36,5 @@ type config struct {
 	PostgresApplicationName string `envconfig:"POSTGRES_APPLICATION_NAME" default:"workspace-engine"`
 
 	// Router registration
-	RouterURL string `envconfig:"ROUTER_URL" default:""`
+	RouterURL string `envconfig:"ROUTER_URL" default:"http://localhost:9091"`
 }

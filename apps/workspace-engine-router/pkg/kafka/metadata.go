@@ -18,7 +18,7 @@ type PartitionCounter struct {
 }
 
 // NewPartitionCounter creates a new PartitionCounter
-func NewPartitionCounter(brokers, topic string) *PartitionCounter {
+func NewPartitionCounter(brokers string, topic string) *PartitionCounter {
 	return &PartitionCounter{
 		brokers:         brokers,
 		topic:           topic,

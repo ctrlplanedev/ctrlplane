@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"workspace-engine/pkg/env"
+	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 
@@ -157,8 +157,8 @@ func (d *GithubDispatcher) getInstallationToken(jwtToken string, installationID 
 }
 
 func (d *GithubDispatcher) createGithubClient(installationID int) (GithubClient, error) {
-	appIDStr := env.Config.GithubBotAppID
-	privateKey := env.Config.GithubBotPrivateKey
+	appIDStr := config.Global.GithubBotAppID
+	privateKey := config.Global.GithubBotPrivateKey
 	// Note: clientID and clientSecret are available but not needed for GitHub App auth
 	// They're used in Node.js but the actual authentication uses JWT + installation token
 

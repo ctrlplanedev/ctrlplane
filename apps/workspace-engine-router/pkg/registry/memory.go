@@ -3,6 +3,8 @@ package registry
 import (
 	"sync"
 	"time"
+
+	"github.com/charmbracelet/log"
 )
 
 // InMemoryRegistry is a thread-safe in-memory implementation of WorkerRegistry
@@ -10,11 +12,11 @@ type InMemoryRegistry struct {
 	workers          map[string]*WorkerInfo
 	partitionWorkers map[int32]string // partition -> workerID
 	mu               sync.RWMutex
-	heartbeatTimeout int
+	heartbeatTimeout time.Duration
 }
 
 // NewInMemoryRegistry creates a new in-memory worker registry
-func NewInMemoryRegistry(heartbeatTimeout int) *InMemoryRegistry {
+func NewInMemoryRegistry(heartbeatTimeout time.Duration) *InMemoryRegistry {
 	return &InMemoryRegistry{
 		workers:          make(map[string]*WorkerInfo),
 		partitionWorkers: make(map[int32]string),
@@ -23,6 +25,7 @@ func NewInMemoryRegistry(heartbeatTimeout int) *InMemoryRegistry {
 }
 
 // Register adds or updates a worker in the registry
+// When multiple workers claim the same partition, the newest worker (by registration time) takes over
 func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []int32) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -32,7 +35,7 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 	worker, exists := r.workers[workerID]
 	if exists {
 		// Update existing worker
-		// Clear old partition mappings
+		// Clear old partition mappings for this worker
 		for _, partition := range worker.Partitions {
 			if r.partitionWorkers[partition] == workerID {
 				delete(r.partitionWorkers, partition)
@@ -41,6 +44,7 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 		worker.HTTPAddress = httpAddress
 		worker.Partitions = partitions
 		worker.LastHeartbeat = now
+		// Keep original RegisteredAt for existing workers
 	} else {
 		// Create new worker
 		worker = &WorkerInfo{
@@ -53,9 +57,67 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 		r.workers[workerID] = worker
 	}
 
-	// Update partition mappings
+	// Detect partition conflicts and assign partitions to newest worker
+	conflictingWorkers := make(map[string][]int32) // workerID -> partitions being taken
+	
 	for _, partition := range partitions {
-		r.partitionWorkers[partition] = workerID
+		if existingWorkerID, exists := r.partitionWorkers[partition]; exists && existingWorkerID != workerID {
+			// Partition conflict detected
+			existingWorker := r.workers[existingWorkerID]
+			
+			// Compare registration times - newest worker wins
+			if worker.RegisteredAt.After(existingWorker.RegisteredAt) {
+				// New worker is newer, take over the partition
+				log.Warn("Partition conflict: newer worker taking over",
+					"partition", partition,
+					"old_worker", existingWorkerID,
+					"old_worker_registered_at", existingWorker.RegisteredAt,
+					"new_worker", workerID,
+					"new_worker_registered_at", worker.RegisteredAt)
+				
+				conflictingWorkers[existingWorkerID] = append(conflictingWorkers[existingWorkerID], partition)
+				r.partitionWorkers[partition] = workerID
+			} else {
+				// Existing worker is newer, keep it
+				log.Warn("Partition conflict: keeping newer existing worker",
+					"partition", partition,
+					"existing_worker", existingWorkerID,
+					"existing_worker_registered_at", existingWorker.RegisteredAt,
+					"rejected_worker", workerID,
+					"rejected_worker_registered_at", worker.RegisteredAt)
+			}
+		} else {
+			// No conflict, assign partition to this worker
+			r.partitionWorkers[partition] = workerID
+		}
+	}
+	
+	// Remove partitions from conflicting workers' partition lists
+	for conflictingWorkerID, takenPartitions := range conflictingWorkers {
+		if conflictingWorker, exists := r.workers[conflictingWorkerID]; exists {
+			// Remove taken partitions from worker's partition list
+			newPartitions := make([]int32, 0, len(conflictingWorker.Partitions))
+			for _, p := range conflictingWorker.Partitions {
+				taken := false
+				for _, tp := range takenPartitions {
+					if p == tp {
+						taken = true
+						break
+					}
+				}
+				if !taken {
+					newPartitions = append(newPartitions, p)
+				}
+			}
+			conflictingWorker.Partitions = newPartitions
+			
+			// If worker has no partitions left, unregister it
+			if len(conflictingWorker.Partitions) == 0 {
+				log.Info("Unregistering worker with no remaining partitions",
+					"worker_id", conflictingWorkerID)
+				delete(r.workers, conflictingWorkerID)
+			}
+		}
 	}
 
 	return nil

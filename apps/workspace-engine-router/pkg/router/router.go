@@ -222,21 +222,16 @@ func (r *Router) ListWorkersHandler(c *gin.Context) {
 	})
 }
 
-// RouteToWorkerAllPaths extracts workspace ID from path, calculates partition, and routes to the appropriate worker
-// This handles ALL paths by extracting workspace ID from the URL path
+// RouteToWorkerAllPaths extracts workspace ID from header, calculates partition, and routes to the appropriate worker
+// This handles ALL paths by extracting workspace ID from the X-Workspace-ID header
 func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
-	path := c.Request.URL.Path
-	
-	// Extract workspace ID from path
-	// Expected patterns: /v1/workspaces/{workspaceId}/... or similar
-	workspaceID := r.extractWorkspaceID(path)
+	// Extract workspace ID from header
+	workspaceID := c.GetHeader("X-Workspace-ID")
 	if workspaceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Workspace ID required",
-			"message": "Could not extract workspace ID from path. Expected pattern: /v1/workspaces/{workspaceId}/...",
-			"path":    path,
+			"message": "Please provide workspace ID via X-Workspace-ID header or in path (/v1/workspaces/{workspaceId}/...)",
 		})
-		return
 	}
 
 	// Get partition count
@@ -257,7 +252,7 @@ func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
 		"workspace_id", workspaceID,
 		"partition", partition,
 		"num_partitions", numPartitions,
-		"path", path)
+		"path", c.Request.URL.Path)
 
 	// Get worker for this partition
 	worker, err := r.registry.GetWorkerForPartition(partition)
@@ -288,7 +283,7 @@ func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
 		"partition", partition,
 		"worker_id", worker.WorkerID,
 		"target_url", targetURL,
-		"full_path", path)
+		"full_path", c.Request.URL.Path)
 
 	// Add routing metadata to context for logging
 	c.Set("workspace_id", workspaceID)
@@ -299,20 +294,3 @@ func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
 	// Proxy the request to the worker
 	r.proxy.ProxyRequest(c, targetURL)
 }
-
-// extractWorkspaceID extracts workspace ID from the URL path
-// Supports patterns like: /v1/workspaces/{workspaceId}/...
-func (r *Router) extractWorkspaceID(path string) string {
-	// Split path into segments
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	
-	// Look for "workspaces" followed by the workspace ID
-	for i := 0; i < len(parts)-1; i++ {
-		if parts[i] == "workspaces" {
-			return parts[i+1]
-		}
-	}
-	
-	return ""
-}
-

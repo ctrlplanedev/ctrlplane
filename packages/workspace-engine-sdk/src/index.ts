@@ -1,12 +1,11 @@
-import murmur from "murmurhash-js";
 import createOClient, { ClientOptions } from "openapi-fetch";
 
-import { paths } from "./schema";
-import { getUrl } from "./url";
+import { env } from "./config.js";
+import { paths } from "./schema.js";
 
-export { operations as Operations } from "./schema";
-export { components as WorkspaceEngine } from "./schema";
-export type { paths } from "./schema";
+export { operations as Operations } from "./schema.js";
+export { components as WorkspaceEngine } from "./schema.js";
+export type { paths } from "./schema.js";
 
 export function createClient(options: ClientOptions) {
   return createOClient<paths>({
@@ -18,8 +17,22 @@ export function createClient(options: ClientOptions) {
   });
 }
 
-export function getClientFor(workspaceId: string, options?: ClientOptions) {
-  return createClient({ baseUrl: getUrl(workspaceId), ...options });
+const clientCache = new Map<string, ReturnType<typeof createClient>>();
+
+export function getClientFor(workspaceId: string) {
+  const cacheKey = workspaceId;
+
+  if (!clientCache.has(cacheKey)) {
+    clientCache.set(
+      cacheKey,
+      createClient({
+        baseUrl: env.WORKSPACE_ENGINE_ROUTER_URL ?? "http://localhost:9090",
+        headers: { "x-workspace-id": workspaceId },
+      }),
+    );
+  }
+
+  return clientCache.get(cacheKey)!;
 }
 
 export { env } from "./config.js";
