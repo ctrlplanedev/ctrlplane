@@ -4,11 +4,12 @@ import { z } from "zod";
 
 import { env as authEnv } from "@ctrlplane/auth/env";
 import { env as dbEnv } from "@ctrlplane/db";
+import { env as workspaceEngineEnv } from "@ctrlplane/workspace-engine-sdk";
 
 dotenv.config();
 
 export const env = createEnv({
-  extends: [authEnv, dbEnv],
+  extends: [authEnv, dbEnv, workspaceEngineEnv],
 
   server: {
     NODE_ENV: z
