@@ -3,17 +3,22 @@ package redeploy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"workspace-engine/pkg/events/handler"
-	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
 )
 
 func HandleReleaseTargetDeploy(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
-	releaseTarget := &oapi.ReleaseTarget{}
-	if err := json.Unmarshal(event.Data, releaseTarget); err != nil {
+	var releaseTargetID string
+	if err := json.Unmarshal(event.Data, &releaseTargetID); err != nil {
 		return err
+	}
+
+	releaseTarget := ws.ReleaseTargets().Get(releaseTargetID)
+	if releaseTarget == nil {
+		return fmt.Errorf("release target %q not found", releaseTargetID)
 	}
 
 	if err := ws.ReleaseManager().Redeploy(ctx, releaseTarget); err != nil {
