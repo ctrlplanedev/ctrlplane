@@ -3,7 +3,7 @@ import baseConfig, { requireJsSuffix } from "@ctrlplane/eslint-config/base";
 /** @type {import('typescript-eslint').Config} */
 export default [
   {
-    ignores: [".nitro/**", ".output/**", "dist/**", "node_modules/**"],
+    ignores: [".nitro/**", ".output/**", "dist/**", "node_modules/**", "src/types/openapi.ts"],
   },
   ...requireJsSuffix,
   ...baseConfig,

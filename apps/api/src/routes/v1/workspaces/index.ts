@@ -1,6 +1,7 @@
 import { asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
+import { deploymentsRouter } from "./deployments.js";
 import {
   createWorkspace,
   deleteWorkspace,
@@ -27,4 +28,5 @@ export const createWorkspacesRouter = (): Router =>
     .post(
       "/:workspaceId/resource-providers/:providerId/set",
       asyncHandler(setResourceProviderResources),
-    );
+    )
+    .use("/:workspaceId/deployments", deploymentsRouter);

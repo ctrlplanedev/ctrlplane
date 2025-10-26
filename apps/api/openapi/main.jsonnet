@@ -36,12 +36,17 @@ local securitySchemes = {
   ],
   paths: (import 'paths/workspaces.jsonnet') +
          (import 'paths/resource-providers.jsonnet') +
-         (import 'paths/resources.jsonnet'),
+         (import 'paths/resources.jsonnet') +
+         (import 'paths/deployments.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
-    schemas: (import 'schemas/errors.jsonnet') +
+    schemas: 
+             (import 'schemas/core.jsonnet') +
+             (import 'schemas/errors.jsonnet') +
              (import 'schemas/workspace.jsonnet') +
-             (import 'schemas/resources.jsonnet'),
+             (import 'schemas/resources.jsonnet') +
+             (import 'schemas/deployments.jsonnet') +
+             (import 'schemas/systems.jsonnet'),
   },
 }

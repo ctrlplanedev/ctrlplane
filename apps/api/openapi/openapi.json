@@ -2,6 +2,20 @@
    "components": {
       "parameters": { },
       "schemas": {
+         "BooleanValue": {
+            "type": "boolean"
+         },
+         "CelSelector": {
+            "properties": {
+               "cel": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "cel"
+            ],
+            "type": "object"
+         },
          "CreateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -24,6 +38,58 @@
             ],
             "type": "object"
          },
+         "Deployment": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "slug": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "slug",
+               "systemId",
+               "jobAgentConfig"
+            ],
+            "type": "object"
+         },
+         "DeploymentAndSystem": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "system": {
+                  "$ref": "#/components/schemas/System"
+               }
+            },
+            "required": [
+               "deployment",
+               "system"
+            ],
+            "type": "object"
+         },
          "Error": {
             "properties": {
                "code": {
@@ -41,6 +107,124 @@
             },
             "required": [
                "message"
+            ],
+            "type": "object"
+         },
+         "ErrorResponse": {
+            "properties": {
+               "error": {
+                  "example": "Workspace not found",
+                  "type": "string"
+               }
+            },
+            "type": "object"
+         },
+         "IntegerValue": {
+            "type": "integer"
+         },
+         "JsonSelector": {
+            "properties": {
+               "json": {
+                  "additionalProperties": true,
+                  "type": "object"
+               }
+            },
+            "required": [
+               "json"
+            ],
+            "type": "object"
+         },
+         "LiteralValue": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/BooleanValue"
+               },
+               {
+                  "$ref": "#/components/schemas/NumberValue"
+               },
+               {
+                  "$ref": "#/components/schemas/IntegerValue"
+               },
+               {
+                  "$ref": "#/components/schemas/StringValue"
+               },
+               {
+                  "$ref": "#/components/schemas/ObjectValue"
+               },
+               {
+                  "$ref": "#/components/schemas/NullValue"
+               }
+            ]
+         },
+         "NullValue": {
+            "enum": [
+               true
+            ],
+            "type": "boolean"
+         },
+         "NumberValue": {
+            "type": "number"
+         },
+         "ObjectValue": {
+            "properties": {
+               "object": {
+                  "additionalProperties": true,
+                  "type": "object"
+               }
+            },
+            "required": [
+               "object"
+            ],
+            "type": "object"
+         },
+         "PropertyMatcher": {
+            "properties": {
+               "fromProperty": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "operator": {
+                  "enum": [
+                     "equals",
+                     "notEquals",
+                     "contains",
+                     "startsWith",
+                     "endsWith",
+                     "regex"
+                  ],
+                  "type": "string"
+               },
+               "toProperty": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "fromProperty",
+               "toProperty",
+               "operator"
+            ],
+            "type": "object"
+         },
+         "ReferenceValue": {
+            "properties": {
+               "path": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "reference": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "reference",
+               "path"
             ],
             "type": "object"
          },
@@ -187,6 +371,52 @@
             ],
             "type": "object"
          },
+         "Selector": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/JsonSelector"
+               },
+               {
+                  "$ref": "#/components/schemas/CelSelector"
+               }
+            ]
+         },
+         "SensitiveValue": {
+            "properties": {
+               "valueHash": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "valueHash"
+            ],
+            "type": "object"
+         },
+         "StringValue": {
+            "type": "string"
+         },
+         "System": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workspaceId",
+               "name"
+            ],
+            "type": "object"
+         },
          "UpdateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -204,6 +434,19 @@
                }
             },
             "type": "object"
+         },
+         "Value": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/LiteralValue"
+               },
+               {
+                  "$ref": "#/components/schemas/ReferenceValue"
+               },
+               {
+                  "$ref": "#/components/schemas/SensitiveValue"
+               }
+            ]
          },
          "Workspace": {
             "properties": {
@@ -652,6 +895,84 @@
             "tags": [
                "Workspaces"
             ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments": {
+         "get": {
+            "operationId": "listDeployments",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/DeploymentAndSystem"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               }
+            },
+            "summary": "List deployments"
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers": {

@@ -82,6 +82,23 @@ export interface paths {
         patch: operations["updateWorkspace"];
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/deployments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List deployments */
+        get: operations["listDeployments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/resource-providers": {
         parameters: {
             query?: never;
@@ -159,11 +176,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        BooleanValue: boolean;
+        CelSelector: {
+            cel: string;
+        };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
             name: string;
             /** @description URL-friendly unique identifier (lowercase, no spaces) */
             slug: string;
+        };
+        Deployment: {
+            description?: string;
+            id: string;
+            jobAgentConfig: Record<string, unknown>;
+            jobAgentId?: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            slug: string;
+            systemId: string;
+        };
+        DeploymentAndSystem: {
+            deployment: components["schemas"]["Deployment"];
+            system: components["schemas"]["System"];
         };
         Error: {
             /** @description Error code */
@@ -172,6 +207,31 @@ export interface components {
             details?: Record<string, never>;
             /** @description Error message */
             message: string;
+        };
+        ErrorResponse: {
+            /** @example Workspace not found */
+            error?: string;
+        };
+        IntegerValue: number;
+        JsonSelector: {
+            json: Record<string, unknown>;
+        };
+        LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"]   | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
+        /** @enum {boolean} */
+        NullValue: true;
+        NumberValue: number;
+        ObjectValue: {
+            object: Record<string, unknown>;
+        };
+        PropertyMatcher: {
+            fromProperty: string[];
+            /** @enum {string} */
+            operator: "equals" | "notEquals" | "contains" | "startsWith" | "endsWith" | "regex";
+            toProperty: string[];
+        };
+        ReferenceValue: {
+            path: string[];
+            reference: string;
         };
         Resource: {
             config: Record<string, unknown>;
@@ -216,12 +276,24 @@ export interface components {
             updatedAt?: string;
             version: string;
         };
+        Selector: components["schemas"]["JsonSelector"] | components["schemas"]["CelSelector"];
+        SensitiveValue: {
+            valueHash: string;
+        };
+        StringValue: string;
+        System: {
+            description?: string;
+            id: string;
+            name: string;
+            workspaceId: string;
+        };
         UpdateWorkspaceRequest: {
             /** @description Display name of the workspace */
             name?: string;
             /** @description URL-friendly unique identifier (lowercase, no spaces) */
             slug?: string;
         };
+        Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
         Workspace: {
             /** @description AWS IAM role ARN for integrations */
             awsRoleArn?: string | null;
@@ -521,6 +593,40 @@ export interface operations {
                 headers: Record<string, unknown>;
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listDeployments: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: Record<string, unknown>;
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["DeploymentAndSystem"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
                 };
             };
         };
