@@ -39,9 +39,6 @@ func (m *Message) KeyAsString() string {
 // Consumer defines the interface for consuming messages
 // This interface is library-agnostic and can be implemented by Kafka, in-memory, or other message systems
 type Consumer interface {
-	// Subscribe subscribes to a topic
-	Subscribe(topic string) error
-
 	// ReadMessage reads the next message with a timeout
 	// Returns ErrTimeout if no message is available within the timeout duration
 	ReadMessage(timeout time.Duration) (*Message, error)

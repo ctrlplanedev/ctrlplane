@@ -23,7 +23,7 @@ type Consumer struct {
 var _ messaging.Consumer = (*Consumer)(nil)
 
 // NewConsumer creates a new Confluent Kafka consumer
-func NewConsumer(brokers string, groupID string, config *kafka.ConfigMap) (*Consumer, error) {
+func NewConsumer(brokers string, groupID string, topic string, config *kafka.ConfigMap) (*Consumer, error) {
 	log.Info("Creating Confluent Kafka consumer", "brokers", brokers, "groupID", groupID)
 
 	// Default configuration
@@ -54,28 +54,32 @@ func NewConsumer(brokers string, groupID string, config *kafka.ConfigMap) (*Cons
 		return nil, err
 	}
 
-	return &Consumer{
-		consumer:           c,
-		assignedPartitions: []int32{},
-		closed:             false,
-	}, nil
+	consumer := &Consumer{
+		consumer: c,
+		closed:   false,
+		topic:    topic,
+	}
+
+	if err := consumer.subscribe(); err != nil {
+		return nil, err
+	}
+
+	return consumer, nil
 }
 
 // Subscribe subscribes to a topic
-func (c *Consumer) Subscribe(topic string) error {
+func (c *Consumer) subscribe() error {
 	if c.closed {
 		return fmt.Errorf("consumer is closed")
 	}
 
-	c.topic = topic
-
-	log.Info("Subscribing to Kafka topic", "topic", topic)
-	if err := c.consumer.SubscribeTopics([]string{topic}, nil); err != nil {
+	log.Info("Subscribing to Kafka topic", "topic", c.topic)
+	if err := c.consumer.SubscribeTopics([]string{c.topic}, nil); err != nil {
 		log.Error("Failed to subscribe", "error", err)
 		return err
 	}
 
-	log.Info("Successfully subscribed to topic", "topic", topic)
+	log.Info("Successfully subscribed to topic", "topic", c.topic)
 
 	// Wait for partition assignment with extended timeout
 	// Kafka coordinator election and initial rebalance can take time

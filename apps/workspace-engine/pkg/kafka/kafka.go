@@ -23,8 +23,8 @@ var (
 	Brokers = config.Global.KafkaBrokers
 )
 
-func NewConsumer(brokers string) (messaging.Consumer, error) {
-	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, &kafka.ConfigMap{
+func NewConsumer(brokers string, topic string) (messaging.Consumer, error) {
+	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, topic, &kafka.ConfigMap{
 		"bootstrap.servers":               Brokers,
 		"group.id":                        GroupID,
 		"auto.offset.reset":               "latest",
@@ -48,11 +48,6 @@ func RunConsumer(ctx context.Context, consumer messaging.Consumer) error {
 	// Subscribe to topic
 	log.Info("Subscribing to Kafka topic", "topic", Topic, "group", GroupID, "brokers", Brokers)
 	log.Info("Waiting for Kafka partition assignment - this may take 30-120 seconds on first startup")
-
-	if err := consumer.Subscribe(Topic); err != nil {
-		log.Error("Failed to subscribe", "error", err)
-		return err
-	}
 
 	log.Info("Successfully subscribed to topic", "topic", Topic)
 

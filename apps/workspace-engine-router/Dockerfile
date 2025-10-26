@@ -34,6 +34,8 @@ COPY --from=builder /app/router-service .
 # Expose ports
 EXPOSE 8080 9090
 
+ENV GIN_MODE=release
+
 # Run the service
 CMD ["./router-service"]
 

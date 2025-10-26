@@ -150,7 +150,7 @@ func main() {
 	}
 	defer producer.Close()
 
-	consumer, err := kafka.NewConsumer(kafka.Brokers)
+	consumer, err := kafka.NewConsumer(kafka.Brokers, kafka.Topic)
 	if err != nil {
 		log.Fatal("Failed to create Kafka consumer", "error", err)
 		panic(err)

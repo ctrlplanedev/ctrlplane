@@ -24,6 +24,6 @@ func (c *Confluent) CreateProducer(topic string, config *kafka.ConfigMap) (messa
 }
 
 // CreateConsumer creates a new Confluent Kafka consumer with custom configuration
-func (c *Confluent) CreateConsumer(groupID string, config *kafka.ConfigMap) (messaging.Consumer, error) {
-	return NewConsumer(c.brokers, groupID, config)
+func (c *Confluent) CreateConsumer(groupID string, topic string, config *kafka.ConfigMap) (messaging.Consumer, error) {
+	return NewConsumer(c.brokers, groupID, topic, config)
 }
