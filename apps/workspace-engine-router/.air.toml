@@ -7,23 +7,23 @@ tmp_dir = "tmp"
   bin = "./tmp/main"
   cmd = "go build -o ./tmp/main ."
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
   follow_symlink = false
-  full_bin = "sh -c 'set -a; [ -f ../../.env ] && . ../../.env; set +a; exec ./tmp/main'"
+  full_bin = ""
   include_dir = []
   include_ext = ["go", "tpl", "tmpl", "html"]
   include_file = []
-  kill_delay = "5s"
+  kill_delay = "2s"
   log = "build-errors.log"
   poll = false
   poll_interval = 0
   rerun = false
   rerun_delay = 500
   send_interrupt = true
-  stop_on_root = false
+  stop_on_error = false
 
 [color]
   app = ""
@@ -38,3 +38,8 @@ tmp_dir = "tmp"
 
 [misc]
   clean_on_exit = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true
+

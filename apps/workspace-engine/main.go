@@ -21,13 +21,15 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+)
+
+var (
+	WorkerID = uuid.New().String()
 )
 
 // stripScheme removes http:// or https:// prefix from a URL
@@ -106,7 +108,7 @@ func initTracer() (func(), error) {
 	}, nil
 }
 
-func init() {
+func main() {
 	ctx := context.Background()
 	store, err := dbpersistence.NewStore(ctx)
 	if err != nil {
@@ -122,16 +124,6 @@ func init() {
 			workspace.AddDefaultSystem(),
 		),
 	)
-
-	pflag.String("host", "0.0.0.0", "Host to listen on")
-	pflag.Int("port", 8081, "Port to listen on")
-	pflag.Parse()
-
-	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-		log.Fatal("Failed to bind flags", "error", err)
-	}
-
-	viper.AutomaticEnv()
 
 	// Initialize OpenTelemetry
 	cleanup, err := initTracer()
@@ -175,7 +167,10 @@ func init() {
 		}
 	})
 
+	// Use a channel to wait for consumer goroutine to finish
+	consumerDone := make(chan struct{})
 	go func() {
+		defer close(consumerDone)
 		log.Info("Kafka consumer started")
 		if err := kafka.RunConsumer(ctx, consumer); err != nil {
 			log.Error("received error from kafka consumer", "error", err)
@@ -198,27 +193,22 @@ func init() {
 		registryClient = registry.NewClient(config.Global.RouterURL, workerID)
 		log.Info("Router registration enabled", "router_url", config.Global.RouterURL, "worker_id", workerID)
 	}
-
-	// Register with router after server is ready
-	if registryClient != nil {
-		// Wait a moment for consumer to get partition assignment
-		time.Sleep(2 * time.Second)
 		
-		// Get assigned partitions from consumer
-		assignedPartitions, err := consumer.GetAssignedPartitions()
-		if err != nil {
-			log.Warn("Failed to get assigned partitions for router registration", "error", err)
+	// Get assigned partitions from consumer
+	assignedPartitions, err := consumer.GetAssignedPartitions()
+	if err != nil {
+		log.Warn("Failed to get assigned partitions for router registration", "error", err)
+	} else {
+		log.Warn("Assigned partitions for router registration", "partitions", assignedPartitions)
+		// Build HTTP address for this worker
+		httpAddress := fmt.Sprintf("http://%s", addr)
+		
+		// Register with router
+		if err := registryClient.Register(ctx, httpAddress, assignedPartitions); err != nil {
+			log.Error("Failed to register with router", "error", err)
 		} else {
-			// Build HTTP address for this worker
-			httpAddress := fmt.Sprintf("http://%s", addr)
-			
-			// Register with router
-			if err := registryClient.Register(ctx, httpAddress, assignedPartitions); err != nil {
-				log.Error("Failed to register with router", "error", err)
-			} else {
-				// Start heartbeat goroutine
-				go registryClient.StartHeartbeat(ctx, 15*time.Second)
-			}
+			// Start heartbeat goroutine
+			go registryClient.StartHeartbeat(ctx, 15*time.Second)
 		}
 	}
 
@@ -226,6 +216,23 @@ func init() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
+
+	log.Warn("Shutting down workspace engine...")
+
+	// Cancel context to stop all goroutines
+	cancel()
+
+	// Wait for consumer goroutine to finish before closing resources
+	log.Info("Waiting for consumer to finish...")
+	shutdownTimeout := time.NewTimer(10 * time.Second)
+	defer shutdownTimeout.Stop()
+	
+	select {
+	case <-consumerDone:
+		log.Info("Consumer finished gracefully")
+	case <-shutdownTimeout.C:
+		log.Warn("Consumer shutdown timeout - forcing shutdown")
+	}
 
 	// Unregister from router on shutdown
 	if registryClient != nil {
@@ -236,6 +243,5 @@ func init() {
 		}
 	}
 
-	producer.Close()
 	log.Info("Shutting down workspace engine...")
 }

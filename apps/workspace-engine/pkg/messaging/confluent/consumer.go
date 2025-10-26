@@ -34,9 +34,9 @@ func NewConsumer(brokers string, groupID string, config *kafka.ConfigMap) (*Cons
 			"auto.offset.reset":               "earliest",
 			"enable.auto.commit":              false,
 			"partition.assignment.strategy":   "cooperative-sticky",
-			"session.timeout.ms":              10000,
-			"heartbeat.interval.ms":           3000,
-			"go.application.rebalance.enable": true, // Enable rebalance callbacks
+			"session.timeout.ms":              3000,  // Minimum for dev (faster coordinator join)
+			"heartbeat.interval.ms":           1000,  // Fast heartbeats for quick detection
+			"go.application.rebalance.enable": true,  // Enable rebalance callbacks
 		}
 	} else {
 		// Ensure required fields are set

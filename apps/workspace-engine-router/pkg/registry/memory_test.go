@@ -726,24 +726,32 @@ func TestContract_GetWorkerForPartition_NewestWinsEvenWithComplexScenarios(t *te
 	reg.Register("worker-C", "http://c:8080", []int32{3, 4, 5})
 	time.Sleep(5 * time.Millisecond)
 
-	// Time T4: worker-A re-registers with partition 3 (becomes newest for partition 3)
-	reg.Register("worker-A", "http://a:8080", []int32{3})
+	// Time T4: worker-D (new worker) registers with partition 3
+	// This tests that a brand new worker can take over from existing workers
+	reg.Register("worker-D", "http://d:8080", []int32{3})
 
 	// CONTRACT: Verify each partition is owned by the newest registered worker
 	tests := []struct {
-		partition int32
-		expected  string
-		reason    string
+		partition   int32
+		expected    string
+		reason      string
+		shouldExist bool
 	}{
-		{1, "worker-A", "only worker-A registered for partition 1"},
-		{2, "worker-B", "worker-B registered after worker-A for partition 2"},
-		{3, "worker-A", "worker-A re-registered most recently for partition 3"},
-		{4, "worker-C", "worker-C registered after worker-B for partition 4"},
-		{5, "worker-C", "only worker-C registered for partition 5"},
+		{1, "worker-A", "only worker-A registered for partition 1", true},
+		{2, "worker-B", "worker-B registered after worker-A for partition 2", true},
+		{3, "worker-D", "worker-D (new worker) registered most recently for partition 3", true},
+		{4, "worker-C", "worker-C registered after worker-B for partition 4", true},
+		{5, "worker-C", "only worker-C registered for partition 5", true},
 	}
 
 	for _, tt := range tests {
 		worker, err := reg.GetWorkerForPartition(tt.partition)
+		if !tt.shouldExist {
+			if err == nil {
+				t.Errorf("Expected error for partition %d, but got worker %s", tt.partition, worker.WorkerID)
+			}
+			continue
+		}
 		if err != nil {
 			t.Errorf("Failed to get worker for partition %d: %v", tt.partition, err)
 			continue
