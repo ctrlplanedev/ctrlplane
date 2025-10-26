@@ -84,6 +84,9 @@ func (j *Jobs) GetJobsForAgent(agentId string) map[string]*oapi.Job {
 
 func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job, j.repo.Jobs.Count())
+	if releaseTarget == nil {
+		return jobs
+	}
 	for jobItem := range j.repo.Jobs.IterBuffered() {
 		release, ok := j.repo.Releases.Get(jobItem.Val.ReleaseId)
 		if !ok || release == nil {

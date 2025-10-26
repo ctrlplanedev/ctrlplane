@@ -48,7 +48,14 @@ func (r *ReleaseTargets) Items(ctx context.Context) (map[string]*oapi.ReleaseTar
 	if err := r.targets.WaitIfRunning(); err != nil && !materialized.IsAlreadyStarted(err) {
 		return nil, err
 	}
-	return r.targets.Get(), nil
+	targets := r.targets.Get()
+	// Check for nil values in the map and log them
+	for key, target := range targets {
+		if target == nil {
+			log.Error("Found nil release target in map", "key", key)
+		}
+	}
+	return targets, nil
 }
 
 func (r *ReleaseTargets) Recompute(ctx context.Context) error {
@@ -174,6 +181,9 @@ func (r *ReleaseTargets) Get(key string) *oapi.ReleaseTarget {
 }
 
 func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Release, *oapi.Job, error) {
+	if releaseTarget == nil {
+		return nil, nil, fmt.Errorf("releaseTarget is nil")
+	}
 	jobs := r.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 	var mostRecentJob *oapi.Job
 

@@ -1,11 +1,13 @@
 package deployments
 
 import (
+	"fmt"
 	"net/http"
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 
+	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -204,21 +206,31 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		offset = *params.Offset
 	}
 
-	total := len(releaseTargets)
-	start := min(offset, total)
-	end := min(start+limit, total)
-
-	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, total)
+	// Build list of release targets for this deployment, filtering out any nils
+	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
 	for _, releaseTarget := range releaseTargets {
+		if releaseTarget == nil {
+			log.Error("release target is nil", "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
+			continue
+		}
 		if releaseTarget.DeploymentId == deploymentId {
 			releaseTargetsList = append(releaseTargetsList, releaseTarget)
 		}
 	}
 
+	total := len(releaseTargetsList)
+	start := min(offset, total)
+	end := min(start+limit, total)
+
 	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, total)
 	for _, releaseTarget := range releaseTargetsList[start:end] {
+		if releaseTarget == nil {
+			log.Error("release target is nil in second loop", "index", len(releaseTargetsWithState))
+			continue
+		}
 		state, err := ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), releaseTarget)
 		if err != nil {
+			log.Error("error getting release target state", "error", err.Error(), "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
