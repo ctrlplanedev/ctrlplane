@@ -44,6 +44,8 @@ const getOapiPolicy = (
     workspaceId: policy.workspaceId,
     selectors,
     rules,
+    enabled: policy.enabled,
+    priority: policy.priority,
     metadata: {},
   };
 };
