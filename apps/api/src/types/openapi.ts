@@ -135,6 +135,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/environments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List environments */
+        get: operations["listEnvironments"];
+        /** Upsert environment */
+        put: operations["upsertEnvironment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment */
+        get: operations["getEnvironment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/policies": {
         parameters: {
             query?: never;
@@ -289,6 +324,19 @@ export interface components {
         };
         /** @enum {string} */
         DeploymentVersionStatus: "unspecified" | "building" | "ready" | "failed" | "rejected";
+        Environment: {
+            /** Format: date-time */
+            createdAt: string;
+            description?: string;
+            id: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            systemId: string;
+        };
+        EnvironmentAndSystem: {
+            environment: components["schemas"]["Environment"];
+            system: components["schemas"]["System"];
+        };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
             id: string;
@@ -459,6 +507,12 @@ export interface components {
             name?: string;
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag: string;
+        };
+        UpsertEnvironmentRequest: {
+            description?: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            systemId: string;
         };
         UpsertPolicyRequest: {
             description?: string;
@@ -1016,6 +1070,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeploymentVersion"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listEnvironments: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["EnvironmentAndSystem"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+        };
+    };
+    upsertEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertEnvironmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Resource created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Environment"];
+                };
+            };
+        };
+    };
+    getEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Environment"];
                 };
             };
             /** @description Invalid request */

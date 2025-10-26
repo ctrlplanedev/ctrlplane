@@ -189,6 +189,51 @@
             ],
             "type": "string"
          },
+         "Environment": {
+            "properties": {
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "systemId",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "EnvironmentAndSystem": {
+            "properties": {
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "system": {
+                  "$ref": "#/components/schemas/System"
+               }
+            },
+            "required": [
+               "environment",
+               "system"
+            ],
+            "type": "object"
+         },
          "EnvironmentProgressionRule": {
             "properties": {
                "dependsOnEnvironmentSelector": {
@@ -721,6 +766,27 @@
             "required": [
                "tag",
                "deploymentId"
+            ],
+            "type": "object"
+         },
+         "UpsertEnvironmentRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "name"
             ],
             "type": "object"
          },
@@ -1548,6 +1614,168 @@
                }
             },
             "summary": "Upsert deployment version"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/environments": {
+         "get": {
+            "operationId": "listEnvironments",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/EnvironmentAndSystem"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               }
+            },
+            "summary": "List environments"
+         },
+         "put": {
+            "operationId": "upsertEnvironment",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertEnvironmentRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "201": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Environment"
+                        }
+                     }
+                  },
+                  "description": "Resource created successfully"
+               }
+            },
+            "summary": "Upsert environment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
+         "get": {
+            "operationId": "getEnvironment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Environment"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get environment"
          }
       },
       "/v1/workspaces/{workspaceId}/policies": {
