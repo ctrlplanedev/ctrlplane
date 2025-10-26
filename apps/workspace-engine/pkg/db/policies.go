@@ -17,7 +17,6 @@ const POLICY_SELECT_QUERY = `
 		p.description,
 		p.workspace_id,
 		p.created_at,
-
 	COALESCE(
 		json_agg(
 			jsonb_build_object(

@@ -5,33 +5,33 @@ import (
 	"workspace-engine/pkg/oapi"
 )
 
-func NewBasicReleaseTarget(environment *oapi.Environment, deployment *oapi.Deployment, resource *oapi.Resource) *BasicReleaseTarget {
-	return &BasicReleaseTarget{
+func NewResolvedReleaseTarget(environment *oapi.Environment, deployment *oapi.Deployment, resource *oapi.Resource) *ResolvedReleaseTarget {
+	return &ResolvedReleaseTarget{
 		environment: environment,
 		deployment:  deployment,
 		resource:    resource,
 	}
 }
 
-type BasicReleaseTarget struct {
+type ResolvedReleaseTarget struct {
 	environment *oapi.Environment
 	deployment  *oapi.Deployment
 	resource    *oapi.Resource
 }
 
-func (b *BasicReleaseTarget) Environment() *oapi.Environment {
+func (b *ResolvedReleaseTarget) Environment() *oapi.Environment {
 	return b.environment
 }
 
-func (b *BasicReleaseTarget) Deployment() *oapi.Deployment {
+func (b *ResolvedReleaseTarget) Deployment() *oapi.Deployment {
 	return b.deployment
 }
 
-func (b *BasicReleaseTarget) Resource() *oapi.Resource {
+func (b *ResolvedReleaseTarget) Resource() *oapi.Resource {
 	return b.resource
 }
 
-func MatchPolicy(ctx context.Context, policy *oapi.Policy, releaseTarget *BasicReleaseTarget) bool {
+func MatchPolicy(ctx context.Context, policy *oapi.Policy, releaseTarget *ResolvedReleaseTarget) bool {
 	for _, policyTarget := range policy.Selectors {
 		if policyTarget.EnvironmentSelector == nil {
 			continue

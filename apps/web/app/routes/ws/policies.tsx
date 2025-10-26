@@ -38,16 +38,13 @@ type Policy = NonNullable<
 
 function PolicyRow({ policy }: { policy: Policy }) {
   // Count release targets from computed relationships
-  const releaseTargetCount =
-    policy.targets?.reduce((sum, target) => {
-      return sum + (target.computedReleaseTargets?.length ?? 0);
-    }, 0) ?? 0;
+  const releaseTargetCount = 0;
 
   return (
     <TableRow className="hover:bg-muted/50">
       <TableCell className="font-medium">{policy.name}</TableCell>
       <TableCell className="text-muted-foreground">
-        {policy.description || "—"}
+        {policy.description ?? "—"}
       </TableCell>
       <TableCell className="text-center">{policy.priority}</TableCell>
       <TableCell>

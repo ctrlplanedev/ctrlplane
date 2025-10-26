@@ -24,6 +24,7 @@ func NewPolicy(workspaceId string) *oapi.Policy {
 		WorkspaceId: workspaceId,
 		Selectors:   []oapi.PolicyTargetSelector{},
 		Rules:       []oapi.PolicyRule{},
+		Enabled:     true,
 	}
 
 	return p

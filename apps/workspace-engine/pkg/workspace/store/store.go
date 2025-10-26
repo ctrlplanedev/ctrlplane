@@ -70,5 +70,8 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes) error 
 	s.Environments.ReinitializeMaterializedViews()
 	s.Deployments.ReinitializeMaterializedViews()
 
+	// Recompute release targets after materialized views are initialized
+	_ = s.ReleaseTargets.Recompute(ctx)
+
 	return nil
 }

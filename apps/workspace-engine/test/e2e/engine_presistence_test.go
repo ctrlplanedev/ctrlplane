@@ -227,9 +227,9 @@ func TestEngine_Persistence_ReleaseTargetsComputation(t *testing.T) {
 
 	// Find the resource ID for the prod-east resource
 	var prodEastResourceID string
-	for _, r := range ws.Store().Repo().Resources.Items() {
+	for _, r := range ws.Resources().Items() {
 		if r.Name == "resource-prod-east" {
-			prodEastResourceID = r.Identifier
+			prodEastResourceID = r.Id
 			break
 		}
 	}

@@ -3,13 +3,15 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   Policy: {
     type: 'object',
-    required: ['id', 'name', 'createdAt', 'workspaceId', 'selectors', 'rules', 'metadata'],
+    required: ['id', 'name', 'createdAt', 'workspaceId', 'selectors', 'rules', 'metadata', 'priority', 'enabled'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
       description: { type: 'string' },
       createdAt: { type: 'string' },
       workspaceId: { type: 'string' },
+      priority: { type: 'integer' },
+      enabled: { type: 'boolean' },
       selectors: {
         type: 'array',
         items: openapi.schemaRef('PolicyTargetSelector'),

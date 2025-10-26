@@ -306,11 +306,13 @@ type ObjectValue struct {
 type Policy struct {
 	CreatedAt   string  `json:"createdAt"`
 	Description *string `json:"description,omitempty"`
+	Enabled     bool    `json:"enabled"`
 	Id          string  `json:"id"`
 
 	// Metadata Arbitrary metadata for the policy (record<string, string>)
 	Metadata    map[string]string      `json:"metadata"`
 	Name        string                 `json:"name"`
+	Priority    int                    `json:"priority"`
 	Rules       []PolicyRule           `json:"rules"`
 	Selectors   []PolicyTargetSelector `json:"selectors"`
 	WorkspaceId string                 `json:"workspaceId"`

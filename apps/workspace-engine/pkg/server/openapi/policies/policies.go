@@ -90,7 +90,7 @@ func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string
 		if !ok {
 			continue
 		}
-		resolvedReleaseTarget := selector.NewBasicReleaseTarget(environment, deployment, resource)
+		resolvedReleaseTarget := selector.NewResolvedReleaseTarget(environment, deployment, resource)
 		if selector.MatchPolicy(c.Request.Context(), policy, resolvedReleaseTarget) {
 			matchingReleaseTargets = append(matchingReleaseTargets, releaseTarget)
 		}

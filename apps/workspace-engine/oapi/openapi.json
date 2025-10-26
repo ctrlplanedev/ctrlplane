@@ -611,6 +611,9 @@
                "description": {
                   "type": "string"
                },
+               "enabled": {
+                  "type": "boolean"
+               },
                "id": {
                   "type": "string"
                },
@@ -623,6 +626,9 @@
                },
                "name": {
                   "type": "string"
+               },
+               "priority": {
+                  "type": "integer"
                },
                "rules": {
                   "items": {
@@ -647,7 +653,9 @@
                "workspaceId",
                "selectors",
                "rules",
-               "metadata"
+               "metadata",
+               "priority",
+               "enabled"
             ],
             "type": "object"
          },

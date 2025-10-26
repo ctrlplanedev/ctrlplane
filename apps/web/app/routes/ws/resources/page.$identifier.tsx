@@ -34,7 +34,8 @@ export function meta() {
 
 const MetadataSection: React.FC<{
   title: string;
-  data: Record<string, string | number | boolean | null | undefined>;
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  data: Record<string, string | unknown>;
   isOpen?: boolean;
 }> = ({ title, data, isOpen = true }) => {
   const [open, setOpen] = useState(isOpen);
@@ -47,7 +48,7 @@ const MetadataSection: React.FC<{
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <CollapsibleTrigger asChild>
@@ -60,26 +61,22 @@ const MetadataSection: React.FC<{
           </div>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent className="pt-0">
-            <div className="space-y-2">
-              {entries.map(([key, value]) => (
+          <CardContent className="space-y-0.5 pt-0">
+            {entries
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map(([key, value]) => (
                 <div
                   key={key}
-                  className="flex items-start gap-2 rounded-md border p-2 text-sm"
+                  className="flex items-start gap-2 font-mono text-xs font-semibold"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono text-xs text-muted-foreground">
-                      {key}
-                    </div>
-                    <div className="mt-1 break-words font-mono text-xs">
-                      {typeof value === "string"
-                        ? value
-                        : JSON.stringify(value, null, 2)}
-                    </div>
-                  </div>
+                  <span className="text-red-600">{key}:</span>
+                  <span className="text-green-700">
+                    {typeof value === "string"
+                      ? value
+                      : JSON.stringify(value, null, 2)}
+                  </span>
                 </div>
               ))}
-            </div>
           </CardContent>
         </CollapsibleContent>
       </Card>

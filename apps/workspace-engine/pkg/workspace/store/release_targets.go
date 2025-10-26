@@ -150,13 +150,15 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 		return nil, fmt.Errorf("resource %s not found", releaseTarget.ResourceId)
 	}
 
-	resolvedReleaseTarget := selector.NewBasicReleaseTarget(environments, deployments, resources)
+	resolvedReleaseTarget := selector.NewResolvedReleaseTarget(environments, deployments, resources)
 	matchingPolicies := make(map[string]*oapi.Policy)
 
 	for policyItem := range r.store.Policies.IterBuffered() {
 		policy := policyItem.Val
-		if selector.MatchPolicy(ctx, policy, resolvedReleaseTarget) {
-			matchingPolicies[policy.Id] = policy
+		if policy.Enabled {
+			if selector.MatchPolicy(ctx, policy, resolvedReleaseTarget) {
+				matchingPolicies[policy.Id] = policy
+			}
 		}
 	}
 

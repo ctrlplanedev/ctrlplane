@@ -764,12 +764,14 @@ export interface components {
         Policy: {
             createdAt: string;
             description?: string;
+            enabled: boolean;
             id: string;
             /** @description Arbitrary metadata for the policy (record<string, string>) */
             metadata: {
                 [key: string]: string;
             };
             name: string;
+            priority: number;
             rules: components["schemas"]["PolicyRule"][];
             selectors: components["schemas"]["PolicyTargetSelector"][];
             workspaceId: string;

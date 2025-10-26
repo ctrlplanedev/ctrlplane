@@ -160,7 +160,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 
 	ctx = changeset.WithChangeSet(ctx, changeSet)
 
-	log.Info("Processing event", "eventType", rawEvent.EventType, "workspaceID", rawEvent.WorkspaceID)
 	if err := handler(ctx, ws, rawEvent); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "handler failed")
