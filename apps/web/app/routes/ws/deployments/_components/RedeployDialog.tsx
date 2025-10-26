@@ -51,7 +51,11 @@ export function RedeployDialog({ releaseTarget }: RedeployDialogProps) {
           <DialogTitle>Redeploy release target</DialogTitle>
           <DialogDescription>
             Are you sure you want to redeploy this release target?
-            <pre>{JSON.stringify(releaseTarget, null, 2)}</pre>
+            <div className="flex flex-col gap-1">
+              <span>Deployment: {releaseTarget.deploymentId}</span>
+              <span>Environment: {releaseTarget.environmentId}</span>
+              <span>Resource: {releaseTarget.resourceId}</span>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
