@@ -222,8 +222,11 @@ export class KafkaEventDispatcher implements EventDispatcher {
     );
   }
 
-  async dispatchRedeploy(releaseTargetId: string): Promise<void> {
-    await redeployDispatch.dispatchRedeploy(releaseTargetId);
+  async dispatchRedeploy(
+    workspaceId: string,
+    releaseTargetId: string,
+  ): Promise<void> {
+    await redeployDispatch.dispatchRedeploy(workspaceId, releaseTargetId);
   }
 
   async dispatchUserApprovalRecordCreated(

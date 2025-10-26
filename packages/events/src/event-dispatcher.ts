@@ -103,7 +103,7 @@ export interface EventDispatcher {
     opts?: { skipDuplicateCheck?: boolean },
   ): Promise<void>;
 
-  dispatchRedeploy(releaseTargetId: string): Promise<void>;
+  dispatchRedeploy(workspaceId: string, releaseTargetId: string): Promise<void>;
 
   dispatchUserApprovalRecordCreated(
     userApprovalRecord: schema.PolicyRuleAnyApprovalRecord,

@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { desc, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { createReleaseJob } from "@ctrlplane/db/queries";
 import * as schema from "@ctrlplane/db/schema";
 import { eventDispatcher } from "@ctrlplane/events";
@@ -58,7 +58,13 @@ const handleDeployment = async (
 
   await Promise.all(
     releaseTargets.map(async (releaseTarget) => {
-      await eventDispatcher.dispatchRedeploy(releaseTarget.id);
+      const workspaceId = await db
+        .select()
+        .from(schema.resource)
+        .where(eq(schema.resource.id, releaseTarget.resourceId))
+        .then(takeFirst)
+        .then((row) => row.workspaceId);
+      await eventDispatcher.dispatchRedeploy(workspaceId, releaseTarget.id);
       await eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget, {
         skipDuplicateCheck: true,
       });
