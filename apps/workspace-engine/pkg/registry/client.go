@@ -13,8 +13,12 @@ import (
 
 // Client handles registration with the workspace-engine-router
 type Client struct {
-	routerURL  string
-	workerID   string
+	routerURL string
+
+	workerID          string
+	workerHTTPAddress string
+	workerPartitions  []int32
+
 	httpClient *http.Client
 }
 
@@ -38,6 +42,8 @@ type RegisterRequest struct {
 
 // Register registers this worker with the router
 func (c *Client) Register(ctx context.Context, httpAddress string, partitions []int32) error {
+	c.workerHTTPAddress = httpAddress
+	c.workerPartitions = partitions
 	req := RegisterRequest{
 		WorkerID:    c.workerID,
 		HTTPAddress: httpAddress,
@@ -49,7 +55,7 @@ func (c *Client) Register(ctx context.Context, httpAddress string, partitions []
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/register", c.routerURL)
+	url := fmt.Sprintf("%s/register", c.routerURL)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -76,13 +82,17 @@ func (c *Client) Register(ctx context.Context, httpAddress string, partitions []
 
 // HeartbeatRequest represents the request body for worker heartbeat
 type HeartbeatRequest struct {
-	WorkerID string `json:"workerId"`
+	WorkerID    string  `json:"workerId"`
+	HTTPAddress string  `json:"httpAddress"`
+	Partitions  []int32 `json:"partitions"`
 }
 
 // Heartbeat sends a heartbeat to the router
 func (c *Client) Heartbeat(ctx context.Context) error {
 	req := HeartbeatRequest{
-		WorkerID: c.workerID,
+		WorkerID:    c.workerID,
+		HTTPAddress: c.workerHTTPAddress,
+		Partitions:  c.workerPartitions,
 	}
 
 	body, err := json.Marshal(req)
@@ -90,7 +100,7 @@ func (c *Client) Heartbeat(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/heartbeat", c.routerURL)
+	url := fmt.Sprintf("%s/heartbeat", c.routerURL)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -126,7 +136,7 @@ func (c *Client) Unregister(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/unregister", c.routerURL)
+	url := fmt.Sprintf("%s/unregister", c.routerURL)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)

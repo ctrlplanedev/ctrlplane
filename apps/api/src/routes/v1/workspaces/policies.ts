@@ -1,20 +1,23 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-import { wsEngine } from "@/engine.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 const listPolicies: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/policies",
   "get"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const response = await wsEngine.GET("/v1/workspaces/{workspaceId}/policies", {
-    params: { path: { workspaceId } },
-  });
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/policies",
+    {
+      params: { path: { workspaceId } },
+    },
+  );
 
   if (response.error?.error != null)
     throw new ApiError(response.error.error, 500);
@@ -24,9 +27,12 @@ const listPolicies: AsyncTypedHandler<
 };
 
 const getExistingPolicy = async (workspaceId: string, name: string) => {
-  const response = await wsEngine.GET("/v1/workspaces/{workspaceId}/policies", {
-    params: { path: { workspaceId } },
-  });
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/policies",
+    {
+      params: { path: { workspaceId } },
+    },
+  );
 
   if (response.error?.error != null)
     throw new ApiError(response.error.error, 500);

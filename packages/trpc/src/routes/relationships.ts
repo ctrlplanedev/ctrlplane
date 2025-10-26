@@ -2,9 +2,9 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const relationshipsRouter = router({
   list: protectedProcedure
@@ -16,7 +16,7 @@ export const relationshipsRouter = router({
       }),
     )
     .query(async ({ input }) => {
-      const result = await wsEngine.GET(
+      const result = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/relationship-rules",
         {
           params: {

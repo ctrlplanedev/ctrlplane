@@ -236,7 +236,7 @@ func TestHeartbeat_Success(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Send heartbeat
-	err = reg.Heartbeat("worker-1")
+	err = reg.Heartbeat("worker-1", "http://localhost:8080", []int32{0})
 	if err != nil {
 		t.Fatalf("Failed to send heartbeat: %v", err)
 	}
@@ -251,7 +251,7 @@ func TestHeartbeat_Success(t *testing.T) {
 func TestHeartbeat_WorkerNotFound(t *testing.T) {
 	reg := NewInMemoryRegistry(30 * time.Second)
 
-	err := reg.Heartbeat("nonexistent-worker")
+	err := reg.Heartbeat("nonexistent-worker", "http://localhost:8080", []int32{0})
 	if err != ErrWorkerNotFound {
 		t.Errorf("Expected ErrWorkerNotFound, got %v", err)
 	}
@@ -409,7 +409,7 @@ func TestCleanupStaleWorkers_KeepsHealthy(t *testing.T) {
 	time.Sleep(1500 * time.Millisecond)
 
 	// Send heartbeat for worker-1 only (refreshes it)
-	reg.Heartbeat("worker-1")
+	reg.Heartbeat("worker-1", "http://localhost:8080", []int32{0})
 
 	// Wait for worker-2 to become stale (but worker-1 stays fresh)
 	time.Sleep(1 * time.Second)
@@ -456,7 +456,7 @@ func TestConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < numOperations; j++ {
 				workerID := "worker-" + string(rune(id))
-				reg.Heartbeat(workerID)
+				reg.Heartbeat(workerID, "http://localhost:8080", []int32{int32(id)})
 			}
 		}(i)
 	}
@@ -535,7 +535,7 @@ func BenchmarkHeartbeat(b *testing.B) {
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		reg.Heartbeat("worker-1")
+		reg.Heartbeat("worker-1", "http://localhost:8080", []int32{0})
 	}
 }
 
@@ -768,7 +768,7 @@ func TestContract_GetWorkerForPartition_NewerWorkerEvenIfOlderIsHealthier(t *tes
 
 	// Register old worker and immediately send heartbeat
 	reg.Register("worker-old", "http://old:8080", []int32{20})
-	reg.Heartbeat("worker-old") // Fresh heartbeat
+	reg.Heartbeat("worker-old", "http://old:8080", []int32{20}) // Fresh heartbeat
 
 	time.Sleep(10 * time.Millisecond)
 

@@ -6,6 +6,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -191,17 +192,20 @@ func main() {
 	if config.Global.RouterURL != "" {
 		workerID := uuid.New().String()
 		registryClient = registry.NewClient(config.Global.RouterURL, workerID)
-		log.Info("Router registration enabled", "router_url", config.Global.RouterURL, "worker_id", workerID)
 	}
 
 	// Get assigned partitions from consumer
 	assignedPartitions, err := consumer.GetAssignedPartitions()
-	if err != nil {
-		log.Warn("Failed to get assigned partitions for router registration", "error", err)
+	if err != nil || len(assignedPartitions) == 0 {
+		log.Warn("Failed to get assigned partitions for router registration", "error", err, "partitions", assignedPartitions)
 	} else {
-		log.Warn("Assigned partitions for router registration", "partitions", assignedPartitions)
-		// Build HTTP address for this worker
 		httpAddress := fmt.Sprintf("http://%s", addr)
+		if config.Global.RegisterAddress != "" {
+			httpAddress = config.Global.RegisterAddress
+		}
+
+		log.Info("Assigned partitions for router registration", "with_http_address", httpAddress, "partitions", assignedPartitions)
+		// Build HTTP address for this worker
 
 		// Register with router
 		if err := registryClient.Register(ctx, httpAddress, assignedPartitions); err != nil {
@@ -222,26 +226,39 @@ func main() {
 	// Cancel context to stop all goroutines
 	cancel()
 
-	// Wait for consumer goroutine to finish before closing resources
-	log.Info("Waiting for consumer to finish...")
+	// Shutdown steps in parallel: consumer, router unregister
+	var shutdownWg sync.WaitGroup
+
 	shutdownTimeout := time.NewTimer(10 * time.Second)
 	defer shutdownTimeout.Stop()
 
-	select {
-	case <-consumerDone:
-		log.Info("Consumer finished gracefully")
-	case <-shutdownTimeout.C:
-		log.Warn("Consumer shutdown timeout - forcing shutdown")
+	// 1. Wait for consumer goroutine to finish
+	shutdownWg.Add(1)
+	go func() {
+		defer shutdownWg.Done()
+		select {
+		case <-consumerDone:
+			log.Info("Consumer finished gracefully")
+		case <-shutdownTimeout.C:
+			log.Warn("Consumer shutdown timeout - forcing shutdown")
+		}
+	}()
+
+	// 2. Unregister from router on shutdown
+	if registryClient != nil {
+		shutdownWg.Add(1)
+		go func() {
+			defer shutdownWg.Done()
+			unregisterCtx, unregisterCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer unregisterCancel()
+			if err := registryClient.Unregister(unregisterCtx); err != nil {
+				log.Warn("Failed to unregister from router", "error", err)
+			}
+		}()
 	}
 
-	// Unregister from router on shutdown
-	if registryClient != nil {
-		unregisterCtx, unregisterCancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer unregisterCancel()
-		if err := registryClient.Unregister(unregisterCtx); err != nil {
-			log.Warn("Failed to unregister from router", "error", err)
-		}
-	}
+	// Wait for all shutdown tasks to complete
+	shutdownWg.Wait()
 
 	log.Info("Shutting down workspace engine...")
 }

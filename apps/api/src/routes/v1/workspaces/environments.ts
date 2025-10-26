@@ -1,11 +1,11 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-import { wsEngine } from "@/engine.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 const listEnvironments: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/environments",
@@ -14,7 +14,7 @@ const listEnvironments: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { limit, offset } = req.query;
 
-  const response = await wsEngine.GET(
+  const response = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/environments",
     {
       params: {
@@ -35,7 +35,7 @@ const getExistingEnvironment = async (
   systemId: string,
   name: string,
 ) => {
-  const response = await wsEngine.GET(
+  const response = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/systems/{systemId}",
     { params: { path: { workspaceId, systemId } } },
   );
@@ -103,7 +103,7 @@ const getEnvironment: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, environmentId } = req.params;
-  const response = await wsEngine.GET(
+  const response = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/environments/{environmentId}",
     { params: { path: { workspaceId, environmentId } } },
   );

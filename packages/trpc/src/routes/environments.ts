@@ -4,9 +4,9 @@ import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const environmentRouter = router({
   resources: protectedProcedure
@@ -20,7 +20,7 @@ export const environmentRouter = router({
     )
     .query(async ({ input }) => {
       const { workspaceId, environmentId, limit, offset } = input;
-      const result = await wsEngine.GET(
+      const result = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources",
         {
           params: {
@@ -48,7 +48,7 @@ export const environmentRouter = router({
     })
     .query(async ({ input }) => {
       const { workspaceId, environmentId } = input;
-      const result = await wsEngine.GET(
+      const result = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/environments/{environmentId}",
         {
           params: { path: { workspaceId, environmentId } },
@@ -72,7 +72,7 @@ export const environmentRouter = router({
     })
     .query(async ({ input }) => {
       const { workspaceId } = input;
-      const result = await wsEngine.GET(
+      const result = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/environments",
         {
           params: { query: { limit: 1000, offset: 0 }, path: { workspaceId } },
@@ -94,13 +94,16 @@ export const environmentRouter = router({
     )
     .mutation(async ({ input }) => {
       const { workspaceId, environmentId, data } = input;
-      const validate = await wsEngine.POST("/v1/validate/resource-selector", {
-        body: {
-          resourceSelector: {
-            cel: data.resourceSelectorCel,
+      const validate = await getClientFor(workspaceId).POST(
+        "/v1/validate/resource-selector",
+        {
+          body: {
+            resourceSelector: {
+              cel: data.resourceSelectorCel,
+            },
           },
         },
-      });
+      );
 
       if (!validate.data?.valid) {
         throw new TRPCError({
@@ -113,7 +116,7 @@ export const environmentRouter = router({
         });
       }
 
-      const env = await wsEngine.GET(
+      const env = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/environments/{environmentId}",
         { params: { path: { workspaceId, environmentId } } },
       );
@@ -153,13 +156,16 @@ export const environmentRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const validate = await wsEngine.POST("/v1/validate/resource-selector", {
-        body: {
-          resourceSelector: {
-            cel: input.resourceSelectorCel,
+      const validate = await getClientFor(input.workspaceId).POST(
+        "/v1/validate/resource-selector",
+        {
+          body: {
+            resourceSelector: {
+              cel: input.resourceSelectorCel,
+            },
           },
         },
-      });
+      );
 
       if (!validate.data?.valid) {
         throw new TRPCError({

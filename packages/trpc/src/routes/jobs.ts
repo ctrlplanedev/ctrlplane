@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const jobsRouter = router({
   list: protectedProcedure
@@ -13,11 +14,14 @@ export const jobsRouter = router({
       }),
     )
     .query(async ({ input }) => {
-      const jobs = await wsEngine.GET("/v1/workspaces/{workspaceId}/jobs", {
-        params: {
-          path: { workspaceId: input.workspaceId },
+      const jobs = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/jobs",
+        {
+          params: {
+            path: { workspaceId: input.workspaceId },
+          },
         },
-      });
+      );
 
       return jobs.data;
     }),

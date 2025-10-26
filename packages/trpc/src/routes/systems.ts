@@ -3,9 +3,9 @@ import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const systemsRouter = router({
   list: protectedProcedure
@@ -17,7 +17,7 @@ export const systemsRouter = router({
     })
     .input(z.object({ workspaceId: z.string() }))
     .query(async ({ input }) => {
-      const response = await wsEngine.GET(
+      const response = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/systems",
         {
           params: {

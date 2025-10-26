@@ -5,15 +5,15 @@ import { desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const workspaceRouter = router({
   engineStatus: protectedProcedure
     .input(z.object({ workspaceId: z.uuid() }))
     .query(async ({ input }) => {
-      const response = await wsEngine.GET(
+      const response = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/status",
         {
           params: {

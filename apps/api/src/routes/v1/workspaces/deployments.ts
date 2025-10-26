@@ -1,11 +1,11 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-import { wsEngine } from "@/engine.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { deploymentVersionsRouter } from "./deployment-versions.js";
 
@@ -16,7 +16,7 @@ const listDeployments: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { limit, offset } = req.query;
 
-  const response = await wsEngine.GET(
+  const response = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/deployments",
     {
       params: {
@@ -37,7 +37,7 @@ const getExistingDeployment = async (
   systemId: string,
   slug: string,
 ) => {
-  const response = await wsEngine.GET(
+  const response = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/systems/{systemId}",
     { params: { path: { workspaceId, systemId } } },
   );
@@ -102,7 +102,7 @@ const getDeployment: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, deploymentId } = req.params;
-  const response = await wsEngine.GET(
+  const response = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
     { params: { path: { workspaceId, deploymentId } } },
   );

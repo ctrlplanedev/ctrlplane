@@ -36,5 +36,6 @@ type Config struct {
 	PostgresApplicationName string `envconfig:"POSTGRES_APPLICATION_NAME" default:"workspace-engine"`
 
 	// Router registration
-	RouterURL string `envconfig:"ROUTER_URL" default:"http://localhost:9091"`
+	RouterURL       string `envconfig:"ROUTER_URL" default:"http://localhost:9091"`
+	RegisterAddress string `envconfig:"REGISTER_ADDRESS" default:""`
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
+var _ WorkerRegistry = &InMemoryRegistry{}
+
 // InMemoryRegistry is a thread-safe in-memory implementation of WorkerRegistry
 type InMemoryRegistry struct {
 	workers          map[string]*WorkerInfo
@@ -124,13 +126,13 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 }
 
 // Heartbeat updates the last heartbeat time for a worker
-func (r *InMemoryRegistry) Heartbeat(workerID string) error {
+func (r *InMemoryRegistry) Heartbeat(workerID string, httpAddress string, partitions []int32) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	worker, exists := r.workers[workerID]
 	if !exists {
-		return ErrWorkerNotFound
+		r.Register(workerID, worker.HTTPAddress, partitions)
 	}
 
 	worker.LastHeartbeat = time.Now()

@@ -13,7 +13,7 @@ type WorkerRegistry interface {
 	Register(workerID, httpAddress string, partitions []int32) error
 
 	// Heartbeat updates the last heartbeat time for a worker
-	Heartbeat(workerID string) error
+	Heartbeat(workerID string, httpAddress string, partitions []int32) error
 
 	// GetWorkerForPartition returns the worker assigned to the given partition
 	GetWorkerForPartition(partition int32) (*WorkerInfo, error)

@@ -3,9 +3,9 @@ import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const resourcesRouter = router({
   create: protectedProcedure
@@ -54,7 +54,7 @@ export const resourcesRouter = router({
       const { workspaceId, identifier } = input;
       // URL encode the identifier to handle special characters like slashes
       const encodedIdentifier = encodeURIComponent(identifier);
-      const result = await wsEngine.GET(
+      const result = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
         {
           params: {
@@ -91,7 +91,7 @@ export const resourcesRouter = router({
     )
     .query(async ({ input }) => {
       const { workspaceId, selector, limit, offset } = input;
-      const result = await wsEngine.POST(
+      const result = await getClientFor(input.workspaceId).POST(
         "/v1/workspaces/{workspaceId}/resources/query",
         {
           body: { filter: selector },
@@ -111,7 +111,7 @@ export const resourcesRouter = router({
     )
     .query(async ({ input }) => {
       const { workspaceId, resourceId } = input;
-      const result = await wsEngine.GET(
+      const result = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations",
         {
           params: {

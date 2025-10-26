@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       // Proxy requests starting with '/api'
       "/api": {
-        target: "http://localhost:3001", // The address of your backend server
+        target: "http://localhost:8080", // The address of your backend server
         changeOrigin: true, // Changes the origin of the host header to the target URL
       },
     },

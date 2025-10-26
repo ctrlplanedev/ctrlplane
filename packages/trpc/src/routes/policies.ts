@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
+
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const policiesRouter = router({
   list: protectedProcedure
@@ -12,7 +13,7 @@ export const policiesRouter = router({
     )
     .query(async ({ input }) => {
       const { workspaceId } = input;
-      const result = await wsEngine.GET(
+      const result = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/policies",
         {
           params: {

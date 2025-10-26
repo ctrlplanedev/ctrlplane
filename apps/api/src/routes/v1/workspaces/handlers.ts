@@ -1,10 +1,10 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import { wsEngine } from "@/engine.js";
 import { ApiError, NotFoundError } from "@/types/api.js";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { entityRole, user, workspace } from "@ctrlplane/db/schema";
 import { predefinedRoles } from "@ctrlplane/validators/auth";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 /**
  * GET /v1/workspaces
@@ -304,7 +304,7 @@ export const listResources: AsyncTypedHandler<
 
   console.log("Listing resources for workspace", req.params, req.query);
 
-  const result = await wsEngine.POST(
+  const result = await getClientFor(workspaceId).POST(
     "/v1/workspaces/{workspaceId}/resources/query",
     {
       body: {

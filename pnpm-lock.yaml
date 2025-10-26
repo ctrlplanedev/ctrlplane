@@ -1012,6 +1012,8 @@ importers:
 
   apps/workspace-engine: {}
 
+  apps/workspace-engine-router: {}
+
   e2e:
     dependencies:
       handlebars:

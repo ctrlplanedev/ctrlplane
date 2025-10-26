@@ -4,9 +4,9 @@ import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
-import { wsEngine } from "../ws-engine.js";
 
 export const deploymentsRouter = router({
   get: protectedProcedure
@@ -18,7 +18,7 @@ export const deploymentsRouter = router({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .query(async ({ input }) => {
-      const response = await wsEngine.GET(
+      const response = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
         {
           params: {
@@ -42,7 +42,7 @@ export const deploymentsRouter = router({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .query(async ({ input }) => {
-      const response = await wsEngine.GET(
+      const response = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/deployments",
         {
           params: {
@@ -70,7 +70,7 @@ export const deploymentsRouter = router({
       }),
     )
     .query(async ({ input }) => {
-      const response = await wsEngine.GET(
+      const response = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets",
         {
           params: {
@@ -101,7 +101,7 @@ export const deploymentsRouter = router({
       }),
     )
     .query(async ({ input }) => {
-      const response = await wsEngine.GET(
+      const response = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
         {
           params: {
@@ -150,9 +150,12 @@ export const deploymentsRouter = router({
     )
     .mutation(async ({ input }) => {
       const { workspaceId, deploymentId, data } = input;
-      const validate = await wsEngine.POST("/v1/validate/resource-selector", {
-        body: { resourceSelector: { cel: data.resourceSelectorCel } },
-      });
+      const validate = await getClientFor(workspaceId).POST(
+        "/v1/validate/resource-selector",
+        {
+          body: { resourceSelector: { cel: data.resourceSelectorCel } },
+        },
+      );
 
       if (!validate.data?.valid)
         throw new TRPCError({
@@ -164,7 +167,7 @@ export const deploymentsRouter = router({
               : "Invalid resource selector",
         });
 
-      const deployment = await wsEngine.GET(
+      const deployment = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
         { params: { path: { workspaceId, deploymentId } } },
       );

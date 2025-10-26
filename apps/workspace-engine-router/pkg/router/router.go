@@ -1,6 +1,7 @@
 package router
 
 import (
+	"math/rand"
 	"net/http"
 	"strings"
 
@@ -139,7 +140,9 @@ func (r *Router) RegisterWorker(c *gin.Context) {
 
 // HeartbeatWorkerRequest represents the request body for worker heartbeat
 type HeartbeatWorkerRequest struct {
-	WorkerID string `json:"workerId" binding:"required"`
+	WorkerID   string `json:"workerId" binding:"required"`
+	HTTPAddress string `json:"httpAddress" binding:"required"`
+	Partitions []int32 `json:"partitions" binding:"required"`
 }
 
 // HeartbeatWorker handles worker heartbeat updates
@@ -152,7 +155,7 @@ func (r *Router) HeartbeatWorker(c *gin.Context) {
 		return
 	}
 
-	if err := r.registry.Heartbeat(req.WorkerID); err != nil {
+	if err := r.registry.Heartbeat(req.WorkerID, req.HTTPAddress, req.Partitions); err != nil {
 		if err == registry.ErrWorkerNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"error": "Worker not found. Please register first.",
@@ -245,8 +248,15 @@ func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
 		return
 	}
 
-	// Calculate partition for this workspace
-	partition := partitioner.PartitionForWorkspace(workspaceID, numPartitions)
+	var partition int32
+	if workspaceID == "any" {
+		// Select a random partition
+		// Note: Use crypto/rand for better randomness, or math/rand for simplicity
+		partition = int32(rand.Int31n(numPartitions))
+	} else {
+		partition = partitioner.PartitionForWorkspace(workspaceID, numPartitions)
+	}
+
 
 	log.Debug("Routing request",
 		"workspace_id", workspaceID,
