@@ -9,6 +9,7 @@ on:
       - packages/**
       - .github/workflows/apps-api.yaml
       - pnpm-lock.yaml
+
   push:
     branches: ["main"]
     paths:

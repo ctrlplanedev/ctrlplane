@@ -44,6 +44,14 @@ COPY . .
 
 RUN turbo build --filter=...@ctrlplane/web-api
 
+# Debug: Verify the build output exists
+RUN ls -la /app/apps/api/ && \
+    if [ ! -f /app/apps/api/dist/index.js ]; then \
+      echo "ERROR: Build failed - index.js not found!" && \
+      ls -la /app/apps/api/dist/ || echo "dist directory does not exist" && \
+      exit 1; \
+    fi
+
 COPY apps/api/openapi/openapi.json /app/apps/api/dist/openapi/openapi.json
 
 RUN addgroup --system --gid 1001 nodejs
