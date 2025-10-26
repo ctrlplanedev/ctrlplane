@@ -17,7 +17,6 @@ import (
 	"workspace-engine/pkg/events/handler/system"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/userapprovalrecords"
-	"workspace-engine/pkg/events/handler/workspacesave"
 )
 
 var handlers = handler.HandlerRegistry{
@@ -77,7 +76,6 @@ var handlers = handler.HandlerRegistry{
 	handler.GithubEntityDelete: githubentities.HandleGithubEntityDeleted,
 
 	handler.WorkspaceTick: tick.HandleWorkspaceTick,
-	handler.WorkspaceSave: workspacesave.HandleWorkspaceSave,
 
 	handler.ReleaseTargetDeploy: redeploy.HandleReleaseTargetDeploy,
 }

@@ -61,6 +61,11 @@ const app = express()
   .use(loggerMiddleware)
   .use(oapiValidatorMiddleware)
 
+  // Health check endpoint
+  .get("/api/healthz", (req, res) => {
+    res.status(200).send({ status: "ok" });
+  })
+
   .all("/api/auth/*splat", toNodeHandler(auth))
 
   .use("/api/ui", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
