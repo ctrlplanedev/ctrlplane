@@ -64,7 +64,7 @@ const handleDeployment = async (
         .where(eq(schema.resource.id, releaseTarget.resourceId))
         .then(takeFirst)
         .then((row) => row.workspaceId);
-      await eventDispatcher.dispatchRedeploy(workspaceId, releaseTarget.id);
+      await eventDispatcher.dispatchRedeploy(workspaceId, releaseTarget);
       await eventDispatcher.dispatchEvaluateReleaseTarget(releaseTarget, {
         skipDuplicateCheck: true,
       });
