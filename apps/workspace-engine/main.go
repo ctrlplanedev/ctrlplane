@@ -10,15 +10,18 @@ import (
 	"time"
 
 	dbpersistence "workspace-engine/pkg/db/persistence"
+	"workspace-engine/pkg/env"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/workspacesave"
 	"workspace-engine/pkg/kafka"
+	"workspace-engine/pkg/registry"
 	"workspace-engine/pkg/server"
 	"workspace-engine/pkg/ticker"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
@@ -190,6 +193,14 @@ func init() {
 		}
 	})
 
+	// Initialize router registration client if configured
+	var registryClient *registry.Client
+	if env.Config.RouterURL != "" {
+		workerID := uuid.New().String()
+		registryClient = registry.NewClient(env.Config.RouterURL, workerID)
+		log.Info("Router registration enabled", "router_url", env.Config.RouterURL, "worker_id", workerID)
+	}
+
 	go func() {
 		log.Info("Kafka consumer started")
 		if err := kafka.RunConsumer(ctx, consumer); err != nil {
@@ -206,10 +217,42 @@ func init() {
 		}
 	}()
 
+	// Register with router after server is ready
+	if registryClient != nil {
+		// Wait a moment for consumer to get partition assignment
+		time.Sleep(2 * time.Second)
+		
+		// Get assigned partitions from consumer
+		assignedPartitions, err := consumer.GetAssignedPartitions()
+		if err != nil {
+			log.Warn("Failed to get assigned partitions for router registration", "error", err)
+		} else {
+			// Build HTTP address for this worker
+			httpAddress := fmt.Sprintf("http://%s", addr)
+			
+			// Register with router
+			if err := registryClient.Register(ctx, httpAddress, assignedPartitions); err != nil {
+				log.Error("Failed to register with router", "error", err)
+			} else {
+				// Start heartbeat goroutine
+				go registryClient.StartHeartbeat(ctx, 15*time.Second)
+			}
+		}
+	}
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigChan
+
+	// Unregister from router on shutdown
+	if registryClient != nil {
+		unregisterCtx, unregisterCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer unregisterCancel()
+		if err := registryClient.Unregister(unregisterCtx); err != nil {
+			log.Warn("Failed to unregister from router", "error", err)
+		}
+	}
 
 	producer.Close()
 	log.Info("Shutting down workspace engine...")
