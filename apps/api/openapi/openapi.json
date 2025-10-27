@@ -1610,6 +1610,42 @@
          }
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {
+         "delete": {
+            "operationId": "deleteDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Deployment"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Delete deployment"
+         },
          "get": {
             "operationId": "getDeployment",
             "parameters": [
@@ -2029,6 +2065,42 @@
          }
       },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
+         "delete": {
+            "operationId": "deleteEnvironment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Environment"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Delete environment"
+         },
          "get": {
             "operationId": "getEnvironment",
             "parameters": [
@@ -2084,6 +2156,72 @@
                }
             },
             "summary": "Get environment"
+         },
+         "put": {
+            "operationId": "upsertEnvironmentById",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/Environment"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Environment"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Upsert environment"
          }
       },
       "/v1/workspaces/{workspaceId}/policies": {
@@ -2247,6 +2385,176 @@
             "tags": [
                "Relationships"
             ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/relationships/{relationshipId}": {
+         "delete": {
+            "operationId": "deleteRelationship",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the relationship",
+                  "in": "path",
+                  "name": "relationshipId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/RelationshipRule"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Delete relationship"
+         },
+         "get": {
+            "operationId": "getRelationship",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the relationship",
+                  "in": "path",
+                  "name": "relationshipId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/RelationshipRule"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get relationship"
+         },
+         "put": {
+            "operationId": "upsertRelationshipById",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the relationship",
+                  "in": "path",
+                  "name": "relationshipId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/RelationshipRule"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Upsert relationship"
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers": {
@@ -2620,7 +2928,7 @@
                "required": true
             },
             "responses": {
-               "201": {
+               "202": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -2628,20 +2936,47 @@
                         }
                      }
                   },
-                  "description": "Resource created successfully"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
+                  "description": "Accepted response"
                }
             },
             "summary": "Create system"
+         },
+         "put": {
+            "operationId": "upsertSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/System"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/System"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Upsert system"
          }
       },
       "/v1/workspaces/{workspaceId}/systems/{systemId}": {
@@ -2668,8 +3003,15 @@
                }
             ],
             "responses": {
-               "204": {
-                  "description": "System deleted successfully"
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/System"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
                },
                "400": {
                   "content": {
@@ -2750,8 +3092,8 @@
             },
             "summary": "Get system"
          },
-         "patch": {
-            "operationId": "updateSystem",
+         "put": {
+            "operationId": "upsertSystemById",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -2776,7 +3118,7 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/UpdateSystemRequest"
+                        "$ref": "#/components/schemas/System"
                      }
                   }
                },
@@ -2792,29 +3134,9 @@
                      }
                   },
                   "description": "OK response"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
                }
             },
-            "summary": "Update system"
+            "summary": "Upsert system"
          }
       }
    },

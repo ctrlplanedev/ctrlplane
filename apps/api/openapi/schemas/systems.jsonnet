@@ -9,7 +9,7 @@ local openapi = import '../lib/openapi.libsonnet';
       description: { type: 'string' },
     },
   },
-  
+
   UpdateSystemRequest: {
     type: 'object',
     properties: {

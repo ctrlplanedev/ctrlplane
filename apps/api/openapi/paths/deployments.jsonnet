@@ -39,5 +39,14 @@ local openapi = import '../lib/openapi.libsonnet';
       ],
       responses: openapi.okResponse(openapi.schemaRef('Deployment')) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
+    delete: {
+      summary: 'Delete deployment',
+      operationId: 'deleteDeployment',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('Deployment')),
+    },
   },
 }

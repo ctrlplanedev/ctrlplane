@@ -37,7 +37,37 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.environmentIdParam(),
       ],
-      responses: openapi.okResponse(openapi.schemaRef('Environment')) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.okResponse(openapi.schemaRef('Environment'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+    delete: {
+      summary: 'Delete environment',
+      operationId: 'deleteEnvironment',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.environmentIdParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('Environment')),
+    },
+    put: {
+      summary: 'Upsert environment',
+      operationId: 'upsertEnvironmentById',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.environmentIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('Environment'),
+          },
+        },
+      },
+      responses: openapi.okResponse(openapi.schemaRef('Environment'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }

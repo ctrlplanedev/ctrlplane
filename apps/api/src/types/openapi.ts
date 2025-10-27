@@ -111,7 +111,8 @@ export interface paths {
         get: operations["getDeployment"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete deployment */
+        delete: operations["deleteDeployment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -179,9 +180,11 @@ export interface paths {
         };
         /** Get environment */
         get: operations["getEnvironment"];
-        put?: never;
+        /** Upsert environment */
+        put: operations["upsertEnvironmentById"];
         post?: never;
-        delete?: never;
+        /** Delete environment */
+        delete: operations["deleteEnvironment"];
         options?: never;
         head?: never;
         patch?: never;
@@ -220,6 +223,25 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/relationships/{relationshipId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get relationship */
+        get: operations["getRelationship"];
+        /** Upsert relationship */
+        put: operations["upsertRelationshipById"];
+        post?: never;
+        /** Delete relationship */
+        delete: operations["deleteRelationship"];
         options?: never;
         head?: never;
         patch?: never;
@@ -325,7 +347,8 @@ export interface paths {
         };
         /** List systems */
         get: operations["listSystems"];
-        put?: never;
+        /** Upsert system */
+        put: operations["upsertSystem"];
         /** Create system */
         post: operations["createSystem"];
         delete?: never;
@@ -343,14 +366,14 @@ export interface paths {
         };
         /** Get system */
         get: operations["getSystem"];
-        put?: never;
+        /** Upsert system */
+        put: operations["upsertSystemById"];
         post?: never;
         /** Delete system */
         delete: operations["deleteSystem"];
         options?: never;
         head?: never;
-        /** Update system */
-        patch: operations["updateSystem"];
+        patch?: never;
         trace?: never;
     };
 }
@@ -1143,6 +1166,31 @@ export interface operations {
             };
         };
     };
+    deleteDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Deployment"];
+                };
+            };
+        };
+    };
     listDeploymentVersions: {
         parameters: {
             query?: {
@@ -1401,6 +1449,78 @@ export interface operations {
             };
         };
     };
+    upsertEnvironmentById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Environment"];
+            };
+        };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Environment"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Environment"];
+                };
+            };
+        };
+    };
     listPolicies: {
         parameters: {
             query?: never;
@@ -1507,6 +1627,135 @@ export interface operations {
                         /** @description Total number of items available */
                         total: number;
                     };
+                };
+            };
+        };
+    };
+    getRelationship: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the relationship */
+                relationshipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationshipRule"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    upsertRelationshipById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the relationship */
+                relationshipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationshipRule"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteRelationship: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the relationship */
+                relationshipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationshipRule"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1693,6 +1942,33 @@ export interface operations {
             };
         };
     };
+    upsertSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["System"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System"];
+                };
+            };
+        };
+    };
     createSystem: {
         parameters: {
             query?: never;
@@ -1709,22 +1985,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Resource created successfully */
-            201: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["System"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1772,6 +2039,35 @@ export interface operations {
             };
         };
     };
+    upsertSystemById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["System"];
+            };
+        };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["System"];
+                };
+            };
+        };
+    };
     deleteSystem: {
         parameters: {
             query?: never;
@@ -1786,53 +2082,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description System deleted successfully */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    updateSystem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the system */
-                systemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSystemRequest"];
-            };
-        };
-        responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -26,8 +26,23 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('System'))
-                 + openapi.badRequestResponse(),
+      responses: openapi.acceptedResponse(openapi.schemaRef('System')),
+    },
+    put: {
+      summary: 'Upsert system',
+      operationId: 'upsertSystem',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('System'),
+          },
+        },
+      },
+      responses: openapi.acceptedResponse(openapi.schemaRef('System')),
     },
   },
   '/v1/workspaces/{workspaceId}/systems/{systemId}': {
@@ -42,9 +57,9 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
-    patch: {
-      summary: 'Update system',
-      operationId: 'updateSystem',
+    put: {
+      summary: 'Upsert system',
+      operationId: 'upsertSystemById',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.systemIdParam(),
@@ -53,13 +68,11 @@ local openapi = import '../lib/openapi.libsonnet';
         required: true,
         content: {
           'application/json': {
-            schema: openapi.schemaRef('UpdateSystemRequest'),
+            schema: openapi.schemaRef('System'),
           },
         },
       },
       responses: openapi.okResponse(openapi.schemaRef('System'))
-                 + openapi.notFoundResponse()
-                 + openapi.badRequestResponse(),
     },
     delete: {
       summary: 'Delete system',
@@ -68,13 +81,9 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.systemIdParam(),
       ],
-      responses: {
-        '204': {
-          description: 'System deleted successfully',
-        },
-      } + openapi.notFoundResponse()
-        + openapi.badRequestResponse(),
+      responses: openapi.acceptedResponse(openapi.schemaRef('System'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }
-

@@ -94,7 +94,7 @@ const putEnvironment: AsyncTypedHandler<
     timestamp: Date.now(),
     data: environment,
   });
-  res.status(201).json(environment);
+  res.status(202).json(environment);
   return;
 };
 
@@ -117,12 +117,30 @@ const getEnvironment: AsyncTypedHandler<
   return;
 };
 
-export const environmentIdRouter = Router({ mergeParams: true }).get(
-  "/",
-  asyncHandler(getEnvironment),
-);
+const deleteEnvironment: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, environmentId } = req.params;
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.EnvironmentDeleted,
+    timestamp: Date.now(),
+    data: {
+      id: environmentId,
+      name: "",
+      systemId: "",
+      createdAt: "",
+    },
+  });
+
+  res.status(204).json({ message: "Environment deleted successfully" });
+  return;
+};
 
 export const environmentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listEnvironments))
   .put("/", asyncHandler(putEnvironment))
-  .use("/:environmentId", environmentIdRouter);
+  .get("/:environmentId", asyncHandler(getEnvironment))
+  .delete("/:environmentId", asyncHandler(deleteEnvironment));
