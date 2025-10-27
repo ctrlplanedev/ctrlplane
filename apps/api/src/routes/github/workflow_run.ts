@@ -4,6 +4,7 @@ import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
+import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -70,7 +71,12 @@ const generateOapiEvent = (
   } = event.workflow_run;
 
   const jobId = extractUuid(name);
-  if (jobId == null) return null;
+  if (jobId == null) {
+    logger.warning("Could not extract jobId from github workflow event", {
+      name,
+    });
+    return null;
+  }
   const updatedAt = new Date(updated_at);
   const status =
     conclusion != null

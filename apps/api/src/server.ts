@@ -21,8 +21,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const specFile = join(__dirname, "../openapi/openapi.json");
 
-console.log("specFile", specFile);
-
 const oapiValidatorMiddleware = OpenApiValidator.middleware({
   apiSpec: specFile,
   validateRequests: true,
@@ -48,9 +46,13 @@ const trpcMiddleware = trpcExpress.createExpressMiddleware({
 });
 
 const loggerMiddleware: express.RequestHandler = (req, res, next) => {
-  res.on("finish", () =>
-    console.log(`${res.statusCode} - ${req.method} ${req.originalUrl}`),
-  );
+  res.on("finish", () => {
+    if (res.statusCode >= 300) {
+      console.log(
+        `${res.statusCode} - ${req.method} ${req.originalUrl} - ${req.ip}`,
+      );
+    }
+  });
   next();
 };
 
