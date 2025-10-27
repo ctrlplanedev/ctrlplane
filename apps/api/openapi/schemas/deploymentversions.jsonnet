@@ -18,6 +18,11 @@ local openapi = import '../lib/openapi.libsonnet';
       status: openapi.schemaRef('DeploymentVersionStatus'),
       name: { type: 'string' },
       tag: { type: 'string' },
+      createdAt: { type: 'string', format: 'date-time' },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
     },
   },
   DeploymentVersion: {
@@ -48,6 +53,10 @@ local openapi = import '../lib/openapi.libsonnet';
       status: openapi.schemaRef('DeploymentVersionStatus'),
       message: { type: 'string' },
       createdAt: { type: 'string', format: 'date-time' },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
     },
   },
 }

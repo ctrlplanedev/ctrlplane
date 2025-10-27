@@ -143,6 +143,12 @@
                "message": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
                "name": {
                   "type": "string"
                },
@@ -831,11 +837,21 @@
                   "additionalProperties": true,
                   "type": "object"
                },
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
                "deploymentId": {
                   "type": "string"
                },
                "jobAgentConfig": {
                   "additionalProperties": true,
+                  "type": "object"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
                   "type": "object"
                },
                "name": {
@@ -2145,6 +2161,65 @@
             "summary": "Upsert a policy"
          }
       },
+      "/v1/workspaces/{workspaceId}/relationships": {
+         "get": {
+            "description": "Returns a paginated list of relationships for workspace {workspaceId}.",
+            "operationId": "getAllRelationships",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/RelationshipRule"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               }
+            },
+            "summary": "Get all relationships",
+            "tags": [
+               "Relationships"
+            ]
+         }
+      },
       "/v1/workspaces/{workspaceId}/resource-providers": {
          "put": {
             "operationId": "upsertResourceProvider",
@@ -2392,38 +2467,6 @@
                   "in": "path",
                   "name": "identifier",
                   "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Maximum number of items to return",
-                  "in": "query",
-                  "name": "limit",
-                  "required": false,
-                  "schema": {
-                     "default": 50,
-                     "maximum": 1000,
-                     "minimum": 1,
-                     "type": "integer"
-                  }
-               },
-               {
-                  "description": "Number of items to skip",
-                  "in": "query",
-                  "name": "offset",
-                  "required": false,
-                  "schema": {
-                     "default": 0,
-                     "minimum": 0,
-                     "type": "integer"
-                  }
-               },
-               {
-                  "description": "CEL expression to filter the results",
-                  "in": "query",
-                  "name": "cel",
-                  "required": false,
                   "schema": {
                      "type": "string"
                   }

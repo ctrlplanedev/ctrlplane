@@ -26,9 +26,6 @@ local openapi = import '../lib/openapi.libsonnet';
       parameters: [
         openapi.workspaceIdParam(),
         openapi.identifierParam(),
-        openapi.limitParam(),
-        openapi.offsetParam(),
-        openapi.celParam(),
       ],
       responses: openapi.okResponse(openapi.schemaRef('Resource')),
     },

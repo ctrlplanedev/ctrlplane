@@ -41,7 +41,8 @@ local securitySchemes = {
          (import 'paths/deploymentversions.jsonnet') +
          (import 'paths/environments.jsonnet') +
          (import 'paths/policies.jsonnet') +
-         (import 'paths/userapprovalrecords.jsonnet'),
+         (import 'paths/userapprovalrecords.jsonnet') +
+         (import 'paths/relationships.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,

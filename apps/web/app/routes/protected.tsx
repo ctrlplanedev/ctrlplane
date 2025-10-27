@@ -22,18 +22,18 @@ export default function ProtectedLayout() {
   const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
 
   if (isLoading) return <LoadingScreen />;
-  if (viewer == null) return <Navigate to="/login" />;
+  if (viewer == null) return <Navigate to="/login" replace />;
 
   const { activeWorkspaceId } = viewer;
-  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
-  if (!activeWorkspace) return <Navigate to="/workspaces/create" />;
+  const workspace =
+    workspaces.find((w) => w.slug === workspaceSlug) ??
+    workspaces.find((w) => w.id === activeWorkspaceId) ??
+    workspaces.at(0);
 
-  if (activeWorkspace.slug !== workspaceSlug) {
-    return <Navigate to={`/${activeWorkspace.slug}/deployments`} />;
-  }
+  if (workspace == null) return <Navigate to="/workspaces/create" replace />;
 
   return (
-    <WorkspaceProvider workspace={activeWorkspace}>
+    <WorkspaceProvider workspace={workspace}>
       <EngineProvider>
         <Outlet />
       </EngineProvider>
