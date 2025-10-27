@@ -72,6 +72,12 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 	var matchedResources []*oapi.Resource
 
 	if body.Filter != nil {
+
+		sel, err := body.Filter.AsCelSelector()
+		if err == nil {
+			fmt.Println("Failed to convert filter to cel selector: ", string(sel.Cel))
+		}
+		fmt.Println("Filter", sel)
 		// Convert to slice first
 		resourceSlice := make([]*oapi.Resource, 0, len(allResources))
 		for _, resource := range allResources {

@@ -9,13 +9,14 @@ export const listResources: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { limit, offset, cel } = req.query;
 
-  console.log("Listing resources for workspace", req.params, req.query);
+  const decodedCel =
+    typeof cel === "string" ? decodeURIComponent(cel.replace(/\+/g, " ")) : cel;
 
   const result = await getClientFor(workspaceId).POST(
     "/v1/workspaces/{workspaceId}/resources/query",
     {
       body: {
-        filter: cel != null ? { cel } : undefined,
+        filter: decodedCel != null ? { cel: decodedCel } : undefined,
       },
       params: {
         path: { workspaceId },
