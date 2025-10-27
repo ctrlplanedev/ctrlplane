@@ -24,4 +24,3 @@ func GetWorkspace(c *gin.Context, workspaceId string) (*workspace.Workspace, err
 
 	return nil, fmt.Errorf("workspace %s not found", workspaceId)
 }
-

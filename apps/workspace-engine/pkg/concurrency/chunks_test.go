@@ -109,7 +109,7 @@ func TestProcessInChunks_ChunkSizeLargerThanSlice(t *testing.T) {
 func TestProcessInChunks_ErrorInProcessing(t *testing.T) {
 	input := []int{1, 2, 3, 4, 5}
 	expectedErr := errors.New("processing error")
-	
+
 	result, err := ProcessInChunks(
 		input,
 		2,
@@ -359,20 +359,20 @@ func TestProcessInChunks_ConcurrencyActuallyLimited(t *testing.T) {
 		func(item int) (int, error) {
 			// Increment concurrent counter
 			current := atomic.AddInt32(&currentConcurrent, 1)
-			
+
 			// Track max concurrent
 			mu.Lock()
 			if current > maxConcurrentObserved {
 				maxConcurrentObserved = current
 			}
 			mu.Unlock()
-			
+
 			// Simulate work
 			time.Sleep(10 * time.Millisecond)
-			
+
 			// Decrement concurrent counter
 			atomic.AddInt32(&currentConcurrent, -1)
-			
+
 			return item * 2, nil
 		},
 	)
@@ -397,7 +397,7 @@ func TestProcessInChunks_ConcurrencyWithSleep(t *testing.T) {
 	maxConcurrency := 5
 	itemCount := 10
 	sleepDuration := 50 * time.Millisecond
-	
+
 	input := make([]int, itemCount)
 	for i := range input {
 		input[i] = i
@@ -428,7 +428,7 @@ func TestProcessInChunks_ConcurrencyWithSleep(t *testing.T) {
 	if elapsed < expectedMin {
 		t.Errorf("execution too fast (%v), parallel execution may not be working", elapsed)
 	}
-	
+
 	if elapsed > expectedMax {
 		t.Errorf("execution too slow (%v), expected around %v", elapsed, expectedMin)
 	}
@@ -501,7 +501,7 @@ func TestProcessInChunks_ErrorStopsProcessing(t *testing.T) {
 		func(item int) (int, error) {
 			atomic.AddInt32(&processedCount, 1)
 			time.Sleep(5 * time.Millisecond)
-			
+
 			if item == 25 {
 				return 0, expectedErr
 			}
@@ -519,4 +519,3 @@ func TestProcessInChunks_ErrorStopsProcessing(t *testing.T) {
 
 	t.Logf("Processed %d items before error", processedCount)
 }
-

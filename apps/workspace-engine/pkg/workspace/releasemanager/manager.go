@@ -290,15 +290,15 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 }
 
 func (m *Manager) GetCachedReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
-    key := releaseTarget.Key()
+	key := releaseTarget.Key()
 
 	if m.releaseTargetStateCache == nil {
 		return m.GetReleaseTargetState(ctx, releaseTarget)
 	}
 
-    if state, ok := m.releaseTargetStateCache.Get(key); ok {
-        return state, nil
-    }
+	if state, ok := m.releaseTargetStateCache.Get(key); ok {
+		return state, nil
+	}
 
 	return m.GetReleaseTargetState(ctx, releaseTarget)
 }

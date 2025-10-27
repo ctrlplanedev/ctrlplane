@@ -1,6 +1,5 @@
 package concurrency
 
-
 func Chunk[T any](slice []T, chunkSize int) [][]T {
 	if chunkSize <= 0 {
 		return [][]T{slice}
@@ -12,7 +11,7 @@ func Chunk[T any](slice []T, chunkSize int) [][]T {
 
 	var chunks [][]T
 	for i := 0; i < len(slice); i += chunkSize {
-		end := min(i + chunkSize, len(slice))
+		end := min(i+chunkSize, len(slice))
 		chunks = append(chunks, slice[i:end])
 	}
 
@@ -42,7 +41,7 @@ func ProcessInChunks[T any, R any](
 	}
 
 	resultsChan := make(chan chunkResult, len(chunks))
-	
+
 	// Create semaphore to limit concurrent goroutines
 	if maxConcurrency <= 0 {
 		maxConcurrency = len(chunks)
@@ -52,10 +51,10 @@ func ProcessInChunks[T any, R any](
 	// Process each chunk in a goroutine with concurrency control
 	for chunkIdx, chunk := range chunks {
 		semaphore <- struct{}{} // Acquire semaphore
-		
+
 		go func(idx int, items []T) {
 			defer func() { <-semaphore }() // Release semaphore
-			
+
 			results := make([]R, 0, len(items))
 
 			for _, item := range items {

@@ -68,16 +68,16 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 
 	// Get all resources from workspace
 	allResources := ws.Resources().Items()
-	
+
 	var matchedResources []*oapi.Resource
-	
+
 	if body.Filter != nil {
 		// Convert to slice first
 		resourceSlice := make([]*oapi.Resource, 0, len(allResources))
 		for _, resource := range allResources {
 			resourceSlice = append(resourceSlice, resource)
 		}
-		
+
 		// Filter resources using the selector
 		matchedResources, err = selector.Filter(
 			c.Request.Context(), body.Filter, resourceSlice,
