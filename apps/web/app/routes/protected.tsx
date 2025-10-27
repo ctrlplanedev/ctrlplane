@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useParams } from "react-router";
+import { Navigate, Outlet, useLocation, useParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
 import { EngineProvider } from "~/components/EngineProvider";
@@ -18,6 +18,7 @@ function LoadingScreen() {
 export default function ProtectedLayout() {
   const { data: viewer, isLoading } = trpc.user.session.useQuery();
   const workspaces = viewer?.workspaces ?? [];
+  const location = useLocation();
 
   const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
 
@@ -31,6 +32,10 @@ export default function ProtectedLayout() {
     workspaces.at(0);
 
   if (workspace == null) return <Navigate to="/workspaces/create" replace />;
+
+  if (!location.pathname.startsWith(`/${workspaceSlug}`)) {
+    return <Navigate to={`/${workspaceSlug}/deployments`} replace />;
+  }
 
   return (
     <WorkspaceProvider workspace={workspace}>
