@@ -24,6 +24,17 @@
          "BooleanValue": {
             "type": "boolean"
          },
+         "CelMatcher": {
+            "properties": {
+               "cel": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "cel"
+            ],
+            "type": "object"
+         },
          "CelSelector": {
             "properties": {
                "cel": {
@@ -505,6 +516,73 @@
             "required": [
                "reference",
                "path"
+            ],
+            "type": "object"
+         },
+         "RelatableEntityType": {
+            "enum": [
+               "deployment",
+               "environment",
+               "resource"
+            ],
+            "type": "string"
+         },
+         "RelationshipRule": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "fromSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "fromType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "matcher": {
+                  "oneOf": [
+                     {
+                        "$ref": "#/components/schemas/CelMatcher"
+                     }
+                  ]
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "reference": {
+                  "type": "string"
+               },
+               "relationshipType": {
+                  "type": "string"
+               },
+               "toSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "toType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "workspaceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "reference",
+               "fromType",
+               "toType",
+               "matcher",
+               "relationshipType",
+               "metadata",
+               "workspaceId"
             ],
             "type": "object"
          },

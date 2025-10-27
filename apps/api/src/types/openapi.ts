@@ -307,6 +307,9 @@ export interface components {
         /** @enum {string} */
         ApprovalStatus: "approved" | "rejected";
         BooleanValue: boolean;
+        CelMatcher: {
+            cel: string;
+        };
         CelSelector: {
             cel: string;
         };
@@ -451,6 +454,24 @@ export interface components {
         ReferenceValue: {
             path: string[];
             reference: string;
+        };
+        /** @enum {string} */
+        RelatableEntityType: "deployment" | "environment" | "resource";
+        RelationshipRule: {
+            description?: string;
+            fromSelector?: components["schemas"]["Selector"];
+            fromType: components["schemas"]["RelatableEntityType"];
+            id: string;
+            matcher: components["schemas"]["CelMatcher"];
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            reference: string;
+            relationshipType: string;
+            toSelector?: components["schemas"]["Selector"];
+            toType: components["schemas"]["RelatableEntityType"];
+            workspaceId: string;
         };
         Resource: {
             config: {
