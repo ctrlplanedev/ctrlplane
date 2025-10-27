@@ -3154,6 +3154,44 @@
             "summary": "Get policies for a release target"
          }
       },
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
+         "get": {
+            "operationId": "getResourceProviderByName",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Name of the resource provider",
+                  "in": "path",
+                  "name": "name",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ResourceProvider"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               }
+            },
+            "summary": "Get a resource provider by name"
+         }
+      },
       "/v1/workspaces/{workspaceId}/resources/query": {
          "post": {
             "description": "Returns paginated resources that match the provided CEL expression. Use the \"resource\" variable in your expression to access resource properties.",

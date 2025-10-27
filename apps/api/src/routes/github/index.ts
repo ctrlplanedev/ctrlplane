@@ -10,7 +10,7 @@ import { logger } from "@ctrlplane/logger";
 import { handleWorkflowRunEvent } from "./workflow_run.js";
 
 export const createGithubRouter = (): Router =>
-  Router().post("/webhooks", asyncHandler(handleWebhookRequest));
+  Router().post("/webhook", asyncHandler(handleWebhookRequest));
 
 const getGithubWebhooksObject = (): Webhooks => {
   const secret = env.GITHUB_WEBHOOK_SECRET;

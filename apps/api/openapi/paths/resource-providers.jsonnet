@@ -1,25 +1,18 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  '/v1/workspaces/{workspaceId}/resource-providers': {
-    parameters: [
-      {
-        name: 'workspaceId',
-        'in': 'path',
-        required: true,
-        schema: { type: 'string' },
-      },
-    ],
-  },
-  '/v1/workspaces/{workspaceId}/resource-providers/{providerId}': {
-    parameters: [
-      {
-        name: 'workspaceId',
-        'in': 'path',
-        required: true,
-        schema: { type: 'string' },
-      },
-    ],
+  '/api/v1/workspaces/{workspaceId}/resource-providers/name/{name}': {
+    get: {
+      summary: 'Get a resource provider by name',
+      operationId: 'getResourceProviderByName',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.nameParam(),
+      ],
+      responses: openapi.acceptedResponse(
+        openapi.schemaRef('ResourceProvider'),
+      ),
+    },
   },
   '/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set': {
     put: {

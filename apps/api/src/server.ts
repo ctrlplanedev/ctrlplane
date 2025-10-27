@@ -64,7 +64,7 @@ const app = express()
   .use(loggerMiddleware)
 
   // Health check endpoint (before OpenAPI validator)
-  .get("/api/healthz", (req, res) => {
+  .get("/api/healthz", (_, res) => {
     res.status(200).send({ status: "ok" });
   })
 

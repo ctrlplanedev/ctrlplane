@@ -18,6 +18,7 @@
   releaseTargetKeyParam():: self.stringParam('releaseTargetKey', 'Key of the release target'),
   jobAgentIdParam():: self.stringParam('jobAgentId', 'ID of the job agent'),
   jobIdParam():: self.stringParam('jobId', 'ID of the job'),
+  nameParam():: self.stringParam('name', 'Name of the resource provider'),
 
   limitParam(defaultValue = 50):: {
     name: 'limit',

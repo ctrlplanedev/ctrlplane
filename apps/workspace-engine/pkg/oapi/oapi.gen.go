@@ -1347,6 +1347,9 @@ type ServerInterface interface {
 	// Get policies for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies)
 	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string)
+	// Get a resource provider by name
+	// (GET /v1/workspaces/{workspaceId}/resource-providers/name/{name})
+	GetResourceProviderByName(c *gin.Context, workspaceId string, name string)
 	// Query resources with CEL expression
 	// (POST /v1/workspaces/{workspaceId}/resources/query)
 	QueryResources(c *gin.Context, workspaceId string, params QueryResourcesParams)
@@ -2288,6 +2291,39 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetKey)
 }
 
+// GetResourceProviderByName operation middleware
+func (siw *ServerInterfaceWrapper) GetResourceProviderByName(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", c.Param("name"), &name, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter name: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetResourceProviderByName(c, workspaceId, name)
+}
+
 // QueryResources operation middleware
 func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
 
@@ -2515,6 +2551,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/name/:name", wrapper.GetResourceProviderByName)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
