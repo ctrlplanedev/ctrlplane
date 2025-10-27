@@ -147,7 +147,6 @@ const upsertUserApprovalRecord: AsyncTypedHandler<
     });
   res.status(200).json({ success: true });
 };
-
 export const deploymentVersionIdRouter = Router({ mergeParams: true }).put(
   "/user-approval-records",
   asyncHandler(upsertUserApprovalRecord),

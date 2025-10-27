@@ -1,7 +1,10 @@
 import { asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
-import { deploymentVersionsRouter } from "./deployment-versions.js";
+import {
+  deploymentVersionIdRouter,
+  deploymentVersionsRouter,
+} from "./deployment-versions.js";
 import { deploymentsRouter } from "./deployments.js";
 import { environmentsRouter } from "./environments.js";
 import {
@@ -35,4 +38,8 @@ export const createWorkspacesRouter = (): Router =>
     .use("/:workspaceId/deployments", deploymentsRouter)
     .use("/:workspaceId/environments", environmentsRouter)
     .use("/:workspaceId/policies", policiesRouter)
-    .use("/:workspaceId/deploymentversions", deploymentVersionsRouter);
+    .use("/:workspaceId/deploymentversions", deploymentVersionsRouter)
+    .use(
+      "/:workspaceId/deploymentversions/:deploymentVersionId",
+      deploymentVersionIdRouter,
+    );
