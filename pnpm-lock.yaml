@@ -1833,6 +1833,15 @@ importers:
       '@ctrlplane/workspace-engine-sdk':
         specifier: workspace:*
         version: link:../workspace-engine-sdk
+      '@octokit/auth-app':
+        specifier: 'catalog:'
+        version: 7.1.5
+      '@octokit/rest':
+        specifier: 'catalog:'
+        version: 20.1.1
+      '@octokit/types':
+        specifier: ^13.5.0
+        version: 13.10.0
       '@t3-oss/env-core':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.8.2)(zod@4.1.12)

@@ -1323,6 +1323,9 @@ type ServerInterface interface {
 	// Get resources for an environment
 	// (GET /v1/workspaces/{workspaceId}/environments/{environmentId}/resources)
 	GetEnvironmentResources(c *gin.Context, workspaceId string, environmentId string, params GetEnvironmentResourcesParams)
+	// Get GitHub entity by installation ID
+	// (GET /v1/workspaces/{workspaceId}/github-entities/{installationId})
+	GetGitHubEntityByInstallationId(c *gin.Context, workspaceId string, installationId int)
 	// Get job agents
 	// (GET /v1/workspaces/{workspaceId}/job-agents)
 	GetJobAgents(c *gin.Context, workspaceId string, params GetJobAgentsParams)
@@ -1883,6 +1886,39 @@ func (siw *ServerInterfaceWrapper) GetEnvironmentResources(c *gin.Context) {
 	}
 
 	siw.Handler.GetEnvironmentResources(c, workspaceId, environmentId, params)
+}
+
+// GetGitHubEntityByInstallationId operation middleware
+func (siw *ServerInterfaceWrapper) GetGitHubEntityByInstallationId(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "installationId" -------------
+	var installationId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "installationId", c.Param("installationId"), &installationId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter installationId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetGitHubEntityByInstallationId(c, workspaceId, installationId)
 }
 
 // GetJobAgents operation middleware
@@ -2631,6 +2667,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments", wrapper.ListEnvironments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId/resources", wrapper.GetEnvironmentResources)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/github-entities/:installationId", wrapper.GetGitHubEntityByInstallationId)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents", wrapper.GetJobAgents)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents/:jobAgentId", wrapper.GetJobAgent)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents/:jobAgentId/jobs", wrapper.GetJobsForJobAgent)

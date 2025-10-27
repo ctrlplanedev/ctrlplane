@@ -7,6 +7,14 @@
     description: description,
     schema: { type: 'string' },
   },
+
+  integerParam(name, description):: {
+    name: name,
+    'in': 'path',
+    required: true,
+    description: description,
+    schema: { type: 'integer' },
+  },
   
   // Common parameters
   workspaceIdParam():: self.stringParam('workspaceId', 'ID of the workspace'),

@@ -20,7 +20,8 @@
     (import 'paths/job-agents.jsonnet') +
     (import 'paths/jobs.jsonnet') +
     (import 'paths/validate.jsonnet') +
-    (import 'paths/resource-providers.jsonnet'),
+    (import 'paths/resource-providers.jsonnet') +
+    (import 'paths/github-entity.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),

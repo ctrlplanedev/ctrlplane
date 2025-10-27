@@ -16,4 +16,21 @@ export const jobAgentsRouter = router({
       );
       return jobAgents.data;
     }),
+
+  get: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid(), jobAgentId: z.string() }))
+    .query(async ({ input }) => {
+      const jobAgent = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
+        {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+              jobAgentId: input.jobAgentId,
+            },
+          },
+        },
+      );
+      return jobAgent.data;
+    }),
 });

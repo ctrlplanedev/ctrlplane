@@ -28,6 +28,10 @@ export default [
               "general",
               "routes/ws/deployments/settings/page.$deploymentId.general.tsx",
             ),
+            route(
+              "job-agent",
+              "routes/ws/deployments/settings/page.$deploymentId.job-agent.tsx",
+            ),
           ],
         ),
       ]),

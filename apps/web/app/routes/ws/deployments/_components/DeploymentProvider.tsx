@@ -7,6 +7,7 @@ type Deployment = {
   slug: string;
   description?: string;
   jobAgentId?: string;
+  jobAgentConfig?: Record<string, unknown>;
   systemId: string;
   resourceSelector?: { cel?: string; json?: Record<string, unknown> };
 };

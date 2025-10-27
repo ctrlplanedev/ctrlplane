@@ -19,7 +19,7 @@ export default function DeploymentsSettingsLayout() {
   const { workspace } = useWorkspace();
   const path = useLocation();
 
-  const baseUrl = `/${workspace.slug}/deployments/${deployment.id}`;
+  const baseUrl = `/${workspace.slug}/deployments/${deployment.id}/settings`;
 
   const isActive = (pathname: string) => path.pathname.startsWith(pathname);
 

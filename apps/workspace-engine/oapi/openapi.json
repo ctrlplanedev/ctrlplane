@@ -2295,6 +2295,65 @@
             "summary": "Get resources for an environment"
          }
       },
+      "/v1/workspaces/{workspaceId}/github-entities/{installationId}": {
+         "get": {
+            "description": "Returns a GitHub entity by installation ID.",
+            "operationId": "getGitHubEntityByInstallationId",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Installation ID of the GitHub entity",
+                  "in": "path",
+                  "name": "installationId",
+                  "required": true,
+                  "schema": {
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/GithubEntity"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get GitHub entity by installation ID"
+         }
+      },
       "/v1/workspaces/{workspaceId}/job-agents": {
          "get": {
             "description": "Returns a list of job agents.",

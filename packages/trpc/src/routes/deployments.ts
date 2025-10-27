@@ -191,6 +191,46 @@ export const deploymentsRouter = router({
       return deployment.data;
     }),
 
+  updateJobAgent: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        deploymentId: z.string(),
+        jobAgentId: z.string(),
+        jobAgentConfig: z.record(z.string(), z.any()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, deploymentId, jobAgentId, jobAgentConfig } = input;
+      const deployment = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId, deploymentId } } },
+      );
+
+      if (!deployment.data) throw new Error("Deployment not found");
+
+      const maybeCleanGhConfig = (config: Record<string, unknown>) => {
+        if (config.workflowId == null) return config;
+        return { ...config, workflowId: Number(config.workflowId) };
+      };
+
+      const cleanConfig = maybeCleanGhConfig(jobAgentConfig);
+      const updateData = {
+        ...deployment.data,
+        jobAgentId,
+        jobAgentConfig: cleanConfig,
+      };
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.DeploymentUpdated,
+        timestamp: Date.now(),
+        data: updateData,
+      });
+
+      return updateData;
+    }),
+
   createVersion: protectedProcedure
     .input(
       z.object({
