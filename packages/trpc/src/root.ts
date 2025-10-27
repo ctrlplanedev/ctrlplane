@@ -4,6 +4,7 @@ import { jobsRouter } from "./routes/jobs.js";
 import { policiesRouter } from "./routes/policies.js";
 import { redeployRouter } from "./routes/redeploy.js";
 import { relationshipsRouter } from "./routes/relationships.js";
+import { resourceProvidersRouter } from "./routes/resource-providers.js";
 import { resourcesRouter } from "./routes/resources.js";
 import { systemsRouter } from "./routes/systems.js";
 import { userRouter } from "./routes/user.js";
@@ -23,4 +24,5 @@ export const appRouter = router({
   relationships: relationshipsRouter,
   policies: policiesRouter,
   redeploy: redeployRouter,
+  resourceProviders: resourceProvidersRouter,
 });

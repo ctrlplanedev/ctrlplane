@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
 import {
   Breadcrumb,
@@ -35,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 
 export function meta() {
   return [
@@ -174,6 +176,14 @@ const mockProviders: Provider[] = [
 ];
 
 export default function Providers() {
+  const { workspace } = useWorkspace();
+
+  const providers = trpc.resourceProviders.list.useQuery({
+    workspaceId: workspace.id,
+    limit: 100,
+    offset: 0,
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredProviders = mockProviders.filter(
@@ -273,6 +283,9 @@ export default function Providers() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4">
+        {providers.data?.items.map((provider) => (
+          <div key={provider.id}>{provider.name}</div>
+        ))}
         {filteredProviders.length === 0 ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="flex flex-col items-center gap-3">
