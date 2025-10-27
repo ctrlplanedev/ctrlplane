@@ -259,9 +259,9 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 			return &oapi.ReleaseTargetWithState{
 				ReleaseTarget: *releaseTarget,
 				State:         *state,
-				Environment:   environment,
-				Resource:      resource,
-				Deployment:    deployment,
+				Environment:   *environment,
+				Resource:      *resource,
+				Deployment:    *deployment,
 			}, nil
 		},
 	)

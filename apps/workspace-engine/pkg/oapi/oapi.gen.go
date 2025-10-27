@@ -420,10 +420,10 @@ type ReleaseTargetState struct {
 
 // ReleaseTargetWithState defines model for ReleaseTargetWithState.
 type ReleaseTargetWithState struct {
-	Deployment    *Deployment        `json:"deployment,omitempty"`
-	Environment   *Environment       `json:"environment,omitempty"`
+	Deployment    Deployment         `json:"deployment"`
+	Environment   Environment        `json:"environment"`
 	ReleaseTarget ReleaseTarget      `json:"releaseTarget"`
-	Resource      *Resource          `json:"resource,omitempty"`
+	Resource      Resource           `json:"resource"`
 	State         ReleaseTargetState `json:"state"`
 }
 

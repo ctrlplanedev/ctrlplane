@@ -966,7 +966,10 @@
             },
             "required": [
                "releaseTarget",
-               "state"
+               "state",
+               "environment",
+               "resource",
+               "deployment"
             ],
             "type": "object"
          },

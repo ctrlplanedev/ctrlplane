@@ -33,28 +33,26 @@ export const environmentRouter = router({
       return result.data;
     }),
 
-  get: protectedProcedure
+  releaseTargets: protectedProcedure
     .input(
       z.object({
         workspaceId: z.uuid(),
         environmentId: z.string(),
+        limit: z.number().min(1).max(1000).default(50),
+        offset: z.number().min(0).default(0),
       }),
     )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.EnvironmentGet)
-          .on({ type: "workspace", id: input.workspaceId }),
-    })
     .query(async ({ input }) => {
-      const { workspaceId, environmentId } = input;
+      const { workspaceId, environmentId, limit, offset } = input;
       const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}/release-targets",
         {
-          params: { path: { workspaceId, environmentId } },
+          params: {
+            path: { workspaceId, environmentId },
+            query: { limit, offset },
+          },
         },
       );
-
       return result.data;
     }),
 
