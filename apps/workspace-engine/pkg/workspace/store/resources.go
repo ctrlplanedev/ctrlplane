@@ -122,7 +122,7 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 		defer wg.Done()
 		for item := range r.store.Environments.IterBuffered() {
 			environment := item.Val
-			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil {
+			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
 				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
 			}
 		}
@@ -131,7 +131,7 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 		defer wg.Done()
 		for item := range r.store.Deployments.IterBuffered() {
 			deployment := item.Val
-			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil {
+			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
 				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
 			}
 		}
