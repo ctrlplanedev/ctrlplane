@@ -106,9 +106,18 @@ const getEnvironmentIds = async (
     throw new ApiError("Deployment version not found", 404);
   const { deploymentId } = deploymentVersionResponse.data;
 
+  const deploymentResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+    { params: { path: { workspaceId, deploymentId } } },
+  );
+  if (deploymentResponse.data == null)
+    throw new ApiError("Deployment not found", 404);
+
+  const { systemId } = deploymentResponse.data;
+
   const systemResponse = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/systems/{systemId}",
-    { params: { path: { workspaceId, systemId: deploymentId } } },
+    { params: { path: { workspaceId, systemId } } },
   );
 
   if (systemResponse.data == null) throw new ApiError("System not found", 404);
