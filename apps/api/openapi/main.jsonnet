@@ -37,6 +37,7 @@ local securitySchemes = {
   paths: (import 'paths/workspaces.jsonnet') +
          (import 'paths/resource-providers.jsonnet') +
          (import 'paths/resources.jsonnet') +
+         (import 'paths/system.jsonnet') +
          (import 'paths/deployments.jsonnet') +
          (import 'paths/deploymentversions.jsonnet') +
          (import 'paths/environments.jsonnet') +
