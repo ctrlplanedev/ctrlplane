@@ -196,13 +196,6 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 	resources := make([]*oapi.Resource, 0, len(setResources))
 	newResourceIdentifiers := make(map[string]bool)
 
-	for key, item := range r.repo.Resources.Items() {
-		if key != item.Id {
-			log.Warn("Resource mismatch", "key", key, "resource.id", item.Id)
-			r.Remove(ctx, key)
-		}
-	}
-
 	for _, resource := range setResources {
 		newResourceIdentifiers[resource.Identifier] = true
 		
