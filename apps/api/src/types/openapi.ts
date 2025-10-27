@@ -1449,6 +1449,8 @@ export interface operations {
             path: {
                 /** @description ID of the workspace */
                 workspaceId: string;
+                /** @description Identifier of the resource */
+                identifier: string;
             };
             cookie?: never;
         };

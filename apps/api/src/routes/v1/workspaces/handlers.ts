@@ -4,7 +4,6 @@ import { ApiError, NotFoundError } from "@/types/api.js";
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { entityRole, user, workspace } from "@ctrlplane/db/schema";
 import { predefinedRoles } from "@ctrlplane/validators/auth";
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 /**
  * GET /v1/workspaces
@@ -293,34 +292,4 @@ export const deleteWorkspace: AsyncTypedHandler<
   await db.delete(workspace).where(eq(workspace.id, workspaceId));
 
   res.status(204).send();
-};
-
-export const listResources: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/resources",
-  "get"
-> = async (req, res) => {
-  const { workspaceId } = req.params;
-  const { limit, offset, cel } = req.query;
-
-  console.log("Listing resources for workspace", req.params, req.query);
-
-  const result = await getClientFor(workspaceId).POST(
-    "/v1/workspaces/{workspaceId}/resources/query",
-    {
-      body: {
-        filter: cel != null ? { cel } : undefined,
-      },
-      params: {
-        path: { workspaceId },
-        query: { limit, offset },
-      },
-    },
-  );
-
-  if (result.error?.error) {
-    res.status(500).json({ error: result.error.error });
-    return;
-  }
-
-  res.status(200).json(result.data);
 };

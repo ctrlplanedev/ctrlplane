@@ -2155,6 +2155,15 @@
                   }
                },
                {
+                  "description": "Identifier of the resource",
+                  "in": "path",
+                  "name": "identifier",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
                   "description": "Maximum number of items to return",
                   "in": "query",
                   "name": "limit",
