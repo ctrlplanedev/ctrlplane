@@ -25,10 +25,10 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.jobAgentIdParam(),
       ],
+      responses: openapi.okResponse(openapi.schemaRef('JobAgent'), 'The requested job agent')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
-    responses: openapi.okResponse(openapi.schemaRef('JobAgent'), 'The requested job agent')
-               + openapi.notFoundResponse()
-               + openapi.badRequestResponse(),
   },
   '/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs': {
     get: {
@@ -41,9 +41,9 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Job'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
-    responses: openapi.paginatedResponse(openapi.schemaRef('Job'))
-               + openapi.notFoundResponse()
-               + openapi.badRequestResponse(),
   },
 }

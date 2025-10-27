@@ -2588,39 +2588,39 @@
                   }
                }
             ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/JobAgent"
+                        }
+                     }
+                  },
+                  "description": "The requested job agent"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
             "summary": "Get job agent"
-         },
-         "responses": {
-            "200": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/JobAgent"
-                     }
-                  }
-               },
-               "description": "The requested job agent"
-            },
-            "400": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/ErrorResponse"
-                     }
-                  }
-               },
-               "description": "Invalid request"
-            },
-            "404": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/ErrorResponse"
-                     }
-                  }
-               },
-               "description": "Resource not found"
-            }
          }
       },
       "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs": {
@@ -2670,65 +2670,65 @@
                   }
                }
             ],
-            "summary": "Get jobs for a job agent"
-         },
-         "responses": {
-            "200": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "properties": {
-                           "items": {
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
                               "items": {
-                                 "$ref": "#/components/schemas/Job"
+                                 "items": {
+                                    "$ref": "#/components/schemas/Job"
+                                 },
+                                 "type": "array"
                               },
-                              "type": "array"
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
                            },
-                           "limit": {
-                              "description": "Maximum number of items returned",
-                              "type": "integer"
-                           },
-                           "offset": {
-                              "description": "Number of items skipped",
-                              "type": "integer"
-                           },
-                           "total": {
-                              "description": "Total number of items available",
-                              "type": "integer"
-                           }
-                        },
-                        "required": [
-                           "items",
-                           "total",
-                           "limit",
-                           "offset"
-                        ],
-                        "type": "object"
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
                      }
-                  }
+                  },
+                  "description": "Paginated list of items"
                },
-               "description": "Paginated list of items"
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
             },
-            "400": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/ErrorResponse"
-                     }
-                  }
-               },
-               "description": "Invalid request"
-            },
-            "404": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/ErrorResponse"
-                     }
-                  }
-               },
-               "description": "Resource not found"
-            }
+            "summary": "Get jobs for a job agent"
          }
       },
       "/v1/workspaces/{workspaceId}/jobs": {
