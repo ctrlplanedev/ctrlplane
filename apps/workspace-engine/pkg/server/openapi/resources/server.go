@@ -68,16 +68,14 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 
 	// Get all resources from workspace
 	allResources := ws.Resources().Items()
-
 	var matchedResources []*oapi.Resource
 
 	if body.Filter != nil {
-
 		sel, err := body.Filter.AsCelSelector()
 		if err == nil {
 			fmt.Println("Failed to convert filter to cel selector: ", string(sel.Cel))
 		}
-		fmt.Println("Filter", sel)
+
 		// Convert to slice first
 		resourceSlice := make([]*oapi.Resource, 0, len(allResources))
 		for _, resource := range allResources {
@@ -110,6 +108,7 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		}
 		return matchedResources[i].Name < matchedResources[j].Name
 	})
+	
 
 	// Get pagination parameters with defaults
 	limit := 50

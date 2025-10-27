@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
@@ -71,6 +72,14 @@ func HandleResourceProviderSetResources(
 	// Ensure all resources have the correct workspace ID
 	for _, resource := range payload.Resources {
 		resource.WorkspaceId = ws.ID
+	}
+
+	now := time.Now()
+	for _, resource := range payload.Resources {
+		resource.UpdatedAt = &now
+		if resource.CreatedAt.IsZero() {
+			resource.CreatedAt = now
+		}
 	}
 
 	if err := ws.Resources().Set(ctx, payload.ProviderId, payload.Resources); err != nil {
