@@ -21,6 +21,9 @@ func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error
 			return err
 		}
 	}
+	for _, resourceProvider := range initialWorkspaceState.ResourceProviders() {
+		ws.store.ResourceProviders.Upsert(ctx, resourceProvider.Id, resourceProvider)
+	}
 	for _, deployment := range initialWorkspaceState.Deployments() {
 		if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
 			return err

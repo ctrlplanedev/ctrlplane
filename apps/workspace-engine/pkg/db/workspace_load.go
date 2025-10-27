@@ -15,6 +15,7 @@ var tracer = otel.Tracer("db")
 type InitialWorkspaceState struct {
 	systems             []*oapi.System
 	resources           []*oapi.Resource
+	resourceProviders   []*oapi.ResourceProvider
 	deployments         []*oapi.Deployment
 	deploymentVersions  []*oapi.DeploymentVersion
 	deploymentVariables []*oapi.DeploymentVariable
@@ -34,6 +35,10 @@ func (i *InitialWorkspaceState) Systems() []*oapi.System {
 
 func (i *InitialWorkspaceState) Resources() []*oapi.Resource {
 	return i.resources
+}
+
+func (i *InitialWorkspaceState) ResourceProviders() []*oapi.ResourceProvider {
+	return i.resourceProviders
 }
 
 func (i *InitialWorkspaceState) Deployments() []*oapi.Deployment {
@@ -102,6 +107,18 @@ func loadResources(ctx context.Context, workspaceID string) ([]*oapi.Resource, e
 	}
 	span.SetAttributes(attribute.Int("count", len(dbResources)))
 	return dbResources, nil
+}
+
+func loadResourceProviders(ctx context.Context, workspaceID string) ([]*oapi.ResourceProvider, error) {
+	ctx, span := tracer.Start(ctx, "loadResourceProviders")
+	defer span.End()
+
+	dbResourceProviders, err := getResourceProviders(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resource providers: %w", err)
+	}
+	span.SetAttributes(attribute.Int("count", len(dbResourceProviders)))
+	return dbResourceProviders, nil
 }
 
 func loadDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment, error) {
@@ -255,6 +272,10 @@ func LoadWorkspace(ctx context.Context, workspaceID string) (initialWorkspaceSta
 
 	if initialWorkspaceState.resources, err = loadResources(ctx, workspaceID); err != nil {
 		return nil, fmt.Errorf("failed to load resources: %w", err)
+	}
+
+	if initialWorkspaceState.resourceProviders, err = loadResourceProviders(ctx, workspaceID); err != nil {
+		return nil, fmt.Errorf("failed to load resource providers: %w", err)
 	}
 
 	if initialWorkspaceState.deployments, err = loadDeployments(ctx, workspaceID); err != nil {

@@ -68,6 +68,13 @@ func applyChange(ctx context.Context, conn pgx.Tx, change changeset.Change[any],
 		return writeResource(ctx, e, conn)
 	}
 
+	if e, ok := change.Entity.(*oapi.ResourceProvider); ok && e != nil {
+		if change.Type == changeset.ChangeTypeDelete {
+			return deleteResourceProvider(ctx, e.Id, conn)
+		}
+		return writeResourceProvider(ctx, e, conn)
+	}
+
 	if e, ok := change.Entity.(*oapi.Deployment); ok && e != nil {
 		if change.Type == changeset.ChangeTypeDelete {
 			return deleteDeployment(ctx, e.Id, conn)
