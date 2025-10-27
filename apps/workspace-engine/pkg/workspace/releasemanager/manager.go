@@ -17,6 +17,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
+	"github.com/dgraph-io/ristretto/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 )
@@ -36,6 +37,8 @@ type Manager struct {
 
 	// Concurrency control
 	releaseTargetLocks sync.Map
+
+	releaseTargetStateCache *ristretto.Cache[string, *oapi.ReleaseTargetState]
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
@@ -47,6 +50,16 @@ func New(store *store.Store) *Manager {
 	versionManager := versions.New(store)
 	variableManager := variables.New(store)
 
+	stateCacheConfig := &ristretto.Config[string, *oapi.ReleaseTargetState]{
+		NumCounters: 1e7,     // 10M keys
+		MaxCost:     1 << 30, // 1GB
+		BufferItems: 64,
+	}
+	stateCache, err := ristretto.NewCache[string, *oapi.ReleaseTargetState](stateCacheConfig)
+	if err != nil {
+		log.Warn("error creating release target state cache", "error", err.Error())
+	}
+
 	return &Manager{
 		store:                 store,
 		targetsManager:        targetsManager,
@@ -54,6 +67,8 @@ func New(store *store.Store) *Manager {
 		jobEligibilityChecker: deployment.NewJobEligibilityChecker(store),
 		executor:              deployment.NewExecutor(store),
 		releaseTargetLocks:    sync.Map{},
+
+		releaseTargetStateCache: stateCache,
 	}
 }
 
@@ -267,5 +282,23 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 		LatestJob:      latestJob,
 	}
 
+	if m.releaseTargetStateCache != nil {
+		m.releaseTargetStateCache.SetWithTTL(releaseTarget.Key(), rts, 1, 2*time.Minute)
+	}
+
 	return rts, nil
+}
+
+func (m *Manager) GetCachedReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
+    key := releaseTarget.Key()
+
+	if m.releaseTargetStateCache == nil {
+		return m.GetReleaseTargetState(ctx, releaseTarget)
+	}
+
+    if state, ok := m.releaseTargetStateCache.Get(key); ok {
+        return state, nil
+    }
+
+	return m.GetReleaseTargetState(ctx, releaseTarget)
 }

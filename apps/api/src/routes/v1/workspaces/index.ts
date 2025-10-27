@@ -12,7 +12,6 @@ import {
   deleteWorkspace,
   getWorkspace,
   getWorkspaceBySlug,
-  listResources,
   listWorkspaces,
   updateWorkspace,
 } from "./handlers.js";
@@ -21,6 +20,7 @@ import {
   getResourceProviderByName,
   setResourceProviderResources,
 } from "./resource-provider.js";
+import { listResources } from "./resources.js";
 
 /**
  * Creates the workspaces router
