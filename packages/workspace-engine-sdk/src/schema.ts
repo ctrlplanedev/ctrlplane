@@ -1858,7 +1858,35 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
-    responses: never;
+    responses: {
+      /** @description The requested job agent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobAgent"];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
   };
   getJobsForJobAgent: {
     parameters: {
@@ -1878,7 +1906,43 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
-    responses: never;
+    responses: {
+      /** @description Paginated list of items */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["Job"][];
+            /** @description Maximum number of items returned */
+            limit: number;
+            /** @description Number of items skipped */
+            offset: number;
+            /** @description Total number of items available */
+            total: number;
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
   };
   getJobs: {
     parameters: {
