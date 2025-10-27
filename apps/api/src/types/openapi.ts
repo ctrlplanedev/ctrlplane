@@ -956,7 +956,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
             cookie?: never;
         };
         requestBody: {

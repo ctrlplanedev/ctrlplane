@@ -1428,6 +1428,17 @@
          },
          "put": {
             "operationId": "upsertDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
             "requestBody": {
                "content": {
                   "application/json": {
