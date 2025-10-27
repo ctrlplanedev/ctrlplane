@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/manager"
@@ -72,22 +73,26 @@ func (s *Server) ListWorkspaceIds(c *gin.Context) {
 	})
 }
 
-// LoggerMiddleware provides request logging
 func LoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		start := c.Request.Context().Value("request_start")
-		if start == nil {
-			c.Next()
-			return
-		}
+		start := time.Now()
+		path := c.Request.URL.Path
+		method := c.Request.Method
+
+		// Process request
+		c.Next()
+
+		// Log after request
+		duration := time.Since(start)
+		statusCode := c.Writer.Status()
 
 		log.Info("request",
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"status", c.Writer.Status(),
+			"method", method,
+			"path", path,
+			"status", statusCode,
+			"duration_ms", duration.Milliseconds(),
+			"client_ip", c.ClientIP(),
 		)
-
-		c.Next()
 	}
 }
 

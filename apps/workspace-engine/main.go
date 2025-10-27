@@ -210,10 +210,9 @@ func main() {
 		// Register with router
 		if err := registryClient.Register(ctx, httpAddress, assignedPartitions); err != nil {
 			log.Error("Failed to register with router", "error", err)
-		} else {
-			// Start heartbeat goroutine
-			go registryClient.StartHeartbeat(ctx, 15*time.Second)
 		}
+
+		go registryClient.StartHeartbeat(ctx, 15*time.Second)
 	}
 
 	sigChan := make(chan os.Signal, 1)
