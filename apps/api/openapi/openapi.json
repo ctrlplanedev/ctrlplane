@@ -2434,37 +2434,11 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/Resource"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
-                           },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
+                           "$ref": "#/components/schemas/Resource"
                         }
                      }
                   },
-                  "description": "Paginated list of items"
+                  "description": "OK response"
                }
             },
             "summary": "Get resource by identifier",

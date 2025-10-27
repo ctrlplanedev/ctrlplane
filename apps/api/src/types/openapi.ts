@@ -1548,21 +1548,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Paginated list of items */
+            /** @description OK response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["Resource"][];
-                        /** @description Maximum number of items returned */
-                        limit: number;
-                        /** @description Number of items skipped */
-                        offset: number;
-                        /** @description Total number of items available */
-                        total: number;
-                    };
+                    "application/json": components["schemas"]["Resource"];
                 };
             };
         };

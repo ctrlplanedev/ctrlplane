@@ -30,7 +30,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.offsetParam(),
         openapi.celParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('Resource')),
+      responses: openapi.okResponse(openapi.schemaRef('Resource')),
     },
   },
 }
