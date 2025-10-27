@@ -4,23 +4,6 @@
  */
 
 export interface paths {
-    "/api/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a resource provider by name */
-        get: operations["getResourceProviderByName"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/workspaces": {
         parameters: {
             query?: never;
@@ -198,6 +181,23 @@ export interface paths {
         get: operations["listPolicies"];
         /** Upsert a policy */
         put: operations["upsertPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a resource provider by name */
+        get: operations["getResourceProviderByName"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -545,31 +545,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getResourceProviderByName: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Name of the resource provider */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceProvider"];
-                };
-            };
-        };
-    };
     listWorkspaces: {
         parameters: {
             query?: never;
@@ -1270,6 +1245,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getResourceProviderByName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Name of the resource provider */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceProvider"];
                 };
             };
         };

@@ -624,6 +624,15 @@ type GetJobsForReleaseTargetParams struct {
 	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
 }
 
+// GetResourceProvidersParams defines parameters for GetResourceProviders.
+type GetResourceProvidersParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // QueryResourcesJSONBody defines parameters for QueryResources.
 type QueryResourcesJSONBody struct {
 	Filter *Selector `json:"filter,omitempty"`
@@ -1347,6 +1356,9 @@ type ServerInterface interface {
 	// Get policies for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies)
 	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string)
+	// Get all resource providers
+	// (GET /v1/workspaces/{workspaceId}/resource-providers)
+	GetResourceProviders(c *gin.Context, workspaceId string, params GetResourceProvidersParams)
 	// Get a resource provider by name
 	// (GET /v1/workspaces/{workspaceId}/resource-providers/name/{name})
 	GetResourceProviderByName(c *gin.Context, workspaceId string, name string)
@@ -2291,6 +2303,49 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetKey)
 }
 
+// GetResourceProviders operation middleware
+func (siw *ServerInterfaceWrapper) GetResourceProviders(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetResourceProvidersParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetResourceProviders(c, workspaceId, params)
+}
+
 // GetResourceProviderByName operation middleware
 func (siw *ServerInterfaceWrapper) GetResourceProviderByName(c *gin.Context) {
 
@@ -2551,6 +2606,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers", wrapper.GetResourceProviders)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/name/:name", wrapper.GetResourceProviderByName)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)

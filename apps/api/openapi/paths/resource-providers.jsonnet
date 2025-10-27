@@ -1,7 +1,7 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  '/api/v1/workspaces/{workspaceId}/resource-providers/name/{name}': {
+  '/v1/workspaces/{workspaceId}/resource-providers/name/{name}': {
     get: {
       summary: 'Get a resource provider by name',
       operationId: 'getResourceProviderByName',

@@ -28,7 +28,7 @@ export const setResourceProviderResources: AsyncTypedHandler<
 };
 
 export const getResourceProviderByName: AsyncTypedHandler<
-  "/api/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
+  "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
   "get"
 > = async (req, res) => {
   const { workspaceId, name } = req.params;

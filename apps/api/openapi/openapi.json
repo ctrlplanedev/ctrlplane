@@ -929,44 +929,6 @@
    },
    "openapi": "3.0.0",
    "paths": {
-      "/api/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
-         "get": {
-            "operationId": "getResourceProviderByName",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Name of the resource provider",
-                  "in": "path",
-                  "name": "name",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ResourceProvider"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               }
-            },
-            "summary": "Get a resource provider by name"
-         }
-      },
       "/v1/workspaces": {
          "get": {
             "description": "Get all workspaces accessible to the authenticated user",
@@ -1896,6 +1858,44 @@
                }
             },
             "summary": "Upsert a policy"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
+         "get": {
+            "operationId": "getResourceProviderByName",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Name of the resource provider",
+                  "in": "path",
+                  "name": "name",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ResourceProvider"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Get a resource provider by name"
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set": {
