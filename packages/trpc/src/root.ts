@@ -1,5 +1,6 @@
 import { deploymentsRouter } from "./routes/deployments.js";
 import { environmentRouter } from "./routes/environments.js";
+import { jobAgentsRouter } from "./routes/job-agents.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { policiesRouter } from "./routes/policies.js";
 import { redeployRouter } from "./routes/redeploy.js";
@@ -25,4 +26,5 @@ export const appRouter = router({
   policies: policiesRouter,
   redeploy: redeployRouter,
   resourceProviders: resourceProvidersRouter,
+  jobAgents: jobAgentsRouter,
 });

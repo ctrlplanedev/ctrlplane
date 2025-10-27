@@ -132,7 +132,17 @@ func (r *InMemoryRegistry) Heartbeat(workerID string, httpAddress string, partit
 
 	worker, exists := r.workers[workerID]
 	if !exists {
-		r.Register(workerID, worker.HTTPAddress, partitions)
+		// Worker doesn't exist, register it first
+		// Note: Register acquires the lock internally, but we already hold it,
+		// so we need to call the registration logic directly
+		r.mu.Unlock()
+		err := r.Register(workerID, httpAddress, partitions)
+		r.mu.Lock()
+		if err != nil {
+			return err
+		}
+		// Fetch the newly registered worker
+		worker = r.workers[workerID]
 	}
 
 	worker.LastHeartbeat = time.Now()
