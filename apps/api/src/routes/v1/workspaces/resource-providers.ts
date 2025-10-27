@@ -12,11 +12,11 @@ const upsertResourceProvider: AsyncTypedHandler<
   "put"
 > = async (req, res) => {
   const { workspaceId } = req.params;
-  const { id, name } = req.body;
+  const { name } = req.body;
 
   const provider = await db
     .insert(resourceProvider)
-    .values({ id, workspaceId, name })
+    .values({ workspaceId, name })
     .onConflictDoUpdate({
       target: [resourceProvider.workspaceId, resourceProvider.name],
       set: { name },

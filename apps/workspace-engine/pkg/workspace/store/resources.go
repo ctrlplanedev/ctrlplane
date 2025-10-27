@@ -3,12 +3,14 @@ package store
 import (
 	"context"
 	"sync"
+	"time"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -31,6 +33,23 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		attribute.String("resource.id", resource.Id),
 	))
 	defer span.End()
+
+	// Check if resource already exists to determine if we're creating or updating
+	existingResource, exists := r.repo.Resources.Get(resource.Id)
+	now := time.Now()
+	
+	if exists && existingResource != nil {
+		// Updating existing resource - preserve CreatedAt, set UpdatedAt
+		if !existingResource.CreatedAt.IsZero() {
+			resource.CreatedAt = existingResource.CreatedAt
+		}
+		resource.UpdatedAt = &now
+	} else {
+		// Creating new resource - set CreatedAt if not already set
+		if resource.CreatedAt.IsZero() {
+			resource.CreatedAt = now
+		}
+	}
 
 	r.repo.Resources.Set(resource.Id, resource)
 
@@ -166,17 +185,29 @@ func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariab
 // - A resource with that identifier exists but has no provider (providerId is null), OR
 // - A resource with that identifier exists and belongs to this provider
 // Resources that belong to other providers are ignored and not modified.
-func (r *Resources) Set(ctx context.Context, providerId string, resources []*oapi.Resource) error {
+func (r *Resources) Set(ctx context.Context, providerId string, setResources []*oapi.Resource) error {
 	ctx, span := tracer.Start(ctx, "Set", trace.WithAttributes(
 		attribute.String("provider.id", providerId),
-		attribute.Int("resources.count", len(resources)),
+		attribute.Int("setResources.count", len(setResources)),
 	))
 	defer span.End()
 
+
+	resources := make([]*oapi.Resource, 0, len(setResources))
 	// Build a set of resource identifiers from the new resources
 	newResourceIdentifiers := make(map[string]bool)
-	for _, resource := range resources {
+	for _, resource := range setResources {
 		newResourceIdentifiers[resource.Identifier] = true
+		
+		// If resource exists, use its existing ID; otherwise generate a new UUID
+		existingResource, ok := r.GetByIdentifier(resource.Identifier)
+		if ok {
+			resource.Id = existingResource.Id
+		} else if resource.Id == "" {
+			resource.Id = uuid.New().String()
+		}
+		
+		resources = append(resources, resource)
 	}
 
 	// Find and delete resources that belong to this provider but aren't in the new set

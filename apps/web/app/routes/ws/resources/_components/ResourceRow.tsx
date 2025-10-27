@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import { Link, NavLink } from "react-router";
 
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { trpc } from "~/api/trpc";
+import { badgeVariants } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
@@ -62,15 +63,20 @@ export const ResourceRow: React.FC<ResourceRowProps> = ({ resource }) => {
           <div className="text-sm font-medium">{resource.name}</div>
         </Link>
 
+        <div className="flex-grow" />
+
         <div className="flex items-center gap-1">
           {Object.entries(links).map(([name, url]) => (
             <a
               key={name}
               referrerPolicy="no-referrer"
               href={url}
-              className="inline-block w-full overflow-hidden text-ellipsis text-nowrap text-blue-300 hover:text-blue-400"
+              className={cn(
+                badgeVariants({ variant: "outline" }),
+                "flex w-full items-center gap-1 overflow-hidden text-ellipsis text-nowrap text-blue-500 hover:text-blue-400 dark:text-blue-300",
+              )}
             >
-              {name}
+              {name} <ExternalLink className="size-3" />
             </a>
           ))}
         </div>

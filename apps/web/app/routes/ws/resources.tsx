@@ -35,6 +35,8 @@ export default function Resources() {
     { refetchInterval: 30_000 },
   );
 
+  console.log(resources);
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b pr-4">
@@ -79,12 +81,7 @@ export default function Resources() {
       </header>
 
       {resources?.items.map((resource) => (
-        <ResourceRow
-          key={
-            resource.identifier + resource.name + resource.kind + resource.id
-          }
-          resource={resource}
-        />
+        <ResourceRow key={resource.identifier} resource={resource} />
       ))}
     </>
   );
