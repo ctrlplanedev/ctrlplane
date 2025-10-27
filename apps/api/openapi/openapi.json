@@ -1674,64 +1674,6 @@
             "summary": "Upsert deployment version"
          }
       },
-      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}": {
-         "get": {
-            "operationId": "getDeploymentVersion",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment version",
-                  "in": "path",
-                  "name": "deploymentVersionId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/DeploymentVersion"
-                        }
-                     }
-                  },
-                  "description": "OK response"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get deployment version"
-         }
-      },
       "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records": {
          "put": {
             "operationId": "upsertUserApprovalRecord",
@@ -1750,21 +1692,16 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/UserApprovalRecord"
+                           "properties": {
+                              "success": {
+                                 "type": "boolean"
+                              }
+                           },
+                           "type": "object"
                         }
                      }
                   },
                   "description": "OK response"
-               },
-               "201": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/UserApprovalRecord"
-                        }
-                     }
-                  },
-                  "description": "Resource created successfully"
                },
                "400": {
                   "content": {

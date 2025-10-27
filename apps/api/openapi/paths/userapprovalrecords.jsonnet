@@ -13,8 +13,12 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('UserApprovalRecord')) + openapi.okResponse(openapi.schemaRef('UserApprovalRecord')) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.okResponse({
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+        },
+      }) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
   },
 }
-
