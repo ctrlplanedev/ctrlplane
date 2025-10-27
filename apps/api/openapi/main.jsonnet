@@ -56,6 +56,7 @@ local securitySchemes = {
       (import 'schemas/systems.jsonnet') +
       (import 'schemas/policies.jsonnet') +
       (import 'schemas/jobs.jsonnet') +
-      (import 'schemas/userapprovalrecord.jsonnet'),
+      (import 'schemas/userapprovalrecord.jsonnet') +
+      (import 'schemas/resource-provider.jsonnet'),
   },
 }

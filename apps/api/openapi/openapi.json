@@ -836,6 +836,29 @@
             ],
             "type": "object"
          },
+         "UpsertResourceProviderRequest": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "Arbitrary metadata for the resource provider (record<string, string>)",
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "metadata"
+            ],
+            "type": "object"
+         },
          "UpsertUserApprovalRecordRequest": {
             "properties": {
                "environmentIds": {
@@ -2043,6 +2066,45 @@
                }
             },
             "summary": "Upsert a policy"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/resource-providers": {
+         "put": {
+            "operationId": "upsertResourceProvider",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertResourceProviderRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ResourceProvider"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Upsert resource provider"
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
