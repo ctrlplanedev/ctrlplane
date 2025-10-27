@@ -9,7 +9,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.nameParam(),
       ],
-      responses: openapi.acceptedResponse(
+      responses: openapi.okResponse(
         openapi.schemaRef('ResourceProvider'),
       ),
     },

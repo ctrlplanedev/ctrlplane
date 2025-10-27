@@ -2131,7 +2131,7 @@
                }
             ],
             "responses": {
-               "202": {
+               "200": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -2139,7 +2139,7 @@
                         }
                      }
                   },
-                  "description": "Accepted response"
+                  "description": "OK response"
                }
             },
             "summary": "Get a resource provider by name"

@@ -1425,8 +1425,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description OK response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
