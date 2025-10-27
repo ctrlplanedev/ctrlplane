@@ -40,7 +40,8 @@ local securitySchemes = {
          (import 'paths/deployments.jsonnet') +
          (import 'paths/deploymentversions.jsonnet') +
          (import 'paths/environments.jsonnet') +
-         (import 'paths/policies.jsonnet'),
+         (import 'paths/policies.jsonnet') +
+         (import 'paths/userapprovalrecords.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
@@ -54,6 +55,7 @@ local securitySchemes = {
              (import 'schemas/environments.jsonnet') +
              (import 'schemas/systems.jsonnet') +
              (import 'schemas/policies.jsonnet') +
-             (import 'schemas/jobs.jsonnet'),
+             (import 'schemas/jobs.jsonnet') +
+             (import 'schemas/userapprovalrecord.jsonnet'),
   },
 }

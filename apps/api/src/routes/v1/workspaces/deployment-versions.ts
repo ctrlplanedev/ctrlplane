@@ -92,3 +92,63 @@ const upsertDeploymentVersion: AsyncTypedHandler<
 export const deploymentVersionsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeploymentVersions))
   .put("/", asyncHandler(upsertDeploymentVersion));
+
+const getEnvironmentIds = async (
+  workspaceId: string,
+  deploymentVersionId: string,
+) => {
+  const deploymentVersionResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}",
+    { params: { path: { workspaceId, deploymentVersionId } } },
+  );
+
+  if (deploymentVersionResponse.data == null)
+    throw new ApiError("Deployment version not found", 404);
+  const { deploymentId } = deploymentVersionResponse.data;
+
+  const systemResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/systems/{systemId}",
+    { params: { path: { workspaceId, systemId: deploymentId } } },
+  );
+
+  if (systemResponse.data == null) throw new ApiError("System not found", 404);
+  const { environments } = systemResponse.data;
+
+  return environments.map((environment) => environment.id);
+};
+
+const upsertUserApprovalRecord: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records",
+  "put"
+> = async (req, res) => {
+  const { workspaceId, deploymentVersionId } = req.params;
+  if (req.apiContext == null) throw new ApiError("Unauthorized", 401);
+  const { user } = req.apiContext;
+
+  const record: WorkspaceEngine["schemas"]["UserApprovalRecord"] = {
+    userId: user.id,
+    versionId: deploymentVersionId,
+    environmentId: "",
+    status: req.body.status,
+    createdAt: new Date().toISOString(),
+    reason: req.body.reason,
+  };
+
+  const environmentIds =
+    req.body.environmentIds ??
+    (await getEnvironmentIds(workspaceId, deploymentVersionId));
+
+  for (const environmentId of environmentIds)
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.UserApprovalRecordCreated,
+      timestamp: Date.now(),
+      data: { ...record, environmentId },
+    });
+  res.status(200).json({ success: true });
+};
+
+export const deploymentVersionIdRouter = Router({ mergeParams: true }).put(
+  "/user-approval-records",
+  asyncHandler(upsertUserApprovalRecord),
+);

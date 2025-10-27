@@ -1,6 +1,18 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  '/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}': {
+    get: {
+      summary: 'Get deployment version',
+      operationId: 'getDeploymentVersion',
+      description: 'Returns a deployment version by ID.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentVersionIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('DeploymentVersion')) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list': {
     get: {
       summary: 'Get deployment version jobs list',

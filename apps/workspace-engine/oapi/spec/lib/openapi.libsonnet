@@ -14,6 +14,7 @@
   resourceIdParam():: self.stringParam('resourceId', 'ID of the resource'),
   resourceIdentifierParam():: self.stringParam('resourceIdentifier', 'Identifier of the resource'),
   deploymentIdParam():: self.stringParam('deploymentId', 'ID of the deployment'),
+  deploymentVersionIdParam():: self.stringParam('deploymentVersionId', 'ID of the deployment version'),
   environmentIdParam():: self.stringParam('environmentId', 'ID of the environment'),
   systemIdParam():: self.stringParam('systemId', 'ID of the system'),
   releaseTargetKeyParam():: self.stringParam('releaseTargetKey', 'Key of the release target'),

@@ -14,6 +14,13 @@
             ],
             "type": "object"
          },
+         "ApprovalStatus": {
+            "enum": [
+               "approved",
+               "rejected"
+            ],
+            "type": "string"
+         },
          "BooleanValue": {
             "type": "boolean"
          },
@@ -829,6 +836,57 @@
             ],
             "type": "object"
          },
+         "UpsertUserApprovalRecordRequest": {
+            "properties": {
+               "environmentIds": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "reason": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/ApprovalStatus"
+               }
+            },
+            "required": [
+               "status"
+            ],
+            "type": "object"
+         },
+         "UserApprovalRecord": {
+            "properties": {
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "environmentId": {
+                  "type": "string"
+               },
+               "reason": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/ApprovalStatus"
+               },
+               "userId": {
+                  "type": "string"
+               },
+               "versionId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "userId",
+               "versionId",
+               "environmentId",
+               "status",
+               "createdAt"
+            ],
+            "type": "object"
+         },
          "Value": {
             "oneOf": [
                {
@@ -1614,6 +1672,122 @@
                }
             },
             "summary": "Upsert deployment version"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}": {
+         "get": {
+            "operationId": "getDeploymentVersion",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "deploymentVersionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVersion"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment version"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records": {
+         "put": {
+            "operationId": "upsertUserApprovalRecord",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertUserApprovalRecordRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/UserApprovalRecord"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "201": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/UserApprovalRecord"
+                        }
+                     }
+                  },
+                  "description": "Resource created successfully"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Upsert user approval record"
          }
       },
       "/v1/workspaces/{workspaceId}/environments": {
