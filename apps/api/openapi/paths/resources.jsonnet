@@ -16,4 +16,20 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.paginatedResponse(openapi.schemaRef('Resource')),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/resources/identifier/{identifier}': {
+    get: {
+      tags: ['Resources'],
+      summary: 'Get resource by identifier',
+      operationId: 'getResourceByIdentifier',
+      description: 'Returns a resource by its identifier.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+        openapi.celParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Resource')),
+    },
+  },
 }

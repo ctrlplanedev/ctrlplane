@@ -1,10 +1,10 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  "/v1/workspaces/{workspaceId}/environments": {
+  '/v1/workspaces/{workspaceId}/environments': {
     get: {
-      summary: "List environments",
-      operationId: "listEnvironments",
+      summary: 'List environments',
+      operationId: 'listEnvironments',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.limitParam(),
@@ -13,12 +13,12 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.paginatedResponse(openapi.schemaRef('EnvironmentAndSystem')),
     },
     put: {
-      summary: "Upsert environment",
-      operationId: "upsertEnvironment",
+      summary: 'Upsert environment',
+      operationId: 'upsertEnvironment',
       requestBody: {
         required: true,
         content: {
-          "application/json": {
+          'application/json': {
             schema: openapi.schemaRef('UpsertEnvironmentRequest'),
           },
         },
@@ -26,10 +26,10 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.createdResponse(openapi.schemaRef('Environment')),
     },
   },
-  "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
+  '/v1/workspaces/{workspaceId}/environments/{environmentId}': {
     get: {
-      summary: "Get environment",
-      operationId: "getEnvironment",
+      summary: 'Get environment',
+      operationId: 'getEnvironment',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.environmentIdParam(),
@@ -38,4 +38,3 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 }
-

@@ -24,7 +24,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-  
+
   Policy: {
     type: 'object',
     required: ['id', 'name', 'createdAt', 'workspaceId', 'selectors', 'rules', 'metadata', 'priority', 'enabled'],

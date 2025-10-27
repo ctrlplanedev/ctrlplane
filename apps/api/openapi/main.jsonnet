@@ -32,7 +32,7 @@ local securitySchemes = {
     },
     {
       BearerAuth: [],
-    }
+    },
   ],
   paths: (import 'paths/workspaces.jsonnet') +
          (import 'paths/resource-providers.jsonnet') +
@@ -45,17 +45,17 @@ local securitySchemes = {
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
-    schemas: 
-             (import 'schemas/core.jsonnet') +
-             (import 'schemas/errors.jsonnet') +
-             (import 'schemas/workspace.jsonnet') +
-             (import 'schemas/resources.jsonnet') +
-             (import 'schemas/deployments.jsonnet') +
-             (import 'schemas/deploymentversions.jsonnet') +
-             (import 'schemas/environments.jsonnet') +
-             (import 'schemas/systems.jsonnet') +
-             (import 'schemas/policies.jsonnet') +
-             (import 'schemas/jobs.jsonnet') +
-             (import 'schemas/userapprovalrecord.jsonnet'),
+    schemas:
+      (import 'schemas/core.jsonnet') +
+      (import 'schemas/errors.jsonnet') +
+      (import 'schemas/workspace.jsonnet') +
+      (import 'schemas/resources.jsonnet') +
+      (import 'schemas/deployments.jsonnet') +
+      (import 'schemas/deploymentversions.jsonnet') +
+      (import 'schemas/environments.jsonnet') +
+      (import 'schemas/systems.jsonnet') +
+      (import 'schemas/policies.jsonnet') +
+      (import 'schemas/jobs.jsonnet') +
+      (import 'schemas/userapprovalrecord.jsonnet'),
   },
 }

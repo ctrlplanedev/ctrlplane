@@ -34,7 +34,7 @@ local openapi = import '../lib/openapi.libsonnet';
       resourceSelector: openapi.schemaRef('Selector'),
     },
   },
-   DeploymentAndSystem: {
+  DeploymentAndSystem: {
     type: 'object',
     required: ['deployment', 'system'],
     properties: {

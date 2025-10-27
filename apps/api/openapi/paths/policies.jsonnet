@@ -1,10 +1,10 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  "/v1/workspaces/{workspaceId}/policies": {
+  '/v1/workspaces/{workspaceId}/policies': {
     get: {
-      summary: "List policies",
-      operationId: "listPolicies",
+      summary: 'List policies',
+      operationId: 'listPolicies',
       responses: openapi.okResponse(
         {
           type: 'object',
@@ -16,10 +16,10 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse(),
     },
     put: {
-      summary: "Upsert a policy",
-      operationId: "upsertPolicy",
-      requestBody: { required: true, content: { "application/json": { schema: openapi.schemaRef('UpsertPolicyRequest') } } },
-      responses: openapi.createdResponse(openapi.schemaRef('Policy')) + openapi.okResponse(openapi.schemaRef('Policy'))  + openapi.badRequestResponse(),
+      summary: 'Upsert a policy',
+      operationId: 'upsertPolicy',
+      requestBody: { required: true, content: { 'application/json': { schema: openapi.schemaRef('UpsertPolicyRequest') } } },
+      responses: openapi.createdResponse(openapi.schemaRef('Policy')) + openapi.okResponse(openapi.schemaRef('Policy')) + openapi.badRequestResponse(),
     },
   },
 }

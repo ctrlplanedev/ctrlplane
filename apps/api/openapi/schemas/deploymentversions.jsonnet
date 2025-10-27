@@ -49,5 +49,5 @@ local openapi = import '../lib/openapi.libsonnet';
       message: { type: 'string' },
       createdAt: { type: 'string', format: 'date-time' },
     },
-  }
+  },
 }

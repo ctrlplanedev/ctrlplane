@@ -1,10 +1,10 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  "/v1/workspaces/{workspaceId}/deployments": {
+  '/v1/workspaces/{workspaceId}/deployments': {
     get: {
-      summary: "List deployments",
-      operationId: "listDeployments",
+      summary: 'List deployments',
+      operationId: 'listDeployments',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.limitParam(),
@@ -13,12 +13,12 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentAndSystem')),
     },
     put: {
-      summary: "Upsert deployment",
-      operationId: "upsertDeployment",
+      summary: 'Upsert deployment',
+      operationId: 'upsertDeployment',
       requestBody: {
         required: true,
         content: {
-          "application/json": {
+          'application/json': {
             schema: openapi.schemaRef('UpsertDeploymentRequest'),
           },
         },
@@ -26,10 +26,10 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.createdResponse(openapi.schemaRef('Deployment')),
     },
   },
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {
+  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}': {
     get: {
-      summary: "Get deployment",
-      operationId: "getDeployment",
+      summary: 'Get deployment',
+      operationId: 'getDeployment',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
