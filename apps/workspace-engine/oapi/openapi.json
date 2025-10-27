@@ -1907,6 +1907,65 @@
             "summary": "Get versions for a deployment"
          }
       },
+      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}": {
+         "get": {
+            "description": "Returns a deployment version by ID.",
+            "operationId": "getDeploymentVersion",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "deploymentVersionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVersion"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment version"
+         }
+      },
       "/v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations": {
          "get": {
             "description": "Returns all entities related to the specified entity (deployment, environment, or resource) based on relationship rules. Relationships are grouped by relationship reference.",

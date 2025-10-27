@@ -13,6 +13,25 @@ import (
 
 type DeploymentVersions struct{}
 
+func (s *DeploymentVersions) GetDeploymentVersion(c *gin.Context, workspaceId string, deploymentVersionId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	deploymentVersion, ok := ws.DeploymentVersions().Get(deploymentVersionId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": fmt.Errorf("deployment version %s not found", deploymentVersionId).Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, deploymentVersion)
+}
+
 func getSystemEnvironments(ws *workspace.Workspace, systemId string) []*oapi.Environment {
 	environments := make([]*oapi.Environment, 0)
 	for environment := range ws.Environments().IterBuffered() {

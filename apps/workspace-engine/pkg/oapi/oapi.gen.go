@@ -1308,6 +1308,9 @@ type ServerInterface interface {
 	// Get versions for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions)
 	GetVersionsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params GetVersionsForDeploymentParams)
+	// Get deployment version
+	// (GET /v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId})
+	GetDeploymentVersion(c *gin.Context, workspaceId string, deploymentVersionId string)
 	// Get related entities for a given entity
 	// (GET /v1/workspaces/{workspaceId}/entities/{relatableEntityType}/{entityId}/relations)
 	GetRelatedEntities(c *gin.Context, workspaceId string, relatableEntityType RelatableEntityType, entityId string)
@@ -1677,6 +1680,39 @@ func (siw *ServerInterfaceWrapper) GetVersionsForDeployment(c *gin.Context) {
 	}
 
 	siw.Handler.GetVersionsForDeployment(c, workspaceId, deploymentId, params)
+}
+
+// GetDeploymentVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentVersion(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "deploymentVersionId" -------------
+	var deploymentVersionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentVersionId", c.Param("deploymentVersionId"), &deploymentVersionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentVersionId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeploymentVersion(c, workspaceId, deploymentVersionId)
 }
 
 // GetRelatedEntities operation middleware
@@ -2590,6 +2626,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/release-targets", wrapper.GetReleaseTargetsForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/versions", wrapper.GetVersionsForDeployment)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deploymentversions/:deploymentVersionId", wrapper.GetDeploymentVersion)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/entities/:relatableEntityType/:entityId/relations", wrapper.GetRelatedEntities)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments", wrapper.ListEnvironments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/environments/:environmentId", wrapper.GetEnvironment)

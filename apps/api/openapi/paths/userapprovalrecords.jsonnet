@@ -1,0 +1,20 @@
+local openapi = import '../lib/openapi.libsonnet';
+
+{
+  "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records": {
+    put: {
+      summary: "Upsert user approval record",
+      operationId: "upsertUserApprovalRecord",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: openapi.schemaRef('UpsertUserApprovalRecordRequest'),
+          },
+        },
+      },
+      responses: openapi.createdResponse(openapi.schemaRef('UserApprovalRecord')) + openapi.okResponse(openapi.schemaRef('UserApprovalRecord')) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
+}
+
