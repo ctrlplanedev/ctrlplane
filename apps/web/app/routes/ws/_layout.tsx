@@ -9,10 +9,12 @@ import {
   LayoutGrid,
   Link2,
   LogOut,
+  Moon,
   Plug,
   Rocket,
   Server,
   ShieldCheck,
+  Sun,
   TreePine,
 } from "lucide-react";
 import {
@@ -51,6 +53,7 @@ import {
   SidebarProvider,
   useSidebar,
 } from "~/components/ui/sidebar";
+import { useTheme } from "~/lib/theme-provider";
 import { cn } from "~/lib/utils";
 import { WorkspaceSelector } from "./_components/WorkspaceSelector";
 
@@ -84,6 +87,7 @@ const UserNav: React.FC<{
 }> = ({ viewer }) => {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   const signOut = async () => {
     await authClient.signOut({
@@ -93,6 +97,10 @@ const UserNav: React.FC<{
         },
       },
     });
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -144,6 +152,19 @@ const UserNav: React.FC<{
               <DropdownMenuItem>
                 <BadgeCheck />
                 Account
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTheme}>
+                {theme === "dark" ? (
+                  <>
+                    <Sun />
+                    Light mode
+                  </>
+                ) : (
+                  <>
+                    <Moon />
+                    Dark mode
+                  </>
+                )}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

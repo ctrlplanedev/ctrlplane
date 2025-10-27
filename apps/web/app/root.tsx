@@ -13,6 +13,7 @@ import "./app.css";
 
 import { TRPCReactProvider } from "./api/trpc";
 import { Toaster } from "./components/ui/sonner";
+import { ThemeProvider } from "./lib/theme-provider";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -29,7 +30,7 @@ export const links: Route.LinksFunction = () => [
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <TRPCReactProvider>
         <head>
           <meta charSet="utf-8" />
@@ -38,8 +39,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Links />
         </head>
         <body suppressHydrationWarning>
-          {children}
-          <Toaster />
+          <ThemeProvider defaultTheme="dark">
+            {children}
+            <Toaster />
+          </ThemeProvider>
           <ScrollRestoration />
           <Scripts />
         </body>
