@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 
@@ -226,84 +227,50 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	start := min(offset, total)
 	end := min(start+limit, total)
 
-	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, total)
-
-	// Process in chunks of 100 using goroutines
-	chunks := utils.Chunk(releaseTargetsList[start:end], 100)
-	
-	type chunkResult struct {
-		index int
-		items []*oapi.ReleaseTargetWithState
-		err   error
-	}
-	
-	resultsChan := make(chan chunkResult, len(chunks))
-	
-	for chunkIdx, chunk := range chunks {
-		go func(idx int, releaseTargets []*oapi.ReleaseTarget) {
-			items := make([]*oapi.ReleaseTargetWithState, 0, len(releaseTargets))
-			
-			for _, releaseTarget := range releaseTargets {
-				if releaseTarget == nil {
-					log.Error("release target is nil in chunk processing", "chunkIndex", idx)
-					continue
-				}
-				
-				state, err := ws.ReleaseManager().GetCachedReleaseTargetState(c.Request.Context(), releaseTarget)
-				if err != nil {
-					log.Error("error getting release target state", "error", err.Error(), "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
-					resultsChan <- chunkResult{index: idx, err: err}
-					return
-				}
-				
-				environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
-				if !ok {
-					resultsChan <- chunkResult{index: idx, err: fmt.Errorf("environment not found for release target")}
-					return
-				}
-				
-				resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
-				if !ok {
-					resultsChan <- chunkResult{index: idx, err: fmt.Errorf("resource not found for release target")}
-					return
-				}
-				
-				deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
-				if !ok {
-					resultsChan <- chunkResult{index: idx, err: fmt.Errorf("deployment not found for release target")}
-					return
-				}
-				
-				items = append(items, &oapi.ReleaseTargetWithState{
-					ReleaseTarget: *releaseTarget,
-					State:         *state,
-					Environment:   environment,
-					Resource:      resource,
-					Deployment:    deployment,
-				})
+	releaseTargetsWithState, err := concurrency.ProcessInChunks(
+		releaseTargetsList[start:end],
+		50,
+		10, // Max 10 concurrent goroutines
+		func(releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetWithState, error) {
+			if releaseTarget == nil {
+				return nil, fmt.Errorf("release target is nil")
 			}
-			
-			resultsChan <- chunkResult{index: idx, items: items}
-		}(chunkIdx, chunk)
-	}
-	
-	// Collect results from all goroutines
-	chunkResults := make([]chunkResult, len(chunks))
-	for range chunks {
-		result := <-resultsChan
-		if result.err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": result.err.Error(),
-			})
-			return
-		}
-		chunkResults[result.index] = result
-	}
-	close(resultsChan)
-	
-	// Combine results in order
-	for _, result := range chunkResults {
-		releaseTargetsWithState = append(releaseTargetsWithState, result.items...)
+
+			state, err := ws.ReleaseManager().GetCachedReleaseTargetState(c.Request.Context(), releaseTarget)
+			if err != nil {
+				return nil, fmt.Errorf("error getting release target state: %w", err)
+			}
+
+			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
+			if !ok {
+				return nil, fmt.Errorf("environment not found for release target")
+			}
+
+			resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
+			if !ok {
+				return nil, fmt.Errorf("resource not found for release target")
+			}
+
+			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
+			if !ok {
+				return nil, fmt.Errorf("deployment not found for release target")
+			}
+
+			return &oapi.ReleaseTargetWithState{
+				ReleaseTarget: *releaseTarget,
+				State:         *state,
+				Environment:   environment,
+				Resource:      resource,
+				Deployment:    deployment,
+			}, nil
+		},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

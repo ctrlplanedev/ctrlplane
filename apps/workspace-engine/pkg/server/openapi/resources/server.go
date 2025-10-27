@@ -68,15 +68,21 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 
 	// Get all resources from workspace
 	allResources := ws.Resources().Items()
-	resourceSlice := make([]*oapi.Resource, 0, len(allResources))
-	for _, resource := range allResources {
-		resourceSlice = append(resourceSlice, resource)
-	}
-
-	var matchedResourcesMap map[string]*oapi.Resource
+	
+	var matchedResources []*oapi.Resource
+	
 	if body.Filter != nil {
+		// Convert to slice first
+		resourceSlice := make([]*oapi.Resource, 0, len(allResources))
+		for _, resource := range allResources {
+			resourceSlice = append(resourceSlice, resource)
+		}
+		
 		// Filter resources using the selector
-		matchedResourcesMap, err = selector.FilterResources(c.Request.Context(), body.Filter, resourceSlice)
+		matchedResources, err = selector.Filter(
+			c.Request.Context(), body.Filter, resourceSlice,
+			selector.WithChunking(100, 10),
+		)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Failed to filter resources: " + err.Error(),
@@ -84,22 +90,16 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 			return
 		}
 	} else {
-		matchedResourcesMap = make(map[string]*oapi.Resource)
-		for _, resource := range resourceSlice {
-			matchedResourcesMap[resource.Id] = resource
+		// No filter - directly convert to slice (skip map entirely)
+		matchedResources = make([]*oapi.Resource, 0, len(allResources))
+		for _, resource := range allResources {
+			matchedResources = append(matchedResources, resource)
 		}
 	}
 
-	// Convert map back to slice for response
-	matchedResources := make([]*oapi.Resource, 0, len(matchedResourcesMap))
-	for _, resource := range matchedResourcesMap {
-		matchedResources = append(matchedResources, resource)
-	}
-
-	// Sort resourceSlice by Name, then CreatedAt
+	// Sort all matched resources (necessary for consistent pagination)
 	sort.Slice(matchedResources, func(i, j int) bool {
 		if matchedResources[i].Name == matchedResources[j].Name {
-			// Fallback to CreatedAt comparison
 			return matchedResources[i].CreatedAt.Before(matchedResources[j].CreatedAt)
 		}
 		return matchedResources[i].Name < matchedResources[j].Name
