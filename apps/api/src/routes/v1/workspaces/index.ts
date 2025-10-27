@@ -18,6 +18,7 @@ import {
 import { policiesRouter } from "./policies.js";
 import { resourceProvidersRouter } from "./resource-providers.js";
 import { listResources } from "./resources.js";
+import { systemRouter } from "./systems.js";
 
 /**
  * Creates the workspaces router
@@ -31,6 +32,7 @@ export const createWorkspacesRouter = (): Router =>
     .patch("/:workspaceId", asyncHandler(updateWorkspace))
     .delete("/:workspaceId", asyncHandler(deleteWorkspace))
     .get("/:workspaceId/resources", asyncHandler(listResources))
+    .use("/:workspaceId/systems", systemRouter)
     .use("/:workspaceId/resource-providers", resourceProvidersRouter)
     .use("/:workspaceId/deployments", deploymentsRouter)
     .use("/:workspaceId/environments", environmentsRouter)

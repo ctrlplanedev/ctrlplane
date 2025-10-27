@@ -1,6 +1,18 @@
-import { AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, MoreVertical, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,6 +21,12 @@ import {
 } from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
@@ -24,8 +42,158 @@ export function meta() {
   ];
 }
 
+type DeleteSystemDialogProps = {
+  system: { id: string; name: string; workspaceId: string } | null;
+  deployments: Array<{
+    deployment: { id: string; name: string; systemId: string };
+  }>;
+  environments: Array<{
+    id: string;
+    name: string;
+    systemId: string;
+  }>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+function DeleteSystemDialog({
+  system,
+  deployments,
+  environments,
+  open,
+  onOpenChange,
+}: DeleteSystemDialogProps) {
+  const utils = trpc.useUtils();
+  const deleteSystemMutation = trpc.system.delete.useMutation();
+
+  if (!system) return null;
+
+  const systemDeployments = deployments.filter(
+    (d) => d.deployment.systemId === system.id,
+  );
+  const systemEnvironments = environments.filter(
+    (e) => e.systemId === system.id,
+  );
+
+  const handleDelete = () => {
+    deleteSystemMutation
+      .mutateAsync({
+        workspaceId: system.workspaceId,
+        systemId: system.id,
+      })
+      .then(() => {
+        utils.system.list.invalidate({ workspaceId: system.workspaceId });
+        utils.deployment.list.invalidate({ workspaceId: system.workspaceId });
+        utils.environment.list.invalidate({ workspaceId: system.workspaceId });
+        onOpenChange(false);
+        toast.success("System deleted successfully");
+      })
+      .catch((error: unknown) => {
+        const message =
+          error &&
+          typeof error === "object" &&
+          "message" in error &&
+          typeof error.message === "string"
+            ? error.message
+            : "Failed to delete system";
+        toast.error(message);
+      });
+  };
+
+  const hasRelatedResources =
+    systemDeployments.length > 0 || systemEnvironments.length > 0;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="max-w-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete System</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-4">
+              <p>
+                Are you sure you want to delete the system{" "}
+                <span className="font-semibold text-foreground">
+                  {system.name}
+                </span>
+                ? This action cannot be undone.
+              </p>
+
+              {hasRelatedResources && (
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4">
+                  <p className="mb-3 font-semibold text-destructive">
+                    The following resources will also be deleted:
+                  </p>
+
+                  <div className="space-y-4">
+                    {systemDeployments.length > 0 && (
+                      <div>
+                        <p className="mb-2 text-sm font-medium text-foreground">
+                          Deployments ({systemDeployments.length}):
+                        </p>
+                        <ul className="space-y-1 pl-4">
+                          {systemDeployments.map((d) => (
+                            <li
+                              key={d.deployment.id}
+                              className="text-sm text-muted-foreground"
+                            >
+                              • {d.deployment.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {systemEnvironments.length > 0 && (
+                      <div>
+                        <p className="mb-2 text-sm font-medium text-foreground">
+                          Environments ({systemEnvironments.length}):
+                        </p>
+                        <ul className="space-y-1 pl-4">
+                          {systemEnvironments.map((e) => (
+                            <li
+                              key={e.id}
+                              className="text-sm text-muted-foreground"
+                            >
+                              • {e.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleteSystemMutation.isPending}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
+            disabled={deleteSystemMutation.isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleteSystemMutation.isPending ? "Deleting..." : "Delete System"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export default function Systems() {
   const { workspace } = useWorkspace();
+  const [systemToDelete, setSystemToDelete] = useState<{
+    id: string;
+    name: string;
+    workspaceId: string;
+  } | null>(null);
+
   const { data: systemsData, isLoading: isLoadingSystems } =
     trpc.system.list.useQuery({
       workspaceId: workspace.id,
@@ -96,10 +264,44 @@ export default function Systems() {
               const { deploymentCount, environmentCount } = getSystemCounts(
                 system.id,
               );
+              const isDefaultSystem =
+                system.id === "00000000-0000-0000-0000-000000000000";
               return (
                 <Card key={system.id}>
-                  <CardContent>
-                    <h3 className="mb-2 font-semibold">{system.name}</h3>
+                  <CardContent className="relative">
+                    <div className="absolute right-4 top-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={isDefaultSystem}
+                            onClick={() => {
+                              if (!isDefaultSystem) {
+                                setSystemToDelete({
+                                  id: system.id,
+                                  name: system.name,
+                                  workspaceId: system.workspaceId,
+                                });
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete System
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <h3 className="mb-2 pr-10 font-semibold">{system.name}</h3>
                     {system.description && (
                       <p className="mb-4 text-sm text-muted-foreground">
                         {system.description}
@@ -135,6 +337,16 @@ export default function Systems() {
           </Card>
         )}
       </div>
+
+      <DeleteSystemDialog
+        system={systemToDelete}
+        deployments={deployments}
+        environments={environments}
+        open={!!systemToDelete}
+        onOpenChange={(open) => {
+          if (!open) setSystemToDelete(null);
+        }}
+      />
     </>
   );
 }

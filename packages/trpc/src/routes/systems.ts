@@ -56,4 +56,47 @@ export const systemsRouter = router({
       });
       return system;
     }),
+
+  delete: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        systemId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, systemId } = input;
+
+      // Prevent deletion of default system
+      if (systemId === "00000000-0000-0000-0000-000000000000") {
+        throw new Error("Cannot delete the default system");
+      }
+
+      const response = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/systems/{systemId}",
+        {
+          params: {
+            path: {
+              workspaceId,
+              systemId,
+            },
+          },
+        },
+      );
+
+      if (!response.data) {
+        throw new Error("System not found");
+      }
+
+      const system = response.data;
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.SystemDeleted,
+        timestamp: Date.now(),
+        data: { id: systemId, name: "", workspaceId, ...system },
+      });
+
+      return system;
+    }),
 });
