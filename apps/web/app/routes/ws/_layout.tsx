@@ -28,6 +28,7 @@ import {
 
 import { authClient } from "~/api/auth-client";
 import { trpc } from "~/api/trpc";
+import { useTheme } from "~/components/ThemeProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -53,7 +54,6 @@ import {
   SidebarProvider,
   useSidebar,
 } from "~/components/ui/sidebar";
-import { useTheme } from "~/lib/theme-provider";
 import { cn } from "~/lib/utils";
 import { WorkspaceSelector } from "./_components/WorkspaceSelector";
 

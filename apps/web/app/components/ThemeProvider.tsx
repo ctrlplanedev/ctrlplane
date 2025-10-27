@@ -21,7 +21,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "dark",
+  defaultTheme = "light",
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
@@ -29,12 +29,14 @@ export function ThemeProvider({
   useEffect(() => {
     // Load theme from localStorage on mount (client-side only)
     if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("theme") as Theme;
-      if (savedTheme) {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark" || savedTheme === "light") {
         setTheme(savedTheme);
+        return;
       }
+      setTheme(defaultTheme);
     }
-  }, []);
+  }, [setTheme, defaultTheme]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -62,9 +64,5 @@ export function ThemeProvider({
 
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
-
-  if (context === undefined)
-    throw new Error("useTheme must be used within a ThemeProvider");
-
   return context;
 };
