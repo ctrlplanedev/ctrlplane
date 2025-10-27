@@ -3,7 +3,7 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   UpsertResourceProviderRequest: {
     type: 'object',
-    required: ['id', 'name', 'metadata'],
+    required: ['id', 'name'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
@@ -48,7 +48,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   ResourceProvider: {
     type: 'object',
-    required: ['id', 'workspaceId', 'name', 'createdAt', 'metadata'],
+    required: ['id', 'workspaceId', 'name', 'createdAt'],
     properties: {
       id: { type: 'string' },
       workspaceId: { type: 'string', format: 'uuid' },
@@ -57,6 +57,7 @@ local openapi = import '../lib/openapi.libsonnet';
       metadata: {
         type: 'object',
         additionalProperties: { type: 'string' },
+        description: 'Arbitrary metadata for the resource provider (record<string, string>)',
       },
     },
   },

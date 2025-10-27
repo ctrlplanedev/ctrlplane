@@ -16,10 +16,7 @@ import {
   updateWorkspace,
 } from "./handlers.js";
 import { policiesRouter } from "./policies.js";
-import {
-  getResourceProviderByName,
-  setResourceProviderResources,
-} from "./resource-provider.js";
+import { resourceProvidersRouter } from "./resource-providers.js";
 import { listResources } from "./resources.js";
 
 /**
@@ -34,14 +31,7 @@ export const createWorkspacesRouter = (): Router =>
     .patch("/:workspaceId", asyncHandler(updateWorkspace))
     .delete("/:workspaceId", asyncHandler(deleteWorkspace))
     .get("/:workspaceId/resources", asyncHandler(listResources))
-    .post(
-      "/:workspaceId/resource-providers/:providerId/set",
-      asyncHandler(setResourceProviderResources),
-    )
-    .get(
-      "/:workspaceId/resource-providers/name/:name",
-      asyncHandler(getResourceProviderByName),
-    )
+    .use("/:workspaceId/resource-providers", resourceProvidersRouter)
     .use("/:workspaceId/deployments", deploymentsRouter)
     .use("/:workspaceId/environments", environmentsRouter)
     .use("/:workspaceId/policies", policiesRouter)

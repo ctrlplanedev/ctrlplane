@@ -478,7 +478,8 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             id: string;
-            metadata: {
+            /** @description Arbitrary metadata for the resource provider (record<string, string>) */
+            metadata?: {
                 [key: string]: string;
             };
             name: string;
@@ -566,7 +567,7 @@ export interface components {
         UpsertResourceProviderRequest: {
             id: string;
             /** @description Arbitrary metadata for the resource provider (record<string, string>) */
-            metadata: {
+            metadata?: {
                 [key: string]: string;
             };
             name: string;
@@ -1400,8 +1401,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description OK response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

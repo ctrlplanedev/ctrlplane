@@ -580,6 +580,7 @@
                   "additionalProperties": {
                      "type": "string"
                   },
+                  "description": "Arbitrary metadata for the resource provider (record<string, string>)",
                   "type": "object"
                },
                "name": {
@@ -594,8 +595,7 @@
                "id",
                "workspaceId",
                "name",
-               "createdAt",
-               "metadata"
+               "createdAt"
             ],
             "type": "object"
          },
@@ -854,8 +854,7 @@
             },
             "required": [
                "id",
-               "name",
-               "metadata"
+               "name"
             ],
             "type": "object"
          },
@@ -2093,7 +2092,7 @@
                "required": true
             },
             "responses": {
-               "202": {
+               "200": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -2101,7 +2100,7 @@
                         }
                      }
                   },
-                  "description": "Accepted response"
+                  "description": "OK response"
                }
             },
             "summary": "Upsert resource provider"

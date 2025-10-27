@@ -75,6 +75,7 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 				workspaceStatus.SetError(err)
 				return nil, err
 			}
+			ws.Changeset().Clear()
 		}
 
 		// Restore from snapshot

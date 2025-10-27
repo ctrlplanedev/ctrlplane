@@ -29,7 +29,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProvider')),
+      responses: openapi.okResponse(openapi.schemaRef('ResourceProvider')),
     },
   },
   '/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set': {
