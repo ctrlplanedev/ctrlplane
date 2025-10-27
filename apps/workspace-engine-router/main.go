@@ -97,7 +97,7 @@ func initTracer() (func(), error) {
 func main() {
 	log.Info("Starting workspace-engine-router",
 		"host", config.Global.Host,
-		"routing_port", config.Global.Port,
+		"routing_port", config.Global.ProxyPort,
 		"management_port", config.Global.ManagementPort,
 		"kafka_brokers", config.Global.KafkaBrokers,
 		"kafka_topic", config.Global.KafkaTopic,
@@ -135,7 +135,7 @@ func main() {
 
 	// Create router
 	r := router.New(workerRegistry, partitionCounter, reverseProxy)
-	
+
 	// Setup routers
 	managementRouter := r.SetupManagementRouter()
 	routingRouter := r.SetupRoutingRouter()
@@ -168,7 +168,7 @@ func main() {
 	}()
 
 	// Start routing HTTP server
-	routingAddr := fmt.Sprintf("%s:%d", config.Global.Host, config.Global.Port)
+	routingAddr := fmt.Sprintf("%s:%d", config.Global.Host, config.Global.ProxyPort)
 	go func() {
 		log.Info("Routing server started", "address", routingAddr)
 		if err := routingRouter.Run(routingAddr); err != nil {
@@ -183,4 +183,3 @@ func main() {
 
 	log.Info("Shutting down workspace-engine-router...")
 }
-

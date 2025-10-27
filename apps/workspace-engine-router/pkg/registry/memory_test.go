@@ -432,7 +432,7 @@ func TestCleanupStaleWorkers_KeepsHealthy(t *testing.T) {
 
 func TestConcurrentAccess(t *testing.T) {
 	reg := NewInMemoryRegistry(30 * time.Second)
-	
+
 	var wg sync.WaitGroup
 	numGoroutines := 10
 	numOperations := 100
@@ -506,7 +506,7 @@ func TestGetWorkerForPartition_ReturnsCopy(t *testing.T) {
 
 func BenchmarkRegister(b *testing.B) {
 	reg := NewInMemoryRegistry(30 * time.Second)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		workerID := "worker-" + string(rune(i%100))
@@ -516,13 +516,13 @@ func BenchmarkRegister(b *testing.B) {
 
 func BenchmarkGetWorkerForPartition(b *testing.B) {
 	reg := NewInMemoryRegistry(30 * time.Second)
-	
+
 	// Pre-populate registry
 	for i := 0; i < 10; i++ {
 		workerID := "worker-" + string(rune(i))
 		reg.Register(workerID, "http://localhost:8080", []int32{int32(i)})
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		reg.GetWorkerForPartition(int32(i % 10))
@@ -532,7 +532,7 @@ func BenchmarkGetWorkerForPartition(b *testing.B) {
 func BenchmarkHeartbeat(b *testing.B) {
 	reg := NewInMemoryRegistry(30 * time.Second)
 	reg.Register("worker-1", "http://localhost:8080", []int32{0})
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		reg.Heartbeat("worker-1", "http://localhost:8080", []int32{0})
@@ -549,7 +549,7 @@ func TestContract_GetWorkerForPartition_AlwaysReturnsNewestWorker(t *testing.T) 
 
 		// Register first worker
 		reg.Register("worker-old", "http://old:8080", []int32{5})
-		
+
 		// Verify old worker owns partition
 		worker, err := reg.GetWorkerForPartition(5)
 		if err != nil {
@@ -713,7 +713,7 @@ func TestContract_GetWorkerForPartition_NewestWinsEvenWithComplexScenarios(t *te
 	reg := NewInMemoryRegistry(30 * time.Second)
 
 	// Complex scenario: Multiple workers, multiple partitions, multiple registrations
-	
+
 	// Time T1: worker-A registers with partitions 1,2,3
 	reg.Register("worker-A", "http://a:8080", []int32{1, 2, 3})
 	time.Sleep(5 * time.Millisecond)
@@ -803,4 +803,3 @@ func TestContract_GetWorkerForPartition_ReturnsErrorForUnassignedPartition(t *te
 		t.Errorf("CONTRACT VIOLATION: Expected ErrNoWorkerForPartition, got %v", err)
 	}
 }
-

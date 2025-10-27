@@ -50,11 +50,11 @@ func (rp *ReverseProxy) ProxyRequest(c *gin.Context, targetURL string) {
 		}
 		defer cancel()
 		req = req.WithContext(ctx)
-		
+
 		// Preserve original request headers
 		req.Header.Set("X-Forwarded-Host", req.Host)
 		req.Header.Set("X-Forwarded-Proto", "http")
-		
+
 		// Add custom header to identify router
 		req.Header.Set("X-Routed-By", "workspace-engine-router")
 	}
@@ -65,7 +65,7 @@ func (rp *ReverseProxy) ProxyRequest(c *gin.Context, targetURL string) {
 			"target", targetURL,
 			"path", r.URL.Path,
 			"error", err)
-		
+
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"error":   "Worker unavailable",
 			"message": fmt.Sprintf("Failed to connect to worker: %v", err),
@@ -83,4 +83,3 @@ func (rp *ReverseProxy) ProxyRequest(c *gin.Context, targetURL string) {
 	// Proxy the request
 	proxy.ServeHTTP(c.Writer, c.Request)
 }
-

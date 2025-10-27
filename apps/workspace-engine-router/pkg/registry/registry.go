@@ -3,7 +3,7 @@ package registry
 import "errors"
 
 var (
-	ErrWorkerNotFound     = errors.New("worker not found")
+	ErrWorkerNotFound       = errors.New("worker not found")
 	ErrNoWorkerForPartition = errors.New("no worker assigned to partition")
 )
 
@@ -24,4 +24,3 @@ type WorkerRegistry interface {
 	// Unregister removes a worker from the registry
 	Unregister(workerID string) error
 }
-

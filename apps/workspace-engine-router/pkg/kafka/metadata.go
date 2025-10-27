@@ -10,10 +10,10 @@ import (
 
 // PartitionCounter provides methods to query Kafka topic metadata
 type PartitionCounter struct {
-	brokers        string
-	topic          string
-	cachedCount    int32
-	lastRefreshed  time.Time
+	brokers         string
+	topic           string
+	cachedCount     int32
+	lastRefreshed   time.Time
 	refreshInterval time.Duration
 }
 
@@ -51,7 +51,7 @@ func (pc *PartitionCounter) GetPartitionCount() (int32, error) {
 	// Update cache
 	pc.cachedCount = count
 	pc.lastRefreshed = time.Now()
-	
+
 	log.Info("Refreshed partition count", "topic", pc.topic, "partitions", count)
 	return count, nil
 }
@@ -87,4 +87,3 @@ func (pc *PartitionCounter) queryPartitionCount() (int32, error) {
 func (pc *PartitionCounter) ForceRefresh() {
 	pc.lastRefreshed = time.Time{}
 }
-

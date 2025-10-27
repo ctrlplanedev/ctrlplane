@@ -33,7 +33,7 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 	defer r.mu.Unlock()
 
 	now := time.Now()
-	
+
 	worker, exists := r.workers[workerID]
 	if exists {
 		// Update existing worker
@@ -61,12 +61,12 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 
 	// Detect partition conflicts and assign partitions to newest worker
 	conflictingWorkers := make(map[string][]int32) // workerID -> partitions being taken
-	
+
 	for _, partition := range partitions {
 		if existingWorkerID, exists := r.partitionWorkers[partition]; exists && existingWorkerID != workerID {
 			// Partition conflict detected
 			existingWorker := r.workers[existingWorkerID]
-			
+
 			// Compare registration times - newest worker wins
 			if worker.RegisteredAt.After(existingWorker.RegisteredAt) {
 				// New worker is newer, take over the partition
@@ -76,7 +76,7 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 					"old_worker_registered_at", existingWorker.RegisteredAt,
 					"new_worker", workerID,
 					"new_worker_registered_at", worker.RegisteredAt)
-				
+
 				conflictingWorkers[existingWorkerID] = append(conflictingWorkers[existingWorkerID], partition)
 				r.partitionWorkers[partition] = workerID
 			} else {
@@ -93,7 +93,7 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 			r.partitionWorkers[partition] = workerID
 		}
 	}
-	
+
 	// Remove partitions from conflicting workers' partition lists
 	for conflictingWorkerID, takenPartitions := range conflictingWorkers {
 		if conflictingWorker, exists := r.workers[conflictingWorkerID]; exists {
@@ -112,7 +112,7 @@ func (r *InMemoryRegistry) Register(workerID, httpAddress string, partitions []i
 				}
 			}
 			conflictingWorker.Partitions = newPartitions
-			
+
 			// If worker has no partitions left, unregister it
 			if len(conflictingWorker.Partitions) == 0 {
 				log.Info("Unregistering worker with no remaining partitions",
@@ -219,18 +219,17 @@ func (r *InMemoryRegistry) CleanupStaleWorkers() int {
 	// Remove stale workers
 	for _, workerID := range staleWorkers {
 		worker := r.workers[workerID]
-		
+
 		// Remove partition mappings
 		for _, partition := range worker.Partitions {
 			if r.partitionWorkers[partition] == workerID {
 				delete(r.partitionWorkers, partition)
 			}
 		}
-		
+
 		// Remove worker
 		delete(r.workers, workerID)
 	}
 
 	return len(staleWorkers)
 }
-

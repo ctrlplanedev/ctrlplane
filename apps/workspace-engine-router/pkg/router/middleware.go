@@ -82,4 +82,3 @@ func CORSMiddleware() gin.HandlerFunc {
 func RecoveryMiddleware() gin.HandlerFunc {
 	return gin.Recovery()
 }
-

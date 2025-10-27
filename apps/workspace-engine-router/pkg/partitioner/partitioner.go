@@ -52,4 +52,3 @@ func murmur2(data []byte) uint32 {
 
 	return h
 }
-

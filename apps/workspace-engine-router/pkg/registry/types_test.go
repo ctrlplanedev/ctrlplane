@@ -39,7 +39,7 @@ func TestWorkerInfo_IsHealthy_ExceededTimeout(t *testing.T) {
 
 func TestWorkerInfo_IsHealthy_ExactlyAtTimeout(t *testing.T) {
 	timeout := 30 * time.Second
-	
+
 	worker := &WorkerInfo{
 		WorkerID:      "worker-1",
 		HTTPAddress:   "http://localhost:8080",
@@ -56,7 +56,7 @@ func TestWorkerInfo_IsHealthy_ExactlyAtTimeout(t *testing.T) {
 
 func TestWorkerInfo_IsHealthy_JustBeforeTimeout(t *testing.T) {
 	timeout := 30 * time.Second
-	
+
 	worker := &WorkerInfo{
 		WorkerID:      "worker-1",
 		HTTPAddress:   "http://localhost:8080",
@@ -137,4 +137,3 @@ func TestWorkerInfo_IsHealthy_FutureHeartbeat(t *testing.T) {
 		t.Error("Expected worker to be healthy with future heartbeat (clock skew)")
 	}
 }
-

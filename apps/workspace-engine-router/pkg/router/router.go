@@ -140,9 +140,9 @@ func (r *Router) RegisterWorker(c *gin.Context) {
 
 // HeartbeatWorkerRequest represents the request body for worker heartbeat
 type HeartbeatWorkerRequest struct {
-	WorkerID   string `json:"workerId" binding:"required"`
-	HTTPAddress string `json:"httpAddress" binding:"required"`
-	Partitions []int32 `json:"partitions" binding:"required"`
+	WorkerID    string  `json:"workerId" binding:"required"`
+	HTTPAddress string  `json:"httpAddress" binding:"required"`
+	Partitions  []int32 `json:"partitions" binding:"required"`
 }
 
 // HeartbeatWorker handles worker heartbeat updates
@@ -257,7 +257,6 @@ func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
 		partition = partitioner.PartitionForWorkspace(workspaceID, numPartitions)
 	}
 
-
 	log.Debug("Routing request",
 		"workspace_id", workspaceID,
 		"partition", partition,
@@ -287,7 +286,7 @@ func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
 	targetURL := worker.HTTPAddress
 	// Ensure targetURL doesn't end with /
 	targetURL = strings.TrimSuffix(targetURL, "/")
-	
+
 	log.Debug("Proxying request",
 		"workspace_id", workspaceID,
 		"partition", partition,

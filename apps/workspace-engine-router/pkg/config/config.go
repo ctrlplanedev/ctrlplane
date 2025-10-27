@@ -11,7 +11,7 @@ import (
 type Config struct {
 	// Server configuration
 	Host           string `envconfig:"HOST" default:"0.0.0.0"`
-	Port           int    `envconfig:"PORT" default:"9090"`
+	ProxyPort      int    `envconfig:"PROXY_PORT" default:"9090"`
 	ManagementPort int    `envconfig:"MANAGEMENT_PORT" default:"9091"`
 
 	// Kafka configuration
@@ -36,4 +36,3 @@ func init() {
 		log.Fatal(err)
 	}
 }
-
