@@ -18,6 +18,10 @@ local openapi = import '../lib/openapi.libsonnet';
     put: {
       summary: 'Set the resources for a provider',
       operationId: 'setResourceProvidersResources',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.providerIdParam(),
+      ],
       requestBody: {
         required: true,
         content: {

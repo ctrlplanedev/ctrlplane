@@ -968,8 +968,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Resource created successfully */
-            201: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1082,7 +1082,12 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -1091,15 +1096,6 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Resource created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVersion"];
-                };
-            };
             /** @description Accepted response */
             202: {
                 headers: {
@@ -1133,7 +1129,12 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment version */
+                deploymentVersionId: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -1213,7 +1214,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -1222,8 +1226,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Resource created successfully */
-            201: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1280,7 +1284,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -1311,7 +1318,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -1329,8 +1339,8 @@ export interface operations {
                     "application/json": components["schemas"]["Policy"];
                 };
             };
-            /** @description Resource created successfully */
-            201: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1378,7 +1388,12 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the resource provider */
+                providerId: string;
+            };
             cookie?: never;
         };
         requestBody: {

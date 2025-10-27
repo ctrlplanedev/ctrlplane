@@ -18,6 +18,10 @@ local openapi = import '../lib/openapi.libsonnet';
     put: {
       summary: 'Upsert deployment version',
       operationId: 'upsertDeploymentVersion',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+      ],
       requestBody: {
         required: true,
         content: {
@@ -26,7 +30,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('DeploymentVersion'))
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVersion'))
                  + openapi.acceptedResponse(openapi.schemaRef('DeploymentVersion'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),

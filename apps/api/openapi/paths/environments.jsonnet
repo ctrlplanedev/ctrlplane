@@ -15,6 +15,9 @@ local openapi = import '../lib/openapi.libsonnet';
     put: {
       summary: 'Upsert environment',
       operationId: 'upsertEnvironment',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
       requestBody: {
         required: true,
         content: {
@@ -23,7 +26,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('Environment')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('Environment')),
     },
   },
   '/v1/workspaces/{workspaceId}/environments/{environmentId}': {

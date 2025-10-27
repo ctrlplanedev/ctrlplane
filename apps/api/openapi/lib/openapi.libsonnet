@@ -21,6 +21,7 @@
   jobIdParam():: self.stringParam('jobId', 'ID of the job'),
   nameParam():: self.stringParam('name', 'Name of the resource provider'),
   identifierParam():: self.stringParam('identifier', 'Identifier of the resource'),
+  providerIdParam():: self.stringParam('providerId', 'ID of the resource provider'),
 
   limitParam(defaultValue = 50):: {
     name: 'limit',

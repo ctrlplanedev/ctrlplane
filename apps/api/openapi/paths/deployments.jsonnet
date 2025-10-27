@@ -26,7 +26,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.createdResponse(openapi.schemaRef('Deployment')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('Deployment')),
     },
   },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}': {
