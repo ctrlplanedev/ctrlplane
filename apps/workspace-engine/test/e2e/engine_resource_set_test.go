@@ -60,7 +60,7 @@ func TestEngine_ResourceProviderSetResources(t *testing.T) {
 	require.NotNil(t, r2.ProviderId, "res-2 should have a providerId")
 	require.Equal(t, providerID, *r2.ProviderId, "res-2 should have correct providerId")
 	require.False(t, r2.CreatedAt.IsZero(), "res-2 should have CreatedAt")
-	
+
 	// Store original timestamps for later comparison
 	r2OriginalCreatedAt := r2.CreatedAt
 

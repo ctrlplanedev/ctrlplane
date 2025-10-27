@@ -108,7 +108,6 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		}
 		return matchedResources[i].Name < matchedResources[j].Name
 	})
-	
 
 	// Get pagination parameters with defaults
 	limit := 50

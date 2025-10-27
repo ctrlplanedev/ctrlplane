@@ -2197,6 +2197,114 @@
             "summary": "Get environment"
          }
       },
+      "/v1/workspaces/{workspaceId}/environments/{environmentId}/release-targets": {
+         "get": {
+            "description": "Returns a list of release targets for an environment.",
+            "operationId": "getReleaseTargetsForEnvironment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/ReleaseTargetWithState"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get release targets for an environment"
+         }
+      },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}/resources": {
          "get": {
             "description": "Returns a paginated list of resources for environment {environmentId}.",
@@ -2477,39 +2585,39 @@
                   }
                }
             ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/JobAgent"
-                        }
-                     }
-                  },
-                  "description": "The requested job agent"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
             "summary": "Get job agent"
+         },
+         "responses": {
+            "200": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/JobAgent"
+                     }
+                  }
+               },
+               "description": "The requested job agent"
+            },
+            "400": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Invalid request"
+            },
+            "404": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Resource not found"
+            }
          }
       },
       "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/jobs": {
@@ -2559,65 +2667,65 @@
                   }
                }
             ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/Job"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
-                           },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "Paginated list of items"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
             "summary": "Get jobs for a job agent"
+         },
+         "responses": {
+            "200": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "items": {
+                              "items": {
+                                 "$ref": "#/components/schemas/Job"
+                              },
+                              "type": "array"
+                           },
+                           "limit": {
+                              "description": "Maximum number of items returned",
+                              "type": "integer"
+                           },
+                           "offset": {
+                              "description": "Number of items skipped",
+                              "type": "integer"
+                           },
+                           "total": {
+                              "description": "Total number of items available",
+                              "type": "integer"
+                           }
+                        },
+                        "required": [
+                           "items",
+                           "total",
+                           "limit",
+                           "offset"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "description": "Paginated list of items"
+            },
+            "400": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Invalid request"
+            },
+            "404": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Resource not found"
+            }
          }
       },
       "/v1/workspaces/{workspaceId}/jobs": {

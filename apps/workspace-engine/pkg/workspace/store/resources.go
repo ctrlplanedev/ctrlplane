@@ -37,7 +37,7 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	// Check if resource already exists to determine if we're creating or updating
 	existingResource, exists := r.repo.Resources.Get(resource.Id)
 	now := time.Now()
-	
+
 	if exists && existingResource != nil {
 		// Updating existing resource - preserve CreatedAt, set UpdatedAt
 		if !existingResource.CreatedAt.IsZero() {
@@ -192,13 +192,12 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 	))
 	defer span.End()
 
-
 	resources := make([]*oapi.Resource, 0, len(setResources))
 	newResourceIdentifiers := make(map[string]bool)
 
 	for _, resource := range setResources {
 		newResourceIdentifiers[resource.Identifier] = true
-		
+
 		// If resource exists, use its existing ID; otherwise generate a new UUID
 		existingResource, ok := r.GetByIdentifier(resource.Identifier)
 		if ok {
@@ -208,7 +207,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 			log.Warn("Creating new resource", "resource.identifier", resource.Identifier)
 			resource.Id = uuid.New().String()
 		}
-		
+
 		resources = append(resources, resource)
 	}
 

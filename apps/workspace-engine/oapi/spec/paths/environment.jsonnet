@@ -33,4 +33,20 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/environments/{environmentId}/release-targets': {
+    get: {
+      summary: 'Get release targets for an environment',
+      operationId: 'getReleaseTargetsForEnvironment',
+      description: 'Returns a list of release targets for an environment.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.environmentIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTargetWithState'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }
