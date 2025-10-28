@@ -66,12 +66,52 @@ func resourceHasChanges(existing, new *oapi.Resource) bool {
 	return false
 }
 
-func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.Resource, error) {
-	ctx, span := tracer.Start(ctx, "Upsert", trace.WithAttributes(
-		attribute.String("resource.id", resource.Id),
-	))
+// recomputeAll triggers recomputation for all environments, deployments, and release targets
+func (r *Resources) recomputeAll(ctx context.Context) {
+	ctx, span := tracer.Start(ctx, "RecomputeAll")
 	defer span.End()
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		ctx, span := tracer.Start(ctx, "RecomputeEnvironmentsResources")
+		defer span.End()
+
+		defer wg.Done()
+		for item := range r.store.Environments.IterBuffered() {
+			environment := item.Val
+			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "Failed to recompute resources for environment")
+				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
+			}
+		}
+	}()
+	go func() {
+		ctx, span := tracer.Start(ctx, "RecomputeDeploymentsResources")
+		defer span.End()
+
+		defer wg.Done()
+		for item := range r.store.Deployments.IterBuffered() {
+			deployment := item.Val
+			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "Failed to recompute resources for deployment")
+				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
+			}
+		}
+	}()
+	wg.Wait()
+
+	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
+		span.RecordError(err)
+		log.Error("Failed to recompute release targets", "error", err)
+	}
+}
+
+// upsertWithoutRecompute performs the upsert operation without triggering recomputation.
+// Returns true if there were meaningful changes that would require recomputation.
+func (r *Resources) upsertWithoutRecompute(ctx context.Context, resource *oapi.Resource) (bool, error) {
 	// Check if resource already exists to determine if we're creating or updating
 	existingResource, exists := r.repo.Resources.Get(resource.Id)
 	now := time.Now()
@@ -94,56 +134,35 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 
 	r.repo.Resources.Set(resource.Id, resource)
 
-	// Only trigger recomputation if there are actual changes
-	if hasChanges {
-		span.SetAttributes(attribute.Bool("recompute.triggered", true))
-		var wg sync.WaitGroup
-		wg.Add(2)
-		go func() {
-			ctx, span := tracer.Start(ctx, "RecomputeEnvironmentsResources")
-			defer span.End()
-
-			defer wg.Done()
-			for item := range r.store.Environments.IterBuffered() {
-				environment := item.Val
-				if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-					span.RecordError(err)
-					span.SetStatus(codes.Error, "Failed to recompute resources for environment")
-					log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
-				}
-			}
-		}()
-		go func() {
-			ctx, span := tracer.Start(ctx, "RecomputeDeploymentsResources")
-			defer span.End()
-
-			defer wg.Done()
-			for item := range r.store.Deployments.IterBuffered() {
-				deployment := item.Val
-				if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-					span.RecordError(err)
-					span.SetStatus(codes.Error, "Failed to recompute resources for deployment")
-					log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
-				}
-			}
-		}()
-		wg.Wait()
-
-		if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
-			span.RecordError(err)
-			log.Error("Failed to recompute release targets", "error", err)
-		}
-	} else {
-		span.SetAttributes(attribute.Bool("recompute.triggered", false))
-		span.AddEvent("Skipped recomputation - no meaningful changes detected")
-	}
-
 	if hasChanges {
 		if cs, ok := changeset.FromContext[any](ctx); ok {
 			cs.Record(changeset.ChangeTypeUpsert, resource)
 		}
 
 		r.store.changeset.RecordUpsert(resource)
+	}
+
+	return hasChanges, nil
+}
+
+func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.Resource, error) {
+	ctx, span := tracer.Start(ctx, "Upsert", trace.WithAttributes(
+		attribute.String("resource.id", resource.Id),
+	))
+	defer span.End()
+
+	hasChanges, err := r.upsertWithoutRecompute(ctx, resource)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only trigger recomputation if there are actual changes
+	if hasChanges {
+		span.SetAttributes(attribute.Bool("recompute.triggered", true))
+		r.recomputeAll(ctx)
+	} else {
+		span.SetAttributes(attribute.Bool("recompute.triggered", false))
+		span.AddEvent("Skipped recomputation - no meaningful changes detected")
 	}
 
 	return resource, nil
@@ -270,12 +289,27 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 		}
 	}
 
-	// Delete old resources
+	// Track if any resources were deleted (which requires recomputation)
+	hadDeletions := len(resourcesToDelete) > 0
+
+	// Delete old resources (but skip recomputation for now)
 	for _, resourceId := range resourcesToDelete {
-		r.Remove(ctx, resourceId)
+		resource, ok := r.repo.Resources.Get(resourceId)
+		if !ok || resource == nil {
+			continue
+		}
+
+		r.repo.Resources.Remove(resourceId)
+
+		if cs, ok := changeset.FromContext[any](ctx); ok {
+			cs.Record(changeset.ChangeTypeDelete, resource)
+		}
+
+		r.store.changeset.RecordDelete(resource)
 	}
 
-	// Upsert new resources, but only if they don't belong to another provider
+	// Upsert new resources without triggering recomputation, tracking if any changes occurred
+	hasAnyChanges := hadDeletions
 	for _, resource := range resources {
 		// Check if a resource with this identifier already exists
 		existingResource, exists := r.GetByIdentifier(resource.Identifier)
@@ -298,11 +332,27 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 		resource.ProviderId = &providerId
 
-		if _, err := r.Upsert(ctx, resource); err != nil {
+		hasChanges, err := r.upsertWithoutRecompute(ctx, resource)
+		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Failed to upsert resource")
 			return err
 		}
+
+		if hasChanges {
+			hasAnyChanges = true
+		}
+	}
+
+	// Single recomputation after all resources have been processed
+	if hasAnyChanges {
+		span.SetAttributes(attribute.Bool("recompute.triggered", true))
+		span.SetAttributes(attribute.Int("resources.upserted", len(resources)))
+		span.SetAttributes(attribute.Int("resources.deleted", len(resourcesToDelete)))
+		r.recomputeAll(ctx)
+	} else {
+		span.SetAttributes(attribute.Bool("recompute.triggered", false))
+		span.AddEvent("Skipped recomputation - no meaningful changes detected")
 	}
 
 	return nil
