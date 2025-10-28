@@ -92,7 +92,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	assert.Equal(t, system.Name, restoredSystem.Name)
 	assert.Equal(t, system.Description, restoredSystem.Description)
 
-	restoredResource, ok := testStore.Repo().Resources.Get(resource.Identifier)
+	restoredResource, ok := testStore.Repo().Resources.Get(resource.Id)
 	require.True(t, ok, "Resource should be restored")
 	assert.Equal(t, resource.Name, restoredResource.Name)
 	assert.Equal(t, resource.Kind, restoredResource.Kind)
@@ -141,13 +141,13 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 	// Wait a moment to ensure timestamp difference
 	time.Sleep(2 * time.Millisecond)
 
-	// Update resource with same Identifier (for compaction)
+	// Update resource with same ID (for compaction)
 	resource2 := &oapi.Resource{
-		Id:         uuid.New().String(), // Different ID is OK
+		Id:         resourceId, // Same ID for compaction (keyed by Id now)
 		Name:       "updated-name",
 		Kind:       "kubernetes",
 		Version:    "2.0.0",
-		Identifier: resourceIdentifier, // Same Identifier for compaction
+		Identifier: resourceIdentifier,
 		Metadata:   map[string]string{},
 		Config:     map[string]interface{}{},
 		CreatedAt:  time.Now(),
@@ -160,7 +160,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 	err = persistenceStore.Save(ctx, changes2)
 	require.NoError(t, err)
 
-	// Should still have only 1 entity due to compaction
+	// Should still have only 1 entity due to compaction (same Id)
 	assert.Equal(t, 1, persistenceStore.EntityCount(namespace))
 
 	// Load and verify we get the latest version
@@ -173,7 +173,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
-	restoredResource, ok := testStore.Repo().Resources.Get(resourceIdentifier)
+	restoredResource, ok := testStore.Repo().Resources.Get(resourceId)
 	require.True(t, ok)
 	assert.Equal(t, "updated-name", restoredResource.Name)
 	assert.Equal(t, "2.0.0", restoredResource.Version)
@@ -225,15 +225,15 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	// Apply to store and verify resource is removed
 	testStore := store.New(statechange.NewChangeSet[any]())
 	// First add it
-	testStore.Repo().Resources.Set(resourceIdentifier, resource)
-	require.True(t, testStore.Repo().Resources.Has(resourceIdentifier))
+	testStore.Repo().Resources.Set(resource.Id, resource)
+	require.True(t, testStore.Repo().Resources.Has(resource.Id))
 
 	// Now apply the unset change
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
 	// Resource should be removed
-	assert.False(t, testStore.Repo().Resources.Has(resourceIdentifier))
+	assert.False(t, testStore.Repo().Resources.Has(resource.Id))
 }
 
 // TestPersistence_MultipleNamespaces tests isolation between namespaces
@@ -466,7 +466,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok := testStore.Repo().Systems.Get(systemId)
 	assert.True(t, ok, "System should be restored")
 
-	_, ok = testStore.Repo().Resources.Get(resource.Identifier)
+	_, ok = testStore.Repo().Resources.Get(resource.Id)
 	assert.True(t, ok, "Resource should be restored")
 
 	_, ok = testStore.Repo().ResourceProviders.Get(resourceProvider.Id)
@@ -656,7 +656,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "Environment should be restored")
 	assert.Equal(t, "production", restoredEnv.Name)
 
-	restoredResource, ok := newStore.Repo().Resources.Get(resource.Identifier)
+	restoredResource, ok := newStore.Repo().Resources.Get(resource.Id)
 	require.True(t, ok, "Resource should be restored")
 	assert.Equal(t, "web-server-1", restoredResource.Name)
 	assert.Equal(t, "us-east-1", restoredResource.Metadata["cluster"])

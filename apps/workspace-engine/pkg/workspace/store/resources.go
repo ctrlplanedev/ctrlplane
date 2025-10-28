@@ -66,6 +66,52 @@ func resourceHasChanges(existing, new *oapi.Resource) bool {
 	return false
 }
 
+// getResourceChanges returns a list of field names that have changed between existing and new resource.
+// Returns nil if no changes detected.
+func getResourceChanges(existing, new *oapi.Resource) []string {
+	var changes []string
+
+	if existing.Name != new.Name {
+		changes = append(changes, "name")
+	}
+	if existing.Kind != new.Kind {
+		changes = append(changes, "kind")
+	}
+	if existing.Version != new.Version {
+		changes = append(changes, "version")
+	}
+	if existing.Identifier != new.Identifier {
+		changes = append(changes, "identifier")
+	}
+
+	// Check ProviderId changes
+	if (existing.ProviderId == nil) != (new.ProviderId == nil) {
+		changes = append(changes, "providerId")
+	} else if existing.ProviderId != nil && new.ProviderId != nil && *existing.ProviderId != *new.ProviderId {
+		changes = append(changes, "providerId")
+	}
+
+	// Check DeletedAt status
+	if (existing.DeletedAt == nil) != (new.DeletedAt == nil) {
+		changes = append(changes, "deletedAt")
+	}
+
+	// Check Metadata
+	if !reflect.DeepEqual(existing.Metadata, new.Metadata) {
+		changes = append(changes, "metadata")
+	}
+
+	// Check Config
+	if !reflect.DeepEqual(existing.Config, new.Config) {
+		changes = append(changes, "config")
+	}
+
+	if len(changes) == 0 {
+		return nil
+	}
+	return changes
+}
+
 // recomputeAll triggers recomputation for all environments, deployments, and release targets
 func (r *Resources) recomputeAll(ctx context.Context) {
 	ctx, span := tracer.Start(ctx, "RecomputeAll")
@@ -112,12 +158,41 @@ func (r *Resources) recomputeAll(ctx context.Context) {
 // upsertWithoutRecompute performs the upsert operation without triggering recomputation.
 // Returns true if there were meaningful changes that would require recomputation.
 func (r *Resources) upsertWithoutRecompute(ctx context.Context, resource *oapi.Resource) (bool, error) {
+	ctx, span := tracer.Start(ctx, "UpsertWithoutRecompute", trace.WithAttributes(
+		attribute.String("resource.id", resource.Id),
+		attribute.String("resource.identifier", resource.Identifier),
+		attribute.String("resource.name", resource.Name),
+		attribute.String("resource.kind", resource.Kind),
+		attribute.String("resource.version", resource.Version),
+	))
+	defer span.End()
+
 	// Check if resource already exists to determine if we're creating or updating
 	existingResource, exists := r.repo.Resources.Get(resource.Id)
 	now := time.Now()
 
+	// Determine operation type
+	isCreate := !exists || existingResource == nil
+	span.SetAttributes(attribute.Bool("operation.is_create", isCreate))
+
 	// Check if there are meaningful changes that would affect matching
-	hasChanges := !exists || existingResource == nil || resourceHasChanges(existingResource, resource)
+	hasChanges := isCreate || resourceHasChanges(existingResource, resource)
+	span.SetAttributes(attribute.Bool("resource.has_changes", hasChanges))
+
+	// Track specific field changes for updates
+	if !isCreate && hasChanges {
+		changedFields := getResourceChanges(existingResource, resource)
+		if changedFields != nil {
+			span.SetAttributes(attribute.StringSlice("resource.changed_fields", changedFields))
+			span.AddEvent("Resource updated", trace.WithAttributes(
+				attribute.StringSlice("fields", changedFields),
+			))
+		}
+	} else if isCreate {
+		span.AddEvent("New resource created")
+	} else {
+		span.AddEvent("No changes detected - resource unchanged")
+	}
 
 	if exists && existingResource != nil {
 		// Updating existing resource - preserve CreatedAt, set UpdatedAt
