@@ -1,4 +1,4 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import type { Operations } from "@ctrlplane/web-api";
 import * as core from "@actions/core";
 
 import { api } from "./sdk.js";
@@ -37,7 +37,8 @@ const setOutputsRecursively = (prefix: string | null, obj: any) => {
   if (prefix != null) setOutputAndLog(prefix, obj);
 };
 
-type Job = WorkspaceEngine["schemas"]["JobWithRelease"];
+type Job =
+  Operations["getJobWithRelease"]["responses"]["200"]["content"]["application/json"];
 
 type JobWithWorkspace = Job & {
   workspaceId: string;
@@ -45,7 +46,8 @@ type JobWithWorkspace = Job & {
 
 const getJob = async (jobId: string): Promise<JobWithWorkspace | null> => {
   const workspaceIdsResponse = await api.GET("/v1/workspaces");
-  const workspaceIds = workspaceIdsResponse.data?.workspaceIds ?? [];
+  const workspaces = workspaceIdsResponse.data?.workspaces ?? [];
+  const workspaceIds = workspaces.map(({ id }) => id);
 
   for (const workspaceId of workspaceIds) {
     const jobResponse = await api.GET(
@@ -71,6 +73,7 @@ async function run() {
   }
 
   const ghActionsJobObject = {
+    ...job.job,
     base: { url: baseUrl },
     variable: job.release.variables,
     resource: job.resource,

@@ -221,6 +221,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List jobs
+         * @description Returns a list of jobs.
+         */
+        get: operations["getJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get job
+         * @description Returns a specific job by ID.
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get job with release
+         * @description Returns a specific job by ID with its release.
+         */
+        get: operations["getJobWithRelease"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/policies": {
         parameters: {
             query?: never;
@@ -536,8 +596,43 @@ export interface components {
             error?: string;
         };
         IntegerValue: number;
+        Job: {
+            /** Format: date-time */
+            completedAt?: string;
+            /** Format: date-time */
+            createdAt: string;
+            externalId?: string;
+            id: string;
+            jobAgentConfig: {
+                [key: string]: unknown;
+            };
+            jobAgentId: string;
+            metadata: {
+                [key: string]: string;
+            };
+            releaseId: string;
+            /** Format: date-time */
+            startedAt?: string;
+            status: components["schemas"]["JobStatus"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
         /** @enum {string} */
         JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
+        JobUpdateEvent: {
+            agentId?: string;
+            externalId?: string;
+            fieldsToUpdate?: ("completedAt" | "createdAt" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "metadata" | "releaseId" | "startedAt" | "status" | "updatedAt")[];
+            id?: string;
+            job: components["schemas"]["Job"];
+        } & (unknown | unknown);
+        JobWithRelease: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            job: components["schemas"]["Job"];
+            release: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+        };
         JsonSelector: {
             json: {
                 [key: string]: unknown;
@@ -607,6 +702,20 @@ export interface components {
             toSelector?: components["schemas"]["Selector"];
             toType: components["schemas"]["RelatableEntityType"];
             workspaceId: string;
+        };
+        Release: {
+            createdAt: string;
+            encryptedVariables: string[];
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            variables: {
+                [key: string]: components["schemas"]["LiteralValue"];
+            };
+            version: components["schemas"]["DeploymentVersion"];
+        };
+        ReleaseTarget: {
+            deploymentId: string;
+            environmentId: string;
+            resourceId: string;
         };
         Resource: {
             config: {
@@ -1619,6 +1728,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Environment"];
+                };
+            };
+        };
+    };
+    getJobs: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["JobWithRelease"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the job */
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get job */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getJobWithRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the job */
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get job with release */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobWithRelease"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

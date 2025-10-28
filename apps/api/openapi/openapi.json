@@ -370,6 +370,62 @@
          "IntegerValue": {
             "type": "integer"
          },
+         "Job": {
+            "properties": {
+               "completedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "externalId": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "releaseId": {
+                  "type": "string"
+               },
+               "startedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/JobStatus"
+               },
+               "updatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "releaseId",
+               "jobAgentId",
+               "jobAgentConfig",
+               "status",
+               "createdAt",
+               "updatedAt",
+               "metadata"
+            ],
+            "type": "object"
+         },
          "JobStatus": {
             "enum": [
                "cancelled",
@@ -384,6 +440,82 @@
                "successful"
             ],
             "type": "string"
+         },
+         "JobUpdateEvent": {
+            "oneOf": [
+               {
+                  "required": [
+                     "id"
+                  ]
+               },
+               {
+                  "required": [
+                     "agentId",
+                     "externalId"
+                  ]
+               }
+            ],
+            "properties": {
+               "agentId": {
+                  "type": "string"
+               },
+               "externalId": {
+                  "type": "string"
+               },
+               "fieldsToUpdate": {
+                  "items": {
+                     "enum": [
+                        "completedAt",
+                        "createdAt",
+                        "externalId",
+                        "id",
+                        "jobAgentConfig",
+                        "jobAgentId",
+                        "metadata",
+                        "releaseId",
+                        "startedAt",
+                        "status",
+                        "updatedAt"
+                     ],
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "job": {
+                  "$ref": "#/components/schemas/Job"
+               }
+            },
+            "required": [
+               "job"
+            ],
+            "type": "object"
+         },
+         "JobWithRelease": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "job": {
+                  "$ref": "#/components/schemas/Job"
+               },
+               "release": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/Resource"
+               }
+            },
+            "required": [
+               "job",
+               "release"
+            ],
+            "type": "object"
          },
          "JsonSelector": {
             "properties": {
@@ -656,6 +788,58 @@
                "relationshipType",
                "metadata",
                "workspaceId"
+            ],
+            "type": "object"
+         },
+         "Release": {
+            "properties": {
+               "createdAt": {
+                  "type": "string"
+               },
+               "encryptedVariables": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "variables": {
+                  "additionalProperties": {
+                     "$ref": "#/components/schemas/LiteralValue"
+                  },
+                  "type": "object"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+               }
+            },
+            "required": [
+               "version",
+               "variables",
+               "encryptedVariables",
+               "releaseTarget",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "ReleaseTarget": {
+            "properties": {
+               "deploymentId": {
+                  "type": "string"
+               },
+               "environmentId": {
+                  "type": "string"
+               },
+               "resourceId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "resourceId",
+               "environmentId",
+               "deploymentId"
             ],
             "type": "object"
          },
@@ -2397,6 +2581,223 @@
                }
             },
             "summary": "Upsert environment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/jobs": {
+         "get": {
+            "description": "Returns a list of jobs.",
+            "operationId": "getJobs",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/JobWithRelease"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List jobs"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/jobs/{jobId}": {
+         "get": {
+            "description": "Returns a specific job by ID.",
+            "operationId": "getJob",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job",
+                  "in": "path",
+                  "name": "jobId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Job"
+                        }
+                     }
+                  },
+                  "description": "Get job"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get job"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release": {
+         "get": {
+            "description": "Returns a specific job by ID with its release.",
+            "operationId": "getJobWithRelease",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job",
+                  "in": "path",
+                  "name": "jobId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/JobWithRelease"
+                        }
+                     }
+                  },
+                  "description": "Get job with release"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get job with release"
          }
       },
       "/v1/workspaces/{workspaceId}/policies": {

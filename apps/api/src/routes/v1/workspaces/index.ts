@@ -15,6 +15,7 @@ import {
   listWorkspaces,
   updateWorkspace,
 } from "./handlers.js";
+import { jobsRouter } from "./jobs.js";
 import { policiesRouter } from "./policies.js";
 import { resourceProvidersRouter } from "./resource-providers.js";
 import { listResources } from "./resources.js";
@@ -41,4 +42,5 @@ export const createWorkspacesRouter = (): Router =>
     .use(
       "/:workspaceId/deploymentversions/:deploymentVersionId",
       deploymentVersionIdRouter,
-    );
+    )
+    .use("/:workspaceId/jobs", jobsRouter);
