@@ -2,9 +2,11 @@ import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type React from "react";
 import _ from "lodash";
 import { CheckCircle, Server, Shield } from "lucide-react";
+import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -61,25 +63,54 @@ const PendingActionsSection: React.FC<{
   environment: Environment;
 }> = ({ version, environment }) => {
   const { workspace } = useWorkspace();
+  const approveMutation = trpc.deploymentVersions.approve.useMutation();
   const decisionsQuery = trpc.decisions.environmentVersion.useQuery({
     workspaceId: workspace.id,
     environmentId: environment.id,
     versionId: version.id,
   });
-  const pendingActions = decisionsQuery.data ?? [];
+  const pendingActions = (decisionsQuery.data ?? []).flatMap(
+    (action) => action.ruleResults,
+  );
+  const approvalAction = pendingActions.find(
+    (action) => action.actionType === "approval",
+  );
 
-  if (pendingActions.length === 0) return null;
+  if (approvalAction == null) return null;
+
+  const onClick = () =>
+    approveMutation
+      .mutateAsync({
+        workspaceId: workspace.id,
+        deploymentVersionId: version.id,
+        environmentId: environment.id,
+        status: "approved",
+      })
+      .then(() => toast.success("Approval record queued successfully"));
 
   return (
-    <div className="space-y-1.5">
-      {pendingActions.map((action, idx) => (
-        <div key={idx}>
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-            <Shield className="h-3.5 w-3.5" />
-            <pre className="text-xs">{JSON.stringify(action, null, 2)}</pre>
+    <div className="space-y-1.5 rounded-md border p-2">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+        <div className="h-1.5 w-1.5 rounded-full bg-amber-500 p-1" />
+        Pending actions
+      </div>
+      <div className="space-y-1">
+        {pendingActions.map((action, idx) => (
+          <div key={idx} className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              {version.tag} - {action.message}
+            </div>
+            <Button
+              variant="secondary"
+              className="h-4 text-xs"
+              onClick={onClick}
+              disabled={approveMutation.isPending}
+            >
+              Approve
+            </Button>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

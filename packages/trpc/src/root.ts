@@ -1,4 +1,5 @@
 import { decisionsRouter } from "./routes/decisions.js";
+import { deploymentVersionsRouter } from "./routes/deployment-versions.js";
 import { deploymentsRouter } from "./routes/deployments.js";
 import { environmentRouter } from "./routes/environments.js";
 import { githubRouter } from "./routes/github.js";
@@ -20,6 +21,7 @@ export const appRouter = router({
   resource: resourcesRouter,
   workspace: workspaceRouter,
   deployment: deploymentsRouter,
+  deploymentVersions: deploymentVersionsRouter,
   system: systemsRouter,
   environment: environmentRouter,
   validate: validateRouter,
