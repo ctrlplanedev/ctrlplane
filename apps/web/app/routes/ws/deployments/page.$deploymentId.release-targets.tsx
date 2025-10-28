@@ -14,6 +14,7 @@ import {
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
+import { ResourceIcon } from "~/components/ui/resource-icon";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableRow } from "~/components/ui/table";
@@ -43,7 +44,13 @@ type ReleaseTarget = {
     environmentId: string;
     resourceId: string;
   };
-  resource?: { id: string; version: string; kind: string; identifier: string };
+  resource?: {
+    id: string;
+    name: string;
+    version: string;
+    kind: string;
+    identifier: string;
+  };
   environment?: {
     id: string;
     name: string;
@@ -125,7 +132,7 @@ const EnvironmentReleaseTargetsGroup: FC<
           </div>
         </TableCell>
       </TableRow>
-      {rts.map(({ releaseTarget, state }) => {
+      {rts.map(({ releaseTarget, state, resource }) => {
         const fromVersionRaw = state.currentRelease?.version.tag;
         const toVersion = state.desiredRelease?.version.tag ?? "unknown";
         const isInSync = !!fromVersionRaw && fromVersionRaw === toVersion;
@@ -145,7 +152,15 @@ const EnvironmentReleaseTargetsGroup: FC<
 
         return (
           <TableRow key={releaseTarget.resourceId}>
-            <TableCell>{releaseTarget.resourceId}</TableCell>
+            <TableCell>
+              <div className="flex items-center gap-2">
+                <ResourceIcon
+                  kind={resource?.kind ?? ""}
+                  version={resource?.version ?? ""}
+                />
+                {resource?.name}
+              </div>
+            </TableCell>
             <TableCell>
               {JobStatusDisplayName[state.latestJob?.status ?? "unknown"]}
             </TableCell>
