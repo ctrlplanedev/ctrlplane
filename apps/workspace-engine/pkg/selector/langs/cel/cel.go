@@ -3,9 +3,11 @@ package cel
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/util"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/ext"
 )
@@ -88,14 +90,12 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 
 	val, _, err := s.Program.Eval(celCtx)
 	if err != nil {
-		// Handle "no such key" errors gracefully by treating as non-match
-		// This allows expressions like resource.metadata['key'] == 'value' to work
-		// even when some resources don't have that metadata key
-		errMsg := err.Error()
-		if len(errMsg) >= 12 && errMsg[:12] == "no such key:" {
-			// Key doesn't exist on this resource, treat as non-match
+		// If the CEL expression fails due to a missing key, treat as non-match (false, nil)
+		if strings.Contains(err.Error(), "no such key:") {
 			return false, nil
 		}
+
+		log.Error("CEL Evaluation ERROR", "error", err)
 		return false, err
 	}
 

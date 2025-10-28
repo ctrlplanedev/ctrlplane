@@ -670,6 +670,101 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 			wantMatch: false,
 			wantErr:   false,
 		},
+		{
+			name:       "no such key error - metadata key does not exist",
+			expression: "resource.metadata['nonexistent-key'] == 'some-value'",
+			resource: oapi.Resource{
+				Id:   "18",
+				Name: "test-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"existing-key": "existing-value",
+				},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:       "no such key error - empty metadata map",
+			expression: "resource.metadata['any-key'] == 'any-value'",
+			resource: oapi.Resource{
+				Id:       "19",
+				Name:     "test-resource",
+				Kind:     "compute",
+				Metadata: map[string]string{},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:       "no such key error - nil metadata",
+			expression: "resource.metadata['key'] == 'value'",
+			resource: oapi.Resource{
+				Id:       "20",
+				Name:     "test-resource",
+				Kind:     "compute",
+				Metadata: nil,
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:       "no such key error - complex expression with missing key",
+			expression: "resource.metadata['env'] == 'production' && resource.metadata['region'] == 'us-east-1'",
+			resource: oapi.Resource{
+				Id:   "21",
+				Name: "test-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"env": "production",
+					// region key is missing
+				},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:       "no such key error - OR expression with missing key still matches",
+			expression: "resource.metadata['missing-key'] == 'value' || resource.kind == 'compute'",
+			resource: oapi.Resource{
+				Id:   "22",
+				Name: "test-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"other-key": "other-value",
+				},
+			},
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:       "no such key error - special character key that doesn't exist",
+			expression: "resource.metadata['google/missing-key'] == 'value'",
+			resource: oapi.Resource{
+				Id:   "23",
+				Name: "gcp-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"google/project": "wandb-qa",
+				},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:       "no such key error - nested condition with missing key",
+			expression: "(resource.metadata['env'] == 'production' || resource.metadata['env'] == 'staging') && resource.metadata['missing'] == 'value'",
+			resource: oapi.Resource{
+				Id:   "24",
+				Name: "test-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"env": "production",
+				},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
 	}
 
 	for _, tt := range tests {
