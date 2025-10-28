@@ -1,6 +1,5 @@
-import type { Edge, Node } from "reactflow";
-import { useCallback } from "react";
-import { useMount } from "react-use";
+import type { Edge, Node, ReactFlowInstance } from "reactflow";
+import { useCallback, useEffect, useRef } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -25,6 +24,7 @@ export const DeploymentFlow: React.FC<DeploymentFlowProps> = ({
 }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(computedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(computedEdges);
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
   const onLayout = useCallback(() => {
     const { nodes: layoutedNodes, edges: layoutedEdges } = layoutNodes(
@@ -36,7 +36,21 @@ export const DeploymentFlow: React.FC<DeploymentFlowProps> = ({
     setEdges(layoutedEdges);
   }, [nodes, edges, setNodes, setEdges]);
 
-  useMount(() => onLayout());
+  useEffect(() => {
+    if (computedNodes.length > 0) {
+      const { nodes: layoutedNodes, edges: layoutedEdges } = layoutNodes(
+        computedNodes,
+        computedEdges,
+      );
+      setNodes(layoutedNodes as Node[]);
+      setEdges(layoutedEdges);
+
+      // Fit view after layout is applied
+      setTimeout(() => {
+        reactFlowInstance.current?.fitView({ duration: 200 });
+      }, 0);
+    }
+  }, [computedNodes, computedEdges, setNodes, setEdges]);
 
   return (
     <ReactFlow
@@ -47,8 +61,11 @@ export const DeploymentFlow: React.FC<DeploymentFlowProps> = ({
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
       fitView
-      onInit={(reactFlowInstance) => {
-        reactFlowInstance.fitView({ duration: 200 });
+      onInit={(instance) => {
+        reactFlowInstance.current = instance;
+        setTimeout(() => {
+          instance.fitView({ duration: 200 });
+        }, 50);
       }}
       minZoom={0.5}
       maxZoom={1.5}
