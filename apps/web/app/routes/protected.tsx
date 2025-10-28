@@ -33,8 +33,8 @@ export default function ProtectedLayout() {
 
   if (workspace == null) return <Navigate to="/workspaces/create" replace />;
 
-  if (!location.pathname.startsWith(`/${workspaceSlug}`)) {
-    return <Navigate to={`/${workspaceSlug}/deployments`} replace />;
+  if (!location.pathname.startsWith(`/${workspace.slug}`)) {
+    return <Navigate to={`/${workspace.slug}/deployments`} replace />;
   }
 
   return (
