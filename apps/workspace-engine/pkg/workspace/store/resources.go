@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"reflect"
 	"sync"
 	"time"
 	"workspace-engine/pkg/changeset"
@@ -28,6 +29,43 @@ type Resources struct {
 	store *Store
 }
 
+// resourceHasChanges checks if a resource has meaningful changes that would affect matching.
+// It compares fields that are used in CEL filters and ignores timestamp/administrative fields.
+func resourceHasChanges(existing, new *oapi.Resource) bool {
+	// Compare simple string fields
+	if existing.Name != new.Name ||
+		existing.Kind != new.Kind ||
+		existing.Version != new.Version ||
+		existing.Identifier != new.Identifier {
+		return true
+	}
+
+	// Compare optional ProviderId
+	if (existing.ProviderId == nil) != (new.ProviderId == nil) {
+		return true
+	}
+	if existing.ProviderId != nil && new.ProviderId != nil && *existing.ProviderId != *new.ProviderId {
+		return true
+	}
+
+	// Compare DeletedAt status
+	if (existing.DeletedAt == nil) != (new.DeletedAt == nil) {
+		return true
+	}
+
+	// Compare Metadata map
+	if !reflect.DeepEqual(existing.Metadata, new.Metadata) {
+		return true
+	}
+
+	// Compare Config map
+	if !reflect.DeepEqual(existing.Config, new.Config) {
+		return true
+	}
+
+	return false
+}
+
 func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.Resource, error) {
 	ctx, span := tracer.Start(ctx, "Upsert", trace.WithAttributes(
 		attribute.String("resource.id", resource.Id),
@@ -37,6 +75,9 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	// Check if resource already exists to determine if we're creating or updating
 	existingResource, exists := r.repo.Resources.Get(resource.Id)
 	now := time.Now()
+
+	// Check if there are meaningful changes that would affect matching
+	hasChanges := !exists || existingResource == nil || resourceHasChanges(existingResource, resource)
 
 	if exists && existingResource != nil {
 		// Updating existing resource - preserve CreatedAt, set UpdatedAt
@@ -53,41 +94,48 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 
 	r.repo.Resources.Set(resource.Id, resource)
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		ctx, span := tracer.Start(ctx, "RecomputeEnvironmentsResources")
-		defer span.End()
+	// Only trigger recomputation if there are actual changes
+	if hasChanges {
+		span.SetAttributes(attribute.Bool("recompute.triggered", true))
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			ctx, span := tracer.Start(ctx, "RecomputeEnvironmentsResources")
+			defer span.End()
 
-		defer wg.Done()
-		for item := range r.store.Environments.IterBuffered() {
-			environment := item.Val
-			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, "Failed to recompute resources for environment")
-				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
+			defer wg.Done()
+			for item := range r.store.Environments.IterBuffered() {
+				environment := item.Val
+				if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+					span.RecordError(err)
+					span.SetStatus(codes.Error, "Failed to recompute resources for environment")
+					log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
+				}
 			}
-		}
-	}()
-	go func() {
-		ctx, span := tracer.Start(ctx, "RecomputeDeploymentsResources")
-		defer span.End()
+		}()
+		go func() {
+			ctx, span := tracer.Start(ctx, "RecomputeDeploymentsResources")
+			defer span.End()
 
-		defer wg.Done()
-		for item := range r.store.Deployments.IterBuffered() {
-			deployment := item.Val
-			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, "Failed to recompute resources for deployment")
-				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
+			defer wg.Done()
+			for item := range r.store.Deployments.IterBuffered() {
+				deployment := item.Val
+				if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+					span.RecordError(err)
+					span.SetStatus(codes.Error, "Failed to recompute resources for deployment")
+					log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
+				}
 			}
-		}
-	}()
-	wg.Wait()
+		}()
+		wg.Wait()
 
-	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
-		span.RecordError(err)
-		log.Error("Failed to recompute release targets", "error", err)
+		if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
+			span.RecordError(err)
+			log.Error("Failed to recompute release targets", "error", err)
+		}
+	} else {
+		span.SetAttributes(attribute.Bool("recompute.triggered", false))
+		span.AddEvent("Skipped recomputation - no meaningful changes detected")
 	}
 
 	if cs, ok := changeset.FromContext[any](ctx); ok {
