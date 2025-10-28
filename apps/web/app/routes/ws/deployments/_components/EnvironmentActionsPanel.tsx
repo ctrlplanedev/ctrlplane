@@ -1,7 +1,8 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import _ from "lodash";
 import { CheckCircle, Server, Shield } from "lucide-react";
 
-import type { DeploymentVersion, Environment, ReleaseTarget } from "./types";
+import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
 import {
   Dialog,
@@ -15,12 +16,20 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { rtid } from "./types";
+import { useWorkspace } from "~/components/WorkspaceProvider";
+
+type DeploymentVersion = WorkspaceEngine["schemas"]["DeploymentVersion"];
+type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
+
+const getReleaseTargetKey = (rt: ReleaseTarget) => {
+  return `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`;
+};
 
 type EnvironmentActionsPanelProps = {
-  environment: Environment;
-  versions: DeploymentVersion[];
-  releaseTargets: ReleaseTarget[];
+  environment: WorkspaceEngine["schemas"]["Environment"];
+  deploymentId: string;
+  versions: WorkspaceEngine["schemas"]["DeploymentVersion"][];
+  // releaseTargets: ReleaseTarget[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
@@ -47,7 +56,6 @@ const PoliciesSection: React.FC<{ policies: string[] }> = ({ policies }) => {
 
 const ResourceItem: React.FC<{
   releaseTarget: ReleaseTarget;
-  versions: DeploymentVersion[];
 }> = ({ releaseTarget: rt }) => {
   return (
     <Tooltip>
@@ -72,12 +80,20 @@ const ResourceItem: React.FC<{
         <div className="space-y-1">
           <div className="font-semibold">{rt.resource.name}</div>
           <div className="text-[11px]">
-            Current: <span className="font-mono">v1</span>
+            Current:{" "}
+            <span className="font-mono">
+              {rt.state.currentRelease?.version.tag ?? "-"}
+            </span>
           </div>
           <div className="text-[11px]">
-            Desired: <span className="font-mono">v1</span>
+            Desired:{" "}
+            <span className="font-mono">
+              {rt.state.desiredRelease?.version.tag ?? "-"}
+            </span>
           </div>
-          <div className="text-[11px] text-blue-400">Update in progress</div>
+          {rt.state.latestJob?.status === "inProgress" && (
+            <div className="text-[11px] text-blue-400">Update in progress</div>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>
@@ -113,7 +129,7 @@ const VersionGroup: React.FC<{
       {/* Resource List */}
       <div className="rounded-b border border-t-0">
         {resources.map((rt) => (
-          <ResourceItem key={rtid(rt)} releaseTarget={rt} versions={versions} />
+          <ResourceItem key={getReleaseTargetKey(rt)} releaseTarget={rt} />
         ))}
       </div>
     </div>
@@ -132,16 +148,27 @@ const EmptyState: React.FC = () => {
   );
 };
 
+const useReleaseTargets = (environmentId: string, deploymentId: string) => {
+  const { workspace } = useWorkspace();
+  const envReleaseTargetsQuery = trpc.environment.releaseTargets.useQuery({
+    workspaceId: workspace.id,
+    environmentId,
+  });
+  return (envReleaseTargetsQuery.data?.items ?? []).filter(
+    (rt) => rt.releaseTarget.deploymentId === deploymentId,
+  );
+};
+
 export const EnvironmentActionsPanel: React.FC<
   EnvironmentActionsPanelProps
-> = ({ environment, versions, releaseTargets, open, onOpenChange }) => {
-  // Filter release targets for this environment
-  const envReleaseTargets = releaseTargets.filter(
-    (rt) => rt.environment.id === environment.id,
-  );
+> = ({ environment, deploymentId, versions, open, onOpenChange }) => {
+  const envReleaseTargets = useReleaseTargets(environment.id, deploymentId);
 
   // Group resources by current version
-  const resourcesByVersion = _.groupBy(envReleaseTargets, () => "v1");
+  const resourcesByVersion = _.groupBy(
+    envReleaseTargets,
+    (target) => target.state.currentRelease?.version.id,
+  );
 
   // Calculate statistics
   const totalResources = envReleaseTargets.length;
@@ -163,7 +190,7 @@ export const EnvironmentActionsPanel: React.FC<
         <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-4 pb-4">
           <div className="space-y-4">
             {/* Policies */}
-            <PoliciesSection policies={environment.policies} />
+            {/* <PoliciesSection policies={environment.policies} /> */}
 
             {/* Resources grouped by version */}
             <div className="space-y-2">

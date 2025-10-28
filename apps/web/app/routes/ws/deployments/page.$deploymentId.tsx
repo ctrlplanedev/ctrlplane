@@ -21,6 +21,7 @@ import { CreateVersionDialog } from "./_components/CreateVersionDialog";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
+import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
 
@@ -115,6 +116,9 @@ export default function DeploymentDetail() {
     (v) => v.id === selectedVersionId,
   );
   const selectedEnvironmentId = searchParams.get("env");
+  const selectedEnvironment = availableEnvironments.find(
+    (e) => e.id === selectedEnvironmentId,
+  );
 
   const handleVersionSelect = useCallback(
     (versionId: string) => {
@@ -359,21 +363,17 @@ export default function DeploymentDetail() {
               )}
 
               {/* Environment Actions Dialog - TODO: Update types */}
-              {/* {selectedEnvironmentId && (
+              {selectedEnvironment != null && (
                 <EnvironmentActionsPanel
-                  environment={
-                    availableEnvironments.find(
-                      (e) => e.id === selectedEnvironmentId,
-                    )!
-                  }
+                  environment={selectedEnvironment}
+                  deploymentId={deployment.id}
                   versions={versions}
-                  releaseTargets={releaseTargets}
-                  open={!!selectedEnvironmentId}
-                  onOpenChange={(open) => {
+                  open={selectedEnvironmentId !== null}
+                  onOpenChange={(open: boolean) => {
                     if (!open) setSearchParams({});
                   }}
                 />
-              )} */}
+              )}
             </ResizablePanelGroup>
           </div>
         </>
