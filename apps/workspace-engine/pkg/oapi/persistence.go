@@ -6,7 +6,7 @@ import "strconv"
 // These enable entities to be persisted using the persistence layer
 
 func (r *Resource) CompactionKey() (string, string) {
-	return "resource", r.Identifier
+	return "resource", r.Id
 }
 
 func (rp *ResourceProvider) CompactionKey() (string, string) {

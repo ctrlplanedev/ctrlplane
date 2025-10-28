@@ -85,6 +85,12 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 			return nil, err
 		}
 
+		for id, resource := range ws.Resources().Items() {
+			if resource.Id != id {
+				ws.Resources().Remove(ctx, id)
+			}
+		}
+
 		globalManager.workspaces.Set(id, ws)
 
 		// Mark as ready
