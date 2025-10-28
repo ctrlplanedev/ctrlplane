@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"encoding/json"
-	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
@@ -74,13 +73,8 @@ func HandleResourceProviderSetResources(
 		resource.WorkspaceId = ws.ID
 	}
 
-	now := time.Now()
-	for _, resource := range payload.Resources {
-		resource.UpdatedAt = &now
-		if resource.CreatedAt.IsZero() {
-			resource.CreatedAt = now
-		}
-	}
+	// Note: Timestamp handling (CreatedAt/UpdatedAt) is managed by the Upsert function
+	// to ensure new resources only get CreatedAt, and existing resources get both
 
 	if err := ws.Resources().Set(ctx, payload.ProviderId, payload.Resources); err != nil {
 		return err
