@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
+	"workspace-engine/pkg/workspace"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,6 +49,40 @@ func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, 
 	})
 }
 
+func getMatchedResources(c *gin.Context, ws *workspace.Workspace, filter *oapi.Selector) ([]*oapi.Resource, error) {
+	allResources := ws.Resources().Items()
+	var matchedResources []*oapi.Resource
+	if filter == nil {
+		matchedResources = make([]*oapi.Resource, 0, len(allResources))
+		for _, resource := range allResources {
+			matchedResources = append(matchedResources, resource)
+		}
+
+		return matchedResources, nil
+	}
+
+	sel, err := filter.AsCelSelector()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert filter to cel selector: %w, %s", err, string(sel.Cel))
+	}
+
+	resourceSlice := make([]*oapi.Resource, 0, len(allResources))
+	for _, resource := range allResources {
+		resourceSlice = append(resourceSlice, resource)
+	}
+
+	// Filter resources using the selector
+	matchedResources, err = selector.Filter(
+		c.Request.Context(), filter, resourceSlice,
+		selector.WithChunking(100, 10),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to filter resources: %w", err)
+	}
+
+	return matchedResources, nil
+}
+
 func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oapi.QueryResourcesParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
@@ -66,39 +101,12 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		return
 	}
 
-	// Get all resources from workspace
-	allResources := ws.Resources().Items()
-	var matchedResources []*oapi.Resource
-
-	if body.Filter != nil {
-		sel, err := body.Filter.AsCelSelector()
-		if err == nil {
-			fmt.Println("Failed to convert filter to cel selector: ", string(sel.Cel))
-		}
-
-		// Convert to slice first
-		resourceSlice := make([]*oapi.Resource, 0, len(allResources))
-		for _, resource := range allResources {
-			resourceSlice = append(resourceSlice, resource)
-		}
-
-		// Filter resources using the selector
-		matchedResources, err = selector.Filter(
-			c.Request.Context(), body.Filter, resourceSlice,
-			selector.WithChunking(100, 10),
-		)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Failed to filter resources: " + err.Error(),
-			})
-			return
-		}
-	} else {
-		// No filter - directly convert to slice (skip map entirely)
-		matchedResources = make([]*oapi.Resource, 0, len(allResources))
-		for _, resource := range allResources {
-			matchedResources = append(matchedResources, resource)
-		}
+	matchedResources, err := getMatchedResources(c, ws, body.Filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get matched resources: " + err.Error(),
+		})
+		return
 	}
 
 	// Sort all matched resources (necessary for consistent pagination)
