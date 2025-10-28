@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { useSearchParams } from "react-router";
+import { useDebounce } from "react-use";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
@@ -20,15 +21,24 @@ import { ResourceRow } from "./resources/_components/ResourceRow";
 
 export default function Resources() {
   const { workspace } = useWorkspace();
-  const [searchQuery, setSearchQuery] = useState("");
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const cel = searchParams.get("cel");
+  const [search, setSearch] = useState(cel ?? "true");
+  const [searchDebounced, setSearchDebounced] = useState(search);
+  useDebounce(
+    () => {
+      setSearchDebounced(search);
+      setSearchParams({ cel: searchDebounced });
+    },
+    1_000,
+    [search],
+  );
 
   const { data: resources } = trpc.resource.list.useQuery(
     {
       workspaceId: workspace.id,
-      selector: { cel: cel ?? "true" },
+      selector: { cel: searchDebounced },
       limit: 200,
       offset: 0,
     },
@@ -71,8 +81,8 @@ export default function Resources() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search resources..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>

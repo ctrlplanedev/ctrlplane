@@ -7,12 +7,18 @@ import (
 	"workspace-engine/pkg/selector/langs/util"
 
 	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/ext"
 )
 
 var Env, _ = cel.NewEnv(
 	cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
 	cel.Variable("deployment", cel.MapType(cel.StringType, cel.AnyType)),
 	cel.Variable("environment", cel.MapType(cel.StringType, cel.AnyType)),
+
+	ext.Strings(),
+	ext.Math(),
+	ext.Lists(),
+	ext.Sets(),
 )
 
 func Compile(expression string) (util.MatchableCondition, error) {
