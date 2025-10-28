@@ -66,3 +66,7 @@ tsconfig.tsbuildinfo
 **/.next
 **/out/
 **/Dockerfile
+
+# Exclude integrations (GitHub Actions, etc.)
+integrations/
+github/
