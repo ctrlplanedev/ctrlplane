@@ -10,6 +10,16 @@ runs:
         node-version-file: ".nvmrc"
         cache: "pnpm"
 
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Install jsonnetfmt
+      shell: bash
+      run: |
+        go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest
+        echo "$HOME/go/bin" >> $GITHUB_PATH
+
     - shell: bash
       run: pnpm add -g turbo
 
