@@ -43,19 +43,20 @@ type DeploymentCardProps = {
   to: string;
 };
 // Components
-const DeploymentCard = forwardRef<HTMLAnchorElement, DeploymentCardProps>(
-  ({ children, to }, ref) => {
-    return (
-      <Link to={to} ref={ref} className="h-full">
-        <Card className="group flex h-full cursor-pointer flex-col transition-all hover:border-primary/50 hover:shadow-lg">
-          {children}
-        </Card>
-      </Link>
-    );
-  },
-);
+export const DeploymentCard = forwardRef<
+  HTMLAnchorElement,
+  DeploymentCardProps
+>(({ children, to }, ref) => {
+  return (
+    <Link to={to} ref={ref} className="h-full">
+      <Card className="group flex h-full cursor-pointer flex-col transition-all hover:border-primary/50 hover:shadow-lg">
+        {children}
+      </Card>
+    </Link>
+  );
+});
 
-function DeploymentCardHeader({
+export function DeploymentCardHeader({
   name,
   systemName,
   description,
@@ -83,7 +84,7 @@ function DeploymentCardHeader({
   );
 }
 
-function DeploymentCardContent({ children }: { children: ReactNode }) {
+export function DeploymentCardContent({ children }: { children: ReactNode }) {
   return (
     <CardContent className="flex flex-1 flex-col space-y-3">
       {children}
@@ -91,11 +92,11 @@ function DeploymentCardContent({ children }: { children: ReactNode }) {
   );
 }
 
-function DeploymentCardMetrics({ children }: { children: ReactNode }) {
+export function DeploymentCardMetrics({ children }: { children: ReactNode }) {
   return <div className="space-y-2 text-sm">{children}</div>;
 }
 
-function DeploymentCardMetricRow({
+export function DeploymentCardMetricRow({
   label,
   value,
 }: {
@@ -110,7 +111,7 @@ function DeploymentCardMetricRow({
   );
 }
 
-function DeploymentCardVersionMetric({
+export function DeploymentCardVersionMetric({
   tag,
   createdAt,
 }: {
@@ -200,7 +201,7 @@ const jobStatusIcons: Record<string, ReactNode> = {
   failure: <X className="size-2.5" />,
 };
 
-function DeploymentCardJobStatus({
+export function DeploymentCardJobStatus({
   jobStatusSummary,
 }: {
   jobStatusSummary: Record<string, number>;
@@ -266,7 +267,7 @@ function DeploymentCardJobStatus({
   );
 }
 
-function DeploymentCardViewButton() {
+export function DeploymentCardViewButton() {
   return (
     <Button variant="outline" className="mt-auto w-full" size="sm">
       View Details
@@ -279,7 +280,7 @@ type LazyLoadDeploymentCardProps = {
   system: { id: string; name: string };
 };
 
-const HealthStatusBadge: React.FC<{
+export const HealthStatusBadge: React.FC<{
   jobStatusSummary: Record<string, number>;
 }> = ({ jobStatusSummary }) => {
   const hasInProgress = jobStatusSummary.inProgress > 0;
@@ -328,7 +329,7 @@ const HealthStatusBadge: React.FC<{
   );
 };
 
-const AttentionBadge: React.FC<{ count: number }> = ({ count }) => {
+export const AttentionBadge: React.FC<{ count: number }> = ({ count }) => {
   return (
     <TooltipProvider>
       <Tooltip>
@@ -350,7 +351,7 @@ const AttentionBadge: React.FC<{ count: number }> = ({ count }) => {
   );
 };
 
-const SyncProgressBadge: React.FC<{ synced: number; total: number }> = ({
+export const SyncProgressBadge: React.FC<{ synced: number; total: number }> = ({
   synced,
   total,
 }) => {

@@ -52,6 +52,7 @@
     "date-fns": "^4.1.0",
     "isbot": "^5.1.31",
     "ldrs": "^1.1.9",
+    "lodash": "catalog:",
     "lucide-react": "^0.441.0",
     "next-themes": "^0.3.0",
     "openapi-fetch": "^0.13.8",
@@ -67,6 +68,7 @@
     "recharts": "2.15.4",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
+    "ts-is-present": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -75,6 +77,7 @@
     "@openapitools/openapi-generator-cli": "^2.21.0",
     "@react-router/dev": "^7.9.2",
     "@tailwindcss/vite": "^4.1.13",
+    "@types/lodash": "catalog:",
     "@types/node": "^22",
     "@types/react": "catalog:react19",
     "@types/react-dom": "catalog:react19",

@@ -608,6 +608,9 @@ importers:
       ldrs:
         specifier: ^1.1.9
         version: 1.1.9
+      lodash:
+        specifier: 'catalog:'
+        version: 4.17.21
       lucide-react:
         specifier: ^0.441.0
         version: 0.441.0(react@19.2.0)
@@ -653,6 +656,9 @@ importers:
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.0
+      ts-is-present:
+        specifier: 'catalog:'
+        version: 1.2.2
       zod:
         specifier: 'catalog:'
         version: 3.24.2
@@ -672,6 +678,9 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.1.13
         version: 4.1.14(vite@7.1.10(@types/node@22.16.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0))
+      '@types/lodash':
+        specifier: 'catalog:'
+        version: 4.17.12
       '@types/node':
         specifier: ^22
         version: 22.16.2

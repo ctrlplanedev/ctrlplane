@@ -10,6 +10,7 @@ import {
 } from "~/components/ui/breadcrumb";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { DeploymentSummaries } from "./_components/DeploymentSummaries";
 import { useEnvironment } from "./_components/EnvironmentProvider";
 import { EnvironmentsNavbarTabs } from "./_components/EnvironmentsNavbarTabs";
 
@@ -41,6 +42,8 @@ export default function EnvironmentPage() {
         </div>
         <EnvironmentsNavbarTabs environmentId={environment.id} />
       </header>
+
+      <DeploymentSummaries />
     </>
   );
 }
