@@ -2,7 +2,6 @@ package validators
 
 import (
 	"net/http"
-	"time"
 	"workspace-engine/pkg/oapi"
 	celSelector "workspace-engine/pkg/selector/langs/cel"
 
@@ -29,27 +28,7 @@ func (v *Validator) ValidateResourceSelector(c *gin.Context) {
 		return
 	}
 
-	condition, err := celSelector.Compile(cel.Cel)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"valid": false, "errors": []string{err.Error()}})
-		return
-	}
-
-	_, err = condition.Matches(oapi.Resource{
-		Id:   "1",
-		Name: "test-resource",
-		Kind: "service",
-		Metadata: map[string]string{
-			"env": "production",
-		},
-		CreatedAt:   time.Now(),
-		WorkspaceId: "1",
-		ProviderId:  nil,
-		Version:     "1",
-		Config: map[string]interface{}{
-			"env": "production",
-		},
-	})
+	_, err = celSelector.Compile(cel.Cel)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"valid": false, "errors": []string{err.Error()}})
 		return

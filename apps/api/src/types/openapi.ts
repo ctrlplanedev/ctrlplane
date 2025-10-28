@@ -93,7 +93,8 @@ export interface paths {
         get: operations["listDeployments"];
         /** Upsert deployment */
         put: operations["upsertDeployment"];
-        post?: never;
+        /** Create deployment */
+        post: operations["createDeployment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -109,7 +110,36 @@ export interface paths {
         };
         /** Get deployment */
         get: operations["getDeployment"];
-        put?: never;
+        /** Upsert deployment */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description ID of the workspace */
+                    workspaceId: string;
+                    /** @description ID of the deployment */
+                    deploymentId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpsertDeploymentRequest"];
+                };
+            };
+            responses: {
+                /** @description Accepted response */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Deployment"];
+                    };
+                };
+            };
+        };
         post?: never;
         /** Delete deployment */
         delete: operations["deleteDeployment"];
@@ -164,7 +194,8 @@ export interface paths {
         get: operations["listEnvironments"];
         /** Upsert environment */
         put: operations["upsertEnvironment"];
-        post?: never;
+        /** Create environment */
+        post: operations["createEnvironment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -392,6 +423,23 @@ export interface components {
         };
         CelSelector: {
             cel: string;
+        };
+        CreateDeploymentRequest: {
+            description?: string;
+            jobAgentConfig?: {
+                [key: string]: unknown;
+            };
+            jobAgentId?: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            slug: string;
+            systemId: string;
+        };
+        CreateEnvironmentRequest: {
+            description?: string;
+            name: string;
+            resourceSelector?: components["schemas"]["Selector"];
+            systemId: string;
         };
         CreateSystemRequest: {
             description?: string;
@@ -626,10 +674,6 @@ export interface components {
             slug: string;
             workspaceId: string;
         };
-        UpdateSystemRequest: {
-            description?: string;
-            name?: string;
-        };
         UpdateWorkspaceRequest: {
             /** @description Display name of the workspace */
             name?: string;
@@ -688,6 +732,10 @@ export interface components {
             metadata?: {
                 [key: string]: string;
             };
+            name: string;
+        };
+        UpsertSystemRequest: {
+            description?: string;
             name: string;
         };
         UpsertUserApprovalRecordRequest: {
@@ -1123,6 +1171,33 @@ export interface operations {
             };
         };
     };
+    createDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDeploymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Deployment"];
+                };
+            };
+        };
+    };
     getDeployment: {
         parameters: {
             query?: never;
@@ -1406,6 +1481,33 @@ export interface operations {
             };
         };
     };
+    createEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEnvironmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Environment"];
+                };
+            };
+        };
+    };
     getEnvironment: {
         parameters: {
             query?: never;
@@ -1463,7 +1565,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Environment"];
+                "application/json": components["schemas"]["UpsertEnvironmentRequest"];
             };
         };
         responses: {
@@ -2053,7 +2155,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["System"];
+                "application/json": components["schemas"]["UpsertSystemRequest"];
             };
         };
         responses: {

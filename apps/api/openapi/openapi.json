@@ -46,6 +46,59 @@
             ],
             "type": "object"
          },
+         "CreateDeploymentRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "slug": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "slug",
+               "name"
+            ],
+            "type": "object"
+         },
+         "CreateEnvironmentRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "name"
+            ],
+            "type": "object"
+         },
          "CreateSystemRequest": {
             "properties": {
                "description": {
@@ -799,17 +852,6 @@
             ],
             "type": "object"
          },
-         "UpdateSystemRequest": {
-            "properties": {
-               "description": {
-                  "type": "string"
-               },
-               "name": {
-                  "type": "string"
-               }
-            },
-            "type": "object"
-         },
          "UpdateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -977,6 +1019,20 @@
             },
             "required": [
                "id",
+               "name"
+            ],
+            "type": "object"
+         },
+         "UpsertSystemRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
                "name"
             ],
             "type": "object"
@@ -1571,6 +1627,43 @@
             },
             "summary": "List deployments"
          },
+         "post": {
+            "operationId": "createDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateDeploymentRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Deployment"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Create deployment"
+         },
          "put": {
             "operationId": "upsertDeployment",
             "parameters": [
@@ -1701,6 +1794,51 @@
                }
             },
             "summary": "Get deployment"
+         },
+         "put": {
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertDeploymentRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Deployment"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Upsert deployment"
          }
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions": {
@@ -2026,6 +2164,43 @@
             },
             "summary": "List environments"
          },
+         "post": {
+            "operationId": "createEnvironment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateEnvironmentRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Environment"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Create environment"
+         },
          "put": {
             "operationId": "upsertEnvironment",
             "parameters": [
@@ -2183,7 +2358,7 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/Environment"
+                        "$ref": "#/components/schemas/UpsertEnvironmentRequest"
                      }
                   }
                },
@@ -3118,7 +3293,7 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/System"
+                        "$ref": "#/components/schemas/UpsertSystemRequest"
                      }
                   }
                },

@@ -1,6 +1,16 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  CreateEnvironmentRequest: {
+    type: 'object',
+    required: ['systemId', 'name'],
+    properties: {
+      systemId: { type: 'string' },
+      name: { type: 'string' },
+      description: { type: 'string' },
+      resourceSelector: openapi.schemaRef('Selector'),
+    },
+  },
   UpsertEnvironmentRequest: {
     type: 'object',
     required: ['systemId', 'name'],
@@ -11,6 +21,7 @@ local openapi = import '../lib/openapi.libsonnet';
       resourceSelector: openapi.schemaRef('Selector'),
     },
   },
+
   Environment: {
     type: 'object',
     required: ['id', 'name', 'systemId', 'createdAt'],

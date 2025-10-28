@@ -68,7 +68,7 @@ local openapi = import '../lib/openapi.libsonnet';
         required: true,
         content: {
           'application/json': {
-            schema: openapi.schemaRef('System'),
+            schema: openapi.schemaRef('UpsertSystemRequest'),
           },
         },
       },

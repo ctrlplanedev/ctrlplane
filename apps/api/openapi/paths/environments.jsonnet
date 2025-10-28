@@ -12,6 +12,22 @@ local openapi = import '../lib/openapi.libsonnet';
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('EnvironmentAndSystem')),
     },
+    post: {
+      summary: 'Create environment',
+      operationId: 'createEnvironment',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('CreateEnvironmentRequest'),
+          },
+        },
+      },
+      responses: openapi.acceptedResponse(openapi.schemaRef('Environment')),
+    },
     put: {
       summary: 'Upsert environment',
       operationId: 'upsertEnvironment',
@@ -61,7 +77,7 @@ local openapi = import '../lib/openapi.libsonnet';
         required: true,
         content: {
           'application/json': {
-            schema: openapi.schemaRef('Environment'),
+            schema: openapi.schemaRef('UpsertEnvironmentRequest'),
           },
         },
       },

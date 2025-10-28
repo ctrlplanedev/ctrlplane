@@ -10,8 +10,9 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  UpdateSystemRequest: {
+  UpsertSystemRequest: {
     type: 'object',
+    required: ['name'],
     properties: {
       name: { type: 'string' },
       description: { type: 'string' },

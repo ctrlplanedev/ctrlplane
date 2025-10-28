@@ -7,6 +7,8 @@ import { v4 as uuidv4 } from "uuid";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
+import { validResourceSelector } from "../valid-selector.js";
+
 const listEnvironments: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/environments",
   "get"
@@ -50,6 +52,22 @@ const getExistingEnvironment = async (
   return environments.find((env) => env.name === name) ?? null;
 };
 
+const getExistingEnvironmentById = async (
+  workspaceId: string,
+  environmentId: string,
+) => {
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+    { params: { path: { workspaceId, environmentId } } },
+  );
+  if (response.error?.error != null)
+    throw new ApiError(response.error.error, 500);
+
+  if (response.data == null) return null;
+
+  return response.data;
+};
+
 const putEnvironment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/environments",
   "put"
@@ -78,6 +96,11 @@ const putEnvironment: AsyncTypedHandler<
       ...environment,
       id: existingEnvironment.id,
     };
+
+    const isValid = await validResourceSelector(body.resourceSelector);
+
+    if (!isValid) throw new ApiError("Invalid resource selector", 400);
+
     sendGoEvent({
       workspaceId,
       eventType: Event.EnvironmentUpdated,
@@ -139,8 +162,74 @@ const deleteEnvironment: AsyncTypedHandler<
   return;
 };
 
+const createEnvironment: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/environments",
+  "post"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const { body } = req;
+
+  const environment: WorkspaceEngine["schemas"]["Environment"] = {
+    id: uuidv4(),
+    createdAt: new Date().toISOString(),
+    ...body,
+  };
+
+  const isValid = await validResourceSelector(body.resourceSelector);
+
+  if (!isValid) throw new ApiError("Invalid resource selector", 400);
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.EnvironmentCreated,
+    timestamp: Date.now(),
+    data: environment,
+  });
+
+  res.status(202).json(environment);
+  return;
+};
+
+export const upsertEnvironmentById: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+  "put"
+> = async (req, res) => {
+  const { workspaceId, environmentId } = req.params;
+  const { body } = req;
+
+  const existingEnvironment = await getExistingEnvironmentById(
+    workspaceId,
+    environmentId,
+  );
+
+  if (existingEnvironment == null)
+    throw new ApiError("Environment not found", 404);
+
+  const mergedEnvironment = {
+    ...existingEnvironment,
+    ...body,
+    id: existingEnvironment.id,
+  };
+
+  const isValid = await validResourceSelector(body.resourceSelector);
+
+  if (!isValid) throw new ApiError("Invalid resource selector", 400);
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.EnvironmentUpdated,
+    timestamp: Date.now(),
+    data: mergedEnvironment,
+  });
+
+  res.status(200).json(mergedEnvironment);
+  return;
+};
+
 export const environmentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listEnvironments))
   .put("/", asyncHandler(putEnvironment))
+  .post("/", asyncHandler(createEnvironment))
   .get("/:environmentId", asyncHandler(getEnvironment))
+  .put("/:environmentId", asyncHandler(upsertEnvironmentById))
   .delete("/:environmentId", asyncHandler(deleteEnvironment));
