@@ -46,8 +46,8 @@ type DeploymentCardProps = {
 const DeploymentCard = forwardRef<HTMLAnchorElement, DeploymentCardProps>(
   ({ children, to }, ref) => {
     return (
-      <Link to={to} ref={ref}>
-        <Card className="group cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg">
+      <Link to={to} ref={ref} className="h-full">
+        <Card className="group h-full cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg">
           {children}
         </Card>
       </Link>
@@ -119,13 +119,22 @@ function DeploymentCardVersionMetric({
   });
   return (
     <>
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground">Latest Version</span>
-        <span className="font-mono">{tag}</span>
+      <div className="flex items-center justify-between gap-4">
+        <span className="shrink-0 text-muted-foreground">Version</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="truncate font-mono">{tag}</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{tag}</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground">Created</span>
-        <span className="flex items-center gap-1">{prettyCreatedAt}</span>
+      <div className="flex items-center justify-between gap-4">
+        <span className="shrink-0 text-muted-foreground">Created</span>
+        <span className="flex items-center gap-1 truncate">
+          {prettyCreatedAt}
+        </span>
       </div>
     </>
   );
