@@ -88,8 +88,17 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 
 	val, _, err := s.Program.Eval(celCtx)
 	if err != nil {
+		// Handle "no such key" errors gracefully by treating as non-match
+		// This allows expressions like resource.metadata['key'] == 'value' to work
+		// even when some resources don't have that metadata key
+		errMsg := err.Error()
+		if len(errMsg) >= 12 && errMsg[:12] == "no such key:" {
+			// Key doesn't exist on this resource, treat as non-match
+			return false, nil
+		}
 		return false, err
 	}
+
 	result := val.ConvertToType(cel.BoolType)
 	boolVal, ok := result.Value().(bool)
 	if !ok {

@@ -61,7 +61,7 @@ const MetadataSection: React.FC<{
           </div>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent className="space-y-0.5 pt-0">
+          <CardContent className="space-y-0.5 overflow-y-auto pt-0">
             {entries
               .sort((a, b) => a[0].localeCompare(b[0]))
               .map(([key, value]) => (
@@ -69,12 +69,12 @@ const MetadataSection: React.FC<{
                   key={key}
                   className="flex items-start gap-2 font-mono text-xs font-semibold"
                 >
-                  <span className="text-red-600">{key}:</span>
-                  <span className="text-green-700">
+                  <span className="shrink-0 text-red-600">{key}:</span>
+                  <pre className="text-green-700">
                     {typeof value === "string"
                       ? value
                       : JSON.stringify(value, null, 2)}
-                  </span>
+                  </pre>
                 </div>
               ))}
           </CardContent>

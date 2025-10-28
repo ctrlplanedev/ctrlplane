@@ -99,6 +99,12 @@ export const resourcesRouter = router({
         },
       );
 
+      if (result.error) {
+        throw new Error(
+          `Failed to query resources: ${JSON.stringify(result.error)}`,
+        );
+      }
+
       return result.data;
     }),
 

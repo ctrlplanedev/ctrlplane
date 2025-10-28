@@ -539,6 +539,137 @@ func TestMatch_CelSelector_Resource(t *testing.T) {
 			wantMatch: false,
 			wantErr:   false,
 		},
+		{
+			name:       "metadata key with forward slash match",
+			expression: "resource.metadata['google/project'] == 'wandb-qa'",
+			resource: oapi.Resource{
+				Id:   "9",
+				Name: "gcp-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"google/project": "wandb-qa",
+					"google/region":  "us-central1",
+				},
+			},
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key with forward slash no match",
+			expression: "resource.metadata['google/project'] == 'wandb-qa'",
+			resource: oapi.Resource{
+				Id:   "10",
+				Name: "gcp-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"google/project": "wandb-prod",
+					"google/region":  "us-central1",
+				},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key with multiple special characters",
+			expression: "resource.metadata['kubernetes.io/cluster-name'] == 'prod-cluster-01'",
+			resource: oapi.Resource{
+				Id:   "11",
+				Name: "k8s-node",
+				Kind: "node",
+				Metadata: map[string]string{
+					"kubernetes.io/cluster-name": "prod-cluster-01",
+					"kubernetes.io/role":         "worker",
+				},
+			},
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key with hyphen and namespace",
+			expression: "resource.metadata['app.kubernetes.io/name'] == 'nginx' && resource.metadata['app.kubernetes.io/version'] == '1.21.0'",
+			resource: oapi.Resource{
+				Id:   "12",
+				Name: "nginx-deployment",
+				Kind: "deployment",
+				Metadata: map[string]string{
+					"app.kubernetes.io/name":    "nginx",
+					"app.kubernetes.io/version": "1.21.0",
+				},
+			},
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key exists with forward slash - key present",
+			expression: "'google/project' in resource.metadata",
+			resource: oapi.Resource{
+				Id:   "13",
+				Name: "gcp-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"google/project": "wandb-qa",
+					"google/region":  "us-central1",
+				},
+			},
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key exists with forward slash - key absent",
+			expression: "'google/project' in resource.metadata",
+			resource: oapi.Resource{
+				Id:   "14",
+				Name: "gcp-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"google/region": "us-central1",
+				},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key exists with dots - key present",
+			expression: "'kubernetes.io/cluster-name' in resource.metadata",
+			resource: oapi.Resource{
+				Id:   "15",
+				Name: "k8s-node",
+				Kind: "node",
+				Metadata: map[string]string{
+					"kubernetes.io/cluster-name": "prod-cluster-01",
+				},
+			},
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key exists combined with value check",
+			expression: "'google/project' in resource.metadata && resource.metadata['google/project'] == 'wandb-qa'",
+			resource: oapi.Resource{
+				Id:   "16",
+				Name: "gcp-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"google/project": "wandb-qa",
+				},
+			},
+			wantMatch: true,
+			wantErr:   false,
+		},
+		{
+			name:       "metadata key exists but value doesn't match",
+			expression: "'google/project' in resource.metadata && resource.metadata['google/project'] == 'wandb-prod'",
+			resource: oapi.Resource{
+				Id:   "17",
+				Name: "gcp-resource",
+				Kind: "compute",
+				Metadata: map[string]string{
+					"google/project": "wandb-qa",
+				},
+			},
+			wantMatch: false,
+			wantErr:   false,
+		},
 	}
 
 	for _, tt := range tests {
