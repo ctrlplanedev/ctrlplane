@@ -111,16 +111,17 @@ const EnvironmentReleaseTargetsGroup: FC<
               size="icon"
               variant="ghost"
               onClick={() => setOpen(!open)}
-              className="size-5"
+              className="size-5 shrink-0"
             >
               <ChevronRight
                 className={cn("s-4 transition-transform", open && "rotate-90")}
               />
             </Button>
             <div className="grow">{environment.name} </div>
-            <pre className="text-xs text-muted-foreground">
-              {cel ?? jsonSelector}
-            </pre>
+            <span className="max-w-[60vw] shrink-0 truncate font-mono text-xs text-muted-foreground">
+              {cel?.replaceAll("\n", " ").trim() ??
+                jsonSelector?.trim().replaceAll("\n", " ")}
+            </span>
           </div>
         </TableCell>
       </TableRow>
