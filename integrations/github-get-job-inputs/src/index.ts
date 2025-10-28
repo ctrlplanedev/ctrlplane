@@ -1,3 +1,4 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import * as core from "@actions/core";
 
 import { api } from "./sdk.js";
@@ -36,73 +37,59 @@ const setOutputsRecursively = (prefix: string | null, obj: any) => {
   if (prefix != null) setOutputAndLog(prefix, obj);
 };
 
+type Job = WorkspaceEngine["schemas"]["JobWithRelease"];
+
+type JobWithWorkspace = Job & {
+  workspaceId: string;
+};
+
+const getJob = async (jobId: string): Promise<JobWithWorkspace | null> => {
+  const workspaceIdsResponse = await api.GET("/v1/workspaces");
+  const workspaceIds = workspaceIdsResponse.data?.workspaceIds ?? [];
+
+  for (const workspaceId of workspaceIds) {
+    const jobResponse = await api.GET(
+      "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release",
+      { params: { path: { workspaceId, jobId } } },
+    );
+
+    const job = jobResponse.data;
+    if (job != null) return { ...job, workspaceId };
+  }
+
+  return null;
+};
+
 async function run() {
   const jobId: string = core.getInput("job_id", { required: true });
   const baseUrl = core.getInput("base_url") || "https://app.ctrlplane.dev";
 
-  await api
-    .GET("/v1/jobs/{jobId}", {
-      params: { path: { jobId } },
-    })
-    .then(({ data }) => {
-      if (data == null) {
-        core.error(`Invalid Job data`);
-        return;
-      }
+  const job = await getJob(jobId);
+  if (job == null) {
+    core.setFailed(`Job not found: ${jobId}`);
+    return;
+  }
 
-      const {
-        variables,
-        resource,
-        version,
-        environment,
-        runbook,
-        deployment,
-        approval,
-      } = data;
+  const ghActionsJobObject = {
+    base: { url: baseUrl },
+    variable: job.release.variables,
+    resource: job.resource,
+    version: job.release.version,
+    workspace: { id: job.workspaceId },
+    environment: job.environment,
+    deployment: job.deployment,
+  };
 
-      setOutputsRecursively(null, {
-        base: { url: baseUrl },
-        variable: variables,
-        resource,
-        version,
-        workspace: { id: resource?.workspaceId },
-        environment: {
-          id: environment?.id,
-          name: environment?.name,
-        },
-        deployment: {
-          id: deployment?.id,
-          name: deployment?.name,
-        },
-        runbook,
-        approval,
-        system: {
-          id:
-            deployment?.systemId ?? runbook?.systemId ?? environment?.systemId,
-        },
-        agent: { id: deployment?.jobAgentId ?? runbook?.jobAgentId },
-      });
-    })
-    .then(() => {
-      if (requiredOutputs.length === 0) {
-        core.info("No required_outputs set for this job");
-        return;
-      }
+  setOutputsRecursively(null, ghActionsJobObject);
 
-      core.info(
-        `The required_outputs for this job are: ${requiredOutputs.join(", ")}`,
-      );
+  const missingOutputs = requiredOutputs.filter(
+    (output) => !outputTracker.has(output),
+  );
 
-      const missingOutputs = requiredOutputs.filter(
-        (output) => !outputTracker.has(output),
-      );
-
-      if (missingOutputs.length > 0)
-        core.setFailed(
-          `Missing required outputs: ${missingOutputs.join(", ")}`,
-        );
-    })
-    .catch((error) => core.setFailed(`Action failed: ${error.message}`));
+  if (missingOutputs.length > 0) {
+    core.setFailed(`Missing required outputs: ${missingOutputs.join(", ")}`);
+    return;
+  }
 }
 
 run();
