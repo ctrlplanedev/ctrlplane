@@ -47,6 +47,15 @@ export default function Environments() {
     workspaceId: workspace.id,
   });
   const systems = systemsQuery.data?.items ?? [];
+  const filteredEnvironments = environments.filter((e) => {
+    if (searchQuery) {
+      return e.name.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    if (systemFilter !== "all") {
+      return e.systemId === systemFilter;
+    }
+    return true;
+  });
 
   return (
     <>
@@ -120,7 +129,7 @@ export default function Environments() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {environments.map((environment) => (
+          {filteredEnvironments.map((environment) => (
             <EnvironmentCard
               key={environment.id}
               environment={environment}

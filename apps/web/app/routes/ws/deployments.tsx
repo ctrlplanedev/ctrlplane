@@ -47,6 +47,18 @@ export default function Deployments() {
     new Set(deploymentsWithSystems.map((d) => d.system.name)),
   );
 
+  const filteredDeployments = deploymentsWithSystems.filter((d) => {
+    if (searchQuery) {
+      return d.deployment.name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+    }
+    if (systemFilter !== "all") {
+      return d.system.name === systemFilter;
+    }
+    return true;
+  });
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
@@ -118,7 +130,7 @@ export default function Deployments() {
         <div
           className={"grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
         >
-          {deploymentsWithSystems.map(({ deployment, system }) => (
+          {filteredDeployments.map(({ deployment, system }) => (
             <LazyLoadDeploymentCard
               deployment={deployment}
               system={system}
