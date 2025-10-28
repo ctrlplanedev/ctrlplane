@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertCircle, MoreVertical, Trash2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -21,16 +21,16 @@ import {
 } from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { CreateSystemDialog } from "./_components/CreateSystemDialog";
+import {
+  SystemCard,
+  SystemCardContent,
+  SystemCardHeader,
+  SystemCardMetrics,
+} from "./systems/_components/SystemCard";
 
 export function meta() {
   return [
@@ -267,58 +267,26 @@ export default function Systems() {
               const isDefaultSystem =
                 system.id === "00000000-0000-0000-0000-000000000000";
               return (
-                <Card key={system.id}>
-                  <CardContent className="relative">
-                    <div className="absolute right-4 top-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={isDefaultSystem}
-                            onClick={() => {
-                              if (!isDefaultSystem) {
-                                setSystemToDelete({
-                                  id: system.id,
-                                  name: system.name,
-                                  workspaceId: system.workspaceId,
-                                });
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete System
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <h3 className="mb-2 pr-10 font-semibold">{system.name}</h3>
-                    {system.description && (
-                      <p className="mb-4 text-sm text-muted-foreground">
-                        {system.description}
-                      </p>
-                    )}
-                    <div className="flex gap-4 text-sm text-muted-foreground">
-                      <div>
-                        <span className="font-medium">{deploymentCount}</span>{" "}
-                        deployment{deploymentCount !== 1 ? "s" : ""}
-                      </div>
-                      <div>
-                        <span className="font-medium">{environmentCount}</span>{" "}
-                        environment{environmentCount !== 1 ? "s" : ""}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <SystemCard key={system.id}>
+                  <SystemCardContent>
+                    <SystemCardHeader
+                      name={system.name}
+                      description={system.description}
+                      isDefaultSystem={isDefaultSystem}
+                      onDelete={() => {
+                        setSystemToDelete({
+                          id: system.id,
+                          name: system.name,
+                          workspaceId: system.workspaceId,
+                        });
+                      }}
+                    />
+                    <SystemCardMetrics
+                      deploymentCount={deploymentCount}
+                      environmentCount={environmentCount}
+                    />
+                  </SystemCardContent>
+                </SystemCard>
               );
             })}
           </div>

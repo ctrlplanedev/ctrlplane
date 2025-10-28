@@ -181,6 +181,11 @@ export default function ReleaseTargetsPage() {
     workspaceId: workspace.id,
   });
 
+  const environments =
+    environmentsQuery.data?.items.filter(
+      (environment) => environment.systemId === deployment.systemId,
+    ) ?? [];
+
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];
 
   const groupByEnvironmentId = _.groupBy(
@@ -220,7 +225,7 @@ export default function ReleaseTargetsPage() {
       <div>
         <Table className="border-b">
           <TableBody>
-            {environmentsQuery.data?.items.map((environment) => {
+            {environments.map((environment) => {
               const releaseTargets = groupByEnvironmentId[environment.id] ?? [];
               return (
                 <EnvironmentReleaseTargetsGroup
