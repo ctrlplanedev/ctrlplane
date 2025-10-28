@@ -25,6 +25,7 @@ type DeploymentVersionStatus =
 type VersionCardProps = {
   version: {
     id: string;
+    name?: string;
     tag: string;
     status: DeploymentVersionStatus;
     createdAt: string;
@@ -78,6 +79,9 @@ export const VersionCard: React.FC<VersionCardProps> = ({
     currentReleaseTargets.length > 0 ||
     versionId === version.id ||
     desiredReleaseTargets.length > 0;
+
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+  const displayName = version.name || version.tag;
 
   // Calculate deployment states
   const deploymentStats = useMemo(() => {
@@ -148,7 +152,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
               {getVersionStatusIcon(version.status)}
             </span>
             <span className="flex-grow truncate overflow-ellipsis text-left">
-              {version.tag}
+              {displayName}
             </span>
             {/* <span className="ml-1 shrink-0 text-right text-xs text-muted-foreground">
               {prettyMs(Date.now() - new Date(version.createdAt).getTime(), {
@@ -183,7 +187,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
             {getVersionStatusIcon(version.status)}
           </span>
 
-          <span className="truncate">{version.tag}</span>
+          <span className="truncate">{displayName}</span>
         </div>
       </div>
 
