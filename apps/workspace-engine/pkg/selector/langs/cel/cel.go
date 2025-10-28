@@ -39,7 +39,7 @@ type CelSelector struct {
 }
 
 func (s *CelSelector) Matches(entity any) (bool, error) {
-	if s.Cel != "" {
+	if s.Cel == "" {
 		return false, fmt.Errorf("cel selector is empty")
 	}
 

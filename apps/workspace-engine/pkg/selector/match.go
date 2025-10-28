@@ -10,6 +10,20 @@ import (
 	"workspace-engine/pkg/selector/langs/util"
 )
 
+type NoMatchableCondition struct {
+}
+
+func (n *NoMatchableCondition) Matches(entity any) (bool, error) {
+	return false, nil
+}
+
+type YesMatchableCondition struct {
+}
+
+func (y *YesMatchableCondition) Matches(entity any) (bool, error) {
+	return true, nil
+}
+
 func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCondition, error) {
 	jsonSelector, err := selector.AsJsonSelector()
 	if err != nil {
@@ -19,12 +33,12 @@ func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCond
 	if len(jsonSelector.Json) != 0 {
 		unknownCondition, err := unknown.ParseFromMap(jsonSelector.Json)
 		if err != nil {
-			return nil, err
+			return &NoMatchableCondition{}, err
 		}
 
 		condition, err := jsonselector.ConvertToSelector(ctx, unknownCondition)
 		if err != nil {
-			return nil, err
+			return &NoMatchableCondition{}, err
 		}
 
 		return condition, nil
@@ -32,16 +46,16 @@ func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCond
 
 	cselSelector, err := selector.AsCelSelector()
 	if err != nil {
-		return nil, fmt.Errorf("selector is not a cel selector")
+		return &NoMatchableCondition{}, fmt.Errorf("selector is not a cel selector")
 	}
 
 	if cselSelector.Cel == "" {
-		return nil, fmt.Errorf("cel selector is empty")
+		return &NoMatchableCondition{}, fmt.Errorf("cel selector is empty")
 	}
 
 	condition, err := cel.Compile(cselSelector.Cel)
 	if err != nil {
-		return nil, err
+		return &NoMatchableCondition{}, err
 	}
 	return condition, nil
 
