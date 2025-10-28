@@ -535,8 +535,23 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 	}
 
 	// Update resource 3 to match the environment selector
-	r3.Metadata["region"] = "us-east-1"
-	engine.PushEvent(ctx, handler.ResourceUpdate, r3)
+	// Create a copy to avoid modifying the stored resource in-place
+	r3Updated := &oapi.Resource{
+		Id:          r3.Id,
+		WorkspaceId: r3.WorkspaceId,
+		Name:        r3.Name,
+		Kind:        r3.Kind,
+		Version:     r3.Version,
+		Identifier:  r3.Identifier,
+		Config:      r3.Config,
+		Metadata: map[string]string{
+			"priority": "critical",
+			"region":   "us-east-1", // Changed from us-west-1
+		},
+		ProviderId: r3.ProviderId,
+		CreatedAt:  r3.CreatedAt,
+	}
+	engine.PushEvent(ctx, handler.ResourceUpdate, r3Updated)
 
 	// Now r3 should create 1 more release target
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items(ctx)
