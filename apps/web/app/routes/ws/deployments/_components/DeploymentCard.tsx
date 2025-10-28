@@ -47,7 +47,7 @@ const DeploymentCard = forwardRef<HTMLAnchorElement, DeploymentCardProps>(
   ({ children, to }, ref) => {
     return (
       <Link to={to} ref={ref} className="h-full">
-        <Card className="group h-full cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg">
+        <Card className="group flex h-full cursor-pointer flex-col transition-all hover:border-primary/50 hover:shadow-lg">
           {children}
         </Card>
       </Link>
@@ -84,7 +84,11 @@ function DeploymentCardHeader({
 }
 
 function DeploymentCardContent({ children }: { children: ReactNode }) {
-  return <CardContent className="space-y-3">{children}</CardContent>;
+  return (
+    <CardContent className="flex flex-1 flex-col space-y-3">
+      {children}
+    </CardContent>
+  );
 }
 
 function DeploymentCardMetrics({ children }: { children: ReactNode }) {
@@ -264,7 +268,7 @@ function DeploymentCardJobStatus({
 
 function DeploymentCardViewButton() {
   return (
-    <Button variant="outline" className="w-full" size="sm">
+    <Button variant="outline" className="mt-auto w-full" size="sm">
       View Details
     </Button>
   );
