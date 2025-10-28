@@ -251,10 +251,8 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 		// If resource exists, use its existing ID; otherwise generate a new UUID
 		existingResource, ok := r.GetByIdentifier(resource.Identifier)
 		if ok {
-			log.Warn("Using existing resource", "resource.identifier", resource.Identifier, "resource.id", existingResource.Id)
 			resource.Id = existingResource.Id
 		} else if resource.Id == "" {
-			log.Warn("Creating new resource", "resource.identifier", resource.Identifier)
 			resource.Id = uuid.New().String()
 		}
 
@@ -300,7 +298,6 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 		resource.ProviderId = &providerId
 
-		log.Warn("Upserting resource", "resource.id", resource.Id)
 		if _, err := r.Upsert(ctx, resource); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Failed to upsert resource")
