@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Trash2 } from "lucide-react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -13,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
+import { Badge } from "~/components/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -25,12 +27,6 @@ import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { CreateSystemDialog } from "./_components/CreateSystemDialog";
-import {
-  SystemCard,
-  SystemCardContent,
-  SystemCardHeader,
-  SystemCardMetrics,
-} from "./systems/_components/SystemCard";
 
 export function meta() {
   return [
@@ -207,19 +203,21 @@ export default function Systems() {
     workspaceId: workspace.id,
   });
 
-  const systems = systemsData?.items ?? [];
+  const systems = (systemsData?.items ?? []).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   const deployments = deploymentsData?.items ?? [];
   const environments = environmentsData?.items ?? [];
 
-  // Count deployments and environments per system
-  const getSystemCounts = (systemId: string) => {
-    const deploymentCount = deployments.filter(
-      (d) => d.deployment.systemId === systemId,
-    ).length;
-    const environmentCount = environments.filter(
-      (e) => e.systemId === systemId,
-    ).length;
-    return { deploymentCount, environmentCount };
+  // Get deployments and environments for a specific system
+  const getSystemResources = (systemId: string) => {
+    const systemDeployments = deployments
+      .filter((d) => d.deployment.systemId === systemId)
+      .sort((a, b) => a.deployment.name.localeCompare(b.deployment.name));
+    const systemEnvironments = environments
+      .filter((e) => e.systemId === systemId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return { systemDeployments, systemEnvironments };
   };
 
   return (
@@ -248,7 +246,7 @@ export default function Systems() {
         {/* Loading State */}
         {isLoadingSystems && (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
+            <CardContent className="flex flex-col items-center justify-center py-4">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               <p className="mt-4 text-sm text-muted-foreground">
                 Loading systems...
@@ -257,36 +255,115 @@ export default function Systems() {
           </Card>
         )}
 
-        {/* Systems Grid */}
+        {/* Systems List */}
         {!isLoadingSystems && systems.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="space-y-2">
             {systems.map((system) => {
-              const { deploymentCount, environmentCount } = getSystemCounts(
-                system.id,
-              );
+              const { systemDeployments, systemEnvironments } =
+                getSystemResources(system.id);
               const isDefaultSystem =
                 system.id === "00000000-0000-0000-0000-000000000000";
               return (
-                <SystemCard key={system.id}>
-                  <SystemCardContent>
-                    <SystemCardHeader
-                      name={system.name}
-                      description={system.description}
-                      isDefaultSystem={isDefaultSystem}
-                      onDelete={() => {
-                        setSystemToDelete({
-                          id: system.id,
-                          name: system.name,
-                          workspaceId: system.workspaceId,
-                        });
-                      }}
-                    />
-                    <SystemCardMetrics
-                      deploymentCount={deploymentCount}
-                      environmentCount={environmentCount}
-                    />
-                  </SystemCardContent>
-                </SystemCard>
+                <Card key={system.id} className="overflow-hidden p-8">
+                  <CardContent className="m-0 p-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-3">
+                        {/* System Header */}
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-semibold">
+                            {system.name}
+                          </h3>
+                          {isDefaultSystem && (
+                            <Badge variant="outline" className="text-xs">
+                              Default
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* System Description */}
+                        {system.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {system.description}
+                          </p>
+                        )}
+
+                        {/* Deployments */}
+                        {systemDeployments.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Deployments ({systemDeployments.length})
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {systemDeployments.map((d) => (
+                                <Link
+                                  key={d.deployment.id}
+                                  to={`/${workspace.slug}/deployments/${d.deployment.id}`}
+                                >
+                                  <Badge
+                                    variant="secondary"
+                                    className="cursor-pointer bg-blue-100 text-blue-900 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30"
+                                  >
+                                    {d.deployment.name}
+                                  </Badge>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Environments */}
+                        {systemEnvironments.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Environments ({systemEnvironments.length})
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {systemEnvironments.map((e) => (
+                                <Link
+                                  key={e.id}
+                                  to={`/${workspace.slug}/environments/${e.id}`}
+                                >
+                                  <Badge
+                                    variant="secondary"
+                                    className="cursor-pointer bg-green-100 text-green-900 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/30"
+                                  >
+                                    {e.name}
+                                  </Badge>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Empty State for System */}
+                        {systemDeployments.length === 0 &&
+                          systemEnvironments.length === 0 && (
+                            <p className="text-sm text-muted-foreground">
+                              No deployments or environments
+                            </p>
+                          )}
+                      </div>
+
+                      {/* Delete Button */}
+                      {!isDefaultSystem && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSystemToDelete({
+                              id: system.id,
+                              name: system.name,
+                              workspaceId: system.workspaceId,
+                            });
+                          }}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
