@@ -6,7 +6,7 @@
     "start": "./bin/workspace-engine-router",
     "test": "go test ./...",
     "generate": "go generate ./...",
-    "format": "go fmt ./...",
+    "format": "bash -c 'go fmt ./...'",
     "clean": "go clean ./..."
   }
 }
