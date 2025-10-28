@@ -336,6 +336,8 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 	))
 	defer span.End()
 
+	// Phase 1: Prepare resources and lookup existing ones
+	_, prepSpan := tracer.Start(ctx, "Set.PrepareResources")
 	resources := make([]*oapi.Resource, 0, len(setResources))
 	newResourceIdentifiers := make(map[string]bool)
 
@@ -352,8 +354,10 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 		resources = append(resources, resource)
 	}
+	prepSpan.End()
 
-	// Find and delete resources that belong to this provider but aren't in the new set
+	// Phase 2: Find resources to delete
+	_, findDeleteSpan := tracer.Start(ctx, "Set.FindResourcesToDelete")
 	var resourcesToDelete []string
 	for item := range r.repo.Resources.IterBuffered() {
 		resource := item.Val
@@ -363,11 +367,14 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 			}
 		}
 	}
+	findDeleteSpan.SetAttributes(attribute.Int("resources.toDelete.count", len(resourcesToDelete)))
+	findDeleteSpan.End()
 
 	// Track if any resources were deleted (which requires recomputation)
 	hadDeletions := len(resourcesToDelete) > 0
 
-	// Delete old resources (but skip recomputation for now)
+	// Phase 3: Delete old resources (but skip recomputation for now)
+	_, deleteSpan := tracer.Start(ctx, "Set.DeleteResources")
 	for _, resourceId := range resourcesToDelete {
 		resource, ok := r.repo.Resources.Get(resourceId)
 		if !ok || resource == nil {
@@ -382,9 +389,15 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 		r.store.changeset.RecordDelete(resource)
 	}
+	deleteSpan.End()
 
-	// Upsert new resources without triggering recomputation, tracking if any changes occurred
+	// Phase 4: Upsert new resources without triggering recomputation
+	_, upsertSpan := tracer.Start(ctx, "Set.UpsertResources")
 	hasAnyChanges := hadDeletions
+	upsertedCount := 0
+	skippedCount := 0
+	changedCount := 0
+	
 	for _, resource := range resources {
 		// Check if a resource with this identifier already exists
 		existingResource, exists := r.GetByIdentifier(resource.Identifier)
@@ -398,6 +411,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 					"existingProviderId", *existingResource.ProviderId,
 					"newProviderId", providerId,
 				)
+				skippedCount++
 				continue
 			}
 			// If it belongs to this provider or has no provider, we'll update it
@@ -411,20 +425,30 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Failed to upsert resource")
+			upsertSpan.End()
 			return err
 		}
 
+		upsertedCount++
 		if hasChanges {
 			hasAnyChanges = true
+			changedCount++
 		}
 	}
+	upsertSpan.SetAttributes(
+		attribute.Int("resources.upserted", upsertedCount),
+		attribute.Int("resources.changed", changedCount),
+		attribute.Int("resources.skipped", skippedCount),
+	)
+	upsertSpan.End()
 
-	// Single recomputation after all resources have been processed
+	// Phase 5: Recomputation (if needed)
 	if hasAnyChanges {
+		_, recomputeSpan := tracer.Start(ctx, "Set.Recompute")
 		span.SetAttributes(attribute.Bool("recompute.triggered", true))
-		span.SetAttributes(attribute.Int("resources.upserted", len(resources)))
 		span.SetAttributes(attribute.Int("resources.deleted", len(resourcesToDelete)))
 		r.recomputeAll(ctx)
+		recomputeSpan.End()
 	} else {
 		span.SetAttributes(attribute.Bool("recompute.triggered", false))
 		span.AddEvent("Skipped recomputation - no meaningful changes detected")
