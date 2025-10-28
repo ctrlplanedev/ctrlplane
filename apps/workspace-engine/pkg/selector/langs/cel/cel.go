@@ -30,14 +30,27 @@ func Compile(expression string) (util.MatchableCondition, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &CelSelector{Program: program}, nil
+	return &CelSelector{Program: program, Cel: expression}, nil
 }
 
 type CelSelector struct {
 	Program cel.Program
+	Cel     string
 }
 
 func (s *CelSelector) Matches(entity any) (bool, error) {
+	if s.Cel != "" {
+		return false, fmt.Errorf("cel selector is empty")
+	}
+
+	if s.Cel == "true" {
+		return true, nil
+	}
+
+	if s.Cel == "false" {
+		return false, nil
+	}
+
 	celCtx := map[string]any{
 		"resource":    map[string]any{},
 		"deployment":  map[string]any{},

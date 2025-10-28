@@ -82,7 +82,10 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 			attribute.String("deployment.resource_selector", fmt.Sprintf("%v", deployment.ResourceSelector)),
 		)
 
-		deploymentResources, err := selector.FilterResources(ctx, deployment.ResourceSelector, items)
+		deploymentResources, err := selector.FilterResources(
+			ctx, deployment.ResourceSelector, items,
+			selector.WithChunking(100, 10),
+		)
 		if err != nil {
 			span.RecordError(err)
 			return nil, fmt.Errorf("failed to filter resources for deployment %s: %w", deploymentId, err)

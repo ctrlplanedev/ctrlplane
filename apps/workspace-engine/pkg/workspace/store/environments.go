@@ -68,7 +68,10 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 			attribute.Int("repo.resources_loaded", len(repoResources)),
 		)
 
-		environmentResources, err := selector.FilterResources(ctx, environment.ResourceSelector, repoResources)
+		environmentResources, err := selector.FilterResources(
+			ctx, environment.ResourceSelector, repoResources,
+			selector.WithChunking(100, 10),
+		)
 		if err != nil {
 			span.SetAttributes(
 				attribute.String("environment.resource_selector", fmt.Sprintf("%v", environment.ResourceSelector)),
