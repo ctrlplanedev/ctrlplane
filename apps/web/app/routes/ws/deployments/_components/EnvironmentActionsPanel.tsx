@@ -1,4 +1,5 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import type React from "react";
 import _ from "lodash";
 import { CheckCircle, Server, Shield } from "lucide-react";
 
@@ -20,6 +21,7 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 
 type DeploymentVersion = WorkspaceEngine["schemas"]["DeploymentVersion"];
 type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
+type Environment = WorkspaceEngine["schemas"]["Environment"];
 
 const getReleaseTargetKey = (rt: ReleaseTarget) => {
   return `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`;
@@ -50,6 +52,34 @@ const PoliciesSection: React.FC<{ policies: string[] }> = ({ policies }) => {
           </Badge>
         ))}
       </div>
+    </div>
+  );
+};
+
+const PendingActionsSection: React.FC<{
+  version: DeploymentVersion;
+  environment: Environment;
+}> = ({ version, environment }) => {
+  const { workspace } = useWorkspace();
+  const decisionsQuery = trpc.decisions.environmentVersion.useQuery({
+    workspaceId: workspace.id,
+    environmentId: environment.id,
+    versionId: version.id,
+  });
+  const pendingActions = decisionsQuery.data ?? [];
+
+  if (pendingActions.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      {pendingActions.map((action, idx) => (
+        <div key={idx}>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+            <Shield className="h-3.5 w-3.5" />
+            <pre className="text-xs">{JSON.stringify(action, null, 2)}</pre>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -191,6 +221,10 @@ export const EnvironmentActionsPanel: React.FC<
           <div className="space-y-4">
             {/* Policies */}
             {/* <PoliciesSection policies={environment.policies} /> */}
+            <PendingActionsSection
+              version={versions[0]}
+              environment={environment}
+            />
 
             {/* Resources grouped by version */}
             <div className="space-y-2">

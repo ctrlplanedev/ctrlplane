@@ -1,3 +1,4 @@
+import { decisionsRouter } from "./routes/decisions.js";
 import { deploymentsRouter } from "./routes/deployments.js";
 import { environmentRouter } from "./routes/environments.js";
 import { githubRouter } from "./routes/github.js";
@@ -29,4 +30,5 @@ export const appRouter = router({
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
   github: githubRouter,
+  decisions: decisionsRouter,
 });
