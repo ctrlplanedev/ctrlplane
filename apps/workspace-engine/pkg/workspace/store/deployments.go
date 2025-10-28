@@ -56,9 +56,12 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 			return nil, fmt.Errorf("deployment %s not found", deploymentId)
 		}
 
-		if deployment.ResourceSelector == nil {
-			deployment.ResourceSelector = &oapi.Selector{}
-			deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{
+		// Use the deployment's selector, or create a default "false" selector if nil
+		// IMPORTANT: Don't modify the stored deployment object - that causes races
+		resourceSelector := deployment.ResourceSelector
+		if resourceSelector == nil {
+			resourceSelector = &oapi.Selector{}
+			resourceSelector.FromCelSelector(oapi.CelSelector{
 				Cel: "false",
 			})
 		}
@@ -79,11 +82,11 @@ func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) mater
 
 		span.SetAttributes(
 			attribute.Int("repo.resource_count", resourceCount),
-			attribute.String("deployment.resource_selector", fmt.Sprintf("%v", deployment.ResourceSelector)),
+			attribute.String("deployment.resource_selector", fmt.Sprintf("%v", resourceSelector)),
 		)
 
 		deploymentResources, err := selector.FilterResources(
-			ctx, deployment.ResourceSelector, items,
+			ctx, resourceSelector, items,
 			selector.WithChunking(100, 10),
 		)
 		if err != nil {

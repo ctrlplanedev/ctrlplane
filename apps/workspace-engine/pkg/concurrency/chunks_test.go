@@ -517,5 +517,5 @@ func TestProcessInChunks_ErrorStopsProcessing(t *testing.T) {
 		t.Errorf("expected error %v, got %v", expectedErr, err)
 	}
 
-	t.Logf("Processed %d items before error", processedCount)
+	t.Logf("Processed %d items before error", atomic.LoadInt32(&processedCount))
 }
