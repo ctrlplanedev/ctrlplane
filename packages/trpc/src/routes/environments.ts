@@ -9,6 +9,25 @@ import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 import { protectedProcedure, router } from "../trpc.js";
 
 export const environmentRouter = router({
+  get: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid(), environmentId: z.string() }))
+    .query(async ({ input }) => {
+      const { workspaceId, environmentId } = input;
+      const result = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+        { params: { path: { workspaceId, environmentId } } },
+      );
+
+      if (!result.data) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Environment not found",
+        });
+      }
+
+      return result.data;
+    }),
+
   resources: protectedProcedure
     .input(
       z.object({

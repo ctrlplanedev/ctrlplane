@@ -2,6 +2,7 @@ package systems
 
 import (
 	"net/http"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 
@@ -78,6 +79,19 @@ func (s *Systems) ListSystems(c *gin.Context, workspaceId string, params oapi.Li
 	for _, system := range systems {
 		systemsList = append(systemsList, system)
 	}
+
+	sort.Slice(systemsList, func(i, j int) bool {
+		if systemsList[i] == nil && systemsList[j] == nil {
+			return false
+		}
+		if systemsList[i] == nil {
+			return false
+		}
+		if systemsList[j] == nil {
+			return true
+		}
+		return systemsList[i].Name < systemsList[j].Name
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,

@@ -12,6 +12,7 @@ import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useEnvironment } from "../_components/EnvironmentProvider";
+import { EnvironmentsNavbarTabs } from "../_components/EnvironmentsNavbarTabs";
 
 export default function EnvironmentsSettingsLayout() {
   const { workspace } = useWorkspace();
@@ -64,7 +65,7 @@ export default function EnvironmentsSettingsLayout() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* <DeploymentsNavbarTabs deploymentId={deployment.id} /> */}
+          <EnvironmentsNavbarTabs environmentId={environment.id} />
         </div>
       </header>
       <div className="container mx-auto flex max-w-6xl gap-8 py-20">
