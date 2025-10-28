@@ -56,7 +56,6 @@ export const workspaceEmailDomainMatchingRouter = createTRPCRouter({
         .map(() => Math.random().toString(36)[2])
         .join("");
       const email = ctx.session.user.email;
-      if (email == null) return;
 
       const domain = email.split("@")[1];
       if (domain == null) return;
