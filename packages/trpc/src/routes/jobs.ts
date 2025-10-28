@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -24,5 +25,50 @@ export const jobsRouter = router({
       );
 
       return jobs.data;
+    }),
+
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        jobId: z.string(),
+        status: z.enum([
+          "cancelled",
+          "skipped",
+          "inProgress",
+          "actionRequired",
+          "pending",
+          "failure",
+          "invalidJobAgent",
+          "invalidIntegration",
+          "externalRunNotFound",
+          "successful",
+        ]),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, jobId, status } = input;
+      const jobResponse = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/jobs/{jobId}",
+        { params: { path: { workspaceId, jobId } } },
+      );
+
+      if (jobResponse.data == null) throw new Error("Job not found");
+      const updatedJob = { ...jobResponse.data, status };
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.JobUpdated,
+        timestamp: Date.now(),
+        data: {
+          id: jobId,
+          job: updatedJob,
+          fieldsToUpdate: ["status"],
+          agentId: jobResponse.data.jobAgentId,
+          externalId: jobResponse.data.externalId,
+        },
+      });
+
+      return updatedJob;
     }),
 });
