@@ -129,7 +129,6 @@ function DeploymentSummaryMetrics({
 
 function DeploymentJobStatusSummary({
   releaseTargets,
-  isLoading,
 }: {
   releaseTargets: ReleaseTargetWithState[];
   isLoading: boolean;

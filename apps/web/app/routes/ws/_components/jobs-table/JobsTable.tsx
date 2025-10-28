@@ -52,7 +52,7 @@ function JobsTableRow({
         {resource?.name ?? <span className="text-muted-foreground">—</span>}
       </TableCell>
       <TableCell className="font-mono  font-medium">
-        {release.version.tag}
+        {release.version.name || release.version.tag}
       </TableCell>
       <TableCell className="font-mono  font-medium">
         {job.externalId ?? <span className="text-muted-foreground">—</span>}
