@@ -397,7 +397,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 	upsertedCount := 0
 	skippedCount := 0
 	changedCount := 0
-	
+
 	for _, resource := range resources {
 		// Check if a resource with this identifier already exists
 		existingResource, exists := r.GetByIdentifier(resource.Identifier)

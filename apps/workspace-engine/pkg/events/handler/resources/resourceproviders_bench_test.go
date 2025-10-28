@@ -102,7 +102,7 @@ func createTestResourceProvider(workspaceID, providerID, name string) *oapi.Reso
 func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) (*workspace.Workspace, string) {
 	workspaceID := uuid.New().String()
 	ctx := context.Background()
-	
+
 	// Create workspace properly
 	ws := workspace.New(ctx, workspaceID)
 
@@ -118,7 +118,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 		environmentID := uuid.New().String()
 		envName := fmt.Sprintf("env-%d", i)
 		env := createTestEnvironment(systemID, environmentID, envName)
-		
+
 		// Vary selectors for realism
 		if i%3 == 0 {
 			// Some environments filter by region
@@ -146,7 +146,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 			env.ResourceSelector = selector
 		}
 		// else: keep the default match-all selector
-		
+
 		if err := ws.Environments().Upsert(ctx, env); err != nil {
 			b.Fatalf("Failed to create environment: %v", err)
 		}
@@ -157,7 +157,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 		deploymentID := uuid.New().String()
 		deploymentName := fmt.Sprintf("deployment-%d", i)
 		deployment := createTestDeployment(systemID, deploymentID, deploymentName)
-		
+
 		// Vary selectors for realism
 		if i%2 == 0 {
 			// Some deployments have selective filters
@@ -168,7 +168,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 			deployment.ResourceSelector = selector
 		}
 		// else: keep the default match-all selector
-		
+
 		if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
 			b.Fatalf("Failed to create deployment: %v", err)
 		}
@@ -200,7 +200,7 @@ func BenchmarkHandleResourceProviderSetResources(b *testing.B) {
 				identifier := fmt.Sprintf("resource-%d", i)
 				name := fmt.Sprintf("Resource %d", i)
 				res := createTestResource(ws.ID, resourceID, identifier, name)
-				
+
 				// Add variety to metadata for realistic filtering
 				switch i % 3 {
 				case 0:
@@ -281,10 +281,10 @@ func BenchmarkHandleResourceProviderSetResources_ScaleEnvironments(b *testing.B)
 				b.Fatalf("Failed to marshal payload: %v", err)
 			}
 
-		event := handler.RawEvent{
-			EventType: handler.ResourceProviderSetResources,
-			Data:      payloadBytes,
-		}
+			event := handler.RawEvent{
+				EventType: handler.ResourceProviderSetResources,
+				Data:      payloadBytes,
+			}
 
 			// Reset timer to exclude setup time
 			b.ResetTimer()
@@ -331,10 +331,10 @@ func BenchmarkHandleResourceProviderSetResources_ScaleDeployments(b *testing.B) 
 				b.Fatalf("Failed to marshal payload: %v", err)
 			}
 
-		event := handler.RawEvent{
-			EventType: handler.ResourceProviderSetResources,
-			Data:      payloadBytes,
-		}
+			event := handler.RawEvent{
+				EventType: handler.ResourceProviderSetResources,
+				Data:      payloadBytes,
+			}
 
 			// Reset timer to exclude setup time
 			b.ResetTimer()
@@ -365,16 +365,16 @@ func BenchmarkHandleResourceProviderSetResources_HighLoad(b *testing.B) {
 		identifier := fmt.Sprintf("resource-%d", i)
 		name := fmt.Sprintf("Resource %d", i)
 		res := createTestResource(ws.ID, resourceID, identifier, name)
-		
+
 		// Add realistic metadata variety
 		regions := []string{"us-east-1", "us-west-1", "eu-west-1", "ap-south-1"}
 		res.Metadata["region"] = regions[i%len(regions)]
-		
+
 		envs := []string{"prod", "staging", "dev"}
 		res.Metadata["env"] = envs[i%len(envs)]
-		
+
 		res.Metadata["team"] = fmt.Sprintf("team-%d", i%10)
-		
+
 		resources[i] = res
 	}
 
@@ -388,13 +388,12 @@ func BenchmarkHandleResourceProviderSetResources_HighLoad(b *testing.B) {
 		b.Fatalf("Failed to marshal payload: %v", err)
 	}
 
-		event := handler.RawEvent{
-			EventType: handler.ResourceProviderSetResources,
-			Data:      payloadBytes,
-		}
+	event := handler.RawEvent{
+		EventType: handler.ResourceProviderSetResources,
+		Data:      payloadBytes,
+	}
 
 	// Reset timer to exclude setup time
-	
 
 	// Run benchmark
 	for b.Loop() {
@@ -432,10 +431,10 @@ func BenchmarkHandleResourceProviderSetResources_MemoryAllocation(b *testing.B) 
 		b.Fatalf("Failed to marshal payload: %v", err)
 	}
 
-		event := handler.RawEvent{
-			EventType: handler.ResourceProviderSetResources,
-			Data:      payloadBytes,
-		}
+	event := handler.RawEvent{
+		EventType: handler.ResourceProviderSetResources,
+		Data:      payloadBytes,
+	}
 
 	// Report allocations
 	b.ReportAllocs()
@@ -493,13 +492,13 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 	for i := 0; i < resourceCount; i++ {
 		identifier := fmt.Sprintf("resource-%d", i)
 		name := fmt.Sprintf("Updated Resource %d", i)
-		
+
 		// Get existing resource to use same ID
 		existingRes, exists := ws.Resources().GetByIdentifier(identifier)
 		if !exists {
 			b.Fatalf("Resource with identifier %s should exist", identifier)
 		}
-		
+
 		res := createTestResource(ws.ID, existingRes.Id, identifier, name)
 		res.Metadata["version"] = "2.0"
 		updatedResources[i] = res
@@ -531,4 +530,3 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 		}
 	}
 }
-

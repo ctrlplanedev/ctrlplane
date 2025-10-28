@@ -2889,6 +2889,65 @@
             "summary": "Get job"
          }
       },
+      "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release": {
+         "get": {
+            "description": "Returns a specific job by ID with its release.",
+            "operationId": "getJobWithRelease",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job",
+                  "in": "path",
+                  "name": "jobId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/JobWithRelease"
+                        }
+                     }
+                  },
+                  "description": "Get job with release"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get job with release"
+         }
+      },
       "/v1/workspaces/{workspaceId}/policies": {
          "get": {
             "description": "Returns a list of policies for workspace {workspaceId}.",

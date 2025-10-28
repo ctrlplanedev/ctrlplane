@@ -31,6 +31,64 @@ func (s *Jobs) GetJob(c *gin.Context, workspaceId string, jobId string) {
 	c.JSON(http.StatusOK, job)
 }
 
+func (s *Jobs) GetJobWithRelease(c *gin.Context, workspaceId string, jobId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	job, ok := ws.Jobs().Get(jobId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Job not found",
+		})
+		return
+	}
+
+	release, ok := ws.Releases().Get(job.ReleaseId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Release not found",
+		})
+		return
+	}
+
+	environment, ok := ws.Environments().Get(release.ReleaseTarget.EnvironmentId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Environment not found",
+		})
+		return
+	}
+
+	deployment, ok := ws.Deployments().Get(release.ReleaseTarget.DeploymentId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Deployment not found",
+		})
+		return
+	}
+
+	resource, ok := ws.Resources().Get(release.ReleaseTarget.ResourceId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Resource not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, &oapi.JobWithRelease{
+		Job:         *job,
+		Release:     *release,
+		Environment: environment,
+		Deployment:  deployment,
+		Resource:    resource,
+	})
+}
+
 func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {

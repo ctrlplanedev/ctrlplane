@@ -1353,6 +1353,9 @@ type ServerInterface interface {
 	// Get job
 	// (GET /v1/workspaces/{workspaceId}/jobs/{jobId})
 	GetJob(c *gin.Context, workspaceId string, jobId string)
+	// Get job with release
+	// (GET /v1/workspaces/{workspaceId}/jobs/{jobId}/with-release)
+	GetJobWithRelease(c *gin.Context, workspaceId string, jobId string)
 	// List policies
 	// (GET /v1/workspaces/{workspaceId}/policies)
 	ListPolicies(c *gin.Context, workspaceId string)
@@ -2189,6 +2192,39 @@ func (siw *ServerInterfaceWrapper) GetJob(c *gin.Context) {
 	siw.Handler.GetJob(c, workspaceId, jobId)
 }
 
+// GetJobWithRelease operation middleware
+func (siw *ServerInterfaceWrapper) GetJobWithRelease(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "jobId" -------------
+	var jobId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "jobId", c.Param("jobId"), &jobId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter jobId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetJobWithRelease(c, workspaceId, jobId)
+}
+
 // ListPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
 
@@ -2738,6 +2774,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/job-agents/:jobAgentId/jobs", wrapper.GetJobsForJobAgent)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs", wrapper.GetJobs)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs/:jobId", wrapper.GetJob)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs/:jobId/with-release", wrapper.GetJobWithRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies", wrapper.ListPolicies)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
