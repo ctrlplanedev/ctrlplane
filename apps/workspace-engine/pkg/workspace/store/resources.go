@@ -138,11 +138,13 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		span.AddEvent("Skipped recomputation - no meaningful changes detected")
 	}
 
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, resource)
-	}
+	if hasChanges {
+		if cs, ok := changeset.FromContext[any](ctx); ok {
+			cs.Record(changeset.ChangeTypeUpsert, resource)
+		}
 
-	r.store.changeset.RecordUpsert(resource)
+		r.store.changeset.RecordUpsert(resource)
+	}
 
 	return resource, nil
 }
