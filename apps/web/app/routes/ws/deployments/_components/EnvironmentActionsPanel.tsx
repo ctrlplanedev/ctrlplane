@@ -1,34 +1,20 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type React from "react";
 import { IconCircleCheck, IconCircleX } from "@tabler/icons-react";
-import _ from "lodash";
-import { CheckCircle, Server, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "~/components/ui/tooltip";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 
 type DeploymentVersion = WorkspaceEngine["schemas"]["DeploymentVersion"];
-type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
 type Environment = WorkspaceEngine["schemas"]["Environment"];
-
-const getReleaseTargetKey = (rt: ReleaseTarget) => {
-  return `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`;
-};
 
 type EnvironmentActionsPanelProps = {
   environment: WorkspaceEngine["schemas"]["Environment"];
@@ -110,69 +96,9 @@ const PendingActionsSection: React.FC<{
   );
 };
 
-const ResourceItem: React.FC<{
-  releaseTarget: ReleaseTarget;
-}> = ({ releaseTarget: rt }) => {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-center justify-between border-b px-2 py-1.5 last:border-b-0 hover:bg-muted/50">
-          <div className="flex items-center gap-1.5">
-            <div className="flex h-5 w-5 items-center justify-center rounded bg-muted">
-              <Server className="h-3 w-3 text-muted-foreground" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs">{rt.resource.name}</span>
-              <span className="text-[10px] text-muted-foreground">
-                {rt.resource.kind}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5"></div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className="space-y-1">
-          <div className="font-semibold">{rt.resource.name}</div>
-          <div className="text-[11px]">
-            Current:{" "}
-            <span className="font-mono">
-              {rt.state.currentRelease?.version.tag ?? "-"}
-            </span>
-          </div>
-          <div className="text-[11px]">
-            Desired:{" "}
-            <span className="font-mono">
-              {rt.state.desiredRelease?.version.tag ?? "-"}
-            </span>
-          </div>
-          {rt.state.latestJob?.status === "inProgress" && (
-            <div className="text-[11px] text-blue-400">Update in progress</div>
-          )}
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
-
-const useReleaseTargets = (environmentId: string, deploymentId: string) => {
-  const { workspace } = useWorkspace();
-  const envReleaseTargetsQuery = trpc.environment.releaseTargets.useQuery({
-    workspaceId: workspace.id,
-    environmentId,
-  });
-  return (envReleaseTargetsQuery.data?.items ?? []).filter(
-    (rt) => rt.releaseTarget.deploymentId === deploymentId,
-  );
-};
-
 export const EnvironmentActionsPanel: React.FC<
   EnvironmentActionsPanelProps
-> = ({ environment, deploymentId, versions, open, onOpenChange }) => {
-  const envReleaseTargets = useReleaseTargets(environment.id, deploymentId);
-  const totalResources = envReleaseTargets.length;
-
+> = ({ environment, versions, open, onOpenChange }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
