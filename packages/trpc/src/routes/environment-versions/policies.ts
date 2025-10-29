@@ -1,9 +1,16 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import _ from "lodash";
 import { z } from "zod";
 
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure } from "../../trpc.js";
 import { getDeploymentVersion } from "./util.js";
+
+const key = (
+  releaseTarget: WorkspaceEngine["schemas"]["ReleaseTargetWithState"],
+) =>
+  `${releaseTarget.resource.id}-${releaseTarget.environment.id}-${releaseTarget.releaseTarget.deploymentId}`;
 
 const getAllReleaseTargets = async (
   workspaceId: string,
@@ -18,6 +25,18 @@ const getAllReleaseTargets = async (
   const envTargets = response.data?.items ?? [];
 
   return envTargets.filter((target) => target.deployment.id === deploymentId);
+};
+
+const getPoliciesForReleaseTarget = async (
+  workspaceId: string,
+  releaseTarget: WorkspaceEngine["schemas"]["ReleaseTargetWithState"],
+) => {
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies",
+    { params: { path: { workspaceId, releaseTargetKey: key(releaseTarget) } } },
+  );
+  if (response.error?.error != null) throw new Error(response.error.error);
+  return response.data?.policies ?? [];
 };
 
 export const policies = protectedProcedure
@@ -38,7 +57,10 @@ export const policies = protectedProcedure
       deploymentId,
     );
 
-    console.log(releaseTargets);
-
-    return Promise.resolve([]);
+    const allPolicies = await Promise.all(
+      releaseTargets.map((target) =>
+        getPoliciesForReleaseTarget(workspaceId, target),
+      ),
+    );
+    return _.intersectionBy(...allPolicies, (policy) => policy.id);
   });
