@@ -44,7 +44,7 @@ func createTestRelationshipRule(id, reference, workspaceID, relType string, from
 
 // setupRelationshipBenchmarkStore creates a store with test data for relationship benchmarks
 func setupRelationshipBenchmarkStore(
-	b *testing.B,
+	_ *testing.B,
 	workspaceID string,
 	numResources, numDeployments, numEnvironments, numRules int,
 ) *Store {

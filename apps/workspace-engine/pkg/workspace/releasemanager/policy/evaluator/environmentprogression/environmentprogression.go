@@ -128,115 +128,56 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.checkDependencyEnvironments")
 	defer span.End()
 
-	var allowedResults []*oapi.RuleEvaluation
-	var failedResults []*oapi.RuleEvaluation
+	allowedResults := make(map[string]*oapi.RuleEvaluation)
+	failedResults := make(map[string]*oapi.RuleEvaluation)
 
 	for _, depEnv := range dependencyEnvs {
-		result, err := e.checkSingleEnvironment(
+		result, err := e.evaluateJobSuccessCriteria(
 			ctx,
-			depEnv,
 			version,
+			depEnv,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check single environment: %w", err)
+			return nil, fmt.Errorf("failed to evaluate job success criteria: %w", err)
 		}
 
 		if result.Allowed {
-			allowedResults = append(allowedResults, result)
-			continue
-		}
-		failedResults = append(failedResults, result)
-	}
-
-	// By default, we require any dependency environment to succeed (OR logic)
-	// This is useful for regional deployments where you need it in ANY staging region
-	if len(allowedResults) > 0 {
-		// Use the first allowed result and add aggregate details
-		result := allowedResults[0]
-		return result.
-			WithDetail("dependency_environment_count", len(dependencyEnvs)).
-			WithDetail("version_id", version.Id), nil
-	}
-
-	// All dependency environments failed
-	if len(failedResults) == 0 {
-		return results.NewDeniedResult("Version has not been deployed to any dependency environment").
-			WithDetail("dependency_environment_count", len(dependencyEnvs)).
-			WithDetail("version_id", version.Id), nil
-	}
-
-	// Merge all failed results - collect messages and details from the first pending/denied result
-	var failureMessages []string
-	var mergedResult *oapi.RuleEvaluation
-
-	for _, failedResult := range failedResults {
-		envName := ""
-		if name, ok := failedResult.Details["environment_name"].(string); ok {
-			envName = name
-		}
-		failureMessages = append(failureMessages, fmt.Sprintf("%s: %s", envName, failedResult.Message))
-
-		// Use the first result as the base (preserves things like soak_finish_time)
-		if mergedResult == nil {
-			mergedResult = failedResult
+			allowedResults[depEnv.Id] = result
+		} else {
+			failedResults[depEnv.Id] = result
 		}
 	}
 
-	// Update the message with all failure reasons
-	mergedResult.Message = fmt.Sprintf(
-		"Version not successful in dependency environment(s): %v",
-		failureMessages,
-	)
+	if len(failedResults) > 0 {
+		failureResult := results.NewDeniedResult("Version not successful in dependency environment(s)").
+			WithDetail("environment_count", len(dependencyEnvs)).
+			WithDetail("version_id", version.Id).
+			WithDetail("failed_environments", len(failedResults))
 
-	return mergedResult.
-		WithDetail("dependency_environment_count", len(dependencyEnvs)).
-		WithDetail("version_id", version.Id), nil
-}
-
-// checkSingleEnvironment checks if the version succeeded in a single environment
-func (e *EnvironmentProgressionEvaluator) checkSingleEnvironment(
-	_ context.Context,
-	depEnv *oapi.Environment,
-	version *oapi.DeploymentVersion,
-) (*oapi.RuleEvaluation, error) {
-
-	jobs := make([]*oapi.Job, 0)
-	for _, job := range e.store.Jobs.Items() {
-		release, exists := e.store.Releases.Get(job.ReleaseId)
-		if !exists {
-			continue
+		for envId, failedResult := range failedResults {
+			failureResult.WithDetail(fmt.Sprintf("environment_%s", envId), failedResult.Details)
 		}
-		if release.Version.Id == version.Id && release.ReleaseTarget.EnvironmentId == depEnv.Id {
-			jobs = append(jobs, job)
-		}
+
+		return failureResult, nil
 	}
 
-	if len(jobs) == 0 {
-		return results.NewDeniedResult("Version not deployed yet").
-			WithDetail("environment_name", depEnv.Name).
-			WithDetail("environment_id", depEnv.Id), nil
+	successResult := results.
+		NewAllowedResult("Version succeeded in dependency environment(s)").
+		WithDetail("environment_count", len(dependencyEnvs))
+
+	for envId, allowedResult := range allowedResults {
+		successResult.WithDetail(fmt.Sprintf("environment_%s", envId), allowedResult.Details)
 	}
 
-	// Check success criteria based on rule configuration
-	result, err := e.evaluateJobSuccessCriteria(jobs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add environment context to the result
-	return result.
-		WithDetail("environment_name", depEnv.Name).
-		WithDetail("environment_id", depEnv.Id), nil
+	return successResult, nil
 }
 
 // evaluateJobSuccessCriteria evaluates if jobs meet the success criteria
 func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
-	jobs []*oapi.Job,
+	ctx context.Context,
+	version *oapi.DeploymentVersion,
+	environment *oapi.Environment,
 ) (*oapi.RuleEvaluation, error) {
-	if len(jobs) == 0 {
-		return results.NewDeniedResult("No jobs found"), nil
-	}
-
 	// Define success statuses (default to just "successful")
 	successStatuses := map[oapi.JobStatus]bool{
 		oapi.Successful: true,
@@ -248,68 +189,56 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		}
 	}
 
-	// Count successful jobs and find the latest success time
-	var successfulJobs int
-	var latestSuccessTime *time.Time
+	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses)
 
-	for _, job := range jobs {
-		if successStatuses[job.Status] {
-			successfulJobs++
-			if job.CompletedAt != nil {
-				if latestSuccessTime == nil || job.CompletedAt.After(*latestSuccessTime) {
-					latestSuccessTime = job.CompletedAt
-				}
-			}
-		}
+	if len(tracker.Jobs()) == 0 {
+		return results.NewDeniedResult("No jobs found"), nil
+	}
+
+	if len(tracker.ReleaseTargets) == 0 {
+		return results.NewDeniedResult("No release targets found"), nil
 	}
 
 	// Check minimum success percentage if specified
 	if e.rule.MinimumSuccessPercentage != nil {
-		successPercentage := float32(successfulJobs) / float32(len(jobs)) * 100
-		if successPercentage < *e.rule.MinimumSuccessPercentage {
-			return results.NewDeniedResult(fmt.Sprintf(
-				"Success rate %.1f%% below required %.1f%%",
-				successPercentage,
-				*e.rule.MinimumSuccessPercentage,
-			)), nil
-		}
-	} else {
-		// Default: require at least one successful job
-		if successfulJobs == 0 {
-			return results.NewDeniedResult("No successful jobs"), nil
+		sucessPercentage := tracker.GetSuccessPercentage()
+		if sucessPercentage < *e.rule.MinimumSuccessPercentage {
+			message := fmt.Sprintf("Success rate %.1f%% below required %.1f%%", sucessPercentage, *e.rule.MinimumSuccessPercentage)
+			return results.NewDeniedResult(message).
+				WithDetail("success_percentage", sucessPercentage).
+				WithDetail("minimum_success_percentage", *e.rule.MinimumSuccessPercentage), nil
 		}
 	}
 
 	// Check minimum soak time if specified
-	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 && latestSuccessTime != nil {
+	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
 		soakDuration := time.Duration(*e.rule.MinimumSockTimeMinutes) * time.Minute
-		timeSinceSuccess := time.Since(*latestSuccessTime)
-
-		if timeSinceSuccess < soakDuration {
-			remaining := soakDuration - timeSinceSuccess
-			soakFinishTime := latestSuccessTime.Add(soakDuration)
-
-			return results.NewPendingResult(results.ActionTypeWait, fmt.Sprintf(
-				"Soak time required: %d minutes. Time remaining: %s",
-				*e.rule.MinimumSockTimeMinutes,
-				remaining.Round(time.Minute),
-			)).
-				WithDetail("soak_finish_time", soakFinishTime.Format(time.RFC3339)).
-				WithDetail("soak_time_remaining_minutes", int(remaining.Minutes())), nil
+		soakTimeRemaining := tracker.GetSoakTimeRemaining(soakDuration)
+		if soakTimeRemaining > 0 {
+			message := fmt.Sprintf("Soak time required: %d minutes. Time remaining: %s", *e.rule.MinimumSockTimeMinutes, soakTimeRemaining.Round(time.Minute))
+			return results.NewPendingResult(results.ActionTypeWait, message).
+				WithDetail("soak_time_remaining_minutes", int(soakTimeRemaining.Minutes())), nil
 		}
 	}
 
 	// Check maximum age if specified
-	if e.rule.MaximumAgeHours != nil && *e.rule.MaximumAgeHours > 0 && latestSuccessTime != nil {
+	if e.rule.MaximumAgeHours != nil && *e.rule.MaximumAgeHours > 0 {
 		maxAge := time.Duration(*e.rule.MaximumAgeHours) * time.Hour
-		timeSinceSuccess := time.Since(*latestSuccessTime)
 
-		if timeSinceSuccess > maxAge {
-			return results.NewDeniedResult(fmt.Sprintf(
-				"Deployment too old: %s (max: %d hours)",
-				timeSinceSuccess.Round(time.Hour),
+		latestSuccessTime := tracker.GetMostRecentSuccess()
+		if latestSuccessTime.IsZero() {
+			return results.NewDeniedResult("No successful jobs").
+				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours), nil
+		}
+
+		if !tracker.IsWithinMaxAge(maxAge) {
+			message := fmt.Sprintf(
+				"Deployment too old: %s (max: %d hours)", latestSuccessTime.Sub(latestSuccessTime).Round(time.Hour),
 				*e.rule.MaximumAgeHours,
-			)), nil
+			)
+			return results.NewDeniedResult(message).
+				WithDetail("latest_success_time", latestSuccessTime.Format(time.RFC3339)).
+				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours), nil
 		}
 	}
 
