@@ -157,4 +157,34 @@ export const relationshipsRouter = router({
 
       return data;
     }),
+
+  delete: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        relationshipRuleId: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, relationshipRuleId } = input;
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.RelationshipRuleDeleted,
+        timestamp: Date.now(),
+        data: {
+          id: relationshipRuleId,
+          workspaceId,
+          fromType: "deployment",
+          matcher: { cel: "" },
+          metadata: {},
+          name: "",
+          reference: "",
+          relationshipType: "",
+          toType: "deployment",
+        },
+      });
+
+      return { id: relationshipRuleId };
+    }),
 });

@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, Edit, Filter, PlusIcon, Search } from "lucide-react";
+import {
+  ArrowRight,
+  Edit,
+  Filter,
+  PlusIcon,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { Link } from "react-router";
 
 import { trpc } from "~/api/trpc";
@@ -9,6 +16,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "~/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import { Badge } from "~/components/ui/badge";
 import {
   Breadcrumb,
@@ -44,12 +61,45 @@ export default function RelationshipRules() {
   const [searchQuery, setSearchQuery] = useState("");
   const [relationshipTypeFilter, setRelationshipTypeFilter] =
     useState<string>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [ruleToDelete, setRuleToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
+  const utils = trpc.useUtils();
   const { data: relationshipRules } = trpc.relationships.list.useQuery({
     workspaceId: workspace.id,
     limit: 200,
     offset: 0,
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  const deleteMutation = trpc.relationships.delete.useMutation();
+
+  const handleDeleteClick = (ruleId: string, ruleName: string) => {
+    setRuleToDelete({ id: ruleId, name: ruleName });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (ruleToDelete) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      deleteMutation
+        .mutateAsync({
+          workspaceId: workspace.id,
+          relationshipRuleId: ruleToDelete.id,
+        })
+        .then(() => {
+          utils.relationships.list.invalidate();
+          setDeleteDialogOpen(false);
+          setRuleToDelete(null);
+        })
+        .catch((error: unknown) => {
+          console.error("Failed to delete relationship rule:", error);
+        });
+    }
+  };
 
   // Get unique relationship types for filter
   const relationshipTypes = useMemo(() => {
@@ -189,14 +239,28 @@ export default function RelationshipRules() {
                         <Badge variant="outline">{rule.toType}</Badge>
                       </div>
                     </div>
-                    <Link
-                      to={`/${workspace.slug}/relationship-rules/${rule.id}/edit`}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="h-4 w-4" />
+
+                    <div className="flex items-center gap-1">
+                      <Link
+                        to={`/${workspace.slug}/relationship-rules/${rule.id}/edit`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(rule.id, rule.name);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    </Link>
+                    </div>
                   </div>
                 </AccordionTrigger>
 
@@ -288,7 +352,15 @@ export default function RelationshipRules() {
                       </div>
                     )}
 
-                    <div className="flex justify-end pt-2">
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteClick(rule.id, rule.name)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Rule
+                      </Button>
                       <Link
                         to={`/${workspace.slug}/relationship-rules/${rule.reference}/edit`}
                       >
@@ -306,6 +378,30 @@ export default function RelationshipRules() {
           </Accordion>
         )}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Relationship Rule</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the relationship rule{" "}
+              <span className="font-semibold">{ruleToDelete?.name}</span>? This
+              action cannot be undone and will remove all relationships created
+              by this rule.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
