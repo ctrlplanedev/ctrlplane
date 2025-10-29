@@ -23,21 +23,30 @@ func setupTestStore() *store.Store {
 	}
 	st.Systems.Upsert(ctx, system)
 
+	// Create resource selector that matches all resources
+	resourceSelector := &oapi.Selector{}
+	_ = resourceSelector.FromCelSelector(oapi.CelSelector{
+		Cel: "true",
+	})
+
 	// Create environments
 	devEnv := &oapi.Environment{
-		Id:       "env-dev",
-		Name:     "dev",
-		SystemId: "system-1",
+		Id:               "env-dev",
+		Name:             "dev",
+		SystemId:         "system-1",
+		ResourceSelector: resourceSelector,
 	}
 	stagingEnv := &oapi.Environment{
-		Id:       "env-staging",
-		Name:     "staging",
-		SystemId: "system-1",
+		Id:               "env-staging",
+		Name:             "staging",
+		SystemId:         "system-1",
+		ResourceSelector: resourceSelector,
 	}
 	prodEnv := &oapi.Environment{
-		Id:       "env-prod",
-		Name:     "prod",
-		SystemId: "system-1",
+		Id:               "env-prod",
+		Name:             "prod",
+		SystemId:         "system-1",
+		ResourceSelector: resourceSelector,
 	}
 	st.Environments.Upsert(ctx, devEnv)
 	st.Environments.Upsert(ctx, stagingEnv)
@@ -47,13 +56,14 @@ func setupTestStore() *store.Store {
 	jobAgentId := "agent-1"
 	description := "Test deployment"
 	deployment := &oapi.Deployment{
-		Id:             "deploy-1",
-		Name:           "my-app",
-		Slug:           "my-app",
-		SystemId:       "system-1",
-		JobAgentId:     &jobAgentId,
-		Description:    &description,
-		JobAgentConfig: map[string]any{},
+		Id:               "deploy-1",
+		Name:             "my-app",
+		Slug:             "my-app",
+		SystemId:         "system-1",
+		JobAgentId:       &jobAgentId,
+		Description:      &description,
+		JobAgentConfig:   map[string]any{},
+		ResourceSelector: resourceSelector,
 	}
 	st.Deployments.Upsert(ctx, deployment)
 

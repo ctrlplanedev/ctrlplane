@@ -8,6 +8,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_EnvironmentProgression_SoakTimeNotMet tests that a deployment version
@@ -93,14 +95,10 @@ func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
 	}
 
 	// Staging job should exist (not blocked)
-	if stagingJob == nil {
-		t.Fatal("staging job should be created")
-	}
+	assert.NotNil(t, stagingJob, "staging job should be created")
 
 	// Production job should NOT be created (blocked by policy - no successful staging deployment)
-	if prodJob != nil {
-		t.Fatal("production job should not be created yet (no successful staging deployment)")
-	}
+	assert.Nil(t, prodJob, "production job should not be created yet (no successful staging deployment)")
 
 	// Update the staging job to successful (just completed)
 	stagingJob.Status = oapi.Successful
@@ -122,9 +120,7 @@ func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
 			prodJobCount++
 		}
 	}
-	if prodJobCount > 0 {
-		t.Fatalf("expected no production jobs (soak time not met), got %d", prodJobCount)
-	}
+	assert.Zero(t, prodJobCount, "expected no production jobs (soak time not met)")
 }
 
 // TestEngine_EnvironmentProgression_SoakTimeMet tests that a deployment version
@@ -193,9 +189,7 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 
 	// Get the staging job
 	jobs := engine.Workspace().Jobs().Items()
-	if len(jobs) != 1 {
-		t.Fatalf("expected 1 job initially, got %d", len(jobs))
-	}
+	assert.Len(t, jobs, 1, "expected 1 job initially")
 
 	var stagingJob *oapi.Job
 	for _, job := range jobs {
@@ -229,9 +223,7 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 			prodJobCount++
 		}
 	}
-	if prodJobCount == 0 {
-		t.Fatal("production job should exist after soak time elapsed")
-	}
+	assert.NotZero(t, prodJobCount, "production job should exist after soak time elapsed")
 }
 
 // TestEngine_EnvironmentProgression_MultipleDependencyEnvironments tests environment
@@ -314,9 +306,7 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 			break
 		}
 	}
-	if usEastJob == nil {
-		t.Fatal("us-east staging job not found")
-	}
+	assert.NotNil(t, usEastJob, "us-east staging job not found")
 
 	usEastJob.Status = oapi.Successful
 	completedAt := time.Now().Add(-3 * time.Minute)
@@ -339,9 +329,7 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 			prodJobCount++
 		}
 	}
-	if prodJobCount == 0 {
-		t.Fatal("production job should exist after ONE staging environment succeeds with soak time")
-	}
+	assert.NotZero(t, prodJobCount, "production job should exist after ONE staging environment succeeds with soak time")
 }
 
 // TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage tests
@@ -432,9 +420,7 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 			stagingJobs = append(stagingJobs, job)
 		}
 	}
-	if len(stagingJobs) != 3 {
-		t.Fatalf("expected 3 staging jobs, got %d", len(stagingJobs))
-	}
+	assert.Len(t, stagingJobs, 3, "expected 3 staging jobs")
 
 	// Complete 2 out of 3 staging jobs successfully (66.7% success rate)
 	completedAt := time.Now().Add(-3 * time.Minute)
@@ -465,9 +451,7 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 			prodJobCount++
 		}
 	}
-	if prodJobCount != 3 {
-		t.Fatalf("expected 3 production jobs after meeting success percentage, got %d", prodJobCount)
-	}
+	assert.Equal(t, 3, prodJobCount, "expected 3 production jobs after meeting success percentage")
 }
 
 // TestEngine_EnvironmentProgression_MaximumAge tests that old successful deployments
@@ -535,9 +519,7 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 
 	// Get the staging job
 	jobs := engine.Workspace().Jobs().Items()
-	if len(jobs) != 1 {
-		t.Fatalf("expected 1 job initially, got %d", len(jobs))
-	}
+	assert.Len(t, jobs, 1, "expected 1 job initially")
 
 	var stagingJob *oapi.Job
 	for _, job := range jobs {
@@ -566,7 +548,5 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 			prodJobCount++
 		}
 	}
-	if prodJobCount > 0 {
-		t.Fatalf("expected no production jobs (deployment too old), got %d", prodJobCount)
-	}
+	assert.Zero(t, prodJobCount, "expected no production jobs (deployment too old)")
 }

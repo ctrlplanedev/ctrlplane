@@ -148,8 +148,24 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 		}
 	}
 
+	// OR logic: If at least one dependency environment succeeded, allow progression
+	if len(allowedResults) > 0 {
+		successResult := results.
+			NewAllowedResult("Version succeeded in dependency environment(s)").
+			WithDetail("environment_count", len(dependencyEnvs)).
+			WithDetail("version_id", version.Id).
+			WithDetail("successful_environments", len(allowedResults))
+
+		for envId, allowedResult := range allowedResults {
+			successResult.WithDetail(fmt.Sprintf("environment_%s", envId), allowedResult.Details)
+		}
+
+		return successResult, nil
+	}
+
+	// All dependency environments failed
 	if len(failedResults) > 0 {
-		failureResult := results.NewDeniedResult("Version not successful in dependency environment(s)").
+		failureResult := results.NewDeniedResult("Version not successful in any dependency environment").
 			WithDetail("environment_count", len(dependencyEnvs)).
 			WithDetail("version_id", version.Id).
 			WithDetail("failed_environments", len(failedResults))
@@ -161,15 +177,8 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 		return failureResult, nil
 	}
 
-	successResult := results.
-		NewAllowedResult("Version succeeded in dependency environment(s)").
-		WithDetail("environment_count", len(dependencyEnvs))
-
-	for envId, allowedResult := range allowedResults {
-		successResult.WithDetail(fmt.Sprintf("environment_%s", envId), allowedResult.Details)
-	}
-
-	return successResult, nil
+	// Should never reach here
+	return results.NewDeniedResult("No dependency environments found"), nil
 }
 
 // evaluateJobSuccessCriteria evaluates if jobs meet the success criteria
@@ -199,19 +208,32 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		return results.NewDeniedResult("No release targets found"), nil
 	}
 
-	// Check minimum success percentage if specified
+	// Check for at least one successful job (or based on success percentage requirement)
+	successPercentage := tracker.GetSuccessPercentage()
+
 	if e.rule.MinimumSuccessPercentage != nil {
-		sucessPercentage := tracker.GetSuccessPercentage()
-		if sucessPercentage < *e.rule.MinimumSuccessPercentage {
-			message := fmt.Sprintf("Success rate %.1f%% below required %.1f%%", sucessPercentage, *e.rule.MinimumSuccessPercentage)
+		// Check if success percentage meets the requirement
+		if successPercentage < *e.rule.MinimumSuccessPercentage {
+			message := fmt.Sprintf("Success rate %.1f%% below required %.1f%%", successPercentage, *e.rule.MinimumSuccessPercentage)
 			return results.NewDeniedResult(message).
-				WithDetail("success_percentage", sucessPercentage).
+				WithDetail("success_percentage", successPercentage).
 				WithDetail("minimum_success_percentage", *e.rule.MinimumSuccessPercentage), nil
+		}
+	} else {
+		// Default: require at least one successful job (success percentage > 0)
+		if successPercentage == 0 {
+			return results.NewDeniedResult("No successful jobs"), nil
 		}
 	}
 
 	// Check minimum soak time if specified
 	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
+		// Only check soak time if there are successful jobs
+		mostRecentSuccess := tracker.GetMostRecentSuccess()
+		if mostRecentSuccess.IsZero() {
+			return results.NewDeniedResult("No successful jobs for soak time check"), nil
+		}
+
 		soakDuration := time.Duration(*e.rule.MinimumSockTimeMinutes) * time.Minute
 		soakTimeRemaining := tracker.GetSoakTimeRemaining(soakDuration)
 		if soakTimeRemaining > 0 {

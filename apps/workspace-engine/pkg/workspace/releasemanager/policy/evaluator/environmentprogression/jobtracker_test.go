@@ -82,7 +82,7 @@ func TestGetReleaseTargets(t *testing.T) {
 	// of environment resources and deployment resources. For this unit test, we're testing
 	// the filtering logic of getReleaseTargets, which filters the store's release targets
 	// by environment ID and deployment ID.
-	// 
+	//
 	// Since setting up proper resource selectors is complex and getReleaseTargets is mainly
 	// a filtering function, we verify it returns empty when the store has no targets,
 	// and the actual filtering logic can be observed working in the other tracker tests
@@ -300,7 +300,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_NoJobs(t *testing.T) {
 	// GetSoakTimeRemaining will calculate time.Since(zero time) which is very large
 	// So duration - large_time_since will be very negative, making it <= 0, returning true
 	// This seems like a bug in the implementation, but let's test actual behavior
-	assert.True(t, tracker.MeetsSoakTimeRequirement(10*time.Minute), 
+	assert.True(t, tracker.MeetsSoakTimeRequirement(10*time.Minute),
 		"with no successful jobs, mostRecentSuccess is zero, time.Since is very large, so soak time appears met")
 }
 
@@ -344,11 +344,11 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
 
 	// Soak time of 10 minutes should be met (job completed 15 minutes ago)
-	assert.True(t, tracker.MeetsSoakTimeRequirement(10*time.Minute), 
+	assert.True(t, tracker.MeetsSoakTimeRequirement(10*time.Minute),
 		"expected soak time of 10 minutes to be met (job completed 15 minutes ago)")
 
 	// Soak time of 20 minutes should not be met (job completed 15 minutes ago)
-	assert.False(t, tracker.MeetsSoakTimeRequirement(20*time.Minute), 
+	assert.False(t, tracker.MeetsSoakTimeRequirement(20*time.Minute),
 		"expected soak time of 20 minutes to not be met (job completed 15 minutes ago)")
 }
 
@@ -421,11 +421,11 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 
 	// Soak time is based on most recent success (5 minutes ago)
 	// So 3 minutes soak time SHOULD be met (5 > 3)
-	assert.True(t, tracker.MeetsSoakTimeRequirement(3*time.Minute), 
+	assert.True(t, tracker.MeetsSoakTimeRequirement(3*time.Minute),
 		"expected soak time of 3 minutes to be met (most recent was 5 min ago)")
 
 	// 10 minutes soak time should not be met (5 < 10)
-	assert.False(t, tracker.MeetsSoakTimeRequirement(10*time.Minute), 
+	assert.False(t, tracker.MeetsSoakTimeRequirement(10*time.Minute),
 		"expected soak time of 10 minutes to not be met (most recent was 5 min ago)")
 }
 
@@ -475,7 +475,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 	// Test with 10 minute soak time (should have ~5 minutes remaining)
 	remaining = tracker.GetSoakTimeRemaining(10 * time.Minute)
 	// Allow some margin for test execution time
-	assert.InDelta(t, float64(5*time.Minute), float64(remaining), float64(time.Minute), 
+	assert.InDelta(t, float64(5*time.Minute), float64(remaining), float64(time.Minute),
 		"expected ~5 minutes remaining")
 
 	// Test with 3 minute soak time (should be negative/0 - already met)
@@ -531,7 +531,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 	assert.False(t, mostRecent.IsZero(), "expected non-zero time with successful job")
 
 	// Should be approximately the completion time
-	assert.InDelta(t, float64(completedAt.Unix()), float64(mostRecent.Unix()), 1.0, 
+	assert.InDelta(t, float64(completedAt.Unix()), float64(mostRecent.Unix()), 1.0,
 		"expected most recent success to be approximately the completion time")
 }
 
@@ -588,11 +588,11 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
 
 	// Should be within 10 minutes
-	assert.True(t, tracker.IsWithinMaxAge(10*time.Minute), 
+	assert.True(t, tracker.IsWithinMaxAge(10*time.Minute),
 		"expected to be within 10 minutes max age (job completed 5 min ago)")
 
 	// Should not be within 3 minutes
-	assert.False(t, tracker.IsWithinMaxAge(3*time.Minute), 
+	assert.False(t, tracker.IsWithinMaxAge(3*time.Minute),
 		"expected to not be within 3 minutes max age (job completed 5 min ago)")
 }
 
@@ -810,11 +810,10 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 
 	// Most recent success should be the newer one for soak time calculations
 	mostRecent := tracker.GetMostRecentSuccess()
-	assert.InDelta(t, float64(completedAt2.Unix()), float64(mostRecent.Unix()), 1.0, 
+	assert.InDelta(t, float64(completedAt2.Unix()), float64(mostRecent.Unix()), 1.0,
 		"expected most recent success to be the newer completion time")
 
 	// Success percentage should still be 100% (1 target with successful job)
 	percentage := tracker.GetSuccessPercentage()
 	assert.Equal(t, float32(100.0), percentage, "expected 100%% success (1 target with successful jobs)")
 }
-
