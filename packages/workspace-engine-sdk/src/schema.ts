@@ -2361,6 +2361,10 @@ export interface operations {
         };
         content: {
           "application/json": {
+            envPolicyDecision?: components["schemas"]["DeployDecision"];
+            envTargetVersionDecision?: components["schemas"]["DeployDecision"];
+            /** @description The number of policies evaluated */
+            policiesEvaluated?: number;
             versionDecision?: components["schemas"]["DeployDecision"];
             workspaceDecision?: components["schemas"]["DeployDecision"];
           };
