@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type React from "react";
+import { IconCircleCheck, IconCircleX } from "@tabler/icons-react";
 import _ from "lodash";
 import { CheckCircle, Server, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -33,29 +34,26 @@ type EnvironmentActionsPanelProps = {
   environment: WorkspaceEngine["schemas"]["Environment"];
   deploymentId: string;
   versions: WorkspaceEngine["schemas"]["DeploymentVersion"][];
-  // releaseTargets: ReleaseTarget[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-const PoliciesSection: React.FC<{ policies: string[] }> = ({ policies }) => {
-  if (policies.length === 0) return null;
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-        <Shield className="h-3.5 w-3.5" />
-        Active Policies
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {policies.map((policy, i) => (
-          <Badge key={i} variant="outline" className="py-0 text-[10px]">
-            {policy}
-          </Badge>
-        ))}
-      </div>
-    </div>
-  );
+const useApproveDeploymentVersion = (
+  versionId: string,
+  environmentId: string,
+) => {
+  const { workspace } = useWorkspace();
+  const approveMutation = trpc.deploymentVersions.approve.useMutation();
+  const onClick = () =>
+    approveMutation
+      .mutateAsync({
+        workspaceId: workspace.id,
+        deploymentVersionId: versionId,
+        environmentId: environmentId,
+        status: "approved",
+      })
+      .then(() => toast.success("Approval record queued successfully"));
+  return { onClick, isPending: approveMutation.isPending };
 };
 
 const PendingActionsSection: React.FC<{
@@ -63,7 +61,10 @@ const PendingActionsSection: React.FC<{
   environment: Environment;
 }> = ({ version, environment }) => {
   const { workspace } = useWorkspace();
-  const approveMutation = trpc.deploymentVersions.approve.useMutation();
+  const { onClick, isPending } = useApproveDeploymentVersion(
+    version.id,
+    environment.id,
+  );
   const decisionsQuery = trpc.decisions.environmentVersion.useQuery({
     workspaceId: workspace.id,
     environmentId: environment.id,
@@ -72,42 +73,36 @@ const PendingActionsSection: React.FC<{
   const pendingActions = (decisionsQuery.data ?? []).flatMap(
     (action) => action.ruleResults,
   );
-  const approvalAction = pendingActions.find(
-    (action) => action.actionType === "approval",
-  );
-
-  if (approvalAction == null) return null;
-
-  const onClick = () =>
-    approveMutation
-      .mutateAsync({
-        workspaceId: workspace.id,
-        deploymentVersionId: version.id,
-        environmentId: environment.id,
-        status: "approved",
-      })
-      .then(() => toast.success("Approval record queued successfully"));
 
   return (
-    <div className="space-y-1.5 rounded-md border p-2">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-        <div className="h-1.5 w-1.5 rounded-full bg-amber-500 p-1" />
-        Pending actions
-      </div>
-      <div className="space-y-1">
-        {pendingActions.map((action, idx) => (
-          <div key={idx} className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-              {version.tag} - {action.message}
-            </div>
-            <Button
-              variant="secondary"
-              className="h-4 text-xs"
-              onClick={onClick}
-              disabled={approveMutation.isPending}
-            >
-              Approve
-            </Button>
+    <div className="space-y-2 rounded-lg border p-2">
+      <h3 className="text-xs font-semibold">{version.tag}</h3>
+      <div className="flex flex-col gap-1">
+        {pendingActions.map((decision, idx) => (
+          <div key={idx} className="flex items-center gap-1.5">
+            {decision.allowed && (
+              <IconCircleCheck className="size-3 text-green-500" />
+            )}
+            {!decision.allowed && (
+              <IconCircleX className="size-3 text-red-500" />
+            )}
+            <span className="text-xs font-semibold text-muted-foreground">
+              {decision.message}
+            </span>
+            {decision.actionType === "approval" && (
+              <>
+                <div className="flex-grow" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-5 text-xs"
+                  onClick={onClick}
+                  disabled={isPending}
+                >
+                  Approve
+                </Button>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -161,54 +156,6 @@ const ResourceItem: React.FC<{
   );
 };
 
-const VersionGroup: React.FC<{
-  versionTag: string;
-  resources: ReleaseTarget[];
-  versions: DeploymentVersion[];
-}> = ({ versionTag, resources, versions }) => {
-  return (
-    <div className="">
-      {/* Version Header */}
-      <div className="flex items-center justify-between rounded-t border border-b-0 bg-muted/30 px-2 py-1.5">
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono text-xs font-medium">{versionTag}</span>
-
-          <Badge
-            variant="outline"
-            className="border-green-500/20 bg-green-500/10 py-0 text-[10px] text-green-600"
-          >
-            <CheckCircle className="mr-0.5 h-2.5 w-2.5" />
-            Stable
-          </Badge>
-        </div>
-        <span className="text-[10px] text-muted-foreground">
-          {resources.length} resource
-          {resources.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {/* Resource List */}
-      <div className="rounded-b border border-t-0">
-        {resources.map((rt) => (
-          <ResourceItem key={getReleaseTargetKey(rt)} releaseTarget={rt} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const EmptyState: React.FC = () => {
-  return (
-    <div className="flex flex-col items-center justify-center rounded border border-dashed p-6 text-center">
-      <Server className="mb-2 h-8 w-8 text-muted-foreground/50" />
-      <p className="text-xs font-medium">No resources</p>
-      <p className="text-[10px] text-muted-foreground">
-        This environment has no deployed resources
-      </p>
-    </div>
-  );
-};
-
 const useReleaseTargets = (environmentId: string, deploymentId: string) => {
   const { workspace } = useWorkspace();
   const envReleaseTargetsQuery = trpc.environment.releaseTargets.useQuery({
@@ -224,59 +171,24 @@ export const EnvironmentActionsPanel: React.FC<
   EnvironmentActionsPanelProps
 > = ({ environment, deploymentId, versions, open, onOpenChange }) => {
   const envReleaseTargets = useReleaseTargets(environment.id, deploymentId);
-
-  // Group resources by current version
-  const resourcesByVersion = _.groupBy(
-    envReleaseTargets,
-    (target) => target.state.currentRelease?.version.id,
-  );
-
-  // Calculate statistics
   const totalResources = envReleaseTargets.length;
-  const upToDateCount = 0;
-  const transitioningCount = 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
         <DialogHeader className="border-b p-4">
           <DialogTitle className="text-base">{environment.name}</DialogTitle>
-          <DialogDescription className="text-[10px]">
-            {totalResources} resource{totalResources !== 1 ? "s" : ""} ·{" "}
-            {upToDateCount} up to date ` · ${transitioningCount} updating`
-          </DialogDescription>
         </DialogHeader>
 
-        {/* Scrollable Content */}
         <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-4 pb-4">
           <div className="space-y-4">
-            {/* Policies */}
-            {/* <PoliciesSection policies={environment.policies} /> */}
-            <PendingActionsSection
-              version={versions[0]}
-              environment={environment}
-            />
-
-            {/* Resources grouped by version */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                <Server className="h-3.5 w-3.5" />
-                Resources by Version
-              </div>
-
-              {Object.entries(resourcesByVersion)
-                .sort(([tagA], [tagB]) => tagB.localeCompare(tagA))
-                .map(([versionTag, resources]) => (
-                  <VersionGroup
-                    key={versionTag}
-                    versionTag={versionTag}
-                    resources={resources}
-                    versions={versions}
-                  />
-                ))}
-            </div>
-
-            {totalResources === 0 && <EmptyState />}
+            {versions.map((version) => (
+              <PendingActionsSection
+                key={version.id}
+                version={version}
+                environment={environment}
+              />
+            ))}
           </div>
         </div>
       </DialogContent>

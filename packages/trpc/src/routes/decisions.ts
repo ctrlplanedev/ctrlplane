@@ -53,15 +53,6 @@ const getPolicyResults = async (
   return decision.data?.versionDecision?.policyResults ?? [];
 };
 
-const getEnvironmentScopedResults = (
-  policyResults: WorkspaceEngine["schemas"]["DeployDecision"]["policyResults"],
-) =>
-  policyResults.filter((result) =>
-    result.ruleResults.some(
-      (rule) => rule.actionType === "approval" && !rule.allowed,
-    ),
-  );
-
 export const decisionsRouter = router({
   environmentVersion: protectedProcedure
     .input(
@@ -80,11 +71,6 @@ export const decisionsRouter = router({
         version.deploymentId,
       );
       if (releaseTarget == null) return [];
-      const policyResults = await getPolicyResults(
-        workspaceId,
-        releaseTarget,
-        version,
-      );
-      return getEnvironmentScopedResults(policyResults);
+      return getPolicyResults(workspaceId, releaseTarget, version);
     }),
 });
