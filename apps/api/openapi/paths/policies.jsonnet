@@ -18,17 +18,17 @@ local openapi = import '../lib/openapi.libsonnet';
         'A list of policies'
       ) + openapi.notFoundResponse(),
     },
-    put: {
-      summary: 'Upsert a policy',
-      operationId: 'upsertPolicy',
-      parameters: [
-        openapi.workspaceIdParam(),
-      ],
-      requestBody: { required: true, content: { 'application/json': { schema: openapi.schemaRef('UpsertPolicyRequest') } } },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Policy')) + openapi.okResponse(openapi.schemaRef('Policy')) + openapi.badRequestResponse(),
-    },
   },
   '/v1/workspaces/{workspaceId}/policies/{policyId}': {
+    get: {
+      summary: 'Get a policy by ID',
+      operationId: 'getPolicy',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.policyIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('Policy')) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
     delete: {
       summary: 'Delete a policy by ID',
       operationId: 'deletePolicy',
@@ -36,9 +36,26 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.policyIdParam(),
       ],
-      responses: openapi.okResponse(openapi.schemaRef('Policy'))
-        + openapi.notFoundResponse()
-        + openapi.badRequestResponse(),
+      responses: openapi.acceptedResponse(openapi.schemaRef('Policy'), 'Policy updated')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
-  }
+    put: {
+      summary: 'Upsert a policy by ID',
+      operationId: 'updatePolicy',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.policyIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': { schema: openapi.schemaRef('UpsertPolicyRequest') },
+        },
+      },
+      responses: openapi.acceptedResponse(openapi.schemaRef('Policy')) +
+                 openapi.badRequestResponse() +
+                 openapi.notFoundResponse(),
+    },
+  },
 }

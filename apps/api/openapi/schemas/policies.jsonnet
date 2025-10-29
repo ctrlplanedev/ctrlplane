@@ -1,6 +1,14 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  CreatePolicyRequest: {
+    type: 'object',
+    required: ['name'],
+    properties: {
+      name: { type: 'string' },
+    },
+  },
+
   UpsertPolicyRequest: {
     type: 'object',
     required: ['name'],

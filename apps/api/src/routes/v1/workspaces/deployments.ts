@@ -33,26 +33,6 @@ const listDeployments: AsyncTypedHandler<
   res.json(response.data);
 };
 
-const getExistingDeployment = async (
-  workspaceId: string,
-  systemId: string,
-  slug: string,
-) => {
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/systems/{systemId}",
-    { params: { path: { workspaceId, systemId } } },
-  );
-
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
-
-  if (response.data == null) return null;
-
-  const { deployments } = response.data;
-
-  return deployments.find((deployment) => deployment.slug === slug) ?? null;
-};
-
 const existingDeploymentById = async (
   workspaceId: string,
   deploymentId: string,
@@ -67,55 +47,6 @@ const existingDeploymentById = async (
   if (response.data == null) return null;
 
   return response.data;
-};
-
-const putDeployment: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deployments",
-  "put"
-> = async (req, res) => {
-  const { workspaceId } = req.params;
-  const { body } = req;
-
-  const existingDeployment = await getExistingDeployment(
-    workspaceId,
-    body.systemId,
-    body.slug,
-  );
-
-  const isValid = await validResourceSelector(body.resourceSelector);
-
-  if (!isValid) throw new ApiError("Invalid resource selector", 400);
-
-  const deployment: WorkspaceEngine["schemas"]["Deployment"] = {
-    id: uuidv4(),
-    ...body,
-    jobAgentConfig: body.jobAgentConfig ?? {},
-  };
-
-  if (existingDeployment != null) {
-    const mergedDeployment = {
-      ...existingDeployment,
-      ...deployment,
-      id: existingDeployment.id,
-    };
-    sendGoEvent({
-      workspaceId,
-      eventType: Event.DeploymentUpdated,
-      timestamp: Date.now(),
-      data: mergedDeployment,
-    });
-    res.json(mergedDeployment);
-    return;
-  }
-
-  sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentCreated,
-    timestamp: Date.now(),
-    data: deployment,
-  });
-  res.json(deployment);
-  return;
 };
 
 const getDeployment: AsyncTypedHandler<
@@ -229,7 +160,6 @@ const upsertDeployment: AsyncTypedHandler<
 
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
-  .put("/", asyncHandler(putDeployment))
   .post("/", asyncHandler(postDeployment))
   .get("/:deploymentId", asyncHandler(getDeployment))
   .put("/:deploymentId", asyncHandler(upsertDeployment))

@@ -12,22 +12,6 @@ local openapi = import '../lib/openapi.libsonnet';
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('DeploymentAndSystem')),
     },
-    put: {
-      summary: 'Upsert deployment',
-      operationId: 'upsertDeployment',
-      parameters: [
-        openapi.workspaceIdParam(),
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: openapi.schemaRef('UpsertDeploymentRequest'),
-          },
-        },
-      },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Deployment')),
-    },
     post: {
       summary: 'Create deployment',
       operationId: 'createDeployment',
@@ -53,11 +37,13 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
       ],
-      responses: openapi.okResponse(openapi.schemaRef('Deployment')) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.okResponse(openapi.schemaRef('Deployment')) +
+                 openapi.notFoundResponse() +
+                 openapi.badRequestResponse(),
     },
     put: {
       summary: 'Upsert deployment',
-      // operationId: 'upsertDeployment',
+      operationId: 'upsertDeployment',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),

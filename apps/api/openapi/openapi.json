@@ -99,6 +99,17 @@
             ],
             "type": "object"
          },
+         "CreatePolicyRequest": {
+            "properties": {
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name"
+            ],
+            "type": "object"
+         },
          "CreateRelationshipRuleRequest": {
             "properties": {
                "description": {
@@ -1973,43 +1984,6 @@
                }
             },
             "summary": "Create deployment"
-         },
-         "put": {
-            "operationId": "upsertDeployment",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/UpsertDeploymentRequest"
-                     }
-                  }
-               },
-               "required": true
-            },
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/Deployment"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               }
-            },
-            "summary": "Upsert deployment"
          }
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {
@@ -2106,6 +2080,7 @@
             "summary": "Get deployment"
          },
          "put": {
+            "operationId": "upsertDeployment",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -2971,9 +2946,11 @@
                }
             },
             "summary": "List policies"
-         },
-         "put": {
-            "operationId": "upsertPolicy",
+         }
+      },
+      "/v1/workspaces/{workspaceId}/policies/{policyId}": {
+         "delete": {
+            "operationId": "deletePolicy",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -2983,29 +2960,18 @@
                   "schema": {
                      "type": "string"
                   }
+               },
+               {
+                  "description": "ID of the policy",
+                  "in": "path",
+                  "name": "policyId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
                }
             ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/UpsertPolicyRequest"
-                     }
-                  }
-               },
-               "required": true
-            },
             "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/Policy"
-                        }
-                     }
-                  },
-                  "description": "OK response"
-               },
                "202": {
                   "content": {
                      "application/json": {
@@ -3014,7 +2980,7 @@
                         }
                      }
                   },
-                  "description": "Accepted response"
+                  "description": "Policy updated"
                },
                "400": {
                   "content": {
@@ -3025,14 +2991,22 @@
                      }
                   },
                   "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
-            "summary": "Upsert a policy"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/policies/{policyId}": {
-         "delete": {
-            "operationId": "deletePolicy",
+            "summary": "Delete a policy by ID"
+         },
+         "get": {
+            "operationId": "getPolicy",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3085,7 +3059,73 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Delete a policy by ID"
+            "summary": "Get a policy by ID"
+         },
+         "put": {
+            "operationId": "updatePolicy",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the policy",
+                  "in": "path",
+                  "name": "policyId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertPolicyRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Policy"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Upsert a policy by ID"
          }
       },
       "/v1/workspaces/{workspaceId}/relationship-rules": {

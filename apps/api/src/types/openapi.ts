@@ -91,8 +91,7 @@ export interface paths {
         };
         /** List deployments */
         get: operations["listDeployments"];
-        /** Upsert deployment */
-        put: operations["upsertDeployment"];
+        put?: never;
         /** Create deployment */
         post: operations["createDeployment"];
         delete?: never;
@@ -111,35 +110,7 @@ export interface paths {
         /** Get deployment */
         get: operations["getDeployment"];
         /** Upsert deployment */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description ID of the workspace */
-                    workspaceId: string;
-                    /** @description ID of the deployment */
-                    deploymentId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["UpsertDeploymentRequest"];
-                };
-            };
-            responses: {
-                /** @description Accepted response */
-                202: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Deployment"];
-                    };
-                };
-            };
-        };
+        put: operations["upsertDeployment"];
         post?: never;
         /** Delete deployment */
         delete: operations["deleteDeployment"];
@@ -290,8 +261,7 @@ export interface paths {
         };
         /** List policies */
         get: operations["listPolicies"];
-        /** Upsert a policy */
-        put: operations["upsertPolicy"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -306,8 +276,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
+        /** Get a policy by ID */
+        get: operations["getPolicy"];
+        /** Upsert a policy by ID */
+        put: operations["updatePolicy"];
         post?: never;
         /** Delete a policy by ID */
         delete: operations["deletePolicy"];
@@ -514,6 +486,9 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
+        };
+        CreatePolicyRequest: {
+            name: string;
         };
         CreateRelationshipRuleRequest: {
             description?: string;
@@ -1302,33 +1277,6 @@ export interface operations {
             };
         };
     };
-    upsertDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertDeploymentRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Deployment"];
-                };
-            };
-        };
-    };
     createDeployment: {
         parameters: {
             query?: never;
@@ -1395,6 +1343,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    upsertDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertDeploymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Deployment"];
                 };
             };
         };
@@ -1955,21 +1932,19 @@ export interface operations {
             };
         };
     };
-    upsertPolicy: {
+    getPolicy: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description ID of the workspace */
                 workspaceId: string;
+                /** @description ID of the policy */
+                policyId: string;
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertPolicyRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK response */
             200: {
@@ -1980,6 +1955,44 @@ export interface operations {
                     "application/json": components["schemas"]["Policy"];
                 };
             };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updatePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the policy */
+                policyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertPolicyRequest"];
+            };
+        };
+        responses: {
             /** @description Accepted response */
             202: {
                 headers: {
@@ -1991,6 +2004,15 @@ export interface operations {
             };
             /** @description Invalid request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2014,8 +2036,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Policy updated */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
