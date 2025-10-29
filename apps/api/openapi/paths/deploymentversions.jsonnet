@@ -15,25 +15,5 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
-    put: {
-      summary: 'Upsert deployment version',
-      operationId: 'upsertDeploymentVersion',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.deploymentIdParam(),
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: openapi.schemaRef('UpsertDeploymentVersionRequest'),
-          },
-        },
-      },
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVersion'))
-                 + openapi.acceptedResponse(openapi.schemaRef('DeploymentVersion'))
-                 + openapi.notFoundResponse()
-                 + openapi.badRequestResponse(),
-    },
   },
 }

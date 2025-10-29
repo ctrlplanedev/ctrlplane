@@ -32,26 +32,6 @@ const listEnvironments: AsyncTypedHandler<
   res.json(response.data);
 };
 
-const getExistingEnvironment = async (
-  workspaceId: string,
-  systemId: string,
-  name: string,
-) => {
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/systems/{systemId}",
-    { params: { path: { workspaceId, systemId } } },
-  );
-
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
-
-  if (response.data == null) return null;
-
-  const { environments } = response.data;
-
-  return environments.find((env) => env.name === name) ?? null;
-};
-
 const getExistingEnvironmentById = async (
   workspaceId: string,
   environmentId: string,
@@ -66,59 +46,6 @@ const getExistingEnvironmentById = async (
   if (response.data == null) return null;
 
   return response.data;
-};
-
-const putEnvironment: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/environments",
-  "put"
-> = async (req, res) => {
-  const { workspaceId } = req.params;
-  const { body } = req;
-
-  const existingEnvironment = await getExistingEnvironment(
-    workspaceId,
-    body.systemId,
-    body.name,
-  );
-
-  const environment: WorkspaceEngine["schemas"]["Environment"] = {
-    id: uuidv4(),
-    name: body.name,
-    description: body.description,
-    systemId: body.systemId,
-    resourceSelector: body.resourceSelector,
-    createdAt: new Date().toISOString(),
-  };
-
-  if (existingEnvironment != null) {
-    const mergedEnvironment = {
-      ...existingEnvironment,
-      ...environment,
-      id: existingEnvironment.id,
-    };
-
-    const isValid = await validResourceSelector(body.resourceSelector);
-
-    if (!isValid) throw new ApiError("Invalid resource selector", 400);
-
-    sendGoEvent({
-      workspaceId,
-      eventType: Event.EnvironmentUpdated,
-      timestamp: Date.now(),
-      data: mergedEnvironment,
-    });
-    res.json(mergedEnvironment);
-    return;
-  }
-
-  sendGoEvent({
-    workspaceId,
-    eventType: Event.EnvironmentCreated,
-    timestamp: Date.now(),
-    data: environment,
-  });
-  res.status(202).json(environment);
-  return;
 };
 
 const getEnvironment: AsyncTypedHandler<
@@ -228,7 +155,6 @@ export const upsertEnvironmentById: AsyncTypedHandler<
 
 export const environmentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listEnvironments))
-  .put("/", asyncHandler(putEnvironment))
   .post("/", asyncHandler(createEnvironment))
   .get("/:environmentId", asyncHandler(getEnvironment))
   .put("/:environmentId", asyncHandler(upsertEnvironmentById))

@@ -28,22 +28,6 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       responses: openapi.acceptedResponse(openapi.schemaRef('Environment')),
     },
-    put: {
-      summary: 'Upsert environment',
-      operationId: 'upsertEnvironment',
-      parameters: [
-        openapi.workspaceIdParam(),
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: openapi.schemaRef('UpsertEnvironmentRequest'),
-          },
-        },
-      },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Environment')),
-    },
   },
   '/v1/workspaces/{workspaceId}/environments/{environmentId}': {
     get: {

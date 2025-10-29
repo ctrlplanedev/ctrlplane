@@ -128,8 +128,7 @@ export interface paths {
         };
         /** List deployment versions */
         get: operations["listDeploymentVersions"];
-        /** Upsert deployment version */
-        put: operations["upsertDeploymentVersion"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -163,8 +162,7 @@ export interface paths {
         };
         /** List environments */
         get: operations["listEnvironments"];
-        /** Upsert environment */
-        put: operations["upsertEnvironment"];
+        put?: never;
         /** Create environment */
         post: operations["createEnvironment"];
         delete?: never;
@@ -424,8 +422,7 @@ export interface paths {
         };
         /** List systems */
         get: operations["listSystems"];
-        /** Upsert system */
-        put: operations["upsertSystem"];
+        put?: never;
         /** Create system */
         post: operations["createSystem"];
         delete?: never;
@@ -1457,53 +1454,6 @@ export interface operations {
             };
         };
     };
-    upsertDeploymentVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the deployment */
-                deploymentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertDeploymentVersionRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVersion"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     upsertUserApprovalRecord: {
         parameters: {
             query?: never;
@@ -1585,33 +1535,6 @@ export interface operations {
                         /** @description Total number of items available */
                         total: number;
                     };
-                };
-            };
-        };
-    };
-    upsertEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertEnvironmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
                 };
             };
         };
@@ -2412,33 +2335,6 @@ export interface operations {
                         /** @description Total number of items available */
                         total: number;
                     };
-                };
-            };
-        };
-    };
-    upsertSystem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["System"];
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System"];
                 };
             };
         };

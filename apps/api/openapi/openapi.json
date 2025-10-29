@@ -2231,72 +2231,6 @@
                }
             },
             "summary": "List deployment versions"
-         },
-         "put": {
-            "operationId": "upsertDeploymentVersion",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment",
-                  "in": "path",
-                  "name": "deploymentId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/UpsertDeploymentVersionRequest"
-                     }
-                  }
-               },
-               "required": true
-            },
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/DeploymentVersion"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Upsert deployment version"
          }
       },
       "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records": {
@@ -2485,43 +2419,6 @@
                }
             },
             "summary": "Create environment"
-         },
-         "put": {
-            "operationId": "upsertEnvironment",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/UpsertEnvironmentRequest"
-                     }
-                  }
-               },
-               "required": true
-            },
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/Environment"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               }
-            },
-            "summary": "Upsert environment"
          }
       },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
@@ -3740,43 +3637,6 @@
                }
             },
             "summary": "Create system"
-         },
-         "put": {
-            "operationId": "upsertSystem",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/System"
-                     }
-                  }
-               },
-               "required": true
-            },
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/System"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               }
-            },
-            "summary": "Upsert system"
          }
       },
       "/v1/workspaces/{workspaceId}/systems/{systemId}": {
