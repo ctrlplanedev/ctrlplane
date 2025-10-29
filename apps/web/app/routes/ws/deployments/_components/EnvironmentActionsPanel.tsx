@@ -42,7 +42,7 @@ const useApproveDeploymentVersion = (
   return { onClick, isPending: approveMutation.isPending };
 };
 
-const PendingActionsSection: React.FC<{
+const PolicyDecisions: React.FC<{
   version: DeploymentVersion;
   environment: Environment;
 }> = ({ version, environment }) => {
@@ -109,7 +109,7 @@ export const EnvironmentActionsPanel: React.FC<
         <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-4 pb-4">
           <div className="space-y-4">
             {versions.map((version) => (
-              <PendingActionsSection
+              <PolicyDecisions
                 key={version.id}
                 version={version}
                 environment={environment}
