@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"sort"
+	"time"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
@@ -65,7 +66,12 @@ func (u *UserApprovalRecords) GetApprovalRecords(versionId, environmentId string
 		}
 	}
 	sort.Slice(records, func(i, j int) bool {
-		return records[i].CreatedAt < records[j].CreatedAt
+		ti, ei := time.Parse(time.RFC3339, records[i].CreatedAt)
+		tj, ej := time.Parse(time.RFC3339, records[j].CreatedAt)
+		if ei != nil || ej != nil {
+			return records[i].CreatedAt < records[j].CreatedAt
+		}
+		return ti.Before(tj)
 	})
 	return records
 }
