@@ -73,6 +73,9 @@ export default [
       route("runners", "routes/ws/runners.tsx"),
       route("providers", "routes/ws/providers.tsx"),
       route("policies", "routes/ws/policies.tsx"),
+      route("policies", "routes/ws/policies/_layout.tsx", [
+        route("create", "routes/ws/policies/page.create.tsx"),
+      ]),
 
       route("settings", "routes/ws/settings/_layout.tsx", [
         route("general", "routes/ws/settings/general.tsx"),

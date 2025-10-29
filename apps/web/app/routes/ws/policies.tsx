@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { buttonVariants } from "../../components/ui/button";
 
 export function meta() {
   return [
@@ -90,8 +91,16 @@ export default function Policies() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {total} {total === 1 ? "policy" : "policies"}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              {total} {total === 1 ? "policy" : "policies"}
+            </div>
+            <a
+              href={`/${workspace.slug}/policies/create`}
+              className={buttonVariants({ variant: "default" })}
+            >
+              New Policy
+            </a>
           </div>
         </div>
       </header>
