@@ -28,4 +28,17 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.acceptedResponse(openapi.schemaRef('Policy')) + openapi.okResponse(openapi.schemaRef('Policy')) + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/policies/{policyId}': {
+    delete: {
+      summary: 'Delete a policy by ID',
+      operationId: 'deletePolicy',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.policyIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('Policy'))
+        + openapi.notFoundResponse()
+        + openapi.badRequestResponse(),
+    },
+  }
 }

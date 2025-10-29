@@ -89,6 +89,36 @@ const upsertPolicy: AsyncTypedHandler<
   return;
 };
 
+const deletePolicy: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/policies/{policyId}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, policyId } = req.params;
+  const client = getClientFor(workspaceId);
+  const policy = await client.GET(
+    "/v1/workspaces/{workspaceId}/policies/{policyId}",
+    { params: { path: { workspaceId, policyId } } },
+  );
+
+  if (policy.error?.error != null) throw new ApiError(policy.error.error, 500);
+  if (policy.data == null) throw new ApiError("Policy not found", 404);
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.PolicyDeleted,
+    timestamp: Date.now(),
+    data: policy.data,
+  });
+  res.status(200).json(policy.data);
+  return;
+};
+
+const policyIdRouter = Router({ mergeParams: true }).delete(
+  "/",
+  asyncHandler(deletePolicy),
+);
+
 export const policiesRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listPolicies))
-  .put("/", asyncHandler(upsertPolicy));
+  .put("/", asyncHandler(upsertPolicy))
+  .use("/:policyId", policyIdRouter);
