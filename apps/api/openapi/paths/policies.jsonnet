@@ -18,6 +18,20 @@ local openapi = import '../lib/openapi.libsonnet';
         'A list of policies'
       ) + openapi.notFoundResponse(),
     },
+    post: {
+      summary: 'Create a policy',
+      operationId: 'createPolicy',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': { schema: openapi.schemaRef('CreatePolicyRequest') },
+        },
+      },
+      responses: openapi.acceptedResponse(openapi.schemaRef('Policy')) + openapi.badRequestResponse(),
+    },
   },
   '/v1/workspaces/{workspaceId}/policies/{policyId}': {
     get: {

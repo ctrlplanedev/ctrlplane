@@ -260,7 +260,8 @@ export interface paths {
         /** List policies */
         get: operations["listPolicies"];
         put?: never;
-        post?: never;
+        /** Create a policy */
+        post: operations["createPolicy"];
         delete?: never;
         options?: never;
         head?: never;
@@ -485,7 +486,16 @@ export interface components {
             systemId: string;
         };
         CreatePolicyRequest: {
+            description?: string;
+            enabled?: boolean;
+            /** @description Arbitrary metadata for the policy (record<string, string>) */
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
+            priority?: number;
+            rules?: components["schemas"]["PolicyRule"][];
+            selectors?: components["schemas"]["PolicyTargetSelector"][];
         };
         CreateRelationshipRuleRequest: {
             description?: string;
@@ -1846,6 +1856,42 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Policy"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

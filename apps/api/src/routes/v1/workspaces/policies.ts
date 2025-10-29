@@ -136,8 +136,38 @@ const getPolicy: AsyncTypedHandler<
   return;
 };
 
+const createPolicy: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/policies",
+  "post"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const { body } = req;
+
+  const policy = {
+    id: uuidv4(),
+    workspaceId,
+    enabled: true,
+    priority: 0,
+    createdAt: new Date().toISOString(),
+    metadata: {},
+    rules: [],
+    selectors: [],
+    ...body,
+  };
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.PolicyCreated,
+    timestamp: Date.now(),
+    data: policy,
+  });
+
+  res.status(202).json(policy);
+};
+
 export const policiesRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listPolicies))
+  .post("/", asyncHandler(createPolicy))
   .get("/:policyId", asyncHandler(getPolicy))
   .delete("/:policyId", asyncHandler(deletePolicy))
   .put("/:policyId", asyncHandler(upsertPolicy));

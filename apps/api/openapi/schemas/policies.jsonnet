@@ -6,6 +6,22 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name'],
     properties: {
       name: { type: 'string' },
+      description: { type: 'string' },
+      priority: { type: 'integer' },
+      enabled: { type: 'boolean' },
+      selectors: {
+        type: 'array',
+        items: openapi.schemaRef('PolicyTargetSelector'),
+      },
+      rules: {
+        type: 'array',
+        items: openapi.schemaRef('PolicyRule'),
+      },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+        description: 'Arbitrary metadata for the policy (record<string, string>)',
+      },
     },
   },
 
