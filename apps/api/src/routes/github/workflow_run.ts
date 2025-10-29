@@ -72,7 +72,7 @@ const generateOapiEvent = (
 
   const jobId = extractUuid(name);
   if (jobId == null) {
-    logger.warning("Could not extract jobId from github workflow event", {
+    logger.warn("Could not extract jobId from github workflow event", {
       name,
     });
     return null;
