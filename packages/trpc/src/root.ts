@@ -1,6 +1,6 @@
-import { decisionsRouter } from "./routes/decisions.js";
 import { deploymentVersionsRouter } from "./routes/deployment-versions.js";
 import { deploymentsRouter } from "./routes/deployments.js";
+import { environmentVersionRouter } from "./routes/environment-version.js";
 import { environmentRouter } from "./routes/environments.js";
 import { githubRouter } from "./routes/github.js";
 import { jobAgentsRouter } from "./routes/job-agents.js";
@@ -32,5 +32,5 @@ export const appRouter = router({
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
   github: githubRouter,
-  decisions: decisionsRouter,
+  environmentVersion: environmentVersionRouter,
 });

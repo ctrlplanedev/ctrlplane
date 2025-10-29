@@ -53,8 +53,8 @@ const getPolicyResults = async (
   return decision.data?.versionDecision?.policyResults ?? [];
 };
 
-export const decisionsRouter = router({
-  environmentVersion: protectedProcedure
+export const environmentVersionRouter = router({
+  policyResults: protectedProcedure
     .input(
       z.object({
         workspaceId: z.uuid(),

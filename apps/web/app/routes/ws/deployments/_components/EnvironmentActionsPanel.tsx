@@ -65,7 +65,7 @@ const PendingActionsSection: React.FC<{
     version.id,
     environment.id,
   );
-  const decisionsQuery = trpc.decisions.environmentVersion.useQuery({
+  const decisionsQuery = trpc.environmentVersion.policyResults.useQuery({
     workspaceId: workspace.id,
     environmentId: environment.id,
     versionId: version.id,
