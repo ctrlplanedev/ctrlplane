@@ -91,8 +91,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upsert user approval record */
-        post: operations["upsertUserApprovalRecord"];
+        /** Create user approval record */
+        post: operations["createUserApprovalRecord"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1238,7 +1238,7 @@ export interface operations {
             };
         };
     };
-    upsertUserApprovalRecord: {
+    createUserApprovalRecord: {
         parameters: {
             query?: never;
             header?: never;
