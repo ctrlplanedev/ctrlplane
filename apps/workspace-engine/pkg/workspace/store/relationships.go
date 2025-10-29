@@ -3,7 +3,9 @@ package store
 import (
 	"context"
 	"fmt"
+	"sync"
 	"workspace-engine/pkg/changeset"
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
@@ -95,6 +97,9 @@ func (r *RelationshipRules) GetRelatedEntities(
 	result := make(map[string][]*oapi.EntityRelation)
 	entityType := entity.GetType()
 
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
 	// Find all relationship rules where this entity matches
 	for _, rule := range r.repo.RelationshipRules.Items() {
 		// Early exit: skip rules that don't involve this entity type
@@ -110,24 +115,30 @@ func (r *RelationshipRules) GetRelatedEntities(
 
 		// If entity is on the "from" side, find matching "to" entities
 		if fromMatches {
-			toEntities, err := r.findMatchingEntities(ctx, rule, rule.ToType, rule.ToSelector, entity, true)
-			if err != nil {
-				return nil, err
-			}
-			if len(toEntities) > 0 {
-				relatedEntities := make([]*oapi.EntityRelation, 0, len(toEntities))
-				for _, toEntity := range toEntities {
-					relatedEntities = append(relatedEntities, &oapi.EntityRelation{
-						Rule:       rule,
-						Direction:  oapi.To,
-						EntityType: toEntity.GetType(),
-						EntityId:   toEntity.GetID(),
-						Entity:     *toEntity,
-					})
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				toEntities, err := r.findMatchingEntities(ctx, rule, rule.ToType, rule.ToSelector, entity, true)
+				if err != nil {
+					return
 				}
+				if len(toEntities) > 0 {
+					relatedEntities := make([]*oapi.EntityRelation, 0, len(toEntities))
+					for _, toEntity := range toEntities {
+						relatedEntities = append(relatedEntities, &oapi.EntityRelation{
+							Rule:       rule,
+							Direction:  oapi.To,
+							EntityType: toEntity.GetType(),
+							EntityId:   toEntity.GetID(),
+							Entity:     *toEntity,
+						})
+					}
 
-				result[rule.Reference] = append(result[rule.Reference], relatedEntities...)
-			}
+					mu.Lock()
+					result[rule.Reference] = append(result[rule.Reference], relatedEntities...)
+					mu.Unlock()
+				}
+			}()
 		}
 
 		// Check if this entity matches the "to" selector
@@ -138,30 +149,40 @@ func (r *RelationshipRules) GetRelatedEntities(
 
 		// If entity is on the "to" side, find matching "from" entities
 		if toMatches && !fromMatches {
-			fromEntities, err := r.findMatchingEntities(ctx, rule, rule.FromType, rule.FromSelector, entity, false)
-			if err != nil {
-				return nil, err
-			}
-			if len(fromEntities) > 0 {
-				relatedEntities := make([]*oapi.EntityRelation, 0, len(fromEntities))
-				for _, fromEntity := range fromEntities {
-					relatedEntities = append(relatedEntities, &oapi.EntityRelation{
-						Rule:       rule,
-						Direction:  oapi.From,
-						EntityType: rule.FromType,
-						EntityId:   fromEntity.GetID(),
-						Entity:     *fromEntity,
-					})
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				fromEntities, err := r.findMatchingEntities(ctx, rule, rule.FromType, rule.FromSelector, entity, false)
+				if err != nil {
+					return
 				}
-				result[rule.Reference] = append(result[rule.Reference], relatedEntities...)
-			}
+				if len(fromEntities) > 0 {
+					relatedEntities := make([]*oapi.EntityRelation, 0, len(fromEntities))
+					for _, fromEntity := range fromEntities {
+						relatedEntities = append(relatedEntities, &oapi.EntityRelation{
+							Rule:       rule,
+							Direction:  oapi.From,
+							EntityType: rule.FromType,
+							EntityId:   fromEntity.GetID(),
+							Entity:     *fromEntity,
+						})
+					}
+
+					mu.Lock()
+					result[rule.Reference] = append(result[rule.Reference], relatedEntities...)
+					mu.Unlock()
+				}
+			}()
 		}
 	}
+
+	wg.Wait()
 
 	return result, nil
 }
 
 // findMatchingEntities is a helper function that finds entities matching a selector and property matchers
+// This function uses parallel processing to improve performance with large entity counts
 func (r *RelationshipRules) findMatchingEntities(
 	ctx context.Context,
 	rule *oapi.RelationshipRule,
@@ -173,101 +194,269 @@ func (r *RelationshipRules) findMatchingEntities(
 	ctx, span := relationshipsTracer.Start(ctx, "findMatchingEntities")
 	defer span.End()
 
-	// Preallocate result slice with estimated capacity based on entity type
-	var estimatedCap int
 	switch entityType {
 	case "deployment":
-		estimatedCap = len(r.store.Deployments.Items()) / 10 // Assume ~10% match rate
+		return r.findMatchingDeployments(ctx, rule, entitySelector, sourceEntity, evaluateFromTo)
 	case "environment":
-		estimatedCap = len(r.store.Environments.Items()) / 10
+		return r.findMatchingEnvironments(ctx, rule, entitySelector, sourceEntity, evaluateFromTo)
 	case "resource":
-		estimatedCap = len(r.store.Resources.Items()) / 10
-	}
-	if estimatedCap < 8 {
-		estimatedCap = 8 // Minimum reasonable capacity
-	}
-	result := make([]*oapi.RelatableEntity, 0, estimatedCap)
-
-	switch entityType {
-	case "deployment":
-		for _, deployment := range r.store.Deployments.Items() {
-			deploymentEntity := relationships.NewDeploymentEntity(deployment)
-			if entitySelector != nil {
-				matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
-				if err != nil {
-					return nil, err
-				}
-				if !matched {
-					continue
-				}
-			}
-
-			var matches bool
-			if evaluateFromTo {
-				matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, deploymentEntity)
-			} else {
-				matches = relationships.Matches(ctx, &rule.Matcher, deploymentEntity, sourceEntity)
-			}
-			if !matches {
-				continue
-			}
-
-			result = append(result, deploymentEntity)
-		}
-	case "environment":
-		for _, environment := range r.store.Environments.Items() {
-			environmentEntity := relationships.NewEnvironmentEntity(environment)
-			if entitySelector != nil {
-				matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
-				if err != nil {
-					return nil, err
-				}
-				if !matched {
-					continue
-				}
-			}
-
-			var matches bool
-			if evaluateFromTo {
-				matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, environmentEntity)
-			} else {
-				matches = relationships.Matches(ctx, &rule.Matcher, environmentEntity, sourceEntity)
-			}
-			if !matches {
-				continue
-			}
-
-			result = append(result, environmentEntity)
-		}
-	case "resource":
-		for _, resource := range r.store.Resources.Items() {
-			resourceEntity := relationships.NewResourceEntity(resource)
-			if entitySelector != nil {
-				matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
-				if err != nil {
-					return nil, err
-				}
-				if !matched {
-					continue
-				}
-			}
-
-			// Apply property matchers if any
-			var matches bool
-			if evaluateFromTo {
-				matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, resourceEntity)
-			} else {
-				matches = relationships.Matches(ctx, &rule.Matcher, resourceEntity, sourceEntity)
-			}
-			if !matches {
-				continue
-			}
-
-			result = append(result, relationships.NewResourceEntity(resource))
-		}
+		return r.findMatchingResources(ctx, rule, entitySelector, sourceEntity, evaluateFromTo)
 	default:
 		return nil, fmt.Errorf("unknown entity type: %s", entityType)
 	}
+}
 
-	return result, nil
+func (r *RelationshipRules) findMatchingDeployments(
+	ctx context.Context,
+	rule *oapi.RelationshipRule,
+	entitySelector *oapi.Selector,
+	sourceEntity *oapi.RelatableEntity,
+	evaluateFromTo bool,
+) ([]*oapi.RelatableEntity, error) {
+	deployments := r.store.Deployments.Items()
+	if len(deployments) == 0 {
+		return nil, nil
+	}
+
+	// Convert map to slice for processing
+	deploymentSlice := make([]*oapi.Deployment, 0, len(deployments))
+	for _, deployment := range deployments {
+		deploymentSlice = append(deploymentSlice, deployment)
+	}
+
+	// Process function for each deployment
+	processFn := func(deployment *oapi.Deployment) (*oapi.RelatableEntity, error) {
+		deploymentEntity := relationships.NewDeploymentEntity(deployment)
+		
+		if entitySelector != nil {
+			matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				return nil, nil // No match, skip
+			}
+		}
+
+		var matches bool
+		if evaluateFromTo {
+			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, deploymentEntity)
+		} else {
+			matches = relationships.Matches(ctx, &rule.Matcher, deploymentEntity, sourceEntity)
+		}
+		
+		if !matches {
+			return nil, nil // No match, skip
+		}
+
+		return deploymentEntity, nil
+	}
+
+	// Use parallel processing for large datasets
+	const parallelThreshold = 100
+	const chunkSize = 50
+	const maxConcurrency = 8
+
+	var results []*oapi.RelatableEntity
+	var err error
+
+	if len(deploymentSlice) < parallelThreshold {
+		// Sequential processing for small datasets
+		results = make([]*oapi.RelatableEntity, 0, 8)
+		for _, deployment := range deploymentSlice {
+			entity, err := processFn(deployment)
+			if err != nil {
+				return nil, err
+			}
+			if entity != nil {
+				results = append(results, entity)
+			}
+		}
+	} else {
+		// Parallel processing for large datasets
+		results, err = concurrency.ProcessInChunks(deploymentSlice, chunkSize, maxConcurrency, processFn)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Filter out nil results
+	filtered := make([]*oapi.RelatableEntity, 0, len(results))
+	for _, entity := range results {
+		if entity != nil {
+			filtered = append(filtered, entity)
+		}
+	}
+
+	return filtered, nil
+}
+
+func (r *RelationshipRules) findMatchingEnvironments(
+	ctx context.Context,
+	rule *oapi.RelationshipRule,
+	entitySelector *oapi.Selector,
+	sourceEntity *oapi.RelatableEntity,
+	evaluateFromTo bool,
+) ([]*oapi.RelatableEntity, error) {
+	environments := r.store.Environments.Items()
+	if len(environments) == 0 {
+		return nil, nil
+	}
+
+	// Convert map to slice for processing
+	environmentSlice := make([]*oapi.Environment, 0, len(environments))
+	for _, environment := range environments {
+		environmentSlice = append(environmentSlice, environment)
+	}
+
+	// Process function for each environment
+	processFn := func(environment *oapi.Environment) (*oapi.RelatableEntity, error) {
+		environmentEntity := relationships.NewEnvironmentEntity(environment)
+		
+		if entitySelector != nil {
+			matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				return nil, nil // No match, skip
+			}
+		}
+
+		var matches bool
+		if evaluateFromTo {
+			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, environmentEntity)
+		} else {
+			matches = relationships.Matches(ctx, &rule.Matcher, environmentEntity, sourceEntity)
+		}
+		
+		if !matches {
+			return nil, nil // No match, skip
+		}
+
+		return environmentEntity, nil
+	}
+
+	// Use parallel processing for large datasets
+	const parallelThreshold = 100
+	const chunkSize = 50
+	const maxConcurrency = 8
+
+	var results []*oapi.RelatableEntity
+	var err error
+
+	if len(environmentSlice) < parallelThreshold {
+		// Sequential processing for small datasets
+		results = make([]*oapi.RelatableEntity, 0, 8)
+		for _, environment := range environmentSlice {
+			entity, err := processFn(environment)
+			if err != nil {
+				return nil, err
+			}
+			if entity != nil {
+				results = append(results, entity)
+			}
+		}
+	} else {
+		// Parallel processing for large datasets
+		results, err = concurrency.ProcessInChunks(environmentSlice, chunkSize, maxConcurrency, processFn)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Filter out nil results
+	filtered := make([]*oapi.RelatableEntity, 0, len(results))
+	for _, entity := range results {
+		if entity != nil {
+			filtered = append(filtered, entity)
+		}
+	}
+
+	return filtered, nil
+}
+
+func (r *RelationshipRules) findMatchingResources(
+	ctx context.Context,
+	rule *oapi.RelationshipRule,
+	entitySelector *oapi.Selector,
+	sourceEntity *oapi.RelatableEntity,
+	evaluateFromTo bool,
+) ([]*oapi.RelatableEntity, error) {
+	resources := r.store.Resources.Items()
+	if len(resources) == 0 {
+		return nil, nil
+	}
+
+	// Convert map to slice for processing
+	resourceSlice := make([]*oapi.Resource, 0, len(resources))
+	for _, resource := range resources {
+		resourceSlice = append(resourceSlice, resource)
+	}
+
+	// Process function for each resource
+	processFn := func(resource *oapi.Resource) (*oapi.RelatableEntity, error) {
+		resourceEntity := relationships.NewResourceEntity(resource)
+		
+		if entitySelector != nil {
+			matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				return nil, nil // No match, skip
+			}
+		}
+
+		var matches bool
+		if evaluateFromTo {
+			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, resourceEntity)
+		} else {
+			matches = relationships.Matches(ctx, &rule.Matcher, resourceEntity, sourceEntity)
+		}
+		
+		if !matches {
+			return nil, nil // No match, skip
+		}
+
+		return resourceEntity, nil
+	}
+
+	// Use parallel processing for large datasets
+	const parallelThreshold = 100
+	const chunkSize = 50
+	const maxConcurrency = 8
+
+	var results []*oapi.RelatableEntity
+	var err error
+
+	if len(resourceSlice) < parallelThreshold {
+		// Sequential processing for small datasets
+		results = make([]*oapi.RelatableEntity, 0, 8)
+		for _, resource := range resourceSlice {
+			entity, err := processFn(resource)
+			if err != nil {
+				return nil, err
+			}
+			if entity != nil {
+				results = append(results, entity)
+			}
+		}
+	} else {
+		// Parallel processing for large datasets
+		results, err = concurrency.ProcessInChunks(resourceSlice, chunkSize, maxConcurrency, processFn)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Filter out nil results
+	filtered := make([]*oapi.RelatableEntity, 0, len(results))
+	for _, entity := range results {
+		if entity != nil {
+			filtered = append(filtered, entity)
+		}
+	}
+
+	return filtered, nil
 }
