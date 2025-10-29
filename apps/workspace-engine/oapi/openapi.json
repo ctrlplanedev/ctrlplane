@@ -3324,6 +3324,16 @@
                      "application/json": {
                         "schema": {
                            "properties": {
+                              "envPolicyDecision": {
+                                 "$ref": "#/components/schemas/DeployDecision"
+                              },
+                              "envTargetVersionDecision": {
+                                 "$ref": "#/components/schemas/DeployDecision"
+                              },
+                              "policiesEvaluated": {
+                                 "description": "The number of policies evaluated",
+                                 "type": "number"
+                              },
                               "versionDecision": {
                                  "$ref": "#/components/schemas/DeployDecision"
                               },

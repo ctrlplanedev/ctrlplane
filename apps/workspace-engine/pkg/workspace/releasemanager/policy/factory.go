@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -18,6 +19,30 @@ type EvaluatorFactory struct {
 
 func NewEvaluatorFactory(store *store.Store) *EvaluatorFactory {
 	return &EvaluatorFactory{store: store}
+}
+
+func (f *EvaluatorFactory) EvaluateEnvironmentAndVersionAndTargetScopedPolicyRules(
+	ctx context.Context,
+	policy *oapi.Policy,
+	environment *oapi.Environment,
+	version *oapi.DeploymentVersion,
+	releaseTarget *oapi.ReleaseTarget,
+) []*oapi.RuleEvaluation {
+	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
+		eval := f.createEnvironmentAndVersionAndTargetScopedEvaluator(rule)
+		if eval == nil {
+			return nil, nil // Skip unknown rule types
+		}
+		ruleResults := make([]*oapi.RuleEvaluation, 0, len(eval))
+		for _, eval := range eval {
+			result, err := eval.Evaluate(ctx, environment, version, releaseTarget)
+			if err != nil {
+				return nil, err
+			}
+			ruleResults = append(ruleResults, result)
+		}
+		return ruleResults, nil
+	})
 }
 
 func (f *EvaluatorFactory) EvaluateEnvironmentAndVersionScopedPolicyRules(
@@ -155,6 +180,16 @@ func evaluateRules(
 	}
 
 	return ruleResults
+}
+
+// createEnvironmentAndVersionAndTargetScopedEvaluator creates a environment and version and target-scoped evaluator for the given rule.
+// Returns nil for unknown rule types.
+func (f *EvaluatorFactory) createEnvironmentAndVersionAndTargetScopedEvaluator(rule *oapi.PolicyRule) []evaluator.EnvironmentAndVersionAndTargetScopedEvaluator {
+	evaluators := []evaluator.EnvironmentAndVersionAndTargetScopedEvaluator{}
+	if rule.GradualRollout != nil {
+		evaluators = append(evaluators, gradualrollout.NewGradualRolloutEvaluator(f.store, rule.GradualRollout))
+	}
+	return evaluators
 }
 
 // createEnvironmentAndVersionScopedEvaluator creates a environment and version-scoped evaluator for the given rule.

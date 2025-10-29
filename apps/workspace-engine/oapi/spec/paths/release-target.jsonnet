@@ -20,8 +20,11 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.okResponse(
         {
           properties: {
+            policiesEvaluated: { type: 'number', description: 'The number of policies evaluated' },
             workspaceDecision: openapi.schemaRef('DeployDecision'),
             versionDecision: openapi.schemaRef('DeployDecision'),
+            envPolicyDecision: openapi.schemaRef('DeployDecision'),
+            envTargetVersionDecision: openapi.schemaRef('DeployDecision'),
           },
         },
         'Policy evaluation results for the release target',

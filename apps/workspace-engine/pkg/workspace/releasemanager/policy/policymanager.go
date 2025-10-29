@@ -163,3 +163,34 @@ func (m *Manager) EvaluateEnvironmentAndVersion(
 
 	return decision, nil
 }
+
+func (m *Manager) EvaluateEnvironmentAndVersionAndTarget(
+	ctx context.Context,
+	environment *oapi.Environment,
+	version *oapi.DeploymentVersion,
+	releaseTarget *oapi.ReleaseTarget,
+	policies map[string]*oapi.Policy,
+) (*oapi.DeployDecision, error) {
+	ctx, span := tracer.Start(ctx, "PolicyManager.EvaluateEnvironmentAndVersionAndTarget")
+	defer span.End()
+
+	decision := NewDeployDecision()
+
+	// Fast path: no policies = allowed
+	if len(policies) == 0 {
+		return decision, nil
+	}
+
+	for _, policy := range policies {
+		policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
+		ruleResults := m.evaluatorFactory.EvaluateEnvironmentAndVersionAndTargetScopedPolicyRules(ctx, policy, environment, version, releaseTarget)
+		for _, ruleResult := range ruleResults {
+			if ruleResult != nil {
+				policyResult.AddRuleResult(*ruleResult)
+			}
+		}
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
+	}
+
+	return decision, nil
+}
