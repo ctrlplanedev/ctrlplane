@@ -623,6 +623,12 @@ export interface components {
             /** @example Workspace not found */
             error?: string;
         };
+        GradualRolloutRule: {
+            id: string;
+            policyId: string;
+            /** Format: int32 */
+            timeScaleInterval: number;
+        };
         IntegerValue: number;
         Job: {
             /** Format: date-time */
@@ -694,6 +700,7 @@ export interface components {
             anyApproval?: components["schemas"]["AnyApprovalRule"];
             createdAt: string;
             environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
+            gradualRollout?: components["schemas"]["GradualRolloutRule"];
             id: string;
             policyId: string;
         };

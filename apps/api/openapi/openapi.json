@@ -418,6 +418,27 @@
             },
             "type": "object"
          },
+         "GradualRolloutRule": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "policyId": {
+                  "type": "string"
+               },
+               "timeScaleInterval": {
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+               }
+            },
+            "required": [
+               "id",
+               "policyId",
+               "timeScaleInterval"
+            ],
+            "type": "object"
+         },
          "IntegerValue": {
             "type": "integer"
          },
@@ -689,6 +710,9 @@
                },
                "environmentProgression": {
                   "$ref": "#/components/schemas/EnvironmentProgressionRule"
+               },
+               "gradualRollout": {
+                  "$ref": "#/components/schemas/GradualRolloutRule"
                },
                "id": {
                   "type": "string"

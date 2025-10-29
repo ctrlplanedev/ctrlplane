@@ -72,6 +72,7 @@ local openapi = import '../lib/openapi.libsonnet';
       createdAt: { type: 'string' },
       anyApproval: openapi.schemaRef('AnyApprovalRule'),
       environmentProgression: openapi.schemaRef('EnvironmentProgressionRule'),
+      gradualRollout: openapi.schemaRef('GradualRolloutRule'),
     },
   },
 
@@ -108,6 +109,16 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['minApprovals'],
     properties: {
       minApprovals: { type: 'integer', format: 'int32' },
+    },
+  },
+
+  GradualRolloutRule: {
+    type: 'object',
+    required: ['id', 'policyId', 'timeScaleInterval'],
+    properties: {
+      id: { type: 'string' },
+      policyId: { type: 'string' },
+      timeScaleInterval: { type: 'integer', format: 'int32', minimum: 0 },
     },
   },
 }
