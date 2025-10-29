@@ -65,4 +65,20 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse(),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/policies/{policyId}/rules/{ruleId}': {
+    get: {
+      summary: 'Get rule',
+      operationId: 'getRule',
+      description: 'Returns a specific rule by ID.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.policyIdParam(),
+        openapi.ruleIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('PolicyRule'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

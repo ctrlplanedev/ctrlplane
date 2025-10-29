@@ -1137,9 +1137,14 @@
                "message": {
                   "description": "Human-readable explanation of the rule result",
                   "type": "string"
+               },
+               "ruleId": {
+                  "description": "The ID of the rule that was evaluated",
+                  "type": "string"
                }
             },
             "required": [
+               "ruleId",
                "allowed",
                "actionRequired",
                "message",
@@ -3134,6 +3139,74 @@
                }
             },
             "summary": "Get release targets for a policy"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/policies/{policyId}/rules/{ruleId}": {
+         "get": {
+            "description": "Returns a specific rule by ID.",
+            "operationId": "getRule",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the policy",
+                  "in": "path",
+                  "name": "policyId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the rule",
+                  "in": "path",
+                  "name": "ruleId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/PolicyRule"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get rule"
          }
       },
       "/v1/workspaces/{workspaceId}/relationship-rules": {

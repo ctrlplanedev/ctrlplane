@@ -19,6 +19,7 @@
   // Common parameters
   workspaceIdParam():: self.stringParam('workspaceId', 'ID of the workspace'),
   policyIdParam():: self.stringParam('policyId', 'ID of the policy'),
+  ruleIdParam():: self.stringParam('ruleId', 'ID of the rule'),
   resourceIdParam():: self.stringParam('resourceId', 'ID of the resource'),
   resourceIdentifierParam():: self.stringParam('resourceIdentifier', 'Identifier of the resource'),
   deploymentIdParam():: self.stringParam('deploymentId', 'ID of the deployment'),
