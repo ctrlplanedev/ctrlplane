@@ -435,12 +435,6 @@ export function LazyLoadDeploymentCard({
     (jobStatusSummary.invalidIntegration || 0) +
     (jobStatusSummary.externalRunNotFound || 0);
 
-  console.log(
-    _.chain(releaseTargets)
-      .groupBy(({ state }) => state.latestJob?.status ?? "unknown")
-      .value(),
-  );
-
   return (
     <DeploymentCard
       ref={ref}
@@ -471,7 +465,7 @@ export function LazyLoadDeploymentCard({
             <>
               {latestVersion ? (
                 <DeploymentCardVersionMetric
-                  tag={latestVersion.tag}
+                  tag={latestVersion.name || latestVersion.tag}
                   createdAt={new Date(latestVersion.createdAt)}
                 />
               ) : (

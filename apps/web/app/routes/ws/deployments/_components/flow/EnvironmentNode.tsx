@@ -36,8 +36,16 @@ type EnvironmentNodeData = {
   name: string;
   resourceCount: number;
   jobs: Job[];
-  currentVersionsWithCounts: Array<{ tag: string; count: number }>;
-  desiredVersionsWithCounts: Array<{ tag: string; count: number }>;
+  currentVersionsWithCounts: Array<{
+    name: string;
+    tag: string;
+    count: number;
+  }>;
+  desiredVersionsWithCounts: Array<{
+    name: string;
+    tag: string;
+    count: number;
+  }>;
   blockedVersionsByVersionId?: Record<string, Array<{ reason: string }>>; // All blocked versions with reasons
   onSelect?: () => void;
 };
@@ -129,7 +137,8 @@ export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
             {!isTransitioning && currentVersionsWithCounts.length === 1 ? (
               // Single stable version - clean display
               <div className="font-mono text-xs text-muted-foreground">
-                {currentVersionsWithCounts[0].tag}
+                {currentVersionsWithCounts[0]?.name ||
+                  currentVersionsWithCounts[0]?.tag}
               </div>
             ) : (
               // Complex state - show total picture
@@ -168,7 +177,7 @@ export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
                           variant="outline"
                           className="border-blue-500/30 bg-blue-500/5 px-1.5 py-0 font-mono text-xs text-blue-600"
                         >
-                          {v.tag}
+                          {v.name || v.tag}
                           <span className="ml-1">({v.count})</span>
                         </Badge>
                       ))}
