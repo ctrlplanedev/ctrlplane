@@ -7,6 +7,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { trpc } from "~/api/trpc";
 import { badgeVariants } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
 import { ResourceIcon } from "../../../../components/ui/resource-icon";
@@ -101,11 +102,15 @@ export const ChildrenResources: React.FC<{ resourceId: string }> = ({
     .filter((r) => r.direction === "to")
     .filter((r) => r.entityType === "resource");
 
-  console.log(relationsQuery.data);
-  console.log(resourceRelations);
   return (
     <div className="ml-3 space-y-2 border-l py-2 pl-4">
-      {resourceRelations.length === 0 && (
+      {relationsQuery.isLoading && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Spinner className="size-3 animate-spin" /> Loading...
+        </div>
+      )}
+
+      {resourceRelations.length === 0 && !relationsQuery.isLoading && (
         <div className="text-xs text-muted-foreground">
           No child resources found.{" "}
           <NavLink
