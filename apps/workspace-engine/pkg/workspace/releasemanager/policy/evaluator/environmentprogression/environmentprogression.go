@@ -77,7 +77,7 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		NewAllowedResult("Version succeeded in dependency environment(s)").
 		WithDetail("dependency_environment_count", len(dependencyEnvs)).
 		WithDetail("version_id", version.Id)
-		
+
 	for key, detail := range result.Details {
 		r.WithDetail(key, detail)
 	}
@@ -168,26 +168,26 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	// Merge all failed results - collect messages and details from the first pending/denied result
 	var failureMessages []string
 	var mergedResult *oapi.RuleEvaluation
-	
+
 	for _, failedResult := range failedResults {
 		envName := ""
 		if name, ok := failedResult.Details["environment_name"].(string); ok {
 			envName = name
 		}
 		failureMessages = append(failureMessages, fmt.Sprintf("%s: %s", envName, failedResult.Message))
-		
+
 		// Use the first result as the base (preserves things like soak_finish_time)
 		if mergedResult == nil {
 			mergedResult = failedResult
 		}
 	}
-	
+
 	// Update the message with all failure reasons
 	mergedResult.Message = fmt.Sprintf(
 		"Version not successful in dependency environment(s): %v",
 		failureMessages,
 	)
-	
+
 	return mergedResult.
 		WithDetail("dependency_environment_count", len(dependencyEnvs)).
 		WithDetail("version_id", version.Id), nil
@@ -222,7 +222,7 @@ func (e *EnvironmentProgressionEvaluator) checkSingleEnvironment(
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Add environment context to the result
 	return result.
 		WithDetail("environment_name", depEnv.Name).
@@ -288,7 +288,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		if timeSinceSuccess < soakDuration {
 			remaining := soakDuration - timeSinceSuccess
 			soakFinishTime := latestSuccessTime.Add(soakDuration)
-			
+
 			return results.NewPendingResult(results.ActionTypeWait, fmt.Sprintf(
 				"Soak time required: %d minutes. Time remaining: %s",
 				*e.rule.MinimumSockTimeMinutes,

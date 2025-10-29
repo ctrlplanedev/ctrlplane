@@ -174,7 +174,7 @@ func (p *Planner) findDeployableVersion(
 
 		// Step 2: Check user-defined policies
 		// Both version-scoped AND environment+version-scoped rules must pass
-		
+
 		// Check version-scoped rules
 		versionDecision, err := p.policyManager.EvaluateVersion(ctx, version, policies)
 		if err != nil {

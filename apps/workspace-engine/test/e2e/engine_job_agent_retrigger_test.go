@@ -331,4 +331,3 @@ func TestEngine_JobAgentConfigurationWithMultipleResources(t *testing.T) {
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	assert.Len(t, pendingJobs, 3, "expected 3 pending jobs")
 }
-

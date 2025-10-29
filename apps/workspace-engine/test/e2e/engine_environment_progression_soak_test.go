@@ -79,7 +79,7 @@ func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // Give time for async processing
 
 	jobs := engine.Workspace().Jobs().Items()
-	
+
 	// Find staging and production jobs
 	var stagingJob, prodJob *oapi.Job
 	for _, job := range jobs {
@@ -221,7 +221,7 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 
 	// Now production job should be created (soak time has elapsed)
 	jobs = engine.Workspace().Jobs().Items()
-	
+
 	prodJobCount := 0
 	for _, job := range jobs {
 		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -331,7 +331,7 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 	// Production job should now be created even though us-west hasn't succeeded
 	// (OR logic - only need success in ANY dependency environment)
 	jobs = engine.Workspace().Jobs().Items()
-	
+
 	prodJobCount := 0
 	for _, job := range jobs {
 		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -558,7 +558,7 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 
 	// Production job should NOT be created (deployment too old)
 	jobs = engine.Workspace().Jobs().Items()
-	
+
 	prodJobCount := 0
 	for _, job := range jobs {
 		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -570,4 +570,3 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 		t.Fatalf("expected no production jobs (deployment too old), got %d", prodJobCount)
 	}
 }
-
