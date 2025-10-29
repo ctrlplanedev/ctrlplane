@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"sort"
+	"time"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
@@ -54,4 +56,22 @@ func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []st
 		}
 	}
 	return approvers
+}
+
+func (u *UserApprovalRecords) GetApprovalRecords(versionId, environmentId string) []*oapi.UserApprovalRecord {
+	records := make([]*oapi.UserApprovalRecord, 0)
+	for record := range u.repo.UserApprovalRecords.IterBuffered() {
+		if record.Val.VersionId == versionId && record.Val.EnvironmentId == environmentId && record.Val.Status == oapi.ApprovalStatusApproved {
+			records = append(records, record.Val)
+		}
+	}
+	sort.Slice(records, func(i, j int) bool {
+		ti, ei := time.Parse(time.RFC3339, records[i].CreatedAt)
+		tj, ej := time.Parse(time.RFC3339, records[j].CreatedAt)
+		if ei != nil || ej != nil {
+			return records[i].CreatedAt < records[j].CreatedAt
+		}
+		return ti.Before(tj)
+	})
+	return records
 }

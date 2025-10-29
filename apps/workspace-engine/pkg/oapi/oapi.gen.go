@@ -223,6 +223,13 @@ type GithubEntity struct {
 	Slug           string `json:"slug"`
 }
 
+// GradualRolloutRule defines model for GradualRolloutRule.
+type GradualRolloutRule struct {
+	Id                string `json:"id"`
+	PolicyId          string `json:"policyId"`
+	TimeScaleInterval int32  `json:"timeScaleInterval"`
+}
+
 // IntegerValue defines model for IntegerValue.
 type IntegerValue = int
 
@@ -330,6 +337,7 @@ type PolicyRule struct {
 	AnyApproval            *AnyApprovalRule            `json:"anyApproval,omitempty"`
 	CreatedAt              string                      `json:"createdAt"`
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
+	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
 }
