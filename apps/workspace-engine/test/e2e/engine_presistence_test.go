@@ -569,7 +569,7 @@ func TestEngine_Persistence_ResourceDeletion(t *testing.T) {
 	// Delete resource 2
 	_, ok := engine.Workspace().Resources().Get(resource2ID)
 	require.True(t, ok)
-	
+
 	// Use PushEvent to delete (which persists the change)
 	engine.PushEvent(ctx, handler.ResourceDelete, &oapi.Resource{Id: resource2ID})
 
@@ -939,7 +939,7 @@ func TestEngine_Persistence_MultipleDeletions(t *testing.T) {
 	// Verify all deletions persisted
 	allResources := ws.Resources().Items()
 	assert.Equal(t, 1, len(allResources), "Should have 1 resource after reload")
-	
+
 	res1, ok := ws.Resources().Get(resource1ID)
 	require.True(t, ok, "resource-1 should exist")
 	assert.Equal(t, "resource-1", res1.Name)

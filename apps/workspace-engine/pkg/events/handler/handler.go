@@ -186,7 +186,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		if !ok {
 			continue
 		}
-		
+
 		// Map statechange type to persistence type
 		var persistenceType persistence.ChangeType
 		switch change.Type {
@@ -198,7 +198,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 			log.Warn("Unknown state change type", "type", change.Type)
 			continue
 		}
-		
+
 		changes = append(changes, persistence.Change{
 			Namespace:  ws.ID,
 			ChangeType: persistenceType,

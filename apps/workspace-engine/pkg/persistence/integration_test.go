@@ -226,7 +226,7 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 
 	// Apply loaded changes to a new store and verify resource doesn't exist
 	testStore := store.New(statechange.NewChangeSet[any]())
-	
+
 	// Apply the (empty) changes - resource should not be added
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)

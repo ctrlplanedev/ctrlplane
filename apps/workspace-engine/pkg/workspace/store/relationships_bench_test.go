@@ -28,7 +28,7 @@ func createTestDeployment(workspaceID, systemID, deploymentID, name string) *oap
 func createTestRelationshipRule(id, reference, workspaceID, relType string, fromType, toType oapi.RelatableEntityType, celExpression string) *oapi.RelationshipRule {
 	matcher := oapi.RelationshipRule_Matcher{}
 	_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: celExpression})
-	
+
 	return &oapi.RelationshipRule{
 		Id:               id,
 		Reference:        reference,
@@ -71,7 +71,7 @@ func setupRelationshipBenchmarkStore(
 	}
 
 	// Create deployments
-	for i := 0; i < numDeployments; i++ {
+	for i := range numDeployments {
 		deploymentID := uuid.New().String()
 		deploymentName := fmt.Sprintf("deployment-%d", i)
 		dep := createTestDeployment(workspaceID, systemID, deploymentID, deploymentName)
@@ -79,7 +79,7 @@ func setupRelationshipBenchmarkStore(
 	}
 
 	// Create environments
-	for i := 0; i < numEnvironments; i++ {
+	for i := range numEnvironments {
 		environmentID := uuid.New().String()
 		environmentName := fmt.Sprintf("environment-%d", i)
 		env := createTestEnvironment(systemID, environmentID, environmentName)
@@ -537,4 +537,3 @@ func BenchmarkGetRelatedEntities_NoMatches(b *testing.B) {
 		}
 	}
 }
-

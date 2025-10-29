@@ -227,7 +227,7 @@ func (r *RelationshipRules) findMatchingDeployments(
 	// Process function for each deployment
 	processFn := func(deployment *oapi.Deployment) (*oapi.RelatableEntity, error) {
 		deploymentEntity := relationships.NewDeploymentEntity(deployment)
-		
+
 		if entitySelector != nil {
 			matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
 			if err != nil {
@@ -244,7 +244,7 @@ func (r *RelationshipRules) findMatchingDeployments(
 		} else {
 			matches = relationships.Matches(ctx, &rule.Matcher, deploymentEntity, sourceEntity)
 		}
-		
+
 		if !matches {
 			return nil, nil // No match, skip
 		}
@@ -312,7 +312,7 @@ func (r *RelationshipRules) findMatchingEnvironments(
 	// Process function for each environment
 	processFn := func(environment *oapi.Environment) (*oapi.RelatableEntity, error) {
 		environmentEntity := relationships.NewEnvironmentEntity(environment)
-		
+
 		if entitySelector != nil {
 			matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
 			if err != nil {
@@ -329,7 +329,7 @@ func (r *RelationshipRules) findMatchingEnvironments(
 		} else {
 			matches = relationships.Matches(ctx, &rule.Matcher, environmentEntity, sourceEntity)
 		}
-		
+
 		if !matches {
 			return nil, nil // No match, skip
 		}
@@ -397,7 +397,7 @@ func (r *RelationshipRules) findMatchingResources(
 	// Process function for each resource
 	processFn := func(resource *oapi.Resource) (*oapi.RelatableEntity, error) {
 		resourceEntity := relationships.NewResourceEntity(resource)
-		
+
 		if entitySelector != nil {
 			matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
 			if err != nil {
@@ -414,7 +414,7 @@ func (r *RelationshipRules) findMatchingResources(
 		} else {
 			matches = relationships.Matches(ctx, &rule.Matcher, resourceEntity, sourceEntity)
 		}
-		
+
 		if !matches {
 			return nil, nil // No match, skip
 		}
