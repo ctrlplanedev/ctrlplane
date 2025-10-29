@@ -70,7 +70,7 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		return
 	}
 
-	envPolicyDecision, err := policyManager.EvaluateEnvironmentAndVersion(c.Request.Context(), environment, &req.Version, policies)
+	envVersionDecision, err := policyManager.EvaluateEnvironmentAndVersion(c.Request.Context(), environment, &req.Version, policies)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to evaluate environment and version policies: " + err.Error(),
@@ -90,7 +90,7 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		"policiesEvaulated":        len(policies),
 		"workspaceDecision":        workspaceDecision,
 		"versionDecision":          versionDecision,
-		"envPolicyDecision":        envPolicyDecision,
+		"envVersionDecision":       envVersionDecision,
 		"envTargetVersionDecision": envTargetVersionDecision,
 	})
 }

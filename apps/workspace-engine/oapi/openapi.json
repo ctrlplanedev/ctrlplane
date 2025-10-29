@@ -3324,10 +3324,10 @@
                      "application/json": {
                         "schema": {
                            "properties": {
-                              "envPolicyDecision": {
+                              "envTargetVersionDecision": {
                                  "$ref": "#/components/schemas/DeployDecision"
                               },
-                              "envTargetVersionDecision": {
+                              "envVersionDecision": {
                                  "$ref": "#/components/schemas/DeployDecision"
                               },
                               "policiesEvaluated": {
