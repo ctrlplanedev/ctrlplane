@@ -1871,6 +1871,79 @@
             ]
          }
       },
+      "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records": {
+         "post": {
+            "operationId": "createUserApprovalRecord",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "deploymentVersionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateUserApprovalRecordRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "success": {
+                                 "type": "boolean"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Create user approval record"
+         }
+      },
       "/v1/workspaces/{workspaceId}/deployments": {
          "get": {
             "operationId": "listDeployments",
@@ -2231,79 +2304,6 @@
                }
             },
             "summary": "List deployment versions"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records": {
-         "put": {
-            "operationId": "upsertUserApprovalRecord",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the deployment version",
-                  "in": "path",
-                  "name": "deploymentVersionId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/UpsertUserApprovalRecordRequest"
-                     }
-                  }
-               },
-               "required": true
-            },
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "properties": {
-                              "success": {
-                                 "type": "boolean"
-                              }
-                           },
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "OK response"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Upsert user approval record"
          }
       },
       "/v1/workspaces/{workspaceId}/environments": {

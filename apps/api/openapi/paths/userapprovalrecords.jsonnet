@@ -1,10 +1,10 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  '/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records': {
-    put: {
-      summary: 'Upsert user approval record',
-      operationId: 'upsertUserApprovalRecord',
+  '/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records': {
+    post: {
+      summary: 'Create user approval record',
+      operationId: 'createUserApprovalRecord',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentVersionIdParam(),

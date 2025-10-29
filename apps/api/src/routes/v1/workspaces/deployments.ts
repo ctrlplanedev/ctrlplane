@@ -8,7 +8,6 @@ import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { validResourceSelector } from "../valid-selector.js";
-import { deploymentVersionsRouter } from "./deployment-versions.js";
 
 const listDeployments: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments",
@@ -158,10 +157,30 @@ const upsertDeployment: AsyncTypedHandler<
   return;
 };
 
+const listDeploymentVersions: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, deploymentId } = req.params;
+  const { limit, offset } = req.query;
+
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+    {
+      params: { path: { workspaceId, deploymentId }, query: { limit, offset } },
+    },
+  );
+
+  if (response.error?.error != null)
+    throw new ApiError(response.error.error, 500);
+
+  res.json(response.data ?? []);
+};
+
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
   .post("/", asyncHandler(postDeployment))
   .get("/:deploymentId", asyncHandler(getDeployment))
   .put("/:deploymentId", asyncHandler(upsertDeployment))
   .delete("/:deploymentId", asyncHandler(deleteDeployment))
-  .use("/:deploymentId/versions", deploymentVersionsRouter);
+  .get("/:deploymentId/versions", asyncHandler(listDeploymentVersions));

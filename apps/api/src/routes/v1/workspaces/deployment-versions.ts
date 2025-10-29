@@ -6,30 +6,49 @@ import { Router } from "express";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
-const listDeploymentVersions: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-  "get"
-> = async (req, res) => {
-  const { workspaceId, deploymentId } = req.params;
-  const { limit, offset } = req.query;
+// const upsertDeploymentVersion: AsyncTypedHandler<
+//   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+//   "post"
+// > = async (req, res) => {
+//   const { workspaceId, deploymentId } = req.params;
+//   const { body } = req;
 
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-    {
-      params: { path: { workspaceId, deploymentId }, query: { limit, offset } },
-    },
-  );
+//   const version: WorkspaceEngine["schemas"]["DeploymentVersion"] = {
+//     config: body.config ?? {},
+//     jobAgentConfig: body.jobAgentConfig ?? {},
+//     deploymentId,
+//     status: body.status ?? "unspecified",
+//     tag: body.tag,
+//     name: body.name ?? body.tag,
+//     createdAt: new Date().toISOString(),
+//     id: uuidv4(),
+//   };
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+//   const existingVersion = await getExistingDeploymentVersion(
+//     workspaceId,
+//     deploymentId,
+//     body.tag,
+//   );
+//   if (existingVersion == null) {
+//     sendGoEvent({
+//       workspaceId,
+//       eventType: Event.DeploymentVersionCreated,
+//       timestamp: Date.now(),
+//       data: version,
+//     });
+//     res.status(201).json(version);
+//     return;
+//   }
 
-  res.json(response.data ?? []);
-};
-
-export const deploymentVersionsRouter = Router({ mergeParams: true }).get(
-  "/",
-  asyncHandler(listDeploymentVersions),
-);
+//   sendGoEvent({
+//     workspaceId,
+//     eventType: Event.DeploymentVersionUpdated,
+//     timestamp: Date.now(),
+//     data: version,
+//   });
+//   res.status(200).json(version);
+//   return;
+// };
 
 const getEnvironmentIds = async (
   workspaceId: string,
@@ -64,9 +83,9 @@ const getEnvironmentIds = async (
   return environments.map((environment) => environment.id);
 };
 
-const upsertUserApprovalRecord: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}/user-approval-records",
-  "put"
+const createUserApprovalRecord: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records",
+  "post"
 > = async (req, res) => {
   const { workspaceId, deploymentVersionId } = req.params;
   if (req.apiContext == null) throw new ApiError("Unauthorized", 401);
@@ -92,9 +111,16 @@ const upsertUserApprovalRecord: AsyncTypedHandler<
       timestamp: Date.now(),
       data: { ...record, environmentId },
     });
+
   res.status(200).json({ success: true });
 };
-export const deploymentVersionIdRouter = Router({ mergeParams: true }).put(
-  "/user-approval-records",
-  asyncHandler(upsertUserApprovalRecord),
-);
+
+export const deploymentVersionsRouter = Router({ mergeParams: true })
+  .post(
+    "/:deploymentVersionId/user-approval-records",
+    asyncHandler(createUserApprovalRecord),
+  )
+  .put(
+    "/:deploymentVersionId/user-approval-records",
+    asyncHandler(createUserApprovalRecord),
+  );
