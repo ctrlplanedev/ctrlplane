@@ -433,3 +433,230 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 		}
 	}
 }
+
+func TestEngine_SystemDeleteSimple(t *testing.T) {
+	systemId := "test-system"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(systemId),
+			integration.SystemName("test-system"),
+		),
+	)
+
+	ctx := context.Background()
+	system, _ := engine.Workspace().Systems().Get(systemId)
+
+	// Verify system exists
+	if !engine.Workspace().Systems().Has(systemId) {
+		t.Fatalf("system should exist before deletion")
+	}
+
+	// Delete the system
+	engine.PushEvent(ctx, handler.SystemDelete, system)
+
+	// Verify system is removed
+	if engine.Workspace().Systems().Has(systemId) {
+		t.Fatalf("system should be removed after deletion")
+	}
+
+	// Verify Get returns not found
+	if _, ok := engine.Workspace().Systems().Get(systemId); ok {
+		t.Fatalf("Get should return not found after deletion")
+	}
+}
+
+func TestEngine_SystemDeleteWithReleaseTargets(t *testing.T) {
+	systemId := "test-system"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(systemId),
+			integration.WithDeployment(
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceMetadata(map[string]string{
+				"env": "prod",
+			}),
+		),
+	)
+
+	ctx := context.Background()
+	system, _ := engine.Workspace().Systems().Get(systemId)
+
+	// Verify release targets exist before deletion
+	releaseTargetsBefore, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargetsBefore) == 0 {
+		t.Fatalf("expected at least one release target before deletion")
+	}
+
+	// Delete the system
+	engine.PushEvent(ctx, handler.SystemDelete, system)
+
+	// Verify system is removed
+	if engine.Workspace().Systems().Has(systemId) {
+		t.Fatalf("system should be removed after deletion")
+	}
+
+	// Verify all release targets are removed
+	releaseTargetsAfter, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	if len(releaseTargetsAfter) != 0 {
+		t.Fatalf("all release targets should be removed after system deletion, got %d", len(releaseTargetsAfter))
+	}
+}
+
+func TestEngine_SystemDeleteMultiple(t *testing.T) {
+	s1Id := "system-1"
+	s2Id := "system-2"
+	s3Id := "system-3"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(s1Id),
+			integration.SystemName("system-1"),
+			integration.WithDeployment(),
+		),
+		integration.WithSystem(
+			integration.SystemID(s2Id),
+			integration.SystemName("system-2"),
+			integration.WithDeployment(),
+		),
+		integration.WithSystem(
+			integration.SystemID(s3Id),
+			integration.SystemName("system-3"),
+			integration.WithDeployment(),
+		),
+	)
+
+	ctx := context.Background()
+	s1, _ := engine.Workspace().Systems().Get(s1Id)
+	s2, _ := engine.Workspace().Systems().Get(s2Id)
+
+	// Verify all systems exist
+	if !engine.Workspace().Systems().Has(s1Id) {
+		t.Fatalf("system s1 should exist")
+	}
+	if !engine.Workspace().Systems().Has(s2Id) {
+		t.Fatalf("system s2 should exist")
+	}
+	if !engine.Workspace().Systems().Has(s3Id) {
+		t.Fatalf("system s3 should exist")
+	}
+
+	// Delete system 1
+	engine.PushEvent(ctx, handler.SystemDelete, s1)
+
+	// Verify only system 1 is removed
+	if engine.Workspace().Systems().Has(s1Id) {
+		t.Fatalf("system s1 should be removed")
+	}
+	if !engine.Workspace().Systems().Has(s2Id) {
+		t.Fatalf("system s2 should still exist")
+	}
+	if !engine.Workspace().Systems().Has(s3Id) {
+		t.Fatalf("system s3 should still exist")
+	}
+
+	// Delete system 2
+	engine.PushEvent(ctx, handler.SystemDelete, s2)
+
+	// Verify system 2 is also removed, system 3 remains
+	if engine.Workspace().Systems().Has(s1Id) {
+		t.Fatalf("system s1 should still be removed")
+	}
+	if engine.Workspace().Systems().Has(s2Id) {
+		t.Fatalf("system s2 should be removed")
+	}
+	if !engine.Workspace().Systems().Has(s3Id) {
+		t.Fatalf("system s3 should still exist")
+	}
+}
+
+func TestEngine_SystemDeleteOnlyDeployments(t *testing.T) {
+	systemId := "test-system"
+	d1Id := "deployment-1"
+	d2Id := "deployment-2"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(systemId),
+			integration.SystemName("test-system"),
+			integration.WithDeployment(integration.DeploymentID(d1Id)),
+			integration.WithDeployment(integration.DeploymentID(d2Id)),
+		),
+	)
+
+	ctx := context.Background()
+	system, _ := engine.Workspace().Systems().Get(systemId)
+
+	// Verify deployments exist
+	if _, ok := engine.Workspace().Deployments().Get(d1Id); !ok {
+		t.Fatalf("deployment d1 should exist")
+	}
+	if _, ok := engine.Workspace().Deployments().Get(d2Id); !ok {
+		t.Fatalf("deployment d2 should exist")
+	}
+
+	// Delete the system
+	engine.PushEvent(ctx, handler.SystemDelete, system)
+
+	// Verify system is removed
+	if engine.Workspace().Systems().Has(systemId) {
+		t.Fatalf("system should be removed")
+	}
+
+	// Verify all deployments are removed
+	if _, ok := engine.Workspace().Deployments().Get(d1Id); ok {
+		t.Fatalf("deployment d1 should be removed")
+	}
+	if _, ok := engine.Workspace().Deployments().Get(d2Id); ok {
+		t.Fatalf("deployment d2 should be removed")
+	}
+}
+
+func TestEngine_SystemDeleteOnlyEnvironments(t *testing.T) {
+	systemId := "test-system"
+	e1Id := "environment-1"
+	e2Id := "environment-2"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(systemId),
+			integration.SystemName("test-system"),
+			integration.WithEnvironment(integration.EnvironmentID(e1Id)),
+			integration.WithEnvironment(integration.EnvironmentID(e2Id)),
+		),
+	)
+
+	ctx := context.Background()
+	system, _ := engine.Workspace().Systems().Get(systemId)
+
+	// Verify environments exist
+	if _, ok := engine.Workspace().Environments().Get(e1Id); !ok {
+		t.Fatalf("environment e1 should exist")
+	}
+	if _, ok := engine.Workspace().Environments().Get(e2Id); !ok {
+		t.Fatalf("environment e2 should exist")
+	}
+
+	// Delete the system
+	engine.PushEvent(ctx, handler.SystemDelete, system)
+
+	// Verify system is removed
+	if engine.Workspace().Systems().Has(systemId) {
+		t.Fatalf("system should be removed")
+	}
+
+	// Verify all environments are removed
+	if _, ok := engine.Workspace().Environments().Get(e1Id); ok {
+		t.Fatalf("environment e1 should be removed")
+	}
+	if _, ok := engine.Workspace().Environments().Get(e2Id); ok {
+		t.Fatalf("environment e2 should be removed")
+	}
+}

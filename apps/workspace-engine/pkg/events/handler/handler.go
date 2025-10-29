@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 
@@ -185,9 +186,22 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		if !ok {
 			continue
 		}
+		
+		// Map statechange type to persistence type
+		var persistenceType persistence.ChangeType
+		switch change.Type {
+		case statechange.StateChangeUpsert:
+			persistenceType = persistence.ChangeTypeSet
+		case statechange.StateChangeDelete:
+			persistenceType = persistence.ChangeTypeUnset
+		default:
+			log.Warn("Unknown state change type", "type", change.Type)
+			continue
+		}
+		
 		changes = append(changes, persistence.Change{
 			Namespace:  ws.ID,
-			ChangeType: persistence.ChangeTypeSet,
+			ChangeType: persistenceType,
 			Entity:     entity,
 			Timestamp:  change.Timestamp,
 		})

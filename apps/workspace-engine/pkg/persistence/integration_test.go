@@ -216,23 +216,22 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	err = persistenceStore.Save(ctx, changes2)
 	require.NoError(t, err)
 
-	// Load and verify delete change is tracked
+	// Load and verify resource is gone (deletions are filtered out in Load)
 	loadedChanges, err := persistenceStore.Load(ctx, namespace)
 	require.NoError(t, err)
-	require.Len(t, loadedChanges, 1)
-	assert.Equal(t, persistence.ChangeTypeUnset, loadedChanges[0].ChangeType)
+	require.Len(t, loadedChanges, 0, "Deleted entities should not be returned by Load()")
 
-	// Apply to store and verify resource is removed
+	// Verify the deletion is tracked internally (entity count includes deleted entities)
+	assert.Equal(t, 1, persistenceStore.EntityCount(namespace), "Deletion should be tracked for compaction")
+
+	// Apply loaded changes to a new store and verify resource doesn't exist
 	testStore := store.New(statechange.NewChangeSet[any]())
-	// First add it
-	testStore.Repo().Resources.Set(resource.Id, resource)
-	require.True(t, testStore.Repo().Resources.Has(resource.Id))
-
-	// Now apply the unset change
+	
+	// Apply the (empty) changes - resource should not be added
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
-	// Resource should be removed
+	// Resource should not exist (because Load didn't return it)
 	assert.False(t, testStore.Repo().Resources.Has(resource.Id))
 }
 

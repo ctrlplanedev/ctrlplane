@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/test/integration"
@@ -530,4 +531,441 @@ func TestEngine_Persistence_MultipleWorkspaces(t *testing.T) {
 
 	_, ok = ws2.Systems().Get(sys1ID)
 	assert.False(t, ok, "Workspace 2 should not have workspace 1's system")
+}
+
+// TestEngine_Persistence_ResourceDeletion tests that resource deletions
+// are properly persisted and reflected after reload
+func TestEngine_Persistence_ResourceDeletion(t *testing.T) {
+	ctx := context.Background()
+
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	resource3ID := uuid.New().String()
+
+	// Create workspace with multiple resources
+	engine := integration.NewTestWorkspace(t,
+		integration.WithResource(
+			integration.ResourceID(resource1ID),
+			integration.ResourceName("resource-to-keep-1"),
+			integration.ResourceMetadata(map[string]string{"env": "prod"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resource2ID),
+			integration.ResourceName("resource-to-delete"),
+			integration.ResourceMetadata(map[string]string{"env": "staging"}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resource3ID),
+			integration.ResourceName("resource-to-keep-2"),
+			integration.ResourceMetadata(map[string]string{"env": "dev"}),
+		),
+	)
+
+	workspaceID := engine.Workspace().ID
+
+	// Verify all resources exist
+	assert.Equal(t, 3, len(engine.Workspace().Resources().Items()))
+
+	// Delete resource 2
+	_, ok := engine.Workspace().Resources().Get(resource2ID)
+	require.True(t, ok)
+	
+	// Use PushEvent to delete (which persists the change)
+	engine.PushEvent(ctx, handler.ResourceDelete, &oapi.Resource{Id: resource2ID})
+
+	// Verify resource 2 is gone from memory
+	assert.Equal(t, 2, len(engine.Workspace().Resources().Items()))
+	_, ok = engine.Workspace().Resources().Get(resource2ID)
+	assert.False(t, ok, "Deleted resource should not exist in memory")
+
+	// Clear workspace from memory
+	manager.Workspaces().Remove(workspaceID)
+
+	// Load workspace from persistence
+	ws, err := manager.GetOrLoad(ctx, workspaceID)
+	require.NoError(t, err)
+
+	// Verify resource 2 is still gone after reload
+	allResources := ws.Resources().Items()
+	assert.Equal(t, 2, len(allResources), "Should have 2 resources after reload")
+
+	_, ok = ws.Resources().Get(resource2ID)
+	assert.False(t, ok, "Deleted resource should not exist after reload")
+
+	// Verify other resources still exist
+	res1, ok := ws.Resources().Get(resource1ID)
+	require.True(t, ok, "resource-to-keep-1 should still exist")
+	assert.Equal(t, "resource-to-keep-1", res1.Name)
+
+	res3, ok := ws.Resources().Get(resource3ID)
+	require.True(t, ok, "resource-to-keep-2 should still exist")
+	assert.Equal(t, "resource-to-keep-2", res3.Name)
+}
+
+// TestEngine_Persistence_RelationshipRuleDeletion tests that relationship rule
+// deletions are properly persisted
+func TestEngine_Persistence_RelationshipRuleDeletion(t *testing.T) {
+	ctx := context.Background()
+
+	rule1ID := uuid.New().String()
+	rule2ID := uuid.New().String()
+	rule3ID := uuid.New().String()
+
+	// Create workspace with multiple relationship rules
+	engine := integration.NewTestWorkspace(t,
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID(rule1ID),
+			integration.RelationshipRuleName("rule-to-keep-1"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("deployment"),
+			integration.RelationshipRuleType("deployed-by"),
+		),
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID(rule2ID),
+			integration.RelationshipRuleName("rule-to-delete"),
+			integration.RelationshipRuleFromType("deployment"),
+			integration.RelationshipRuleToType("environment"),
+			integration.RelationshipRuleType("deploys-to"),
+		),
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID(rule3ID),
+			integration.RelationshipRuleName("rule-to-keep-2"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleType("depends-on"),
+		),
+	)
+
+	workspaceID := engine.Workspace().ID
+
+	// Verify all rules exist
+	assert.Equal(t, 3, len(engine.Workspace().RelationshipRules().Items()))
+
+	// Delete rule 2
+	engine.PushEvent(ctx, handler.RelationshipRuleDelete, &oapi.RelationshipRule{Id: rule2ID})
+
+	// Verify rule 2 is gone from memory
+	assert.Equal(t, 2, len(engine.Workspace().RelationshipRules().Items()))
+
+	// Clear workspace from memory
+	manager.Workspaces().Remove(workspaceID)
+
+	// Load workspace from persistence
+	ws, err := manager.GetOrLoad(ctx, workspaceID)
+	require.NoError(t, err)
+
+	// Verify rule 2 is still gone after reload
+	allRules := ws.RelationshipRules().Items()
+	assert.Equal(t, 2, len(allRules), "Should have 2 rules after reload")
+
+	_, ok := ws.RelationshipRules().Get(rule2ID)
+	assert.False(t, ok, "Deleted rule should not exist after reload")
+
+	// Verify other rules still exist
+	rule1, ok := ws.RelationshipRules().Get(rule1ID)
+	require.True(t, ok, "rule-to-keep-1 should still exist")
+	assert.Equal(t, "rule-to-keep-1", rule1.Name)
+
+	rule3, ok := ws.RelationshipRules().Get(rule3ID)
+	require.True(t, ok, "rule-to-keep-2 should still exist")
+	assert.Equal(t, "rule-to-keep-2", rule3.Name)
+}
+
+// TestEngine_Persistence_DeploymentDeletion tests that deployment deletions
+// are properly persisted including cascading deletions
+func TestEngine_Persistence_DeploymentDeletion(t *testing.T) {
+	ctx := context.Background()
+
+	systemID := uuid.New().String()
+	deployment1ID := uuid.New().String()
+	deployment2ID := uuid.New().String()
+
+	// Create workspace with multiple deployments
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(systemID),
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deployment1ID),
+				integration.DeploymentName("deployment-to-keep"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(deployment2ID),
+				integration.DeploymentName("deployment-to-delete"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+		),
+	)
+
+	workspaceID := engine.Workspace().ID
+
+	// Verify both deployments exist
+	assert.Equal(t, 2, len(engine.Workspace().Deployments().Items()))
+
+	// Delete deployment 2
+	_, ok := engine.Workspace().Deployments().Get(deployment2ID)
+	require.True(t, ok)
+	engine.PushEvent(ctx, handler.DeploymentDelete, &oapi.Deployment{Id: deployment2ID})
+
+	// Verify deployment 2 is gone from memory
+	assert.Equal(t, 1, len(engine.Workspace().Deployments().Items()))
+
+	// Clear workspace from memory
+	manager.Workspaces().Remove(workspaceID)
+
+	// Load workspace from persistence
+	ws, err := manager.GetOrLoad(ctx, workspaceID)
+	require.NoError(t, err)
+
+	// Verify deployment 2 is still gone after reload
+	allDeployments := ws.Deployments().Items()
+	assert.Equal(t, 1, len(allDeployments), "Should have 1 deployment after reload")
+
+	_, ok = ws.Deployments().Get(deployment2ID)
+	assert.False(t, ok, "Deleted deployment should not exist after reload")
+
+	// Verify deployment 1 still exists
+	dep1, ok := ws.Deployments().Get(deployment1ID)
+	require.True(t, ok, "deployment-to-keep should still exist")
+	assert.Equal(t, "deployment-to-keep", dep1.Name)
+}
+
+// TestEngine_Persistence_PolicyDeletion tests that policy deletions
+// are properly persisted
+func TestEngine_Persistence_PolicyDeletion(t *testing.T) {
+	ctx := context.Background()
+
+	policy1ID := uuid.New().String()
+	policy2ID := uuid.New().String()
+
+	// Create workspace with multiple policies
+	engine := integration.NewTestWorkspace(t,
+		integration.WithPolicy(
+			integration.PolicyID(policy1ID),
+			integration.PolicyName("policy-to-keep"),
+			integration.PolicyDescription("A policy to keep"),
+		),
+		integration.WithPolicy(
+			integration.PolicyID(policy2ID),
+			integration.PolicyName("policy-to-delete"),
+			integration.PolicyDescription("A policy to delete"),
+		),
+	)
+
+	workspaceID := engine.Workspace().ID
+
+	// Verify both policies exist
+	assert.Equal(t, 2, len(engine.Workspace().Policies().Items()))
+
+	// Delete policy 2
+	_, ok := engine.Workspace().Policies().Get(policy2ID)
+	require.True(t, ok)
+	engine.PushEvent(ctx, handler.PolicyDelete, &oapi.Policy{Id: policy2ID})
+
+	// Verify policy 2 is gone from memory
+	assert.Equal(t, 1, len(engine.Workspace().Policies().Items()))
+
+	// Clear workspace from memory
+	manager.Workspaces().Remove(workspaceID)
+
+	// Load workspace from persistence
+	ws, err := manager.GetOrLoad(ctx, workspaceID)
+	require.NoError(t, err)
+
+	// Verify policy 2 is still gone after reload
+	allPolicies := ws.Policies().Items()
+	assert.Equal(t, 1, len(allPolicies), "Should have 1 policy after reload")
+
+	_, ok = ws.Policies().Get(policy2ID)
+	assert.False(t, ok, "Deleted policy should not exist after reload")
+
+	// Verify policy 1 still exists
+	pol1, ok := ws.Policies().Get(policy1ID)
+	require.True(t, ok, "policy-to-keep should still exist")
+	assert.Equal(t, "policy-to-keep", pol1.Name)
+}
+
+// TestEngine_Persistence_SystemDeletion tests that system deletions
+// are properly persisted including cascading deletions of deployments and environments
+func TestEngine_Persistence_SystemDeletion(t *testing.T) {
+	ctx := context.Background()
+
+	system1ID := uuid.New().String()
+	system2ID := uuid.New().String()
+	deployment1ID := uuid.New().String()
+	deployment2ID := uuid.New().String()
+
+	// Create workspace with multiple systems
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(system1ID),
+			integration.SystemName("system-to-keep"),
+			integration.WithDeployment(
+				integration.DeploymentID(deployment1ID),
+				integration.DeploymentName("deployment-in-kept-system"),
+			),
+		),
+		integration.WithSystem(
+			integration.SystemID(system2ID),
+			integration.SystemName("system-to-delete"),
+			integration.WithDeployment(
+				integration.DeploymentID(deployment2ID),
+				integration.DeploymentName("deployment-in-deleted-system"),
+			),
+		),
+	)
+
+	workspaceID := engine.Workspace().ID
+
+	// Verify both systems exist
+	assert.Equal(t, 2, len(engine.Workspace().Systems().Items()))
+	assert.Equal(t, 2, len(engine.Workspace().Deployments().Items()))
+
+	// Delete system 2
+	_, ok := engine.Workspace().Systems().Get(system2ID)
+	require.True(t, ok)
+	engine.PushEvent(ctx, handler.SystemDelete, &oapi.System{Id: system2ID})
+
+	// Verify system 2 and its deployment are gone from memory
+	assert.Equal(t, 1, len(engine.Workspace().Systems().Items()))
+	assert.Equal(t, 1, len(engine.Workspace().Deployments().Items()))
+
+	// Clear workspace from memory
+	manager.Workspaces().Remove(workspaceID)
+
+	// Load workspace from persistence
+	ws, err := manager.GetOrLoad(ctx, workspaceID)
+	require.NoError(t, err)
+
+	// Verify system 2 is still gone after reload
+	allSystems := ws.Systems().Items()
+	assert.Equal(t, 1, len(allSystems), "Should have 1 system after reload")
+
+	_, ok = ws.Systems().Get(system2ID)
+	assert.False(t, ok, "Deleted system should not exist after reload")
+
+	// Verify deployment 2 is also gone (cascading delete)
+	_, ok = ws.Deployments().Get(deployment2ID)
+	assert.False(t, ok, "Deployment in deleted system should not exist after reload")
+
+	// Verify system 1 and its deployment still exist
+	sys1, ok := ws.Systems().Get(system1ID)
+	require.True(t, ok, "system-to-keep should still exist")
+	assert.Equal(t, "system-to-keep", sys1.Name)
+
+	dep1, ok := ws.Deployments().Get(deployment1ID)
+	require.True(t, ok, "deployment-in-kept-system should still exist")
+	assert.Equal(t, "deployment-in-kept-system", dep1.Name)
+}
+
+// TestEngine_Persistence_MultipleDeletions tests that multiple entity deletions
+// across different types are properly persisted
+func TestEngine_Persistence_MultipleDeletions(t *testing.T) {
+	ctx := context.Background()
+
+	systemID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	resource3ID := uuid.New().String()
+	ruleID := uuid.New().String()
+	policyID := uuid.New().String()
+
+	// Create workspace with various entities
+	engine := integration.NewTestWorkspace(t,
+		integration.WithSystem(
+			integration.SystemID(systemID),
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("test-deployment"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("test-environment"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resource1ID),
+			integration.ResourceName("resource-1"),
+		),
+		integration.WithResource(
+			integration.ResourceID(resource2ID),
+			integration.ResourceName("resource-2-to-delete"),
+		),
+		integration.WithResource(
+			integration.ResourceID(resource3ID),
+			integration.ResourceName("resource-3-to-delete"),
+		),
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID(ruleID),
+			integration.RelationshipRuleName("rule-to-delete"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("deployment"),
+		),
+		integration.WithPolicy(
+			integration.PolicyID(policyID),
+			integration.PolicyName("policy-to-delete"),
+		),
+	)
+
+	workspaceID := engine.Workspace().ID
+
+	// Verify initial state
+	assert.Equal(t, 3, len(engine.Workspace().Resources().Items()))
+	assert.Equal(t, 1, len(engine.Workspace().RelationshipRules().Items()))
+	assert.Equal(t, 1, len(engine.Workspace().Policies().Items()))
+
+	// Delete multiple entities
+	engine.PushEvent(ctx, handler.ResourceDelete, &oapi.Resource{Id: resource2ID})
+	engine.PushEvent(ctx, handler.ResourceDelete, &oapi.Resource{Id: resource3ID})
+	engine.PushEvent(ctx, handler.RelationshipRuleDelete, &oapi.RelationshipRule{Id: ruleID})
+	engine.PushEvent(ctx, handler.PolicyDelete, &oapi.Policy{Id: policyID})
+
+	// Verify deletions in memory
+	assert.Equal(t, 1, len(engine.Workspace().Resources().Items()))
+	assert.Equal(t, 0, len(engine.Workspace().RelationshipRules().Items()))
+	assert.Equal(t, 0, len(engine.Workspace().Policies().Items()))
+
+	// Clear workspace from memory
+	manager.Workspaces().Remove(workspaceID)
+
+	// Load workspace from persistence
+	ws, err := manager.GetOrLoad(ctx, workspaceID)
+	require.NoError(t, err)
+
+	// Verify all deletions persisted
+	allResources := ws.Resources().Items()
+	assert.Equal(t, 1, len(allResources), "Should have 1 resource after reload")
+	
+	res1, ok := ws.Resources().Get(resource1ID)
+	require.True(t, ok, "resource-1 should exist")
+	assert.Equal(t, "resource-1", res1.Name)
+
+	_, ok = ws.Resources().Get(resource2ID)
+	assert.False(t, ok, "resource-2 should be deleted")
+
+	_, ok = ws.Resources().Get(resource3ID)
+	assert.False(t, ok, "resource-3 should be deleted")
+
+	allRules := ws.RelationshipRules().Items()
+	assert.Equal(t, 0, len(allRules), "Should have 0 rules after reload")
+
+	allPolicies := ws.Policies().Items()
+	assert.Equal(t, 0, len(allPolicies), "Should have 0 policies after reload")
+
+	// Verify system, deployment, and environment still exist
+	sys, ok := ws.Systems().Get(systemID)
+	require.True(t, ok)
+	assert.Equal(t, "test-system", sys.Name)
+
+	dep, ok := ws.Deployments().Get(deploymentID)
+	require.True(t, ok)
+	assert.Equal(t, "test-deployment", dep.Name)
+
+	env, ok := ws.Environments().Get(environmentID)
+	require.True(t, ok)
+	assert.Equal(t, "test-environment", env.Name)
 }

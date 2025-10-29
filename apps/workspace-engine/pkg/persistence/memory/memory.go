@@ -59,6 +59,7 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 
 // Load retrieves the compacted snapshot for a namespace
 // Returns only the latest change per entity
+// Filters out entities marked as deleted (ChangeTypeUnset)
 func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -68,10 +69,13 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 		return persistence.Changes{}, nil
 	}
 
-	// Convert map to slice
+	// Convert map to slice, filtering out deleted entities
 	result := make(persistence.Changes, 0, len(entityMap))
 	for _, change := range entityMap {
-		result = append(result, change)
+		// Only return entities that are set, not deleted
+		if change.ChangeType == persistence.ChangeTypeSet {
+			result = append(result, change)
+		}
 	}
 
 	return result, nil

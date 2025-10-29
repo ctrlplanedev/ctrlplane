@@ -446,6 +446,347 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 	}
 }
 
+func TestEngine_DeploymentRemoval(t *testing.T) {
+	deploymentID1 := "deployment-1"
+	deploymentID2 := "deployment-2"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID1),
+				integration.DeploymentName("deployment-1"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID2),
+				integration.DeploymentName("deployment-2"),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Verify both deployments exist
+	d1, exists := engine.Workspace().Deployments().Get(deploymentID1)
+	if !exists {
+		t.Fatalf("deployment 1 not found")
+	}
+	if d1.Id != deploymentID1 {
+		t.Fatalf("deployment 1 id mismatch: got %s, want %s", d1.Id, deploymentID1)
+	}
+
+	_, exists = engine.Workspace().Deployments().Get(deploymentID2)
+	if !exists {
+		t.Fatalf("deployment 2 not found")
+	}
+
+	// Remove deployment 1
+	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
+
+	// Verify deployment 1 is gone
+	_, exists = engine.Workspace().Deployments().Get(deploymentID1)
+	if exists {
+		t.Fatalf("deployment 1 should be deleted")
+	}
+
+	// Verify deployment 2 still exists
+	d2After, exists := engine.Workspace().Deployments().Get(deploymentID2)
+	if !exists {
+		t.Fatalf("deployment 2 should still exist")
+	}
+	if d2After.Id != deploymentID2 {
+		t.Fatalf("deployment 2 id mismatch after deletion: got %s, want %s", d2After.Id, deploymentID2)
+	}
+}
+
+func TestEngine_DeploymentRemovalWithReleaseTargets(t *testing.T) {
+	deploymentID := "deployment-to-remove"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("deployment-to-remove"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Verify release targets were created
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets: %v", err)
+	}
+
+	initialReleaseTargetCount := len(releaseTargets)
+	if initialReleaseTargetCount == 0 {
+		t.Fatalf("expected at least 1 release target, got 0")
+	}
+
+	// Count release targets for this deployment
+	deploymentReleaseTargets := 0
+	for _, rt := range releaseTargets {
+		if rt.DeploymentId == deploymentID {
+			deploymentReleaseTargets++
+		}
+	}
+
+	if deploymentReleaseTargets == 0 {
+		t.Fatalf("expected release targets for deployment, got 0")
+	}
+
+	// Remove deployment
+	d, _ := engine.Workspace().Deployments().Get(deploymentID)
+	engine.PushEvent(ctx, handler.DeploymentDelete, d)
+
+	// Verify deployment is gone
+	_, exists := engine.Workspace().Deployments().Get(deploymentID)
+	if exists {
+		t.Fatalf("deployment should be deleted")
+	}
+
+	// Verify release targets for this deployment are gone
+	releaseTargetsAfter, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	if err != nil {
+		t.Fatalf("failed to get release targets after deletion: %v", err)
+	}
+
+	for _, rt := range releaseTargetsAfter {
+		if rt.DeploymentId == deploymentID {
+			t.Fatalf("release target for deleted deployment still exists: deployment=%s, environment=%s, resource=%s", rt.DeploymentId, rt.EnvironmentId, rt.ResourceId)
+		}
+	}
+}
+
+func TestEngine_DeploymentRemovalWithJobs(t *testing.T) {
+	jobAgentID := "job-agent-1"
+	deploymentID := "deployment-with-jobs"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("deployment-with-jobs"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Verify jobs were created
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) == 0 {
+		t.Fatalf("expected at least 1 pending job, got 0")
+	}
+
+	// Count jobs for this deployment
+	deploymentJobs := 0
+	var jobsForDeployment []string
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			jobsForDeployment = append(jobsForDeployment, job.Id)
+		}
+	}
+
+	if deploymentJobs == 0 {
+		t.Fatalf("expected jobs for deployment, got 0")
+	}
+
+	// Remove deployment
+	d, _ := engine.Workspace().Deployments().Get(deploymentID)
+	engine.PushEvent(ctx, handler.DeploymentDelete, d)
+
+	// Verify deployment is gone
+	_, exists := engine.Workspace().Deployments().Get(deploymentID)
+	if exists {
+		t.Fatalf("deployment should be deleted")
+	}
+
+	// Verify jobs for this deployment are gone
+	pendingJobsAfter := engine.Workspace().Jobs().GetPending()
+	for _, job := range pendingJobsAfter {
+		for _, jobID := range jobsForDeployment {
+			if job.Id == jobID {
+				t.Fatalf("job %s for deleted deployment still exists", jobID)
+			}
+		}
+	}
+}
+
+func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
+	deploymentID1 := "deployment-1"
+	deploymentID2 := "deployment-2"
+	resourceID := "resource-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID1),
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentJsonResourceSelector(map[string]any{
+					"type":     "metadata",
+					"operator": "equals",
+					"value":    "web",
+					"key":      "tier",
+				}),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID2),
+				integration.DeploymentName("deployment-2"),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Create a resource that matches both deployments
+	r1 := c.NewResource(engine.Workspace().ID)
+	r1.Id = resourceID
+	r1.Name = "resource-1"
+	r1.Metadata = map[string]string{"tier": "web"}
+	engine.PushEvent(ctx, handler.ResourceCreate, r1)
+
+	// Verify both deployments have the resource
+	d1Resources, err := engine.Workspace().Deployments().Resources(deploymentID1)
+	if err != nil {
+		t.Fatalf("failed to get deployment 1 resources: %v", err)
+	}
+	if len(d1Resources) != 1 {
+		t.Fatalf("deployment 1 resources count is %d, want 1", len(d1Resources))
+	}
+
+	d2Resources, err := engine.Workspace().Deployments().Resources(deploymentID2)
+	if err != nil {
+		t.Fatalf("failed to get deployment 2 resources: %v", err)
+	}
+	if len(d2Resources) != 1 {
+		t.Fatalf("deployment 2 resources count is %d, want 1", len(d2Resources))
+	}
+
+	// Remove deployment 1
+	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
+	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
+
+	// Verify deployment 1 is gone
+	_, exists := engine.Workspace().Deployments().Get(deploymentID1)
+	if exists {
+		t.Fatalf("deployment 1 should be deleted")
+	}
+
+	// Verify resource still exists and is still linked to deployment 2
+	resource, exists := engine.Workspace().Resources().Get(resourceID)
+	if !exists {
+		t.Fatalf("resource should still exist")
+	}
+	if resource.Id != resourceID {
+		t.Fatalf("resource id mismatch: got %s, want %s", resource.Id, resourceID)
+	}
+
+	// Verify deployment 2 still has the resource
+	d2ResourcesAfter, err := engine.Workspace().Deployments().Resources(deploymentID2)
+	if err != nil {
+		t.Fatalf("failed to get deployment 2 resources after deletion: %v", err)
+	}
+	if len(d2ResourcesAfter) != 1 {
+		t.Fatalf("deployment 2 resources count after deletion is %d, want 1", len(d2ResourcesAfter))
+	}
+}
+
+func TestEngine_DeploymentRemovalMultiple(t *testing.T) {
+	// Test removing multiple deployments
+	deployment1 := "deployment-1"
+	deployment2 := "deployment-2"
+	deployment3 := "deployment-3"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deployment1),
+				integration.DeploymentName("deployment-1"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(deployment2),
+				integration.DeploymentName("deployment-2"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(deployment3),
+				integration.DeploymentName("deployment-3"),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Verify all deployments exist
+	initialDeployments := engine.Workspace().Deployments().Items()
+	if len(initialDeployments) != 3 {
+		t.Fatalf("expected 3 deployments, got %d", len(initialDeployments))
+	}
+
+	// Remove deployments 1 and 2
+	d1, _ := engine.Workspace().Deployments().Get(deployment1)
+	d2, _ := engine.Workspace().Deployments().Get(deployment2)
+	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
+	engine.PushEvent(ctx, handler.DeploymentDelete, d2)
+
+	// Verify only deployment 3 remains
+	remainingDeployments := engine.Workspace().Deployments().Items()
+	if len(remainingDeployments) != 1 {
+		t.Fatalf("expected 1 remaining deployment, got %d", len(remainingDeployments))
+	}
+
+	d3, exists := engine.Workspace().Deployments().Get(deployment3)
+	if !exists {
+		t.Fatalf("deployment 3 should still exist")
+	}
+	if d3.Id != deployment3 {
+		t.Fatalf("remaining deployment id mismatch: got %s, want %s", d3.Id, deployment3)
+	}
+}
+
 func BenchmarkEngine_DeploymentCreation(b *testing.B) {
 	engine := integration.NewTestWorkspace(nil)
 	workspaceID := engine.Workspace().ID
@@ -458,5 +799,24 @@ func BenchmarkEngine_DeploymentCreation(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		engine.PushEvent(ctx, handler.DeploymentCreate, c.NewDeployment(workspaceID))
+	}
+}
+
+func BenchmarkEngine_DeploymentRemoval(b *testing.B) {
+	engine := integration.NewTestWorkspace(nil)
+	workspaceID := engine.Workspace().ID
+	ctx := context.Background()
+
+	// Create deployments to remove
+	deployments := make([]*oapi.Deployment, b.N)
+	for i := range b.N {
+		deployment := c.NewDeployment(workspaceID)
+		deployments[i] = deployment
+		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+	}
+
+	b.ResetTimer()
+	for i := range b.N {
+		engine.PushEvent(ctx, handler.DeploymentDelete, deployments[i])
 	}
 }
