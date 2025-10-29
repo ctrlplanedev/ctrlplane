@@ -15,16 +15,17 @@ import (
 
 var _ evaluator.EnvironmentAndVersionAndTargetScopedEvaluator = &GradualRolloutEvaluator{}
 
-var fnvHashingFn = func(targetID, versionID string) uint64 {
+var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
 	h := fnv.New64a()
-	h.Write([]byte(targetID + versionID))
-	return h.Sum64()
+	h.Write([]byte(releaseTarget.Key() + versionID))
+	return h.Sum64(), nil
 }
 
 type GradualRolloutEvaluator struct {
-	store     *store.Store
-	rule      *oapi.GradualRolloutRule
-	hashingFn func(targetID, versionID string) uint64
+	store      *store.Store
+	rule       *oapi.GradualRolloutRule
+	hashingFn  func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
+	timeGetter func() time.Time
 }
 
 func NewGradualRolloutEvaluator(store *store.Store, rule *oapi.GradualRolloutRule) *GradualRolloutEvaluator {
@@ -32,6 +33,9 @@ func NewGradualRolloutEvaluator(store *store.Store, rule *oapi.GradualRolloutRul
 		store:     store,
 		rule:      rule,
 		hashingFn: fnvHashingFn,
+		timeGetter: func() time.Time {
+			return time.Now()
+		},
 	}
 }
 
@@ -44,6 +48,9 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	maxMinApprovals := int32(0)
 
 	for _, policy := range policiesForTarget {
+		if !policy.Enabled {
+			continue
+		}
 		for _, rule := range policy.Rules {
 			if rule.AnyApproval != nil && rule.AnyApproval.MinApprovals > maxMinApprovals {
 				maxMinApprovals = rule.AnyApproval.MinApprovals
@@ -90,9 +97,13 @@ func (e *GradualRolloutEvaluator) getRolloutPositionForTarget(ctx context.Contex
 
 	targetsWithHashes := make([]targetWithHash, len(relevantTargets))
 	for i, target := range relevantTargets {
+		hash, err := e.hashingFn(target, version.Id)
+		if err != nil {
+			return 0, err
+		}
 		targetsWithHashes[i] = targetWithHash{
 			target: target,
-			hash:   e.hashingFn(target.Key(), version.Id),
+			hash:   hash,
 		}
 	}
 
@@ -116,16 +127,17 @@ func (e *GradualRolloutEvaluator) getDeploymentOffset(rolloutPosition int32, tim
 }
 
 func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*oapi.RuleEvaluation, error) {
+	now := e.timeGetter()
 	rolloutStartTime, err := e.getRolloutStartTime(ctx, environment, version, releaseTarget)
 	if err != nil {
 		return nil, err
 	}
 
 	if rolloutStartTime == nil {
-		return results.NewDeniedResult("Rollout has not started yet"), nil
+		return results.NewPendingResult(results.ActionTypeWait, "Rollout has not started yet"), nil
 	}
 
-	if time.Now().Before(*rolloutStartTime) {
+	if now.Before(*rolloutStartTime) {
 		return results.NewPendingResult(results.ActionTypeWait, "Rollout has not started yet"), nil
 	}
 
@@ -137,7 +149,7 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, environment *oap
 	deploymentOffset := e.getDeploymentOffset(rolloutPosition, e.rule.TimeScaleInterval)
 	deploymentTime := rolloutStartTime.Add(deploymentOffset)
 
-	if time.Now().Before(deploymentTime) {
+	if now.Before(deploymentTime) {
 		reason := fmt.Sprintf("Rollout will start at %s for this release target", deploymentTime.Format(time.RFC3339))
 		return results.NewPendingResult(results.ActionTypeWait, reason), nil
 	}
