@@ -1,6 +1,6 @@
 import { deploymentVersionsRouter } from "./routes/deployment-versions.js";
 import { deploymentsRouter } from "./routes/deployments.js";
-import { environmentVersionRouter } from "./routes/environment-version.js";
+import { environmentVersionRouter } from "./routes/environment-versions/router.js";
 import { environmentRouter } from "./routes/environments.js";
 import { githubRouter } from "./routes/github.js";
 import { jobAgentsRouter } from "./routes/job-agents.js";

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
-import { protectedProcedure, router } from "../trpc.js";
+import { protectedProcedure } from "../../trpc.js";
 
 const getOneReleaseTarget = async (
   workspaceId: string,
@@ -53,24 +53,22 @@ const getPolicyResults = async (
   return decision.data?.versionDecision?.policyResults ?? [];
 };
 
-export const environmentVersionRouter = router({
-  policyResults: protectedProcedure
-    .input(
-      z.object({
-        workspaceId: z.uuid(),
-        environmentId: z.uuid(),
-        versionId: z.uuid(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId, versionId } = input;
-      const version = await getDeploymentVersion(workspaceId, versionId);
-      const releaseTarget = await getOneReleaseTarget(
-        workspaceId,
-        environmentId,
-        version.deploymentId,
-      );
-      if (releaseTarget == null) return [];
-      return getPolicyResults(workspaceId, releaseTarget, version);
+export const policyResults = protectedProcedure
+  .input(
+    z.object({
+      workspaceId: z.uuid(),
+      environmentId: z.uuid(),
+      versionId: z.uuid(),
     }),
-});
+  )
+  .query(async ({ input }) => {
+    const { workspaceId, environmentId, versionId } = input;
+    const version = await getDeploymentVersion(workspaceId, versionId);
+    const releaseTarget = await getOneReleaseTarget(
+      workspaceId,
+      environmentId,
+      version.deploymentId,
+    );
+    if (releaseTarget == null) return [];
+    return getPolicyResults(workspaceId, releaseTarget, version);
+  });
