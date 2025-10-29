@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure } from "../../trpc.js";
+import { getDeploymentVersion } from "./util.js";
 
 const getOneReleaseTarget = async (
   workspaceId: string,
@@ -17,18 +18,6 @@ const getOneReleaseTarget = async (
   return (response.data?.items ?? []).find(
     (target) => target.deployment.id === deploymentId,
   );
-};
-
-const getDeploymentVersion = async (
-  workspaceId: string,
-  deploymentVersionId: string,
-) => {
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}",
-    { params: { path: { workspaceId, deploymentVersionId } } },
-  );
-  if (response.data == null) throw new Error("Deployment version not found");
-  return response.data;
 };
 
 const getPolicyResults = async (
