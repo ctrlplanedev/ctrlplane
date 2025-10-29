@@ -299,27 +299,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/relationships": {
+    "/v1/workspaces/{workspaceId}/relationship-rules": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get all relationships
-         * @description Returns a paginated list of relationships for workspace {workspaceId}.
-         */
-        get: operations["getAllRelationships"];
+        get?: never;
         put?: never;
-        post?: never;
+        /** Create relationship rule */
+        post: operations["createRelationshipRule"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/relationships/{relationshipId}": {
+    "/v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -327,7 +324,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get relationship */
-        get: operations["getRelationship"];
+        get: operations["getRelationshipRule"];
         /** Upsert relationship */
         put: operations["upsertRelationshipById"];
         post?: never;
@@ -500,6 +497,20 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
+        };
+        CreateRelationshipRuleRequest: {
+            description?: string;
+            fromSelector?: components["schemas"]["Selector"];
+            fromType: components["schemas"]["RelatableEntityType"];
+            matcher: components["schemas"]["CelMatcher"];
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            reference: string;
+            relationshipType: string;
+            toSelector?: components["schemas"]["Selector"];
+            toType: components["schemas"]["RelatableEntityType"];
         };
         CreateSystemRequest: {
             description?: string;
@@ -834,6 +845,20 @@ export interface components {
             priority?: number;
             rules?: components["schemas"]["PolicyRule"][];
             selectors?: components["schemas"]["PolicyTargetSelector"][];
+        };
+        UpsertRelationshipRuleRequest: {
+            description?: string;
+            fromSelector?: components["schemas"]["Selector"];
+            fromType: components["schemas"]["RelatableEntityType"];
+            matcher: components["schemas"]["CelMatcher"];
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            reference: string;
+            relationshipType: string;
+            toSelector?: components["schemas"]["Selector"];
+            toType: components["schemas"]["RelatableEntityType"];
         };
         UpsertResourceProviderRequest: {
             id: string;
@@ -1951,7 +1976,7 @@ export interface operations {
             };
         };
     };
-    getAllRelationships: {
+    createRelationshipRule: {
         parameters: {
             query?: never;
             header?: never;
@@ -1961,36 +1986,41 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRelationshipRuleRequest"];
+            };
+        };
         responses: {
-            /** @description Paginated list of items */
-            200: {
+            /** @description Resource created successfully */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["RelationshipRule"][];
-                        /** @description Maximum number of items returned */
-                        limit: number;
-                        /** @description Number of items skipped */
-                        offset: number;
-                        /** @description Total number of items available */
-                        total: number;
-                    };
+                    "application/json": components["schemas"]["RelationshipRule"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    getRelationship: {
+    getRelationshipRule: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description ID of the workspace */
                 workspaceId: string;
-                /** @description ID of the relationship */
-                relationshipId: string;
+                /** @description ID of the relationship rule */
+                relationshipRuleId: string;
             };
             cookie?: never;
         };
@@ -2032,12 +2062,16 @@ export interface operations {
             path: {
                 /** @description ID of the workspace */
                 workspaceId: string;
-                /** @description ID of the relationship */
-                relationshipId: string;
+                /** @description ID of the relationship rule */
+                relationshipRuleId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertRelationshipRuleRequest"];
+            };
+        };
         responses: {
             /** @description Accepted response */
             202: {
@@ -2075,8 +2109,8 @@ export interface operations {
             path: {
                 /** @description ID of the workspace */
                 workspaceId: string;
-                /** @description ID of the relationship */
-                relationshipId: string;
+                /** @description ID of the relationship rule */
+                relationshipRuleId: string;
             };
             cookie?: never;
         };

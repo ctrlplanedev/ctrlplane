@@ -17,6 +17,7 @@ import {
 } from "./handlers.js";
 import { jobsRouter } from "./jobs.js";
 import { policiesRouter } from "./policies.js";
+import { relationshipRulesRouter } from "./relationship-rules.js";
 import { resourceProvidersRouter } from "./resource-providers.js";
 import { listResources } from "./resources.js";
 import { systemRouter } from "./systems.js";
@@ -43,4 +44,5 @@ export const createWorkspacesRouter = (): Router =>
       "/:workspaceId/deploymentversions/:deploymentVersionId",
       deploymentVersionIdRouter,
     )
-    .use("/:workspaceId/jobs", jobsRouter);
+    .use("/:workspaceId/jobs", jobsRouter)
+    .use("/:workspaceId/relationship-rules", relationshipRulesRouter);

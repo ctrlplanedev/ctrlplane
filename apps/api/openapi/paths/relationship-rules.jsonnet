@@ -1,25 +1,32 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  '/v1/workspaces/{workspaceId}/relationships': {
-    get: {
-      tags: ['Relationships'],
-      summary: 'Get all relationships',
-      operationId: 'getAllRelationships',
-      description: 'Returns a paginated list of relationships for workspace {workspaceId}.',
+  '/v1/workspaces/{workspaceId}/relationship-rules': {
+    post: {
+      summary: 'Create relationship rule',
+      operationId: 'createRelationshipRule',
       parameters: [
         openapi.workspaceIdParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('RelationshipRule')),
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('CreateRelationshipRuleRequest'),
+          },
+        },
+      },
+      responses: openapi.createdResponse(openapi.schemaRef('RelationshipRule'))
+                 + openapi.badRequestResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/relationships/{relationshipId}': {
+  '/v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId}': {
     get: {
       summary: 'Get relationship',
-      operationId: 'getRelationship',
+      operationId: 'getRelationshipRule',
       parameters: [
         openapi.workspaceIdParam(),
-        openapi.relationshipIdParam(),
+        openapi.relationshipRuleIdParam(),
       ],
       responses: openapi.okResponse(openapi.schemaRef('RelationshipRule'))
                  + openapi.notFoundResponse()
@@ -30,8 +37,16 @@ local openapi = import '../lib/openapi.libsonnet';
       operationId: 'upsertRelationshipById',
       parameters: [
         openapi.workspaceIdParam(),
-        openapi.relationshipIdParam(),
+        openapi.relationshipRuleIdParam(),
       ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('UpsertRelationshipRuleRequest'),
+          },
+        },
+      },
       responses: openapi.acceptedResponse(openapi.schemaRef('RelationshipRule'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
@@ -41,9 +56,9 @@ local openapi = import '../lib/openapi.libsonnet';
       operationId: 'deleteRelationship',
       parameters: [
         openapi.workspaceIdParam(),
-        openapi.relationshipIdParam(),
+        openapi.relationshipRuleIdParam(),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('RelationshipRule')) 
+      responses: openapi.acceptedResponse(openapi.schemaRef('RelationshipRule'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

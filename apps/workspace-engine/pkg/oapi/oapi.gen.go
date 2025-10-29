@@ -1368,6 +1368,9 @@ type ServerInterface interface {
 	// Get relationship rules for a given workspace
 	// (GET /v1/workspaces/{workspaceId}/relationship-rules)
 	GetRelationshipRules(c *gin.Context, workspaceId string, params GetRelationshipRulesParams)
+	// Get relationship rule
+	// (GET /v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId})
+	GetRelationshipRule(c *gin.Context, workspaceId string, relationshipRuleId string)
 	// Evaluate policies for a release target
 	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
 	EvaluateReleaseTarget(c *gin.Context, workspaceId string)
@@ -2358,6 +2361,39 @@ func (siw *ServerInterfaceWrapper) GetRelationshipRules(c *gin.Context) {
 	siw.Handler.GetRelationshipRules(c, workspaceId, params)
 }
 
+// GetRelationshipRule operation middleware
+func (siw *ServerInterfaceWrapper) GetRelationshipRule(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "relationshipRuleId" -------------
+	var relationshipRuleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "relationshipRuleId", c.Param("relationshipRuleId"), &relationshipRuleId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter relationshipRuleId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRelationshipRule(c, workspaceId, relationshipRuleId)
+}
+
 // EvaluateReleaseTarget operation middleware
 func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 
@@ -2779,6 +2815,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.GetRelationshipRules)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:relationshipRuleId", wrapper.GetRelationshipRule)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)

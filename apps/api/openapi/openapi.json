@@ -99,6 +99,57 @@
             ],
             "type": "object"
          },
+         "CreateRelationshipRuleRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "fromSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "fromType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "matcher": {
+                  "oneOf": [
+                     {
+                        "$ref": "#/components/schemas/CelMatcher"
+                     }
+                  ]
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "reference": {
+                  "type": "string"
+               },
+               "relationshipType": {
+                  "type": "string"
+               },
+               "toSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "toType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               }
+            },
+            "required": [
+               "name",
+               "reference",
+               "fromType",
+               "toType",
+               "matcher",
+               "relationshipType",
+               "metadata"
+            ],
+            "type": "object"
+         },
          "CreateSystemRequest": {
             "properties": {
                "description": {
@@ -1182,6 +1233,57 @@
             },
             "required": [
                "name"
+            ],
+            "type": "object"
+         },
+         "UpsertRelationshipRuleRequest": {
+            "properties": {
+               "description": {
+                  "type": "string"
+               },
+               "fromSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "fromType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               },
+               "matcher": {
+                  "oneOf": [
+                     {
+                        "$ref": "#/components/schemas/CelMatcher"
+                     }
+                  ]
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "reference": {
+                  "type": "string"
+               },
+               "relationshipType": {
+                  "type": "string"
+               },
+               "toSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "toType": {
+                  "$ref": "#/components/schemas/RelatableEntityType"
+               }
+            },
+            "required": [
+               "name",
+               "reference",
+               "fromType",
+               "toType",
+               "matcher",
+               "relationshipType",
+               "metadata"
             ],
             "type": "object"
          },
@@ -2904,10 +3006,9 @@
             "summary": "Upsert a policy"
          }
       },
-      "/v1/workspaces/{workspaceId}/relationships": {
-         "get": {
-            "description": "Returns a paginated list of relationships for workspace {workspaceId}.",
-            "operationId": "getAllRelationships",
+      "/v1/workspaces/{workspaceId}/relationship-rules": {
+         "post": {
+            "operationId": "createRelationshipRule",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -2919,51 +3020,42 @@
                   }
                }
             ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateRelationshipRuleRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
             "responses": {
-               "200": {
+               "201": {
                   "content": {
                      "application/json": {
                         "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/RelationshipRule"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
-                           },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
+                           "$ref": "#/components/schemas/RelationshipRule"
                         }
                      }
                   },
-                  "description": "Paginated list of items"
+                  "description": "Resource created successfully"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
                }
             },
-            "summary": "Get all relationships",
-            "tags": [
-               "Relationships"
-            ]
+            "summary": "Create relationship rule"
          }
       },
-      "/v1/workspaces/{workspaceId}/relationships/{relationshipId}": {
+      "/v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId}": {
          "delete": {
             "operationId": "deleteRelationship",
             "parameters": [
@@ -2977,9 +3069,9 @@
                   }
                },
                {
-                  "description": "ID of the relationship",
+                  "description": "ID of the relationship rule",
                   "in": "path",
-                  "name": "relationshipId",
+                  "name": "relationshipRuleId",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -3021,7 +3113,7 @@
             "summary": "Delete relationship"
          },
          "get": {
-            "operationId": "getRelationship",
+            "operationId": "getRelationshipRule",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3033,9 +3125,9 @@
                   }
                },
                {
-                  "description": "ID of the relationship",
+                  "description": "ID of the relationship rule",
                   "in": "path",
-                  "name": "relationshipId",
+                  "name": "relationshipRuleId",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -3089,15 +3181,25 @@
                   }
                },
                {
-                  "description": "ID of the relationship",
+                  "description": "ID of the relationship rule",
                   "in": "path",
-                  "name": "relationshipId",
+                  "name": "relationshipRuleId",
                   "required": true,
                   "schema": {
                      "type": "string"
                   }
                }
             ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertRelationshipRuleRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
             "responses": {
                "202": {
                   "content": {

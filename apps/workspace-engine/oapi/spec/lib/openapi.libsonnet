@@ -29,6 +29,7 @@
   jobAgentIdParam():: self.stringParam('jobAgentId', 'ID of the job agent'),
   jobIdParam():: self.stringParam('jobId', 'ID of the job'),
   nameParam():: self.stringParam('name', 'Name of the resource provider'),
+  relationshipRuleIdParam():: self.stringParam('relationshipRuleId', 'ID of the relationship rule'),
   
   entityTypeParam():: {
     name: 'entityType',

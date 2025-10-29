@@ -11,7 +11,7 @@ local openapi = import '../lib/openapi.libsonnet';
       deploymentId: { type: 'string' },
     },
   },
-   Release: {
+  Release: {
     type: 'object',
     required: ['version', 'variables', 'encryptedVariables', 'releaseTarget', 'createdAt'],
     properties: {

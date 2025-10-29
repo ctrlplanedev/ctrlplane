@@ -22,7 +22,7 @@
   nameParam():: self.stringParam('name', 'Name of the resource provider'),
   identifierParam():: self.stringParam('identifier', 'Identifier of the resource'),
   providerIdParam():: self.stringParam('providerId', 'ID of the resource provider'),
-  relationshipIdParam():: self.stringParam('relationshipId', 'ID of the relationship'),
+  relationshipRuleIdParam():: self.stringParam('relationshipRuleId', 'ID of the relationship rule'),
 
   limitParam(defaultValue = 50):: {
     name: 'limit',

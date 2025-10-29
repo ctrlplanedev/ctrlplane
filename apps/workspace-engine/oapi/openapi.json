@@ -3211,6 +3211,64 @@
             "summary": "Get relationship rules for a given workspace"
          }
       },
+      "/v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId}": {
+         "get": {
+            "operationId": "getRelationshipRule",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the relationship rule",
+                  "in": "path",
+                  "name": "relationshipRuleId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/RelationshipRule"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get relationship rule"
+         }
+      },
       "/v1/workspaces/{workspaceId}/release-targets/evaluate": {
          "post": {
             "description": "Evaluates all policies and rules that apply to a given release target and returns the evaluation results.",

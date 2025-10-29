@@ -43,7 +43,7 @@ local securitySchemes = {
          (import 'paths/environments.jsonnet') +
          (import 'paths/policies.jsonnet') +
          (import 'paths/userapprovalrecords.jsonnet') +
-         (import 'paths/relationships.jsonnet') +
+         (import 'paths/relationship-rules.jsonnet') +
          (import 'paths/jobs.jsonnet'),
   components: {
     parameters: {},
@@ -61,7 +61,7 @@ local securitySchemes = {
       (import 'schemas/jobs.jsonnet') +
       (import 'schemas/userapprovalrecord.jsonnet') +
       (import 'schemas/resource-provider.jsonnet') +
-      (import 'schemas/relationships.jsonnet') +
+      (import 'schemas/relationship-rules.jsonnet') +
       (import 'schemas/release.jsonnet'),
   },
 }

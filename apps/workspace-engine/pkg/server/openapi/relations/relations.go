@@ -94,3 +94,19 @@ func (s *Relations) GetRelationshipRules(c *gin.Context, workspaceId string, par
 		"items":  paginatedRelationshipRules,
 	})
 }
+
+func (s *Relations) GetRelationshipRule(c *gin.Context, workspaceId string, relationshipRuleId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	relationshipRule, ok := ws.RelationshipRules().Get(relationshipRuleId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "relationship rule not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, relationshipRule)
+}
