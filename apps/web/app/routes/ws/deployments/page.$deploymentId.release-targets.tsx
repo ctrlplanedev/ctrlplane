@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import type { FC } from "react";
 import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
@@ -63,11 +64,13 @@ type ReleaseTarget = {
     currentRelease?: {
       version: {
         tag: string;
+        name?: string;
       };
     };
     desiredRelease?: {
       version: {
         tag: string;
+        name?: string;
       };
     };
   };
@@ -133,8 +136,13 @@ const EnvironmentReleaseTargetsGroup: FC<
         </TableCell>
       </TableRow>
       {rts.map(({ releaseTarget, state, resource }) => {
-        const fromVersionRaw = state.currentRelease?.version.tag;
-        const toVersion = state.desiredRelease?.version.tag ?? "unknown";
+        const fromVersionRaw =
+          state.currentRelease?.version.name ||
+          state.currentRelease?.version.tag;
+        const toVersion =
+          (state.desiredRelease?.version.name ||
+            state.desiredRelease?.version.tag) ??
+          "unknown";
         const isInSync = !!fromVersionRaw && fromVersionRaw === toVersion;
 
         let versionDisplay;
