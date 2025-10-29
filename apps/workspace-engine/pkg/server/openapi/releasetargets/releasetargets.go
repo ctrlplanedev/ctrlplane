@@ -37,7 +37,7 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 	// Create policy manager
 	policyManager := policy.New(ws.Store())
 
-	policies, err := policyManager.GetPoliciesForReleaseTarget(c.Request.Context(), &req.ReleaseTarget)
+	policies, err := ws.ReleaseTargets().GetPolicies(c.Request.Context(), &req.ReleaseTarget)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get policies for release target: " + err.Error(),
@@ -54,10 +54,26 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 	}
 
 	// Evaluate the version for this release target
-	versionDecision, err := policyManager.EvaluateVersion(c.Request.Context(), &req.Version, &req.ReleaseTarget)
+	versionDecision, err := policyManager.EvaluateVersion(c.Request.Context(), &req.Version, policies)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to evaluate policies: " + err.Error(),
+		})
+		return
+	}
+
+	environment, ok := ws.Environments().Get(req.ReleaseTarget.EnvironmentId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Failed to get environment: " + req.ReleaseTarget.EnvironmentId,
+		})
+		return
+	}
+
+	envPolicyDecision, err := policyManager.EvaluateEnvironmentAndVersion(c.Request.Context(), environment, &req.Version, policies)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to evaluate environment and version policies: " + err.Error(),
 		})
 		return
 	}
@@ -66,6 +82,7 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		"policiesEvaulated": len(policies),
 		"workspaceDecision": workspaceDecision,
 		"versionDecision":   versionDecision,
+		"envPolicyDecision": envPolicyDecision,
 	})
 }
 

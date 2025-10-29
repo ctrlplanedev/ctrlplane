@@ -32,10 +32,6 @@ func New(store *store.Store) *Manager {
 	}
 }
 
-func (m *Manager) GetPoliciesForReleaseTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.Policy, error) {
-	return m.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
-}
-
 // EvaluateWorkspace evaluates all workspace-scoped policies and returns a comprehensive decision.
 func (m *Manager) EvaluateWorkspace(
 	ctx context.Context,
@@ -76,18 +72,12 @@ func (m *Manager) EvaluateWorkspace(
 func (m *Manager) EvaluateVersion(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
-	releaseTarget *oapi.ReleaseTarget,
+	policies map[string]*oapi.Policy,
 ) (*oapi.DeployDecision, error) {
 	ctx, span := tracer.Start(ctx, "PolicyManager.EvaluateVersion")
 	defer span.End()
 
 	decision := NewDeployDecision()
-
-	policies, err := m.GetPoliciesForReleaseTarget(ctx, releaseTarget)
-	if err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to get policies for release target: %w", err)
-	}
 
 	// Fast path: no policies = allowed
 	if len(policies) == 0 {
@@ -99,7 +89,7 @@ func (m *Manager) EvaluateVersion(
 		policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
 
 		// Use factory to evaluate all version-scoped rules
-		ruleResults := m.evaluatorFactory.EvaluateVersionScopedPolicyRules(ctx, policy, releaseTarget, version)
+		ruleResults := m.evaluatorFactory.EvaluateVersionScopedPolicyRules(ctx, policy, version)
 		if ruleResults == nil {
 			return nil, fmt.Errorf("failed to evaluate version-scoped policy rules")
 		}
@@ -122,17 +112,12 @@ func (m *Manager) EvaluateVersion(
 func (m *Manager) EvaluateRelease(
 	ctx context.Context,
 	release *oapi.Release,
+	policies map[string]*oapi.Policy,
 ) (*oapi.DeployDecision, error) {
 	ctx, span := tracer.Start(ctx, "PolicyManager.EvaluateRelease")
 	defer span.End()
 
 	decision := NewDeployDecision()
-
-	policies, err := m.GetPoliciesForReleaseTarget(ctx, &release.ReleaseTarget)
-	if err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to get policies for release target: %w", err)
-	}
 
 	// Fast path: no policies = allowed
 	if len(policies) == 0 {
@@ -141,10 +126,35 @@ func (m *Manager) EvaluateRelease(
 
 	for _, policy := range policies {
 		policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
-		ruleResults := m.evaluatorFactory.EvaluateReleaseScopedPolicyRules(ctx, policy, &release.ReleaseTarget, release)
-		if ruleResults == nil {
-			return nil, fmt.Errorf("failed to evaluate release-scoped policy rules: %w", err)
+		ruleResults := m.evaluatorFactory.EvaluateReleaseScopedPolicyRules(ctx, policy, release)
+		for _, ruleResult := range ruleResults {
+			policyResult.AddRuleResult(*ruleResult)
 		}
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
+	}
+
+	return decision, nil
+}
+
+func (m *Manager) EvaluateEnvironmentAndVersion(
+	ctx context.Context,
+	environment *oapi.Environment,
+	version *oapi.DeploymentVersion,
+	policies map[string]*oapi.Policy,
+) (*oapi.DeployDecision, error) {
+	ctx, span := tracer.Start(ctx, "PolicyManager.EvaluateEnvironmentAndVersion")
+	defer span.End()
+
+	decision := NewDeployDecision()
+
+	// Fast path: no policies = allowed
+	if len(policies) == 0 {
+		return decision, nil
+	}
+
+	for _, policy := range policies {
+		policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
+		ruleResults := m.evaluatorFactory.EvaluateEnvironmentAndVersionScopedPolicyRules(ctx, policy, environment, version)
 		for _, ruleResult := range ruleResults {
 			policyResult.AddRuleResult(*ruleResult)
 		}

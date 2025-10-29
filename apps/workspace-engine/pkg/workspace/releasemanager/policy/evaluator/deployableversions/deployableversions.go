@@ -22,24 +22,8 @@ func NewDeployableVersionStatusEvaluator(store *store.Store) *DeployableVersionS
 
 func (e *DeployableVersionStatusEvaluator) Evaluate(
 	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
 	version *oapi.DeploymentVersion,
 ) (*oapi.RuleEvaluation, error) {
-	// Check if any policies apply to this release target
-	// Only enforce version status check if policies exist
-	policies, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
-	if err != nil {
-		return nil, err
-	}
-
-	// If no policies apply to this release target, allow any version status
-	if len(policies) == 0 {
-		return results.NewAllowedResult("No policies apply").
-			WithDetail("version_id", version.Id).
-			WithDetail("version_status", version.Status), nil
-	}
-
-	// If policies exist, enforce version status check
 	if version.Status == oapi.DeploymentVersionStatusReady {
 		return results.NewAllowedResult("Version is ready").
 			WithDetail("version_id", version.Id).

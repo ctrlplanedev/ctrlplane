@@ -2,9 +2,14 @@ package integration
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // WorkspaceOption configures a TestWorkspace
@@ -36,6 +41,9 @@ type PolicyOption func(*TestWorkspace, *oapi.Policy, *eventsBuilder)
 
 // PolicyTargetSelectorOption configures a PolicyTargetSelector
 type PolicyTargetSelectorOption func(*TestWorkspace, *oapi.PolicyTargetSelector)
+
+// PolicyRuleOption configures a PolicyRule
+type PolicyRuleOption func(*TestWorkspace, *oapi.PolicyRule) error
 
 // RelationshipRuleOption configures a RelationshipRule
 type RelationshipRuleOption func(*TestWorkspace, *oapi.RelationshipRule) error
@@ -575,6 +583,25 @@ func WithPolicyTargetSelector(options ...PolicyTargetSelectorOption) PolicyOptio
 	}
 }
 
+func WithPolicyRule(options ...PolicyRuleOption) PolicyOption {
+	return func(ws *TestWorkspace, p *oapi.Policy, _ *eventsBuilder) {
+		rule := &oapi.PolicyRule{
+			Id:        fmt.Sprintf("rule-%s", uuid.New().String()[:8]),
+			PolicyId:  p.Id,
+			CreatedAt: time.Now().Format(time.RFC3339),
+		}
+
+		for _, option := range options {
+			if err := option(ws, rule); err != nil {
+				// Log error but continue - tests can handle validation
+				_ = err
+			}
+		}
+
+		p.Rules = append(p.Rules, *rule)
+	}
+}
+
 // ===== PolicyTargetSelector Options =====
 
 func PolicyTargetSelectorID(id string) PolicyTargetSelectorOption {
@@ -628,6 +655,100 @@ func PolicyTargetCelResourceSelector(cel string) PolicyTargetSelectorOption {
 		sel := &oapi.Selector{}
 		_ = sel.FromCelSelector(oapi.CelSelector{Cel: cel})
 		s.ResourceSelector = sel
+	}
+}
+
+// ===== PolicyRule Options =====
+
+func PolicyRuleID(id string) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.Id = id
+		return nil
+	}
+}
+
+// WithRuleEnvironmentProgression configures an environment progression rule
+func WithRuleEnvironmentProgression(options ...EnvironmentProgressionRuleOption) PolicyRuleOption {
+	return func(ws *TestWorkspace, r *oapi.PolicyRule) error {
+		rule := &oapi.EnvironmentProgressionRule{
+			Id:       fmt.Sprintf("env-prog-%s", uuid.New().String()[:8]),
+			PolicyId: r.PolicyId,
+		}
+
+		for _, option := range options {
+			if err := option(ws, rule); err != nil {
+				return err
+			}
+		}
+
+		r.EnvironmentProgression = rule
+		return nil
+	}
+}
+
+// WithRuleAnyApproval configures an approval rule
+func WithRuleAnyApproval(minApprovals int32) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.AnyApproval = &oapi.AnyApprovalRule{
+			MinApprovals: minApprovals,
+		}
+		return nil
+	}
+}
+
+// ===== EnvironmentProgressionRule Options =====
+
+type EnvironmentProgressionRuleOption func(*TestWorkspace, *oapi.EnvironmentProgressionRule) error
+
+// EnvironmentProgressionDependsOnEnvironmentSelector configures a CEL selector for dependency environments (default/simple case)
+func EnvironmentProgressionDependsOnEnvironmentSelector(cel string) EnvironmentProgressionRuleOption {
+	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
+		sel := &oapi.Selector{}
+		if err := sel.FromCelSelector(oapi.CelSelector{Cel: cel}); err != nil {
+			return err
+		}
+		r.DependsOnEnvironmentSelector = *sel
+		return nil
+	}
+}
+
+// EnvironmentProgressionDependsOnEnvironmentJsonSelector configures a JSON selector for dependency environments
+func EnvironmentProgressionDependsOnEnvironmentJsonSelector(selector map[string]any) EnvironmentProgressionRuleOption {
+	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
+		sel := &oapi.Selector{}
+		if err := sel.FromJsonSelector(oapi.JsonSelector{Json: selector}); err != nil {
+			return err
+		}
+		r.DependsOnEnvironmentSelector = *sel
+		return nil
+	}
+}
+
+func EnvironmentProgressionMinimumSoakTimeMinutes(minutes int32) EnvironmentProgressionRuleOption {
+	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
+		r.MinimumSockTimeMinutes = &minutes
+		return nil
+	}
+}
+
+func EnvironmentProgressionMinimumSuccessPercentage(percentage float32) EnvironmentProgressionRuleOption {
+	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
+		r.MinimumSuccessPercentage = &percentage
+		return nil
+	}
+}
+
+func EnvironmentProgressionMaximumAgeHours(hours int32) EnvironmentProgressionRuleOption {
+	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
+		r.MaximumAgeHours = &hours
+		return nil
+	}
+}
+
+func EnvironmentProgressionSuccessStatuses(statuses ...oapi.JobStatus) EnvironmentProgressionRuleOption {
+	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
+		r.SuccessStatuses = &statuses
+		return nil
 	}
 }
 

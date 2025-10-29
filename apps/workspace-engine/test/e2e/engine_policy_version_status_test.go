@@ -379,38 +379,37 @@ func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Create building version for prod deployment (policy applies, should NOT create job)
+	// Create building version for prod deployment (should NOT create job - not ready)
 	versionProdBuilding := c.NewDeploymentVersion()
 	versionProdBuilding.DeploymentId = deploymentProdID
 	versionProdBuilding.Tag = "v1.0.0"
 	versionProdBuilding.Status = oapi.DeploymentVersionStatusBuilding
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, versionProdBuilding)
 
-	// Create building version for dev deployment (policy doesn't apply, SHOULD create job)
+	// Create building version for dev deployment (should also NOT create job - not ready)
 	versionDevBuilding := c.NewDeploymentVersion()
 	versionDevBuilding.DeploymentId = deploymentDevID
 	versionDevBuilding.Tag = "v1.0.0"
 	versionDevBuilding.Status = oapi.DeploymentVersionStatusBuilding
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, versionDevBuilding)
 
-	// Verify only 1 job was created (for dev, which is not affected by policy)
+	// Verify NO jobs were created (building versions are never deployable)
 	allJobs := engine.Workspace().Jobs().Items()
-	if len(allJobs) != 1 {
-		t.Fatalf("expected 1 job (dev deployment not affected by policy), got %d", len(allJobs))
+	if len(allJobs) != 0 {
+		t.Fatalf("expected 0 jobs for building versions (never deployable), got %d", len(allJobs))
 	}
 
-	// Verify the job is for dev deployment
-	var job *oapi.Job
-	for _, j := range allJobs {
-		job = j
-		break
-	}
-	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
-	if !ok {
-		t.Fatalf("release %s not found", job.ReleaseId)
-	}
-	if release.ReleaseTarget.DeploymentId != deploymentDevID {
-		t.Fatalf("expected job for dev deployment %s, got %s", deploymentDevID, release.ReleaseTarget.DeploymentId)
+	// Create ready version for dev deployment (should create job - no policy restrictions)
+	versionDevReady := c.NewDeploymentVersion()
+	versionDevReady.DeploymentId = deploymentDevID
+	versionDevReady.Tag = "v2.0.0"
+	versionDevReady.Status = oapi.DeploymentVersionStatusReady
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, versionDevReady)
+
+	// Verify 1 job was created for dev
+	allJobs = engine.Workspace().Jobs().Items()
+	if len(allJobs) != 1 {
+		t.Fatalf("expected 1 job for dev ready version, got %d", len(allJobs))
 	}
 
 	// Create ready version for prod deployment (policy applies, SHOULD create job)
@@ -420,18 +419,25 @@ func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
 	versionProdReady.Status = oapi.DeploymentVersionStatusReady
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, versionProdReady)
 
-	// Verify now we have 2 jobs total
+	// Verify now we have 2 jobs total (both ready versions)
 	allJobs = engine.Workspace().Jobs().Items()
 	if len(allJobs) != 2 {
-		t.Fatalf("expected 2 jobs total, got %d", len(allJobs))
+		t.Fatalf("expected 2 jobs total (both ready versions), got %d", len(allJobs))
 	}
 
-	// Verify prod deployment now has a job
+	// Verify both deployments have jobs with ready versions
+	devHasJob := false
 	prodHasJob := false
 	for _, j := range allJobs {
 		release, ok := engine.Workspace().Releases().Get(j.ReleaseId)
 		if !ok {
 			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentDevID && release.Version.Tag == "v2.0.0" {
+			devHasJob = true
+			if release.Version.Status != oapi.DeploymentVersionStatusReady {
+				t.Fatalf("expected dev version status ready, got %s", release.Version.Status)
+			}
 		}
 		if release.ReleaseTarget.DeploymentId == deploymentProdID && release.Version.Tag == "v2.0.0" {
 			prodHasJob = true
@@ -441,6 +447,9 @@ func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
 		}
 	}
 
+	if !devHasJob {
+		t.Fatalf("expected job for dev deployment with ready version")
+	}
 	if !prodHasJob {
 		t.Fatalf("expected job for prod deployment with ready version")
 	}

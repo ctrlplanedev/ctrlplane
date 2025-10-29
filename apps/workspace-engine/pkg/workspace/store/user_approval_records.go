@@ -46,10 +46,10 @@ func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 	u.store.changeset.RecordDelete(userApprovalRecord)
 }
 
-func (u *UserApprovalRecords) GetApprovers(versionId string) []string {
+func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []string {
 	approvers := make([]string, 0)
 	for record := range u.repo.UserApprovalRecords.IterBuffered() {
-		if record.Val.VersionId == versionId && record.Val.Status == oapi.ApprovalStatusApproved {
+		if record.Val.VersionId == versionId && record.Val.EnvironmentId == environmentId && record.Val.Status == oapi.ApprovalStatusApproved {
 			approvers = append(approvers, record.Val.UserId)
 		}
 	}

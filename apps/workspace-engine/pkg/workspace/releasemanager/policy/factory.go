@@ -20,12 +20,34 @@ func NewEvaluatorFactory(store *store.Store) *EvaluatorFactory {
 	return &EvaluatorFactory{store: store}
 }
 
+func (f *EvaluatorFactory) EvaluateEnvironmentAndVersionScopedPolicyRules(
+	ctx context.Context,
+	policy *oapi.Policy,
+	environment *oapi.Environment,
+	version *oapi.DeploymentVersion,
+) []*oapi.RuleEvaluation {
+	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
+		eval := f.createEnvironmentAndVersionScopedEvaluator(rule)
+		if eval == nil {
+			return nil, nil // Skip unknown rule types
+		}
+		ruleResults := make([]*oapi.RuleEvaluation, 0, len(eval))
+		for _, eval := range eval {
+			result, err := eval.Evaluate(ctx, environment, version)
+			if err != nil {
+				return nil, err
+			}
+			ruleResults = append(ruleResults, result)
+		}
+		return ruleResults, nil
+	})
+}
+
 // EvaluateVersionScopedPolicyRules evaluates all version-scoped rules in a policy.
 // Returns nil if any rule evaluation fails.
 func (f *EvaluatorFactory) EvaluateVersionScopedPolicyRules(
 	ctx context.Context,
 	policy *oapi.Policy,
-	releaseTarget *oapi.ReleaseTarget,
 	version *oapi.DeploymentVersion,
 ) []*oapi.RuleEvaluation {
 	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
@@ -35,7 +57,7 @@ func (f *EvaluatorFactory) EvaluateVersionScopedPolicyRules(
 		}
 		ruleResults := make([]*oapi.RuleEvaluation, 0, len(eval))
 		for _, eval := range eval {
-			result, err := eval.Evaluate(ctx, releaseTarget, version)
+			result, err := eval.Evaluate(ctx, version)
 			if err != nil {
 				return nil, err
 			}
@@ -74,7 +96,6 @@ func (f *EvaluatorFactory) EvaluateTargetScopedPolicyRules(
 func (f *EvaluatorFactory) EvaluateReleaseScopedPolicyRules(
 	ctx context.Context,
 	policy *oapi.Policy,
-	releaseTarget *oapi.ReleaseTarget,
 	release *oapi.Release,
 ) []*oapi.RuleEvaluation {
 	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
@@ -129,24 +150,30 @@ func evaluateRules(
 		if err != nil {
 			return nil
 		}
-		for _, result := range result {
-			ruleResults = append(ruleResults, result)
-		}
+		ruleResults = append(ruleResults, result...)
+
 	}
 
 	return ruleResults
 }
 
-// createVersionScopedEvaluator creates a version-scoped evaluator for the given rule.
+// createEnvironmentAndVersionScopedEvaluator creates a environment and version-scoped evaluator for the given rule.
 // Returns nil for unknown rule types.
-func (f *EvaluatorFactory) createVersionScopedEvaluator(rule *oapi.PolicyRule) []evaluator.VersionScopedEvaluator {
-	evaluators := []evaluator.VersionScopedEvaluator{}
+func (f *EvaluatorFactory) createEnvironmentAndVersionScopedEvaluator(rule *oapi.PolicyRule) []evaluator.EnvironmentAndVersionScopedEvaluator {
+	evaluators := []evaluator.EnvironmentAndVersionScopedEvaluator{}
 	if rule.AnyApproval != nil {
 		evaluators = append(evaluators, approval.NewAnyApprovalEvaluator(f.store, rule.AnyApproval))
 	}
 	if rule.EnvironmentProgression != nil {
 		evaluators = append(evaluators, environmentprogression.NewEnvironmentProgressionEvaluator(f.store, rule.EnvironmentProgression))
 	}
+	return evaluators
+}
+
+// createVersionScopedEvaluator creates a version-scoped evaluator for the given rule.
+// Returns nil for unknown rule types.
+func (f *EvaluatorFactory) createVersionScopedEvaluator(rule *oapi.PolicyRule) []evaluator.VersionScopedEvaluator {
+	evaluators := []evaluator.VersionScopedEvaluator{}
 	return evaluators
 }
 

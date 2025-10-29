@@ -76,14 +76,10 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
 
-	// Create a selector that matches staging
+	// Create a CEL selector that matches staging
 	selector := oapi.Selector{}
-	err := selector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "name",
-			"operator": "equals",
-			"value":    "staging",
-		},
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
 	})
 	if err != nil {
 		t.Fatalf("failed to create selector: %v", err)
@@ -98,7 +94,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 
 	evaluator := NewEnvironmentProgressionEvaluator(st, rule)
 
-	// Create a version and release target for prod
+	// Create a version for prod environment
 	version := &oapi.DeploymentVersion{
 		Id:           "version-1",
 		Name:         "v1.0.0",
@@ -108,14 +104,11 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 
-	releaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-prod",
-		DeploymentId:  "deploy-1",
-	}
+	// Get the prod environment
+	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be pending since version not in staging
-	result, err := evaluator.Evaluate(ctx, releaseTarget, version)
+	result, err := evaluator.Evaluate(ctx, prodEnv, version)
 
 	// Assert
 	if err != nil {
@@ -179,14 +172,10 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 	}
 	st.Jobs.Upsert(ctx, job)
 
-	// Create a selector that matches staging
+	// Create a CEL selector that matches staging
 	selector := oapi.Selector{}
-	err := selector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
-			"type":     "name",
-			"operator": "equals",
-			"value":    "staging",
-		},
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
 	})
 	if err != nil {
 		t.Fatalf("failed to create selector: %v", err)
@@ -201,15 +190,11 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 
 	evaluator := NewEnvironmentProgressionEvaluator(st, rule)
 
-	// Create release target for prod
-	prodReleaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-prod",
-		DeploymentId:  "deploy-1",
-	}
+	// Get the prod environment
+	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be allowed since version succeeded in staging
-	result, err := evaluator.Evaluate(ctx, prodReleaseTarget, version)
+	result, err := evaluator.Evaluate(ctx, prodEnv, version)
 
 	// Assert
 	if err != nil {
@@ -269,14 +254,10 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	}
 	st.Jobs.Upsert(ctx, job)
 
-	// Create a selector that matches staging
+	// Create a CEL selector that matches staging
 	selector := oapi.Selector{}
-	err := selector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
-			"type":     "name",
-			"operator": "equals",
-			"value":    "staging",
-		},
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
 	})
 	if err != nil {
 		t.Fatalf("failed to create selector: %v", err)
@@ -293,15 +274,11 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 
 	evaluator := NewEnvironmentProgressionEvaluator(st, rule)
 
-	// Create release target for prod
-	prodReleaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-prod",
-		DeploymentId:  "deploy-1",
-	}
+	// Get the prod environment
+	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be pending since soak time not met
-	result, err := evaluator.Evaluate(ctx, prodReleaseTarget, version)
+	result, err := evaluator.Evaluate(ctx, prodEnv, version)
 
 	// Assert
 	if err != nil {
@@ -325,14 +302,10 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
 
-	// Create a selector that matches nothing
+	// Create a CEL selector that matches nothing
 	selector := oapi.Selector{}
-	err := selector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
-			"type":     "name",
-			"operator": "equals",
-			"value":    "non-existent-env",
-		},
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'non-existent-env'",
 	})
 	if err != nil {
 		t.Fatalf("failed to create selector: %v", err)
@@ -356,14 +329,11 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 
-	releaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    "resource-1",
-		EnvironmentId: "env-prod",
-		DeploymentId:  "deploy-1",
-	}
+	// Get the prod environment
+	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be denied since no matching environments
-	result, err := evaluator.Evaluate(ctx, releaseTarget, version)
+	result, err := evaluator.Evaluate(ctx, prodEnv, version)
 
 	// Assert
 	if err != nil {

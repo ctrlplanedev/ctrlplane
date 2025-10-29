@@ -59,40 +59,16 @@ func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
+			integration.WithPolicyRule(
+				integration.WithRuleEnvironmentProgression(
+					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
+					integration.EnvironmentProgressionMinimumSoakTimeMinutes(30),
+				),
+			),
 		),
 	)
 
 	ctx := context.Background()
-
-	// Add environment progression rule requiring 30 minute soak time in staging
-	policy, _ := engine.Workspace().Policies().Get(policyID)
-	
-	// Create selector to match staging environment
-	stagingSelector := &oapi.Selector{}
-	err := stagingSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "equals",
-		"value":    "staging",
-	}})
-	if err != nil {
-		t.Fatalf("failed to create staging selector: %v", err)
-	}
-
-	soakTimeMinutes := int32(30)
-	policy.Rules = []oapi.PolicyRule{
-		{
-			Id:        "rule-1",
-			PolicyId:  policyID,
-			CreatedAt: time.Now().Format(time.RFC3339),
-			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				Id:                           "env-prog-rule-1",
-				PolicyId:                     policyID,
-				DependsOnEnvironmentSelector: *stagingSelector,
-				MinimumSockTimeMinutes:       &soakTimeMinutes,
-			},
-		},
-	}
-	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Create a deployment version
 	version := c.NewDeploymentVersion()
@@ -192,48 +168,20 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 			integration.PolicyName("production-progression"),
 			integration.WithPolicyTargetSelector(
 				// Only apply to production environment
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "production",
-				}),
+				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
+			),
+			integration.WithPolicyRule(
+				integration.WithRuleEnvironmentProgression(
+					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
+					integration.EnvironmentProgressionMinimumSoakTimeMinutes(2),
+				),
 			),
 		),
 	)
 
 	ctx := context.Background()
-
-	// Add environment progression rule with 2 minute soak time (short for testing)
-	policy, _ := engine.Workspace().Policies().Get(policyID)
-	
-	// Create selector to match staging environment
-	stagingSelector := &oapi.Selector{}
-	err := stagingSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "equals",
-		"value":    "staging",
-	}})
-	if err != nil {
-		t.Fatalf("failed to create staging selector: %v", err)
-	}
-
-	soakTimeMinutes := int32(2)
-	policy.Rules = []oapi.PolicyRule{
-		{
-			Id:        "rule-1",
-			PolicyId:  policyID,
-			CreatedAt: time.Now().Format(time.RFC3339),
-			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				Id:                           "env-prog-rule-1",
-				PolicyId:                     policyID,
-				DependsOnEnvironmentSelector: *stagingSelector,
-				MinimumSockTimeMinutes:       &soakTimeMinutes,
-			},
-		},
-	}
-	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Create a deployment version
 	version := c.NewDeploymentVersion()
@@ -332,48 +280,20 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "production",
-				}),
+				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
+			),
+			integration.WithPolicyRule(
+				integration.WithRuleEnvironmentProgression(
+					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name.startsWith('staging')"),
+					integration.EnvironmentProgressionMinimumSoakTimeMinutes(2),
+				),
 			),
 		),
 	)
 
 	ctx := context.Background()
-
-	// Add environment progression rule with selector matching ANY staging environment
-	policy, _ := engine.Workspace().Policies().Get(policyID)
-	
-	// Create selector to match any staging environment (starts-with "staging")
-	stagingSelector := &oapi.Selector{}
-	err := stagingSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "starts-with",
-		"value":    "staging",
-	}})
-	if err != nil {
-		t.Fatalf("failed to create staging selector: %v", err)
-	}
-
-	soakTimeMinutes := int32(2)
-	policy.Rules = []oapi.PolicyRule{
-		{
-			Id:        "rule-1",
-			PolicyId:  policyID,
-			CreatedAt: time.Now().Format(time.RFC3339),
-			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				Id:                           "env-prog-rule-1",
-				PolicyId:                     policyID,
-				DependsOnEnvironmentSelector: *stagingSelector,
-				MinimumSockTimeMinutes:       &soakTimeMinutes,
-			},
-		},
-	}
-	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Create a deployment version
 	version := c.NewDeploymentVersion()
@@ -483,41 +403,17 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
+			integration.WithPolicyRule(
+				integration.WithRuleEnvironmentProgression(
+					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
+					integration.EnvironmentProgressionMinimumSoakTimeMinutes(2),
+					integration.EnvironmentProgressionMinimumSuccessPercentage(60.0),
+				),
+			),
 		),
 	)
 
 	ctx := context.Background()
-
-	// Add environment progression rule requiring 60% success rate and 2 minute soak
-	policy, _ := engine.Workspace().Policies().Get(policyID)
-	
-	stagingSelector := &oapi.Selector{}
-	err := stagingSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "equals",
-		"value":    "staging",
-	}})
-	if err != nil {
-		t.Fatalf("failed to create staging selector: %v", err)
-	}
-
-	soakTimeMinutes := int32(2)
-	minimumSuccessPercentage := float32(60.0) // Require 60% success rate
-	policy.Rules = []oapi.PolicyRule{
-		{
-			Id:        "rule-1",
-			PolicyId:  policyID,
-			CreatedAt: time.Now().Format(time.RFC3339),
-			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				Id:                           "env-prog-rule-1",
-				PolicyId:                     policyID,
-				DependsOnEnvironmentSelector: *stagingSelector,
-				MinimumSockTimeMinutes:       &soakTimeMinutes,
-				MinimumSuccessPercentage:     &minimumSuccessPercentage,
-			},
-		},
-	}
-	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Create a deployment version
 	version := c.NewDeploymentVersion()
@@ -614,47 +510,20 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
 			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "production",
-				}),
+				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
+			),
+			integration.WithPolicyRule(
+				integration.WithRuleEnvironmentProgression(
+					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
+					integration.EnvironmentProgressionMaximumAgeHours(2),
+				),
 			),
 		),
 	)
 
 	ctx := context.Background()
-
-	// Add environment progression rule with maximum age of 2 hours
-	policy, _ := engine.Workspace().Policies().Get(policyID)
-	
-	stagingSelector := &oapi.Selector{}
-	err := stagingSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "equals",
-		"value":    "staging",
-	}})
-	if err != nil {
-		t.Fatalf("failed to create staging selector: %v", err)
-	}
-
-	maximumAgeHours := int32(2)
-	policy.Rules = []oapi.PolicyRule{
-		{
-			Id:        "rule-1",
-			PolicyId:  policyID,
-			CreatedAt: time.Now().Format(time.RFC3339),
-			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				Id:                           "env-prog-rule-1",
-				PolicyId:                     policyID,
-				DependsOnEnvironmentSelector: *stagingSelector,
-				MaximumAgeHours:              &maximumAgeHours,
-			},
-		},
-	}
-	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Create a deployment version
 	version := c.NewDeploymentVersion()

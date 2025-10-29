@@ -8,16 +8,25 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-// setupStore creates a test store with approval records.
-func setupStore(versionId string, approvers []string) *store.Store {
+// setupStore creates a test store with approval records and a test environment.
+func setupStore(versionId string, environmentId string, approvers []string) *store.Store {
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
+	// Create test environment
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(context.Background(), env)
+
 	for _, userId := range approvers {
 		record := &oapi.UserApprovalRecord{
-			VersionId: versionId,
-			UserId:    userId,
-			Status:    oapi.ApprovalStatusApproved,
+			VersionId:     versionId,
+			EnvironmentId: environmentId,
+			UserId:        userId,
+			Status:        oapi.ApprovalStatusApproved,
 		}
 		st.UserApprovalRecords.Upsert(context.Background(), record)
 	}
@@ -28,16 +37,17 @@ func setupStore(versionId string, approvers []string) *store.Store {
 func TestAnyApprovalEvaluator_EnoughApprovals(t *testing.T) {
 	// Setup: 3 approvers, need 2
 	versionId := "version-1"
-	st := setupStore(versionId, []string{"user-1", "user-2", "user-3"})
+	environmentId := "env-1"
+	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3"})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(context.Background(), environment, version)
 
 	// Assert
 	if err != nil {
@@ -65,16 +75,17 @@ func TestAnyApprovalEvaluator_EnoughApprovals(t *testing.T) {
 func TestAnyApprovalEvaluator_NotEnoughApprovals(t *testing.T) {
 	// Setup: 1 approver, need 3
 	versionId := "version-1"
-	st := setupStore(versionId, []string{"user-1"})
+	environmentId := "env-1"
+	st := setupStore(versionId, environmentId, []string{"user-1"})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 3}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(context.Background(), environment, version)
 
 	// Assert
 	if err != nil {
@@ -102,16 +113,17 @@ func TestAnyApprovalEvaluator_NotEnoughApprovals(t *testing.T) {
 func TestAnyApprovalEvaluator_ExactlyMinApprovals(t *testing.T) {
 	// Setup: 2 approvers, need 2 (exact match)
 	versionId := "version-1"
-	st := setupStore(versionId, []string{"user-1", "user-2"})
+	environmentId := "env-1"
+	st := setupStore(versionId, environmentId, []string{"user-1", "user-2"})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(context.Background(), environment, version)
 
 	// Assert
 	if err != nil {
@@ -131,16 +143,17 @@ func TestAnyApprovalEvaluator_ExactlyMinApprovals(t *testing.T) {
 func TestAnyApprovalEvaluator_NoApprovalsRequired(t *testing.T) {
 	// Setup: 0 approvals required (rule disabled)
 	versionId := "version-1"
-	st := setupStore(versionId, []string{})
+	environmentId := "env-1"
+	st := setupStore(versionId, environmentId, []string{})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 0}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(context.Background(), environment, version)
 
 	// Assert
 	if err != nil {
@@ -159,16 +172,17 @@ func TestAnyApprovalEvaluator_NoApprovalsRequired(t *testing.T) {
 func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
 	// Setup: 0 approvers, need 1
 	versionId := "version-1"
-	st := setupStore(versionId, []string{})
+	environmentId := "env-1"
+	st := setupStore(versionId, environmentId, []string{})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(context.Background(), environment, version)
 
 	// Assert
 	if err != nil {
@@ -193,30 +207,41 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 	// Setup: Different approval counts for different versions
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
+	ctx := context.Background()
+
+	environmentId := "env-1"
+	// Create test environment
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
 
 	// Version 1: 2 approvals
-	ctx := context.Background()
 	for _, userId := range []string{"user-1", "user-2"} {
 		st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-			VersionId: "version-1",
-			UserId:    userId,
-			Status:    oapi.ApprovalStatusApproved,
+			VersionId:     "version-1",
+			EnvironmentId: environmentId,
+			UserId:        userId,
+			Status:        oapi.ApprovalStatusApproved,
 		})
 	}
 
 	// Version 2: 1 approval
 	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
-		VersionId: "version-2",
-		UserId:    "user-3",
-		Status:    oapi.ApprovalStatusApproved,
+		VersionId:     "version-2",
+		EnvironmentId: environmentId,
+		UserId:        "user-3",
+		Status:        oapi.ApprovalStatusApproved,
 	})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Test version-1 (2 approvals, should pass)
-	result1, err := evaluator.Evaluate(ctx, releaseTarget, &oapi.DeploymentVersion{Id: "version-1"})
+	result1, err := evaluator.Evaluate(ctx, environment, &oapi.DeploymentVersion{Id: "version-1"})
 	if err != nil {
 		t.Fatalf("unexpected error for version-1: %v", err)
 	}
@@ -225,7 +250,7 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 	}
 
 	// Test version-2 (1 approval, should fail)
-	result2, err := evaluator.Evaluate(ctx, releaseTarget, &oapi.DeploymentVersion{Id: "version-2"})
+	result2, err := evaluator.Evaluate(ctx, environment, &oapi.DeploymentVersion{Id: "version-2"})
 	if err != nil {
 		t.Fatalf("unexpected error for version-2: %v", err)
 	}
@@ -249,15 +274,25 @@ func TestAnyApprovalEvaluator_EmptyVersionId(t *testing.T) {
 	// Setup: Version with empty ID
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
+	ctx := context.Background()
+
+	environmentId := "env-1"
+	// Create test environment
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: ""} // Empty ID
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(ctx, environment, version)
 
 	// Assert
 	if err != nil {
@@ -276,16 +311,17 @@ func TestAnyApprovalEvaluator_EmptyVersionId(t *testing.T) {
 func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
 	// Verify result has all expected fields and proper types
 	versionId := "version-1"
-	st := setupStore(versionId, []string{"user-1"})
+	environmentId := "env-1"
+	st := setupStore(versionId, environmentId, []string{"user-1"})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(context.Background(), environment, version)
 
 	// Assert
 	if err != nil {
@@ -322,16 +358,17 @@ func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
 func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
 	// Setup: More approvals than required
 	versionId := "version-1"
-	st := setupStore(versionId, []string{"user-1", "user-2", "user-3", "user-4", "user-5"})
+	environmentId := "env-1"
+	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3", "user-4", "user-5"})
 
 	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
 	evaluator := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
-	releaseTarget := &oapi.ReleaseTarget{ResourceId: "target-1", EnvironmentId: "env-1", DeploymentId: "deploy-1"}
+	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), releaseTarget, version)
+	result, err := evaluator.Evaluate(context.Background(), environment, version)
 
 	// Assert
 	if err != nil {

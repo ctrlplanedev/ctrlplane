@@ -4,6 +4,7 @@ package deployment
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -124,7 +125,7 @@ func (p *Planner) findDeployableVersion(
 	ctx, span := tracer.Start(ctx, "findDeployableVersion")
 	defer span.End()
 
-	policies, err := p.policyManager.GetPoliciesForReleaseTarget(ctx, releaseTarget)
+	policies, err := p.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 	if err != nil {
 		span.RecordError(err)
 		return nil
@@ -140,11 +141,22 @@ func (p *Planner) findDeployableVersion(
 		return nil
 	}
 
+	environment, ok := p.store.Environments.Get(releaseTarget.EnvironmentId)
+	if !ok {
+		span.RecordError(fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId))
+		return nil
+	}
+
+	if environment == nil {
+		span.RecordError(fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId))
+		return nil
+	}
+
 	for _, version := range candidateVersions {
 		// Step 1: Evaluate system-level version checks (e.g., version status)
 		eligible := true
 		for _, versionEvaluator := range p.versionEvaluators {
-			result, err := versionEvaluator.Evaluate(ctx, releaseTarget, version)
+			result, err := versionEvaluator.Evaluate(ctx, version)
 			if err != nil {
 				span.RecordError(err)
 				eligible = false
@@ -161,14 +173,30 @@ func (p *Planner) findDeployableVersion(
 		}
 
 		// Step 2: Check user-defined policies
-		policyDecision, err := p.policyManager.EvaluateVersion(ctx, version, releaseTarget)
+		// Both version-scoped AND environment+version-scoped rules must pass
+		
+		// Check version-scoped rules
+		versionDecision, err := p.policyManager.EvaluateVersion(ctx, version, policies)
 		if err != nil {
 			span.RecordError(err)
 			continue // Skip this version on error
 		}
-		if policyDecision.CanDeploy() {
-			return version
+		if !versionDecision.CanDeploy() {
+			continue // Version-scoped rules blocked deployment
 		}
+
+		// Check environment+version-scoped rules (approval, environment progression, etc.)
+		envVersionDecision, err := p.policyManager.EvaluateEnvironmentAndVersion(ctx, environment, version, policies)
+		if err != nil {
+			span.RecordError(err)
+			continue // Skip this version on error
+		}
+		if !envVersionDecision.CanDeploy() {
+			continue // Environment+version-scoped rules blocked deployment
+		}
+
+		// Both checks passed - this version can be deployed
+		return version
 	}
 
 	return nil

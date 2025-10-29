@@ -35,12 +35,19 @@ type ReleaseScopedEvaluator interface {
 }
 
 // VersionScopedEvaluator evaluates policy rules that apply to specific deployment versions
-// within the context of a release target. These rules determine whether a particular
+// independent of any specific release target. These rules determine whether a particular
 // version is allowed to be deployed to a target based on policy constraints.
 type VersionScopedEvaluator interface {
 	Evaluate(
 		ctx context.Context,
-		releaseTarget *oapi.ReleaseTarget,
+		version *oapi.DeploymentVersion,
+	) (*oapi.RuleEvaluation, error)
+}
+
+type EnvironmentAndVersionScopedEvaluator interface {
+	Evaluate(
+		ctx context.Context,
+		environment *oapi.Environment,
 		version *oapi.DeploymentVersion,
 	) (*oapi.RuleEvaluation, error)
 }

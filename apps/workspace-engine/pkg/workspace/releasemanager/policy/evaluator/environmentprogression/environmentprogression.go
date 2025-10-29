@@ -16,7 +16,7 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
 
-var _ evaluator.VersionScopedEvaluator = &EnvironmentProgressionEvaluator{}
+var _ evaluator.EnvironmentAndVersionScopedEvaluator = &EnvironmentProgressionEvaluator{}
 
 type EnvironmentProgressionEvaluator struct {
 	store *store.Store
@@ -35,11 +35,11 @@ func NewEnvironmentProgressionEvaluator(
 
 func (e *EnvironmentProgressionEvaluator) Evaluate(
 	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
+	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 ) (*oapi.RuleEvaluation, error) {
 	// Find dependency environments using the selector
-	dependencyEnvs, err := e.findDependencyEnvironments(ctx, releaseTarget)
+	dependencyEnvs, err := e.findDependencyEnvironments(ctx, environment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find dependency environments: %w", err)
 	}
@@ -48,8 +48,7 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		return results.
 			NewDeniedResult("No dependency environments found matching selector").
 			WithDetail("version_id", version.Id).
-			WithDetail("deployment_id", releaseTarget.DeploymentId).
-			WithDetail("resource_id", releaseTarget.ResourceId), nil
+			WithDetail("deployment_id", version.DeploymentId), nil
 	}
 
 	// Check if version succeeded in dependency environments
@@ -67,8 +66,7 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 			NewPendingResult(results.ActionTypeWait, result.Message).
 			WithDetail("dependency_environment_count", len(dependencyEnvs)).
 			WithDetail("version_id", version.Id).
-			WithDetail("deployment_id", releaseTarget.DeploymentId).
-			WithDetail("resource_id", releaseTarget.ResourceId)
+			WithDetail("deployment_id", version.DeploymentId)
 		for key, detail := range result.Details {
 			r.WithDetail(key, detail)
 		}
@@ -89,27 +87,21 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 // findDependencyEnvironments finds all environments matching the selector
 func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 	ctx context.Context,
-	releaseTarget *oapi.ReleaseTarget,
+	environment *oapi.Environment,
 ) ([]*oapi.Environment, error) {
 	var matchedEnvs []*oapi.Environment
-
-	// Get the current environment to determine system scope
-	currentEnv, exists := e.store.Environments.Get(releaseTarget.EnvironmentId)
-	if !exists {
-		return nil, fmt.Errorf("current environment not found: %s", releaseTarget.EnvironmentId)
-	}
 
 	// Iterate through all environments
 	envItems := e.store.Environments.Items()
 	for _, env := range envItems {
 		// By default, only check environments in the same system
 		// This prevents accidental cross-system dependencies
-		if env.SystemId != currentEnv.SystemId {
+		if env.SystemId != environment.SystemId {
 			continue
 		}
 
 		// Don't depend on the same environment
-		if env.Id == releaseTarget.EnvironmentId {
+		if env.Id == environment.Id {
 			continue
 		}
 
