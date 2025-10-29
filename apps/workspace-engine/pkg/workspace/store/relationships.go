@@ -8,6 +8,12 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"go.opentelemetry.io/otel"
+)
+
+var (
+	relationshipsTracer = otel.Tracer("workspace/store/relationships")
 )
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
@@ -58,6 +64,22 @@ func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
 	return r.repo.RelationshipRules.Items()
 }
 
+// matchesSelector checks if an entity matches the given type and selector
+func (r *RelationshipRules) matchesSelector(
+	ctx context.Context,
+	targetType oapi.RelatableEntityType,
+	targetSelector *oapi.Selector,
+	entity *oapi.RelatableEntity,
+) (bool, error) {
+	if targetType != entity.GetType() {
+		return false, nil
+	}
+	if targetSelector == nil {
+		return true, nil
+	}
+	return selector.Match(ctx, targetSelector, entity.Item())
+}
+
 // GetRelatedEntities returns all entities related to the given entity, grouped by relationship reference.
 // This includes relationships where the entity is the "from" side (outgoing) or "to" side (incoming).
 func (r *RelationshipRules) GetRelatedEntities(
@@ -67,23 +89,23 @@ func (r *RelationshipRules) GetRelatedEntities(
 	map[string][]*oapi.EntityRelation,
 	error,
 ) {
+	ctx, span := relationshipsTracer.Start(ctx, "GetRelatedEntities")
+	defer span.End()
+
 	result := make(map[string][]*oapi.EntityRelation)
+	entityType := entity.GetType()
 
 	// Find all relationship rules where this entity matches
 	for _, rule := range r.repo.RelationshipRules.Items() {
+		// Early exit: skip rules that don't involve this entity type
+		if rule.FromType != entityType && rule.ToType != entityType {
+			continue
+		}
 
 		// Check if this entity matches the "from" selector
-		fromMatches := false
-		if rule.FromType == entity.GetType() {
-			if rule.FromSelector == nil {
-				fromMatches = true
-			} else {
-				matched, err := selector.Match(ctx, rule.FromSelector, entity.Item())
-				if err != nil {
-					return nil, err
-				}
-				fromMatches = matched
-			}
+		fromMatches, err := r.matchesSelector(ctx, rule.FromType, rule.FromSelector, entity)
+		if err != nil {
+			return nil, err
 		}
 
 		// If entity is on the "from" side, find matching "to" entities
@@ -93,7 +115,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 				return nil, err
 			}
 			if len(toEntities) > 0 {
-				relatedEntities := make([]*oapi.EntityRelation, 0)
+				relatedEntities := make([]*oapi.EntityRelation, 0, len(toEntities))
 				for _, toEntity := range toEntities {
 					relatedEntities = append(relatedEntities, &oapi.EntityRelation{
 						Rule:       rule,
@@ -109,17 +131,9 @@ func (r *RelationshipRules) GetRelatedEntities(
 		}
 
 		// Check if this entity matches the "to" selector
-		toMatches := false
-		if rule.ToType == entity.GetType() {
-			if rule.ToSelector == nil {
-				toMatches = true
-			} else {
-				matched, err := selector.Match(ctx, rule.ToSelector, entity.Item())
-				if err != nil {
-					return nil, err
-				}
-				toMatches = matched
-			}
+		toMatches, err := r.matchesSelector(ctx, rule.ToType, rule.ToSelector, entity)
+		if err != nil {
+			return nil, err
 		}
 
 		// If entity is on the "to" side, find matching "from" entities
@@ -129,7 +143,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 				return nil, err
 			}
 			if len(fromEntities) > 0 {
-				relatedEntities := make([]*oapi.EntityRelation, 0)
+				relatedEntities := make([]*oapi.EntityRelation, 0, len(fromEntities))
 				for _, fromEntity := range fromEntities {
 					relatedEntities = append(relatedEntities, &oapi.EntityRelation{
 						Rule:       rule,
@@ -156,7 +170,23 @@ func (r *RelationshipRules) findMatchingEntities(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool, // true = evaluate(source, target), false = evaluate(target, source)
 ) ([]*oapi.RelatableEntity, error) {
-	var result []*oapi.RelatableEntity
+	ctx, span := relationshipsTracer.Start(ctx, "findMatchingEntities")
+	defer span.End()
+
+	// Preallocate result slice with estimated capacity based on entity type
+	var estimatedCap int
+	switch entityType {
+	case "deployment":
+		estimatedCap = len(r.store.Deployments.Items()) / 10 // Assume ~10% match rate
+	case "environment":
+		estimatedCap = len(r.store.Environments.Items()) / 10
+	case "resource":
+		estimatedCap = len(r.store.Resources.Items()) / 10
+	}
+	if estimatedCap < 8 {
+		estimatedCap = 8 // Minimum reasonable capacity
+	}
+	result := make([]*oapi.RelatableEntity, 0, estimatedCap)
 
 	switch entityType {
 	case "deployment":

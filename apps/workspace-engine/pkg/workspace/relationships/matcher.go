@@ -133,6 +133,9 @@ func (m *CelMatcher) Evaluate(ctx context.Context, from *oapi.RelatableEntity, t
 	}
 	val, _, err := m.program.Eval(celCtx)
 	if err != nil {
+		if strings.Contains(err.Error(), "no such key:") {
+			return false
+		}
 		log.Warn("CEL evaluation error", "error", err)
 		return false
 	}
