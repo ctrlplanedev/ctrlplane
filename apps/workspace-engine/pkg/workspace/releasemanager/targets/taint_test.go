@@ -1,7 +1,6 @@
 package targets
 
 import (
-	"context"
 	"testing"
 	"time"
 	"workspace-engine/pkg/changeset"
@@ -142,6 +141,7 @@ func TestBuildTargetIndex(t *testing.T) {
 
 // Test taint on Policy change (should taint all targets)
 func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -165,7 +165,7 @@ func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
 	cs.Record(changeset.ChangeTypeCreate, policy)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify all targets are tainted
@@ -176,6 +176,7 @@ func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
 
 // Test taint on System change (should taint all targets)
 func TestTaintProcessor_SystemChange_TaintsAll(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -199,7 +200,7 @@ func TestTaintProcessor_SystemChange_TaintsAll(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, system)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify all targets are tainted
@@ -210,6 +211,7 @@ func TestTaintProcessor_SystemChange_TaintsAll(t *testing.T) {
 
 // Test taint on Environment change
 func TestTaintProcessor_EnvironmentChange_TaintsEnvironmentTargets(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -234,7 +236,7 @@ func TestTaintProcessor_EnvironmentChange_TaintsEnvironmentTargets(t *testing.T)
 	cs.Record(changeset.ChangeTypeUpdate, env)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify only env1 targets are tainted
@@ -245,6 +247,7 @@ func TestTaintProcessor_EnvironmentChange_TaintsEnvironmentTargets(t *testing.T)
 
 // Test taint on Deployment change
 func TestTaintProcessor_DeploymentChange_TaintsDeploymentTargets(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -268,7 +271,7 @@ func TestTaintProcessor_DeploymentChange_TaintsDeploymentTargets(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, dep)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify only dep1 targets are tainted
@@ -279,6 +282,7 @@ func TestTaintProcessor_DeploymentChange_TaintsDeploymentTargets(t *testing.T) {
 
 // Test taint on DeploymentVersion change
 func TestTaintProcessor_DeploymentVersionChange_TaintsDeploymentTargets(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -302,7 +306,7 @@ func TestTaintProcessor_DeploymentVersionChange_TaintsDeploymentTargets(t *testi
 	cs.Record(changeset.ChangeTypeCreate, version)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify only dep1 targets are tainted
@@ -313,6 +317,7 @@ func TestTaintProcessor_DeploymentVersionChange_TaintsDeploymentTargets(t *testi
 
 // Test taint on Resource change
 func TestTaintProcessor_ResourceChange_TaintsResourceTargets(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -336,7 +341,7 @@ func TestTaintProcessor_ResourceChange_TaintsResourceTargets(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, resource)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify only resID1 targets are tainted
@@ -347,7 +352,7 @@ func TestTaintProcessor_ResourceChange_TaintsResourceTargets(t *testing.T) {
 
 // Test taint on Job change
 func TestTaintProcessor_JobChange_TaintsJobReleaseTarget(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -379,7 +384,7 @@ func TestTaintProcessor_JobChange_TaintsJobReleaseTarget(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, job)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify only the target associated with the job's release is tainted
@@ -390,6 +395,7 @@ func TestTaintProcessor_JobChange_TaintsJobReleaseTarget(t *testing.T) {
 
 // Test taint with job that has non-existent release
 func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -409,7 +415,7 @@ func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, job)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify no targets are tainted
@@ -418,6 +424,7 @@ func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
 
 // Test multiple changes in single pass
 func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -450,7 +457,7 @@ func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, resource)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify all targets are tainted (target1 by env+dep, target2 by dep+res, target3 by env+res)
@@ -462,6 +469,7 @@ func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
 
 // Test empty changeset
 func TestTaintProcessor_EmptyChangeset(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -479,7 +487,7 @@ func TestTaintProcessor_EmptyChangeset(t *testing.T) {
 	cs := changeset.NewChangeSet[any]()
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify no targets are tainted
@@ -488,6 +496,7 @@ func TestTaintProcessor_EmptyChangeset(t *testing.T) {
 
 // Test that Policy change short-circuits (taints all and returns early)
 func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -514,7 +523,7 @@ func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, env)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify all targets are tainted (policy should cause all to be tainted and return early)
@@ -525,6 +534,7 @@ func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
 
 // Test with no targets
 func TestTaintProcessor_NoTargets(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 	targets := map[string]*oapi.ReleaseTarget{}
@@ -535,7 +545,7 @@ func TestTaintProcessor_NoTargets(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, env)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify no targets are tainted (because there are none)
@@ -544,6 +554,7 @@ func TestTaintProcessor_NoTargets(t *testing.T) {
 
 // Test taint deduplication (same target tainted by multiple changes)
 func TestTaintProcessor_Deduplication(t *testing.T) {
+	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
 	st := store.New(sc)
 
@@ -568,7 +579,7 @@ func TestTaintProcessor_Deduplication(t *testing.T) {
 	cs.Record(changeset.ChangeTypeUpdate, resource)
 
 	// Process
-	tp := NewTaintProcessor(st, cs, targets)
+	tp := NewTaintProcessor(ctx, st, cs, targets)
 	tainted := tp.Tainted()
 
 	// Verify target is tainted only once (deduplication works)

@@ -51,7 +51,7 @@ func (m *Manager) DetectChanges(ctx context.Context, changeSet *changeset.Change
 	})
 	defer changes.Finalize()
 
-	taintedTargets := NewTaintProcessor(m.store, changeSet, targets).Tainted()
+	taintedTargets := NewTaintProcessor(ctx, m.store, changeSet, targets).Tainted()
 
 	var numTainted int
 	var numCreated int
