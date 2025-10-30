@@ -149,14 +149,6 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, environment *oap
 	deploymentOffset := e.getDeploymentOffset(rolloutPosition, e.rule.TimeScaleInterval)
 	deploymentTime := rolloutStartTime.Add(deploymentOffset)
 
-	if now.Before(*rolloutStartTime) {
-		return results.
-			NewPendingResult(results.ActionTypeWait, "Rollout has not started yet").
-			WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
-			WithDetail("target_rollout_position", rolloutPosition).
-			WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339)), nil
-	}
-
 	if now.Before(deploymentTime) {
 		reason := fmt.Sprintf("Rollout will start at %s for this release target", deploymentTime.Format(time.RFC3339))
 		return results.NewPendingResult(results.ActionTypeWait, reason).
