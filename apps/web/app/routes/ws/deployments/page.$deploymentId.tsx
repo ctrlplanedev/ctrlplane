@@ -305,7 +305,9 @@ export default function DeploymentDetail() {
                 <Link to={`/${workspace.slug}/deployments`}>Deployments</Link>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
-              <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
+              <BreadcrumbItem>
+                <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
+              </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>

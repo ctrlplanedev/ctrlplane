@@ -670,10 +670,7 @@ func PolicyRuleID(id string) PolicyRuleOption {
 // WithRuleEnvironmentProgression configures an environment progression rule
 func WithRuleEnvironmentProgression(options ...EnvironmentProgressionRuleOption) PolicyRuleOption {
 	return func(ws *TestWorkspace, r *oapi.PolicyRule) error {
-		rule := &oapi.EnvironmentProgressionRule{
-			Id:       fmt.Sprintf("env-prog-%s", uuid.New().String()[:8]),
-			PolicyId: r.PolicyId,
-		}
+		rule := &oapi.EnvironmentProgressionRule{}
 
 		for _, option := range options {
 			if err := option(ws, rule); err != nil {

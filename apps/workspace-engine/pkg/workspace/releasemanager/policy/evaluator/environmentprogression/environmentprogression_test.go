@@ -97,8 +97,6 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 
 	// Create rule: prod depends on staging
 	rule := &oapi.EnvironmentProgressionRule{
-		Id:                           "rule-1",
-		PolicyId:                     "policy-1",
 		DependsOnEnvironmentSelector: selector,
 	}
 
@@ -193,8 +191,6 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 
 	// Create rule: prod depends on staging
 	rule := &oapi.EnvironmentProgressionRule{
-		Id:                           "rule-1",
-		PolicyId:                     "policy-1",
 		DependsOnEnvironmentSelector: selector,
 	}
 
@@ -276,8 +272,6 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	// Create rule: prod depends on staging with 30 minute soak time
 	soakTime := int32(30)
 	rule := &oapi.EnvironmentProgressionRule{
-		Id:                           "rule-1",
-		PolicyId:                     "policy-1",
 		DependsOnEnvironmentSelector: selector,
 		MinimumSockTimeMinutes:       &soakTime,
 	}
@@ -323,8 +317,6 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 
 	// Create rule with selector that matches no environments
 	rule := &oapi.EnvironmentProgressionRule{
-		Id:                           "rule-1",
-		PolicyId:                     "policy-1",
 		DependsOnEnvironmentSelector: selector,
 	}
 
