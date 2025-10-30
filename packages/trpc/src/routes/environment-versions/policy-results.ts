@@ -5,6 +5,7 @@ import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure } from "../../trpc.js";
 import { getApprovalRuleWithResult } from "./approval-decision.js";
+import { getEnvironmentProgressionRuleWithResult } from "./environment-progression-decision.js";
 import { getGradualRolloutWithResult } from "./gradual-rollout.js";
 
 export const getDeploymentVersion = async (
@@ -86,9 +87,12 @@ export const policyResults = protectedProcedure
       version,
       policyResults,
     );
+    const environmentProgressionRuleWithResult =
+      getEnvironmentProgressionRuleWithResult(policyResults);
 
     return {
       approval: approvalRuleWithResult,
       gradualRollout: gradualRolloutWithResult,
+      environmentProgression: environmentProgressionRuleWithResult,
     };
   });
