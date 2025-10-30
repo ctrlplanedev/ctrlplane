@@ -24,6 +24,22 @@ type EnvironmentActionsPanelProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+const usePolicyResults = (
+  workspaceId: string,
+  environmentId: string,
+  versionId: string,
+) => {
+  const decisionsQuery = trpc.environmentVersion.policyResults.useQuery({
+    workspaceId,
+    environmentId,
+    versionId,
+  });
+  return {
+    policyResults: decisionsQuery.data,
+    isPending: decisionsQuery.isPending,
+  };
+};
+
 const useApproveDeploymentVersion = (
   versionId: string,
   environmentId: string,
@@ -42,59 +58,65 @@ const useApproveDeploymentVersion = (
   return { onClick, isPending: approveMutation.isPending };
 };
 
-const PolicyDecisions: React.FC<{
+const ApprovalDecision: React.FC<{
   version: DeploymentVersion;
   environment: Environment;
 }> = ({ version, environment }) => {
+  const { onClick: onClickApprove, isPending: isPendingApprove } =
+    useApproveDeploymentVersion(version.id, environment.id);
   const { workspace } = useWorkspace();
-  const { onClick, isPending } = useApproveDeploymentVersion(
-    version.id,
+  const { policyResults, isPending } = usePolicyResults(
+    workspace.id,
     environment.id,
+    version.id,
   );
-  const decisionsQuery = trpc.environmentVersion.policyResults.useQuery({
-    workspaceId: workspace.id,
-    environmentId: environment.id,
-    versionId: version.id,
-  });
-  const pendingActions = (decisionsQuery.data ?? []).flatMap(
-    (action) => action.ruleResults,
-  );
+  const approvalResult = policyResults?.approval;
+  if (approvalResult == null) return null;
 
   return (
-    <div className="space-y-2 rounded-lg border p-2">
-      <h3 className="text-xs font-semibold">{version.tag}</h3>
-      <div className="flex flex-col gap-1">
-        {pendingActions.map((decision, idx) => (
-          <div key={idx} className="flex items-center gap-1.5">
-            {decision.allowed && (
-              <IconCircleCheck className="size-3 text-green-500" />
-            )}
-            {!decision.allowed && (
-              <IconCircleX className="size-3 text-red-500" />
-            )}
-            <span className="text-xs font-semibold text-muted-foreground">
-              {decision.message}
-            </span>
-            {decision.actionType === "approval" && (
-              <>
-                <div className="flex-grow" />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-5 text-xs"
-                  onClick={onClick}
-                  disabled={isPending}
-                >
-                  Approve
-                </Button>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="flex items-center gap-1.5">
+      {approvalResult.allowed && (
+        <>
+          <IconCircleCheck className="size-3 text-green-500" />
+          <span className="text-xs font-semibold text-muted-foreground">
+            Approved
+          </span>
+        </>
+      )}
+      {!approvalResult.allowed && (
+        <>
+          <IconCircleX className="size-3 text-red-500" />
+          <span className="text-xs font-semibold text-muted-foreground">
+            Not approved ({approvalResult.approvers.length}/
+            {approvalResult.minApprovals})
+          </span>
+        </>
+      )}
+      <div className="flex-grow" />
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-5 text-xs"
+        onClick={onClickApprove}
+        disabled={isPendingApprove}
+      >
+        Approve
+      </Button>
     </div>
   );
 };
+
+const PolicyDecisions: React.FC<{
+  version: DeploymentVersion;
+  environment: Environment;
+}> = ({ version, environment }) => (
+  <div className="space-y-2 rounded-lg border p-2">
+    <h3 className="text-xs font-semibold">{version.tag}</h3>
+    <div className="flex flex-col gap-1">
+      <ApprovalDecision version={version} environment={environment} />
+    </div>
+  </div>
+);
 
 export const EnvironmentActionsPanel: React.FC<
   EnvironmentActionsPanelProps
