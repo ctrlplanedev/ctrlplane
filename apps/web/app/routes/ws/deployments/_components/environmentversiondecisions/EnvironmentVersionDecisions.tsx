@@ -25,7 +25,7 @@ function EnvironmentVersionDecisionCard(props: {
 }) {
   return (
     <div className="space-y-2 rounded-lg border p-2">
-      <h3 className="text-xs font-semibold">{props.version.tag}</h3>
+      <h3 className="text-sm font-semibold">{props.version.tag}</h3>
       <div className="flex flex-col gap-1">
         <ApprovalDecision {...props} />
         <GradualRolloutDecision {...props} />
