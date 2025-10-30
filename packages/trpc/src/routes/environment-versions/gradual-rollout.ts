@@ -95,6 +95,7 @@ const getRolloutInfoForReleaseTarget = async (
       if (rule?.gradualRollout == null) continue;
 
       return {
+        allowed: ruleResult.allowed,
         rolloutStartTime: getRolloutStartTime(ruleResult.details),
         rolloutPosition: getRolloutPosition(ruleResult.details),
         rolloutTime: getRolloutTime(ruleResult.details),
