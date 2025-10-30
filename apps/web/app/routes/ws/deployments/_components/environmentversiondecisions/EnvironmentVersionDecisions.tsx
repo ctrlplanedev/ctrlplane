@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { ApprovalDecision } from "./ApprovalDecision";
+import { GradualRolloutDecision } from "./GradualRolloutDecision";
 
 type EnvironmentVersionDecisionsProps = {
   environment: WorkspaceEngine["schemas"]["Environment"];
@@ -27,6 +28,7 @@ function EnvironmentVersionDecisionCard(props: {
       <h3 className="text-xs font-semibold">{props.version.tag}</h3>
       <div className="flex flex-col gap-1">
         <ApprovalDecision {...props} />
+        <GradualRolloutDecision {...props} />
       </div>
     </div>
   );
