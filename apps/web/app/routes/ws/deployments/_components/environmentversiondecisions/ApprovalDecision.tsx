@@ -1,4 +1,4 @@
-import { IconCircleCheck, IconCircleX } from "@tabler/icons-react";
+import { CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import type { DeploymentVersion, Environment } from "./types";
@@ -42,7 +42,7 @@ export function ApprovalDecision({
     <div className="flex items-center gap-1.5">
       {approvalResult.allowed && (
         <>
-          <IconCircleCheck className="size-3 text-green-500" />
+          <CheckCircle className="size-3 text-green-500" />
           <span className="text-xs font-semibold text-muted-foreground">
             Approved
           </span>
@@ -50,7 +50,7 @@ export function ApprovalDecision({
       )}
       {!approvalResult.allowed && (
         <>
-          <IconCircleX className="size-3 text-red-500" />
+          <XCircle className="size-3 text-red-500" />
           <span className="text-xs font-semibold text-muted-foreground">
             Not approved ({approvalResult.approvers.length}/
             {approvalResult.minApprovals})
