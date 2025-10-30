@@ -214,52 +214,46 @@ export default function Policies() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto p-6">
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="flex h-64 items-center justify-center">
-                <div className="text-muted-foreground">Loading policies...</div>
-              </div>
-            ) : policies.length === 0 ? (
-              <div className="flex h-64 flex-col items-center justify-center gap-2">
-                <div className="text-lg font-medium">No policies found</div>
-                <div className="text-sm text-muted-foreground">
-                  Create a policy to control deployment behavior
-                </div>
-              </div>
-            ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-center">Priority</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-center">
-                        Release Targets
-                      </TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {policies
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((policy) => (
-                        <PolicyRow
-                          key={policy.id}
-                          policy={policy}
-                          onDelete={() => setPolicyToDelete(policy)}
-                        />
-                      ))}
-                  </TableBody>
-                </Table>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      <main className="flex-1 overflow-auto">
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center p-6">
+            <div className="text-muted-foreground">Loading policies...</div>
+          </div>
+        ) : policies.length === 0 ? (
+          <div className="flex h-64 flex-col items-center justify-center gap-2 p-6">
+            <div className="text-lg font-medium">No policies found</div>
+            <div className="text-sm text-muted-foreground">
+              Create a policy to control deployment behavior
+            </div>
+          </div>
+        ) : (
+          <>
+            <Table className="border-b">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-center">Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Release Targets</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {policies
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((policy) => (
+                    <PolicyRow
+                      key={policy.id}
+                      policy={policy}
+                      onDelete={() => setPolicyToDelete(policy)}
+                    />
+                  ))}
+              </TableBody>
+            </Table>
+          </>
+        )}
       </main>
 
       <DeletePolicyDialog
