@@ -109,6 +109,9 @@ func (tp *TaintProcessor) processChanges(changeSet *changeset.ChangeSet[any]) {
 			}
 			tp.taintByReleaseTarget(&rel.ReleaseTarget)
 
+		case *oapi.ReleaseTarget:
+			tp.taintByReleaseTarget(entity)
+
 		case *oapi.ResourceVariable:
 			tp.taintByResourceId(entity.ResourceId)
 		}

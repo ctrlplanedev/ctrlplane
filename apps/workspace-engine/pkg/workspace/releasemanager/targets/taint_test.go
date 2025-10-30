@@ -422,6 +422,40 @@ func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
 	assert.Len(t, tainted, 0, "no targets should be tainted for non-existent release")
 }
 
+// Test taint on ReleaseTarget change
+func TestTaintProcessor_ReleaseTargetChange_TaintsSpecificTarget(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	// Setup targets
+	envID := uuid.New().String()
+	depID := uuid.New().String()
+	resID1 := uuid.New().String()
+	resID2 := uuid.New().String()
+
+	target1 := createTestReleaseTarget(envID, depID, resID1)
+	target2 := createTestReleaseTarget(envID, depID, resID2)
+
+	targets := map[string]*oapi.ReleaseTarget{
+		target1.Key(): target1,
+		target2.Key(): target2,
+	}
+
+	// Create changeset with release target change
+	cs := changeset.NewChangeSet[any]()
+	cs.Record(changeset.ChangeTypeUpdate, target1)
+
+	// Process
+	tp := NewTaintProcessor(ctx, st, cs, targets)
+	tainted := tp.Tainted()
+
+	// Verify only the specific release target is tainted
+	assert.Len(t, tainted, 1, "only the changed release target should be tainted")
+	assert.Contains(t, tainted, target1.Key())
+	assert.NotContains(t, tainted, target2.Key())
+}
+
 // Test multiple changes in single pass
 func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
 	ctx := t.Context()
