@@ -489,6 +489,9 @@ type RuleEvaluation struct {
 
 	// Message Human-readable explanation of the rule result
 	Message string `json:"message"`
+
+	// RuleId The ID of the rule that was evaluated
+	RuleId string `json:"ruleId"`
 }
 
 // RuleEvaluationActionType Type of action required
@@ -1381,6 +1384,9 @@ type ServerInterface interface {
 	// Get release targets for a policy
 	// (GET /v1/workspaces/{workspaceId}/policies/{policyId}/release-targets)
 	GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string, policyId string)
+	// Get rule
+	// (GET /v1/workspaces/{workspaceId}/policies/{policyId}/rules/{ruleId})
+	GetRule(c *gin.Context, workspaceId string, policyId string, ruleId string)
 	// Get relationship rules for a given workspace
 	// (GET /v1/workspaces/{workspaceId}/relationship-rules)
 	GetRelationshipRules(c *gin.Context, workspaceId string, params GetRelationshipRulesParams)
@@ -2367,6 +2373,48 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForPolicy(c *gin.Context) {
 	siw.Handler.GetReleaseTargetsForPolicy(c, workspaceId, policyId)
 }
 
+// GetRule operation middleware
+func (siw *ServerInterfaceWrapper) GetRule(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "policyId" -------------
+	var policyId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "policyId", c.Param("policyId"), &policyId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter policyId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "ruleId" -------------
+	var ruleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "ruleId", c.Param("ruleId"), &ruleId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter ruleId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRule(c, workspaceId, policyId, ruleId)
+}
+
 // GetRelationshipRules operation middleware
 func (siw *ServerInterfaceWrapper) GetRelationshipRules(c *gin.Context) {
 
@@ -2864,6 +2912,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies", wrapper.ListPolicies)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/rules/:ruleId", wrapper.GetRule)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.GetRelationshipRules)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:relationshipRuleId", wrapper.GetRelationshipRule)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)

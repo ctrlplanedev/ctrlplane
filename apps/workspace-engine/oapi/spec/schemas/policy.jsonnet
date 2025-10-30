@@ -145,8 +145,12 @@ local openapi = import '../lib/openapi.libsonnet';
 
   RuleEvaluation: {
     type: 'object',
-    required: ['allowed', 'actionRequired', 'message', 'details'],
+    required: ['ruleId', 'allowed', 'actionRequired', 'message', 'details'],
     properties: {
+      ruleId: {
+        type: 'string',
+        description: 'The ID of the rule that was evaluated',
+      },
       allowed: {
         type: 'boolean',
         description: 'Whether the rule allows the deployment',

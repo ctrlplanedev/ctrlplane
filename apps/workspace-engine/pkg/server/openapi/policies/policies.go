@@ -1,6 +1,7 @@
 package policies
 
 import (
+	"fmt"
 	"net/http"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -98,5 +99,34 @@ func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string
 
 	c.JSON(http.StatusOK, gin.H{
 		"releaseTargets": matchingReleaseTargets,
+	})
+}
+
+func (p *Policies) GetRule(c *gin.Context, workspaceId string, policyId string, ruleId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	policy, ok := ws.Policies().Get(policyId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Policy not found",
+		})
+		return
+	}
+
+	for _, rule := range policy.Rules {
+		if rule.Id == ruleId {
+			c.JSON(http.StatusOK, rule)
+			return
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": fmt.Sprintf("Rule %s not found in policy %s", ruleId, policyId),
 	})
 }

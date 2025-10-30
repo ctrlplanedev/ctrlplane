@@ -2,6 +2,7 @@ package oapi
 
 func NewRuleEvaluation() *RuleEvaluation {
 	return &RuleEvaluation{
+		RuleId:         "",
 		Allowed:        false,
 		ActionRequired: false,
 		ActionType:     nil,
@@ -17,6 +18,11 @@ func (r *RuleEvaluation) Allow() *RuleEvaluation {
 
 func (r *RuleEvaluation) Deny() *RuleEvaluation {
 	r.Allowed = false
+	return r
+}
+
+func (r *RuleEvaluation) WithRuleId(ruleId string) *RuleEvaluation {
+	r.RuleId = ruleId
 	return r
 }
 

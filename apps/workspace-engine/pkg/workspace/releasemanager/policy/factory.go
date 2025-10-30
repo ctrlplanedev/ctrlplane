@@ -39,7 +39,7 @@ func (f *EvaluatorFactory) EvaluateEnvironmentAndVersionAndTargetScopedPolicyRul
 			if err != nil {
 				return nil, err
 			}
-			ruleResults = append(ruleResults, result)
+			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
 		}
 		return ruleResults, nil
 	})
@@ -62,7 +62,7 @@ func (f *EvaluatorFactory) EvaluateEnvironmentAndVersionScopedPolicyRules(
 			if err != nil {
 				return nil, err
 			}
-			ruleResults = append(ruleResults, result)
+			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
 		}
 		return ruleResults, nil
 	})
@@ -86,7 +86,7 @@ func (f *EvaluatorFactory) EvaluateVersionScopedPolicyRules(
 			if err != nil {
 				return nil, err
 			}
-			ruleResults = append(ruleResults, result)
+			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
 		}
 		return ruleResults, nil
 	})
@@ -110,7 +110,7 @@ func (f *EvaluatorFactory) EvaluateTargetScopedPolicyRules(
 			if err != nil {
 				return nil, err
 			}
-			ruleResults = append(ruleResults, result)
+			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
 		}
 		return ruleResults, nil
 	})
@@ -134,7 +134,7 @@ func (f *EvaluatorFactory) EvaluateReleaseScopedPolicyRules(
 			if err != nil {
 				return nil, err
 			}
-			ruleResults = append(ruleResults, result)
+			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
 		}
 		return ruleResults, nil
 	})
@@ -157,7 +157,7 @@ func (f *EvaluatorFactory) EvaluateWorkspaceScopedPolicyRules(
 			if err != nil {
 				return nil, err
 			}
-			ruleResults = append(ruleResults, result)
+			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
 		}
 		return ruleResults, nil
 	})
