@@ -135,6 +135,11 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 	_, span := tracer.Start(ctx, "computePolicies")
 	defer span.End()
 
+	span.SetAttributes(attribute.String("releaseTarget.key", releaseTarget.Key()))
+	span.SetAttributes(attribute.String("releaseTarget.environmentId", releaseTarget.EnvironmentId))
+	span.SetAttributes(attribute.String("releaseTarget.deploymentId", releaseTarget.DeploymentId))
+	span.SetAttributes(attribute.String("releaseTarget.resourceId", releaseTarget.ResourceId))
+
 	environments, ok := r.store.Environments.Get(releaseTarget.EnvironmentId)
 	if !ok {
 		span.SetAttributes(attribute.String("environment.id", releaseTarget.EnvironmentId))
