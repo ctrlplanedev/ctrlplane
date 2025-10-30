@@ -21,7 +21,7 @@ import { CreateVersionDialog } from "./_components/CreateVersionDialog";
 import { DeploymentFlow } from "./_components/DeploymentFlow";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
-import { EnvironmentActionsPanel } from "./_components/EnvironmentActionsPanel";
+import { EnvironmentVersionDecisions } from "./_components/environmentversiondecisions/EnvironmentVersionDecisions";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
 import { VersionCard } from "./_components/VersionCard";
 
@@ -385,7 +385,7 @@ export default function DeploymentDetail() {
 
               {/* Environment Actions Dialog - TODO: Update types */}
               {selectedEnvironment != null && (
-                <EnvironmentActionsPanel
+                <EnvironmentVersionDecisions
                   environment={selectedEnvironment}
                   deploymentId={deployment.id}
                   versions={versions}
