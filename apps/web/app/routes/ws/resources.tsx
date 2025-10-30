@@ -19,6 +19,16 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { CreateResourceDialog } from "./_components/CreateResourceDialog";
 import { ResourceRow } from "./resources/_components/ResourceRow";
 
+export function meta() {
+  return [
+    { title: "Resources - Ctrlplane" },
+    {
+      name: "description",
+      content: "Manage your resources",
+    },
+  ];
+}
+
 export default function Resources() {
   const { workspace } = useWorkspace();
 

@@ -41,14 +41,15 @@ import { cn } from "~/lib/utils";
 type DeploymentCardProps = {
   children: ReactNode;
   to: string;
+  className?: string;
 };
 // Components
 export const DeploymentCard = forwardRef<
   HTMLAnchorElement,
   DeploymentCardProps
->(({ children, to }, ref) => {
+>(({ children, to, className }, ref) => {
   return (
-    <Link to={to} ref={ref} className="h-full">
+    <Link to={to} ref={ref} className={cn("h-full", className)}>
       <Card className="group flex h-full cursor-pointer flex-col transition-all hover:border-primary/50 hover:shadow-lg">
         {children}
       </Card>
@@ -206,7 +207,6 @@ export function DeploymentCardJobStatus({
 }: {
   jobStatusSummary: Record<string, number>;
 }) {
-  console.log(jobStatusSummary);
   const jobStatuses = Object.entries(jobStatusSummary);
   const jobStatusesWithColors = jobStatuses.map(([status, count]) => ({
     status,
@@ -276,6 +276,7 @@ export function DeploymentCardViewButton() {
 }
 
 type LazyLoadDeploymentCardProps = {
+  className?: string;
   deployment: { id: string; name: string; description?: string };
   system: { id: string; name: string };
 };
@@ -385,6 +386,7 @@ export const SyncProgressBadge: React.FC<{ synced: number; total: number }> = ({
 export function LazyLoadDeploymentCard({
   deployment,
   system,
+  className,
 }: LazyLoadDeploymentCardProps) {
   const { workspace } = useWorkspace();
   const { ref, inView } = useInView();
@@ -439,6 +441,7 @@ export function LazyLoadDeploymentCard({
     <DeploymentCard
       ref={ref}
       to={`/${workspace.slug}/deployments/${deployment.id}`}
+      className={className}
     >
       <DeploymentCardHeader
         name={deployment.name}

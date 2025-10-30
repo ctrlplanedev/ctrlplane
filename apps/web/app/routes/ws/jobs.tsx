@@ -11,6 +11,13 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { JobsTable } from "./_components/jobs-table/JobsTable";
 
+export function meta() {
+  return [
+    { title: "Jobs - Ctrlplane" },
+    { name: "description", content: "Manage your jobs" },
+  ];
+}
+
 function JobsLoadingSkeleton() {
   return (
     <div className="space-y-4 p-4">

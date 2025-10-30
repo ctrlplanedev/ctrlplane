@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertCircle, Filter, Search } from "lucide-react";
+import { useSearchParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
 import {
@@ -38,9 +39,20 @@ export default function Deployments() {
   });
   const deploymentsWithSystems = deploymentsQuery.data?.items ?? [];
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [systemFilter, setSystemFilter] = useState<string>("all");
+  const systemFilter = searchParams.get("system") ?? "all";
+
+  const handleSystemFilterChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value === "all") {
+      newParams.delete("system");
+    } else {
+      newParams.set("system", value);
+    }
+    setSearchParams(newParams);
+  };
 
   // Get unique systems for filter
   const systems = Array.from(
@@ -96,14 +108,17 @@ export default function Deployments() {
               />
             </div>
             <div className="flex gap-2">
-              <Select value={systemFilter} onValueChange={setSystemFilter}>
+              <Select
+                value={systemFilter}
+                onValueChange={handleSystemFilterChange}
+              >
                 <SelectTrigger className="w-[180px]">
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="System" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Systems</SelectItem>
-                  {systems.map((system) => (
+                  {systems.sort().map((system) => (
                     <SelectItem key={system} value={system}>
                       {system}
                     </SelectItem>
