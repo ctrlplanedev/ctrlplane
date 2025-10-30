@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure } from "../../trpc.js";
+import { getApprovalRuleWithResult } from "./approval-decision.js";
 
 export const getDeploymentVersion = async (
   workspaceId: string,
@@ -51,39 +52,6 @@ const getPolicyResults = async (
     },
   );
   return decision.data;
-};
-
-type PolicyResults = Awaited<ReturnType<typeof getPolicyResults>>;
-
-type ApprovalRuleDetails = {
-  allowed: boolean;
-  approvers: string[];
-  minApprovals: number;
-};
-
-const getApprovalRuleWithResult = (policyResults: PolicyResults) => {
-  const envVersionResult = policyResults?.envVersionDecision;
-  if (envVersionResult == null) return null;
-
-  for (const { policy, ruleResults } of envVersionResult.policyResults) {
-    if (policy == null) continue;
-
-    for (const ruleResult of ruleResults) {
-      const { ruleId } = ruleResult;
-      const rule = policy.rules.find((rule) => rule.id === ruleId);
-      if (rule?.anyApproval == null) continue;
-
-      const details: ApprovalRuleDetails = {
-        approvers: ruleResult.details.approvers as string[],
-        minApprovals: rule.anyApproval.minApprovals,
-        allowed: ruleResult.allowed,
-      };
-
-      return details;
-    }
-  }
-
-  return null;
 };
 
 export const policyResults = protectedProcedure
