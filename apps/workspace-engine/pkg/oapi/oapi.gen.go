@@ -658,6 +658,15 @@ type GetResourceProvidersParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// CacheBatchJSONBody defines parameters for CacheBatch.
+type CacheBatchJSONBody struct {
+	// ProviderId The ID of the resource provider
+	ProviderId string `json:"providerId"`
+
+	// Resources Array of resources to cache
+	Resources []Resource `json:"resources"`
+}
+
 // QueryResourcesJSONBody defines parameters for QueryResources.
 type QueryResourcesJSONBody struct {
 	Filter *Selector `json:"filter,omitempty"`
@@ -686,6 +695,9 @@ type ValidateResourceSelectorJSONRequestBody ValidateResourceSelectorJSONBody
 
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
+
+// CacheBatchJSONRequestBody defines body for CacheBatch for application/json ContentType.
+type CacheBatchJSONRequestBody CacheBatchJSONBody
 
 // QueryResourcesJSONRequestBody defines body for QueryResources for application/json ContentType.
 type QueryResourcesJSONRequestBody QueryResourcesJSONBody
@@ -1405,6 +1417,9 @@ type ServerInterface interface {
 	// Get all resource providers
 	// (GET /v1/workspaces/{workspaceId}/resource-providers)
 	GetResourceProviders(c *gin.Context, workspaceId string, params GetResourceProvidersParams)
+	// Cache a large resource batch for deferred processing
+	// (POST /v1/workspaces/{workspaceId}/resource-providers/cache-batch)
+	CacheBatch(c *gin.Context, workspaceId string)
 	// Get a resource provider by name
 	// (GET /v1/workspaces/{workspaceId}/resource-providers/name/{name})
 	GetResourceProviderByName(c *gin.Context, workspaceId string, name string)
@@ -2651,6 +2666,30 @@ func (siw *ServerInterfaceWrapper) GetResourceProviders(c *gin.Context) {
 	siw.Handler.GetResourceProviders(c, workspaceId, params)
 }
 
+// CacheBatch operation middleware
+func (siw *ServerInterfaceWrapper) CacheBatch(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CacheBatch(c, workspaceId)
+}
+
 // GetResourceProviderByName operation middleware
 func (siw *ServerInterfaceWrapper) GetResourceProviderByName(c *gin.Context) {
 
@@ -2919,6 +2958,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers", wrapper.GetResourceProviders)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/cache-batch", wrapper.CacheBatch)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/name/:name", wrapper.GetResourceProviderByName)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)

@@ -208,7 +208,7 @@ export type GoEventPayload = {
   [Event.Redeploy]: WorkspaceEngine["schemas"]["ReleaseTarget"];
   [Event.ResourceProviderSetResources]: {
     providerId: string;
-    resources: WorkspaceEngine["schemas"]["Resource"][];
+    batchId: string;
   };
 };
 

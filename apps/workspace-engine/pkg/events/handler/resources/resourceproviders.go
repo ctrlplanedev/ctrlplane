@@ -3,9 +3,13 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/store"
+
+	"github.com/charmbracelet/log"
 )
 
 func HandleResourceProviderCreated(
@@ -61,24 +65,42 @@ func HandleResourceProviderSetResources(
 	event handler.RawEvent,
 ) error {
 	var payload struct {
-		ProviderId string           `json:"providerId"`
-		Resources  []*oapi.Resource `json:"resources"`
+		ProviderId string  `json:"providerId"`
+		BatchId    *string `json:"batchId,omitempty"`
 	}
 	if err := json.Unmarshal(event.Data, &payload); err != nil {
 		return err
 	}
 
-	// Ensure all resources have the correct workspace ID
-	for _, resource := range payload.Resources {
-		resource.WorkspaceId = ws.ID
+	if payload.BatchId == nil {
+		return fmt.Errorf("batchId is required - resources must be cached via /cache-batch endpoint")
 	}
 
-	// Note: Timestamp handling (CreatedAt/UpdatedAt) is managed by the Upsert function
-	// to ensure new resources only get CreatedAt, and existing resources get both
-
-	if err := ws.Resources().Set(ctx, payload.ProviderId, payload.Resources); err != nil {
+	// Retrieve from in-memory cache
+	cache := store.GetResourceProviderBatchCache()
+	batch, err := cache.Retrieve(ctx, *payload.BatchId)
+	if err != nil {
+		log.Error("Failed to retrieve cached batch", "error", err, "batchId", *payload.BatchId)
 		return err
 	}
 
-	return nil
+	// Verify provider ID matches
+	if batch.ProviderId != payload.ProviderId {
+		return fmt.Errorf("provider ID mismatch: expected %s, got %s",
+			payload.ProviderId, batch.ProviderId)
+	}
+
+	resources := batch.Resources
+
+	log.Info("Retrieved cached batch",
+		"batchId", *payload.BatchId,
+		"providerId", payload.ProviderId,
+		"resourceCount", len(resources))
+
+	// Ensure all resources have the correct workspace ID
+	for _, resource := range resources {
+		resource.WorkspaceId = ws.ID
+	}
+
+	return ws.Resources().Set(ctx, payload.ProviderId, resources)
 }

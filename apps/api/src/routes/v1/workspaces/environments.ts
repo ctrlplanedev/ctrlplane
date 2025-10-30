@@ -32,22 +32,6 @@ const listEnvironments: AsyncTypedHandler<
   res.json(response.data);
 };
 
-const getExistingEnvironmentById = async (
-  workspaceId: string,
-  environmentId: string,
-) => {
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-    { params: { path: { workspaceId, environmentId } } },
-  );
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
-
-  if (response.data == null) return null;
-
-  return response.data;
-};
-
 const getEnvironment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/environments/{environmentId}",
   "get"
@@ -124,18 +108,10 @@ export const upsertEnvironmentById: AsyncTypedHandler<
   const { workspaceId, environmentId } = req.params;
   const { body } = req;
 
-  const existingEnvironment = await getExistingEnvironmentById(
-    workspaceId,
-    environmentId,
-  );
-
-  if (existingEnvironment == null)
-    throw new ApiError("Environment not found", 404);
-
   const mergedEnvironment = {
-    ...existingEnvironment,
+    id: environmentId,
+    createdAt: new Date().toISOString(),
     ...body,
-    id: existingEnvironment.id,
   };
 
   const isValid = await validResourceSelector(body.resourceSelector);

@@ -6,6 +6,7 @@ import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { resourceProvider } from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
+import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 const upsertResourceProvider: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resource-providers",
@@ -58,21 +59,49 @@ const setResourceProviderResources: AsyncTypedHandler<
   const { workspaceId, providerId } = req.params;
   const { resources } = req.body;
 
+  // Phase 1: Cache the batch in workspace-engine memory
+  // Type assertion needed until SDK types are regenerated from OpenAPI spec
+  const cacheResponse = await getClientFor(workspaceId).POST(
+    "/v1/workspaces/{workspaceId}/resource-providers/cache-batch",
+    {
+      params: {
+        path: { workspaceId },
+      },
+      body: {
+        providerId,
+        resources: resources.map((r: any) => ({
+          id: "",
+          ...r,
+          workspaceId,
+        })),
+      },
+    },
+  );
+
+  const batchId = cacheResponse.data?.batchId;
+  if (batchId == null) {
+    res.status(500).json({
+      error: "Failed to cache batch",
+      details: cacheResponse.error,
+    });
+    return;
+  }
+
+  // Phase 2: Send lightweight Kafka event with batch reference
+  // Using type assertion as Event types don't include optional batchId yet
   await sendGoEvent({
     workspaceId,
     eventType: Event.ResourceProviderSetResources,
     timestamp: Date.now(),
-    data: {
-      providerId,
-      resources: resources.map((r) => ({
-        id: "",
-        ...r,
-        workspaceId,
-      })),
-    },
+    data: { providerId, batchId },
   });
 
-  res.status(202).json({ ok: true });
+  res.status(202).json({
+    ok: true,
+    batchId,
+    resources,
+    method: "cached",
+  });
 };
 
 export const resourceProvidersRouter = Router({ mergeParams: true })

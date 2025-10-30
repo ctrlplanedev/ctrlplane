@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -221,28 +222,37 @@ func BenchmarkHandleResourceProviderSetResources(b *testing.B) {
 				resources[i] = res
 			}
 
-			// Create event payload
-			payload := map[string]interface{}{
-				"providerId": providerID,
-				"resources":  resources,
-			}
-			payloadBytes, err := json.Marshal(payload)
-			if err != nil {
-				b.Fatalf("Failed to marshal payload: %v", err)
-			}
-
-			event := handler.RawEvent{
-				EventType: handler.ResourceProviderSetResources,
-				Data:      payloadBytes,
-			}
+			// Get cache for storing resources
+			ctx := context.Background()
+			cache := store.GetResourceProviderBatchCache()
 
 			// Reset timer to exclude setup time
 			b.ResetTimer()
 
 			// Run benchmark
 			for b.Loop() {
-				ctx := context.Background()
-				err := HandleResourceProviderSetResources(ctx, ws, event)
+				// Cache the resources
+				batchId, err := cache.Store(ctx, providerID, resources)
+				if err != nil {
+					b.Fatalf("Failed to cache resources: %v", err)
+				}
+
+				// Create event payload with batchId reference
+				payload := map[string]interface{}{
+					"providerId": providerID,
+					"batchId":    batchId,
+				}
+				payloadBytes, err := json.Marshal(payload)
+				if err != nil {
+					b.Fatalf("Failed to marshal payload: %v", err)
+				}
+
+				event := handler.RawEvent{
+					EventType: handler.ResourceProviderSetResources,
+					Data:      payloadBytes,
+				}
+
+				err = HandleResourceProviderSetResources(ctx, ws, event)
 				if err != nil {
 					b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
 				}
@@ -271,28 +281,37 @@ func BenchmarkHandleResourceProviderSetResources_ScaleEnvironments(b *testing.B)
 				resources[i] = res
 			}
 
-			// Create event payload
-			payload := map[string]interface{}{
-				"providerId": providerID,
-				"resources":  resources,
-			}
-			payloadBytes, err := json.Marshal(payload)
-			if err != nil {
-				b.Fatalf("Failed to marshal payload: %v", err)
-			}
-
-			event := handler.RawEvent{
-				EventType: handler.ResourceProviderSetResources,
-				Data:      payloadBytes,
-			}
+			// Get cache for storing resources
+			ctx := context.Background()
+			cache := store.GetResourceProviderBatchCache()
 
 			// Reset timer to exclude setup time
 			b.ResetTimer()
 
 			// Run benchmark
 			for i := 0; i < b.N; i++ {
-				ctx := context.Background()
-				err := HandleResourceProviderSetResources(ctx, ws, event)
+				// Cache the resources
+				batchId, err := cache.Store(ctx, providerID, resources)
+				if err != nil {
+					b.Fatalf("Failed to cache resources: %v", err)
+				}
+
+				// Create event payload with batchId reference
+				payload := map[string]interface{}{
+					"providerId": providerID,
+					"batchId":    batchId,
+				}
+				payloadBytes, err := json.Marshal(payload)
+				if err != nil {
+					b.Fatalf("Failed to marshal payload: %v", err)
+				}
+
+				event := handler.RawEvent{
+					EventType: handler.ResourceProviderSetResources,
+					Data:      payloadBytes,
+				}
+
+				err = HandleResourceProviderSetResources(ctx, ws, event)
 				if err != nil {
 					b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
 				}
@@ -321,28 +340,37 @@ func BenchmarkHandleResourceProviderSetResources_ScaleDeployments(b *testing.B) 
 				resources[i] = res
 			}
 
-			// Create event payload
-			payload := map[string]interface{}{
-				"providerId": providerID,
-				"resources":  resources,
-			}
-			payloadBytes, err := json.Marshal(payload)
-			if err != nil {
-				b.Fatalf("Failed to marshal payload: %v", err)
-			}
-
-			event := handler.RawEvent{
-				EventType: handler.ResourceProviderSetResources,
-				Data:      payloadBytes,
-			}
+			// Get cache for storing resources
+			ctx := context.Background()
+			cache := store.GetResourceProviderBatchCache()
 
 			// Reset timer to exclude setup time
 			b.ResetTimer()
 
 			// Run benchmark
 			for i := 0; i < b.N; i++ {
-				ctx := context.Background()
-				err := HandleResourceProviderSetResources(ctx, ws, event)
+				// Cache the resources
+				batchId, err := cache.Store(ctx, providerID, resources)
+				if err != nil {
+					b.Fatalf("Failed to cache resources: %v", err)
+				}
+
+				// Create event payload with batchId reference
+				payload := map[string]interface{}{
+					"providerId": providerID,
+					"batchId":    batchId,
+				}
+				payloadBytes, err := json.Marshal(payload)
+				if err != nil {
+					b.Fatalf("Failed to marshal payload: %v", err)
+				}
+
+				event := handler.RawEvent{
+					EventType: handler.ResourceProviderSetResources,
+					Data:      payloadBytes,
+				}
+
+				err = HandleResourceProviderSetResources(ctx, ws, event)
 				if err != nil {
 					b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
 				}
@@ -378,27 +406,37 @@ func BenchmarkHandleResourceProviderSetResources_HighLoad(b *testing.B) {
 		resources[i] = res
 	}
 
-	// Create event payload
-	payload := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  resources,
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		b.Fatalf("Failed to marshal payload: %v", err)
-	}
-
-	event := handler.RawEvent{
-		EventType: handler.ResourceProviderSetResources,
-		Data:      payloadBytes,
-	}
+	// Get cache for storing resources
+	ctx := context.Background()
+	cache := store.GetResourceProviderBatchCache()
 
 	// Reset timer to exclude setup time
+	b.ResetTimer()
 
 	// Run benchmark
 	for b.Loop() {
-		ctx := context.Background()
-		err := HandleResourceProviderSetResources(ctx, ws, event)
+		// Cache the resources
+		batchId, err := cache.Store(ctx, providerID, resources)
+		if err != nil {
+			b.Fatalf("Failed to cache resources: %v", err)
+		}
+
+		// Create event payload with batchId reference
+		payload := map[string]interface{}{
+			"providerId": providerID,
+			"batchId":    batchId,
+		}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			b.Fatalf("Failed to marshal payload: %v", err)
+		}
+
+		event := handler.RawEvent{
+			EventType: handler.ResourceProviderSetResources,
+			Data:      payloadBytes,
+		}
+
+		err = HandleResourceProviderSetResources(ctx, ws, event)
 		if err != nil {
 			b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
 		}
@@ -421,28 +459,40 @@ func BenchmarkHandleResourceProviderSetResources_MemoryAllocation(b *testing.B) 
 		resources[i] = res
 	}
 
-	// Create event payload
-	payload := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  resources,
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		b.Fatalf("Failed to marshal payload: %v", err)
-	}
-
-	event := handler.RawEvent{
-		EventType: handler.ResourceProviderSetResources,
-		Data:      payloadBytes,
-	}
+	// Get cache for storing resources
+	ctx := context.Background()
+	cache := store.GetResourceProviderBatchCache()
 
 	// Report allocations
 	b.ReportAllocs()
 
+	// Reset timer to exclude setup time
+	b.ResetTimer()
+
 	// Run benchmark
 	for b.Loop() {
-		ctx := context.Background()
-		err := HandleResourceProviderSetResources(ctx, ws, event)
+		// Cache the resources
+		batchId, err := cache.Store(ctx, providerID, resources)
+		if err != nil {
+			b.Fatalf("Failed to cache resources: %v", err)
+		}
+
+		// Create event payload with batchId reference
+		payload := map[string]interface{}{
+			"providerId": providerID,
+			"batchId":    batchId,
+		}
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			b.Fatalf("Failed to marshal payload: %v", err)
+		}
+
+		event := handler.RawEvent{
+			EventType: handler.ResourceProviderSetResources,
+			Data:      payloadBytes,
+		}
+
+		err = HandleResourceProviderSetResources(ctx, ws, event)
 		if err != nil {
 			b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
 		}
@@ -466,10 +516,19 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 		resources[i] = res
 	}
 
+	// Get cache for storing resources
+	ctx := context.Background()
+	cache := store.GetResourceProviderBatchCache()
+
 	// Initial SET to create resources
+	initialBatchId, err := cache.Store(ctx, providerID, resources)
+	if err != nil {
+		b.Fatalf("Failed to cache initial resources: %v", err)
+	}
+
 	initialPayload := map[string]interface{}{
 		"providerId": providerID,
-		"resources":  resources,
+		"batchId":    initialBatchId,
 	}
 	initialPayloadBytes, err := json.Marshal(initialPayload)
 	if err != nil {
@@ -481,7 +540,6 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 		Data:      initialPayloadBytes,
 	}
 
-	ctx := context.Background()
 	err = HandleResourceProviderSetResources(ctx, ws, initialEvent)
 	if err != nil {
 		b.Fatalf("Initial HandleResourceProviderSetResources failed: %v", err)
@@ -504,27 +562,32 @@ func BenchmarkHandleResourceProviderSetResources_Update(b *testing.B) {
 		updatedResources[i] = res
 	}
 
-	updatePayload := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  updatedResources,
-	}
-	updatePayloadBytes, err := json.Marshal(updatePayload)
-	if err != nil {
-		b.Fatalf("Failed to marshal update payload: %v", err)
-	}
-
-	updateEvent := handler.RawEvent{
-		EventType: handler.ResourceProviderSetResources,
-		Data:      updatePayloadBytes,
-	}
-
 	// Reset timer to exclude setup time
 	b.ResetTimer()
 
 	// Run benchmark
 	for i := 0; i < b.N; i++ {
-		ctx := context.Background()
-		err := HandleResourceProviderSetResources(ctx, ws, updateEvent)
+		// Cache the updated resources
+		updateBatchId, err := cache.Store(ctx, providerID, updatedResources)
+		if err != nil {
+			b.Fatalf("Failed to cache updated resources: %v", err)
+		}
+
+		updatePayload := map[string]interface{}{
+			"providerId": providerID,
+			"batchId":    updateBatchId,
+		}
+		updatePayloadBytes, err := json.Marshal(updatePayload)
+		if err != nil {
+			b.Fatalf("Failed to marshal update payload: %v", err)
+		}
+
+		updateEvent := handler.RawEvent{
+			EventType: handler.ResourceProviderSetResources,
+			Data:      updatePayloadBytes,
+		}
+
+		err = HandleResourceProviderSetResources(ctx, ws, updateEvent)
 		if err != nil {
 			b.Fatalf("HandleResourceProviderSetResources failed: %v", err)
 		}

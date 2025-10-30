@@ -46,8 +46,12 @@ local openapi = import '../lib/openapi.libsonnet';
           'application/json': {
             schema: {
               type: 'object',
-              required: ['resources'],
+              required: ['batchId', 'resources'],
               properties: {
+                batchId: {
+                  type: 'string',
+                  description: 'The ID of the batch to use',
+                },
                 resources: {
                   type: 'array',
                   items: openapi.schemaRef('ResourceProviderResource'),

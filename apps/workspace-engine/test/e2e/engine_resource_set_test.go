@@ -6,10 +6,24 @@ import (
 	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 	integration "workspace-engine/test/integration"
 
 	"github.com/stretchr/testify/require"
 )
+
+// Helper function to cache resources and send set event
+func cacheAndSetResources(t *testing.T, engine *integration.TestWorkspace, ctx context.Context, providerID string, resources []*oapi.Resource) {
+	cache := store.GetResourceProviderBatchCache()
+	batchId, err := cache.Store(ctx, providerID, resources)
+	require.NoError(t, err)
+
+	setResourcesPayload := map[string]interface{}{
+		"providerId": providerID,
+		"batchId":    batchId,
+	}
+	engine.PushEvent(ctx, handler.ResourceProviderSetResources, setResourcesPayload)
+}
 
 func TestEngine_ResourceProviderSetResources(t *testing.T) {
 	providerID := "test-provider"
@@ -21,6 +35,8 @@ func TestEngine_ResourceProviderSetResources(t *testing.T) {
 			integration.ProviderName("Test Provider"),
 		),
 	)
+
+	ctx := context.Background()
 
 	// Create initial resources via SET
 	resource1 := &oapi.Resource{
@@ -40,11 +56,7 @@ func TestEngine_ResourceProviderSetResources(t *testing.T) {
 	}
 
 	// Initial SET with resources 1 and 2
-	setResourcesPayload := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  []*oapi.Resource{resource1, resource2},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResourcesPayload)
+	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{resource1, resource2})
 
 	// Verify both resources exist
 	ws := engine.Workspace()
@@ -73,11 +85,7 @@ func TestEngine_ResourceProviderSetResources(t *testing.T) {
 		Metadata:   map[string]string{},
 	}
 
-	setResourcesPayload2 := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  []*oapi.Resource{resource2, resource3},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResourcesPayload2)
+	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{resource2, resource3})
 
 	// Verify resource 1 was deleted
 	_, exists = ws.Resources().GetByIdentifier("res-1")
@@ -132,17 +140,9 @@ func TestEngine_ResourceProviderSetResources_OnlyDeletesProviderResources(t *tes
 		Metadata:   map[string]string{},
 	}
 
-	setResources1 := map[string]interface{}{
-		"providerId": provider1ID,
-		"resources":  []*oapi.Resource{provider1Resource},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResources1)
-
-	setResources2 := map[string]interface{}{
-		"providerId": provider2ID,
-		"resources":  []*oapi.Resource{provider2Resource},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResources2)
+	ctx := context.Background()
+	cacheAndSetResources(t, engine, ctx, provider1ID, []*oapi.Resource{provider1Resource})
+	cacheAndSetResources(t, engine, ctx, provider2ID, []*oapi.Resource{provider2Resource})
 
 	// Verify both exist
 	ws := engine.Workspace()
@@ -153,11 +153,7 @@ func TestEngine_ResourceProviderSetResources_OnlyDeletesProviderResources(t *tes
 	require.True(t, exists, "p2-res-1 should exist")
 
 	// SET provider1 with empty list
-	setResources3 := map[string]interface{}{
-		"providerId": provider1ID,
-		"resources":  []*oapi.Resource{},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResources3)
+	cacheAndSetResources(t, engine, ctx, provider1ID, []*oapi.Resource{})
 
 	// Verify provider1's resource was deleted
 	_, exists = ws.Resources().GetByIdentifier("p1-res-1")
@@ -193,11 +189,8 @@ func TestEngine_ResourceProviderSetResources_CannotStealFromOtherProvider(t *tes
 		Metadata:   map[string]string{},
 	}
 
-	setResources1 := map[string]interface{}{
-		"providerId": provider1ID,
-		"resources":  []*oapi.Resource{provider1Resource},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResources1)
+	ctx := context.Background()
+	cacheAndSetResources(t, engine, ctx, provider1ID, []*oapi.Resource{provider1Resource})
 
 	ws := engine.Workspace()
 	res, exists := ws.Resources().GetByIdentifier("shared-resource")
@@ -216,11 +209,7 @@ func TestEngine_ResourceProviderSetResources_CannotStealFromOtherProvider(t *tes
 		Metadata:   map[string]string{},
 	}
 
-	setResources2 := map[string]interface{}{
-		"providerId": provider2ID,
-		"resources":  []*oapi.Resource{provider2Resource},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResources2)
+	cacheAndSetResources(t, engine, ctx, provider2ID, []*oapi.Resource{provider2Resource})
 
 	// Verify the original resource still belongs to provider1
 	res, exists = ws.Resources().GetByIdentifier("shared-resource")
@@ -263,11 +252,8 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 		Metadata:   map[string]string{},
 	}
 
-	setResources := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  []*oapi.Resource{claimedResource},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResources)
+	ctx := context.Background()
+	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{claimedResource})
 
 	// Verify the original resource is now owned by the provider
 	claimedRes, exists := ws.Resources().Get("unowned-res")
@@ -300,11 +286,8 @@ func TestEngine_ResourceProviderSetResources_TimestampBehavior(t *testing.T) {
 		Metadata:   map[string]string{},
 	}
 
-	setResourcesPayload := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  []*oapi.Resource{resource1},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResourcesPayload)
+	ctx := context.Background()
+	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{resource1})
 
 	ws := engine.Workspace()
 	r1, exists := ws.Resources().GetByIdentifier("timestamp-test")
@@ -327,11 +310,7 @@ func TestEngine_ResourceProviderSetResources_TimestampBehavior(t *testing.T) {
 		Metadata:   map[string]string{},
 	}
 
-	setResourcesPayload2 := map[string]interface{}{
-		"providerId": providerID,
-		"resources":  []*oapi.Resource{resource1Updated},
-	}
-	engine.PushEvent(context.Background(), handler.ResourceProviderSetResources, setResourcesPayload2)
+	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{resource1Updated})
 
 	r1Updated, exists := ws.Resources().GetByIdentifier("timestamp-test")
 	require.True(t, exists, "resource should still exist")
@@ -341,3 +320,122 @@ func TestEngine_ResourceProviderSetResources_TimestampBehavior(t *testing.T) {
 	require.True(t, r1Updated.UpdatedAt.After(originalCreatedAt), "UpdatedAt should be after CreatedAt")
 	require.Equal(t, "Timestamp Test Updated", r1Updated.Name, "resource name should be updated")
 }
+
+// Cached Batch Pattern Tests - These test the new Ristretto cache-based approach for large payloads
+
+func TestEngine_ResourceProviderSetResources_CachedBatch(t *testing.T) {
+	providerID := "test-provider"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithResourceProvider(
+			integration.ProviderID(providerID),
+			integration.ProviderName("Test Provider"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Create resources to cache
+	resources := []*oapi.Resource{
+		{
+			Identifier: "cached-res-1",
+			Name:       "Cached Resource 1",
+			Kind:       "TestKind",
+			Config:     map[string]interface{}{},
+			Metadata:   map[string]string{},
+		},
+		{
+			Identifier: "cached-res-2",
+			Name:       "Cached Resource 2",
+			Kind:       "TestKind",
+			Config:     map[string]interface{}{},
+			Metadata:   map[string]string{},
+		},
+	}
+
+	// Store batch in cache (simulating API layer)
+	cache := store.GetResourceProviderBatchCache()
+	batchId, err := cache.Store(ctx, providerID, resources)
+	require.NoError(t, err, "should store batch in cache")
+	require.NotEmpty(t, batchId, "should return a batchId")
+
+	// Send event with batchId reference (tiny Kafka message)
+	setResourcesPayload := map[string]interface{}{
+		"providerId": providerID,
+		"batchId":    batchId,
+	}
+	engine.PushEvent(ctx, handler.ResourceProviderSetResources, setResourcesPayload)
+
+	// Verify resources were created from cached batch
+	ws := engine.Workspace()
+	r1, exists := ws.Resources().GetByIdentifier("cached-res-1")
+	require.True(t, exists, "cached-res-1 should exist")
+	require.NotNil(t, r1.ProviderId, "cached-res-1 should have a providerId")
+	require.Equal(t, providerID, *r1.ProviderId, "cached-res-1 should have correct providerId")
+
+	r2, exists := ws.Resources().GetByIdentifier("cached-res-2")
+	require.True(t, exists, "cached-res-2 should exist")
+	require.NotNil(t, r2.ProviderId, "cached-res-2 should have a providerId")
+	require.Equal(t, providerID, *r2.ProviderId, "cached-res-2 should have correct providerId")
+}
+
+func TestEngine_ResourceProviderSetResources_CachedBatch_LargePayload(t *testing.T) {
+	providerID := "test-provider-large"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithResourceProvider(
+			integration.ProviderID(providerID),
+			integration.ProviderName("Test Provider Large"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Create 200 resources (simulating large payload that exceeds Kafka limits)
+	resources := make([]*oapi.Resource, 200)
+	for i := 0; i < 200; i++ {
+		resources[i] = &oapi.Resource{
+			Identifier: string(rune(65 + i)), // A, B, C, ...
+			Name:       string(rune(65 + i)),
+			Kind:       "TestKind",
+			Config: map[string]interface{}{
+				"index": i,
+			},
+			Metadata: map[string]string{
+				"seq": string(rune(48 + (i % 10))),
+			},
+		}
+	}
+
+	// Store large batch in cache
+	cache := store.GetResourceProviderBatchCache()
+	batchId, err := cache.Store(ctx, providerID, resources)
+	require.NoError(t, err, "should store large batch in cache")
+
+	// Send small event with batchId reference
+	setResourcesPayload := map[string]interface{}{
+		"providerId": providerID,
+		"batchId":    batchId,
+	}
+	engine.PushEvent(ctx, handler.ResourceProviderSetResources, setResourcesPayload)
+
+	// Verify all 200 resources were created
+	ws := engine.Workspace()
+	allResources := ws.Resources().Items()
+	providerResources := 0
+	for _, res := range allResources {
+		if res.ProviderId != nil && *res.ProviderId == providerID {
+			providerResources++
+		}
+	}
+	require.Equal(t, 200, providerResources, "should have created all 200 resources")
+}
+
+// Note: Batch not found errors are tested in unit tests (resourceproviders_cache_test.go)
+// E2E tests with PushEvent cannot test error conditions since it calls t.Fatalf on errors
+
+// Note: Provider ID mismatch and one-time use errors are tested in unit tests
+// E2E tests with PushEvent cannot test error conditions since it calls t.Fatalf on errors
+

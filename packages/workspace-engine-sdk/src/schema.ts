@@ -615,6 +615,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/resource-providers/cache-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cache a large resource batch for deferred processing
+         * @description Stores resources in memory and returns a batch ID. The batch is processed when a corresponding Kafka event is received. Uses Ristretto cache with 5-minute TTL.
+         */
+        post: operations["cacheBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
         parameters: {
             query?: never;
@@ -2525,6 +2545,43 @@ export interface operations {
                         offset: number;
                         /** @description Total number of items available */
                         total: number;
+                    };
+                };
+            };
+        };
+    };
+    cacheBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The ID of the resource provider */
+                    providerId: string;
+                    /** @description Array of resources to cache */
+                    resources: components["schemas"]["Resource"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Batch cached successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Unique ID for this cached batch */
+                        batchId?: string;
+                        /** @description Number of resources cached */
+                        resourceCount?: number;
                     };
                 };
             };

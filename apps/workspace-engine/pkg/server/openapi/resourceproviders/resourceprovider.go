@@ -7,7 +7,9 @@ import (
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
+	"workspace-engine/pkg/workspace/store"
 
+	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -82,5 +84,45 @@ func (s *ResourceProviders) GetResourceProviders(c *gin.Context, workspaceId str
 		"offset": offset,
 		"limit":  limit,
 		"items":  providersList[start:end],
+	})
+}
+
+// CacheBatch temporarily stores a large resource batch in memory
+// This allows the API to send a small Kafka event with just a reference
+func (s *ResourceProviders) CacheBatch(c *gin.Context, workspaceId string) {
+	// Parse request body
+	var body struct {
+		ProviderId string           `json:"providerId" binding:"required"`
+		Resources  []*oapi.Resource `json:"resources" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	// Get batch cache
+	cache := store.GetResourceProviderBatchCache()
+
+	// Store in cache
+	batchId, err := cache.Store(c.Request.Context(), body.ProviderId, body.Resources)
+	if err != nil {
+		log.Error("Failed to cache batch", "error", err)
+		c.JSON(http.StatusInsufficientStorage, gin.H{
+			"error": "Failed to cache batch: " + err.Error(),
+		})
+		return
+	}
+
+	log.Info("Cached resource batch",
+		"batchId", batchId,
+		"workspaceId", workspaceId,
+		"providerId", body.ProviderId,
+		"resourceCount", len(body.Resources))
+
+	c.JSON(http.StatusOK, gin.H{
+		"batchId":       batchId,
+		"resourceCount": len(body.Resources),
 	})
 }

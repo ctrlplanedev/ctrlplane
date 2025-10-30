@@ -3772,6 +3772,73 @@
             "summary": "Get all resource providers"
          }
       },
+      "/v1/workspaces/{workspaceId}/resource-providers/cache-batch": {
+         "post": {
+            "description": "Stores resources in memory and returns a batch ID. The batch is processed when a corresponding Kafka event is received. Uses Ristretto cache with 5-minute TTL.",
+            "operationId": "cacheBatch",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "providerId": {
+                              "description": "The ID of the resource provider",
+                              "type": "string"
+                           },
+                           "resources": {
+                              "description": "Array of resources to cache",
+                              "items": {
+                                 "$ref": "#/components/schemas/Resource"
+                              },
+                              "type": "array"
+                           }
+                        },
+                        "required": [
+                           "providerId",
+                           "resources"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "batchId": {
+                                 "description": "Unique ID for this cached batch",
+                                 "type": "string"
+                              },
+                              "resourceCount": {
+                                 "description": "Number of resources cached",
+                                 "type": "integer"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Batch cached successfully"
+               }
+            },
+            "summary": "Cache a large resource batch for deferred processing"
+         }
+      },
       "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
          "get": {
             "operationId": "getResourceProviderByName",
