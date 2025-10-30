@@ -391,4 +391,3 @@ func TestHandleResourceProviderSetResources_ChangesetTracking(t *testing.T) {
 	require.Equal(t, "test-resource-1", resource.Identifier)
 	require.Equal(t, "Test Resource 1", resource.Name)
 }
-

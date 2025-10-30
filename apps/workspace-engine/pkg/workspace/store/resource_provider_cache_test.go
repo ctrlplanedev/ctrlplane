@@ -190,7 +190,7 @@ func TestResourceProviderCache_ConcurrentAccess(t *testing.T) {
 	// Collect all batch IDs
 	collected := make([]string, 0, numGoroutines)
 	timeout := time.After(5 * time.Second)
-	
+
 	for i := 0; i < numGoroutines; i++ {
 		select {
 		case batchId := <-batchIds:
@@ -321,13 +321,13 @@ func TestResourceProviderCache_ResourceIntegrity(t *testing.T) {
 	assert.Equal(t, "Complex Resource", retrieved.Name)
 	assert.Equal(t, "ComplexKind", retrieved.Kind)
 	assert.Equal(t, "v1", retrieved.Version)
-	
+
 	// Verify config
 	assert.Equal(t, "value", retrieved.Config["string"])
 	// Numbers are stored as-is in memory (not JSON serialized), so they maintain their type
 	assert.Equal(t, 42, retrieved.Config["number"])
 	assert.Equal(t, true, retrieved.Config["boolean"])
-	
+
 	// Verify metadata
 	assert.Equal(t, "production", retrieved.Metadata["env"])
 	assert.Equal(t, "us-east-1", retrieved.Metadata["region"])
@@ -423,4 +423,3 @@ func BenchmarkResourceProviderCache_StoreAndRetrieve(b *testing.B) {
 		}
 	}
 }
-

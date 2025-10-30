@@ -438,4 +438,3 @@ func TestEngine_ResourceProviderSetResources_CachedBatch_LargePayload(t *testing
 
 // Note: Provider ID mismatch and one-time use errors are tested in unit tests
 // E2E tests with PushEvent cannot test error conditions since it calls t.Fatalf on errors
-

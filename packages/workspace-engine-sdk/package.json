@@ -14,7 +14,6 @@
     "build:tsc": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf .turbo node_modules",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
     "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc",
