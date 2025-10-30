@@ -12,6 +12,8 @@ import (
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
@@ -38,11 +40,22 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 ) (*oapi.RuleEvaluation, error) {
+	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.Evaluate")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("environment.id", environment.Id))
+	span.SetAttributes(attribute.String("version.id", version.Id))
+	span.SetAttributes(attribute.String("rule", fmt.Sprintf("%+v", e.rule)))
+
 	// Find dependency environments using the selector
 	dependencyEnvs, err := e.findDependencyEnvironments(ctx, environment)
 	if err != nil {
+		span.SetStatus(codes.Error, "failed to find dependency environments")
+		span.RecordError(err)
 		return nil, fmt.Errorf("failed to find dependency environments: %w", err)
 	}
+
+	span.SetAttributes(attribute.Int("dependency_environment_count", len(dependencyEnvs)))
 
 	if len(dependencyEnvs) == 0 {
 		return results.
@@ -58,10 +71,13 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		dependencyEnvs,
 	)
 	if err != nil {
+		span.SetStatus(codes.Error, "failed to check dependency environments")
+		span.RecordError(err)
 		return nil, fmt.Errorf("failed to check dependency environments: %w", err)
 	}
 
 	if !result.Allowed {
+		span.SetAttributes(attribute.Bool("result.allowed", false))
 		r := results.
 			NewPendingResult(results.ActionTypeWait, result.Message).
 			WithDetail("dependency_environment_count", len(dependencyEnvs)).
@@ -72,6 +88,8 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		}
 		return r, nil
 	}
+
+	span.SetAttributes(attribute.Bool("result.allowed", true))
 
 	r := results.
 		NewAllowedResult("Version succeeded in dependency environment(s)").
@@ -187,6 +205,8 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	version *oapi.DeploymentVersion,
 	environment *oapi.Environment,
 ) (*oapi.RuleEvaluation, error) {
+	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
+	defer span.End()
 	// Define success statuses (default to just "successful")
 	successStatuses := map[oapi.JobStatus]bool{
 		oapi.Successful: true,
@@ -199,6 +219,8 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	}
 
 	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses)
+	span.SetAttributes(attribute.Int("job_count", len(tracker.Jobs())))
+	span.SetAttributes(attribute.Int("release_target_count", len(tracker.ReleaseTargets)))
 
 	if len(tracker.Jobs()) == 0 {
 		return results.NewDeniedResult("No jobs found"), nil
@@ -210,6 +232,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 
 	// Check for at least one successful job (or based on success percentage requirement)
 	successPercentage := tracker.GetSuccessPercentage()
+	span.SetAttributes(attribute.Float64("success_percentage", float64(successPercentage)))
 
 	if e.rule.MinimumSuccessPercentage != nil {
 		// Check if success percentage meets the requirement
@@ -230,12 +253,17 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
 		// Only check soak time if there are successful jobs
 		mostRecentSuccess := tracker.GetMostRecentSuccess()
+		span.SetAttributes(attribute.String("most_recent_success", mostRecentSuccess.Format(
+			time.RFC3339,
+		)))
 		if mostRecentSuccess.IsZero() {
 			return results.NewDeniedResult("No successful jobs for soak time check"), nil
 		}
 
 		soakDuration := time.Duration(*e.rule.MinimumSockTimeMinutes) * time.Minute
 		soakTimeRemaining := tracker.GetSoakTimeRemaining(soakDuration)
+
+		span.SetAttributes(attribute.Float64("soak_time_remaining_minutes", soakTimeRemaining.Minutes()))
 		if soakTimeRemaining > 0 {
 			message := fmt.Sprintf("Soak time required: %d minutes. Time remaining: %s", *e.rule.MinimumSockTimeMinutes, soakTimeRemaining.Round(time.Minute))
 			return results.NewPendingResult(results.ActionTypeWait, message).
