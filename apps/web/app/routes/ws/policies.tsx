@@ -1,5 +1,8 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
+import { useState } from "react";
 import { format } from "date-fns";
+import { MoreVertical, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
@@ -9,7 +12,22 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "~/components/ui/breadcrumb";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import {
@@ -21,7 +39,6 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { buttonVariants } from "../../components/ui/button";
 
 export function meta() {
   return [
@@ -37,7 +54,13 @@ type Policy = NonNullable<
   NonNullable<RouterOutputs["policies"]["list"]>["policies"]
 >[number];
 
-function PolicyRow({ policy }: { policy: Policy }) {
+function PolicyRow({
+  policy,
+  onDelete,
+}: {
+  policy: Policy;
+  onDelete: () => void;
+}) {
   // Count release targets from computed relationships
   const releaseTargetCount = 0;
 
@@ -59,12 +82,98 @@ function PolicyRow({ policy }: { policy: Policy }) {
       <TableCell className="text-muted-foreground">
         {format(new Date(policy.createdAt), "MMM d, yyyy")}
       </TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
     </TableRow>
+  );
+}
+
+function DeletePolicyDialog({
+  policy,
+  open,
+  onOpenChange,
+}: {
+  policy: Policy | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { workspace } = useWorkspace();
+  const utils = trpc.useUtils();
+  const deletePolicyMutation = trpc.policies.delete.useMutation();
+
+  if (!policy) return null;
+
+  const handleDelete = () => {
+    deletePolicyMutation
+      .mutateAsync({
+        workspaceId: workspace.id,
+        policyId: policy.id,
+      })
+      .then(() => {
+        utils.policies.list.invalidate({ workspaceId: workspace.id });
+        onOpenChange(false);
+        toast.success("Policy deleted successfully");
+      })
+      .catch((error: unknown) => {
+        const message =
+          error &&
+          typeof error === "object" &&
+          "message" in error &&
+          typeof error.message === "string"
+            ? error.message
+            : "Failed to delete policy";
+        toast.error(message);
+      });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Policy</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete the policy "{policy.name}"? This
+            action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={deletePolicyMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deletePolicyMutation.isPending}
+          >
+            {deletePolicyMutation.isPending ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 export default function Policies() {
   const { workspace } = useWorkspace();
+  const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const { data, isLoading } = trpc.policies.list.useQuery({
     workspaceId: workspace.id,
@@ -132,11 +241,16 @@ export default function Policies() {
                         Release Targets
                       </TableHead>
                       <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {policies.map((policy) => (
-                      <PolicyRow key={policy.id} policy={policy} />
+                      <PolicyRow
+                        key={policy.id}
+                        policy={policy}
+                        onDelete={() => setPolicyToDelete(policy)}
+                      />
                     ))}
                   </TableBody>
                 </Table>
@@ -145,6 +259,14 @@ export default function Policies() {
           </CardContent>
         </Card>
       </main>
+
+      <DeletePolicyDialog
+        policy={policyToDelete}
+        open={!!policyToDelete}
+        onOpenChange={(open) => {
+          if (!open) setPolicyToDelete(null);
+        }}
+      />
     </>
   );
 }
