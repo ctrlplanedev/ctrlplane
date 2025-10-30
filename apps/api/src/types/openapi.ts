@@ -366,13 +366,13 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /** Set the resources for a provider */
+        put: operations["setResourceProvidersResources"];
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Set the resources for a provider */
-        patch: operations["setResourceProvidersResources"];
+        patch?: never;
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources": {

@@ -54,7 +54,7 @@ const getResourceProviderByName: AsyncTypedHandler<
 
 const setResourceProviderResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-  "patch"
+  "put"
 > = async (req, res) => {
   const { workspaceId, providerId } = req.params;
   const { resources } = req.body;

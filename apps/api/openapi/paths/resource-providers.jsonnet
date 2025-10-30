@@ -33,7 +33,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
   '/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set': {
-    patch: {
+    put: {
       summary: 'Set the resources for a provider',
       operationId: 'setResourceProvidersResources',
       parameters: [

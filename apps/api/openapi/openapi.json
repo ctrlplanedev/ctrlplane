@@ -3492,7 +3492,7 @@
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set": {
-         "patch": {
+         "put": {
             "operationId": "setResourceProvidersResources",
             "parameters": [
                {
