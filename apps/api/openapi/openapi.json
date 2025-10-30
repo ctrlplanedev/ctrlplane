@@ -388,9 +388,6 @@
                "dependsOnEnvironmentSelector": {
                   "$ref": "#/components/schemas/Selector"
                },
-               "id": {
-                  "type": "string"
-               },
                "maximumAgeHours": {
                   "description": "Maximum age of dependency deployment before blocking progression (prevents stale promotions)",
                   "format": "int32",
@@ -411,9 +408,6 @@
                   "minimum": 0,
                   "type": "number"
                },
-               "policyId": {
-                  "type": "string"
-               },
                "successStatuses": {
                   "items": {
                      "$ref": "#/components/schemas/JobStatus"
@@ -422,8 +416,6 @@
                }
             },
             "required": [
-               "id",
-               "policyId",
                "dependsOnEnvironmentSelector"
             ],
             "type": "object"

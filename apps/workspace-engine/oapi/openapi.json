@@ -291,9 +291,6 @@
                "dependsOnEnvironmentSelector": {
                   "$ref": "#/components/schemas/Selector"
                },
-               "id": {
-                  "type": "string"
-               },
                "maximumAgeHours": {
                   "description": "Maximum age of dependency deployment before blocking progression (prevents stale promotions)",
                   "format": "int32",
@@ -314,9 +311,6 @@
                   "minimum": 0,
                   "type": "number"
                },
-               "policyId": {
-                  "type": "string"
-               },
                "successStatuses": {
                   "items": {
                      "$ref": "#/components/schemas/JobStatus"
@@ -325,8 +319,6 @@
                }
             },
             "required": [
-               "id",
-               "policyId",
                "dependsOnEnvironmentSelector"
             ],
             "type": "object"
@@ -997,6 +989,31 @@
             ],
             "type": "object"
          },
+         "ResolvedPolicy": {
+            "properties": {
+               "environmentIds": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "policy": {
+                  "$ref": "#/components/schemas/Policy"
+               },
+               "releaseTargets": {
+                  "items": {
+                     "$ref": "#/components/schemas/ReleaseTarget"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "policy",
+               "environmentIds",
+               "releaseTargets"
+            ],
+            "type": "object"
+         },
          "Resource": {
             "properties": {
                "config": {
@@ -1618,6 +1635,76 @@
                }
             },
             "summary": "Get deployment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/policies": {
+         "get": {
+            "description": "Returns a list of resolved policies for a deployment.",
+            "operationId": "getPoliciesForDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/ResolvedPolicy"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "required": [
+                              "items"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of resolved policies"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get policies for a deployment"
          }
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets": {

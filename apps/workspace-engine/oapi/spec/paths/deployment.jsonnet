@@ -16,6 +16,29 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/policies': {
+    get: {
+      summary: 'Get policies for a deployment',
+      operationId: 'getPoliciesForDeployment',
+      description: 'Returns a list of resolved policies for a deployment.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.okResponse(
+                   {
+                     type: 'object',
+                     required: ['items'],
+                     properties: {
+                       items: { type: 'array', items: openapi.schemaRef('ResolvedPolicy') },
+                     },
+                   },
+                   'A list of resolved policies'
+                 )
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}': {
     get: {
       summary: 'Get deployment',

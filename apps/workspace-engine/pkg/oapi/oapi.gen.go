@@ -194,7 +194,6 @@ type Environment struct {
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
 type EnvironmentProgressionRule struct {
 	DependsOnEnvironmentSelector Selector `json:"dependsOnEnvironmentSelector"`
-	Id                           string   `json:"id"`
 
 	// MaximumAgeHours Maximum age of dependency deployment before blocking progression (prevents stale promotions)
 	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
@@ -202,7 +201,6 @@ type EnvironmentProgressionRule struct {
 	// MinimumSockTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
 	MinimumSockTimeMinutes   *int32       `json:"minimumSockTimeMinutes,omitempty"`
 	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
-	PolicyId                 string       `json:"policyId"`
 	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
 }
 
@@ -433,6 +431,13 @@ type ReleaseTargetWithState struct {
 	ReleaseTarget ReleaseTarget      `json:"releaseTarget"`
 	Resource      Resource           `json:"resource"`
 	State         ReleaseTargetState `json:"state"`
+}
+
+// ResolvedPolicy defines model for ResolvedPolicy.
+type ResolvedPolicy struct {
+	EnvironmentIds []string        `json:"environmentIds"`
+	Policy         Policy          `json:"policy"`
+	ReleaseTargets []ReleaseTarget `json:"releaseTargets"`
 }
 
 // Resource defines model for Resource.
@@ -1316,6 +1321,9 @@ type ServerInterface interface {
 	// Get deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId})
 	GetDeployment(c *gin.Context, workspaceId string, deploymentId string)
+	// Get policies for a deployment
+	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/policies)
+	GetPoliciesForDeployment(c *gin.Context, workspaceId string, deploymentId string)
 	// Get release targets for a deployment
 	// (GET /v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets)
 	GetReleaseTargetsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params GetReleaseTargetsForDeploymentParams)
@@ -1553,6 +1561,39 @@ func (siw *ServerInterfaceWrapper) GetDeployment(c *gin.Context) {
 	}
 
 	siw.Handler.GetDeployment(c, workspaceId, deploymentId)
+}
+
+// GetPoliciesForDeployment operation middleware
+func (siw *ServerInterfaceWrapper) GetPoliciesForDeployment(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "deploymentId" -------------
+	var deploymentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentId", c.Param("deploymentId"), &deploymentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPoliciesForDeployment(c, workspaceId, deploymentId)
 }
 
 // GetReleaseTargetsForDeployment operation middleware
@@ -2803,6 +2844,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-versions/:versionId/jobs-list", wrapper.GetDeploymentVersionJobsList)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments", wrapper.ListDeployments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/policies", wrapper.GetPoliciesForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/release-targets", wrapper.GetReleaseTargetsForDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/resources", wrapper.GetDeploymentResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId/versions", wrapper.GetVersionsForDeployment)

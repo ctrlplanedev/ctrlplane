@@ -6,11 +6,33 @@ import (
 	"sort"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
+	"workspace-engine/pkg/workspace"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
+
+func getReleaseTargetsForDeployment(c *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
+	releaseTargets, err := ws.ReleaseTargets().Items(c.Request.Context())
+	if err != nil {
+		return nil, err
+	}
+	// Build list of release targets for this deployment, filtering out any nils
+	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
+	for _, releaseTarget := range releaseTargets {
+		if releaseTarget == nil {
+			log.Error("release target is nil", "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
+			continue
+		}
+		if releaseTarget.DeploymentId == deploymentId {
+			releaseTargetsList = append(releaseTargetsList, releaseTarget)
+		}
+	}
+
+	return releaseTargetsList, nil
+}
 
 type Deployments struct{}
 
@@ -189,14 +211,6 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		return
 	}
 
-	releaseTargets, err := ws.ReleaseTargets().Items(c.Request.Context())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
 	limit := 50
 	if params.Limit != nil {
 		limit = *params.Limit
@@ -208,15 +222,12 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	}
 
 	// Build list of release targets for this deployment, filtering out any nils
-	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
-	for _, releaseTarget := range releaseTargets {
-		if releaseTarget == nil {
-			log.Error("release target is nil", "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
-			continue
-		}
-		if releaseTarget.DeploymentId == deploymentId {
-			releaseTargetsList = append(releaseTargetsList, releaseTarget)
-		}
+	releaseTargetsList, err := getReleaseTargetsForDeployment(c, ws, deploymentId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
 	sort.Slice(releaseTargetsList, func(i, j int) bool {
@@ -322,5 +333,82 @@ func (s *Deployments) GetVersionsForDeployment(c *gin.Context, workspaceId strin
 		"offset": offset,
 		"limit":  limit,
 		"items":  versionsList[start:end],
+	})
+}
+
+func (s *Deployments) GetPoliciesForDeployment(c *gin.Context, workspaceId string, deploymentId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	releaseTargets, err := getReleaseTargetsForDeployment(c, ws, deploymentId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	policiesMap := make(map[string]*oapi.ResolvedPolicy)
+	for _, releaseTarget := range releaseTargets {
+		policies, err := ws.ReleaseTargets().GetPolicies(c.Request.Context(), releaseTarget)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		for _, policy := range policies {
+			if p, ok := policiesMap[policy.Id]; ok {
+				p.ReleaseTargets = append(p.ReleaseTargets, *releaseTarget)
+				continue
+			}
+
+			envs := make([]string, 0)
+
+			allEnvironments := ws.Environments().Items()
+			envsList := make([]*oapi.Environment, 0, len(allEnvironments))
+			for _, env := range ws.Environments().Items() {
+				envsList = append(envsList, env)
+			}
+
+			for _, rule := range policy.Rules {
+				if rule.EnvironmentProgression != nil {
+					matchingEnvs, err := selector.Filter(
+						c.Request.Context(),
+						&rule.EnvironmentProgression.DependsOnEnvironmentSelector,
+						envsList,
+					)
+					if err != nil {
+						c.JSON(http.StatusInternalServerError, gin.H{
+							"error": err.Error(),
+						})
+						return
+					}
+					for _, env := range matchingEnvs {
+						envs = append(envs, env.Id)
+					}
+				}
+			}
+
+			policiesMap[policy.Id] = &oapi.ResolvedPolicy{
+				Policy:         *policy,
+				EnvironmentIds: envs,
+				ReleaseTargets: []oapi.ReleaseTarget{*releaseTarget},
+			}
+		}
+	}
+
+	policies := make([]*oapi.ResolvedPolicy, 0, len(policiesMap))
+	for _, policy := range policiesMap {
+		policies = append(policies, policy)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"items": policies,
 	})
 }

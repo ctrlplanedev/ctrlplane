@@ -573,7 +573,6 @@ export interface components {
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
-            id: string;
             /**
              * Format: int32
              * @description Maximum age of dependency deployment before blocking progression (prevents stale promotions)
@@ -590,7 +589,6 @@ export interface components {
              * @default 100
              */
             minimumSuccessPercentage: number;
-            policyId: string;
             successStatuses?: components["schemas"]["JobStatus"][];
         };
         Error: {

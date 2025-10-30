@@ -270,4 +270,18 @@ export const deploymentsRouter = router({
 
       return version;
     }),
+
+  policies: protectedProcedure
+    .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
+    .query(async ({ input }) => {
+      const response = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/policies",
+        {
+          params: {
+            path: input,
+          },
+        },
+      );
+      return response.data?.items ?? [];
+    }),
 });

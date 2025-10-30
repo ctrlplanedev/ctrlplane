@@ -88,9 +88,30 @@ export default function DeploymentDetail() {
     workspaceId: workspace.id,
   });
 
+  const policiesQuery = trpc.deployment.policies.useQuery({
+    workspaceId: workspace.id,
+    deploymentId: deployment.id,
+  });
+
+  const policies = useMemo(
+    () => policiesQuery.data ?? [],
+    [policiesQuery.data],
+  );
+
   const environments = useMemo(
     () => environmentsQuery.data?.items ?? [],
     [environmentsQuery.data?.items],
+  );
+
+  const envDependsOn = useCallback(
+    (environmentId: string) =>
+      policies
+        .filter(({ policy }) => policy.enabled)
+        .filter(({ releaseTargets }) =>
+          releaseTargets.some((rt) => rt.environmentId === environmentId),
+        )
+        .flatMap(({ environmentIds }) => environmentIds),
+    [policies],
   );
 
   // Extract unique environment IDs from release targets (we'll need to fetch full environment data)
@@ -238,7 +259,7 @@ export default function DeploymentDetail() {
     // Create edges based on environment dependencies (if the field exists)
     for (const environment of availableEnvironments) {
       // Check if environment has dependency information
-      const dependsOnIds = (environment as any).dependsOnEnvironmentIds ?? [];
+      const dependsOnIds = envDependsOn(environment.id);
       for (const dependsOnEnvironmentId of dependsOnIds) {
         connections.push({
           id: `${dependsOnEnvironmentId}-${environment.id}`,
@@ -265,7 +286,7 @@ export default function DeploymentDetail() {
     }
 
     return connections;
-  }, [availableEnvironments]);
+  }, [availableEnvironments, envDependsOn]);
 
   const versions = versionsQuery.data?.items ?? [];
   const noVersions = !versionsQuery.isLoading && versions.length === 0;
@@ -281,12 +302,10 @@ export default function DeploymentDetail() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbItem>
-                  <Link to={`/${workspace.slug}/deployments`}>Deployments</Link>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
+                <Link to={`/${workspace.slug}/deployments`}>Deployments</Link>
               </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
             </BreadcrumbList>
           </Breadcrumb>
         </div>

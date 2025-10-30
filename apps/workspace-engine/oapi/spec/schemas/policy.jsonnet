@@ -28,6 +28,16 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  ResolvedPolicy: {
+    type: 'object',
+    required: ['policy', 'environmentIds', 'releaseTargets'],
+    properties: {
+      policy: openapi.schemaRef('Policy'),
+      environmentIds: { type: 'array', items: { type: 'string' } },
+      releaseTargets: { type: 'array', items: openapi.schemaRef('ReleaseTarget') },
+    },
+  },
+
   PolicyTargetSelector: {
     type: 'object',
     required: ['id'],
@@ -64,10 +74,8 @@ local openapi = import '../lib/openapi.libsonnet';
 
   EnvironmentProgressionRule: {
     type: 'object',
-    required: ['id', 'policyId', 'dependsOnEnvironmentSelector'],
+    required: ['dependsOnEnvironmentSelector'],
     properties: {
-      id: { type: 'string' },
-      policyId: { type: 'string' },
       dependsOnEnvironmentSelector: openapi.schemaRef('Selector'),
 
       minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },

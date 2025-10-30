@@ -102,10 +102,8 @@ local openapi = import '../lib/openapi.libsonnet';
 
   EnvironmentProgressionRule: {
     type: 'object',
-    required: ['id', 'policyId', 'dependsOnEnvironmentSelector'],
+    required: ['dependsOnEnvironmentSelector'],
     properties: {
-      id: { type: 'string' },
-      policyId: { type: 'string' },
       dependsOnEnvironmentSelector: openapi.schemaRef('Selector'),
 
       minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },

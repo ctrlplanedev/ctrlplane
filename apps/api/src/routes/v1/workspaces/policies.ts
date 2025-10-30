@@ -63,25 +63,7 @@ const upsertPolicy: AsyncTypedHandler<
     { params: { path: { workspaceId, policyId } } },
   );
 
-  // Generate IDs for nested objects if not provided
-  const bodyRules = Array.isArray(body.rules) ? body.rules : [];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  const rules: WorkspaceEngine["schemas"]["PolicyRule"][] = bodyRules.map(
-    (rule) => ({
-      ...rule,
-      id: uuidv4(),
-      policyId,
-      createdAt: new Date().toISOString(),
-    }),
-  );
-
-  const bodySelectors = Array.isArray(body.selectors) ? body.selectors : [];
-  const selectors: WorkspaceEngine["schemas"]["PolicyTargetSelector"][] =
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    bodySelectors.map((selector) => ({
-      ...selector,
-      id: uuidv4(),
-    }));
+  const selectors = Array.isArray(body.selectors) ? body.selectors : [];
 
   const policyIdResult = z.string().uuid().safeParse(policyId);
   if (!policyIdResult.success)
@@ -97,7 +79,7 @@ const upsertPolicy: AsyncTypedHandler<
     priority: body.priority ?? 0,
     enabled: body.enabled ?? true,
     metadata: body.metadata ?? {},
-    rules,
+    rules: body.rules ?? [],
     selectors,
   };
 
@@ -163,6 +145,7 @@ const createPolicy: AsyncTypedHandler<
   });
 
   res.status(202).json(policy);
+  return;
 };
 
 export const policiesRouter = Router({ mergeParams: true })
