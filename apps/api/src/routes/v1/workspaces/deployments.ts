@@ -103,8 +103,6 @@ const postDeployment: AsyncTypedHandler<
     jobAgentConfig: body.jobAgentConfig ?? {},
   };
 
-  console.log(deployment);
-
   const isValid = await validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
