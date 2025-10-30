@@ -5,6 +5,27 @@ local openapi = import '../lib/openapi.libsonnet';
     type: 'string',
     enum: ['unspecified', 'building', 'ready', 'failed', 'rejected'],
   },
+
+  CreateDeploymentVersionRequest: {
+    type: 'object',
+    required: ['name', 'tag', 'status'],
+    properties: {
+      config: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      jobAgentConfig: { type: 'object', additionalProperties: true },
+      status: openapi.schemaRef('DeploymentVersionStatus'),
+      name: { type: 'string' },
+      tag: { type: 'string' },
+      createdAt: { type: 'string', format: 'date-time' },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
+    },
+  },
+
   UpsertDeploymentVersionRequest: {
     type: 'object',
     required: ['tag', 'deploymentId'],

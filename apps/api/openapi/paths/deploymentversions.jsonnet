@@ -15,5 +15,23 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
+    post: {
+      summary: 'Create a deployment version',
+      operationId: 'createDeploymentVersion',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('CreateDeploymentVersionRequest'),
+          },
+        },
+      },
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVersion'))
+                 + openapi.badRequestResponse(),
+    },
   },
 }

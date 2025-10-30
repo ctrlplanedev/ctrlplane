@@ -146,7 +146,8 @@ export interface paths {
         /** List deployment versions */
         get: operations["listDeploymentVersions"];
         put?: never;
-        post?: never;
+        /** Create a deployment version */
+        post: operations["createDeploymentVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -478,6 +479,22 @@ export interface components {
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
             systemId: string;
+        };
+        CreateDeploymentVersionRequest: {
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt?: string;
+            jobAgentConfig?: {
+                [key: string]: unknown;
+            };
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            status: components["schemas"]["DeploymentVersionStatus"];
+            tag: string;
         };
         CreateEnvironmentRequest: {
             description?: string;
@@ -1502,6 +1519,44 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createDeploymentVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDeploymentVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVersion"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

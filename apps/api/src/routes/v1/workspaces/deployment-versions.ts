@@ -6,50 +6,6 @@ import { Router } from "express";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
-// const upsertDeploymentVersion: AsyncTypedHandler<
-//   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-//   "post"
-// > = async (req, res) => {
-//   const { workspaceId, deploymentId } = req.params;
-//   const { body } = req;
-
-//   const version: WorkspaceEngine["schemas"]["DeploymentVersion"] = {
-//     config: body.config ?? {},
-//     jobAgentConfig: body.jobAgentConfig ?? {},
-//     deploymentId,
-//     status: body.status ?? "unspecified",
-//     tag: body.tag,
-//     name: body.name ?? body.tag,
-//     createdAt: new Date().toISOString(),
-//     id: uuidv4(),
-//   };
-
-//   const existingVersion = await getExistingDeploymentVersion(
-//     workspaceId,
-//     deploymentId,
-//     body.tag,
-//   );
-//   if (existingVersion == null) {
-//     sendGoEvent({
-//       workspaceId,
-//       eventType: Event.DeploymentVersionCreated,
-//       timestamp: Date.now(),
-//       data: version,
-//     });
-//     res.status(201).json(version);
-//     return;
-//   }
-
-//   sendGoEvent({
-//     workspaceId,
-//     eventType: Event.DeploymentVersionUpdated,
-//     timestamp: Date.now(),
-//     data: version,
-//   });
-//   res.status(200).json(version);
-//   return;
-// };
-
 const getEnvironmentIds = async (
   workspaceId: string,
   deploymentVersionId: string,

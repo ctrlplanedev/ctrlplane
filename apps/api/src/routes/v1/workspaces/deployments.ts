@@ -177,10 +177,37 @@ const listDeploymentVersions: AsyncTypedHandler<
   res.json(response.data ?? []);
 };
 
+const createDeploymentVersion: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
+  "post"
+> = async (req, res) => {
+  const { workspaceId, deploymentId } = req.params;
+  const { body } = req;
+
+  const data = {
+    ...body,
+    config: body.config ?? {},
+    jobAgentConfig: body.jobAgentConfig ?? {},
+    deploymentId,
+    createdAt: new Date().toISOString(),
+    id: uuidv4(),
+  };
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.DeploymentVersionUpdated,
+    timestamp: Date.now(),
+    data,
+  });
+
+  res.status(200).json(data);
+};
+
 export const deploymentsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listDeployments))
   .post("/", asyncHandler(postDeployment))
   .get("/:deploymentId", asyncHandler(getDeployment))
   .put("/:deploymentId", asyncHandler(upsertDeployment))
   .delete("/:deploymentId", asyncHandler(deleteDeployment))
-  .get("/:deploymentId/versions", asyncHandler(listDeploymentVersions));
+  .get("/:deploymentId/versions", asyncHandler(listDeploymentVersions))
+  .post("/:deploymentId/versions", asyncHandler(createDeploymentVersion));
