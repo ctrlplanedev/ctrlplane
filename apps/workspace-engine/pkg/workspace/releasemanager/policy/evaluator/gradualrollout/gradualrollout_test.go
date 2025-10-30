@@ -155,6 +155,10 @@ func TestGradualRolloutEvaluator_BasicLinearRollout(t *testing.T) {
 	assert.False(t, result1.ActionRequired)
 	assert.Nil(t, result1.ActionType)
 	assert.Equal(t, result1.Message, "Rollout has progressed to this release target")
+	assert.NotNil(t, result1.Details)
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	assert.Equal(t, baseTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
 
 	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
 	if err != nil {
@@ -165,6 +169,10 @@ func TestGradualRolloutEvaluator_BasicLinearRollout(t *testing.T) {
 	assert.False(t, result2.ActionRequired)
 	assert.Nil(t, result2.ActionType)
 	assert.Equal(t, result2.Message, "Rollout has progressed to this release target")
+	assert.NotNil(t, result2.Details)
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result2.Details["rollout_start_time"])
+	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
+	assert.Equal(t, baseTime.Add(60*time.Minute).Format(time.RFC3339), result2.Details["target_rollout_time"])
 
 	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
 	if err != nil {
@@ -175,6 +183,10 @@ func TestGradualRolloutEvaluator_BasicLinearRollout(t *testing.T) {
 	assert.True(t, result3.ActionRequired)
 	assert.Equal(t, *result3.ActionType, oapi.Wait)
 	assert.Equal(t, result3.Message, "Rollout will start at 2025-01-01T02:00:00Z for this release target")
+	assert.NotNil(t, result3.Details)
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result3.Details["rollout_start_time"])
+	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
+	assert.Equal(t, "2025-01-01T02:00:00Z", result3.Details["target_rollout_time"])
 }
 
 func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testing.T) {
@@ -236,6 +248,10 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	assert.False(t, result1.ActionRequired)
 	assert.Nil(t, result1.ActionType)
 	assert.Equal(t, result1.Message, "Rollout has progressed to this release target")
+	assert.NotNil(t, result1.Details)
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	assert.Equal(t, baseTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
 
 	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
 	if err != nil {
@@ -246,6 +262,10 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	assert.False(t, result2.ActionRequired)
 	assert.Nil(t, result2.ActionType)
 	assert.Equal(t, result2.Message, "Rollout has progressed to this release target")
+	assert.NotNil(t, result2.Details)
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result2.Details["rollout_start_time"])
+	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
+	assert.Equal(t, baseTime.Format(time.RFC3339), result2.Details["target_rollout_time"])
 
 	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
 	if err != nil {
@@ -256,6 +276,10 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	assert.False(t, result3.ActionRequired)
 	assert.Nil(t, result3.ActionType)
 	assert.Equal(t, result3.Message, "Rollout has progressed to this release target")
+	assert.NotNil(t, result3.Details)
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result3.Details["rollout_start_time"])
+	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
+	assert.Equal(t, baseTime.Format(time.RFC3339), result3.Details["target_rollout_time"])
 }
 
 func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
@@ -344,6 +368,10 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	assert.True(t, result1.ActionRequired)
 	assert.Equal(t, *result1.ActionType, oapi.Wait)
 	assert.Equal(t, result1.Message, "Rollout has not started yet")
+	assert.NotNil(t, result1.Details)
+	assert.Nil(t, result1.Details["rollout_start_time"])
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	assert.Nil(t, result1.Details["target_rollout_time"])
 
 	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
 	if err != nil {
@@ -354,6 +382,10 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	assert.True(t, result2.ActionRequired)
 	assert.Equal(t, *result2.ActionType, oapi.Wait)
 	assert.Equal(t, result2.Message, "Rollout has not started yet")
+	assert.NotNil(t, result2.Details)
+	assert.Nil(t, result2.Details["rollout_start_time"])
+	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
+	assert.Nil(t, result2.Details["target_rollout_time"])
 
 	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
 	if err != nil {
@@ -364,6 +396,10 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	assert.True(t, result3.ActionRequired)
 	assert.Equal(t, *result3.ActionType, oapi.Wait)
 	assert.Equal(t, result3.Message, "Rollout has not started yet")
+	assert.NotNil(t, result3.Details)
+	assert.Nil(t, result3.Details["rollout_start_time"])
+	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
+	assert.Nil(t, result3.Details["target_rollout_time"])
 }
 
 func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
@@ -470,6 +506,10 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.False(t, result1.ActionRequired)
 	assert.Nil(t, result1.ActionType)
 	assert.Equal(t, result1.Message, "Rollout has progressed to this release target")
+	assert.NotNil(t, result1.Details)
+	assert.Equal(t, oneHourLater.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	assert.Equal(t, oneHourLater.Format(time.RFC3339), result1.Details["target_rollout_time"])
 
 	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
 	if err != nil {
@@ -480,6 +520,10 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.False(t, result2.ActionRequired)
 	assert.Nil(t, result2.ActionType)
 	assert.Equal(t, result2.Message, "Rollout has progressed to this release target")
+	assert.NotNil(t, result2.Details)
+	assert.Equal(t, oneHourLater.Format(time.RFC3339), result2.Details["rollout_start_time"])
+	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
+	assert.Equal(t, twoHoursLater.Format(time.RFC3339), result2.Details["target_rollout_time"])
 
 	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
 	if err != nil {
@@ -490,4 +534,8 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.True(t, result3.ActionRequired)
 	assert.Equal(t, *result3.ActionType, oapi.Wait)
 	assert.Equal(t, result3.Message, "Rollout will start at 2025-01-01T03:00:00Z for this release target")
+	assert.NotNil(t, result3.Details)
+	assert.Equal(t, oneHourLater.Format(time.RFC3339), result3.Details["rollout_start_time"])
+	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
+	assert.Equal(t, "2025-01-01T03:00:00Z", result3.Details["target_rollout_time"])
 }
