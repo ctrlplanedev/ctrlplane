@@ -550,3 +550,141 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 	}
 	assert.Zero(t, prodJobCount, "expected no production jobs (deployment too old)")
 }
+
+// TestEngine_EnvironmentProgression_MultipleVersions tests that jobs from different
+// versions don't interfere with each other's environment progression logic
+func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
+	jobAgentID := "job-agent-1"
+	deploymentID := "deployment-1"
+	stagingEnvID := "env-staging"
+	prodEnvID := "env-prod"
+	resourceID := "resource-1"
+	policyID := "policy-1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api-service"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(stagingEnvID),
+				integration.EnvironmentName("staging"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(prodEnvID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+		),
+		integration.WithPolicy(
+			integration.PolicyID(policyID),
+			integration.PolicyName("production-progression"),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
+			integration.WithPolicyRule(
+				integration.WithRuleEnvironmentProgression(
+					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
+					integration.EnvironmentProgressionMinimumSoakTimeMinutes(5),
+				),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Deploy v1.0.0 and complete it successfully in staging with old completion time
+	version1 := c.NewDeploymentVersion()
+	version1.DeploymentId = deploymentID
+	version1.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version1)
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Get v1.0.0 staging job
+	jobs := engine.Workspace().Jobs().Items()
+	var v1StagingJob *oapi.Job
+	for _, job := range jobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.EnvironmentId == stagingEnvID && release.Version.Tag == "v1.0.0" {
+			v1StagingJob = job
+			break
+		}
+	}
+	assert.NotNil(t, v1StagingJob, "v1.0.0 staging job should exist")
+
+	// Complete v1.0.0 staging job 10 minutes ago (past the soak time)
+	v1CompletedAt := time.Now().Add(-10 * time.Minute)
+	v1StagingJob.Status = oapi.Successful
+	v1StagingJob.CompletedAt = &v1CompletedAt
+	v1StagingJob.UpdatedAt = v1CompletedAt
+	engine.PushEvent(ctx, handler.JobUpdate, v1StagingJob)
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Deploy v2.0.0
+	version2 := c.NewDeploymentVersion()
+	version2.DeploymentId = deploymentID
+	version2.Tag = "v2.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version2)
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Get v2.0.0 staging job
+	jobs = engine.Workspace().Jobs().Items()
+	var v2StagingJob *oapi.Job
+	for _, job := range jobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if ok && release.ReleaseTarget.EnvironmentId == stagingEnvID && release.Version.Tag == "v2.0.0" {
+			v2StagingJob = job
+			break
+		}
+	}
+	assert.NotNil(t, v2StagingJob, "v2.0.0 staging job should exist")
+
+	// Complete v2.0.0 staging job just now (soak time NOT met)
+	v2CompletedAt := time.Now()
+	v2StagingJob.Status = oapi.Successful
+	v2StagingJob.CompletedAt = &v2CompletedAt
+	v2StagingJob.UpdatedAt = v2CompletedAt
+	engine.PushEvent(ctx, handler.JobUpdate, v2StagingJob)
+
+	// Trigger policy re-evaluation
+	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version2)
+	time.Sleep(100 * time.Millisecond)
+
+	// v2.0.0 production job should NOT be created
+	// (even though v1.0.0 has past soak time, v2.0.0's own soak time hasn't elapsed)
+	jobs = engine.Workspace().Jobs().Items()
+	v2ProdJobCount := 0
+	for _, job := range jobs {
+		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
+		if exists && release.ReleaseTarget.EnvironmentId == prodEnvID && release.Version.Tag == "v2.0.0" {
+			v2ProdJobCount++
+		}
+	}
+	assert.Zero(t, v2ProdJobCount, "v2.0.0 production job should not exist (v2.0.0 soak time not met, should not use v1.0.0's completion time)")
+
+	// Verify v1.0.0 production job was created (since its soak time was met)
+	v1ProdJobCount := 0
+	for _, job := range jobs {
+		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
+		if exists && release.ReleaseTarget.EnvironmentId == prodEnvID && release.Version.Tag == "v1.0.0" {
+			v1ProdJobCount++
+		}
+	}
+	assert.NotZero(t, v1ProdJobCount, "v1.0.0 production job should exist (its own soak time was met)")
+}

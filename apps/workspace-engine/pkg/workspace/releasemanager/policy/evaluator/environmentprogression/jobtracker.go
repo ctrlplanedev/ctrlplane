@@ -95,6 +95,9 @@ func (t *ReleaseTargetJobTracker) compute() []*oapi.Job {
 		if release.ReleaseTarget.DeploymentId != t.Version.DeploymentId {
 			continue
 		}
+		if release.Version.Id != t.Version.Id {
+			continue
+		}
 
 		if t.SuccessStatuses[job.Status] {
 			if job.CompletedAt != nil {
