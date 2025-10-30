@@ -41,10 +41,7 @@ export const policiesRouter = router({
         "/v1/workspaces/{workspaceId}/policies/{policyId}",
         {
           params: {
-            path: {
-              workspaceId,
-              policyId,
-            },
+            path: { workspaceId, policyId },
           },
         },
       );

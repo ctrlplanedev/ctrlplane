@@ -245,13 +245,15 @@ export default function Policies() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {policies.map((policy) => (
-                      <PolicyRow
-                        key={policy.id}
-                        policy={policy}
-                        onDelete={() => setPolicyToDelete(policy)}
-                      />
-                    ))}
+                    {policies
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((policy) => (
+                        <PolicyRow
+                          key={policy.id}
+                          policy={policy}
+                          onDelete={() => setPolicyToDelete(policy)}
+                        />
+                      ))}
                   </TableBody>
                 </Table>
               </>
