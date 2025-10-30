@@ -174,6 +174,8 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 		}
 	}
 
+	span.SetAttributes(attribute.Int("matchingPolicies.count", len(matchingPolicies)))
+
 	return matchingPolicies, nil
 }
 
