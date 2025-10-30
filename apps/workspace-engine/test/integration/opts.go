@@ -693,6 +693,17 @@ func WithRuleAnyApproval(minApprovals int32) PolicyRuleOption {
 	}
 }
 
+// ===== GradualRolloutRule Options =====
+
+func WithRuleGradualRollout(timeScaleInterval int32) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.GradualRollout = &oapi.GradualRolloutRule{
+			TimeScaleInterval: timeScaleInterval,
+		}
+		return nil
+	}
+}
+
 // ===== EnvironmentProgressionRule Options =====
 
 type EnvironmentProgressionRuleOption func(*TestWorkspace, *oapi.EnvironmentProgressionRule) error
