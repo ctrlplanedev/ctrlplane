@@ -123,6 +123,8 @@ export const getGradualRolloutWithResult = async (
     version.deploymentId,
   );
 
+  if (releaseTargets.length === 0) return null;
+
   const rolloutInfoPromises = releaseTargets.map((releaseTarget) =>
     getRolloutInfoForReleaseTarget(workspaceId, releaseTarget, version),
   );
@@ -131,8 +133,11 @@ export const getGradualRolloutWithResult = async (
     .filter(isPresent)
     .sort((a, b) => a.rolloutPosition - b.rolloutPosition);
 
+  if (rolloutInfos.length === 0) return null;
+
   return {
     rule: gradualRolloutRule,
+    rolloutStartTime: rolloutInfos[0]!.rolloutStartTime,
     rolloutInfos,
   };
 };
