@@ -366,13 +366,13 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set the resources for a provider */
-        put: operations["setResourceProvidersResources"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Set the resources for a provider */
+        patch: operations["setResourceProvidersResources"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources": {
@@ -2323,6 +2323,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description The ID of the batch to use */
+                    batchId: string;
                     resources: components["schemas"]["ResourceProviderResource"][];
                 };
             };

@@ -54,7 +54,7 @@ const getResourceProviderByName: AsyncTypedHandler<
 
 const setResourceProviderResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set",
-  "put"
+  "patch"
 > = async (req, res) => {
   const { workspaceId, providerId } = req.params;
   const { resources } = req.body;
@@ -107,4 +107,4 @@ const setResourceProviderResources: AsyncTypedHandler<
 export const resourceProvidersRouter = Router({ mergeParams: true })
   .put("/", asyncHandler(upsertResourceProvider))
   .get("/name/:name", asyncHandler(getResourceProviderByName))
-  .put("/:providerId/set", asyncHandler(setResourceProviderResources));
+  .patch("/:providerId/set", asyncHandler(setResourceProviderResources));

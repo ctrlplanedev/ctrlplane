@@ -3492,7 +3492,7 @@
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set": {
-         "put": {
+         "patch": {
             "operationId": "setResourceProvidersResources",
             "parameters": [
                {
@@ -3519,6 +3519,10 @@
                   "application/json": {
                      "schema": {
                         "properties": {
+                           "batchId": {
+                              "description": "The ID of the batch to use",
+                              "type": "string"
+                           },
                            "resources": {
                               "items": {
                                  "$ref": "#/components/schemas/ResourceProviderResource"
@@ -3527,6 +3531,7 @@
                            }
                         },
                         "required": [
+                           "batchId",
                            "resources"
                         ],
                         "type": "object"
