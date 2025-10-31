@@ -2,6 +2,7 @@ package environmentprogression
 
 import (
 	"context"
+	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
@@ -125,8 +126,67 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentage() float32 {
 	if numRt == 0 {
 		return 0.0 // If no targets, consider it 100% successful
 	}
-	return float32(len(t.successfulReleaseTargets)) / float32(numRt) * 100
+	
+	// Build a set of release target keys for filtering
+	rtKeys := make(map[string]bool)
+	for _, rt := range t.ReleaseTargets {
+		rtKeys[rt.Key()] = true
+	}
+	
+	// Count only successful release targets that are in t.ReleaseTargets
+	successfulCount := 0
+	for targetKey := range t.successfulReleaseTargets {
+		if rtKeys[targetKey] {
+			successfulCount++
+		}
+	}
+	
+	return float32(successfulCount) / float32(numRt) * 100
 }
+
+// GetSuccessPercentageSatisfiedAt returns the earliest time at which the minimum success percentage
+// was satisfied. If it has never been satisfied, returns zero time.
+func (t *ReleaseTargetJobTracker) GetSuccessPercentageSatisfiedAt(minimumSuccessPercentage float32) time.Time {
+	if minimumSuccessPercentage <= 0 {
+		minimumSuccessPercentage = 100.0
+	}
+	numRt := len(t.ReleaseTargets)
+	if numRt == 0 {
+		return time.Time{}
+	}
+
+	// Build a set of release target keys for filtering
+	rtKeys := make(map[string]bool)
+	for _, rt := range t.ReleaseTargets {
+		rtKeys[rt.Key()] = true
+	}
+
+	// Collect success times only for release targets that are in t.ReleaseTargets
+	var successTimes []time.Time
+	for targetKey, completedAt := range t.successfulReleaseTargets {
+		if rtKeys[targetKey] {
+			successTimes = append(successTimes, completedAt)
+		}
+	}
+	if len(successTimes) == 0 {
+		return time.Time{}
+	}
+
+	// Sort by time ascending for historical simulation as successes accumulate
+	sort.Slice(successTimes, func(i, j int) bool {
+		return successTimes[i].Before(successTimes[j])
+	})
+
+	required := int(float32(numRt)*minimumSuccessPercentage/100.0 + 0.9999) // ceil
+	if required == 0 {
+		required = 1
+	}
+	if len(successTimes) < required {
+		return time.Time{}
+	}
+	return successTimes[required-1]
+}
+
 
 // MeetsSoakTimeRequirement checks if the latest successful completion across all release targets
 // has soaked for at least the specified duration. Returns true if the soak time requirement is met.
@@ -151,6 +211,23 @@ func (t *ReleaseTargetJobTracker) GetSoakTimeRemaining(duration time.Duration) t
 
 func (t *ReleaseTargetJobTracker) GetMostRecentSuccess() time.Time {
 	return t.mostRecentSuccess
+}
+
+// GetEarliestSuccess returns the earliest successful completion time across all release targets.
+func (t *ReleaseTargetJobTracker) GetEarliestSuccess() time.Time {
+	if len(t.successfulReleaseTargets) == 0 {
+		return time.Time{}
+	}
+	
+	var earliest time.Time
+	first := true
+	for _, completedAt := range t.successfulReleaseTargets {
+		if first || completedAt.Before(earliest) {
+			earliest = completedAt
+			first = false
+		}
+	}
+	return earliest
 }
 
 func (t *ReleaseTargetJobTracker) IsWithinMaxAge(maxAge time.Duration) bool {

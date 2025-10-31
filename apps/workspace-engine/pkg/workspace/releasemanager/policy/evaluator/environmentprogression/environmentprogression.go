@@ -105,8 +105,13 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		WithDetail("dependency_environment_count", len(dependencyEnvs)).
 		WithDetail("version_id", version.Id)
 
+	// Copy satisfiedAt from the dependency check result
+	if result.SatisfiedAt != nil {
+		r = r.WithSatisfiedAt(*result.SatisfiedAt)
+	}
+
 	for key, detail := range result.Details {
-		r.WithDetail(key, detail)
+		r = r.WithDetail(key, detail)
 	}
 	return r
 }
@@ -158,11 +163,37 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	allowedResults := make(map[string]*oapi.RuleEvaluation)
 	failedResults := make(map[string]*oapi.RuleEvaluation)
 
+	// Define success statuses (default to just "successful")
+	successStatuses := map[oapi.JobStatus]bool{
+		oapi.Successful: true,
+	}
+	if e.rule.SuccessStatuses != nil {
+		successStatuses = make(map[oapi.JobStatus]bool)
+		for _, status := range *e.rule.SuccessStatuses {
+			successStatuses[status] = true
+		}
+	}
+
+	// Set up pass rate evaluator
+	var minSuccessPercentage float32 = 0.0 // Default: require at least one successful job (> 0%)
+	if e.rule.MinimumSuccessPercentage != nil {
+		minSuccessPercentage = *e.rule.MinimumSuccessPercentage
+	}
+	passRateEvaluator := NewPassRateEvaluator(e.store, minSuccessPercentage, successStatuses)
+
+	// Set up soak time evaluator
+	var soakTimeEvaluator evaluator.Evaluator
+	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
+		soakTimeEvaluator = NewSoakTimeEvaluator(e.store, *e.rule.MinimumSockTimeMinutes, successStatuses)
+	}
+
 	for _, depEnv := range dependencyEnvs {
 		result := e.evaluateJobSuccessCriteria(
 			ctx,
 			version,
 			depEnv,
+			passRateEvaluator,
+			soakTimeEvaluator,
 		)
 
 		if result.Allowed {
@@ -181,7 +212,13 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			WithDetail("successful_environments", len(allowedResults))
 
 		for envId, allowedResult := range allowedResults {
-			successResult.WithDetail(fmt.Sprintf("environment_%s", envId), allowedResult.Details)
+			successResult = successResult.WithDetail(fmt.Sprintf("environment_%s", envId), allowedResult.Details)
+			// Use the earliest satisfiedAt time from any successful environment
+			if allowedResult.SatisfiedAt != nil {
+				if successResult.SatisfiedAt == nil || allowedResult.SatisfiedAt.Before(*successResult.SatisfiedAt) {
+					successResult = successResult.WithSatisfiedAt(*allowedResult.SatisfiedAt)
+				}
+			}
 		}
 
 		return successResult
@@ -205,26 +242,25 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	return results.NewDeniedResult("No dependency environments found")
 }
 
-// evaluateJobSuccessCriteria evaluates if jobs meet the success criteria
+// evaluateJobSuccessCriteria evaluates if jobs meet the success criteria by combining
+// pass rate and soak time evaluators.
 func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
 	environment *oapi.Environment,
+	passRateEvaluator evaluator.Evaluator,
+	soakTimeEvaluator evaluator.Evaluator,
 ) *oapi.RuleEvaluation {
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
 	defer span.End()
-	// Define success statuses (default to just "successful")
-	successStatuses := map[oapi.JobStatus]bool{
-		oapi.Successful: true,
-	}
-	if e.rule.SuccessStatuses != nil {
-		successStatuses = make(map[oapi.JobStatus]bool)
-		for _, status := range *e.rule.SuccessStatuses {
-			successStatuses[status] = true
-		}
+
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
 	}
 
-	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses)
+	// Check if there are jobs and release targets
+	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, nil)
 	span.SetAttributes(attribute.Int("job_count", len(tracker.Jobs())))
 	span.SetAttributes(attribute.Int("release_target_count", len(tracker.ReleaseTargets)))
 
@@ -236,67 +272,52 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		return results.NewDeniedResult("No release targets found")
 	}
 
-	// Check for at least one successful job (or based on success percentage requirement)
-	successPercentage := tracker.GetSuccessPercentage()
-	span.SetAttributes(attribute.Float64("success_percentage", float64(successPercentage)))
+	passRateResult := passRateEvaluator.Evaluate(ctx, scope)
+	span.SetAttributes(attribute.Bool("pass_rate.allowed", passRateResult.Allowed))
+	if !passRateResult.Allowed {
+		return passRateResult
+	}
 
-	if e.rule.MinimumSuccessPercentage != nil {
-		// Check if success percentage meets the requirement
-		if successPercentage < *e.rule.MinimumSuccessPercentage {
-			message := fmt.Sprintf("Success rate %.1f%% below required %.1f%%", successPercentage, *e.rule.MinimumSuccessPercentage)
-			return results.NewDeniedResult(message).
-				WithDetail("success_percentage", successPercentage).
-				WithDetail("minimum_success_percentage", *e.rule.MinimumSuccessPercentage)
-		}
-	} else {
-		// Default: require at least one successful job (success percentage > 0)
-		if successPercentage == 0 {
-			return results.NewDeniedResult("No successful jobs")
+
+	// Evaluate soak time requirement
+	var soakTimeResult *oapi.RuleEvaluation
+	if soakTimeEvaluator != nil {
+		soakTimeResult = soakTimeEvaluator.Evaluate(ctx, scope)
+		span.SetAttributes(attribute.Bool("soak_time.allowed", soakTimeResult.Allowed))
+		if !soakTimeResult.Allowed {
+			return soakTimeResult
 		}
 	}
 
-	// Check minimum soak time if specified
-	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
-		// Only check soak time if there are successful jobs
-		mostRecentSuccess := tracker.GetMostRecentSuccess()
-		span.SetAttributes(attribute.String("most_recent_success", mostRecentSuccess.Format(
-			time.RFC3339,
-		)))
-		if mostRecentSuccess.IsZero() {
-			return results.NewDeniedResult("No successful jobs for soak time check")
-		}
-
-		soakDuration := time.Duration(*e.rule.MinimumSockTimeMinutes) * time.Minute
-		soakTimeRemaining := tracker.GetSoakTimeRemaining(soakDuration)
-
-		span.SetAttributes(attribute.Float64("soak_time_remaining_minutes", soakTimeRemaining.Minutes()))
-		if soakTimeRemaining > 0 {
-			message := fmt.Sprintf("Soak time required: %d minutes. Time remaining: %s", *e.rule.MinimumSockTimeMinutes, soakTimeRemaining.Round(time.Minute))
-			return results.NewPendingResult(results.ActionTypeWait, message).
-				WithDetail("soak_time_remaining_minutes", int(soakTimeRemaining.Minutes()))
+	// Both requirements met (or only one was required)
+	// Combine results and determine the satisfiedAt time
+	var satisfiedAt *time.Time
+	if passRateResult != nil && passRateResult.SatisfiedAt != nil {
+		satisfiedAt = passRateResult.SatisfiedAt
+	}
+	if soakTimeResult != nil && soakTimeResult.SatisfiedAt != nil {
+		if satisfiedAt == nil || soakTimeResult.SatisfiedAt.After(*satisfiedAt) {
+			// Use the later of the two times (both must be satisfied)
+			satisfiedAt = soakTimeResult.SatisfiedAt
 		}
 	}
 
-	// Check maximum age if specified
-	if e.rule.MaximumAgeHours != nil && *e.rule.MaximumAgeHours > 0 {
-		maxAge := time.Duration(*e.rule.MaximumAgeHours) * time.Hour
+	result := results.NewAllowedResult("Job success criteria met")
+	if satisfiedAt != nil {
+		result = result.WithSatisfiedAt(*satisfiedAt)
+	}
 
-		latestSuccessTime := tracker.GetMostRecentSuccess()
-		if latestSuccessTime.IsZero() {
-			return results.NewDeniedResult("No successful jobs").
-				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours)
+	// Merge details from both evaluators
+	if passRateResult != nil {
+		for key, value := range passRateResult.Details {
+			result = result.WithDetail(key, value)
 		}
-
-		if !tracker.IsWithinMaxAge(maxAge) {
-			message := fmt.Sprintf(
-				"Deployment too old: %s (max: %d hours)", latestSuccessTime.Sub(latestSuccessTime).Round(time.Hour),
-				*e.rule.MaximumAgeHours,
-			)
-			return results.NewDeniedResult(message).
-				WithDetail("latest_success_time", latestSuccessTime.Format(time.RFC3339)).
-				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours)
+	}
+	if soakTimeResult != nil {
+		for key, value := range soakTimeResult.Details {
+			result = result.WithDetail(key, value)
 		}
 	}
 
-	return results.NewAllowedResult("Job success criteria met")
+	return result
 }

@@ -817,3 +817,405 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 	percentage := tracker.GetSuccessPercentage()
 	assert.Equal(t, float32(100.0), percentage, "expected 100%% success (1 target with successful jobs)")
 }
+
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testing.T) {
+	st := setupTestStoreForJobTracker()
+	ctx := context.Background()
+
+	env, _ := st.Environments.Get("env-1")
+	version, _ := st.DeploymentVersions.Get("version-1")
+
+	// Create 3 release targets
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+
+	// Create releases
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *rt3,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+	st.Releases.Upsert(ctx, release2)
+	st.Releases.Upsert(ctx, release3)
+
+	// Create successful jobs with specific timestamps
+	// Job 1 completes first (pass rate 33%)
+	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	// Job 2 completes second (pass rate 66% - meets 50% requirement)
+	// This should be the satisfiedAt timestamp for 50% requirement
+	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		ReleaseId:      release2.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job2)
+
+	// Job 3 completes third (pass rate 100%)
+	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
+	job3 := &oapi.Job{
+		Id:             "job-3",
+		ReleaseId:      release3.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
+		UpdatedAt:      completedAt3,
+		CompletedAt:    &completedAt3,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job3)
+
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
+
+	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
+	// Should return the timestamp of the 2nd success (completedAt2)
+	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
+	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 50%% requirement")
+	assert.Equal(t, completedAt2, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd successful job")
+
+	// Test 100% requirement: need 3 successes (ceil(3 * 1.0) = 3)
+	// Should return the timestamp of the 3rd success (completedAt3)
+	satisfiedAt100 := tracker.GetSuccessPercentageSatisfiedAt(100.0)
+	assert.False(t, satisfiedAt100.IsZero(), "expected non-zero satisfiedAt for 100%% requirement")
+	assert.Equal(t, completedAt3, satisfiedAt100, "expected satisfiedAt to be the timestamp of the 3rd successful job")
+
+	// Test 67% requirement: need 2 successes (ceil(3 * 0.67) = 3, wait no ceil(3 * 0.67) = ceil(2.01) = 3)
+	// Actually, let me recalculate: 3 * 0.67 = 2.01, ceil(2.01) = 3
+	// So need 3 successes, should return completedAt3
+	satisfiedAt67 := tracker.GetSuccessPercentageSatisfiedAt(67.0)
+	assert.False(t, satisfiedAt67.IsZero(), "expected non-zero satisfiedAt for 67%% requirement")
+	assert.Equal(t, completedAt3, satisfiedAt67, "expected satisfiedAt to be the timestamp of the 3rd successful job for 67%% requirement")
+}
+
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSuccesses(t *testing.T) {
+	st := setupTestStoreForJobTracker()
+	ctx := context.Background()
+
+	env, _ := st.Environments.Get("env-1")
+	version, _ := st.DeploymentVersions.Get("version-1")
+
+	// Create 3 release targets
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+
+	// Create releases
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+	st.Releases.Upsert(ctx, release2)
+
+	// Create successful job for only one release target
+	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
+
+	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
+	// Only have 1 success, so should return zero time
+	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
+	assert.True(t, satisfiedAt.IsZero(), "expected zero satisfiedAt when requirement not met")
+
+	// Test 100% requirement: need 3 successes
+	// Only have 1 success, so should return zero time
+	satisfiedAt100 := tracker.GetSuccessPercentageSatisfiedAt(100.0)
+	assert.True(t, satisfiedAt100.IsZero(), "expected zero satisfiedAt for 100%% requirement when not met")
+}
+
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoReleaseTargets(t *testing.T) {
+	st := setupTestStoreForJobTracker()
+	ctx := context.Background()
+
+	env, _ := st.Environments.Get("env-1")
+	version, _ := st.DeploymentVersions.Get("version-1")
+
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker.ReleaseTargets = []*oapi.ReleaseTarget{}
+
+	// With no release targets, should return zero time
+	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
+	assert.True(t, satisfiedAt.IsZero(), "expected zero satisfiedAt with no release targets")
+}
+
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NoSuccessfulJobs(t *testing.T) {
+	st := setupTestStoreForJobTracker()
+	ctx := context.Background()
+
+	env, _ := st.Environments.Get("env-1")
+	version, _ := st.DeploymentVersions.Get("version-1")
+
+	// Create 2 release targets
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
+
+	// With no successful jobs, should return zero time
+	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
+	assert.True(t, satisfiedAt.IsZero(), "expected zero satisfiedAt with no successful jobs")
+}
+
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPercentage(t *testing.T) {
+	st := setupTestStoreForJobTracker()
+	ctx := context.Background()
+
+	env, _ := st.Environments.Get("env-1")
+	version, _ := st.DeploymentVersions.Get("version-1")
+
+	// Create 2 release targets
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+
+	// Create releases
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+	st.Releases.Upsert(ctx, release2)
+
+	// Create successful jobs
+	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		ReleaseId:      release2.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+	st.Jobs.Upsert(ctx, job2)
+
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2}
+
+	// With zero or negative minimum percentage, should default to 100%
+	// Need 2 successes (ceil(2 * 1.0) = 2)
+	// Should return the timestamp of the 2nd success (completedAt2)
+	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(0.0)
+	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 0%% requirement (defaults to 100%%)")
+	assert.Equal(t, completedAt2, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement")
+
+	satisfiedAtNeg := tracker.GetSuccessPercentageSatisfiedAt(-10.0)
+	assert.False(t, satisfiedAtNeg.IsZero(), "expected non-zero satisfiedAt for negative requirement (defaults to 100%%)")
+	assert.Equal(t, completedAt2, satisfiedAtNeg, "expected satisfiedAt to be the timestamp of the 2nd successful job for 100%% requirement")
+}
+
+func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompletions(t *testing.T) {
+	st := setupTestStoreForJobTracker()
+	ctx := context.Background()
+
+	env, _ := st.Environments.Get("env-1")
+	version, _ := st.DeploymentVersions.Get("version-1")
+
+	// Create 3 release targets
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+	rt3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deploy-1",
+	}
+
+	// Create releases
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *rt2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *rt3,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+	st.Releases.Upsert(ctx, release2)
+	st.Releases.Upsert(ctx, release3)
+
+	// Create successful jobs with out-of-order completion times
+	// Job 2 completes first (10:05)
+	completedAt2 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		ReleaseId:      release2.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job2)
+
+	// Job 1 completes second (10:10)
+	completedAt1 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	// Job 3 completes third (10:15)
+	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
+	job3 := &oapi.Job{
+		Id:             "job-3",
+		ReleaseId:      release3.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
+		UpdatedAt:      completedAt3,
+		CompletedAt:    &completedAt3,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job3)
+
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	tracker.ReleaseTargets = []*oapi.ReleaseTarget{rt1, rt2, rt3}
+
+	// Test 50% requirement: need 2 successes (ceil(3 * 0.5) = 2)
+	// Successes in order: completedAt2 (10:05), completedAt1 (10:10), completedAt3 (10:15)
+	// After sorting: [10:05, 10:10, 10:15]
+	// The 2nd success (index 1) is completedAt1 (10:10)
+	satisfiedAt := tracker.GetSuccessPercentageSatisfiedAt(50.0)
+	assert.False(t, satisfiedAt.IsZero(), "expected non-zero satisfiedAt for 50%% requirement")
+	assert.Equal(t, completedAt1, satisfiedAt, "expected satisfiedAt to be the timestamp of the 2nd success chronologically (completedAt1)")
+}

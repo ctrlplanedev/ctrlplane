@@ -329,3 +329,599 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	assert.False(t, result.Allowed, "expected not allowed (no matching environments)")
 	assert.False(t, result.ActionRequired, "expected denied, not action required")
 }
+
+func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) {
+	// Test that satisfiedAt is set correctly when only pass rate is required
+	st := setupTestStore()
+	ctx := context.Background()
+
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	// Create release targets for staging
+	stagingReleaseTarget1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	stagingReleaseTarget2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	stagingReleaseTarget3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+
+	// Create releases
+	release1 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget3,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+	st.Releases.Upsert(ctx, release2)
+	st.Releases.Upsert(ctx, release3)
+
+	// Create resources for release targets
+	resource2 := &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	resource3 := &oapi.Resource{
+		Id:          "resource-3",
+		Identifier:  "test-resource-3",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	st.Resources.Upsert(ctx, resource2)
+	st.Resources.Upsert(ctx, resource3)
+	// ReleaseTargets are computed automatically from resources and deployments
+	// Call Items() to ensure ReleaseTargets are computed and available
+	_, err := st.ReleaseTargets.Items(ctx)
+	require.NoError(t, err, "failed to get release targets")
+
+	// Create successful jobs with specific timestamps
+	// Job 1 completes first (pass rate 33%)
+	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	// Job 2 completes second (pass rate 66% - meets 50% requirement)
+	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC) // This should be the satisfiedAt
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		ReleaseId:      release2.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job2)
+
+	// Job 3 completes third (pass rate 100%)
+	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
+	job3 := &oapi.Job{
+		Id:             "job-3",
+		ReleaseId:      release3.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
+		UpdatedAt:      completedAt3,
+		CompletedAt:    &completedAt3,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job3)
+
+	// Create selector and rule with 50% pass rate requirement (no soak time)
+	selector := oapi.Selector{}
+	err = selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(50.0)
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+			MinimumSuccessPercentage:     &minSuccessPercentage,
+		},
+	}
+
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
+	prodEnv, _ := st.Environments.Get("env-prod")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, completedAt2, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 2nd successful job (when 50% requirement was met)")
+}
+
+func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) {
+	// Test that satisfiedAt is set correctly when only soak time is required
+	st := setupTestStore()
+	ctx := context.Background()
+
+	versionCreatedAt := time.Now().Add(-2 * time.Hour)
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	stagingReleaseTarget := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+
+	stagingRelease := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, stagingRelease)
+
+	// Create a successful job that completed 40 minutes ago
+	// With 30 minute soak time requirement, it should be satisfied
+	soakMinutes := int32(30)
+	mostRecentSuccess := time.Now().Add(-40 * time.Minute) // 40 minutes ago
+	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute) // mostRecentSuccess + soakDuration
+
+	completedAt := mostRecentSuccess
+	job := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      stagingRelease.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job)
+
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+			MinimumSockTimeMinutes:       &soakMinutes,
+		},
+	}
+
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
+	prodEnv, _ := st.Environments.Get("env-prod")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed (soak time satisfied)")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
+}
+
+func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *testing.T) {
+	// Test that satisfiedAt is set to the later of the two times when both requirements are specified
+	st := setupTestStore()
+	ctx := context.Background()
+
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	// Create 2 release targets
+	stagingReleaseTarget1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	stagingReleaseTarget2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+	st.Releases.Upsert(ctx, release2)
+
+	resource2 := &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	st.Resources.Upsert(ctx, resource2)
+	// ReleaseTargets are computed automatically from resources and deployments
+
+	// Job 1 completes first (pass rate 50% - meets requirement)
+	passRateSatisfiedAt := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
+	completedAt1 := passRateSatisfiedAt
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	// Job 2 completes later (pass rate 100%, most recent success)
+	mostRecentSuccess := time.Date(2024, 1, 1, 10, 20, 0, 0, time.UTC)
+	completedAt2 := mostRecentSuccess
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		ReleaseId:      release2.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job2)
+
+	// Soak time requirement: 30 minutes
+	// Soak time satisfied at: mostRecentSuccess + 30 minutes = 10:50
+	soakMinutes := int32(30)
+	soakTimeSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
+	// Pass rate satisfied at: 10:10
+	// Soak time satisfied at: 10:50
+	// Expected satisfiedAt: 10:50 (the later of the two)
+
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(50.0)
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+			MinimumSuccessPercentage:     &minSuccessPercentage,
+			MinimumSockTimeMinutes:        &soakMinutes,
+		},
+	}
+
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
+	prodEnv, _ := st.Environments.Get("env-prod")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed (both requirements satisfied)")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, soakTimeSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be the later of pass rate and soak time satisfaction times")
+}
+
+func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *testing.T) {
+	// Test when pass rate is satisfied later than soak time
+	st := setupTestStore()
+	ctx := context.Background()
+
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	// Create 3 release targets (need 2 for 67% requirement)
+	stagingReleaseTarget1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	stagingReleaseTarget2 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-2",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	stagingReleaseTarget3 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-3",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release2 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget2,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	release3 := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget3,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+	st.Releases.Upsert(ctx, release2)
+	st.Releases.Upsert(ctx, release3)
+
+	resource2 := &oapi.Resource{
+		Id:          "resource-2",
+		Identifier:  "test-resource-2",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	resource3 := &oapi.Resource{
+		Id:          "resource-3",
+		Identifier:  "test-resource-3",
+		Kind:        "service",
+		WorkspaceId: "workspace-1",
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		CreatedAt:   time.Now(),
+	}
+	st.Resources.Upsert(ctx, resource2)
+	st.Resources.Upsert(ctx, resource3)
+	// ReleaseTargets are computed automatically from resources and deployments
+	// Call Items() to ensure ReleaseTargets are computed and available
+	_, err := st.ReleaseTargets.Items(ctx)
+	require.NoError(t, err, "failed to get release targets")
+
+	// Job 1 completes early (most recent success for soak time)
+	// Use relative time so soak time calculation works correctly
+	mostRecentSuccess := time.Now().Add(-30 * time.Minute) // 30 minutes ago, satisfies 15-minute soak time
+	completedAt1 := mostRecentSuccess
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Now().Add(-35 * time.Minute),
+		UpdatedAt:      completedAt1,
+		CompletedAt:    &completedAt1,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	// Job 2 completes second (pass rate 66.67% - doesn't meet 67% requirement yet)
+	completedAt2 := time.Now().Add(-18 * time.Minute) // Completes before job3
+	job2 := &oapi.Job{
+		Id:             "job-2",
+		ReleaseId:      release2.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Now().Add(-20 * time.Minute),
+		UpdatedAt:      completedAt2,
+		CompletedAt:    &completedAt2,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job2)
+
+	// Job 3 completes third (pass rate 100% - meets 67% requirement)
+	// Need 3 successes for 67% requirement (ceil(3 * 0.67) = 3), so pass rate satisfied at: when 3rd job completes
+	// Make job3 complete at least 15 minutes ago so soak time requirement is satisfied
+	passRateSatisfiedAt := time.Now().Add(-20 * time.Minute) // Completes last, satisfying 67% requirement AND soak time (20 > 15)
+	completedAt3 := passRateSatisfiedAt
+	job3 := &oapi.Job{
+		Id:             "job-3",
+		ReleaseId:      release3.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Now().Add(-22 * time.Minute),
+		UpdatedAt:      completedAt3,
+		CompletedAt:    &completedAt3,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job3)
+
+	// Soak time requirement: 15 minutes
+	// mostRecentSuccess = completedAt3 (20 minutes ago)
+	// Soak time satisfied at: 20 minutes ago + 15 minutes = 5 minutes ago
+	// Pass rate satisfied at: 20 minutes ago (when 3rd job completed, meeting 67% requirement)
+	// Soak time satisfied at: 5 minutes ago
+	// Expected satisfiedAt: 5 minutes ago (the later of the two - soak time)
+	soakMinutes := int32(15)
+
+	selector := oapi.Selector{}
+	err = selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(67.0)
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+			MinimumSuccessPercentage:     &minSuccessPercentage,
+			MinimumSockTimeMinutes:        &soakMinutes,
+		},
+	}
+
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
+	prodEnv, _ := st.Environments.Get("env-prod")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed (both requirements satisfied)")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	// Soak time satisfied at: mostRecentSuccess + 15 minutes
+	// The actual result should be approximately: (now - 20 min) + 15 min = now - 5 min
+	// Use InDelta with a large tolerance to account for timing differences between job creation and evaluation
+	expectedSatisfiedAt := time.Now().Add(-5 * time.Minute)
+	assert.InDelta(t, expectedSatisfiedAt.Unix(), result.SatisfiedAt.Unix(), 150, "satisfiedAt should be approximately 5 minutes ago (within 2.5 minutes)")
+}
+
+func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
+	// Test that satisfiedAt is nil when requirements are not met
+	st := setupTestStore()
+	ctx := context.Background()
+
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	stagingReleaseTarget := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+
+	stagingRelease := &oapi.Release{
+		ReleaseTarget: *stagingReleaseTarget,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, stagingRelease)
+
+	// Create a successful job that completed very recently (soak time not met)
+	completedAt := time.Now().Add(-2 * time.Minute)
+	job := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      stagingRelease.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      time.Now().Add(-5 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job)
+
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	soakMinutes := int32(30)
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+			MinimumSockTimeMinutes:        &soakMinutes,
+		},
+	}
+
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
+	prodEnv, _ := st.Environments.Get("env-prod")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.False(t, result.Allowed, "expected not allowed (soak time not satisfied)")
+	assert.Nil(t, result.SatisfiedAt, "satisfiedAt should be nil when requirements are not satisfied")
+}
