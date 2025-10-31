@@ -3492,6 +3492,64 @@
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set": {
+         "patch": {
+            "operationId": "setResourceProvidersResourcesPatch",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the resource provider",
+                  "in": "path",
+                  "name": "providerId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "resources": {
+                              "items": {
+                                 "$ref": "#/components/schemas/ResourceProviderResource"
+                              },
+                              "type": "array"
+                           }
+                        },
+                        "required": [
+                           "resources"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": { },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Set the resources for a provider"
+         },
          "put": {
             "operationId": "setResourceProvidersResources",
             "parameters": [
@@ -3519,10 +3577,6 @@
                   "application/json": {
                      "schema": {
                         "properties": {
-                           "batchId": {
-                              "description": "The ID of the batch to use",
-                              "type": "string"
-                           },
                            "resources": {
                               "items": {
                                  "$ref": "#/components/schemas/ResourceProviderResource"
@@ -3531,7 +3585,6 @@
                            }
                         },
                         "required": [
-                           "batchId",
                            "resources"
                         ],
                         "type": "object"

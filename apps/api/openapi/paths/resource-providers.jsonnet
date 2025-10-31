@@ -33,6 +33,36 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
   '/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set': {
+    // Adding patch for backwards compatibility with existing code. Should be remove after 30 days.
+    patch: {
+      summary: 'Set the resources for a provider',
+      operationId: 'setResourceProvidersResourcesPatch',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.providerIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['resources'],
+              properties: {
+                resources: {
+                  type: 'array',
+                  items: openapi.schemaRef('ResourceProviderResource'),
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: openapi.acceptedResponse(
+        { type: 'object', properties: {} },
+      ),
+    },
+  
     put: {
       summary: 'Set the resources for a provider',
       operationId: 'setResourceProvidersResources',
@@ -46,12 +76,8 @@ local openapi = import '../lib/openapi.libsonnet';
           'application/json': {
             schema: {
               type: 'object',
-              required: ['batchId', 'resources'],
+              required: ['resources'],
               properties: {
-                batchId: {
-                  type: 'string',
-                  description: 'The ID of the batch to use',
-                },
                 resources: {
                   type: 'array',
                   items: openapi.schemaRef('ResourceProviderResource'),

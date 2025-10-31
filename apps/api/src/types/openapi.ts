@@ -372,7 +372,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Set the resources for a provider */
+        patch: operations["setResourceProvidersResourcesPatch"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources": {
@@ -2323,8 +2324,37 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** @description The ID of the batch to use */
-                    batchId: string;
+                    resources: components["schemas"]["ResourceProviderResource"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    setResourceProvidersResourcesPatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the resource provider */
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
                     resources: components["schemas"]["ResourceProviderResource"][];
                 };
             };
