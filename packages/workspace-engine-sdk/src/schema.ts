@@ -1157,6 +1157,11 @@ export interface components {
       message: string;
       /** @description The ID of the rule that was evaluated */
       ruleId: string;
+      /**
+       * Format: date-time
+       * @description The time when the rule requirement was satisfied (e.g., when approvals were met, soak time completed)
+       */
+      satisfiedAt?: string;
     };
     Selector:
       | components["schemas"]["JsonSelector"]
