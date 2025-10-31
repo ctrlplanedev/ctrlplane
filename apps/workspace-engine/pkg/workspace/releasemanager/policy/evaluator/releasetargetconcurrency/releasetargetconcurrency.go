@@ -9,27 +9,24 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ evaluator.Evaluator = &ReleaseTargetConcurrencyEvaluator{}
+var _ evaluator.JobEvaluator = &ReleaseTargetConcurrencyEvaluator{}
 
 type ReleaseTargetConcurrencyEvaluator struct {
 	store *store.Store
 }
 
-func NewReleaseTargetConcurrencyEvaluator(store *store.Store) evaluator.Evaluator {
-	return evaluator.WithMemoization(&ReleaseTargetConcurrencyEvaluator{store: store})
+func NewReleaseTargetConcurrencyEvaluator(store *store.Store) evaluator.JobEvaluator {
+	return &ReleaseTargetConcurrencyEvaluator{store: store}
 }
 
 func (e *ReleaseTargetConcurrencyEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeReleaseTarget
 }
 
-func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
-	releaseTarget := scope.ReleaseTarget
-	if releaseTarget == nil {
-		return results.NewDeniedResult("Release target is required, but was missing from the scope")
-	}
+func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(ctx context.Context, release *oapi.Release) *oapi.RuleEvaluation {
+	releaseTarget := release.ReleaseTarget
 
-	processingJobs := e.store.Jobs.GetJobsInProcessingStateForReleaseTarget(releaseTarget)
+	processingJobs := e.store.Jobs.GetJobsInProcessingStateForReleaseTarget(&releaseTarget)
 	if len(processingJobs) != 0 {
 		res := results.NewDeniedResult("Release target has an active job").WithDetail("release_target", releaseTarget.Key())
 		for _, job := range processingJobs {
