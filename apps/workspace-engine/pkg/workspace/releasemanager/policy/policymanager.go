@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/pausedversions"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 
@@ -49,7 +48,6 @@ func (m *Manager) GlobalEvaluators() []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
 		pausedversions.New(m.store),
 		deployableversions.NewDeployableVersionStatusEvaluator(m.store),
-		releasetargetconcurrency.NewReleaseTargetConcurrencyEvaluator(m.store),
 	)
 }
 
