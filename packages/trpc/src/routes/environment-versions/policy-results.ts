@@ -7,6 +7,7 @@ import { protectedProcedure } from "../../trpc.js";
 import { getApprovalRuleWithResult } from "./approval-decision.js";
 import { getEnvironmentProgressionRuleWithResult } from "./environment-progression-decision.js";
 import { getGradualRolloutWithResult } from "./gradual-rollout.js";
+import { getReleaseTargetsWithEval } from "./util.js";
 
 export const getDeploymentVersion = async (
   workspaceId: string,
@@ -81,10 +82,14 @@ export const policyResults = protectedProcedure
     );
 
     const approvalRuleWithResult = getApprovalRuleWithResult(policyResults);
-    const gradualRolloutWithResult = await getGradualRolloutWithResult(
+
+    const releaseTargetsWithEval = await getReleaseTargetsWithEval(
       workspaceId,
       environmentId,
       version,
+    );
+    const gradualRolloutWithResult = await getGradualRolloutWithResult(
+      releaseTargetsWithEval,
       policyResults,
     );
     const environmentProgressionRuleWithResult =

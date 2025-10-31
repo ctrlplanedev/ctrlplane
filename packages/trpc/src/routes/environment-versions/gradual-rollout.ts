@@ -1,12 +1,10 @@
 import { isPresent } from "ts-is-present";
 
-import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
-
 import type {
-  DeploymentVersion,
   PolicyEvaluation,
   PolicyResults,
-  ReleaseTarget,
+  ReleaseTargetEvaluation,
+  ReleaseTargetWithEval,
 } from "./types.js";
 
 const getGradualRolloutRule = (policyEvaluations: PolicyEvaluation[]) => {
@@ -22,44 +20,6 @@ const getGradualRolloutRule = (policyEvaluations: PolicyEvaluation[]) => {
   return null;
 };
 
-const getAllReleaseTargets = async (
-  workspaceId: string,
-  environmentId: string,
-  deploymentId: string,
-) => {
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/environments/{environmentId}/release-targets",
-    { params: { path: { workspaceId, environmentId } } },
-  );
-  if (response.error != null) throw new Error(response.error.error);
-
-  const envTargets = response.data.items;
-  return envTargets.filter((target) => target.deployment.id === deploymentId);
-};
-
-const getReleaseTargetEvaluation = async (
-  workspaceId: string,
-  releaseTarget: ReleaseTarget,
-  version: DeploymentVersion,
-) => {
-  const response = await getClientFor(workspaceId).POST(
-    "/v1/workspaces/{workspaceId}/release-targets/evaluate",
-    {
-      params: { path: { workspaceId } },
-      body: {
-        releaseTarget: {
-          deploymentId: releaseTarget.deployment.id,
-          environmentId: releaseTarget.environment.id,
-          resourceId: releaseTarget.resource.id,
-        },
-        version,
-      },
-    },
-  );
-  if (response.error != null) throw new Error(response.error.error);
-  return response.data;
-};
-
 const getRolloutStartTime = (details: Record<string, unknown>) =>
   details.rollout_start_time != null
     ? new Date(details.rollout_start_time as string)
@@ -73,16 +33,9 @@ const getRolloutTime = (details: Record<string, unknown>) =>
     ? new Date(details.target_rollout_time as string)
     : null;
 
-const getRolloutInfoForReleaseTarget = async (
-  workspaceId: string,
-  releaseTarget: ReleaseTarget,
-  version: DeploymentVersion,
+const getRolloutInfoForReleaseTarget = (
+  evaluation: ReleaseTargetEvaluation,
 ) => {
-  const evaluation = await getReleaseTargetEvaluation(
-    workspaceId,
-    releaseTarget,
-    version,
-  );
   const policyResults = evaluation.decision?.policyResults;
   if (policyResults == null) return null;
 
@@ -105,9 +58,7 @@ const getRolloutInfoForReleaseTarget = async (
 };
 
 export const getGradualRolloutWithResult = async (
-  workspaceId: string,
-  environmentId: string,
-  version: DeploymentVersion,
+  releaseTargetsWithEval: ReleaseTargetWithEval[],
   policyResults?: PolicyResults,
 ) => {
   const decision = policyResults?.decision;
@@ -115,16 +66,10 @@ export const getGradualRolloutWithResult = async (
   const gradualRolloutRule = getGradualRolloutRule(decision.policyResults);
   if (gradualRolloutRule == null) return null;
 
-  const releaseTargets = await getAllReleaseTargets(
-    workspaceId,
-    environmentId,
-    version.deploymentId,
-  );
+  if (releaseTargetsWithEval.length === 0) return null;
 
-  if (releaseTargets.length === 0) return null;
-
-  const rolloutInfoPromises = releaseTargets.map((releaseTarget) =>
-    getRolloutInfoForReleaseTarget(workspaceId, releaseTarget, version),
+  const rolloutInfoPromises = releaseTargetsWithEval.map(({ evaluation }) =>
+    getRolloutInfoForReleaseTarget(evaluation),
   );
   const rolloutInfoResults = await Promise.all(rolloutInfoPromises);
   const rolloutInfos = rolloutInfoResults
