@@ -622,3 +622,74 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
 	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be based on creation time order, not insertion order")
 }
+
+// TestAnyApprovalEvaluator_AlreadyDeployed tests that if a version has already been deployed
+// to an environment, it should be allowed without requiring new approvals.
+func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
+	ctx := context.Background()
+	versionId := "version-1"
+	environmentId := "env-1"
+	
+	// Setup store with no approvals (should normally fail)
+	st := setupStore(versionId, environmentId, []string{})
+	
+	// Create a deployment
+	jobAgentId := "agent-1"
+	deployment := &oapi.Deployment{
+		Id:         "deploy-1",
+		Name:       "my-app",
+		SystemId:   "system-1",
+		JobAgentId: &jobAgentId,
+	}
+	st.Deployments.Upsert(ctx, deployment)
+	
+	// Create version
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:           versionId,
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+	
+	// Create a release target
+	rt := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: environmentId,
+		DeploymentId:  "deploy-1",
+	}
+	
+	// Create a release showing this version was already deployed to this environment
+	release := &oapi.Release{
+		ReleaseTarget: *rt,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release)
+	
+	// Rule requires 2 approvals, but we have none
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+	require.NotNil(t, eval, "evaluator should not be nil")
+	
+	environment, _ := st.Environments.Get(environmentId)
+	
+	// Act
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+	
+	// Assert: Should be allowed because version was already deployed to this environment
+	assert.True(t, result.Allowed, "expected allowed because version already deployed to this environment")
+	assert.Contains(t, result.Message, "already deployed")
+	assert.Equal(t, versionId, result.Details["version_id"])
+	assert.Equal(t, environmentId, result.Details["environment_id"])
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, versionCreatedAt, *result.SatisfiedAt, "satisfiedAt should be version creation time")
+}
