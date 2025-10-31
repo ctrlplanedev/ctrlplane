@@ -5,7 +5,11 @@ import (
 	"testing"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // setupStore creates a test store with approval records and a test environment.
@@ -40,36 +44,27 @@ func TestAnyApprovalEvaluator_EnoughApprovals(t *testing.T) {
 	environmentId := "env-1"
 	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3"})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+	require.NotNil(t, eval, "evaluator should not be nil")
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), environment, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !result.Allowed {
-		t.Errorf("expected allowed, got denied: %s", result.Message)
-	}
-
-	if result.Details["min_approvals"] != 2 {
-		t.Errorf("expected min_approvals=2, got %v", result.Details["min_approvals"])
-	}
+	assert.True(t, result.Allowed, "expected allowed, got denied: %s", result.Message)
+	assert.Equal(t, 2, result.Details["min_approvals"], "expected min_approvals=2")
 
 	approvers, ok := result.Details["approvers"].([]string)
-	if !ok {
-		t.Fatal("expected approvers to be []string")
-	}
-
-	if len(approvers) != 3 {
-		t.Errorf("expected 3 approvers, got %d", len(approvers))
-	}
+	require.True(t, ok, "expected approvers to be []string")
+	assert.Len(t, approvers, 3, "expected 3 approvers")
 }
 
 func TestAnyApprovalEvaluator_NotEnoughApprovals(t *testing.T) {
@@ -78,36 +73,26 @@ func TestAnyApprovalEvaluator_NotEnoughApprovals(t *testing.T) {
 	environmentId := "env-1"
 	st := setupStore(versionId, environmentId, []string{"user-1"})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 3}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 3}}
+	eval := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), environment, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.Allowed {
-		t.Errorf("expected denied, got allowed: %s", result.Message)
-	}
-
-	if result.Details["min_approvals"] != 3 {
-		t.Errorf("expected min_approvals=3, got %v", result.Details["min_approvals"])
-	}
+	assert.False(t, result.Allowed, "expected denied, got allowed: %s", result.Message)
+	assert.Equal(t, 3, result.Details["min_approvals"], "expected min_approvals=3")
 
 	approvers, ok := result.Details["approvers"].([]string)
-	if !ok {
-		t.Fatal("expected approvers to be []string")
-	}
-
-	if len(approvers) != 1 {
-		t.Errorf("expected 1 approver, got %d", len(approvers))
-	}
+	require.True(t, ok, "expected approvers to be []string")
+	assert.Len(t, approvers, 1, "expected 1 approver")
 }
 
 func TestAnyApprovalEvaluator_ExactlyMinApprovals(t *testing.T) {
@@ -116,28 +101,25 @@ func TestAnyApprovalEvaluator_ExactlyMinApprovals(t *testing.T) {
 	environmentId := "env-1"
 	st := setupStore(versionId, environmentId, []string{"user-1", "user-2"})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), environment, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !result.Allowed {
-		t.Errorf("expected allowed when approvals exactly meet minimum, got denied: %s", result.Message)
-	}
+	assert.True(t, result.Allowed, "expected allowed when approvals exactly meet minimum")
 
 	approvers, ok := result.Details["approvers"].([]string)
-	if !ok || len(approvers) != 2 {
-		t.Errorf("expected 2 approvers, got %d", len(approvers))
-	}
+	require.True(t, ok, "expected approvers to be []string")
+	assert.Len(t, approvers, 2, "expected 2 approvers")
 }
 
 func TestAnyApprovalEvaluator_NoApprovalsRequired(t *testing.T) {
@@ -146,27 +128,22 @@ func TestAnyApprovalEvaluator_NoApprovalsRequired(t *testing.T) {
 	environmentId := "env-1"
 	st := setupStore(versionId, environmentId, []string{})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 0}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 0}}
+	eval := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), environment, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !result.Allowed {
-		t.Errorf("expected allowed when no approvals required, got denied: %s", result.Message)
-	}
-
-	if result.Message != "No approvals required" {
-		t.Errorf("expected reason 'No approvals required', got '%s'", result.Message)
-	}
+	assert.True(t, result.Allowed, "expected allowed when no approvals required")
+	assert.Equal(t, "No approvals required", result.Message)
 }
 
 func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
@@ -175,32 +152,25 @@ func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
 	environmentId := "env-1"
 	st := setupStore(versionId, environmentId, []string{})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
+	eval := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), environment, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.Allowed {
-		t.Errorf("expected denied when no approvals given, got allowed: %s", result.Message)
-	}
+	assert.False(t, result.Allowed, "expected denied when no approvals given")
 
 	approvers, ok := result.Details["approvers"].([]string)
-	if !ok {
-		t.Fatal("expected approvers to be []string")
-	}
-
-	if len(approvers) != 0 {
-		t.Errorf("expected 0 approvers, got %d", len(approvers))
-	}
+	require.True(t, ok, "expected approvers to be []string")
+	assert.Empty(t, approvers, "expected 0 approvers")
 }
 
 func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
@@ -236,76 +206,32 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 		Status:        oapi.ApprovalStatusApproved,
 	})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Test version-1 (2 approvals, should pass)
-	result1, err := evaluator.Evaluate(ctx, environment, &oapi.DeploymentVersion{Id: "version-1"})
-	if err != nil {
-		t.Fatalf("unexpected error for version-1: %v", err)
+	scope1 := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     &oapi.DeploymentVersion{Id: "version-1"},
 	}
-	if !result1.Allowed {
-		t.Errorf("expected version-1 allowed (has 2 approvals), got denied: %s", result1.Message)
-	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed, "expected version-1 allowed (has 2 approvals)")
 
 	// Test version-2 (1 approval, should fail)
-	result2, err := evaluator.Evaluate(ctx, environment, &oapi.DeploymentVersion{Id: "version-2"})
-	if err != nil {
-		t.Fatalf("unexpected error for version-2: %v", err)
+	scope2 := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     &oapi.DeploymentVersion{Id: "version-2"},
 	}
-	if result2.Allowed {
-		t.Errorf("expected version-2 denied (has 1 approval), got allowed: %s", result2.Message)
-	}
+	result2 := eval.Evaluate(ctx, scope2)
+	assert.False(t, result2.Allowed, "expected version-2 denied (has 1 approval)")
 
 	// Verify approvers are version-specific
 	approvers1 := result1.Details["approvers"].([]string)
-	if len(approvers1) != 2 {
-		t.Errorf("expected 2 approvers for version-1, got %d", len(approvers1))
-	}
+	assert.Len(t, approvers1, 2, "expected 2 approvers for version-1")
 
 	approvers2 := result2.Details["approvers"].([]string)
-	if len(approvers2) != 1 {
-		t.Errorf("expected 1 approver for version-2, got %d", len(approvers2))
-	}
-}
-
-func TestAnyApprovalEvaluator_EmptyVersionId(t *testing.T) {
-	// Setup: Version with empty ID
-	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
-	ctx := context.Background()
-
-	environmentId := "env-1"
-	// Create test environment
-	env := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "test-env",
-		SystemId: "system-1",
-	}
-	st.Environments.Upsert(ctx, env)
-
-	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
-
-	version := &oapi.DeploymentVersion{Id: ""} // Empty ID
-	environment, _ := st.Environments.Get(environmentId)
-
-	// Act
-	result, err := evaluator.Evaluate(ctx, environment, version)
-
-	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.Allowed {
-		t.Errorf("expected denied for empty version ID, got allowed: %s", result.Message)
-	}
-
-	if result.Message != "Version ID is required" {
-		t.Errorf("expected 'Version ID is required', got '%s'", result.Message)
-	}
+	assert.Len(t, approvers2, 1, "expected 1 approver for version-2")
 }
 
 func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
@@ -314,45 +240,29 @@ func TestAnyApprovalEvaluator_ResultStructure(t *testing.T) {
 	environmentId := "env-1"
 	st := setupStore(versionId, environmentId, []string{"user-1"})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 1}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
+	eval := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), environment, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.Details == nil {
-		t.Fatal("expected Details to be initialized")
-	}
-
-	if _, ok := result.Details["min_approvals"]; !ok {
-		t.Error("expected Details to contain 'min_approvals'")
-	}
-
-	if _, ok := result.Details["approvers"]; !ok {
-		t.Error("expected Details to contain 'approvers'")
-	}
-
-	if result.Message == "" {
-		t.Error("expected Message to be set")
-	}
+	require.NotNil(t, result.Details, "expected Details to be initialized")
+	assert.Contains(t, result.Details, "min_approvals", "expected Details to contain 'min_approvals'")
+	assert.Contains(t, result.Details, "approvers", "expected Details to contain 'approvers'")
+	assert.NotEmpty(t, result.Message, "expected Message to be set")
 
 	// Verify approvers is correct type
 	approvers, ok := result.Details["approvers"].([]string)
-	if !ok {
-		t.Error("expected approvers to be []string")
-	}
-
-	if len(approvers) != 1 {
-		t.Errorf("expected 1 approver, got %d", len(approvers))
-	}
+	require.True(t, ok, "expected approvers to be []string")
+	assert.Len(t, approvers, 1, "expected 1 approver")
 }
 
 func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
@@ -361,26 +271,22 @@ func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
 	environmentId := "env-1"
 	st := setupStore(versionId, environmentId, []string{"user-1", "user-2", "user-3", "user-4", "user-5"})
 
-	rule := &oapi.AnyApprovalRule{MinApprovals: 2}
-	evaluator := NewAnyApprovalEvaluator(st, rule)
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{Id: versionId}
 	environment, _ := st.Environments.Get(environmentId)
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), environment, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !result.Allowed {
-		t.Errorf("expected allowed when approvals exceed minimum (5 > 2), got denied: %s", result.Message)
-	}
+	assert.True(t, result.Allowed, "expected allowed when approvals exceed minimum (5 > 2)")
 
 	approvers := result.Details["approvers"].([]string)
-	if len(approvers) != 5 {
-		t.Errorf("expected 5 approvers, got %d", len(approvers))
-	}
+	assert.Len(t, approvers, 5, "expected 5 approvers")
 }

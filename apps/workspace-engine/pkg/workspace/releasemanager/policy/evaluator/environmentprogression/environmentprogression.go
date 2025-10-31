@@ -18,7 +18,7 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
 
-var _ evaluator.EnvironmentAndVersionScopedEvaluator = &EnvironmentProgressionEvaluator{}
+var _ evaluator.Evaluator = &EnvironmentProgressionEvaluator{}
 
 type EnvironmentProgressionEvaluator struct {
 	store *store.Store
@@ -27,19 +27,30 @@ type EnvironmentProgressionEvaluator struct {
 
 func NewEnvironmentProgressionEvaluator(
 	store *store.Store,
-	rule *oapi.EnvironmentProgressionRule,
-) *EnvironmentProgressionEvaluator {
-	return &EnvironmentProgressionEvaluator{
-		store: store,
-		rule:  rule,
+	rule *oapi.PolicyRule,
+) evaluator.Evaluator {
+	if rule.EnvironmentProgression == nil {
+		return nil
 	}
+	return evaluator.WithMemoization(&EnvironmentProgressionEvaluator{
+		store: store,
+		rule:  rule.EnvironmentProgression,
+	})
 }
 
+// ScopeFields declares that this evaluator cares about Environment and Version.
+func (e *EnvironmentProgressionEvaluator) ScopeFields() evaluator.ScopeFields {
+	return evaluator.ScopeEnvironment | evaluator.ScopeVersion
+}
+
+// Evaluate checks if a version can progress to an environment based on its success in dependency environments.
+// The memoization wrapper ensures Environment and Version are present.
 func (e *EnvironmentProgressionEvaluator) Evaluate(
 	ctx context.Context,
-	environment *oapi.Environment,
-	version *oapi.DeploymentVersion,
-) (*oapi.RuleEvaluation, error) {
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+	environment := scope.Environment
+	version := scope.Version
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.Evaluate")
 	defer span.End()
 
@@ -52,7 +63,10 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 	if err != nil {
 		span.SetStatus(codes.Error, "failed to find dependency environments")
 		span.RecordError(err)
-		return nil, fmt.Errorf("failed to find dependency environments: %w", err)
+		return results.
+			NewDeniedResult(fmt.Sprintf("Failed to find dependency environments: %v", err)).
+			WithDetail("version_id", version.Id).
+			WithDetail("deployment_id", version.DeploymentId)
 	}
 
 	span.SetAttributes(attribute.Int("dependency_environment_count", len(dependencyEnvs)))
@@ -61,20 +75,15 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		return results.
 			NewDeniedResult("No dependency environments found matching selector").
 			WithDetail("version_id", version.Id).
-			WithDetail("deployment_id", version.DeploymentId), nil
+			WithDetail("deployment_id", version.DeploymentId)
 	}
 
 	// Check if version succeeded in dependency environments
-	result, err := e.checkDependencyEnvironments(
+	result := e.checkDependencyEnvironments(
 		ctx,
 		version,
 		dependencyEnvs,
 	)
-	if err != nil {
-		span.SetStatus(codes.Error, "failed to check dependency environments")
-		span.RecordError(err)
-		return nil, fmt.Errorf("failed to check dependency environments: %w", err)
-	}
 
 	if !result.Allowed {
 		span.SetAttributes(attribute.Bool("result.allowed", false))
@@ -86,7 +95,7 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 		for key, detail := range result.Details {
 			r.WithDetail(key, detail)
 		}
-		return r, nil
+		return r
 	}
 
 	span.SetAttributes(attribute.Bool("result.allowed", true))
@@ -99,7 +108,7 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 	for key, detail := range result.Details {
 		r.WithDetail(key, detail)
 	}
-	return r, nil
+	return r
 }
 
 // findDependencyEnvironments finds all environments matching the selector
@@ -142,7 +151,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
 	dependencyEnvs []*oapi.Environment,
-) (*oapi.RuleEvaluation, error) {
+) *oapi.RuleEvaluation {
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.checkDependencyEnvironments")
 	defer span.End()
 
@@ -150,14 +159,11 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	failedResults := make(map[string]*oapi.RuleEvaluation)
 
 	for _, depEnv := range dependencyEnvs {
-		result, err := e.evaluateJobSuccessCriteria(
+		result := e.evaluateJobSuccessCriteria(
 			ctx,
 			version,
 			depEnv,
 		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to evaluate job success criteria: %w", err)
-		}
 
 		if result.Allowed {
 			allowedResults[depEnv.Id] = result
@@ -178,7 +184,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			successResult.WithDetail(fmt.Sprintf("environment_%s", envId), allowedResult.Details)
 		}
 
-		return successResult, nil
+		return successResult
 	}
 
 	// All dependency environments failed
@@ -192,11 +198,11 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			failureResult.WithDetail(fmt.Sprintf("environment_%s", envId), failedResult.Details)
 		}
 
-		return failureResult, nil
+		return failureResult
 	}
 
 	// Should never reach here
-	return results.NewDeniedResult("No dependency environments found"), nil
+	return results.NewDeniedResult("No dependency environments found")
 }
 
 // evaluateJobSuccessCriteria evaluates if jobs meet the success criteria
@@ -204,7 +210,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
 	environment *oapi.Environment,
-) (*oapi.RuleEvaluation, error) {
+) *oapi.RuleEvaluation {
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
 	defer span.End()
 	// Define success statuses (default to just "successful")
@@ -223,11 +229,11 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	span.SetAttributes(attribute.Int("release_target_count", len(tracker.ReleaseTargets)))
 
 	if len(tracker.Jobs()) == 0 {
-		return results.NewDeniedResult("No jobs found"), nil
+		return results.NewDeniedResult("No jobs found")
 	}
 
 	if len(tracker.ReleaseTargets) == 0 {
-		return results.NewDeniedResult("No release targets found"), nil
+		return results.NewDeniedResult("No release targets found")
 	}
 
 	// Check for at least one successful job (or based on success percentage requirement)
@@ -240,12 +246,12 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 			message := fmt.Sprintf("Success rate %.1f%% below required %.1f%%", successPercentage, *e.rule.MinimumSuccessPercentage)
 			return results.NewDeniedResult(message).
 				WithDetail("success_percentage", successPercentage).
-				WithDetail("minimum_success_percentage", *e.rule.MinimumSuccessPercentage), nil
+				WithDetail("minimum_success_percentage", *e.rule.MinimumSuccessPercentage)
 		}
 	} else {
 		// Default: require at least one successful job (success percentage > 0)
 		if successPercentage == 0 {
-			return results.NewDeniedResult("No successful jobs"), nil
+			return results.NewDeniedResult("No successful jobs")
 		}
 	}
 
@@ -257,7 +263,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 			time.RFC3339,
 		)))
 		if mostRecentSuccess.IsZero() {
-			return results.NewDeniedResult("No successful jobs for soak time check"), nil
+			return results.NewDeniedResult("No successful jobs for soak time check")
 		}
 
 		soakDuration := time.Duration(*e.rule.MinimumSockTimeMinutes) * time.Minute
@@ -267,7 +273,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		if soakTimeRemaining > 0 {
 			message := fmt.Sprintf("Soak time required: %d minutes. Time remaining: %s", *e.rule.MinimumSockTimeMinutes, soakTimeRemaining.Round(time.Minute))
 			return results.NewPendingResult(results.ActionTypeWait, message).
-				WithDetail("soak_time_remaining_minutes", int(soakTimeRemaining.Minutes())), nil
+				WithDetail("soak_time_remaining_minutes", int(soakTimeRemaining.Minutes()))
 		}
 	}
 
@@ -278,7 +284,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		latestSuccessTime := tracker.GetMostRecentSuccess()
 		if latestSuccessTime.IsZero() {
 			return results.NewDeniedResult("No successful jobs").
-				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours), nil
+				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours)
 		}
 
 		if !tracker.IsWithinMaxAge(maxAge) {
@@ -288,9 +294,9 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 			)
 			return results.NewDeniedResult(message).
 				WithDetail("latest_success_time", latestSuccessTime.Format(time.RFC3339)).
-				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours), nil
+				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours)
 		}
 	}
 
-	return results.NewAllowedResult("Job success criteria met"), nil
+	return results.NewAllowedResult("Job success criteria met")
 }

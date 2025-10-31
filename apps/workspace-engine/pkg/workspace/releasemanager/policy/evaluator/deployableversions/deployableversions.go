@@ -8,35 +8,44 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ evaluator.VersionScopedEvaluator = &DeployableVersionStatusEvaluator{}
+var _ evaluator.Evaluator = &DeployableVersionStatusEvaluator{}
 
 type DeployableVersionStatusEvaluator struct {
 	store *store.Store
 }
 
-func NewDeployableVersionStatusEvaluator(store *store.Store) *DeployableVersionStatusEvaluator {
-	return &DeployableVersionStatusEvaluator{
+func NewDeployableVersionStatusEvaluator(store *store.Store) evaluator.Evaluator {
+	return evaluator.WithMemoization(&DeployableVersionStatusEvaluator{
 		store: store,
-	}
+	})
 }
 
+// ScopeFields declares that this evaluator only cares about Version.
+func (e *DeployableVersionStatusEvaluator) ScopeFields() evaluator.ScopeFields {
+	return evaluator.ScopeVersion
+}
+
+// Evaluate checks if a version is in a deployable status.
+// The memoization wrapper ensures Version is present.
 func (e *DeployableVersionStatusEvaluator) Evaluate(
 	ctx context.Context,
-	version *oapi.DeploymentVersion,
-) (*oapi.RuleEvaluation, error) {
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+	version := scope.Version
+
 	if version.Status == oapi.DeploymentVersionStatusReady {
 		return results.NewAllowedResult("Version is ready").
 			WithDetail("version_id", version.Id).
-			WithDetail("version_status", version.Status), nil
+			WithDetail("version_status", version.Status)
 	}
 
 	if version.Status == oapi.DeploymentVersionStatusPaused {
 		return results.NewPendingResult(results.ActionTypeWait, "Version is paused").
 			WithDetail("version_id", version.Id).
-			WithDetail("version_status", version.Status), nil
+			WithDetail("version_status", version.Status)
 	}
 
 	return results.NewDeniedResult("Version is not ready").
 		WithDetail("version_id", version.Id).
-		WithDetail("version_status", version.Status), nil
+		WithDetail("version_status", version.Status)
 }

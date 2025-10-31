@@ -8,27 +8,34 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ evaluator.VersionAndTargetScopedEvaluator = &PausedVersionsEvaluator{}
+var _ evaluator.Evaluator = &PausedVersionsEvaluator{}
 
 type PausedVersionsEvaluator struct {
 	store *store.Store
 }
 
-func NewPausedVersionsEvaluator(store *store.Store) *PausedVersionsEvaluator {
-	return &PausedVersionsEvaluator{
-		store: store,
-	}
+func New(store *store.Store) evaluator.Evaluator {
+	return evaluator.WithMemoization(&PausedVersionsEvaluator{store: store})
 }
 
+// ScopeFields declares that this evaluator cares about Version and ReleaseTarget.
+func (e *PausedVersionsEvaluator) ScopeFields() evaluator.ScopeFields {
+	return evaluator.ScopeVersion | evaluator.ScopeReleaseTarget
+}
+
+// Evaluate checks if a paused version is allowed to deploy to a target.
+// The memoization wrapper ensures Version and ReleaseTarget are present.
 func (e *PausedVersionsEvaluator) Evaluate(
 	ctx context.Context,
-	version *oapi.DeploymentVersion,
-	releaseTarget *oapi.ReleaseTarget,
-) (*oapi.RuleEvaluation, error) {
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+	version := scope.Version
+	releaseTarget := scope.ReleaseTarget
+
 	if version.Status != oapi.DeploymentVersionStatusPaused {
 		return results.NewAllowedResult("Version is not paused").
 			WithDetail("version_id", version.Id).
-			WithDetail("version_status", version.Status), nil
+			WithDetail("version_status", version.Status)
 	}
 
 	// Check if any releases of the releaseTarget are linked to the version
@@ -49,11 +56,11 @@ func (e *PausedVersionsEvaluator) Evaluate(
 		return results.NewAllowedResult("Version is paused but has an active release for this target.").
 			WithDetail("version_id", version.Id).
 			WithDetail("version_status", version.Status).
-			WithDetail("release_target", releaseTarget.Key()), nil
+			WithDetail("release_target", releaseTarget.Key())
 	}
 
 	return results.NewDeniedResult("Version is paused and has no active release for this target.").
 		WithDetail("version_id", version.Id).
 		WithDetail("version_status", version.Status).
-		WithDetail("release_target", releaseTarget.Key()), nil
+		WithDetail("release_target", releaseTarget.Key())
 }

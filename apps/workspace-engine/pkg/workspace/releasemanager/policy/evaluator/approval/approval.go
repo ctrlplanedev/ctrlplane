@@ -9,47 +9,43 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ evaluator.EnvironmentAndVersionScopedEvaluator = &AnyApprovalEvaluator{}
+var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
 type AnyApprovalEvaluator struct {
 	store *store.Store
 	rule  *oapi.AnyApprovalRule
 }
 
-func NewAnyApprovalEvaluator(store *store.Store, rule *oapi.AnyApprovalRule) *AnyApprovalEvaluator {
-	return &AnyApprovalEvaluator{
-		store: store,
-		rule:  rule,
+func NewAnyApprovalEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
+	if rule.AnyApproval == nil {
+		return nil
 	}
+	return evaluator.WithMemoization(&AnyApprovalEvaluator{
+		store: store,
+		rule:  rule.AnyApproval,
+	})
 }
 
+// ScopeFields declares that this evaluator cares about Environment and Version.
+func (m *AnyApprovalEvaluator) ScopeFields() evaluator.ScopeFields {
+	return evaluator.ScopeEnvironment | evaluator.ScopeVersion
+}
+
+// Evaluate checks if the version has enough approvals for the environment.
+// The memoization wrapper ensures Environment and Version are present.
 func (m *AnyApprovalEvaluator) Evaluate(
 	ctx context.Context,
-	environment *oapi.Environment,
-	version *oapi.DeploymentVersion,
-) (*oapi.RuleEvaluation, error) {
-	if version.Id == "" {
-		return results.
-			NewDeniedResult("Version ID is required").
-			WithDetail("version_id", version.Id).
-			WithDetail("environment_id", environment.Id).
-			WithDetail("min_approvals", m.rule.MinApprovals), nil
-	}
-
-	if environment.Id == "" {
-		return results.
-			NewDeniedResult("Environment ID is required").
-			WithDetail("version_id", version.Id).
-			WithDetail("environment_id", environment.Id).
-			WithDetail("min_approvals", m.rule.MinApprovals), nil
-	}
+	scope evaluator.EvaluatorScope,
+) *oapi.RuleEvaluation {
+	environment := scope.Environment
+	version := scope.Version
 
 	if m.rule.MinApprovals <= 0 {
 		return results.
 			NewAllowedResult("No approvals required").
 			WithDetail("version_id", version.Id).
 			WithDetail("environment_id", environment.Id).
-			WithDetail("min_approvals", m.rule.MinApprovals), nil
+			WithDetail("min_approvals", m.rule.MinApprovals)
 	}
 
 	approvers := m.store.UserApprovalRecords.GetApprovers(version.Id, environment.Id)
@@ -62,7 +58,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			WithDetail("min_approvals", minApprovals).
 			WithDetail("approvers", approvers).
 			WithDetail("version_id", version.Id).
-			WithDetail("environment_id", environment.Id), nil
+			WithDetail("environment_id", environment.Id)
 	}
 
 	return results.
@@ -72,5 +68,5 @@ func (m *AnyApprovalEvaluator) Evaluate(
 		WithDetail("min_approvals", minApprovals).
 		WithDetail("approvers", approvers).
 		WithDetail("version_id", version.Id).
-		WithDetail("environment_id", environment.Id), nil
+		WithDetail("environment_id", environment.Id)
 }

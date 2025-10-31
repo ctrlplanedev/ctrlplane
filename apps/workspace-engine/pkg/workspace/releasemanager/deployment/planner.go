@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deployableversions"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
@@ -31,9 +30,6 @@ type Planner struct {
 	policyManager   *policy.Manager
 	versionManager  *versions.Manager
 	variableManager *variables.Manager
-
-	// System-level version evaluators (e.g., version status checks)
-	versionEvaluators []evaluator.VersionScopedEvaluator
 }
 
 // NewPlanner creates a new deployment planner.
@@ -48,9 +44,6 @@ func NewPlanner(
 		policyManager:   policyManager,
 		versionManager:  versionManager,
 		variableManager: variableManager,
-		versionEvaluators: []evaluator.VersionScopedEvaluator{
-			deployableversions.NewDeployableVersionStatusEvaluator(store),
-		},
 	}
 }
 
@@ -131,16 +124,6 @@ func (p *Planner) findDeployableVersion(
 		return nil
 	}
 
-	workspaceDecision, err := p.policyManager.EvaluateWorkspace(ctx, policies)
-	if err != nil {
-		span.RecordError(err)
-		return nil
-	}
-
-	if !workspaceDecision.CanDeploy() {
-		return nil
-	}
-
 	environment, ok := p.store.Environments.Get(releaseTarget.EnvironmentId)
 	if !ok {
 		span.RecordError(fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId))
@@ -152,61 +135,37 @@ func (p *Planner) findDeployableVersion(
 		return nil
 	}
 
+	evaluators := p.policyManager.GlobalEvaluators()
+	for _, policy := range policies {
+		for _, rule := range policy.Rules {
+			evaluators = append(evaluators, p.policyManager.EvaluatorsForPolicy(&rule)...)
+		}
+	}
+
+	scope := evaluator.EvaluatorScope{
+		Environment:   environment,
+		ReleaseTarget: releaseTarget,
+	}
 	for _, version := range candidateVersions {
-		// Step 1: Evaluate system-level version checks (e.g., version status)
 		eligible := true
-		for _, versionEvaluator := range p.versionEvaluators {
-			result, err := versionEvaluator.Evaluate(ctx, version)
-			if err != nil {
-				span.RecordError(err)
-				eligible = false
-				break
+		scope.Version = version
+		for _, evaluator := range evaluators {
+			if !scope.HasFields(evaluator.ScopeFields()) {
+				continue
 			}
+			result := evaluator.Evaluate(ctx, scope)
 			if !result.Allowed {
 				eligible = false
 				break
 			}
 		}
 
-		if !eligible {
-			continue // Skip this version
+		if eligible {
+			// Found a deployable version!
+			return version
 		}
-
-		// Step 2: Check user-defined policies
-		// Both version-scoped AND environment+version-scoped rules must pass
-
-		// Check version-scoped rules
-		versionDecision, err := p.policyManager.EvaluateVersion(ctx, version, policies)
-		if err != nil {
-			span.RecordError(err)
-			continue // Skip this version on error
-		}
-		if !versionDecision.CanDeploy() {
-			continue // Version-scoped rules blocked deployment
-		}
-
-		// Check environment+version-scoped rules (approval, environment progression, etc.)
-		envVersionDecision, err := p.policyManager.EvaluateEnvironmentAndVersion(ctx, environment, version, policies)
-		if err != nil {
-			span.RecordError(err)
-			continue // Skip this version on error
-		}
-		if !envVersionDecision.CanDeploy() {
-			continue // Environment+version-scoped rules blocked deployment
-		}
-
-		envVersionAndTargetDecision, err := p.policyManager.EvaluateEnvironmentAndVersionAndTarget(ctx, environment, version, releaseTarget, policies)
-		if err != nil {
-			span.RecordError(err)
-			continue // Skip this version on error
-		}
-		if !envVersionAndTargetDecision.CanDeploy() {
-			continue // Environment+version+target-scoped rules blocked deployment
-		}
-
-		// Both checks passed - this version can be deployed
-		return version
 	}
 
+	// No eligible versions found
 	return nil
 }

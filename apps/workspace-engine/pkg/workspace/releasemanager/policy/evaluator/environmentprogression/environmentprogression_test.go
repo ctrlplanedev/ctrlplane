@@ -6,7 +6,11 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // setupTestStore creates a test store with environments, jobs, and releases
@@ -91,16 +95,17 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	err := selector.FromCelSelector(oapi.CelSelector{
 		Cel: "environment.name == 'staging'",
 	})
-	if err != nil {
-		t.Fatalf("failed to create selector: %v", err)
-	}
+	require.NoError(t, err, "failed to create selector")
 
 	// Create rule: prod depends on staging
-	rule := &oapi.EnvironmentProgressionRule{
-		DependsOnEnvironmentSelector: selector,
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+		},
 	}
 
-	evaluator := NewEnvironmentProgressionEvaluator(st, rule)
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
+	require.NotNil(t, eval, "evaluator should not be nil")
 
 	// Create a version for prod environment
 	version := &oapi.DeploymentVersion{
@@ -116,24 +121,16 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be pending since version not in staging
-	result, err := evaluator.Evaluate(ctx, prodEnv, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.Allowed {
-		t.Error("expected not allowed, got allowed")
-	}
-
-	if !result.ActionRequired {
-		t.Error("expected action required (pending)")
-	}
-
-	if result.Message == "" {
-		t.Error("expected error message")
-	}
+	assert.False(t, result.Allowed, "expected not allowed")
+	assert.True(t, result.ActionRequired, "expected action required (pending)")
+	assert.NotEmpty(t, result.Message, "expected error message")
 }
 
 func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testing.T) {
@@ -185,35 +182,30 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 	err := selector.FromCelSelector(oapi.CelSelector{
 		Cel: "environment.name == 'staging'",
 	})
-	if err != nil {
-		t.Fatalf("failed to create selector: %v", err)
-	}
+	require.NoError(t, err, "failed to create selector")
 
 	// Create rule: prod depends on staging
-	rule := &oapi.EnvironmentProgressionRule{
-		DependsOnEnvironmentSelector: selector,
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+		},
 	}
 
-	evaluator := NewEnvironmentProgressionEvaluator(st, rule)
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
 
 	// Get the prod environment
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be allowed since version succeeded in staging
-	result, err := evaluator.Evaluate(ctx, prodEnv, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !result.Allowed {
-		t.Errorf("expected allowed, got denied: %s", result.Message)
-	}
-
-	if result.ActionRequired {
-		t.Error("expected no action required")
-	}
+	assert.True(t, result.Allowed, "expected allowed, got denied: %s", result.Message)
+	assert.False(t, result.ActionRequired, "expected no action required")
 }
 
 func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
@@ -265,41 +257,33 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	err := selector.FromCelSelector(oapi.CelSelector{
 		Cel: "environment.name == 'staging'",
 	})
-	if err != nil {
-		t.Fatalf("failed to create selector: %v", err)
-	}
+	require.NoError(t, err, "failed to create selector")
 
 	// Create rule: prod depends on staging with 30 minute soak time
 	soakTime := int32(30)
-	rule := &oapi.EnvironmentProgressionRule{
-		DependsOnEnvironmentSelector: selector,
-		MinimumSockTimeMinutes:       &soakTime,
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+			MinimumSockTimeMinutes:       &soakTime,
+		},
 	}
 
-	evaluator := NewEnvironmentProgressionEvaluator(st, rule)
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
 
 	// Get the prod environment
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be pending since soak time not met
-	result, err := evaluator.Evaluate(ctx, prodEnv, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.Allowed {
-		t.Error("expected not allowed (soak time not met)")
-	}
-
-	if !result.ActionRequired {
-		t.Error("expected action required (waiting for soak time)")
-	}
-
-	if result.Message == "" {
-		t.Error("expected message about soak time")
-	}
+	assert.False(t, result.Allowed, "expected not allowed (soak time not met)")
+	assert.True(t, result.ActionRequired, "expected action required (waiting for soak time)")
+	assert.NotEmpty(t, result.Message, "expected message about soak time")
 }
 
 func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
@@ -311,16 +295,16 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	err := selector.FromCelSelector(oapi.CelSelector{
 		Cel: "environment.name == 'non-existent-env'",
 	})
-	if err != nil {
-		t.Fatalf("failed to create selector: %v", err)
-	}
+	require.NoError(t, err, "failed to create selector")
 
 	// Create rule with selector that matches no environments
-	rule := &oapi.EnvironmentProgressionRule{
-		DependsOnEnvironmentSelector: selector,
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+		},
 	}
 
-	evaluator := NewEnvironmentProgressionEvaluator(st, rule)
+	eval := NewEnvironmentProgressionEvaluator(st, rule)
 
 	version := &oapi.DeploymentVersion{
 		Id:           "version-1",
@@ -335,18 +319,13 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	// Evaluate - should be denied since no matching environments
-	result, err := evaluator.Evaluate(ctx, prodEnv, version)
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if result.Allowed {
-		t.Error("expected not allowed (no matching environments)")
-	}
-
-	if result.ActionRequired {
-		t.Error("expected denied, not action required")
-	}
+	assert.False(t, result.Allowed, "expected not allowed (no matching environments)")
+	assert.False(t, result.ActionRequired, "expected denied, not action required")
 }

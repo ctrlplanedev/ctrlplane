@@ -8,6 +8,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -121,7 +122,7 @@ func TestGradualRolloutEvaluator_BasicLinearRollout(t *testing.T) {
 	rule := &oapi.GradualRolloutRule{
 		TimeScaleInterval: 60,
 	}
-	evaluator := GradualRolloutEvaluator{
+	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
 		hashingFn:  hashingFn,
@@ -146,10 +147,12 @@ func TestGradualRolloutEvaluator_BasicLinearRollout(t *testing.T) {
 		t.Fatalf("release target not found: %s", key3)
 	}
 
-	result1, err := evaluator.Evaluate(ctx, environment, version, releaseTarget1)
-	if err != nil {
-		t.Fatalf("error evaluating release target 1: %v", err)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget1,
 	}
+	result1 := eval.Evaluate(ctx, scope1)
 
 	assert.True(t, result1.Allowed)
 	assert.False(t, result1.ActionRequired)
@@ -160,10 +163,12 @@ func TestGradualRolloutEvaluator_BasicLinearRollout(t *testing.T) {
 	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
 
-	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
-	if err != nil {
-		t.Fatalf("error evaluating release target 2: %v", err)
+	scope2 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget2,
 	}
+	result2 := eval.Evaluate(ctx, scope2)
 
 	assert.True(t, result2.Allowed)
 	assert.False(t, result2.ActionRequired)
@@ -174,10 +179,12 @@ func TestGradualRolloutEvaluator_BasicLinearRollout(t *testing.T) {
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Add(60*time.Minute).Format(time.RFC3339), result2.Details["target_rollout_time"])
 
-	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
-	if err != nil {
-		t.Fatalf("error evaluating release target 3: %v", err)
+	scope3 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget3,
 	}
+	result3 := eval.Evaluate(ctx, scope3)
 
 	assert.False(t, result3.Allowed)
 	assert.True(t, result3.ActionRequired)
@@ -214,7 +221,7 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	rule := &oapi.GradualRolloutRule{
 		TimeScaleInterval: 0,
 	}
-	evaluator := GradualRolloutEvaluator{
+	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
 		hashingFn:  hashingFn,
@@ -239,10 +246,12 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 		t.Fatalf("release target not found: %s", key3)
 	}
 
-	result1, err := evaluator.Evaluate(ctx, environment, version, releaseTarget1)
-	if err != nil {
-		t.Fatalf("error evaluating release target 1: %v", err)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget1,
 	}
+	result1 := eval.Evaluate(ctx, scope1)
 
 	assert.True(t, result1.Allowed)
 	assert.False(t, result1.ActionRequired)
@@ -253,10 +262,12 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
 
-	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
-	if err != nil {
-		t.Fatalf("error evaluating release target 2: %v", err)
+	scope2 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget2,
 	}
+	result2 := eval.Evaluate(ctx, scope2)
 
 	assert.True(t, result2.Allowed)
 	assert.False(t, result2.ActionRequired)
@@ -267,10 +278,12 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Format(time.RFC3339), result2.Details["target_rollout_time"])
 
-	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
-	if err != nil {
-		t.Fatalf("error evaluating release target 3: %v", err)
+	scope3 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget3,
 	}
+	result3 := eval.Evaluate(ctx, scope3)
 
 	assert.True(t, result3.Allowed)
 	assert.False(t, result3.ActionRequired)
@@ -307,7 +320,7 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	rule := &oapi.GradualRolloutRule{
 		TimeScaleInterval: 60,
 	}
-	evaluator := GradualRolloutEvaluator{
+	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
 		hashingFn:  hashingFn,
@@ -359,10 +372,12 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 		t.Fatalf("release target not found: %s", key3)
 	}
 
-	result1, err := evaluator.Evaluate(ctx, environment, version, releaseTarget1)
-	if err != nil {
-		t.Fatalf("error evaluating release target 1: %v", err)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget1,
 	}
+	result1 := eval.Evaluate(ctx, scope1)
 
 	assert.False(t, result1.Allowed)
 	assert.True(t, result1.ActionRequired)
@@ -373,10 +388,12 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
 	assert.Nil(t, result1.Details["target_rollout_time"])
 
-	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
-	if err != nil {
-		t.Fatalf("error evaluating release target 2: %v", err)
+	scope2 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget2,
 	}
+	result2 := eval.Evaluate(ctx, scope2)
 
 	assert.False(t, result2.Allowed)
 	assert.True(t, result2.ActionRequired)
@@ -387,10 +404,12 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Nil(t, result2.Details["target_rollout_time"])
 
-	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
-	if err != nil {
-		t.Fatalf("error evaluating release target 3: %v", err)
+	scope3 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget3,
 	}
+	result3 := eval.Evaluate(ctx, scope3)
 
 	assert.False(t, result3.Allowed)
 	assert.True(t, result3.ActionRequired)
@@ -429,7 +448,7 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	rule := &oapi.GradualRolloutRule{
 		TimeScaleInterval: 60,
 	}
-	evaluator := GradualRolloutEvaluator{
+	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
 		hashingFn:  hashingFn,
@@ -497,10 +516,12 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 		t.Fatalf("release target not found: %s", key3)
 	}
 
-	result1, err := evaluator.Evaluate(ctx, environment, version, releaseTarget1)
-	if err != nil {
-		t.Fatalf("error evaluating release target 1: %v", err)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget1,
 	}
+	result1 := eval.Evaluate(ctx, scope1)
 
 	assert.True(t, result1.Allowed)
 	assert.False(t, result1.ActionRequired)
@@ -511,10 +532,12 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
 	assert.Equal(t, oneHourLater.Format(time.RFC3339), result1.Details["target_rollout_time"])
 
-	result2, err := evaluator.Evaluate(ctx, environment, version, releaseTarget2)
-	if err != nil {
-		t.Fatalf("error evaluating release target 2: %v", err)
+	scope2 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget2,
 	}
+	result2 := eval.Evaluate(ctx, scope2)
 
 	assert.True(t, result2.Allowed)
 	assert.False(t, result2.ActionRequired)
@@ -525,10 +548,12 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	assert.Equal(t, twoHoursLater.Format(time.RFC3339), result2.Details["target_rollout_time"])
 
-	result3, err := evaluator.Evaluate(ctx, environment, version, releaseTarget3)
-	if err != nil {
-		t.Fatalf("error evaluating release target 3: %v", err)
+	scope3 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget3,
 	}
+	result3 := eval.Evaluate(ctx, scope3)
 
 	assert.False(t, result3.Allowed)
 	assert.True(t, result3.ActionRequired)

@@ -6,6 +6,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -35,7 +36,7 @@ func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
 func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 	// Setup: No previous jobs
 	st := setupStoreWithResource(t, "resource-1")
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	release := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -50,13 +51,10 @@ func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 	}
 
 	// Act
-	result, err := evaluator.Evaluate(context.Background(), release)
+	scope := evaluator.EvaluatorScope{Release: release}
+	result := eval.Evaluate(context.Background(), scope)
 
 	// Assert
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if !result.Allowed {
 		t.Errorf("expected allowed when no previous deployment, got denied: %s", result.Message)
 	}
@@ -98,16 +96,13 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 		CompletedAt: &completedAt,
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	result, err := evaluator.Evaluate(ctx, previousRelease)
+	scope := evaluator.EvaluatorScope{Release: previousRelease}
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should DENY retry because failed jobs are now considered (validJobStatuses filter removed)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if result.Allowed {
 		t.Errorf("expected denied for retry after failure (failed jobs are now tracked), got allowed: %s", result.Message)
 	}
@@ -153,16 +148,14 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 		CompletedAt: &completedAt,
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	result, err := evaluator.Evaluate(ctx, deployedRelease)
+	scope := evaluator.EvaluatorScope{Release: deployedRelease}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should deny re-deployment
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if result.Allowed {
 		t.Errorf("expected denied when already deployed, got allowed: %s", result.Message)
 	}
@@ -224,16 +217,14 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 		t.Fatalf("Failed to upsert v2 release: %v", err)
 	}
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy v2.0.0
-	result, err := evaluator.Evaluate(ctx, v2Release)
+	scope := evaluator.EvaluatorScope{Release: v2Release}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should allow deploying new version
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if !result.Allowed {
 		t.Errorf("expected allowed for new version, got denied: %s", result.Message)
 	}
@@ -273,16 +264,14 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 		CreatedAt: time.Now(),
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Check same release
-	result, err := evaluator.Evaluate(ctx, release)
+	scope := evaluator.EvaluatorScope{Release: release}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should DENY - same release already has a job, even if in progress
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if result.Allowed {
 		t.Errorf("expected denied when same release job in progress, got allowed: %s", result.Message)
 	}
@@ -328,16 +317,14 @@ func TestSkipDeployedEvaluator_CancelledJobPreventsRedeploy(t *testing.T) {
 		CompletedAt: &completedAt,
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	result, err := evaluator.Evaluate(ctx, release)
+	scope := evaluator.EvaluatorScope{Release: release}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should DENY retry because cancelled jobs are now considered (validJobStatuses filter removed)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if result.Allowed {
 		t.Errorf("expected denied for retry after cancellation (cancelled jobs are now tracked), got allowed: %s", result.Message)
 	}
@@ -410,16 +397,14 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 		t.Fatalf("Failed to upsert release2: %v", err)
 	}
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy with different variables
-	result, err := evaluator.Evaluate(ctx, release2)
+	scope := evaluator.EvaluatorScope{Release: release2}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should allow (different release ID due to different variables)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if !result.Allowed {
 		t.Errorf("expected allowed for different variables, got denied: %s", result.Message)
 	}
@@ -498,16 +483,14 @@ func TestSkipDeployedEvaluator_UsesCreatedAtNotCompletedAt(t *testing.T) {
 		CompletedAt: &completedAt,                      // More recent completion
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Evaluate new release - should not panic
-	result, err := evaluator.Evaluate(ctx, release3)
+	scope := evaluator.EvaluatorScope{Release: release3}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should not panic and should allow (different release)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if !result.Allowed {
 		t.Errorf("expected allowed for new release, got denied: %s", result.Message)
 	}
@@ -560,17 +543,15 @@ func TestSkipDeployedEvaluator_OnlyJobsWithNilCompletedAt(t *testing.T) {
 		CompletedAt: nil,
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Evaluate same release - should not panic
-	result, err := evaluator.Evaluate(ctx, release)
+	scope := evaluator.EvaluatorScope{Release: release}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should not panic. Jobs are tracked by createdAt now,
 	// so the most recently created job (job-2) should be found and deny the re-deployment
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if result.Allowed {
 		t.Errorf("expected denied for same release with in-progress job, got allowed: %s", result.Message)
 	}
@@ -617,16 +598,14 @@ func TestSkipDeployedEvaluator_PendingJobPreventsRedeploy(t *testing.T) {
 		CompletedAt: nil,
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again (simulating re-evaluation on job update)
-	result, err := evaluator.Evaluate(ctx, release)
+	scope := evaluator.EvaluatorScope{Release: release}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should DENY - prevents infinite loop of creating duplicate jobs
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if result.Allowed {
 		t.Errorf("expected denied when pending job exists for same release, got allowed: %s", result.Message)
 	}
@@ -700,16 +679,14 @@ func TestSkipDeployedEvaluator_ConsidersAllJobStatuses(t *testing.T) {
 		CompletedAt: &completedAt,
 	})
 
-	evaluator := NewSkipDeployedEvaluator(st)
+	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy new release
-	result, err := evaluator.Evaluate(ctx, newRelease)
+	scope := evaluator.EvaluatorScope{Release: newRelease}
+
+	result := eval.Evaluate(ctx, scope)
 
 	// Assert: Should ALLOW because it's a different release, but should recognize the previous job
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
 	if !result.Allowed {
 		t.Errorf("expected allowed for different release, got denied: %s", result.Message)
 	}
@@ -769,16 +746,14 @@ func TestSkipDeployedEvaluator_AllJobStatusesPreventRedeployOfSameRelease(t *tes
 				CompletedAt: &completedAt,
 			})
 
-			evaluator := NewSkipDeployedEvaluator(st)
+			eval := NewSkipDeployedEvaluator(st)
 
 			// Act: Try to deploy the same release again
-			result, err := evaluator.Evaluate(ctx, release)
+			scope := evaluator.EvaluatorScope{Release: release}
+
+			result := eval.Evaluate(ctx, scope)
 
 			// Assert: Should DENY regardless of job status
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
 			if result.Allowed {
 				t.Errorf("expected denied for retry with status %s, got allowed: %s", status, result.Message)
 			}

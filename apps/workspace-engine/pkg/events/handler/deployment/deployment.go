@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	deploym "workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 
 	"github.com/charmbracelet/log"
@@ -106,8 +107,9 @@ func shouldRetriggerJobs(ws *workspace.Workspace, deployment *oapi.Deployment) b
 
 // retriggerInvalidJobAgentJobs creates new Pending jobs for all releases that currently have InvalidJobAgent jobs
 func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) {
-	// Create job factory and dispatcher
+	// Create job factory, eligibility checker, and dispatcher
 	jobFactory := jobs.NewFactory(ws.Store())
+	eligibilityChecker := deploym.NewJobEligibilityChecker(ws.Store())
 	jobDispatcher := jobs.NewDispatcher(ws.Store())
 
 	// Find all InvalidJobAgent jobs for this deployment
@@ -125,6 +127,24 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 
 		// Check if this release belongs to the updated deployment
 		if release.ReleaseTarget.DeploymentId != deployment.Id {
+			continue
+		}
+
+		// Check if we should create a job for this release (eligibility check)
+		shouldCreate, _, err := eligibilityChecker.ShouldCreateJob(ctx, release)
+		if err != nil {
+			log.Error("failed to check job eligibility during retrigger",
+				"releaseId", release.ID(),
+				"deploymentId", deployment.Id,
+				"error", err.Error())
+			continue
+		}
+
+		// Skip if job should not be created (e.g., duplicate)
+		if !shouldCreate {
+			log.Debug("skipping job creation during retrigger (failed eligibility check)",
+				"releaseId", release.ID(),
+				"deploymentId", deployment.Id)
 			continue
 		}
 

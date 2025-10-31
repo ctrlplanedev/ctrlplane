@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,23 +46,6 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		return
 	}
 
-	workspaceDecision, err := policyManager.EvaluateWorkspace(c.Request.Context(), policies)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to evaluate workspace policies: " + err.Error(),
-		})
-		return
-	}
-
-	// Evaluate the version for this release target
-	versionDecision, err := policyManager.EvaluateVersion(c.Request.Context(), &req.Version, policies)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to evaluate policies: " + err.Error(),
-		})
-		return
-	}
-
 	environment, ok := ws.Environments().Get(req.ReleaseTarget.EnvironmentId)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -70,28 +54,20 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		return
 	}
 
-	envVersionDecision, err := policyManager.EvaluateEnvironmentAndVersion(c.Request.Context(), environment, &req.Version, policies)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to evaluate environment and version policies: " + err.Error(),
-		})
-		return
+	decision := policy.NewDeployDecision()
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     &req.Version,
+		ReleaseTarget: &req.ReleaseTarget,
 	}
-
-	envTargetVersionDecision, err := policyManager.EvaluateEnvironmentAndVersionAndTarget(c.Request.Context(), environment, &req.Version, &req.ReleaseTarget, policies)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to evaluate environment and version and target policies: " + err.Error(),
-		})
-		return
+	for _, policy := range policies {
+		policyResult := policyManager.EvaluatePolicy(c.Request.Context(), policy, scope)
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"policiesEvaulated":        len(policies),
-		"workspaceDecision":        workspaceDecision,
-		"versionDecision":          versionDecision,
-		"envVersionDecision":       envVersionDecision,
-		"envTargetVersionDecision": envTargetVersionDecision,
+		"decision":                 decision,
 	})
 }
 

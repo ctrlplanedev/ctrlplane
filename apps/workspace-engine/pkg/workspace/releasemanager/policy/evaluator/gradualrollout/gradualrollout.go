@@ -13,7 +13,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ evaluator.EnvironmentAndVersionAndTargetScopedEvaluator = &GradualRolloutEvaluator{}
+var _ evaluator.Evaluator = &GradualRolloutEvaluator{}
 
 var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
 	h := fnv.New64a()
@@ -28,15 +28,23 @@ type GradualRolloutEvaluator struct {
 	timeGetter func() time.Time
 }
 
-func NewGradualRolloutEvaluator(store *store.Store, rule *oapi.GradualRolloutRule) *GradualRolloutEvaluator {
-	return &GradualRolloutEvaluator{
+func NewGradualRolloutEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
+	if rule.GradualRollout == nil {
+		return nil
+	}
+	return evaluator.WithMemoization(&GradualRolloutEvaluator{
 		store:     store,
-		rule:      rule,
+		rule:      rule.GradualRollout,
 		hashingFn: fnvHashingFn,
 		timeGetter: func() time.Time {
 			return time.Now()
 		},
-	}
+	})
+}
+
+// ScopeFields declares that this evaluator cares about Environment, Version, and ReleaseTarget.
+func (e *GradualRolloutEvaluator) ScopeFields() evaluator.ScopeFields {
+	return evaluator.ScopeEnvironment | evaluator.ScopeVersion | evaluator.ScopeReleaseTarget
 }
 
 func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*time.Time, error) {
@@ -126,16 +134,26 @@ func (e *GradualRolloutEvaluator) getDeploymentOffset(rolloutPosition int32, tim
 	return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Minute
 }
 
-func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*oapi.RuleEvaluation, error) {
+// Evaluate checks if a gradual rollout has progressed enough to allow deployment to this release target.
+// The memoization wrapper ensures Environment, Version, and ReleaseTarget are present.
+func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+	environment := scope.Environment
+	version := scope.Version
+	releaseTarget := scope.ReleaseTarget
+
 	now := e.timeGetter()
 	rolloutStartTime, err := e.getRolloutStartTime(ctx, environment, version, releaseTarget)
 	if err != nil {
-		return nil, err
+		return results.
+			NewDeniedResult(fmt.Sprintf("Failed to determine rollout start time: %v", err)).
+			WithDetail("error", err.Error())
 	}
 
 	rolloutPosition, err := e.getRolloutPositionForTarget(ctx, environment, version, releaseTarget)
 	if err != nil {
-		return results.NewDeniedResult("Failed to get rollout position"), err
+		return results.
+			NewDeniedResult(fmt.Sprintf("Failed to get rollout position: %v", err)).
+			WithDetail("error", err.Error())
 	}
 
 	if rolloutStartTime == nil {
@@ -143,7 +161,7 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, environment *oap
 			NewPendingResult(results.ActionTypeWait, "Rollout has not started yet").
 			WithDetail("rollout_start_time", nil).
 			WithDetail("target_rollout_position", rolloutPosition).
-			WithDetail("target_rollout_time", nil), nil
+			WithDetail("target_rollout_time", nil)
 	}
 
 	deploymentOffset := e.getDeploymentOffset(rolloutPosition, e.rule.TimeScaleInterval)
@@ -154,11 +172,11 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, environment *oap
 		return results.NewPendingResult(results.ActionTypeWait, reason).
 			WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 			WithDetail("target_rollout_position", rolloutPosition).
-			WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339)), nil
+			WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339))
 	}
 
 	return results.NewAllowedResult("Rollout has progressed to this release target").
 		WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 		WithDetail("target_rollout_position", rolloutPosition).
-		WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339)), nil
+		WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339))
 }
