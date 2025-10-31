@@ -225,7 +225,8 @@
                "building",
                "ready",
                "failed",
-               "rejected"
+               "rejected",
+               "paused"
             ],
             "type": "string"
          },

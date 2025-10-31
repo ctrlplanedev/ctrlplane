@@ -14,16 +14,6 @@ type WorkspaceScopedEvaluator interface {
 	) (*oapi.RuleEvaluation, error)
 }
 
-// TargetScopedEvaluator evaluates policy rules that apply to release targets
-// themselves, independent of any specific release or version. These rules determine
-// whether a target is eligible for deployments based on target-level constraints.
-type TargetScopedEvaluator interface {
-	Evaluate(
-		ctx context.Context,
-		releaseTarget *oapi.ReleaseTarget,
-	) (*oapi.RuleEvaluation, error)
-}
-
 // ReleaseScopedEvaluator evaluates policy rules that apply to entire releases within
 // the context of a release target. These rules determine whether a release meets
 // the policy requirements for deployment to a target.
@@ -59,4 +49,19 @@ type EnvironmentAndVersionAndTargetScopedEvaluator interface {
 		version *oapi.DeploymentVersion,
 		releaseTarget *oapi.ReleaseTarget,
 	) (*oapi.RuleEvaluation, error)
+}
+
+type VersionAndTargetScopedEvaluator interface {
+	Evaluate(
+		ctx context.Context,
+		version *oapi.DeploymentVersion,
+		releaseTarget *oapi.ReleaseTarget,
+	) (*oapi.RuleEvaluation, error)
+}
+
+type EvaluationContext struct {
+	Environment   *oapi.Environment
+	Version       *oapi.DeploymentVersion
+	ReleaseTarget *oapi.ReleaseTarget
+	Release       *oapi.Release
 }

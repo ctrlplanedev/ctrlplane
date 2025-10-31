@@ -29,6 +29,13 @@ func (e *DeployableVersionStatusEvaluator) Evaluate(
 			WithDetail("version_id", version.Id).
 			WithDetail("version_status", version.Status), nil
 	}
+
+	if version.Status == oapi.DeploymentVersionStatusPaused {
+		return results.NewPendingResult(results.ActionTypeWait, "Version is paused").
+			WithDetail("version_id", version.Id).
+			WithDetail("version_status", version.Status), nil
+	}
+
 	return results.NewDeniedResult("Version is not ready").
 		WithDetail("version_id", version.Id).
 		WithDetail("version_status", version.Status), nil

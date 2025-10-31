@@ -92,30 +92,6 @@ func (f *EvaluatorFactory) EvaluateVersionScopedPolicyRules(
 	})
 }
 
-// EvaluateTargetScopedPolicyRules evaluates all target-scoped rules in a policy.
-// Returns nil if any rule evaluation fails.
-func (f *EvaluatorFactory) EvaluateTargetScopedPolicyRules(
-	ctx context.Context,
-	policy *oapi.Policy,
-	releaseTarget *oapi.ReleaseTarget,
-) []*oapi.RuleEvaluation {
-	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
-		evals := f.createTargetScopedEvaluator(rule)
-		if evals == nil {
-			return nil, nil // Skip unknown rule types
-		}
-		ruleResults := make([]*oapi.RuleEvaluation, 0, len(evals))
-		for _, eval := range evals {
-			result, err := eval.Evaluate(ctx, releaseTarget)
-			if err != nil {
-				return nil, err
-			}
-			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
-		}
-		return ruleResults, nil
-	})
-}
-
 // EvaluateReleaseScopedPolicyRules evaluates all release-scoped rules in a policy.
 // Returns nil if any rule evaluation fails.
 func (f *EvaluatorFactory) EvaluateReleaseScopedPolicyRules(
@@ -176,7 +152,6 @@ func evaluateRules(
 			return nil
 		}
 		ruleResults = append(ruleResults, result...)
-
 	}
 
 	return ruleResults
@@ -212,10 +187,13 @@ func (f *EvaluatorFactory) createVersionScopedEvaluator(rule *oapi.PolicyRule) [
 	return evaluators
 }
 
-// createTargetScopedEvaluator creates a target-scoped evaluator for the given rule.
+// createVersionAndTargetScopedEvaluator creates a version and target-scoped evaluator for the given rule.
 // Returns nil for unknown rule types.
-func (f *EvaluatorFactory) createTargetScopedEvaluator(rule *oapi.PolicyRule) []evaluator.TargetScopedEvaluator {
-	evaluators := []evaluator.TargetScopedEvaluator{}
+func (f *EvaluatorFactory) createVersionAndTargetScopedEvaluator(rule *oapi.PolicyRule) []evaluator.VersionAndTargetScopedEvaluator {
+	evaluators := []evaluator.VersionAndTargetScopedEvaluator{}
+	// if rule.PausedVersions != nil {
+	// 	evaluators = append(evaluators, pausedversions.NewPausedVersionsEvaluator(f.store, rule.PausedVersions))
+	// }
 	return evaluators
 }
 

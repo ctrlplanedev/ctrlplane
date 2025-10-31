@@ -6,7 +6,7 @@
 
   DeploymentVersionStatus: {
     type: 'string',
-    enum: ['unspecified', 'building', 'ready', 'failed', 'rejected'],
+    enum: ['unspecified', 'building', 'ready', 'failed', 'rejected', 'paused'],
   },
 
   RelationDirection: {

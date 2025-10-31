@@ -24,6 +24,7 @@ const (
 const (
 	DeploymentVersionStatusBuilding    DeploymentVersionStatus = "building"
 	DeploymentVersionStatusFailed      DeploymentVersionStatus = "failed"
+	DeploymentVersionStatusPaused      DeploymentVersionStatus = "paused"
 	DeploymentVersionStatusReady       DeploymentVersionStatus = "ready"
 	DeploymentVersionStatusRejected    DeploymentVersionStatus = "rejected"
 	DeploymentVersionStatusUnspecified DeploymentVersionStatus = "unspecified"
