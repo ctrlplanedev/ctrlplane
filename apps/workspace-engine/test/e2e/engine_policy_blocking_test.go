@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
@@ -70,6 +71,19 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 2 {
 		t.Fatalf("expected 2 pending jobs initially, got %d", len(pendingJobs))
+	}
+
+	for _, job := range pendingJobs {
+		job.Status = oapi.Successful
+		completedAt := time.Now()
+		job.CompletedAt = &completedAt
+
+		jobUpdateEvent := &oapi.JobUpdateEvent{
+			Id:  &job.Id,
+			Job: *job,
+		}
+
+		engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
 	}
 
 	// Update the policy to add an approval rule and target prod deployments

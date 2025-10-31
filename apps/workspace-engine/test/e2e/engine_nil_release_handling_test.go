@@ -307,6 +307,12 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	resource := c.NewResource(workspaceID)
 	engine.PushEvent(ctx, handler.ResourceCreate, resource)
 
+	releaseTarget := &oapi.ReleaseTarget{
+		ResourceId:    resource.Id,
+		EnvironmentId: environment.Id,
+		DeploymentId:  deployment.Id,
+	}
+
 	// Create first version - this creates a valid job and release
 	version1 := c.NewDeploymentVersion()
 	version1.DeploymentId = deployment.Id
@@ -314,6 +320,23 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version1)
 
 	time.Sleep(100 * time.Millisecond)
+
+	for _, job := range engine.Workspace().Jobs().GetJobsInProcessingStateForReleaseTarget(releaseTarget) {
+		job.Status = oapi.Skipped
+		completedAt := time.Now()
+		job.CompletedAt = &completedAt
+
+		jobUpdateEvent := &oapi.JobUpdateEvent{
+			Id:  &job.Id,
+			Job: *job,
+			FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+				oapi.JobUpdateEventFieldsToUpdate("completedAt"),
+				oapi.JobUpdateEventFieldsToUpdate("status"),
+			},
+		}
+
+		engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
+	}
 
 	// Create second version - another valid job and release
 	version2 := c.NewDeploymentVersion()
@@ -332,7 +355,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	// Find a job and corrupt its release
 	var jobToCorrupt *oapi.Job
 	for _, j := range allJobs {
-		if j.Status == oapi.Pending {
+		if j.Status == oapi.Skipped {
 			jobToCorrupt = j
 			break
 		}
@@ -349,12 +372,6 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 
 	releaseIdToDelete := release.ID()
 	engine.Workspace().Releases().Remove(ctx, releaseIdToDelete)
-
-	releaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    resource.Id,
-		EnvironmentId: environment.Id,
-		DeploymentId:  deployment.Id,
-	}
 
 	// Get jobs for release target - should only return jobs with valid releases
 	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)

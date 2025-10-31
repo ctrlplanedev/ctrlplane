@@ -43,10 +43,6 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		return err
 	}
 
-	// Step 2: Cancel outdated jobs for this release target (WRITES)
-	// Cancel any pending/in-progress jobs for different releases (outdated versions)
-	e.CancelOutdatedJobs(ctx, releaseToDeploy)
-
 	// Step 3: Create and persist new job (WRITE)
 	newJob, err := e.jobFactory.CreateJobForRelease(ctx, releaseToDeploy)
 	if err != nil {
@@ -75,22 +71,6 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	}
 
 	return nil
-}
-
-// CancelOutdatedJobs cancels jobs for outdated releases (WRITES TO STORE).
-func (e *Executor) CancelOutdatedJobs(ctx context.Context, desiredRelease *oapi.Release) {
-	ctx, span := tracer.Start(ctx, "CancelOutdatedJobs")
-	defer span.End()
-
-	jobs := e.store.Jobs.GetJobsForReleaseTarget(&desiredRelease.ReleaseTarget)
-
-	for _, job := range jobs {
-		if job.Status == oapi.Pending {
-			job.Status = oapi.Cancelled
-			job.UpdatedAt = time.Now()
-			e.store.Jobs.Upsert(ctx, job)
-		}
-	}
 }
 
 // BuildRelease constructs a release object from its components.

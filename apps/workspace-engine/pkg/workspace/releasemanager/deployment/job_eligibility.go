@@ -4,6 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/skipdeployed"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
@@ -33,6 +34,7 @@ func NewJobEligibilityChecker(store *store.Store) *JobEligibilityChecker {
 		store: store,
 		releaseEvaluators: []evaluator.JobEvaluator{
 			skipdeployed.NewSkipDeployedEvaluator(store),
+			releasetargetconcurrency.NewReleaseTargetConcurrencyEvaluator(store),
 			// Future: Add retry limit evaluator here
 			// retrylimit.NewRetryLimitEvaluator(store, maxRetries: 4),
 		},
