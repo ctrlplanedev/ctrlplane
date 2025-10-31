@@ -22,7 +22,7 @@ func (e *ReleaseTargetConcurrencyEvaluator) Evaluate(ctx context.Context, releas
 	processingJobs := e.store.Jobs.GetJobsInProcessingStateForReleaseTarget(releaseTarget)
 	if len(processingJobs) > 0 {
 		return results.NewDeniedResult("Release target is already processing jobs").
-			WithDetail("release_target_id", releaseTarget.Key()).
+			WithDetail("release_target_key", releaseTarget.Key()).
 			WithDetail("jobs", processingJobs), nil
 	}
 
