@@ -86,6 +86,9 @@ func setupTestStore() *store.Store {
 	return st
 }
 
+// TestEnvironmentProgressionEvaluator_VersionNotInDependency tests that when a version has not been deployed
+// to any dependency environment (matching the selector), the evaluator returns a pending/action-required result.
+// This ensures that versions must succeed in dependency environments before they can be deployed to the target environment.
 func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
@@ -133,6 +136,9 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 	assert.NotEmpty(t, result.Message, "expected error message")
 }
 
+// TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency tests that when a version has been
+// successfully deployed to a dependency environment (has at least one successful job), the evaluator allows
+// progression to the target environment. This verifies the basic success detection logic.
 func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
@@ -208,6 +214,10 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 	assert.False(t, result.ActionRequired, "expected no action required")
 }
 
+// TestEnvironmentProgressionEvaluator_SoakTimeNotMet tests that when a version has successful jobs in the
+// dependency environment but they completed too recently (within the required soak time period), the evaluator
+// returns a pending/action-required result. This ensures versions must "soak" (remain stable) for a minimum
+// duration before progressing to the next environment.
 func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
@@ -286,6 +296,9 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 	assert.NotEmpty(t, result.Message, "expected message about soak time")
 }
 
+// TestEnvironmentProgressionEvaluator_NoMatchingEnvironments tests that when the dependency environment selector
+// matches no environments in the system, the evaluator denies progression. This handles the edge case where
+// the selector is misconfigured or no matching environments exist.
 func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
@@ -330,8 +343,12 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 	assert.False(t, result.ActionRequired, "expected denied, not action required")
 }
 
+// TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly tests that the satisfiedAt timestamp is correctly
+// calculated when only a minimum pass rate (success percentage) requirement is specified. The satisfiedAt should
+// reflect the exact moment when the minimum pass rate was achieved (i.e., when the Nth successful job completed,
+// where N is the minimum number of successes required). This test uses 3 release targets with a 50% requirement,
+// so satisfiedAt should be set to when the 2nd job completed (at 10:10), as that's when 66% (2/3) first met the 50% threshold.
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) {
-	// Test that satisfiedAt is set correctly when only pass rate is required
 	st := setupTestStore()
 	ctx := context.Background()
 
@@ -485,8 +502,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	assert.Equal(t, completedAt2, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 2nd successful job (when 50% requirement was met)")
 }
 
+// TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly tests that the satisfiedAt timestamp is correctly
+// calculated when only a minimum soak time requirement is specified. The satisfiedAt should reflect when the
+// soak time requirement was satisfied, which is calculated as: mostRecentSuccess + soakDuration. For example,
+// if the most recent successful job completed 40 minutes ago and the soak time is 30 minutes, then satisfiedAt
+// should be 10 minutes ago (40 - 30).
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) {
-	// Test that satisfiedAt is set correctly when only soak time is required
 	st := setupTestStore()
 	ctx := context.Background()
 
@@ -562,8 +583,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
 }
 
+// TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime tests that when both pass rate and
+// soak time requirements are specified, the satisfiedAt timestamp is set to the later of the two satisfaction
+// times. This is because both conditions must be met (AND logic), so the overall requirement is satisfied only
+// when the last condition is satisfied. In this test, pass rate is satisfied at 10:10, but soak time requires
+// the most recent success (10:20) plus 30 minutes, so satisfiedAt should be 10:50 (the later time).
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *testing.T) {
-	// Test that satisfiedAt is set to the later of the two times when both requirements are specified
 	st := setupTestStore()
 	ctx := context.Background()
 
@@ -685,8 +710,12 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 	assert.Equal(t, soakTimeSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be the later of pass rate and soak time satisfaction times")
 }
 
+// TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime tests the scenario where the pass rate
+// requirement is satisfied chronologically before the soak time requirement (though both must be met). This verifies
+// that satisfiedAt correctly identifies the later of the two times even when they are satisfied in different orders.
+// In this test, the pass rate is satisfied when the 3rd job completes (20 minutes ago), but the soak time is
+// satisfied later (mostRecentSuccess + 15 minutes = 5 minutes ago), so satisfiedAt should be 5 minutes ago.
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *testing.T) {
-	// Test when pass rate is satisfied later than soak time
 	st := setupTestStore()
 	ctx := context.Background()
 
@@ -854,8 +883,11 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	assert.InDelta(t, expectedSatisfiedAt.Unix(), result.SatisfiedAt.Unix(), 150, "satisfiedAt should be approximately 5 minutes ago (within 2.5 minutes)")
 }
 
+// TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied tests that when the environment progression
+// requirements are not met (e.g., soak time requirement not satisfied), the satisfiedAt field is nil. This
+// ensures that satisfiedAt is only set when the requirement has actually been satisfied, not when it's still
+// pending or denied.
 func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
-	// Test that satisfiedAt is nil when requirements are not met
 	st := setupTestStore()
 	ctx := context.Background()
 
