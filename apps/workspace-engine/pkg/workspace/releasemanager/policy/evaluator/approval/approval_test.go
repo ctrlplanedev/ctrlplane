@@ -2,7 +2,9 @@ package approval
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -289,4 +291,334 @@ func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
 
 	approvers := result.Details["approvers"].([]string)
 	assert.Len(t, approvers, 5, "expected 5 approvers")
+}
+
+func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
+	// Test that satisfiedAt is set to the timestamp of the Nth approval (where N = minApprovals)
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+	ctx := context.Background()
+
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	// Create test environment
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
+
+	// Create approval records with specific timestamps
+	// We need 2 approvals, so the 2nd approval (index 1) should be the satisfying one
+	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	
+	firstApprovalTime := baseTime.Add(5 * time.Minute)
+	secondApprovalTime := baseTime.Add(10 * time.Minute) // This should be the satisfiedAt timestamp
+	thirdApprovalTime := baseTime.Add(15 * time.Minute)
+
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     firstApprovalTime.Format(time.RFC3339),
+	})
+
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-2",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     secondApprovalTime.Format(time.RFC3339),
+	})
+
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-3",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     thirdApprovalTime.Format(time.RFC3339),
+	})
+
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+
+	version := &oapi.DeploymentVersion{Id: versionId}
+	environment, _ := st.Environments.Get(environmentId)
+
+	// Act
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, secondApprovalTime, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 2nd approval (the one that satisfied the requirement)")
+}
+
+func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
+	// Test that satisfiedAt uses the Nth approval even when there are more approvals
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+	ctx := context.Background()
+
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
+
+	// Create 5 approvals, but only need 2
+	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	
+	firstApprovalTime := baseTime.Add(5 * time.Minute)
+	secondApprovalTime := baseTime.Add(10 * time.Minute) // This should be the satisfiedAt (2nd approval)
+	thirdApprovalTime := baseTime.Add(15 * time.Minute)
+	fourthApprovalTime := baseTime.Add(20 * time.Minute)
+	fifthApprovalTime := baseTime.Add(25 * time.Minute)
+
+	approvalTimes := []time.Time{firstApprovalTime, secondApprovalTime, thirdApprovalTime, fourthApprovalTime, fifthApprovalTime}
+	for i, approvalTime := range approvalTimes {
+		st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+			VersionId:     versionId,
+			EnvironmentId: environmentId,
+			UserId:        fmt.Sprintf("user-%d", i+1),
+			Status:        oapi.ApprovalStatusApproved,
+			CreatedAt:     approvalTime.Format(time.RFC3339),
+		})
+	}
+
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+
+	version := &oapi.DeploymentVersion{Id: versionId}
+	environment, _ := st.Environments.Get(environmentId)
+
+	// Act
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, secondApprovalTime, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 2nd approval, not the 5th")
+}
+
+func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
+	// Test with minApprovals = 1, so the first approval should be the satisfying one
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+	ctx := context.Background()
+
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
+
+	firstApprovalTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	secondApprovalTime := firstApprovalTime.Add(5 * time.Minute)
+
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     firstApprovalTime.Format(time.RFC3339),
+	})
+
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-2",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     secondApprovalTime.Format(time.RFC3339),
+	})
+
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 1}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+
+	version := &oapi.DeploymentVersion{Id: versionId}
+	environment, _ := st.Environments.Get(environmentId)
+
+	// Act
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, firstApprovalTime, *result.SatisfiedAt, "satisfiedAt should be the timestamp of the 1st approval")
+}
+
+func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
+	// Test that satisfiedAt is nil when approvals are not satisfied
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+	ctx := context.Background()
+
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
+
+	// Only 1 approval, but need 3
+	approvalTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 3}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+
+	version := &oapi.DeploymentVersion{Id: versionId}
+	environment, _ := st.Environments.Get(environmentId)
+
+	// Act
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.False(t, result.Allowed, "expected denied")
+	assert.Nil(t, result.SatisfiedAt, "satisfiedAt should be nil when approvals are not satisfied")
+}
+
+func TestAnyApprovalEvaluator_SatisfiedAt_NoApprovalsRequired(t *testing.T) {
+	// Test that satisfiedAt uses version.CreatedAt when no approvals are required
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+	ctx := context.Background()
+
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
+
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:        versionId,
+		CreatedAt: versionCreatedAt,
+	}
+
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 0}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+
+	environment, _ := st.Environments.Get(environmentId)
+
+	// Act
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, versionCreatedAt, *result.SatisfiedAt, "satisfiedAt should be version.CreatedAt when no approvals required")
+}
+
+func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
+	// Test that satisfiedAt uses the correct approval even if approvals are created out of order
+	// The store sorts by CreatedAt, so we should get the Nth approval by creation time, not insertion order
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+	ctx := context.Background()
+
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	env := &oapi.Environment{
+		Id:       environmentId,
+		Name:     "test-env",
+		SystemId: "system-1",
+	}
+	st.Environments.Upsert(ctx, env)
+
+	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	
+	// Create approvals out of chronological order
+	// First approval (created later, but inserted first)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     baseTime.Add(15 * time.Minute).Format(time.RFC3339),
+	})
+
+	// Second approval (created first, but inserted second)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-2",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     baseTime.Add(5 * time.Minute).Format(time.RFC3339), // This is the 2nd approval by creation time
+	})
+
+	// Third approval (created middle)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		EnvironmentId: environmentId,
+		UserId:        "user-3",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     baseTime.Add(10 * time.Minute).Format(time.RFC3339),
+	})
+
+	// Need 2 approvals, so the 2nd approval by creation time should be the satisfying one
+	expectedSatisfiedAt := baseTime.Add(10 * time.Minute) // This is the 2nd approval chronologically
+
+	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	eval := NewAnyApprovalEvaluator(st, rule)
+
+	version := &oapi.DeploymentVersion{Id: versionId}
+	environment, _ := st.Environments.Get(environmentId)
+
+	// Act
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed")
+	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be based on creation time order, not insertion order")
 }

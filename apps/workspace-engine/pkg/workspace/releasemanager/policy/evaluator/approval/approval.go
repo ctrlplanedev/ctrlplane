@@ -3,6 +3,7 @@ package approval
 import (
 	"context"
 	"fmt"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -45,25 +46,49 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			NewAllowedResult("No approvals required").
 			WithDetail("version_id", version.Id).
 			WithDetail("environment_id", environment.Id).
-			WithDetail("min_approvals", m.rule.MinApprovals)
+			WithDetail("min_approvals", m.rule.MinApprovals).
+			WithSatisfiedAt(version.CreatedAt)
 	}
 
-	approvers := m.store.UserApprovalRecords.GetApprovers(version.Id, environment.Id)
+	approvalRecords := m.store.UserApprovalRecords.GetApprovalRecords(version.Id, environment.Id)
 	minApprovals := int(m.rule.MinApprovals)
-	if len(approvers) >= minApprovals {
+	
+	approvers := make([]string, len(approvalRecords))
+	for i, record := range approvalRecords {
+		approvers[i] = record.UserId
+	}
+
+	if len(approvalRecords) >= minApprovals {
+		// Get the timestamp of the approval that satisfied the requirement (the Nth approval)
+		// Records are sorted oldest first, so the Nth approval is at index minApprovals-1
+		satisfyingApproval := approvalRecords[minApprovals-1]
+		approvalTime, err := time.Parse(time.RFC3339, satisfyingApproval.CreatedAt)
+		if err != nil {
+			// If parsing fails, continue without the timestamp
+			return results.
+				NewAllowedResult(
+					fmt.Sprintf("All approvals met (%d/%d).", len(approvalRecords), minApprovals),
+				).
+				WithDetail("min_approvals", minApprovals).
+				WithDetail("approvers", approvers).
+				WithDetail("version_id", version.Id).
+				WithDetail("environment_id", environment.Id)
+		}
+
 		return results.
 			NewAllowedResult(
-				fmt.Sprintf("All approvals met (%d/%d).", len(approvers), minApprovals),
+				fmt.Sprintf("All approvals met (%d/%d).", len(approvalRecords), minApprovals),
 			).
 			WithDetail("min_approvals", minApprovals).
 			WithDetail("approvers", approvers).
 			WithDetail("version_id", version.Id).
-			WithDetail("environment_id", environment.Id)
+			WithDetail("environment_id", environment.Id).
+			WithSatisfiedAt(approvalTime)
 	}
 
 	return results.
 		NewPendingResult("approval",
-			fmt.Sprintf("Not enough approvals (%d/%d).", len(approvers), minApprovals),
+			fmt.Sprintf("Not enough approvals (%d/%d).", len(approvalRecords), minApprovals),
 		).
 		WithDetail("min_approvals", minApprovals).
 		WithDetail("approvers", approvers).

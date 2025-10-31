@@ -1,5 +1,7 @@
 package oapi
 
+import "time"
+
 func NewRuleEvaluation() *RuleEvaluation {
 	return &RuleEvaluation{
 		RuleId:         "",
@@ -42,6 +44,11 @@ func (r *RuleEvaluation) WithDetail(key string, value any) *RuleEvaluation {
 		r.Details = map[string]any{}
 	}
 	r.Details[key] = value
+	return r
+}
+
+func (r *RuleEvaluation) WithSatisfiedAt(satisfiedAt time.Time) *RuleEvaluation {
+	r.SatisfiedAt = &satisfiedAt
 	return r
 }
 

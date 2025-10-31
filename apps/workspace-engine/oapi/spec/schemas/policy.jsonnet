@@ -173,6 +173,11 @@ local openapi = import '../lib/openapi.libsonnet';
         additionalProperties: true,
         description: 'Additional details about the rule evaluation',
       },
+      satisfiedAt: {
+        type: 'string',
+        format: 'date-time',
+        description: 'The time when the rule requirement was satisfied (e.g., when approvals were met, soak time completed)',
+      },
     },
   },
 

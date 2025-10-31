@@ -1159,6 +1159,11 @@
                "ruleId": {
                   "description": "The ID of the rule that was evaluated",
                   "type": "string"
+               },
+               "satisfiedAt": {
+                  "description": "The time when the rule requirement was satisfied (e.g., when approvals were met, soak time completed)",
+                  "format": "date-time",
+                  "type": "string"
                }
             },
             "required": [

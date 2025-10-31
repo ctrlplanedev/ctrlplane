@@ -493,6 +493,9 @@ type RuleEvaluation struct {
 
 	// RuleId The ID of the rule that was evaluated
 	RuleId string `json:"ruleId"`
+
+	// SatisfiedAt The time when the rule requirement was satisfied (e.g., when approvals were met, soak time completed)
+	SatisfiedAt *time.Time `json:"satisfiedAt,omitempty"`
 }
 
 // RuleEvaluationActionType Type of action required
