@@ -19,6 +19,7 @@ type EnvironmentProgressionDetails = {
   allowed: boolean;
   dependencyEnvironmentCount: number;
   dependencyEnvironmentDetails: Record<string, DependencyEnvironmentDetails>;
+  message: string;
 };
 
 const findEnvironmentProgressionRule = (
@@ -109,6 +110,7 @@ const getDetailsForPolicy = (
     dependencyEnvironmentCount: ruleResult.details
       .dependency_environment_count as number,
     dependencyEnvironmentDetails,
+    message: ruleResult.message,
   };
 };
 

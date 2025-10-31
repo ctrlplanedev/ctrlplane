@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { ApprovalDecision } from "./ApprovalDecision";
+import { EnvironmentProgressionDecision } from "./EnvironmentProgressionDecision";
 import { GradualRolloutDecision } from "./GradualRolloutDecision";
 
 type EnvironmentVersionDecisionsProps = {
@@ -29,6 +30,7 @@ function EnvironmentVersionDecisionCard(props: {
       <div className="flex flex-col gap-1">
         <ApprovalDecision {...props} />
         <GradualRolloutDecision {...props} />
+        <EnvironmentProgressionDecision {...props} />
       </div>
     </div>
   );
