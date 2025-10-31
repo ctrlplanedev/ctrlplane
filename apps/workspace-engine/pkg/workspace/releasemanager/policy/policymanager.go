@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/pausedversions"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 
@@ -32,7 +33,7 @@ type Manager struct {
 // New creates a new policy manager.
 func New(store *store.Store) *Manager {
 	return &Manager{
-		store:            store,
+		store: store,
 	}
 }
 
@@ -48,6 +49,7 @@ func (m *Manager) GlobalEvaluators() []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
 		pausedversions.New(m.store),
 		deployableversions.NewDeployableVersionStatusEvaluator(m.store),
+		releasetargetconcurrency.NewReleaseTargetConcurrencyEvaluator(m.store),
 	)
 }
 
@@ -61,7 +63,6 @@ func (m *Manager) EvaluatePolicy(
 			attribute.String("policy.id", policy.Id),
 		))
 	defer span.End()
-
 
 	policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
 	for _, rule := range policy.Rules {
