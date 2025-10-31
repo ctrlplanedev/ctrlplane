@@ -19,9 +19,13 @@ type SkipDeployedEvaluator struct {
 }
 
 func NewSkipDeployedEvaluator(store *store.Store) evaluator.Evaluator {
-	return evaluator.WithMemoization(&SkipDeployedEvaluator{
+	// Note: We do NOT use memoization for this evaluator because the job state
+	// can change between evaluations. The same release might have no jobs initially
+	// (allow), but after a job is created, it should be denied. Memoization would
+	// cache the initial "allow" result and incorrectly allow duplicate jobs.
+	return &SkipDeployedEvaluator{
 		store: store,
-	})
+	}
 }
 
 // ScopeFields declares that this evaluator cares about Release.
