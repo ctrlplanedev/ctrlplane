@@ -83,7 +83,7 @@ const getRolloutInfoForReleaseTarget = async (
     releaseTarget,
     version,
   );
-  const policyResults = evaluation.envTargetVersionDecision?.policyResults;
+  const policyResults = evaluation.decision?.policyResults;
   if (policyResults == null) return null;
 
   for (const { policy, ruleResults } of policyResults) {
@@ -110,11 +110,9 @@ export const getGradualRolloutWithResult = async (
   version: DeploymentVersion,
   policyResults?: PolicyResults,
 ) => {
-  const envVersionTargetResult = policyResults?.envTargetVersionDecision;
-  if (envVersionTargetResult == null) return null;
-  const gradualRolloutRule = getGradualRolloutRule(
-    envVersionTargetResult.policyResults,
-  );
+  const decision = policyResults?.decision;
+  if (decision == null) return null;
+  const gradualRolloutRule = getGradualRolloutRule(decision.policyResults);
   if (gradualRolloutRule == null) return null;
 
   const releaseTargets = await getAllReleaseTargets(

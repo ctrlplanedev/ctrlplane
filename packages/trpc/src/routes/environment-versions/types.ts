@@ -8,9 +8,6 @@ export type Policy = WorkspaceEngine["schemas"]["Policy"];
 export type RuleEvaluation = WorkspaceEngine["schemas"]["RuleEvaluation"];
 
 export type PolicyResults = {
-  envTargetVersionDecision?: WorkspaceEngine["schemas"]["DeployDecision"];
-  envVersionDecision?: WorkspaceEngine["schemas"]["DeployDecision"];
+  decision?: WorkspaceEngine["schemas"]["DeployDecision"];
   policiesEvaluated?: number;
-  versionDecision?: WorkspaceEngine["schemas"]["DeployDecision"];
-  workspaceDecision?: WorkspaceEngine["schemas"]["DeployDecision"];
 };

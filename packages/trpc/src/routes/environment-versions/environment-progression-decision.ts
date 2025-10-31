@@ -117,10 +117,10 @@ const getDetailsForPolicy = (
 export const getEnvironmentProgressionRuleWithResult = (
   policyResults?: PolicyResults,
 ) => {
-  const envVersionResult = policyResults?.envVersionDecision;
-  if (envVersionResult == null) return null;
+  const decision = policyResults?.decision;
+  if (decision == null) return null;
 
-  return envVersionResult.policyResults
+  return decision.policyResults
     .map(({ policy, ruleResults }) => {
       if (policy == null) return null;
       const details = getDetailsForPolicy(policy, ruleResults);

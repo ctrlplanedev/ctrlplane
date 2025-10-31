@@ -7,10 +7,10 @@ type ApprovalRuleDetails = {
 };
 
 export const getApprovalRuleWithResult = (policyResults?: PolicyResults) => {
-  const envVersionResult = policyResults?.envVersionDecision;
-  if (envVersionResult == null) return null;
+  const decision = policyResults?.decision;
+  if (decision == null) return null;
 
-  for (const { policy, ruleResults } of envVersionResult.policyResults) {
+  for (const { policy, ruleResults } of decision.policyResults) {
     if (policy == null) continue;
 
     for (const ruleResult of ruleResults) {
