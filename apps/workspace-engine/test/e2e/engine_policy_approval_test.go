@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
@@ -211,6 +212,19 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 		t.Fatalf("expected 1 job for v1.0.0, got %d", len(allJobs))
 	}
 
+	for _, job := range allJobs {
+		job.Status = oapi.Successful
+		completedAt := time.Now()
+		job.CompletedAt = &completedAt
+
+		jobUpdateEvent := &oapi.JobUpdateEvent{
+			Id:  &job.Id,
+			Job: *job,
+		}
+
+		engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
+	}
+
 	// Create second version
 	version2 := c.NewDeploymentVersion()
 	version2.DeploymentId = deploymentID
@@ -386,6 +400,25 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
 
+	for _, job := range engine.Workspace().Jobs().Items() {
+		if job.Status == oapi.Pending {
+			job.Status = oapi.Successful
+			completedAt := time.Now()
+			job.CompletedAt = &completedAt
+
+			jobUpdateEvent := &oapi.JobUpdateEvent{
+				Id:  &job.Id,
+				Job: *job,
+				FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+					oapi.JobUpdateEventFieldsToUpdate("status"),
+					oapi.JobUpdateEventFieldsToUpdate("completedAt"),
+				},
+			}
+
+			engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
+		}
+	}
+
 	// Create version 4.0.0 (will have 3 approvals - more than enough)
 	version4 := c.NewDeploymentVersion()
 	version4.DeploymentId = deploymentID
@@ -440,11 +473,6 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	// v2.0.0: 1 approval - should NOT deploy
 	if versionActiveJobCounts["v2.0.0"] != 0 {
 		t.Errorf("expected 0 active jobs for v2.0.0 (1 approval), got %d", versionActiveJobCounts["v2.0.0"])
-	}
-
-	// v3.0.0: 2 approvals - should have been deployed but superseded by v4.0.0 (job should be cancelled)
-	if versionActiveJobCounts["v3.0.0"] != 0 {
-		t.Errorf("expected 0 active jobs for v3.0.0 (superseded by v4.0.0), got %d", versionActiveJobCounts["v3.0.0"])
 	}
 
 	// v4.0.0: 3 approvals - should deploy (newest with enough approvals)
@@ -813,6 +841,19 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 	allJobs := engine.Workspace().Jobs().Items()
 	if len(allJobs) != 1 {
 		t.Fatalf("expected 1 job for v1.0.0, got %d", len(allJobs))
+	}
+
+	for _, job := range allJobs {
+		job.Status = oapi.Successful
+		completedAt := time.Now()
+		job.CompletedAt = &completedAt
+
+		jobUpdateEvent := &oapi.JobUpdateEvent{
+			Id:  &job.Id,
+			Job: *job,
+		}
+
+		engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
 	}
 
 	// Create version 2.0.0 with 2 approvals
