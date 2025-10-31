@@ -284,109 +284,6 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
-  apps/event-queue:
-    dependencies:
-      '@ctrlplane/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@ctrlplane/events':
-        specifier: workspace:*
-        version: link:../../packages/events
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/rule-engine':
-        specifier: workspace:*
-        version: link:../../packages/rule-engine
-      '@ctrlplane/secrets':
-        specifier: workspace:*
-        version: link:../../packages/secrets
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../../packages/validators
-      '@octokit/auth-app':
-        specifier: 'catalog:'
-        version: 7.1.5
-      '@octokit/rest':
-        specifier: 'catalog:'
-        version: 20.1.1
-      '@opentelemetry/api':
-        specifier: ^1.9.0
-        version: 1.9.0
-      '@opentelemetry/auto-instrumentations-node':
-        specifier: ^0.52.1
-        version: 0.52.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/exporter-logs-otlp-http':
-        specifier: ^0.54.2
-        version: 0.54.2(@opentelemetry/api@1.9.0)
-      '@opentelemetry/exporter-trace-otlp-http':
-        specifier: ^0.54.2
-        version: 0.54.2(@opentelemetry/api@1.9.0)
-      '@opentelemetry/resources':
-        specifier: ^1.27.0
-        version: 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/sdk-logs':
-        specifier: ^0.54.2
-        version: 0.54.2(@opentelemetry/api@1.9.0)
-      '@opentelemetry/sdk-node':
-        specifier: ^0.54.2
-        version: 0.54.2(@opentelemetry/api@1.9.0)
-      '@opentelemetry/sdk-trace-base':
-        specifier: ^1.27.0
-        version: 1.30.1(@opentelemetry/api@1.9.0)
-      '@opentelemetry/semantic-conventions':
-        specifier: ^1.27.0
-        version: 1.34.0
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.11.1(typescript@5.9.3)(zod@3.24.2)
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
-      kafkajs:
-        specifier: ^2.2.4
-        version: 2.2.4
-      murmurhash-js:
-        specifier: ^1.0.0
-        version: 1.0.0
-      ts-is-present:
-        specifier: 'catalog:'
-        version: 1.2.2
-      workerpool:
-        specifier: ^9.3.4
-        version: 9.3.4
-      zod:
-        specifier: 'catalog:'
-        version: 3.24.2
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:^
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:^
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/murmurhash-js':
-        specifier: ^1.0.6
-        version: 1.0.6
-      '@types/node':
-        specifier: catalog:node22
-        version: 22.16.2
-      eslint:
-        specifier: 'catalog:'
-        version: 9.11.1(jiti@2.6.1)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.6.2
-      tsx:
-        specifier: 'catalog:'
-        version: 4.20.3
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-
   apps/pty-proxy:
     dependencies:
       '@ctrlplane/auth':
@@ -13288,9 +13185,6 @@ packages:
 
   wordwrap@1.0.0:
     resolution: {integrity: sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==}
-
-  workerpool@9.3.4:
-    resolution: {integrity: sha512-TmPRQYYSAnnDiEB0P/Ytip7bFGvqnSU6I2BcuSw7Hx+JSg/DsUi5ebYfc8GYaSdpuvOcEs6dXxPurOYpe9QFwg==}
 
   wrap-ansi@6.2.0:
     resolution: {integrity: sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==}
@@ -26975,8 +26869,6 @@ snapshots:
   word-wrap@1.2.5: {}
 
   wordwrap@1.0.0: {}
-
-  workerpool@9.3.4: {}
 
   wrap-ansi@6.2.0:
     dependencies:
