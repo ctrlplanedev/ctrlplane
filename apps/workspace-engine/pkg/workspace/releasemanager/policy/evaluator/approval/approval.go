@@ -17,13 +17,13 @@ type AnyApprovalEvaluator struct {
 	rule  *oapi.AnyApprovalRule
 }
 
-func NewAnyApprovalEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
-	if rule.AnyApproval == nil {
+func NewAnyApprovalEvaluator(store *store.Store, approvalRule *oapi.AnyApprovalRule) evaluator.Evaluator {
+	if approvalRule == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(&AnyApprovalEvaluator{
 		store: store,
-		rule:  rule.AnyApproval,
+		rule:  approvalRule,
 	})
 }
 
@@ -52,7 +52,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 
 
 	// If this version has already been deployed to this environment, it was previously "approved"
-	// so we can allow it without requiring new approvals. Will need to add support for bypass jobs though
+	// so we can allow it without requiring new approvals. Will need to add support for bypass jobs though.
 	for _, release := range m.store.Releases.Items() {
 		if release.Version.Id == version.Id && release.ReleaseTarget.EnvironmentId == environment.Id {
 			return results.

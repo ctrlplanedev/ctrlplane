@@ -365,13 +365,24 @@
          },
          "GradualRolloutRule": {
             "properties": {
-               "id": {
-                  "type": "string"
+               "positionGrowthFactor": {
+                  "description": "Modifier controlling the growth rate for exponential rollouts. Larger values increase the delay between later deployments. Only meaningful when using an exponential rolloutType.",
+                  "format": "float",
+                  "minimum": 0,
+                  "type": "number"
                },
-               "policyId": {
+               "rolloutType": {
+                  "description": "Algorithm used to schedule deployments across release targets. \"linear\" deploys at a fixed interval; \"linear-normalized\" spaces deployments evenly across targets; \"exponential\" increases delay nonlinearly, and \"exponential-normalized\" normalizes exponential spacing across all targets.",
+                  "enum": [
+                     "linear",
+                     "linear-normalized",
+                     "exponential",
+                     "exponential-normalized"
+                  ],
                   "type": "string"
                },
                "timeScaleInterval": {
+                  "description": "Base time interval in seconds used to compute the delay between deployments to release targets.",
                   "format": "int32",
                   "minimum": 0,
                   "type": "integer"
@@ -380,7 +391,9 @@
             "required": [
                "id",
                "policyId",
-               "timeScaleInterval"
+               "timeScaleInterval",
+               "rolloutType",
+               "positionGrowthFactor"
             ],
             "type": "object"
          },

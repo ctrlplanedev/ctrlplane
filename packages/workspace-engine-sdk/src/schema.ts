@@ -890,9 +890,20 @@ export interface components {
             slug: string;
         };
         GradualRolloutRule: {
-            id: string;
-            policyId: string;
-            /** Format: int32 */
+            /**
+             * Format: float
+             * @description Modifier controlling the growth rate for exponential rollouts. Larger values increase the delay between later deployments. Only meaningful when using an exponential rolloutType.
+             */
+            positionGrowthFactor: number;
+            /**
+             * @description Algorithm used to schedule deployments across release targets. "linear" deploys at a fixed interval; "linear-normalized" spaces deployments evenly across targets; "exponential" increases delay nonlinearly, and "exponential-normalized" normalizes exponential spacing across all targets.
+             * @enum {string}
+             */
+            rolloutType: "linear" | "linear-normalized" | "exponential" | "exponential-normalized";
+            /**
+             * Format: int32
+             * @description Base time interval in seconds used to compute the delay between deployments to release targets.
+             */
             timeScaleInterval: number;
         };
         IntegerValue: number;

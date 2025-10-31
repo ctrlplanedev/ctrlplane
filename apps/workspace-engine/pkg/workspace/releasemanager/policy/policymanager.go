@@ -36,11 +36,11 @@ func New(store *store.Store) *Manager {
 	}
 }
 
-func (m *Manager) EvaluatorsForPolicy(policy *oapi.PolicyRule) []evaluator.Evaluator {
+func (m *Manager) EvaluatorsForPolicy(rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		approval.NewAnyApprovalEvaluator(m.store, policy),
-		environmentprogression.NewEnvironmentProgressionEvaluator(m.store, policy),
-		gradualrollout.NewGradualRolloutEvaluator(m.store, policy),
+		approval.NewAnyApprovalEvaluator(m.store, rule.AnyApproval),
+		environmentprogression.NewEnvironmentProgressionEvaluator(m.store, rule),
+		gradualrollout.NewGradualRolloutEvaluator(m.store, rule),
 	)
 }
 

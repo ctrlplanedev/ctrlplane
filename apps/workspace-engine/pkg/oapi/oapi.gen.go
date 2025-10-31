@@ -30,6 +30,14 @@ const (
 	DeploymentVersionStatusUnspecified DeploymentVersionStatus = "unspecified"
 )
 
+// Defines values for GradualRolloutRuleRolloutType.
+const (
+	Exponential           GradualRolloutRuleRolloutType = "exponential"
+	ExponentialNormalized GradualRolloutRuleRolloutType = "exponential-normalized"
+	Linear                GradualRolloutRuleRolloutType = "linear"
+	LinearNormalized      GradualRolloutRuleRolloutType = "linear-normalized"
+)
+
 // Defines values for JobStatus.
 const (
 	ActionRequired      JobStatus = "actionRequired"
@@ -224,10 +232,18 @@ type GithubEntity struct {
 
 // GradualRolloutRule defines model for GradualRolloutRule.
 type GradualRolloutRule struct {
-	Id                string `json:"id"`
-	PolicyId          string `json:"policyId"`
-	TimeScaleInterval int32  `json:"timeScaleInterval"`
+	// PositionGrowthFactor Modifier controlling the growth rate for exponential rollouts. Larger values increase the delay between later deployments. Only meaningful when using an exponential rolloutType.
+	PositionGrowthFactor float32 `json:"positionGrowthFactor"`
+
+	// RolloutType Algorithm used to schedule deployments across release targets. "linear" deploys at a fixed interval; "linear-normalized" spaces deployments evenly across targets; "exponential" increases delay nonlinearly, and "exponential-normalized" normalizes exponential spacing across all targets.
+	RolloutType GradualRolloutRuleRolloutType `json:"rolloutType"`
+
+	// TimeScaleInterval Base time interval in seconds used to compute the delay between deployments to release targets.
+	TimeScaleInterval int32 `json:"timeScaleInterval"`
 }
+
+// GradualRolloutRuleRolloutType Algorithm used to schedule deployments across release targets. "linear" deploys at a fixed interval; "linear-normalized" spaces deployments evenly across targets; "exponential" increases delay nonlinearly, and "exponential-normalized" normalizes exponential spacing across all targets.
+type GradualRolloutRuleRolloutType string
 
 // IntegerValue defines model for IntegerValue.
 type IntegerValue = int

@@ -2,22 +2,22 @@ package gradualrollout
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hash/fnv"
-	"sort"
+	"math"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
 
 var _ evaluator.Evaluator = &GradualRolloutEvaluator{}
 
-var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
+var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, key string) (uint64, error) {
 	h := fnv.New64a()
-	h.Write([]byte(releaseTarget.Key() + versionID))
+	h.Write([]byte(releaseTarget.Key() + key))
 	return h.Sum64(), nil
 }
 
@@ -25,6 +25,8 @@ type GradualRolloutEvaluator struct {
 	store      *store.Store
 	rule       *oapi.GradualRolloutRule
 	hashingFn  func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
+
+	// For testing
 	timeGetter func() time.Time
 }
 
@@ -48,90 +50,89 @@ func (e *GradualRolloutEvaluator) ScopeFields() evaluator.ScopeFields {
 }
 
 func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*time.Time, error) {
+	// "start time" is when the approval condition passes
 	policiesForTarget, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 	if err != nil {
 		return nil, err
 	}
 
-	maxMinApprovals := int32(0)
+	var approvalSatisfiedAt *time.Time
+	var foundApprovalPolicy bool
+
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
 
 	for _, policy := range policiesForTarget {
 		if !policy.Enabled {
 			continue
 		}
 		for _, rule := range policy.Rules {
-			if rule.AnyApproval != nil && rule.AnyApproval.MinApprovals > maxMinApprovals {
-				maxMinApprovals = rule.AnyApproval.MinApprovals
+			// Only consider the approval rule if present
+			if rule.AnyApproval == nil {
+				continue
+			}
+			foundApprovalPolicy = true
+			approvalEvaluator := approval.NewAnyApprovalEvaluator(e.store, rule.AnyApproval)
+			if approvalEvaluator == nil {
+				continue
+			}
+		
+			approvalResult := approvalEvaluator.Evaluate(ctx, scope)
+			if approvalResult.Allowed && approvalResult.SatisfiedAt != nil {
+				// pick the latest SatisfiedAt if multiple approvals exist
+				if approvalSatisfiedAt == nil || approvalResult.SatisfiedAt.After(*approvalSatisfiedAt) {
+					approvalSatisfiedAt = approvalResult.SatisfiedAt
+				}
 			}
 		}
 	}
 
-	if maxMinApprovals == 0 {
+	// If no approval policies exist, use version creation time as rollout start
+	if !foundApprovalPolicy {
 		return &version.CreatedAt, nil
 	}
 
-	approvalRecords := e.store.UserApprovalRecords.GetApprovalRecords(version.Id, environment.Id)
-	if len(approvalRecords) < int(maxMinApprovals) {
-		return nil, nil
+	// If approval policies exist but none are satisfied, return error
+	if approvalSatisfiedAt == nil {
+		return nil, fmt.Errorf("approval condition not yet satisfied for rollout start")
 	}
 
-	firstApprovalRecordSatisfyingMinimumRequired := approvalRecords[maxMinApprovals-1]
-	approvalTime, err := time.Parse(time.RFC3339, firstApprovalRecordSatisfyingMinimumRequired.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
-
-	return &approvalTime, nil
+	return approvalSatisfiedAt, nil
 }
 
-func (e *GradualRolloutEvaluator) getRolloutPositionForTarget(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (int32, error) {
-	allReleaseTargets, err := e.store.ReleaseTargets.Items(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	var relevantTargets []*oapi.ReleaseTarget
-	for _, target := range allReleaseTargets {
-		if target.EnvironmentId == environment.Id && target.DeploymentId == version.DeploymentId {
-			relevantTargets = append(relevantTargets, target)
-		}
-	}
-
-	// Create a slice with target IDs and their hash values
-	type targetWithHash struct {
-		target *oapi.ReleaseTarget
-		hash   uint64
-	}
-
-	targetsWithHashes := make([]targetWithHash, len(relevantTargets))
-	for i, target := range relevantTargets {
-		hash, err := e.hashingFn(target, version.Id)
-		if err != nil {
-			return 0, err
-		}
-		targetsWithHashes[i] = targetWithHash{
-			target: target,
-			hash:   hash,
-		}
-	}
-
-	// Sort by hash value
-	sort.Slice(targetsWithHashes, func(i, j int) bool {
-		return targetsWithHashes[i].hash < targetsWithHashes[j].hash
-	})
-
-	// Find position of the current release target
-	for i, t := range targetsWithHashes {
-		if t.target.Key() == releaseTarget.Key() {
-			return int32(i), nil
-		}
-	}
-
-	return 0, errors.New("release target not found in sorted list")
-}
-
-func (e *GradualRolloutEvaluator) getDeploymentOffset(rolloutPosition int32, timeScaleInterval int32) time.Duration {
-	return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Minute
+func (e *GradualRolloutEvaluator) getDeploymentOffset(
+    rolloutPosition int32,
+    timeScaleInterval int32,
+    rolloutType oapi.GradualRolloutRuleRolloutType,
+    positionGrowthFactor float64,
+    numReleaseTargets int32,
+) time.Duration {
+    switch rolloutType {
+    case oapi.Linear:
+        return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
+    
+    case oapi.LinearNormalized:
+        return time.Duration(float64(rolloutPosition) / float64(numReleaseTargets) * float64(timeScaleInterval)) * time.Second
+    
+    case oapi.Exponential:
+        // exponential: timeScaleInterval * (1 - e^(-position / positionGrowthFactor))
+        exp := math.Exp(-float64(rolloutPosition) / positionGrowthFactor)
+        offset := float64(timeScaleInterval) * (1 - exp)
+        return time.Duration(offset) * time.Second
+    
+    case oapi.ExponentialNormalized:
+        // normalized exponential: timeScaleInterval * ((1 - e^(-position/numTargets)) / (1 - e^(-numTargets/growthFactor)))
+        exp1 := math.Exp(-float64(rolloutPosition) / float64(numReleaseTargets))
+        exp2 := math.Exp(-float64(numReleaseTargets) / positionGrowthFactor)
+        offset := float64(timeScaleInterval) * ((1 - exp1) / (1 - exp2))
+        return time.Duration(offset) * time.Second
+    
+    default:
+        // Default to linear for backward compatibility
+        return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
+    }
 }
 
 // Evaluate checks if a gradual rollout has progressed enough to allow deployment to this release target.
@@ -141,30 +142,51 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 	version := scope.Version
 	releaseTarget := scope.ReleaseTarget
 
-	now := e.timeGetter()
-	rolloutStartTime, err := e.getRolloutStartTime(ctx, environment, version, releaseTarget)
+	for _, release := range e.store.Releases.Items() {
+		if release.Version.Id == version.Id && release.ReleaseTarget.Key() == releaseTarget.Key() {
+			return results.NewAllowedResult("Release target has already been deployed").
+				WithDetail("release_id", release.ID()).
+				WithDetail("version_id", version.Id).
+				WithDetail("environment_id", environment.Id).
+				WithDetail("release_target", releaseTarget.Key())
+		}
+	}
+
+	releaseTargets, err := e.getReleaseTargets(ctx, environment, version)
 	if err != nil {
 		return results.
-			NewDeniedResult(fmt.Sprintf("Failed to determine rollout start time: %v", err)).
+			NewDeniedResult(fmt.Sprintf("Failed to get release targets: %v", err)).
 			WithDetail("error", err.Error())
 	}
 
-	rolloutPosition, err := e.getRolloutPositionForTarget(ctx, environment, version, releaseTarget)
+	now := e.timeGetter()
+	rolloutStartTime, err := e.getRolloutStartTime(ctx, environment, version, releaseTarget)
+	if err != nil || rolloutStartTime == nil {
+		return results.
+			NewPendingResult(results.ActionTypeWait, "Rollout has not started yet").
+			WithDetail("rollout_start_time", nil).
+			WithDetail("target_rollout_time", nil)
+	}
+
+	rolloutPosition, err := newRolloutPositionBuilder(releaseTargets, e.hashingFn).
+		computeHashes(version.Id).
+		sortByHash().
+		findPosition(releaseTarget).
+		build()
+
 	if err != nil {
 		return results.
 			NewDeniedResult(fmt.Sprintf("Failed to get rollout position: %v", err)).
 			WithDetail("error", err.Error())
 	}
 
-	if rolloutStartTime == nil {
-		return results.
-			NewPendingResult(results.ActionTypeWait, "Rollout has not started yet").
-			WithDetail("rollout_start_time", nil).
-			WithDetail("target_rollout_position", rolloutPosition).
-			WithDetail("target_rollout_time", nil)
-	}
-
-	deploymentOffset := e.getDeploymentOffset(rolloutPosition, e.rule.TimeScaleInterval)
+	deploymentOffset := e.getDeploymentOffset(
+		rolloutPosition, 
+		e.rule.TimeScaleInterval, 
+		e.rule.RolloutType, 
+		float64(e.rule.PositionGrowthFactor), 
+		int32(len(releaseTargets)),
+	)
 	deploymentTime := rolloutStartTime.Add(deploymentOffset)
 
 	if now.Before(deploymentTime) {
@@ -179,4 +201,24 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 		WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 		WithDetail("target_rollout_position", rolloutPosition).
 		WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339))
+}
+
+func (e *GradualRolloutEvaluator) getReleaseTargets(
+	ctx context.Context,
+	environment *oapi.Environment,
+	version *oapi.DeploymentVersion,
+) ([]*oapi.ReleaseTarget, error) {
+	targets, err := e.store.ReleaseTargets.Items(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	releaseTargets := make([]*oapi.ReleaseTarget, 0, len(targets))
+	for _, releaseTarget := range targets {
+		if releaseTarget.EnvironmentId == environment.Id && releaseTarget.DeploymentId == version.DeploymentId {
+			releaseTargets = append(releaseTargets, releaseTarget)
+		}
+	}
+
+	return releaseTargets, nil
 }

@@ -64,11 +64,25 @@ local openapi = import '../lib/openapi.libsonnet';
 
   GradualRolloutRule: {
     type: 'object',
-    required: ['id', 'policyId', 'timeScaleInterval'],
+    required: ['id', 'policyId', 'timeScaleInterval', 'rolloutType', 'positionGrowthFactor'],
     properties: {
-      id: { type: 'string' },
-      policyId: { type: 'string' },
-      timeScaleInterval: { type: 'integer', format: 'int32', minimum: 0 },
+      timeScaleInterval: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Base time interval in seconds used to compute the delay between deployments to release targets.',
+      },
+      rolloutType: {
+        type: 'string',
+        enum: ['linear', 'linear-normalized', 'exponential', 'exponential-normalized'],
+        description: 'Algorithm used to schedule deployments across release targets. "linear" deploys at a fixed interval; "linear-normalized" spaces deployments evenly across targets; "exponential" increases delay nonlinearly, and "exponential-normalized" normalizes exponential spacing across all targets.',
+      },
+      positionGrowthFactor: {
+        type: 'number',
+        format: 'float',
+        minimum: 0,
+        description: 'Modifier controlling the growth rate for exponential rollouts. Larger values increase the delay between later deployments. Only meaningful when using an exponential rolloutType.',
+      },
     },
   },
 
