@@ -22,6 +22,12 @@ const (
 //   - Gradual rollout: typically Environment + Version + ReleaseTarget
 //   - Skip deployed: typically Release
 //   - Workspace rules: may not need any specific entities
+//
+// Release-scoped evaluators (like skip deployed) are fundamentally different from
+// version/environment-scoped evaluators. They operate at the release level and make
+// decisions that apply across all targets/versions, rather than evaluating specific
+// deployment contexts. This means they can't be memoized per-version or per-target,
+// and their results typically affect the entire release rather than individual deployments.
 type EvaluatorScope struct {
 	Environment   *oapi.Environment
 	Version       *oapi.DeploymentVersion
