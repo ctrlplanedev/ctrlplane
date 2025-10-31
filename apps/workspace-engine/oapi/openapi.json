@@ -3485,21 +3485,12 @@
                      "application/json": {
                         "schema": {
                            "properties": {
-                              "envTargetVersionDecision": {
-                                 "$ref": "#/components/schemas/DeployDecision"
-                              },
-                              "envVersionDecision": {
+                              "decision": {
                                  "$ref": "#/components/schemas/DeployDecision"
                               },
                               "policiesEvaluated": {
                                  "description": "The number of policies evaluated",
                                  "type": "number"
-                              },
-                              "versionDecision": {
-                                 "$ref": "#/components/schemas/DeployDecision"
-                              },
-                              "workspaceDecision": {
-                                 "$ref": "#/components/schemas/DeployDecision"
                               }
                            }
                         }
