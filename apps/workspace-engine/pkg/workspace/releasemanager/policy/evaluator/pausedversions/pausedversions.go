@@ -52,7 +52,7 @@ func (e *PausedVersionsEvaluator) Evaluate(
 		if release.ReleaseTarget.Key() != releaseTarget.Key() {
 			continue
 		}
-		
+
 		return results.NewAllowedResult("Version is paused but has an active release for this target.").
 			WithDetail("version_id", version.Id).
 			WithDetail("version_status", version.Status).

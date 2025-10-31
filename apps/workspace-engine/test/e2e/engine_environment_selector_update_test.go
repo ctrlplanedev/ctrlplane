@@ -141,7 +141,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 		// Debug: Print all jobs
 		for _, job := range allJobsAfter {
 			release, _ := engine.Workspace().Releases().Get(job.ReleaseId)
-			t.Logf("Job: %s, Status: %s, ReleaseID: %s, Resource: %s", 
+			t.Logf("Job: %s, Status: %s, ReleaseID: %s, Resource: %s",
 				job.Id, job.Status, job.ReleaseId, release.ReleaseTarget.ResourceId)
 		}
 		t.Fatalf("expected 2 jobs to still exist after selector update, got %d", len(allJobsAfter))

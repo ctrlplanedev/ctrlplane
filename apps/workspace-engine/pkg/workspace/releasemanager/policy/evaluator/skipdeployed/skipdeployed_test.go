@@ -6,7 +6,6 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -51,8 +50,7 @@ func TestSkipDeployedEvaluator_NoPreviousDeployment(t *testing.T) {
 	}
 
 	// Act
-	scope := evaluator.EvaluatorScope{Release: release}
-	result := eval.Evaluate(context.Background(), scope)
+	result := eval.Evaluate(context.Background(), release)
 
 	// Assert
 	if !result.Allowed {
@@ -99,8 +97,7 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	scope := evaluator.EvaluatorScope{Release: previousRelease}
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, previousRelease)
 
 	// Assert: Should DENY retry because failed jobs are now considered (validJobStatuses filter removed)
 	if result.Allowed {
@@ -151,9 +148,7 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	scope := evaluator.EvaluatorScope{Release: deployedRelease}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, deployedRelease)
 
 	// Assert: Should deny re-deployment
 	if result.Allowed {
@@ -220,9 +215,7 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy v2.0.0
-	scope := evaluator.EvaluatorScope{Release: v2Release}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, v2Release)
 
 	// Assert: Should allow deploying new version
 	if !result.Allowed {
@@ -267,9 +260,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Check same release
-	scope := evaluator.EvaluatorScope{Release: release}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, release)
 
 	// Assert: Should DENY - same release already has a job, even if in progress
 	if result.Allowed {
@@ -320,9 +311,7 @@ func TestSkipDeployedEvaluator_CancelledJobPreventsRedeploy(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again
-	scope := evaluator.EvaluatorScope{Release: release}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, release)
 
 	// Assert: Should DENY retry because cancelled jobs are now considered (validJobStatuses filter removed)
 	if result.Allowed {
@@ -400,9 +389,7 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy with different variables
-	scope := evaluator.EvaluatorScope{Release: release2}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, release2)
 
 	// Assert: Should allow (different release ID due to different variables)
 	if !result.Allowed {
@@ -486,9 +473,7 @@ func TestSkipDeployedEvaluator_UsesCreatedAtNotCompletedAt(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Evaluate new release - should not panic
-	scope := evaluator.EvaluatorScope{Release: release3}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, release3)
 
 	// Assert: Should not panic and should allow (different release)
 	if !result.Allowed {
@@ -546,9 +531,7 @@ func TestSkipDeployedEvaluator_OnlyJobsWithNilCompletedAt(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Evaluate same release - should not panic
-	scope := evaluator.EvaluatorScope{Release: release}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, release)
 
 	// Assert: Should not panic. Jobs are tracked by createdAt now,
 	// so the most recently created job (job-2) should be found and deny the re-deployment
@@ -601,9 +584,7 @@ func TestSkipDeployedEvaluator_PendingJobPreventsRedeploy(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy same release again (simulating re-evaluation on job update)
-	scope := evaluator.EvaluatorScope{Release: release}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, release)
 
 	// Assert: Should DENY - prevents infinite loop of creating duplicate jobs
 	if result.Allowed {
@@ -682,9 +663,7 @@ func TestSkipDeployedEvaluator_ConsidersAllJobStatuses(t *testing.T) {
 	eval := NewSkipDeployedEvaluator(st)
 
 	// Act: Try to deploy new release
-	scope := evaluator.EvaluatorScope{Release: newRelease}
-
-	result := eval.Evaluate(ctx, scope)
+	result := eval.Evaluate(ctx, newRelease)
 
 	// Assert: Should ALLOW because it's a different release, but should recognize the previous job
 	if !result.Allowed {
@@ -749,9 +728,7 @@ func TestSkipDeployedEvaluator_AllJobStatusesPreventRedeployOfSameRelease(t *tes
 			eval := NewSkipDeployedEvaluator(st)
 
 			// Act: Try to deploy the same release again
-			scope := evaluator.EvaluatorScope{Release: release}
-
-			result := eval.Evaluate(ctx, scope)
+			result := eval.Evaluate(ctx, release)
 
 			// Assert: Should DENY regardless of job status
 			if result.Allowed {

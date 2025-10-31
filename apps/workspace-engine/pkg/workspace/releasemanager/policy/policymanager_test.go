@@ -83,10 +83,10 @@ func TestEvaluatorsForPolicy(t *testing.T) {
 				Id: "rule-5",
 				AnyApproval: &oapi.AnyApprovalRule{
 					MinApprovals: 1,
-			},
-			EnvironmentProgression: &oapi.EnvironmentProgressionRule{
-				DependsOnEnvironmentSelector: oapi.Selector{},
-			},
+				},
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: oapi.Selector{},
+				},
 				GradualRollout: &oapi.GradualRolloutRule{
 					TimeScaleInterval: 30,
 				},
@@ -131,19 +131,19 @@ func TestGlobalEvaluators(t *testing.T) {
 	for _, eval := range evals {
 		// Check scope fields to identify evaluator types
 		scopeFields := eval.ScopeFields()
-		
+
 		// PausedVersions cares about Version + ReleaseTarget
 		if scopeFields == (evaluator.ScopeVersion | evaluator.ScopeReleaseTarget) {
 			foundPausedVersions = true
 		}
-		
+
 		// DeployableVersions cares about Version only
 		if scopeFields == evaluator.ScopeVersion {
 			foundDeployableVersions = true
 		}
 	}
 
-	assert.True(t, foundPausedVersions || foundDeployableVersions, 
+	assert.True(t, foundPausedVersions || foundDeployableVersions,
 		"expected to find global evaluators")
 }
 
@@ -430,7 +430,7 @@ func TestEvaluatePolicy_MultipleRules(t *testing.T) {
 	require.NotNil(t, result)
 	// Both rules should be evaluated
 	assert.Len(t, result.RuleResults, 2, "both rules should be evaluated")
-	
+
 	// Find results for each rule
 	var rule1Result, rule2Result *oapi.RuleEvaluation
 	for i := range result.RuleResults {
@@ -456,9 +456,9 @@ func TestEvaluatorsForPolicy_ReturnsCorrectTypes(t *testing.T) {
 	manager := New(st)
 
 	tests := []struct {
-		name          string
-		rule          *oapi.PolicyRule
-		checkType     func(*testing.T, []evaluator.Evaluator)
+		name      string
+		rule      *oapi.PolicyRule
+		checkType func(*testing.T, []evaluator.Evaluator)
 	}{
 		{
 			name: "approval evaluator check",
@@ -499,7 +499,7 @@ func TestEvaluatorsForPolicy_ReturnsCorrectTypes(t *testing.T) {
 			checkType: func(t *testing.T, evals []evaluator.Evaluator) {
 				require.Len(t, evals, 1)
 				// Gradual rollout cares about Environment + Version + ReleaseTarget
-				assert.Equal(t, evaluator.ScopeEnvironment|evaluator.ScopeVersion|evaluator.ScopeReleaseTarget, 
+				assert.Equal(t, evaluator.ScopeEnvironment|evaluator.ScopeVersion|evaluator.ScopeReleaseTarget,
 					evals[0].ScopeFields())
 			},
 		},
@@ -512,4 +512,3 @@ func TestEvaluatorsForPolicy_ReturnsCorrectTypes(t *testing.T) {
 		})
 	}
 }
-

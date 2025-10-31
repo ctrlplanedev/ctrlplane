@@ -32,7 +32,7 @@ type Manager struct {
 // New creates a new policy manager.
 func New(store *store.Store) *Manager {
 	return &Manager{
-		store:            store,
+		store: store,
 	}
 }
 
@@ -61,7 +61,6 @@ func (m *Manager) EvaluatePolicy(
 			attribute.String("policy.id", policy.Id),
 		))
 	defer span.End()
-
 
 	policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
 	for _, rule := range policy.Rules {

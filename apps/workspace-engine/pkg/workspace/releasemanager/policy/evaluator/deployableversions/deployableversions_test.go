@@ -244,4 +244,3 @@ func TestDeployableVersionStatusEvaluator_ResultStructure(t *testing.T) {
 	assert.Contains(t, result.Details, "version_status", "should contain version_status")
 	assert.NotEmpty(t, result.Message, "message should be set")
 }
-

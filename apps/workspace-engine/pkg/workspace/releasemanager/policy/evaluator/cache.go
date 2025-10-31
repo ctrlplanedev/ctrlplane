@@ -22,13 +22,14 @@ type MemoizedEvaluator struct {
 // NewMemoized creates a memoized evaluator that caches based on the specified scope fields.
 //
 // Example:
-//   // Approval rule only cares about Environment + Version
-//   memoized := NewMemoized(approvalEval, ScopeEnvironment|ScopeVersion)
 //
-//   // Will evaluate once
-//   result1, _ := memoized.Evaluate(ctx, EvaluatorScope{env1, v1, target1, nil})
-//   // Will return cached (same env+version, target ignored)
-//   result2, _ := memoized.Evaluate(ctx, EvaluatorScope{env1, v1, target2, nil})
+//	// Approval rule only cares about Environment + Version
+//	memoized := NewMemoized(approvalEval, ScopeEnvironment|ScopeVersion)
+//
+//	// Will evaluate once
+//	result1, _ := memoized.Evaluate(ctx, EvaluatorScope{env1, v1, target1, nil})
+//	// Will return cached (same env+version, target ignored)
+//	result2, _ := memoized.Evaluate(ctx, EvaluatorScope{env1, v1, target2, nil})
 func NewMemoized(evaluator Evaluator, scopeFields ScopeFields) *MemoizedEvaluator {
 	return &MemoizedEvaluator{
 		evaluator:   evaluator,

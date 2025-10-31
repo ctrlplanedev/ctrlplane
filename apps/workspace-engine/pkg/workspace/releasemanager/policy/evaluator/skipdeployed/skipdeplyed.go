@@ -10,7 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ evaluator.Evaluator = &SkipDeployedEvaluator{}
+var _ evaluator.JobEvaluator = &SkipDeployedEvaluator{}
 
 // SkipDeployedEvaluator prevents re-deploying releases that are already successfully deployed.
 // This ensures idempotency - the same release (version + variables + target) won't be deployed twice.
@@ -18,7 +18,7 @@ type SkipDeployedEvaluator struct {
 	store *store.Store
 }
 
-func NewSkipDeployedEvaluator(store *store.Store) evaluator.Evaluator {
+func NewSkipDeployedEvaluator(store *store.Store) evaluator.JobEvaluator {
 	// Note: We do NOT use memoization for this evaluator because the job state
 	// can change between evaluations. The same release might have no jobs initially
 	// (allow), but after a job is created, it should be denied. Memoization would
@@ -28,11 +28,6 @@ func NewSkipDeployedEvaluator(store *store.Store) evaluator.Evaluator {
 	}
 }
 
-// ScopeFields declares that this evaluator cares about Release.
-func (e *SkipDeployedEvaluator) ScopeFields() evaluator.ScopeFields {
-	return evaluator.ScopeRelease
-}
-
 // Evaluate checks if the release has already been attempted.
 // The memoization wrapper ensures Release is present.
 // Returns:
@@ -40,9 +35,8 @@ func (e *SkipDeployedEvaluator) ScopeFields() evaluator.ScopeFields {
 //   - Allowed: If not yet attempted or previous job was for a different release
 func (e *SkipDeployedEvaluator) Evaluate(
 	ctx context.Context,
-	scope evaluator.EvaluatorScope,
+	release *oapi.Release,
 ) *oapi.RuleEvaluation {
-	release := scope.Release
 	releaseTarget := release.ReleaseTarget
 
 	// Get all jobs for this release target

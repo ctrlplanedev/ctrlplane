@@ -81,3 +81,7 @@ func CollectEvaluators(evals ...Evaluator) []Evaluator {
 	}
 	return result
 }
+
+type JobEvaluator interface {
+	Evaluate(ctx context.Context, release *oapi.Release) *oapi.RuleEvaluation
+}

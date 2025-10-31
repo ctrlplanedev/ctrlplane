@@ -56,8 +56,8 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 
 	decision := policy.NewDeployDecision()
 	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     &req.Version,
+		Environment:   environment,
+		Version:       &req.Version,
 		ReleaseTarget: &req.ReleaseTarget,
 	}
 	for _, policy := range policies {
@@ -66,8 +66,8 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"policiesEvaulated":        len(policies),
-		"decision":                 decision,
+		"policiesEvaulated": len(policies),
+		"decision":          decision,
 	})
 }
 

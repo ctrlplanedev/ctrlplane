@@ -24,14 +24,14 @@ type JobEligibilityChecker struct {
 	store *store.Store
 
 	// Release-level evaluators that determine job creation eligibility
-	releaseEvaluators []evaluator.Evaluator
+	releaseEvaluators []evaluator.JobEvaluator
 }
 
 // NewJobEligibilityChecker creates a new job eligibility checker with default system rules.
 func NewJobEligibilityChecker(store *store.Store) *JobEligibilityChecker {
 	return &JobEligibilityChecker{
 		store: store,
-		releaseEvaluators: []evaluator.Evaluator{
+		releaseEvaluators: []evaluator.JobEvaluator{
 			skipdeployed.NewSkipDeployedEvaluator(store),
 			// Future: Add retry limit evaluator here
 			// retrylimit.NewRetryLimitEvaluator(store, maxRetries: 4),
@@ -58,15 +58,8 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	// Evaluate release-scoped rules (e.g., skip deployed, retry limits)
 	if len(c.releaseEvaluators) > 0 {
 		policyResult := results.NewPolicyEvaluation()
-		scope := evaluator.EvaluatorScope{
-			Release: release,
-		}
 		for _, eval := range c.releaseEvaluators {
-			// Only evaluate if the evaluator has the required scope fields
-			if !scope.HasFields(eval.ScopeFields()) {
-				continue
-			}
-			ruleResult := eval.Evaluate(ctx, scope)
+			ruleResult := eval.Evaluate(ctx, release)
 			policyResult.AddRuleResult(*ruleResult)
 		}
 		decision.PolicyResults = append(decision.PolicyResults, *policyResult)

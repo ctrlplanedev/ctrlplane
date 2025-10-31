@@ -180,4 +180,3 @@ func TestPausedVersionsEvaluator_WithMemoization(t *testing.T) {
 		t.Errorf("all results should be denied (paused version with no releases)")
 	}
 }
-
