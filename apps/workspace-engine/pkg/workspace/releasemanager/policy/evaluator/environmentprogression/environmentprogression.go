@@ -289,12 +289,27 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		}
 	}
 
+	// Check maximum age requirement if specified
+	if e.rule.MaximumAgeHours != nil && *e.rule.MaximumAgeHours > 0 {
+		maxAge := time.Duration(*e.rule.MaximumAgeHours) * time.Hour
+		if !tracker.IsWithinMaxAge(maxAge) {
+			span.SetAttributes(attribute.Bool("max_age.allowed", false))
+			return results.NewDeniedResult(
+				fmt.Sprintf("Most recent successful deployment exceeds maximum age of %d hours", *e.rule.MaximumAgeHours),
+			).
+				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours).
+				WithDetail("most_recent_success", tracker.GetMostRecentSuccess().Format(time.RFC3339))
+		}
+		span.SetAttributes(attribute.Bool("max_age.allowed", true))
+	}
+
 	// Both requirements met (or only one was required)
 	// Combine results and determine the satisfiedAt time
 	var satisfiedAt *time.Time
 	if passRateResult != nil && passRateResult.SatisfiedAt != nil {
 		satisfiedAt = passRateResult.SatisfiedAt
 	}
+
 	if soakTimeResult != nil && soakTimeResult.SatisfiedAt != nil {
 		if satisfiedAt == nil || soakTimeResult.SatisfiedAt.After(*satisfiedAt) {
 			// Use the later of the two times (both must be satisfied)
@@ -313,6 +328,7 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 			result = result.WithDetail(key, value)
 		}
 	}
+
 	if soakTimeResult != nil {
 		for key, value := range soakTimeResult.Details {
 			result = result.WithDetail(key, value)
