@@ -214,11 +214,10 @@ func (f *EvaluatorFactory) createVersionScopedEvaluator(rule *oapi.PolicyRule) [
 
 // createTargetScopedEvaluator creates a target-scoped evaluator for the given rule.
 // Returns nil for unknown rule types.
-func (f *EvaluatorFactory) createTargetScopedEvaluator(rule *oapi.PolicyRule) []evaluator.TargetScopedEvaluator {
-	evaluators := []evaluator.TargetScopedEvaluator{
+func (f *EvaluatorFactory) createTargetScopedEvaluator(_ *oapi.PolicyRule) []evaluator.TargetScopedEvaluator {
+	return []evaluator.TargetScopedEvaluator{
 		releasetargetconcurrency.NewReleaseTargetConcurrencyEvaluator(f.store),
 	}
-	return evaluators
 }
 
 // createVersionAndTargetScopedEvaluator creates a version and target-scoped evaluator for the given rule.
