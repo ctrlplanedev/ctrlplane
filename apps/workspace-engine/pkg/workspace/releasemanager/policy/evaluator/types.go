@@ -59,6 +59,13 @@ type VersionAndTargetScopedEvaluator interface {
 	) (*oapi.RuleEvaluation, error)
 }
 
+type TargetScopedEvaluator interface {
+	Evaluate(
+		ctx context.Context,
+		releaseTarget *oapi.ReleaseTarget,
+	) (*oapi.RuleEvaluation, error)
+}
+
 type EvaluationContext struct {
 	Environment   *oapi.Environment
 	Version       *oapi.DeploymentVersion

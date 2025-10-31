@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -116,6 +117,30 @@ func (f *EvaluatorFactory) EvaluateReleaseScopedPolicyRules(
 	})
 }
 
+// EvaluateTargetScopedPolicyRules evaluates all target-scoped rules in a policy.
+// Returns nil if any rule evaluation fails.
+func (f *EvaluatorFactory) EvaluateTargetScopedPolicyRules(
+	ctx context.Context,
+	policy *oapi.Policy,
+	releaseTarget *oapi.ReleaseTarget,
+) []*oapi.RuleEvaluation {
+	return evaluateRules(policy, func(rule *oapi.PolicyRule) ([]*oapi.RuleEvaluation, error) {
+		eval := f.createTargetScopedEvaluator(rule)
+		if eval == nil {
+			return nil, nil // Skip unknown rule types
+		}
+		ruleResults := make([]*oapi.RuleEvaluation, 0, len(eval))
+		for _, eval := range eval {
+			result, err := eval.Evaluate(ctx, releaseTarget)
+			if err != nil {
+				return nil, err
+			}
+			ruleResults = append(ruleResults, result.WithRuleId(rule.Id))
+		}
+		return ruleResults, nil
+	})
+}
+
 // EvaluateWorkspaceScopedPolicyRules evaluates all workspace-scoped rules in a policy.
 // Returns nil if any rule evaluation fails.
 func (f *EvaluatorFactory) EvaluateWorkspaceScopedPolicyRules(
@@ -184,6 +209,15 @@ func (f *EvaluatorFactory) createEnvironmentAndVersionScopedEvaluator(rule *oapi
 // Returns nil for unknown rule types.
 func (f *EvaluatorFactory) createVersionScopedEvaluator(rule *oapi.PolicyRule) []evaluator.VersionScopedEvaluator {
 	evaluators := []evaluator.VersionScopedEvaluator{}
+	return evaluators
+}
+
+// createTargetScopedEvaluator creates a target-scoped evaluator for the given rule.
+// Returns nil for unknown rule types.
+func (f *EvaluatorFactory) createTargetScopedEvaluator(rule *oapi.PolicyRule) []evaluator.TargetScopedEvaluator {
+	evaluators := []evaluator.TargetScopedEvaluator{
+		releasetargetconcurrency.NewReleaseTargetConcurrencyEvaluator(f.store),
+	}
 	return evaluators
 }
 

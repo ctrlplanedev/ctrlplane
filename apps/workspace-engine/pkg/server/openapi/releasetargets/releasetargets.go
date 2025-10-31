@@ -86,12 +86,21 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		return
 	}
 
+	targetDecision, err := policyManager.EvaluateTarget(c.Request.Context(), &req.ReleaseTarget, policies)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to evaluate target policies: " + err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"policiesEvaulated":        len(policies),
 		"workspaceDecision":        workspaceDecision,
 		"versionDecision":          versionDecision,
 		"envVersionDecision":       envVersionDecision,
 		"envTargetVersionDecision": envTargetVersionDecision,
+		"targetDecision":           targetDecision,
 	})
 }
 

@@ -204,6 +204,15 @@ func (p *Planner) findDeployableVersion(
 			continue // Environment+version+target-scoped rules blocked deployment
 		}
 
+		targetDecision, err := p.policyManager.EvaluateTarget(ctx, releaseTarget, policies)
+		if err != nil {
+			span.RecordError(err)
+			continue // Skip this version on error
+		}
+		if !targetDecision.CanDeploy() {
+			continue // Target-scoped rules blocked deployment
+		}
+
 		// Both checks passed - this version can be deployed
 		return version
 	}

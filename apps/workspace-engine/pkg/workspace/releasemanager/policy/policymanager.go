@@ -194,3 +194,30 @@ func (m *Manager) EvaluateEnvironmentAndVersionAndTarget(
 
 	return decision, nil
 }
+
+func (m *Manager) EvaluateTarget(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	policies map[string]*oapi.Policy,
+) (*oapi.DeployDecision, error) {
+	ctx, span := tracer.Start(ctx, "PolicyManager.EvaluateTarget")
+	defer span.End()
+
+	decision := NewDeployDecision()
+
+	// Fast path: no policies = allowed
+	if len(policies) == 0 {
+		return decision, nil
+	}
+
+	for _, policy := range policies {
+		policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
+		ruleResults := m.evaluatorFactory.EvaluateTargetScopedPolicyRules(ctx, policy, releaseTarget)
+		for _, ruleResult := range ruleResults {
+			policyResult.AddRuleResult(*ruleResult)
+		}
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
+	}
+
+	return decision, nil
+}
