@@ -20,7 +20,8 @@ type DeploymentVersionStatus =
   | "building"
   | "ready"
   | "failed"
-  | "rejected";
+  | "rejected"
+  | "paused";
 
 type VersionCardProps = {
   version: {
@@ -46,6 +47,8 @@ const getVersionStatusColor = (status: DeploymentVersionStatus) => {
       return "text-red-600 border-red-500/20";
     case "rejected":
       return "text-amber-600 border-amber-500/20";
+    case "paused":
+      return "text-gray-600 border-gray-500/20";
     default:
       return "text-gray-600 border-gray-500/20";
   }
