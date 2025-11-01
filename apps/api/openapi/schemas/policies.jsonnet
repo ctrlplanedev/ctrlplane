@@ -136,11 +136,22 @@ local openapi = import '../lib/openapi.libsonnet';
 
   GradualRolloutRule: {
     type: 'object',
-    required: ['id', 'policyId', 'timeScaleInterval'],
+    required: ['timeScaleInterval'],
     properties: {
-      id: { type: 'string' },
-      policyId: { type: 'string' },
-      timeScaleInterval: { type: 'integer', format: 'int32', minimum: 0 },
+      timeScaleInterval: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Base time interval in seconds used to compute the delay between deployments to release targets.',
+      },
+      rolloutType: {
+        type: 'string',
+        enum: ['linear', 'linear-normalized'],
+        description: 'Strategy for scheduling deployments to release targets. ' +
+                     '"linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. ' +
+                     '"linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. ' +
+                     'See rolloutType algorithm documentation for details.',
+      },
     },
   },
 }

@@ -622,9 +622,15 @@ export interface components {
             error?: string;
         };
         GradualRolloutRule: {
-            id: string;
-            policyId: string;
-            /** Format: int32 */
+            /**
+             * @description Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
+             * @enum {string}
+             */
+            rolloutType?: "linear" | "linear-normalized";
+            /**
+             * Format: int32
+             * @description Base time interval in seconds used to compute the delay between deployments to release targets.
+             */
             timeScaleInterval: number;
         };
         IntegerValue: number;

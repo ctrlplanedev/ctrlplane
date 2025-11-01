@@ -64,7 +64,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   GradualRolloutRule: {
     type: 'object',
-    required: ['id', 'policyId', 'timeScaleInterval', 'rolloutType'],
+    required: ['timeScaleInterval', 'rolloutType'],
     properties: {
       timeScaleInterval: {
         type: 'integer',

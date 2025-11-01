@@ -62,7 +62,7 @@ local openapi = import '../lib/openapi.libsonnet';
         { type: 'object', properties: {} },
       ),
     },
-  
+
     put: {
       summary: 'Set the resources for a provider',
       operationId: 'setResourceProvidersResources',
