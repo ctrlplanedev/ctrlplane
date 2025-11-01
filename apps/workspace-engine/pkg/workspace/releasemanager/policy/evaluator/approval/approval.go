@@ -17,8 +17,8 @@ type AnyApprovalEvaluator struct {
 	rule  *oapi.AnyApprovalRule
 }
 
-func NewAnyApprovalEvaluator(store *store.Store, approvalRule *oapi.AnyApprovalRule) evaluator.Evaluator {
-	if approvalRule == nil {
+func NewEvaluator(store *store.Store, approvalRule *oapi.AnyApprovalRule) evaluator.Evaluator {
+	if approvalRule == nil || store == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(&AnyApprovalEvaluator{

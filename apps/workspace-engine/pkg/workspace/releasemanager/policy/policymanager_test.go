@@ -98,7 +98,7 @@ func TestEvaluatorsForPolicy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evals := manager.EvaluatorsForPolicy(tt.rule)
+			evals := manager.PlannerPolicyEvaluators(tt.rule)
 
 			assert.Len(t, evals, tt.expectedCount, "unexpected number of evaluators")
 
@@ -114,7 +114,7 @@ func TestGlobalEvaluators(t *testing.T) {
 	st := setupTestStore(t)
 	m := New(st)
 
-	evals := m.GlobalEvaluators()
+	evals := m.PlannerGlobalEvaluators()
 
 	// Should return pausedversions and deployableversions evaluators
 	assert.Len(t, evals, 2, "expected 2 global evaluators")
@@ -322,7 +322,7 @@ func TestEvaluatePolicy(t *testing.T) {
 				testScope = *tt.scope
 			}
 
-			result := testManager.EvaluatePolicy(ctx, tt.policy, testScope)
+			result := testManager.EvaluateWithPolicy(ctx, tt.policy, testScope, testManager.PlannerPolicyEvaluators)
 
 			require.NotNil(t, result)
 			assert.Equal(t, tt.policy.Id, result.Policy.Id)
@@ -365,7 +365,7 @@ func TestEvaluatePolicy_SkipsEvaluatorWithMissingScope(t *testing.T) {
 		// Environment is nil
 	}
 
-	result := manager.EvaluatePolicy(ctx, policy, scope)
+	result := manager.EvaluateWithPolicy(ctx, policy, scope, manager.PlannerPolicyEvaluators)
 
 	require.NotNil(t, result)
 	// Evaluator should be skipped due to missing scope fields
@@ -425,7 +425,7 @@ func TestEvaluatePolicy_MultipleRules(t *testing.T) {
 		},
 	}
 
-	result := manager.EvaluatePolicy(ctx, policy, scope)
+	result := manager.EvaluateWithPolicy(ctx, policy, scope, manager.PlannerPolicyEvaluators)
 
 	require.NotNil(t, result)
 	// Both rules should be evaluated
@@ -507,7 +507,7 @@ func TestEvaluatorsForPolicy_ReturnsCorrectTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evals := manager.EvaluatorsForPolicy(tt.rule)
+			evals := manager.PlannerPolicyEvaluators(tt.rule)
 			tt.checkType(t, evals)
 		})
 	}

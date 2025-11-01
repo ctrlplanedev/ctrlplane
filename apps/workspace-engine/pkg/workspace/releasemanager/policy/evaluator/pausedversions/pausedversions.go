@@ -14,7 +14,10 @@ type PausedVersionsEvaluator struct {
 	store *store.Store
 }
 
-func New(store *store.Store) evaluator.Evaluator {
+func NewEvaluator(store *store.Store) evaluator.Evaluator {
+	if store == nil {
+		return nil
+	}
 	return evaluator.WithMemoization(&PausedVersionsEvaluator{store: store})
 }
 

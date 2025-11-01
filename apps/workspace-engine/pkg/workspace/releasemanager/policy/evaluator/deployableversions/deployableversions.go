@@ -14,7 +14,10 @@ type DeployableVersionStatusEvaluator struct {
 	store *store.Store
 }
 
-func NewDeployableVersionStatusEvaluator(store *store.Store) evaluator.Evaluator {
+func NewEvaluator(store *store.Store) evaluator.Evaluator {
+	if store == nil {
+		return nil
+	}
 	return evaluator.WithMemoization(&DeployableVersionStatusEvaluator{
 		store: store,
 	})

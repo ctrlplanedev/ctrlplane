@@ -13,8 +13,6 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-var _ evaluator.Evaluator = &GradualRolloutEvaluator{}
-
 var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, key string) (uint64, error) {
 	h := fnv.New64a()
 	h.Write([]byte(releaseTarget.Key() + key))
@@ -46,8 +44,8 @@ type GradualRolloutEvaluator struct {
 	timeGetter func() time.Time
 }
 
-func NewGradualRolloutEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
-	if rule.GradualRollout == nil {
+func NewEvaluator(store *store.Store, rule *oapi.GradualRolloutRule) evaluator.Evaluator {
+	if rule == nil || store == nil {
 		return nil
 	}
 
@@ -61,7 +59,7 @@ func NewGradualRolloutEvaluator(store *store.Store, rule *oapi.PolicyRule) evalu
 
 	return evaluator.WithMemoization(&GradualRolloutEvaluator{
 		store:      store,
-		rule:       rule.GradualRollout,
+		rule:       rule,
 		hashingFn:  fnvHashingFn,
 		timeGetter: timeGetter,
 	})
@@ -98,7 +96,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 			// Only consider the approval rule if present
 			if rule.AnyApproval != nil {
 				foundApprovalPolicy = true
-				approvalEvaluator := approval.NewAnyApprovalEvaluator(e.store, rule.AnyApproval)
+				approvalEvaluator := approval.NewEvaluator(e.store, rule.AnyApproval)
 				if approvalEvaluator == nil {
 					continue
 				}
@@ -114,7 +112,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 
 			if rule.EnvironmentProgression != nil {
 				foundEnvironmentProgressionPolicy = true
-				environmentProgressionEvaluator := environmentprogression.NewEnvironmentProgressionEvaluator(e.store, rule.EnvironmentProgression)
+				environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.store, rule.EnvironmentProgression)
 				if environmentProgressionEvaluator == nil {
 					continue
 				}

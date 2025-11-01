@@ -25,11 +25,11 @@ type EnvironmentProgressionEvaluator struct {
 	rule  *oapi.EnvironmentProgressionRule
 }
 
-func NewEnvironmentProgressionEvaluator(
+func NewEvaluator(
 	store *store.Store,
 	rule *oapi.EnvironmentProgressionRule,
 ) evaluator.Evaluator {
-	if rule == nil {
+	if rule == nil || store == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(&EnvironmentProgressionEvaluator{

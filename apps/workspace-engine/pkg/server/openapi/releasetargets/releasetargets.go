@@ -61,7 +61,7 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		ReleaseTarget: &req.ReleaseTarget,
 	}
 	for _, policy := range policies {
-		policyResult := policyManager.EvaluatePolicy(c.Request.Context(), policy, scope)
+		policyResult := policyManager.EvaluateWithPolicy(c.Request.Context(), policy, scope, policyManager.SummaryPolicyEvaluators)
 		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 

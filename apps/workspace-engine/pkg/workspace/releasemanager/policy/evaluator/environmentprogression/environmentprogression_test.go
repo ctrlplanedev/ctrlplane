@@ -107,7 +107,7 @@ func TestEnvironmentProgressionEvaluator_VersionNotInDependency(t *testing.T) {
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	// Create a version for prod environment
@@ -197,7 +197,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 
 	// Get the prod environment
 	prodEnv, _ := st.Environments.Get("env-prod")
@@ -278,7 +278,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 
 	// Get the prod environment
 	prodEnv, _ := st.Environments.Get("env-prod")
@@ -317,7 +317,7 @@ func TestEnvironmentProgressionEvaluator_NoMatchingEnvironments(t *testing.T) {
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 
 	version := &oapi.DeploymentVersion{
 		Id:           "version-1",
@@ -487,7 +487,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -568,7 +568,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -695,7 +695,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -864,7 +864,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{
@@ -944,7 +944,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		},
 	}
 
-	eval := NewEnvironmentProgressionEvaluator(st, rule.EnvironmentProgression)
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
 	prodEnv, _ := st.Environments.Get("env-prod")
 
 	scope := evaluator.EvaluatorScope{

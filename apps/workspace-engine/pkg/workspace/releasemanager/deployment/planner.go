@@ -135,10 +135,10 @@ func (p *Planner) findDeployableVersion(
 		return nil
 	}
 
-	evaluators := p.policyManager.GlobalEvaluators()
+	evaluators := p.policyManager.PlannerGlobalEvaluators()
 	for _, policy := range policies {
 		for _, rule := range policy.Rules {
-			evaluators = append(evaluators, p.policyManager.EvaluatorsForPolicy(&rule)...)
+			evaluators = append(evaluators, p.policyManager.PlannerPolicyEvaluators(&rule)...)
 		}
 	}
 

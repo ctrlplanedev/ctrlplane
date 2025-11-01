@@ -178,8 +178,8 @@ func (p *Policies) EvaluatePolicies(c *gin.Context, workspaceId string) {
 
 	decision := policy.NewDeployDecision()
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
+		Environment: environment,
+		Version:     version,
 	}
 
 	policies := map[string]*oapi.Policy{}
@@ -203,7 +203,7 @@ func (p *Policies) EvaluatePolicies(c *gin.Context, workspaceId string) {
 
 	policyManager := policy.New(ws.Store())
 	globalPolicy := results.NewPolicyEvaluation()
-	for _, evaluator := range policyManager.GlobalEvaluators() {
+	for _, evaluator := range policyManager.PlannerGlobalEvaluators() {
 		if !scope.HasFields(evaluator.ScopeFields()) {
 			continue
 		}
@@ -213,7 +213,7 @@ func (p *Policies) EvaluatePolicies(c *gin.Context, workspaceId string) {
 	decision.PolicyResults = append(decision.PolicyResults, *globalPolicy)
 
 	for _, policy := range policies {
-		policyResult := policyManager.EvaluatePolicy(c.Request.Context(), policy, scope)
+		policyResult := policyManager.EvaluateWithPolicy(c.Request.Context(), policy, scope, policyManager.SummaryPolicyEvaluators)
 		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 

@@ -20,7 +20,7 @@ func setupStore() *store.Store {
 
 func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
 	version := &oapi.DeploymentVersion{
@@ -42,7 +42,7 @@ func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_PausedVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-2",
@@ -63,7 +63,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-3",
@@ -84,7 +84,7 @@ func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-4",
@@ -105,7 +105,7 @@ func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-5",
@@ -126,7 +126,7 @@ func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-6",
@@ -147,7 +147,7 @@ func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_Caching(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",
@@ -179,7 +179,7 @@ func TestDeployableVersionStatusEvaluator_Caching(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_DifferentVersionsNotCached(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	readyVersion := &oapi.DeploymentVersion{
 		Id:     "version-1",
@@ -204,7 +204,7 @@ func TestDeployableVersionStatusEvaluator_DifferentVersionsNotCached(t *testing.
 
 func TestDeployableVersionStatusEvaluator_MissingVersion(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	// Scope without version - should be denied by memoization wrapper
 	scope := evaluator.EvaluatorScope{
@@ -219,7 +219,7 @@ func TestDeployableVersionStatusEvaluator_MissingVersion(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_ScopeFields(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	// Verify that the evaluator declares it only needs Version
 	scopeFields := eval.ScopeFields()
@@ -228,7 +228,7 @@ func TestDeployableVersionStatusEvaluator_ScopeFields(t *testing.T) {
 
 func TestDeployableVersionStatusEvaluator_ResultStructure(t *testing.T) {
 	st := setupStore()
-	eval := NewDeployableVersionStatusEvaluator(st)
+	eval := NewEvaluator(st)
 
 	version := &oapi.DeploymentVersion{
 		Id:     "version-1",

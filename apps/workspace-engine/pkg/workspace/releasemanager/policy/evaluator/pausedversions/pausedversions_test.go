@@ -29,7 +29,7 @@ func TestPausedVersionsEvaluator_WithNewInterface(t *testing.T) {
 		DeploymentId:  "api",
 	}
 
-	eval := pausedversions.New(st)
+	eval := pausedversions.NewEvaluator(st)
 	ctx := context.Background()
 
 	t.Run("active version is allowed", func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestPausedVersionsEvaluator_WithNewInterface(t *testing.T) {
 		_ = st.Releases.Upsert(ctx, release)
 
 		// Create a fresh evaluator for this test since the previous one is cached
-		freshEval := pausedversions.New(st)
+		freshEval := pausedversions.NewEvaluator(st)
 
 		scope := evaluator.EvaluatorScope{
 			Version:       pausedVersion,
@@ -84,7 +84,7 @@ func TestPausedVersionsEvaluator_MissingFields(t *testing.T) {
 	st := store.New(cs)
 	ctx := context.Background()
 
-	eval := pausedversions.New(st)
+	eval := pausedversions.NewEvaluator(st)
 
 	t.Run("missing version", func(t *testing.T) {
 		scope := evaluator.EvaluatorScope{
@@ -144,7 +144,7 @@ func TestPausedVersionsEvaluator_WithMemoization(t *testing.T) {
 		DeploymentId:  "api",
 	}
 
-	eval := pausedversions.New(st)
+	eval := pausedversions.NewEvaluator(st)
 
 	// Wrap with memoization - this evaluator cares about Version + ReleaseTarget
 	memoized := evaluator.NewMemoized(

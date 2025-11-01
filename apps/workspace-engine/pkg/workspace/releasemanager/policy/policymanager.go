@@ -36,25 +36,34 @@ func New(store *store.Store) *Manager {
 	}
 }
 
-func (m *Manager) EvaluatorsForPolicy(rule *oapi.PolicyRule) []evaluator.Evaluator {
+func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		approval.NewAnyApprovalEvaluator(m.store, rule.AnyApproval),
-		environmentprogression.NewEnvironmentProgressionEvaluator(m.store, rule.EnvironmentProgression),
-		gradualrollout.NewGradualRolloutEvaluator(m.store, rule),
+		approval.NewEvaluator(m.store, rule.AnyApproval),
+		environmentprogression.NewEvaluator(m.store, rule.EnvironmentProgression),
+		gradualrollout.NewEvaluator(m.store, rule.GradualRollout),
 	)
 }
 
-func (m *Manager) GlobalEvaluators() []evaluator.Evaluator {
+func (m *Manager) PlannerGlobalEvaluators() []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		pausedversions.New(m.store),
-		deployableversions.NewDeployableVersionStatusEvaluator(m.store),
+		pausedversions.NewEvaluator(m.store),
+		deployableversions.NewEvaluator(m.store),
 	)
 }
 
-func (m *Manager) EvaluatePolicy(
+func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
+	return evaluator.CollectEvaluators(
+		approval.NewEvaluator(m.store, rule.AnyApproval),
+		environmentprogression.NewEvaluator(m.store, rule.EnvironmentProgression),
+		gradualrollout.NewSummaryEvaluator(m.store, rule.GradualRollout),
+	)
+}
+
+func (m *Manager) EvaluateWithPolicy(
 	ctx context.Context,
 	policy *oapi.Policy,
 	scope evaluator.EvaluatorScope,
+	evaluators func(rule *oapi.PolicyRule) []evaluator.Evaluator,
 ) *oapi.PolicyEvaluation {
 	ctx, span := tracer.Start(ctx, "EvaluatePolicy",
 		trace.WithAttributes(
@@ -64,8 +73,10 @@ func (m *Manager) EvaluatePolicy(
 
 	policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
 	for _, rule := range policy.Rules {
-		evaluators := m.EvaluatorsForPolicy(&rule)
-		for _, evaluator := range evaluators {
+		for _, evaluator := range evaluators(&rule) {
+			if evaluator == nil {
+				continue
+			}
 			if !scope.HasFields(evaluator.ScopeFields()) {
 				continue
 			}
