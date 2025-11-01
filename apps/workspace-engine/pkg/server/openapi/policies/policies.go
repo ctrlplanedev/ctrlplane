@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 
 	"github.com/gin-gonic/gin"
 )
@@ -201,6 +202,16 @@ func (p *Policies) EvaluatePolicies(c *gin.Context, workspaceId string) {
 	}
 
 	policyManager := policy.New(ws.Store())
+	globalPolicy := results.NewPolicyEvaluation()
+	for _, evaluator := range policyManager.GlobalEvaluators() {
+		if !scope.HasFields(evaluator.ScopeFields()) {
+			continue
+		}
+		result := evaluator.Evaluate(c.Request.Context(), scope)
+		globalPolicy.RuleResults = append(globalPolicy.RuleResults, *result)
+	}
+	decision.PolicyResults = append(decision.PolicyResults, *globalPolicy)
+
 	for _, policy := range policies {
 		policyResult := policyManager.EvaluatePolicy(c.Request.Context(), policy, scope)
 		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
