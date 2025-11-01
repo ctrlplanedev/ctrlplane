@@ -3,7 +3,6 @@ package gradualrollout
 import (
 	"context"
 	"fmt"
-	"math"
 	"strconv"
 	"testing"
 	"time"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func generateResourceSelector() *oapi.Selector {
@@ -97,11 +97,10 @@ func getHashingFunc(st *store.Store) func(releaseTarget *oapi.ReleaseTarget, ver
 	}
 }
 
-func createGradualRolloutRule(rolloutType oapi.GradualRolloutRuleRolloutType, timeScaleInterval int32, positionGrowthFactor float32) *oapi.GradualRolloutRule {
+func createGradualRolloutRule(rolloutType oapi.GradualRolloutRuleRolloutType, timeScaleInterval int32) *oapi.GradualRolloutRule {
 	return &oapi.GradualRolloutRule{
 		RolloutType:           rolloutType,
 		TimeScaleInterval:     timeScaleInterval,
-		PositionGrowthFactor:  positionGrowthFactor,
 	}
 }
 
@@ -129,7 +128,7 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 		return threeMinutesLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60, 1.0)
+	rule := createGradualRolloutRule(oapi.Linear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -199,7 +198,7 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 		return thirtySecondsLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60, 1.0)
+	rule := createGradualRolloutRule(oapi.Linear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -271,7 +270,7 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 		return twoMinutesLater
 	}
 
-	rule := createGradualRolloutRule(oapi.LinearNormalized, 60, 1.0)
+	rule := createGradualRolloutRule(oapi.LinearNormalized, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -319,222 +318,6 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 	assert.Equal(t, baseTime.Add(40*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
 }
 
-// TestGradualRolloutEvaluator_ExponentialRollout tests that exponential rollout
-// creates a front-loaded curve where deployments start fast and slow down
-func TestGradualRolloutEvaluator_ExponentialRollout(t *testing.T) {
-	ctx := t.Context()
-	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
-
-	systemID := uuid.New().String()
-	environment := generateEnvironment(ctx, systemID, st)
-	deployment := generateDeployment(ctx, systemID, st)
-	resources := generateResources(ctx, 3, st)
-
-	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	versionCreatedAt := baseTime
-	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
-
-	hashingFn := getHashingFunc(st)
-	threeMinutesLater := baseTime.Add(3 * time.Minute)
-	timeGetter := func() time.Time {
-		return threeMinutesLater
-	}
-
-	rule := createGradualRolloutRule(oapi.Exponential, 60, 2.0)
-	eval := GradualRolloutEvaluator{
-		store:      st,
-		rule:       rule,
-		hashingFn:  hashingFn,
-		timeGetter: timeGetter,
-	}
-
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
-	}
-
-	// Position 0: offset = 60 * (1 - e^(-0/2)) = 0 seconds
-	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
-	}
-	result1 := eval.Evaluate(ctx, scope1)
-	assert.True(t, result1.Allowed)
-	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
-
-	// Position 1: offset = 60 * (1 - e^(-1/2)) ≈ 23.6 seconds
-	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
-	}
-	result2 := eval.Evaluate(ctx, scope2)
-	assert.True(t, result2.Allowed)
-	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
-	expectedOffset1 := 60.0 * (1 - math.Exp(-1.0/2.0))
-	deploymentTime1, _ := time.Parse(time.RFC3339, result2.Details["target_rollout_time"].(string))
-	actualOffset1 := deploymentTime1.Sub(baseTime).Seconds()
-	assert.InDelta(t, expectedOffset1, actualOffset1, 1.0, "position 1 should have exponential offset")
-
-	// Position 2: offset = 60 * (1 - e^(-2/2)) ≈ 37.9 seconds
-	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
-	}
-	result3 := eval.Evaluate(ctx, scope3)
-	assert.True(t, result3.Allowed)
-	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
-	expectedOffset2 := 60.0 * (1 - math.Exp(-2.0/2.0))
-	deploymentTime2, _ := time.Parse(time.RFC3339, result3.Details["target_rollout_time"].(string))
-	actualOffset2 := deploymentTime2.Sub(baseTime).Seconds()
-	assert.InDelta(t, expectedOffset2, actualOffset2, 1.0, "position 2 should have exponential offset")
-}
-
-// TestGradualRolloutEvaluator_ExponentialNormalizedRollout tests that exponential-normalized
-// rollout creates an exponential curve normalized to timeScaleInterval total duration
-func TestGradualRolloutEvaluator_ExponentialNormalizedRollout(t *testing.T) {
-	ctx := t.Context()
-	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
-
-	systemID := uuid.New().String()
-	environment := generateEnvironment(ctx, systemID, st)
-	deployment := generateDeployment(ctx, systemID, st)
-	resources := generateResources(ctx, 3, st)
-
-	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	versionCreatedAt := baseTime
-	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
-
-	hashingFn := getHashingFunc(st)
-	twoMinutesLater := baseTime.Add(2 * time.Minute)
-	timeGetter := func() time.Time {
-		return twoMinutesLater
-	}
-
-	rule := createGradualRolloutRule(oapi.ExponentialNormalized, 60, 2.0)
-	eval := GradualRolloutEvaluator{
-		store:      st,
-		rule:       rule,
-		hashingFn:  hashingFn,
-		timeGetter: timeGetter,
-	}
-
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
-	}
-
-	// Position 0: offset = normalized exponential at 0
-	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
-	}
-	result1 := eval.Evaluate(ctx, scope1)
-	assert.True(t, result1.Allowed)
-	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
-	assert.Equal(t, baseTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
-
-	// Position 1: offset = normalized exponential at 1/3
-	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
-	}
-	result2 := eval.Evaluate(ctx, scope2)
-	assert.True(t, result2.Allowed)
-	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
-	// Verify it's normalized (should be less than timeScaleInterval)
-	deploymentTime2, _ := time.Parse(time.RFC3339, result2.Details["target_rollout_time"].(string))
-	offset2 := deploymentTime2.Sub(baseTime)
-	assert.Less(t, offset2.Seconds(), float64(60), "normalized exponential should keep total time under timeScaleInterval")
-
-	// Position 2: offset = normalized exponential at 2/3 (should approach but not exceed timeScaleInterval)
-	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
-	}
-	result3 := eval.Evaluate(ctx, scope3)
-	assert.True(t, result3.Allowed)
-	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
-	deploymentTime3, _ := time.Parse(time.RFC3339, result3.Details["target_rollout_time"].(string))
-	offset3 := deploymentTime3.Sub(baseTime)
-	assert.LessOrEqual(t, offset3.Seconds(), float64(60), "last target should deploy at or before timeScaleInterval")
-}
-
-// TestGradualRolloutEvaluator_RolloutTypeComparison tests that different rollout types
-// produce different deployment schedules for the same targets
-func TestGradualRolloutEvaluator_RolloutTypeComparison(t *testing.T) {
-	ctx := t.Context()
-	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
-
-	systemID := uuid.New().String()
-	environment := generateEnvironment(ctx, systemID, st)
-	deployment := generateDeployment(ctx, systemID, st)
-	resources := generateResources(ctx, 3, st)
-
-	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	versionCreatedAt := baseTime
-	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
-
-	hashingFn := getHashingFunc(st)
-	threeMinutesLater := baseTime.Add(3 * time.Minute)
-	timeGetter := func() time.Time {
-		return threeMinutesLater
-	}
-
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
-	}
-
-	// Test linear rollout - position 2 should deploy at 120 seconds
-	linearRule := createGradualRolloutRule(oapi.Linear, 60, 1.0)
-	linearEval := GradualRolloutEvaluator{
-		store:      st,
-		rule:       linearRule,
-		hashingFn:  hashingFn,
-		timeGetter: timeGetter,
-	}
-	linearResult := linearEval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2], // Position 2
-	})
-	linearTime, _ := time.Parse(time.RFC3339, linearResult.Details["target_rollout_time"].(string))
-	linearOffset := linearTime.Sub(baseTime)
-
-	// Test exponential rollout - position 2 should deploy faster than linear
-	expRule := createGradualRolloutRule(oapi.Exponential, 60, 2.0)
-	expEval := GradualRolloutEvaluator{
-		store:      st,
-		rule:       expRule,
-		hashingFn:  hashingFn,
-		timeGetter: timeGetter,
-	}
-	expResult := expEval.Evaluate(ctx, evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2], // Position 2
-	})
-	expTime, _ := time.Parse(time.RFC3339, expResult.Details["target_rollout_time"].(string))
-	expOffset := expTime.Sub(baseTime)
-
-	// Exponential should have smaller offset than linear for position 2
-	// Linear: 120 seconds, Exponential: ~38 seconds
-	assert.Less(t, expOffset.Seconds(), linearOffset.Seconds(),
-		"exponential rollout should deploy faster than linear for later positions")
-}
 
 // TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately tests that zero timeScaleInterval
 // causes all targets to deploy immediately regardless of rollout type
@@ -558,7 +341,7 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 		return oneHourLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 0, 1.0)
+	rule := createGradualRolloutRule(oapi.Linear, 0)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -608,7 +391,7 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60, 1.0)
+	rule := createGradualRolloutRule(oapi.Linear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -692,7 +475,7 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60, 1.0)
+	rule := createGradualRolloutRule(oapi.Linear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -784,4 +567,913 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
 	assert.Equal(t, oneHourLater.Format(time.RFC3339), result3.Details["rollout_start_time"])
 	assert.Equal(t, oneHourLater.Add(120*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage tests that rollout starts
+// when environment progression with only success percentage is satisfied
+func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	envProgPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, envProgPolicy)
+
+	// Create releases and successful jobs in staging to satisfy 100% success rate
+	stagingReleaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	}
+
+	successTime := baseTime.Add(1 * time.Hour) // Success happens 1 hour after version creation
+	for i, rt := range stagingReleaseTargets {
+		release := &oapi.Release{
+			ReleaseTarget: *rt,
+			Version:       *version,
+		}
+		st.Releases.Upsert(ctx, release)
+
+		completedAt := successTime.Add(time.Duration(i) * time.Minute)
+		job := &oapi.Job{
+			Id:          fmt.Sprintf("job-staging-%d", i),
+			ReleaseId:   release.ID(),
+			Status:      oapi.Successful,
+			CreatedAt:   successTime,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		}
+		st.Jobs.Upsert(ctx, job)
+	}
+
+	releaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, prodEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, prodEnv.Id, deployment.Id)),
+	}
+
+	// Position 0: deploys immediately after environment progression is satisfied
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed)
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be when success percentage was satisfied (last job completion)
+	expectedStartTime := successTime.Add(2 * time.Minute) // Last job completed at this time
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime tests that rollout starts
+// when environment progression with only soak time is satisfied
+func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 1, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	soakMinutes := int32(30) // 30 minutes soak time
+	envProgPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSockTimeMinutes:      &soakMinutes,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, envProgPolicy)
+
+	// Create release and successful job in staging
+	stagingRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id))
+	release := &oapi.Release{
+		ReleaseTarget: *stagingRT,
+		Version:       *version,
+	}
+	st.Releases.Upsert(ctx, release)
+
+	// Job completes 1 hour after version creation
+	jobCompletedAt := baseTime.Add(1 * time.Hour)
+	job := &oapi.Job{
+		Id:          "job-staging-1",
+		ReleaseId:   release.ID(),
+		Status:      oapi.Successful,
+		CreatedAt:   baseTime,
+		CompletedAt: &jobCompletedAt,
+		UpdatedAt:   jobCompletedAt,
+	}
+	st.Jobs.Upsert(ctx, job)
+
+	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+
+	// Position 0: deploys after soak time is satisfied
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: prodRT,
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed)
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be when soak time was satisfied: jobCompletedAt + soakMinutes
+	expectedStartTime := jobCompletedAt.Add(time.Duration(soakMinutes) * time.Minute)
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentageAndSoakTime tests that rollout starts
+// when environment progression with both success percentage and soak time is satisfied
+func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentageAndSoakTime(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	soakMinutes := int32(30)
+	envProgPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+					MinimumSockTimeMinutes:       &soakMinutes,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, envProgPolicy)
+
+	// Create releases and successful jobs in staging
+	stagingReleaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	}
+
+	successTime := baseTime.Add(1 * time.Hour)
+	lastJobCompletedAt := successTime.Add(2 * time.Minute) // Last job completes at this time
+	for i, rt := range stagingReleaseTargets {
+		release := &oapi.Release{
+			ReleaseTarget: *rt,
+			Version:       *version,
+		}
+		st.Releases.Upsert(ctx, release)
+
+		completedAt := successTime.Add(time.Duration(i) * time.Minute)
+		job := &oapi.Job{
+			Id:          fmt.Sprintf("job-staging-%d", i),
+			ReleaseId:   release.ID(),
+			Status:      oapi.Successful,
+			CreatedAt:   successTime,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		}
+		st.Jobs.Upsert(ctx, job)
+	}
+
+	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+
+	// Position 0: deploys after both conditions are satisfied (soak time is later)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: prodRT,
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed)
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be when soak time was satisfied: lastJobCompletedAt + soakMinutes
+	expectedStartTime := lastJobCompletedAt.Add(time.Duration(soakMinutes) * time.Minute)
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied tests that rollout doesn't start
+// when environment progression requirements are not satisfied
+func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	envProgPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, envProgPolicy)
+
+	// Don't create any jobs in staging - condition won't be satisfied
+
+	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: prodRT,
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.False(t, result1.Allowed)
+	assert.True(t, result1.ActionRequired)
+	assert.NotNil(t, result1.ActionType)
+	assert.Equal(t, oapi.Wait, *result1.ActionType)
+	assert.Equal(t, "Rollout has not started yet", result1.Message)
+	assert.Nil(t, result1.Details["rollout_start_time"])
+	assert.Nil(t, result1.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_BothPolicies_BothSatisfied tests that rollout starts
+// when both approval and environment progression are satisfied, using the later of the two
+func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	policy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				AnyApproval: &oapi.AnyApprovalRule{
+					MinApprovals: 2,
+				},
+			},
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, policy)
+
+	// Approval happens at 30 minutes
+	approvalTime := baseTime.Add(30 * time.Minute)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: prodEnv.Id,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: prodEnv.Id,
+		UserId:        "user-2",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+
+	// Environment progression happens at 1 hour (later than approval)
+	envProgTime := baseTime.Add(1 * time.Hour)
+	stagingReleaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	}
+
+	for i, rt := range stagingReleaseTargets {
+		release := &oapi.Release{
+			ReleaseTarget: *rt,
+			Version:       *version,
+		}
+		st.Releases.Upsert(ctx, release)
+
+		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
+		job := &oapi.Job{
+			Id:          fmt.Sprintf("job-staging-%d", i),
+			ReleaseId:   release.ID(),
+			Status:      oapi.Successful,
+			CreatedAt:   envProgTime,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		}
+		st.Jobs.Upsert(ctx, job)
+	}
+
+	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+
+	// Position 0: deploys after the later condition (environment progression)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: prodRT,
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed)
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be when environment progression was satisfied (later)
+	expectedStartTime := envProgTime.Add(2 * time.Minute) // Last job completed
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, expectedStartTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_BothPolicies_ApprovalLater tests that rollout starts
+// when both policies are satisfied but approval happens later
+func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	policy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				AnyApproval: &oapi.AnyApprovalRule{
+					MinApprovals: 2,
+				},
+			},
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, policy)
+
+	// Environment progression happens at 30 minutes (earlier)
+	envProgTime := baseTime.Add(30 * time.Minute)
+	stagingReleaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	}
+
+	for i, rt := range stagingReleaseTargets {
+		release := &oapi.Release{
+			ReleaseTarget: *rt,
+			Version:       *version,
+		}
+		st.Releases.Upsert(ctx, release)
+
+		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
+		job := &oapi.Job{
+			Id:          fmt.Sprintf("job-staging-%d", i),
+			ReleaseId:   release.ID(),
+			Status:      oapi.Successful,
+			CreatedAt:   envProgTime,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		}
+		st.Jobs.Upsert(ctx, job)
+	}
+
+	// Approval happens at 1 hour (later than environment progression)
+	approvalTime := baseTime.Add(1 * time.Hour)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: prodEnv.Id,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: prodEnv.Id,
+		UserId:        "user-2",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+
+	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+
+	// Position 0: deploys after the later condition (approval)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: prodRT,
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed)
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be when approval was satisfied (later)
+	assert.Equal(t, approvalTime.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, approvalTime.Format(time.RFC3339), result1.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied tests that rollout doesn't start
+// when approval is not satisfied even if environment progression is satisfied
+func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	policy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				AnyApproval: &oapi.AnyApprovalRule{
+					MinApprovals: 2,
+				},
+			},
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, policy)
+
+	// Environment progression is satisfied
+	envProgTime := baseTime.Add(30 * time.Minute)
+	stagingReleaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	}
+
+	for i, rt := range stagingReleaseTargets {
+		release := &oapi.Release{
+			ReleaseTarget: *rt,
+			Version:       *version,
+		}
+		st.Releases.Upsert(ctx, release)
+
+		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
+		job := &oapi.Job{
+			Id:          fmt.Sprintf("job-staging-%d", i),
+			ReleaseId:   release.ID(),
+			Status:      oapi.Successful,
+			CreatedAt:   envProgTime,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		}
+		st.Jobs.Upsert(ctx, job)
+	}
+
+	// Approval is NOT satisfied (only 1 approval, need 2)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: prodEnv.Id,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     baseTime.Format(time.RFC3339),
+	})
+
+	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: prodRT,
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.False(t, result1.Allowed)
+	assert.True(t, result1.ActionRequired)
+	assert.NotNil(t, result1.ActionType)
+	assert.Equal(t, oapi.Wait, *result1.ActionType)
+	assert.Equal(t, "Rollout has not started yet", result1.Message)
+	assert.Nil(t, result1.Details["rollout_start_time"])
+	assert.Nil(t, result1.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied tests that rollout doesn't start
+// when environment progression is not satisfied even if approval is satisfied
+func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	policy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				AnyApproval: &oapi.AnyApprovalRule{
+					MinApprovals: 2,
+				},
+			},
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, policy)
+
+	// Approval is satisfied
+	approvalTime := baseTime.Add(30 * time.Minute)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: prodEnv.Id,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: prodEnv.Id,
+		UserId:        "user-2",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+
+	// Environment progression is NOT satisfied (no jobs in staging)
+
+	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: prodRT,
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.False(t, result1.Allowed)
+	assert.True(t, result1.ActionRequired)
+	assert.NotNil(t, result1.ActionType)
+	assert.Equal(t, oapi.Wait, *result1.ActionType)
+	assert.Equal(t, "Rollout has not started yet", result1.Message)
+	assert.Nil(t, result1.Details["rollout_start_time"])
+	assert.Nil(t, result1.Details["target_rollout_time"])
 }

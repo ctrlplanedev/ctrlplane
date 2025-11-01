@@ -32,10 +32,8 @@ const (
 
 // Defines values for GradualRolloutRuleRolloutType.
 const (
-	Exponential           GradualRolloutRuleRolloutType = "exponential"
-	ExponentialNormalized GradualRolloutRuleRolloutType = "exponential-normalized"
-	Linear                GradualRolloutRuleRolloutType = "linear"
-	LinearNormalized      GradualRolloutRuleRolloutType = "linear-normalized"
+	Linear           GradualRolloutRuleRolloutType = "linear"
+	LinearNormalized GradualRolloutRuleRolloutType = "linear-normalized"
 )
 
 // Defines values for JobStatus.
@@ -232,17 +230,14 @@ type GithubEntity struct {
 
 // GradualRolloutRule defines model for GradualRolloutRule.
 type GradualRolloutRule struct {
-	// PositionGrowthFactor Modifier controlling the growth rate for exponential rollouts. Larger values increase the delay between later deployments. Only meaningful when using an exponential rolloutType.
-	PositionGrowthFactor float32 `json:"positionGrowthFactor"`
-
-	// RolloutType Algorithm used to schedule deployments across release targets. "linear" deploys at a fixed interval; "linear-normalized" spaces deployments evenly across targets; "exponential" increases delay nonlinearly, and "exponential-normalized" normalizes exponential spacing across all targets.
+	// RolloutType Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
 	RolloutType GradualRolloutRuleRolloutType `json:"rolloutType"`
 
 	// TimeScaleInterval Base time interval in seconds used to compute the delay between deployments to release targets.
 	TimeScaleInterval int32 `json:"timeScaleInterval"`
 }
 
-// GradualRolloutRuleRolloutType Algorithm used to schedule deployments across release targets. "linear" deploys at a fixed interval; "linear-normalized" spaces deployments evenly across targets; "exponential" increases delay nonlinearly, and "exponential-normalized" normalizes exponential spacing across all targets.
+// GradualRolloutRuleRolloutType Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
 type GradualRolloutRuleRolloutType string
 
 // IntegerValue defines model for IntegerValue.

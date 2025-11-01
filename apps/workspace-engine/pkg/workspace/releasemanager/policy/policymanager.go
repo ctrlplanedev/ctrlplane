@@ -39,7 +39,7 @@ func New(store *store.Store) *Manager {
 func (m *Manager) EvaluatorsForPolicy(rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
 		approval.NewAnyApprovalEvaluator(m.store, rule.AnyApproval),
-		environmentprogression.NewEnvironmentProgressionEvaluator(m.store, rule),
+		environmentprogression.NewEnvironmentProgressionEvaluator(m.store, rule.EnvironmentProgression),
 		gradualrollout.NewGradualRolloutEvaluator(m.store, rule),
 	)
 }

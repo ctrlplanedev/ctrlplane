@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"math"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -59,6 +59,9 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	var approvalSatisfiedAt *time.Time
 	var foundApprovalPolicy bool
 
+	var environmentProgressionSatisfiedAt *time.Time
+	var foundEnvironmentProgressionPolicy bool
+
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
 		Version:     version,
@@ -70,43 +73,74 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 		}
 		for _, rule := range policy.Rules {
 			// Only consider the approval rule if present
-			if rule.AnyApproval == nil {
-				continue
+			if rule.AnyApproval != nil {
+				foundApprovalPolicy = true
+				approvalEvaluator := approval.NewAnyApprovalEvaluator(e.store, rule.AnyApproval)
+				if approvalEvaluator == nil {
+					continue
+				}
+			
+				result := approvalEvaluator.Evaluate(ctx, scope)
+				if result.Allowed && result.SatisfiedAt != nil {
+					// pick the latest SatisfiedAt if multiple approvals exist
+					if approvalSatisfiedAt == nil || result.SatisfiedAt.After(*approvalSatisfiedAt) {
+						approvalSatisfiedAt = result.SatisfiedAt
+					}
+				}
 			}
-			foundApprovalPolicy = true
-			approvalEvaluator := approval.NewAnyApprovalEvaluator(e.store, rule.AnyApproval)
-			if approvalEvaluator == nil {
-				continue
-			}
-		
-			approvalResult := approvalEvaluator.Evaluate(ctx, scope)
-			if approvalResult.Allowed && approvalResult.SatisfiedAt != nil {
-				// pick the latest SatisfiedAt if multiple approvals exist
-				if approvalSatisfiedAt == nil || approvalResult.SatisfiedAt.After(*approvalSatisfiedAt) {
-					approvalSatisfiedAt = approvalResult.SatisfiedAt
+
+			if rule.EnvironmentProgression != nil {
+				foundEnvironmentProgressionPolicy = true
+				environmentProgressionEvaluator := environmentprogression.NewEnvironmentProgressionEvaluator(e.store, rule.EnvironmentProgression)
+				if environmentProgressionEvaluator == nil {
+					continue
+				}
+
+				result := environmentProgressionEvaluator.Evaluate(ctx, scope)
+				if result.Allowed && result.SatisfiedAt != nil {
+					// pick the latest SatisfiedAt if multiple environment progression policies exist
+					if environmentProgressionSatisfiedAt == nil || result.SatisfiedAt.After(*environmentProgressionSatisfiedAt) {
+						environmentProgressionSatisfiedAt = result.SatisfiedAt
+					}
 				}
 			}
 		}
 	}
 
 	// If no approval policies exist, use version creation time as rollout start
-	if !foundApprovalPolicy {
+	if !foundApprovalPolicy && !foundEnvironmentProgressionPolicy {
 		return &version.CreatedAt, nil
 	}
 
 	// If approval policies exist but none are satisfied, return error
-	if approvalSatisfiedAt == nil {
+	if foundApprovalPolicy && approvalSatisfiedAt == nil {
 		return nil, fmt.Errorf("approval condition not yet satisfied for rollout start")
 	}
 
-	return approvalSatisfiedAt, nil
+	if foundEnvironmentProgressionPolicy && environmentProgressionSatisfiedAt == nil {
+		return nil, fmt.Errorf("environment progression condition not yet satisfied for rollout start")
+	}
+
+	if foundApprovalPolicy && foundEnvironmentProgressionPolicy {
+		// Return the later of the two times - that's when both conditions are satisfied
+		if approvalSatisfiedAt.After(*environmentProgressionSatisfiedAt) {
+			return approvalSatisfiedAt, nil
+		}
+		return environmentProgressionSatisfiedAt, nil
+	}
+
+	// Only one policy type was found - return whichever one is satisfied
+	if foundApprovalPolicy {
+		return approvalSatisfiedAt, nil
+	}
+
+	return environmentProgressionSatisfiedAt, nil
 }
 
 func (e *GradualRolloutEvaluator) getDeploymentOffset(
     rolloutPosition int32,
     timeScaleInterval int32,
     rolloutType oapi.GradualRolloutRuleRolloutType,
-    positionGrowthFactor float64,
     numReleaseTargets int32,
 ) time.Duration {
     switch rolloutType {
@@ -115,19 +149,6 @@ func (e *GradualRolloutEvaluator) getDeploymentOffset(
     
     case oapi.LinearNormalized:
         return time.Duration(float64(rolloutPosition) / float64(numReleaseTargets) * float64(timeScaleInterval)) * time.Second
-    
-    case oapi.Exponential:
-        // exponential: timeScaleInterval * (1 - e^(-position / positionGrowthFactor))
-        exp := math.Exp(-float64(rolloutPosition) / positionGrowthFactor)
-        offset := float64(timeScaleInterval) * (1 - exp)
-        return time.Duration(offset) * time.Second
-    
-    case oapi.ExponentialNormalized:
-        // normalized exponential: timeScaleInterval * ((1 - e^(-position/numTargets)) / (1 - e^(-numTargets/growthFactor)))
-        exp1 := math.Exp(-float64(rolloutPosition) / float64(numReleaseTargets))
-        exp2 := math.Exp(-float64(numReleaseTargets) / positionGrowthFactor)
-        offset := float64(timeScaleInterval) * ((1 - exp1) / (1 - exp2))
-        return time.Duration(offset) * time.Second
     
     default:
         // Default to linear for backward compatibility
@@ -144,7 +165,7 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 
 	for _, release := range e.store.Releases.Items() {
 		if release.Version.Id == version.Id && release.ReleaseTarget.Key() == releaseTarget.Key() {
-			return results.NewAllowedResult("Release target has already been deployed").
+			return results.NewAllowedResult("Version has already been deployed to this release target.").
 				WithDetail("release_id", release.ID()).
 				WithDetail("version_id", version.Id).
 				WithDetail("environment_id", environment.Id).
@@ -184,7 +205,6 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 		rolloutPosition, 
 		e.rule.TimeScaleInterval, 
 		e.rule.RolloutType, 
-		float64(e.rule.PositionGrowthFactor), 
 		int32(len(releaseTargets)),
 	)
 	deploymentTime := rolloutStartTime.Add(deploymentOffset)
