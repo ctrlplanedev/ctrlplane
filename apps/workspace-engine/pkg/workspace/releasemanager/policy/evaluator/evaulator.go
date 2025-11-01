@@ -32,7 +32,6 @@ type EvaluatorScope struct {
 	Environment   *oapi.Environment
 	Version       *oapi.DeploymentVersion
 	ReleaseTarget *oapi.ReleaseTarget
-	Release       *oapi.Release
 }
 
 // HasFields checks if this scope has all the required fields set (non-nil).
@@ -46,9 +45,7 @@ func (s EvaluatorScope) HasFields(fields ScopeFields) bool {
 	if fields&ScopeReleaseTarget != 0 && s.ReleaseTarget == nil {
 		return false
 	}
-	if fields&ScopeRelease != 0 && s.Release == nil {
-		return false
-	}
+
 	return true
 }
 

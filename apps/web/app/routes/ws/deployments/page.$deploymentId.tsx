@@ -383,7 +383,6 @@ export default function DeploymentDetail() {
                 />
               )}
 
-              {/* Environment Actions Dialog - TODO: Update types */}
               {selectedEnvironment != null && (
                 <EnvironmentVersionDecisions
                   environment={selectedEnvironment}

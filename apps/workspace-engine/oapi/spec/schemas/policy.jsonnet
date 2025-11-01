@@ -200,4 +200,12 @@ local openapi = import '../lib/openapi.libsonnet';
       version: openapi.schemaRef('DeploymentVersion'),
     },
   },
+
+  EvaluationScope: {
+    type: 'object',
+    properties: {
+      environmentId: { type: 'string' },
+      versionId: { type: 'string' },
+    },
+  },
 }

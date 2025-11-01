@@ -95,10 +95,6 @@ func (m *MemoizedEvaluator) buildCacheKey(scope EvaluatorScope) string {
 		key += fmt.Sprintf("tgt:%s|", scope.ReleaseTarget.Key())
 	}
 
-	if m.scopeFields&ScopeRelease != 0 && scope.Release != nil {
-		key += fmt.Sprintf("rel:%s|", scope.Release.ID())
-	}
-
 	if key == "" {
 		return "workspace" // Workspace-scoped (no specific entities)
 	}
@@ -118,9 +114,6 @@ func (m *MemoizedEvaluator) buildMissingFieldsResult(scope EvaluatorScope) *oapi
 	}
 	if m.scopeFields&ScopeReleaseTarget != 0 && scope.ReleaseTarget == nil {
 		missing = append(missing, "ReleaseTarget")
-	}
-	if m.scopeFields&ScopeRelease != 0 && scope.Release == nil {
-		missing = append(missing, "Release")
 	}
 
 	message := fmt.Sprintf("Evaluator requires %s but scope is missing: %s",

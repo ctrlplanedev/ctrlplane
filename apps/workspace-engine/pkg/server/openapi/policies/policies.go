@@ -6,6 +6,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
+	"workspace-engine/pkg/workspace/releasemanager/policy"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
 	"github.com/gin-gonic/gin"
 )
@@ -128,5 +130,83 @@ func (p *Policies) GetRule(c *gin.Context, workspaceId string, policyId string, 
 
 	c.JSON(http.StatusNotFound, gin.H{
 		"error": fmt.Sprintf("Rule %s not found in policy %s", ruleId, policyId),
+	})
+}
+
+func (p *Policies) EvaluatePolicies(c *gin.Context, workspaceId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	// Parse request body
+	var req oapi.EvaluationScope
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	var environment *oapi.Environment
+	if req.EnvironmentId != nil {
+		var ok bool
+		environment, ok = ws.Environments().Get(*req.EnvironmentId)
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Environment not found",
+			})
+			return
+		}
+	}
+
+	var version *oapi.DeploymentVersion
+	if req.VersionId != nil {
+		var ok bool
+		version, ok = ws.DeploymentVersions().Get(*req.VersionId)
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Version not found",
+			})
+			return
+		}
+	}
+
+	decision := policy.NewDeployDecision()
+	scope := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+	}
+
+	policies := map[string]*oapi.Policy{}
+
+	rt, _ := ws.ReleaseTargets().Items(c.Request.Context())
+	for _, releaseTarget := range rt {
+		if scope.Environment != nil && releaseTarget.EnvironmentId != scope.Environment.Id {
+			continue
+		}
+		if scope.Version != nil && releaseTarget.DeploymentId != scope.Version.DeploymentId {
+			continue
+		}
+		rtp, err := ws.ReleaseTargets().GetPolicies(c.Request.Context(), releaseTarget)
+		if err != nil {
+			continue
+		}
+		for _, policy := range rtp {
+			policies[policy.Id] = policy
+		}
+	}
+
+	policyManager := policy.New(ws.Store())
+	for _, policy := range policies {
+		policyResult := policyManager.EvaluatePolicy(c.Request.Context(), policy, scope)
+		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"decision": decision,
 	})
 }

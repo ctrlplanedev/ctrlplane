@@ -222,6 +222,12 @@ type EvaluateReleaseTargetRequest struct {
 	Version       DeploymentVersion `json:"version"`
 }
 
+// EvaluationScope defines model for EvaluationScope.
+type EvaluationScope struct {
+	EnvironmentId *string `json:"environmentId,omitempty"`
+	VersionId     *string `json:"versionId,omitempty"`
+}
+
 // GithubEntity defines model for GithubEntity.
 type GithubEntity struct {
 	InstallationId int    `json:"installationId"`
@@ -707,6 +713,9 @@ type ListSystemsParams struct {
 
 // ValidateResourceSelectorJSONRequestBody defines body for ValidateResourceSelector for application/json ContentType.
 type ValidateResourceSelectorJSONRequestBody ValidateResourceSelectorJSONBody
+
+// EvaluatePoliciesJSONRequestBody defines body for EvaluatePolicies for application/json ContentType.
+type EvaluatePoliciesJSONRequestBody = EvaluationScope
 
 // EvaluateReleaseTargetJSONRequestBody defines body for EvaluateReleaseTarget for application/json ContentType.
 type EvaluateReleaseTargetJSONRequestBody = EvaluateReleaseTargetRequest
@@ -1405,6 +1414,9 @@ type ServerInterface interface {
 	// List policies
 	// (GET /v1/workspaces/{workspaceId}/policies)
 	ListPolicies(c *gin.Context, workspaceId string)
+	// Evaluate policies
+	// (POST /v1/workspaces/{workspaceId}/policies/evaluate)
+	EvaluatePolicies(c *gin.Context, workspaceId string)
 	// Get policy
 	// (GET /v1/workspaces/{workspaceId}/policies/{policyId})
 	GetPolicy(c *gin.Context, workspaceId string, policyId string)
@@ -2337,6 +2349,30 @@ func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
 	siw.Handler.ListPolicies(c, workspaceId)
 }
 
+// EvaluatePolicies operation middleware
+func (siw *ServerInterfaceWrapper) EvaluatePolicies(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.EvaluatePolicies(c, workspaceId)
+}
+
 // GetPolicy operation middleware
 func (siw *ServerInterfaceWrapper) GetPolicy(c *gin.Context) {
 
@@ -2964,6 +3000,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs/:jobId", wrapper.GetJob)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/jobs/:jobId/with-release", wrapper.GetJobWithRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies", wrapper.ListPolicies)
+	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/policies/evaluate", wrapper.EvaluatePolicies)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/rules/:ruleId", wrapper.GetRule)

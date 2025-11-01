@@ -5,7 +5,31 @@ import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
+const EvaluationScope = z.object({
+  environmentId: z.uuid(),
+  versionId: z.uuid(),
+});
+
 export const policiesRouter = router({
+  evaluate: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        scope: EvaluationScope,
+      }),
+    )
+    .query(async ({ input }) => {
+      const { workspaceId, scope } = input;
+      const result = await getClientFor(workspaceId).POST(
+        "/v1/workspaces/{workspaceId}/policies/evaluate",
+        {
+          params: { path: { workspaceId } },
+          body: scope,
+        },
+      );
+      return result.data?.decision;
+    }),
+
   list: protectedProcedure
     .input(
       z.object({

@@ -1,16 +1,51 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type React from "react";
 
-import type { DeploymentVersion, Environment } from "./types";
+import { trpc } from "~/api/trpc";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { ApprovalDecision } from "./ApprovalDecision";
-import { EnvironmentProgressionDecision } from "./EnvironmentProgressionDecision";
-import { GradualRolloutDecision } from "./GradualRolloutDecision";
+import { Spinner } from "~/components/ui/spinner";
+import { useWorkspace } from "~/components/WorkspaceProvider";
+
+const DeploymentVersion: React.FC<{
+  version: WorkspaceEngine["schemas"]["DeploymentVersion"];
+  environment: WorkspaceEngine["schemas"]["Environment"];
+}> = ({ version, environment }) => {
+  const { workspace } = useWorkspace();
+  const { data, isLoading } = trpc.policies.evaluate.useQuery({
+    workspaceId: workspace.id,
+    scope: {
+      environmentId: environment.id,
+      versionId: version.id,
+    },
+  });
+
+  if (isLoading)
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Spinner className="size-3 animate-spin" />
+        Loading...
+      </div>
+    );
+
+  if (data == null) return null;
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+      {data.policyResults.map(({ policy }, idx) => (
+        <div key={idx} className="border-b">
+          {policy?.name}
+          <pre>{JSON.stringify(policy, null, 2)}</pre>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 type EnvironmentVersionDecisionsProps = {
   environment: WorkspaceEngine["schemas"]["Environment"];
@@ -19,22 +54,6 @@ type EnvironmentVersionDecisionsProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
-
-function EnvironmentVersionDecisionCard(props: {
-  version: DeploymentVersion;
-  environment: Environment;
-}) {
-  return (
-    <div className="space-y-2 rounded-lg border p-2">
-      <h3 className="text-sm font-semibold">{props.version.tag}</h3>
-      <div className="flex flex-col gap-1">
-        <ApprovalDecision {...props} />
-        <GradualRolloutDecision {...props} />
-        <EnvironmentProgressionDecision {...props} />
-      </div>
-    </div>
-  );
-}
 
 export function EnvironmentVersionDecisions({
   environment,
@@ -52,11 +71,17 @@ export function EnvironmentVersionDecisions({
         <div className="max-h-[calc(85vh-120px)] overflow-y-auto px-4 pb-4">
           <div className="space-y-4">
             {versions.map((version) => (
-              <EnvironmentVersionDecisionCard
-                key={version.id}
-                version={version}
-                environment={environment}
-              />
+              <div className="space-y-2 rounded-lg border p-2" key={version.id}>
+                <h3 className="text-sm font-semibold">
+                  {version.name || version.tag}
+                </h3>
+                <div className="flex flex-col gap-1">
+                  <DeploymentVersion
+                    version={version}
+                    environment={environment}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </div>

@@ -21,6 +21,22 @@ var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, key string) (uint64, 
 	return h.Sum64(), nil
 }
 
+// testTimeGetterFactory allows tests to inject a custom time getter function
+// If set, this will be used instead of time.Now() in NewGradualRolloutEvaluator
+var testTimeGetterFactory func() time.Time
+
+// SetTestTimeGetterFactory sets a custom time getter factory for testing purposes
+// This should only be used in tests
+func SetTestTimeGetterFactory(factory func() time.Time) {
+	testTimeGetterFactory = factory
+}
+
+// ClearTestTimeGetterFactory clears the test time getter factory
+// This should be called after tests to restore normal behavior
+func ClearTestTimeGetterFactory() {
+	testTimeGetterFactory = nil
+}
+
 type GradualRolloutEvaluator struct {
 	store     *store.Store
 	rule      *oapi.GradualRolloutRule
@@ -34,13 +50,20 @@ func NewGradualRolloutEvaluator(store *store.Store, rule *oapi.PolicyRule) evalu
 	if rule.GradualRollout == nil {
 		return nil
 	}
+
+	// Use test time getter if set, otherwise use time.Now()
+	timeGetter := func() time.Time {
+		return time.Now()
+	}
+	if testTimeGetterFactory != nil {
+		timeGetter = testTimeGetterFactory
+	}
+
 	return evaluator.WithMemoization(&GradualRolloutEvaluator{
-		store:     store,
-		rule:      rule.GradualRollout,
-		hashingFn: fnvHashingFn,
-		timeGetter: func() time.Time {
-			return time.Now()
-		},
+		store:      store,
+		rule:       rule.GradualRollout,
+		hashingFn:  fnvHashingFn,
+		timeGetter: timeGetter,
 	})
 }
 

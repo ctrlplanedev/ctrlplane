@@ -1,6 +1,33 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  '/v1/workspaces/{workspaceId}/policies/evaluate': {
+    post: {
+      summary: 'Evaluate policies',
+      operationId: 'evaluatePolicies',
+      description: 'Evaluates all policies for a workspace.',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('EvaluationScope'),
+          },
+        },
+      },
+      responses: openapi.okResponse(
+        {
+          type: 'object',
+          properties: {
+            decision: openapi.schemaRef('DeployDecision'),
+          },
+        },
+      ) + openapi.notFoundResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/policies': {
     get: {
       summary: 'List policies',

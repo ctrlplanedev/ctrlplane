@@ -348,6 +348,17 @@
             ],
             "type": "object"
          },
+         "EvaluationScope": {
+            "properties": {
+               "environmentId": {
+                  "type": "string"
+               },
+               "versionId": {
+                  "type": "string"
+               }
+            },
+            "type": "object"
+         },
          "GithubEntity": {
             "properties": {
                "installationId": {
@@ -3118,6 +3129,61 @@
                }
             },
             "summary": "List policies"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/policies/evaluate": {
+         "post": {
+            "description": "Evaluates all policies for a workspace.",
+            "operationId": "evaluatePolicies",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/EvaluationScope"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "decision": {
+                                 "$ref": "#/components/schemas/DeployDecision"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Evaluate policies"
          }
       },
       "/v1/workspaces/{workspaceId}/policies/{policyId}": {

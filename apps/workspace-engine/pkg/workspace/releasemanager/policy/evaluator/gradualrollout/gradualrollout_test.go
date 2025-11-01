@@ -1476,3 +1476,351 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 	assert.Nil(t, result1.Details["rollout_start_time"])
 	assert.Nil(t, result1.Details["target_rollout_time"])
 }
+
+// TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed tests the real-world scenario
+// where approval is just satisfied and we check if only position 0 is allowed immediately,
+// while other positions should still be pending
+func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 5, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	approvalTime := baseTime.Add(1 * time.Hour)
+
+	// CRITICAL: Set current time to EXACTLY when approval is satisfied
+	currentTime := approvalTime
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	approvalPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				AnyApproval: &oapi.AnyApprovalRule{
+					MinApprovals: 2,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, approvalPolicy)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environment.Id,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environment.Id,
+		UserId:        "user-2",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+
+	releaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[3].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[4].Id, environment.Id, deployment.Id)),
+	}
+
+	// Check all positions at the exact moment approval is satisfied
+	allowedCount := 0
+	pendingCount := 0
+
+	for i, rt := range releaseTargets {
+		scope := evaluator.EvaluatorScope{
+			Environment:   environment,
+			Version:       version,
+			ReleaseTarget: rt,
+		}
+		result := eval.Evaluate(ctx, scope)
+
+		t.Logf("Position %d: Allowed=%v, Message=%s, RolloutTime=%v",
+			i, result.Allowed, result.Message, result.Details["target_rollout_time"])
+
+		if result.Allowed {
+			allowedCount++
+		} else if result.ActionRequired && result.ActionType != nil && *result.ActionType == oapi.Wait {
+			pendingCount++
+		}
+	}
+
+	// CRITICAL CHECK: Only position 0 should be allowed, all others should be pending
+	assert.Equal(t, 1, allowedCount, "Only position 0 should be allowed immediately after approval")
+	assert.Equal(t, 4, pendingCount, "Positions 1-4 should be pending (waiting for their rollout time)")
+}
+
+// TestGradualRolloutEvaluator_GradualProgressionOverTime tests that as time advances,
+// more positions become allowed in the correct order
+func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 5, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	approvalTime := baseTime.Add(1 * time.Hour)
+
+	// Use a mutable time reference
+	currentTime := approvalTime
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60) // 60 seconds between each position
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	approvalPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				AnyApproval: &oapi.AnyApprovalRule{
+					MinApprovals: 1,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, approvalPolicy)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environment.Id,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     approvalTime.Format(time.RFC3339),
+	})
+
+	releaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[3].Id, environment.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[4].Id, environment.Id, deployment.Id)),
+	}
+
+	// Time T+0: Only position 0 should be allowed
+	currentTime = approvalTime
+	allowedAtT0 := countAllowedTargets(ctx, t, eval, environment, version, releaseTargets)
+	assert.Equal(t, 1, allowedAtT0, "At T+0 (approval time), only position 0 should be allowed")
+
+	// Time T+30s: Still only position 0 (position 1 needs 60s)
+	currentTime = approvalTime.Add(30 * time.Second)
+	allowedAtT30 := countAllowedTargets(ctx, t, eval, environment, version, releaseTargets)
+	assert.Equal(t, 1, allowedAtT30, "At T+30s, only position 0 should be allowed")
+
+	// Time T+60s: Positions 0 and 1 should be allowed
+	currentTime = approvalTime.Add(60 * time.Second)
+	allowedAtT60 := countAllowedTargets(ctx, t, eval, environment, version, releaseTargets)
+	assert.Equal(t, 2, allowedAtT60, "At T+60s, positions 0 and 1 should be allowed")
+
+	// Time T+120s: Positions 0, 1, and 2 should be allowed
+	currentTime = approvalTime.Add(120 * time.Second)
+	allowedAtT120 := countAllowedTargets(ctx, t, eval, environment, version, releaseTargets)
+	assert.Equal(t, 3, allowedAtT120, "At T+120s, positions 0, 1, and 2 should be allowed")
+
+	// Time T+180s: Positions 0, 1, 2, and 3 should be allowed
+	currentTime = approvalTime.Add(180 * time.Second)
+	allowedAtT180 := countAllowedTargets(ctx, t, eval, environment, version, releaseTargets)
+	assert.Equal(t, 4, allowedAtT180, "At T+180s, positions 0, 1, 2, and 3 should be allowed")
+
+	// Time T+240s: All 5 positions should be allowed
+	currentTime = approvalTime.Add(240 * time.Second)
+	allowedAtT240 := countAllowedTargets(ctx, t, eval, environment, version, releaseTargets)
+	assert.Equal(t, 5, allowedAtT240, "At T+240s, all 5 positions should be allowed")
+}
+
+// Helper function to count how many targets are allowed at a given time
+func countAllowedTargets(ctx context.Context, t *testing.T, eval GradualRolloutEvaluator,
+	environment *oapi.Environment, version *oapi.DeploymentVersion,
+	releaseTargets []*oapi.ReleaseTarget) int {
+
+	allowedCount := 0
+	for _, rt := range releaseTargets {
+		scope := evaluator.EvaluatorScope{
+			Environment:   environment,
+			Version:       version,
+			ReleaseTarget: rt,
+		}
+		result := eval.Evaluate(ctx, scope)
+		if result.Allowed {
+			allowedCount++
+		}
+	}
+	return allowedCount
+}
+
+// TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowed tests the scenario
+// where environment progression is just satisfied and only position 0 should deploy immediately
+func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowed(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New(sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 5, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	// Staging jobs complete at this time
+	stagingCompletionTime := baseTime.Add(1 * time.Hour)
+
+	// CRITICAL: Set current time to EXACTLY when staging completes (env progression satisfied)
+	currentTime := stagingCompletionTime
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	envProgPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, envProgPolicy)
+
+	// Create successful staging jobs (all complete at stagingCompletionTime)
+	for i := 0; i < 5; i++ {
+		stagingRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[i].Id, stagingEnv.Id, deployment.Id))
+		release := &oapi.Release{
+			ReleaseTarget: *stagingRT,
+			Version:       *version,
+		}
+		st.Releases.Upsert(ctx, release)
+
+		completedAt := stagingCompletionTime
+		job := &oapi.Job{
+			Id:          fmt.Sprintf("job-staging-%d", i),
+			ReleaseId:   release.ID(),
+			Status:      oapi.Successful,
+			CreatedAt:   baseTime,
+			CompletedAt: &completedAt,
+			UpdatedAt:   completedAt,
+		}
+		st.Jobs.Upsert(ctx, job)
+	}
+
+	prodReleaseTargets := []*oapi.ReleaseTarget{
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, prodEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, prodEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[3].Id, prodEnv.Id, deployment.Id)),
+		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[4].Id, prodEnv.Id, deployment.Id)),
+	}
+
+	// Check all positions at the exact moment staging completes
+	allowedCount := 0
+	pendingCount := 0
+
+	for i, rt := range prodReleaseTargets {
+		scope := evaluator.EvaluatorScope{
+			Environment:   prodEnv,
+			Version:       version,
+			ReleaseTarget: rt,
+		}
+		result := eval.Evaluate(ctx, scope)
+
+		t.Logf("Position %d: Allowed=%v, Message=%s, RolloutTime=%v",
+			i, result.Allowed, result.Message, result.Details["target_rollout_time"])
+
+		if result.Allowed {
+			allowedCount++
+		} else if result.ActionRequired && result.ActionType != nil && *result.ActionType == oapi.Wait {
+			pendingCount++
+		}
+	}
+
+	// CRITICAL CHECK: Only position 0 should be allowed, all others should be pending
+	assert.Equal(t, 1, allowedCount, "Only position 0 should be allowed immediately after staging completes")
+	assert.Equal(t, 4, pendingCount, "Positions 1-4 should be pending (waiting for their rollout time)")
+}

@@ -14,13 +14,15 @@ export function GradualRolloutDecision({
   const gradualRolloutResult = policyResults?.gradualRollout;
   if (gradualRolloutResult == null) return null;
 
+  console.log("gradualRolloutResult", gradualRolloutResult);
+
   const { rolloutStartTime, rolloutInfos } = gradualRolloutResult;
 
   if (rolloutStartTime == null)
     return (
       <div className="flex items-center gap-1.5">
         <Clock className="size-3 text-muted-foreground" />
-        <span className="text-xs font-semibold text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           Not started, pending approvals
         </span>
       </div>
@@ -31,9 +33,7 @@ export function GradualRolloutDecision({
     return (
       <div className="flex items-center gap-1.5">
         <CheckCircle className="size-3 text-green-500" />
-        <span className="text-xs font-semibold text-green-500">
-          Rollout complete
-        </span>
+        <span className="text-xs  text-green-500">Rollout complete</span>
       </div>
     );
 
@@ -42,7 +42,7 @@ export function GradualRolloutDecision({
   return (
     <div className="flex items-center gap-1.5">
       <Loader2 className="size-3 animate-spin text-blue-500" />
-      <span className="text-xs font-semibold text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         Rollout in progress ({numAllowed}/{rolloutInfos.length})
       </span>
     </div>

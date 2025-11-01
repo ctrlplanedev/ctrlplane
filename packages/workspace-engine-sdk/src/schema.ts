@@ -461,6 +461,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/policies/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate policies
+         * @description Evaluates all policies for a workspace.
+         */
+        post: operations["evaluatePolicies"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/policies/{policyId}": {
         parameters: {
             query?: never;
@@ -884,6 +904,10 @@ export interface components {
         EvaluateReleaseTargetRequest: {
             releaseTarget: components["schemas"]["ReleaseTarget"];
             version: components["schemas"]["DeploymentVersion"];
+        };
+        EvaluationScope: {
+            environmentId?: string;
+            versionId?: string;
         };
         GithubEntity: {
             installationId: number;
@@ -2220,6 +2244,44 @@ export interface operations {
                 content: {
                     "application/json": {
                         policies?: components["schemas"]["Policy"][];
+                    };
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    evaluatePolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluationScope"];
+            };
+        };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        decision?: components["schemas"]["DeployDecision"];
                     };
                 };
             };
