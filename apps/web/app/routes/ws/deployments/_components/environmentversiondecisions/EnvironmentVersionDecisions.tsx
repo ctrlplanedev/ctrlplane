@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type React from "react";
+import { AlertCircleIcon, Check, X } from "lucide-react";
 
 import { trpc } from "~/api/trpc";
 import {
@@ -12,6 +13,7 @@ import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 
 const DeploymentVersion: React.FC<{
+  allEnvironments: WorkspaceEngine["schemas"]["Environment"][];
   version: WorkspaceEngine["schemas"]["DeploymentVersion"];
   environment: WorkspaceEngine["schemas"]["Environment"];
 }> = ({ version, environment }) => {
@@ -33,14 +35,27 @@ const DeploymentVersion: React.FC<{
     );
 
   if (data == null) return null;
-
+  console.log(data);
   return (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-      {data.policyResults.map(({ policy }, idx) => (
-        <div key={idx} className="border-b">
-          {policy?.name}
-          <pre>{JSON.stringify(policy, null, 2)}</pre>
+      {data.policyResults.map(({ policy, ruleResults }, idx) => (
+        <div key={idx} className="space-y-1">
+          <div className="font-semibold">{policy?.name}</div>
+
+          {ruleResults.map((rule, idx) => (
+            <div key={idx} className="flex items-center gap-2 text-xs">
+              <div>
+                {rule.allowed ? (
+                  <Check className="size-3 text-green-500" />
+                ) : rule.actionRequired ? (
+                  <AlertCircleIcon className="size-3 text-red-500" />
+                ) : (
+                  <X className="size-3 text-green-500" />
+                )}
+              </div>
+              <div key={idx}>{rule.message}</div>
+            </div>
+          ))}
         </div>
       ))}
     </div>
@@ -48,6 +63,7 @@ const DeploymentVersion: React.FC<{
 };
 
 type EnvironmentVersionDecisionsProps = {
+  allEnvironments: WorkspaceEngine["schemas"]["Environment"][];
   environment: WorkspaceEngine["schemas"]["Environment"];
   deploymentId: string;
   versions: WorkspaceEngine["schemas"]["DeploymentVersion"][];
@@ -56,6 +72,7 @@ type EnvironmentVersionDecisionsProps = {
 };
 
 export function EnvironmentVersionDecisions({
+  allEnvironments,
   environment,
   versions,
   open,
@@ -77,6 +94,7 @@ export function EnvironmentVersionDecisions({
                 </h3>
                 <div className="flex flex-col gap-1">
                   <DeploymentVersion
+                    allEnvironments={allEnvironments}
                     version={version}
                     environment={environment}
                   />
