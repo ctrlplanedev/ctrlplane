@@ -14,6 +14,7 @@ import type { ReleaseTargetWithState } from "./types";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
+import { VersionDropdown } from "./VersionDropdown";
 
 type DeploymentVersionStatus =
   | "unspecified"
@@ -191,6 +192,8 @@ export const VersionCard: React.FC<VersionCardProps> = ({
           </span>
 
           <span className="truncate">{displayName}</span>
+          <div className="flex-grow" />
+          <VersionDropdown version={version} />
         </div>
       </div>
 
