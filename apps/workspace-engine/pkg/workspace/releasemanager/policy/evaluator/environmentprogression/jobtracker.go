@@ -2,6 +2,7 @@ package environmentprogression
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -101,7 +102,9 @@ func (t *ReleaseTargetJobTracker) compute() []*oapi.Job {
 		}
 
 		if t.SuccessStatuses[job.Status] {
+			fmt.Println("job.Status", job.Id, job.Status)
 			if job.CompletedAt != nil {
+				fmt.Println("job.CompletedAt", *job.CompletedAt)
 				targetKey := release.ReleaseTarget.Key()
 				// Store the oldest successful completion time for this release target
 				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || job.CompletedAt.Before(existingTime) {

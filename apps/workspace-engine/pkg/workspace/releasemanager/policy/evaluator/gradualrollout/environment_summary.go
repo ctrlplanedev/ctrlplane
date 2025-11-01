@@ -132,17 +132,17 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 
 	result := results.NewResult()
 
-	var nextDeploymentTimeStr interface{}
+	var nextDeploymentTimeStr any
 	if nextDeploymentTime != nil {
 		nextDeploymentTimeStr = nextDeploymentTime.Format(time.RFC3339)
 	}
 
-	var estimatedCompletionTimeStr interface{}
+	var estimatedCompletionTimeStr any
 	if estimatedCompletionTime != nil {
 		estimatedCompletionTimeStr = estimatedCompletionTime.Format(time.RFC3339)
 	}
 
-	var rolloutStartTimeStr interface{}
+	var rolloutStartTimeStr any
 	if rolloutStartTime != nil {
 		rolloutStartTimeStr = rolloutStartTime.Format(time.RFC3339)
 	}

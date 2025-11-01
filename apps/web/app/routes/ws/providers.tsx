@@ -210,7 +210,7 @@ export default function Providers() {
       case "salesforce":
         return "bg-sky-500/10 text-sky-500 hover:bg-sky-500/20";
       case "github":
-        return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20";
+        return "bg-neutral-500/10 text-neutral-500 hover:bg-neutral-500/20";
       case "custom":
         return "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20";
       default:
@@ -227,7 +227,7 @@ export default function Providers() {
       case "error":
         return "bg-red-500/10 text-red-500 hover:bg-red-500/20";
       case "idle":
-        return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20";
+        return "bg-neutral-500/10 text-neutral-500 hover:bg-neutral-500/20";
       default:
         return "";
     }

@@ -147,12 +147,12 @@ export function DeploymentCardVersionMetric({
 }
 
 const jobStatusBarColor: Record<string, string> = {
-  unknown: "bg-gray-500",
-  cancelled: "bg-gray-500",
-  skipped: "bg-gray-500",
+  unknown: "bg-neutral-500",
+  cancelled: "bg-neutral-500",
+  skipped: "bg-neutral-500",
   inProgress: "bg-blue-500",
   actionRequired: "bg-yellow-500",
-  pending: "bg-gray-500",
+  pending: "bg-neutral-500",
   failure: "bg-red-500",
   invalidJobAgent: "bg-orange-400",
   invalidIntegration: "bg-orange-500",
@@ -162,15 +162,15 @@ const jobStatusBarColor: Record<string, string> = {
 
 const jobStatusTextColor: Record<string, string> = {
   successful: "text-green-500",
-  unknown: "text-gray-500",
-  cancelled: "text-gray-500",
-  skipped: "text-gray-500",
+  unknown: "text-neutral-500",
+  cancelled: "text-neutral-500",
+  skipped: "text-neutral-500",
   inProgress: "text-blue-500",
   invalidJobAgent: "text-orange-500",
   invalidIntegration: "text-orange-500",
   externalRunNotFound: "text-orange-500",
   actionRequired: "text-yellow-500",
-  pending: "text-gray-500",
+  pending: "text-neutral-500",
   failure: "text-red-500",
 };
 

@@ -55,6 +55,17 @@ export const jobsRouter = router({
 
       if (jobResponse.data == null) throw new Error("Job not found");
       const updatedJob = { ...jobResponse.data, status };
+      if (
+        status === "successful" ||
+        status === "failure" ||
+        status === "cancelled" ||
+        status === "skipped" ||
+        status === "externalRunNotFound" ||
+        status === "invalidJobAgent" ||
+        status === "invalidIntegration"
+      ) {
+        updatedJob.completedAt = new Date().toISOString();
+      }
 
       await sendGoEvent({
         workspaceId,
@@ -63,7 +74,7 @@ export const jobsRouter = router({
         data: {
           id: jobId,
           job: updatedJob,
-          fieldsToUpdate: ["status"],
+          fieldsToUpdate: ["status", "completedAt"],
           agentId: jobResponse.data.jobAgentId,
           externalId: jobResponse.data.externalId,
         },

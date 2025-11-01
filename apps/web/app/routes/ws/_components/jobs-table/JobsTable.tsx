@@ -41,6 +41,7 @@ function JobsTableHeader() {
 function LinksCell({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
   const { metadata } = job;
   const links: Record<string, string> =
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     metadata["ctrlplane/links"] != null
       ? JSON.parse(metadata["ctrlplane/links"])
       : {};

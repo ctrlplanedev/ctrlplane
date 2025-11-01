@@ -20,7 +20,7 @@ export const getVersionStatusColor = (status: DeploymentVersionStatus) => {
     case "rejected":
       return "text-amber-600 border-amber-500/20";
     default:
-      return "text-gray-600 border-gray-500/20";
+      return "text-neutral-600 border-neutral-500/20";
   }
 };
 
@@ -50,9 +50,9 @@ export const getJobStatusColor = (status: JobStatus) => {
     case "pending":
       return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     case "cancelled":
-      return "bg-gray-500/10 text-gray-600 border-gray-500/20";
+      return "bg-neutral-500/10 text-neutral-600 border-neutral-500/20";
     default:
-      return "bg-gray-500/10 text-gray-600 border-gray-500/20";
+      return "bg-neutral-500/10 text-neutral-600 border-neutral-500/20";
   }
 };
 

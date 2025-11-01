@@ -14,16 +14,26 @@ const JobStatusDisplayName = {
 // Basic job status badge component with color mapping
 
 const JobStatusBadgeColor: Record<string, string> = {
-  cancelled: "bg-gray-100 text-gray-700 border-gray-200",
-  skipped: "bg-gray-100 text-gray-700 border-gray-200",
-  inProgress: "bg-blue-100 text-blue-800 border-blue-200",
-  actionRequired: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  pending: "bg-muted text-muted-foreground border-muted-foreground/20",
-  failure: "bg-red-100 text-red-800 border-red-200",
-  invalidJobAgent: "bg-orange-100 text-orange-800 border-orange-200",
-  invalidIntegration: "bg-orange-100 text-orange-800 border-orange-200",
-  externalRunNotFound: "bg-orange-100 text-orange-800 border-orange-200",
-  successful: "bg-green-100 text-green-800 border-green-200",
+  cancelled:
+    "bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800",
+  skipped:
+    "bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800",
+  inProgress:
+    "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800",
+  actionRequired:
+    "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800",
+  pending:
+    "bg-muted dark:bg-muted-foreground text-muted-foreground dark:text-muted border-muted-foreground/20 dark:border-muted-foreground/20",
+  failure:
+    "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800",
+  invalidJobAgent:
+    "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800",
+  invalidIntegration:
+    "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800",
+  externalRunNotFound:
+    "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-800",
+  successful:
+    "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800",
 };
 
 export function JobStatusBadge({
@@ -33,7 +43,7 @@ export function JobStatusBadge({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${JobStatusBadgeColor[status] ?? "border-gray-200 bg-gray-100 text-gray-700"}`}
+      className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${JobStatusBadgeColor[status] ?? "border-neutral-200 bg-neutral-100 text-neutral-700"}`}
     >
       {JobStatusDisplayName[status]}
     </span>

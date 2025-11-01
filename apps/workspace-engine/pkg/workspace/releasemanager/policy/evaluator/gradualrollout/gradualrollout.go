@@ -219,6 +219,10 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 	if err != nil {
 		return results.
 			NewDeniedResult(fmt.Sprintf("Failed to get rollout position: %v", err)).
+			WithDetail("release_targets", releaseTargets).
+			WithDetail("version", version).
+			WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
+			WithDetail("target_rollout_position", rolloutPosition).
 			WithDetail("error", err.Error())
 	}
 

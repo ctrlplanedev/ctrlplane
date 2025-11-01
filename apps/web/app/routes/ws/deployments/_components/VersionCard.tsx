@@ -48,9 +48,9 @@ const getVersionStatusColor = (status: DeploymentVersionStatus) => {
     case "rejected":
       return "text-amber-600 border-amber-500/20";
     case "paused":
-      return "text-gray-600 border-gray-500/20";
+      return "text-neutral-600 border-neutral-500/20";
     default:
-      return "text-gray-600 border-gray-500/20";
+      return "text-neutral-600 border-neutral-500/20";
   }
 };
 
