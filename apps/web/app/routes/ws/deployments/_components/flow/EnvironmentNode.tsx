@@ -155,7 +155,7 @@ export const EnvironmentNode = ({ data }: NodeProps<EnvironmentNodeData>) => {
                         variant="outline"
                         className="px-1.5 py-0 font-mono text-xs"
                       >
-                        {v.tag}
+                        {v.name || v.tag}
                         <span className="ml-1 text-muted-foreground">
                           ({v.count})
                         </span>
