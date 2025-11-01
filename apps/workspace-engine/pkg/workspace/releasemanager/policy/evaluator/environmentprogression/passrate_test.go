@@ -610,4 +610,3 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 	// Should be allowed because InProgress is treated as a success status
 	assert.True(t, result.Allowed, "expected allowed with InProgress job when InProgress is a success status")
 }
-

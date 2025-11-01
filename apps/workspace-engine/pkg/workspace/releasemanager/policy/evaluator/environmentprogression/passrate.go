@@ -10,9 +10,9 @@ import (
 )
 
 type PassRateEvaluator struct {
-	store *store.Store
+	store                    *store.Store
 	minimumSuccessPercentage float32
-	successStatuses map[oapi.JobStatus]bool
+	successStatuses          map[oapi.JobStatus]bool
 }
 
 func NewPassRateEvaluator(
@@ -24,9 +24,9 @@ func NewPassRateEvaluator(
 		successStatuses = map[oapi.JobStatus]bool{oapi.Successful: true}
 	}
 	return evaluator.WithMemoization(&PassRateEvaluator{
-		store: store,
+		store:                    store,
 		minimumSuccessPercentage: minimumSuccessPercentage,
-		successStatuses: successStatuses,
+		successStatuses:          successStatuses,
 	})
 }
 

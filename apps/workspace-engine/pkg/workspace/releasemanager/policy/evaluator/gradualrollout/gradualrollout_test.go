@@ -99,8 +99,8 @@ func getHashingFunc(st *store.Store) func(releaseTarget *oapi.ReleaseTarget, ver
 
 func createGradualRolloutRule(rolloutType oapi.GradualRolloutRuleRolloutType, timeScaleInterval int32) *oapi.GradualRolloutRule {
 	return &oapi.GradualRolloutRule{
-		RolloutType:           rolloutType,
-		TimeScaleInterval:     timeScaleInterval,
+		RolloutType:       rolloutType,
+		TimeScaleInterval: timeScaleInterval,
 	}
 }
 
@@ -317,7 +317,6 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
 	assert.Equal(t, baseTime.Add(40*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
 }
-
 
 // TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately tests that zero timeScaleInterval
 // causes all targets to deploy immediately regardless of rollout type
@@ -741,7 +740,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 			{
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 					DependsOnEnvironmentSelector: selector,
-					MinimumSockTimeMinutes:      &soakMinutes,
+					MinimumSockTimeMinutes:       &soakMinutes,
 				},
 			},
 		},

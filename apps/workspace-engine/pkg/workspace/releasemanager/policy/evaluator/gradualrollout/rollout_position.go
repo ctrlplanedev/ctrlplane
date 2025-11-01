@@ -15,11 +15,11 @@ type targetWithHash struct {
 
 // rolloutPositionBuilder builds and computes rollout positions through a fluent API
 type rolloutPositionBuilder struct {
-	targets          []*oapi.ReleaseTarget
-	hashingFn        hashingFunc
+	targets           []*oapi.ReleaseTarget
+	hashingFn         hashingFunc
 	targetsWithHashes []targetWithHash
-	releaseTarget    *oapi.ReleaseTarget
-	err              error
+	releaseTarget     *oapi.ReleaseTarget
+	err               error
 }
 
 // newRolloutPositionBuilder creates a new builder for computing rollout positions

@@ -22,9 +22,9 @@ var fnvHashingFn = func(releaseTarget *oapi.ReleaseTarget, key string) (uint64, 
 }
 
 type GradualRolloutEvaluator struct {
-	store      *store.Store
-	rule       *oapi.GradualRolloutRule
-	hashingFn  func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
+	store     *store.Store
+	rule      *oapi.GradualRolloutRule
+	hashingFn func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
 
 	// For testing
 	timeGetter func() time.Time
@@ -79,7 +79,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 				if approvalEvaluator == nil {
 					continue
 				}
-			
+
 				result := approvalEvaluator.Evaluate(ctx, scope)
 				if result.Allowed && result.SatisfiedAt != nil {
 					// pick the latest SatisfiedAt if multiple approvals exist
@@ -138,22 +138,22 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 }
 
 func (e *GradualRolloutEvaluator) getDeploymentOffset(
-    rolloutPosition int32,
-    timeScaleInterval int32,
-    rolloutType oapi.GradualRolloutRuleRolloutType,
-    numReleaseTargets int32,
+	rolloutPosition int32,
+	timeScaleInterval int32,
+	rolloutType oapi.GradualRolloutRuleRolloutType,
+	numReleaseTargets int32,
 ) time.Duration {
-    switch rolloutType {
-    case oapi.Linear:
-        return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
-    
-    case oapi.LinearNormalized:
-        return time.Duration(float64(rolloutPosition) / float64(numReleaseTargets) * float64(timeScaleInterval)) * time.Second
-    
-    default:
-        // Default to linear for backward compatibility
-        return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
-    }
+	switch rolloutType {
+	case oapi.Linear:
+		return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
+
+	case oapi.LinearNormalized:
+		return time.Duration(float64(rolloutPosition)/float64(numReleaseTargets)*float64(timeScaleInterval)) * time.Second
+
+	default:
+		// Default to linear for backward compatibility
+		return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
+	}
 }
 
 // Evaluate checks if a gradual rollout has progressed enough to allow deployment to this release target.
@@ -202,9 +202,9 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 	}
 
 	deploymentOffset := e.getDeploymentOffset(
-		rolloutPosition, 
-		e.rule.TimeScaleInterval, 
-		e.rule.RolloutType, 
+		rolloutPosition,
+		e.rule.TimeScaleInterval,
+		e.rule.RolloutType,
 		int32(len(releaseTargets)),
 	)
 	deploymentTime := rolloutStartTime.Add(deploymentOffset)

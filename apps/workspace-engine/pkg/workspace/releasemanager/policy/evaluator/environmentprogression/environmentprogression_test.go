@@ -539,7 +539,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	// Create a successful job that completed 40 minutes ago
 	// With 30 minute soak time requirement, it should be satisfied
 	soakMinutes := int32(30)
-	mostRecentSuccess := time.Now().Add(-40 * time.Minute) // 40 minutes ago
+	mostRecentSuccess := time.Now().Add(-40 * time.Minute)                                 // 40 minutes ago
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute) // mostRecentSuccess + soakDuration
 
 	completedAt := mostRecentSuccess
@@ -691,7 +691,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
 			MinimumSuccessPercentage:     &minSuccessPercentage,
-			MinimumSockTimeMinutes:        &soakMinutes,
+			MinimumSockTimeMinutes:       &soakMinutes,
 		},
 	}
 
@@ -860,7 +860,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
 			MinimumSuccessPercentage:     &minSuccessPercentage,
-			MinimumSockTimeMinutes:        &soakMinutes,
+			MinimumSockTimeMinutes:       &soakMinutes,
 		},
 	}
 
@@ -940,7 +940,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 	rule := &oapi.PolicyRule{
 		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 			DependsOnEnvironmentSelector: selector,
-			MinimumSockTimeMinutes:        &soakMinutes,
+			MinimumSockTimeMinutes:       &soakMinutes,
 		},
 	}
 

@@ -126,13 +126,13 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentage() float32 {
 	if numRt == 0 {
 		return 0.0 // If no targets, consider it 100% successful
 	}
-	
+
 	// Build a set of release target keys for filtering
 	rtKeys := make(map[string]bool)
 	for _, rt := range t.ReleaseTargets {
 		rtKeys[rt.Key()] = true
 	}
-	
+
 	// Count only successful release targets that are in t.ReleaseTargets
 	successfulCount := 0
 	for targetKey := range t.successfulReleaseTargets {
@@ -140,7 +140,7 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentage() float32 {
 			successfulCount++
 		}
 	}
-	
+
 	return float32(successfulCount) / float32(numRt) * 100
 }
 
@@ -187,7 +187,6 @@ func (t *ReleaseTargetJobTracker) GetSuccessPercentageSatisfiedAt(minimumSuccess
 	return successTimes[required-1]
 }
 
-
 // MeetsSoakTimeRequirement checks if the latest successful completion across all release targets
 // has soaked for at least the specified duration. Returns true if the soak time requirement is met.
 func (t *ReleaseTargetJobTracker) MeetsSoakTimeRequirement(duration time.Duration) bool {
@@ -218,7 +217,7 @@ func (t *ReleaseTargetJobTracker) GetEarliestSuccess() time.Time {
 	if len(t.successfulReleaseTargets) == 0 {
 		return time.Time{}
 	}
-	
+
 	var earliest time.Time
 	first := true
 	for _, completedAt := range t.successfulReleaseTargets {

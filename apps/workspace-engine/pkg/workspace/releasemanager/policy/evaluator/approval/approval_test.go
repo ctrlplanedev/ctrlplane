@@ -313,7 +313,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
 	// Create approval records with specific timestamps
 	// We need 2 approvals, so the 2nd approval (index 1) should be the satisfying one
 	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	
+
 	firstApprovalTime := baseTime.Add(5 * time.Minute)
 	secondApprovalTime := baseTime.Add(10 * time.Minute) // This should be the satisfiedAt timestamp
 	thirdApprovalTime := baseTime.Add(15 * time.Minute)
@@ -379,7 +379,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 
 	// Create 5 approvals, but only need 2
 	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	
+
 	firstApprovalTime := baseTime.Add(5 * time.Minute)
 	secondApprovalTime := baseTime.Add(10 * time.Minute) // This should be the satisfiedAt (2nd approval)
 	thirdApprovalTime := baseTime.Add(15 * time.Minute)
@@ -572,7 +572,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 	st.Environments.Upsert(ctx, env)
 
 	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
-	
+
 	// Create approvals out of chronological order
 	// First approval (created later, but inserted first)
 	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
@@ -629,10 +629,10 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 	ctx := context.Background()
 	versionId := "version-1"
 	environmentId := "env-1"
-	
+
 	// Setup store with no approvals (should normally fail)
 	st := setupStore(versionId, environmentId, []string{})
-	
+
 	// Create a deployment
 	jobAgentId := "agent-1"
 	deployment := &oapi.Deployment{
@@ -642,7 +642,7 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 		JobAgentId: &jobAgentId,
 	}
 	st.Deployments.Upsert(ctx, deployment)
-	
+
 	// Create version
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 	version := &oapi.DeploymentVersion{
@@ -654,14 +654,14 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 		CreatedAt:    versionCreatedAt,
 	}
 	st.DeploymentVersions.Upsert(ctx, version.Id, version)
-	
+
 	// Create a release target
 	rt := &oapi.ReleaseTarget{
 		ResourceId:    "resource-1",
 		EnvironmentId: environmentId,
 		DeploymentId:  "deploy-1",
 	}
-	
+
 	// Create a release showing this version was already deployed to this environment
 	release := &oapi.Release{
 		ReleaseTarget: *rt,
@@ -670,21 +670,21 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 	st.Releases.Upsert(ctx, release)
-	
+
 	// Rule requires 2 approvals, but we have none
 	rule := &oapi.PolicyRule{AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
 	eval := NewAnyApprovalEvaluator(st, rule.AnyApproval)
 	require.NotNil(t, eval, "evaluator should not be nil")
-	
+
 	environment, _ := st.Environments.Get(environmentId)
-	
+
 	// Act
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
 		Version:     version,
 	}
 	result := eval.Evaluate(ctx, scope)
-	
+
 	// Assert: Should be allowed because version was already deployed to this environment
 	assert.True(t, result.Allowed, "expected allowed because version already deployed to this environment")
 	assert.Contains(t, result.Message, "already deployed")

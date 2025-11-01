@@ -530,4 +530,3 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
 	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
 }
-

@@ -50,7 +50,6 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			WithSatisfiedAt(version.CreatedAt)
 	}
 
-
 	// If this version has already been deployed to this environment, it was previously "approved"
 	// so we can allow it without requiring new approvals. Will need to add support for bypass jobs though.
 	for _, release := range m.store.Releases.Items() {
@@ -66,12 +65,11 @@ func (m *AnyApprovalEvaluator) Evaluate(
 
 	approvalRecords := m.store.UserApprovalRecords.GetApprovalRecords(version.Id, environment.Id)
 	minApprovals := int(m.rule.MinApprovals)
-	
+
 	approvers := make([]string, len(approvalRecords))
 	for i, record := range approvalRecords {
 		approvers[i] = record.UserId
 	}
-
 
 	if len(approvalRecords) >= minApprovals {
 		// Get the timestamp of the approval that satisfied the requirement (the Nth approval)

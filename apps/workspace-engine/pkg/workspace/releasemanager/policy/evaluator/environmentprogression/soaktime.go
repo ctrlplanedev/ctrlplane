@@ -13,10 +13,10 @@ import (
 var _ evaluator.Evaluator = &SoakTimeEvaluator{}
 
 type SoakTimeEvaluator struct {
-	store          *store.Store
-	soakMinutes    int32
+	store           *store.Store
+	soakMinutes     int32
 	successStatuses map[oapi.JobStatus]bool
-	timeGetter     func() time.Time
+	timeGetter      func() time.Time
 }
 
 func NewSoakTimeEvaluator(
@@ -33,8 +33,8 @@ func NewSoakTimeEvaluator(
 		}
 	}
 	return evaluator.WithMemoization(&SoakTimeEvaluator{
-		store:          store,
-		soakMinutes:    soakMinutes,
+		store:           store,
+		soakMinutes:     soakMinutes,
 		successStatuses: successStatuses,
 		timeGetter: func() time.Time {
 			return time.Now()
@@ -84,4 +84,3 @@ func (e *SoakTimeEvaluator) Evaluate(
 		WithDetail("most_recent_success", mostRecentSuccess.Format(time.RFC3339)).
 		WithSatisfiedAt(satisfiedAt)
 }
-

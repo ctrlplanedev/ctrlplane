@@ -278,7 +278,6 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		return passRateResult
 	}
 
-
 	// Evaluate soak time requirement
 	var soakTimeResult *oapi.RuleEvaluation
 	if soakTimeEvaluator != nil {

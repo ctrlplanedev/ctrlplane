@@ -504,7 +504,8 @@
                }
             },
             "required": [
-               "timeScaleInterval"
+               "timeScaleInterval",
+               "rolloutType"
             ],
             "type": "object"
          },
