@@ -381,8 +381,6 @@
                }
             },
             "required": [
-               "id",
-               "policyId",
                "timeScaleInterval",
                "rolloutType"
             ],

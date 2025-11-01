@@ -29,6 +29,9 @@ func NewEnvironmentProgressionEvaluator(
 	store *store.Store,
 	rule *oapi.EnvironmentProgressionRule,
 ) evaluator.Evaluator {
+	if rule == nil {
+		return nil
+	}
 	return evaluator.WithMemoization(&EnvironmentProgressionEvaluator{
 		store: store,
 		rule:  rule,
