@@ -261,6 +261,7 @@ export const deploymentsRouter = router({
         id: uuidv4(),
         ...versionData,
         name: versionData.name ?? versionData.tag,
+        metadata: {} as Record<string, string>,
         createdAt: new Date().toISOString(),
       };
 
