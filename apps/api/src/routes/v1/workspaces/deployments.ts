@@ -180,6 +180,7 @@ const createDeploymentVersion: AsyncTypedHandler<
     ...body,
     config: body.config ?? {},
     jobAgentConfig: body.jobAgentConfig ?? {},
+    metadata: body.metadata ?? {},
     deploymentId,
     createdAt: new Date().toISOString(),
     id: uuidv4(),
