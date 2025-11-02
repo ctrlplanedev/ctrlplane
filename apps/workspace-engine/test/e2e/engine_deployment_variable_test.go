@@ -1813,4 +1813,3 @@ func TestEngine_DeploymentVariableValue_ResourceVariableOverride(t *testing.T) {
 		t.Errorf("replicas = %d, want 5 (resource variable overrides deployment variable value)", replicasInt)
 	}
 }
-

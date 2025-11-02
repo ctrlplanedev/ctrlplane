@@ -136,7 +136,7 @@ export default function DeploymentsSettingsPage() {
                       <CollapsibleTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="w-full justify-between p-4"
+                          className="h-20 w-full justify-between p-4"
                         >
                           <div className="flex items-start gap-3 text-left">
                             <div className="flex-1">

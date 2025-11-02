@@ -77,7 +77,7 @@ type eventsBuilder struct {
 
 func newEventsBuilder() *eventsBuilder {
 	return &eventsBuilder{
-		preEvents:               []event{},
+		preEvents:                []event{},
 		postEvents:               []event{},
 		deploymentVariableValues: make(map[string][]*oapi.DeploymentVariableValue),
 	}
