@@ -81,6 +81,7 @@ local openapi = import '../lib/openapi.libsonnet';
       'deploymentId',
       'status',
       'createdAt',
+      'metadata',
     ],
     properties: {
       id: { type: 'string' },

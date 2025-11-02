@@ -239,7 +239,8 @@
                "jobAgentConfig",
                "deploymentId",
                "status",
-               "createdAt"
+               "createdAt",
+               "metadata"
             ],
             "type": "object"
          },
