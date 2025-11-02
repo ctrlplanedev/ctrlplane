@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/githubclient"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
@@ -56,6 +57,10 @@ func getGithubStatus(status oapi.JobStatus) string {
 	}
 }
 
+func getTargetURL(owner, repo, sha string) string {
+	return fmt.Sprintf("https://github.com/%s/%s/commit/%s", owner, repo, sha)
+}
+
 func MaybeAddCommitStatusFromJob(ctx context.Context, ws *workspace.Workspace, job *oapi.Job) error {
 	release, exists := ws.Releases().Get(job.ReleaseId)
 	if !exists {
@@ -77,6 +82,21 @@ func MaybeAddCommitStatusFromJob(ctx context.Context, ws *workspace.Workspace, j
 		return nil
 	}
 
+	resource, ok := ws.Resources().Get(release.ReleaseTarget.ResourceId)
+	if !ok {
+		return nil
+	}
+
+	deployment, ok := ws.Deployments().Get(release.ReleaseTarget.DeploymentId)
+	if !ok {
+		return nil
+	}
+
+	environment, ok := ws.Environments().Get(release.ReleaseTarget.EnvironmentId)
+	if !ok {
+		return nil
+	}
+
 	client, err := getGithubClient(ws, owner)
 	if err != nil {
 		return err
@@ -88,9 +108,8 @@ func MaybeAddCommitStatusFromJob(ctx context.Context, ws *workspace.Workspace, j
 
 	_, _, err = client.Repositories.CreateStatus(ctx, owner, repo, sha, &github.RepoStatus{
 		State:       github.String(getGithubStatus(job.Status)),
-		TargetURL:   github.String("https://example.com/build/status"),
-		Description: github.String("The build succeeded"),
-		Context:     github.String("continuous-integration/jenkins"),
+		TargetURL:   github.String(getTargetURL(owner, repo, sha)),
+		Description: github.String(fmt.Sprintf("%s | %s | %s", deployment.Name, environment.Name, resource.Name)),
 	})
 	return err
 }
