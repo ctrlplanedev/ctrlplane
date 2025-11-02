@@ -172,9 +172,9 @@ export type GoEventPayload = {
   [Event.DeploymentVariableCreated]: WorkspaceEngine["schemas"]["DeploymentVariable"];
   [Event.DeploymentVariableUpdated]: WorkspaceEngine["schemas"]["DeploymentVariable"];
   [Event.DeploymentVariableDeleted]: WorkspaceEngine["schemas"]["DeploymentVariable"];
-  // [Event.DeploymentVariableValueCreated]: PB.DeploymentVariableValue;
-  // [Event.DeploymentVariableValueUpdated]: PB.DeploymentVariableValue;
-  // [Event.DeploymentVariableValueDeleted]: PB.DeploymentVariableValue;
+  [Event.DeploymentVariableValueCreated]: WorkspaceEngine["schemas"]["DeploymentVariableValue"];
+  [Event.DeploymentVariableValueUpdated]: WorkspaceEngine["schemas"]["DeploymentVariableValue"];
+  [Event.DeploymentVariableValueDeleted]: WorkspaceEngine["schemas"]["DeploymentVariableValue"];
   [Event.DeploymentVersionCreated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionUpdated]: WorkspaceEngine["schemas"]["DeploymentVersion"];
   [Event.DeploymentVersionDeleted]: WorkspaceEngine["schemas"]["DeploymentVersion"];

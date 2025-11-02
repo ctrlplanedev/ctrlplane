@@ -1,3 +1,4 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
@@ -29,7 +30,6 @@ export const deploymentsRouter = router({
           },
         },
       );
-      console.log(response.data);
       return response.data;
     }),
 
@@ -179,7 +179,10 @@ export const deploymentsRouter = router({
         });
 
       const resourceSelector = { cel: data.resourceSelectorCel };
-      const updateData = { ...deployment.data, resourceSelector };
+      const updateData: WorkspaceEngine["schemas"]["Deployment"] = {
+        ...deployment.data.deployment,
+        resourceSelector,
+      };
 
       await sendGoEvent({
         workspaceId,
@@ -215,8 +218,8 @@ export const deploymentsRouter = router({
       };
 
       const cleanConfig = maybeCleanGhConfig(jobAgentConfig);
-      const updateData = {
-        ...deployment.data,
+      const updateData: WorkspaceEngine["schemas"]["Deployment"] = {
+        ...deployment.data.deployment,
         jobAgentId,
         jobAgentConfig: cleanConfig,
       };

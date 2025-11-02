@@ -9,21 +9,22 @@ export default function DeploymentsLayout() {
   const { workspace } = useWorkspace();
   const { deploymentId } = useParams();
 
-  const { data: deployment, isLoading } = trpc.deployment.get.useQuery(
-    { workspaceId: workspace.id, deploymentId: deploymentId ?? "" },
-    { enabled: deploymentId != null },
-  );
+  const { data: { deployment, variables } = {}, isLoading } =
+    trpc.deployment.get.useQuery(
+      { workspaceId: workspace.id, deploymentId: deploymentId ?? "" },
+      { enabled: deploymentId != null },
+    );
 
   if (isLoading) {
     return <Spinner />;
   }
 
-  if (deployment == null) {
+  if (deployment == null || variables == null) {
     throw new Error("Deployment not found");
   }
 
   return (
-    <DeploymentProvider deployment={deployment}>
+    <DeploymentProvider deployment={{ ...deployment, variables }}>
       <Outlet />
     </DeploymentProvider>
   );

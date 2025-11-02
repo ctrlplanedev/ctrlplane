@@ -1,15 +1,9 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 
-type Deployment = {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  jobAgentId?: string;
-  jobAgentConfig?: Record<string, unknown>;
-  systemId: string;
-  resourceSelector?: { cel?: string; json?: Record<string, unknown> };
+type Deployment = WorkspaceEngine["schemas"]["Deployment"] & {
+  variables: WorkspaceEngine["schemas"]["DeploymentVariableWithValues"][];
 };
 
 type DeploymentContextType = {
