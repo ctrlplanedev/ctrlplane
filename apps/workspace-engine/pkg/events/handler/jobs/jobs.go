@@ -73,7 +73,7 @@ func HandleJobUpdated(
 	ws.Jobs().Upsert(ctx, mergedJob)
 
 	go func() {
-		if err := MaybeAddCommitStatusFromJob(ctx, ws, mergedJob); err != nil {
+		if err := MaybeAddCommitStatusFromJob(ws, mergedJob); err != nil {
 			log.Error("error adding commit status", "error", err.Error())
 		}
 	}()

@@ -61,7 +61,8 @@ func getTargetURL(owner, repo, sha string) string {
 	return fmt.Sprintf("https://github.com/%s/%s/commit/%s", owner, repo, sha)
 }
 
-func MaybeAddCommitStatusFromJob(ctx context.Context, ws *workspace.Workspace, job *oapi.Job) error {
+func MaybeAddCommitStatusFromJob(ws *workspace.Workspace, job *oapi.Job) error {
+	ctx := context.Background()
 	release, exists := ws.Releases().Get(job.ReleaseId)
 	if !exists {
 		return nil
