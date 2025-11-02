@@ -28,11 +28,6 @@ func (d *DeploymentVariables) Get(id string) (*oapi.DeploymentVariable, bool) {
 	return d.repo.DeploymentVariables.Get(id)
 }
 
-func (d *DeploymentVariables) Values(varableId string) map[string]*oapi.DeploymentVariableValue {
-	values := make(map[string]*oapi.DeploymentVariableValue)
-	return values
-}
-
 func (d *DeploymentVariables) Upsert(ctx context.Context, id string, deploymentVariable *oapi.DeploymentVariable) {
 	d.repo.DeploymentVariables.Set(id, deploymentVariable)
 	if cs, ok := changeset.FromContext[any](ctx); ok {
@@ -53,4 +48,14 @@ func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
 	}
 
 	d.store.changeset.RecordDelete(deploymentVariable)
+}
+
+func (d *DeploymentVariables) Values(variableId string) map[string]*oapi.DeploymentVariableValue {
+	values := make(map[string]*oapi.DeploymentVariableValue)
+	for value := range d.repo.DeploymentVariableValues.IterBuffered() {
+		if value.Val.DeploymentVariableId == variableId {
+			values[value.Key] = value.Val
+		}
+	}
+	return values
 }

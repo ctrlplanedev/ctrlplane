@@ -669,4 +669,3 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_ZeroTimeScaleInterval(t *test
 
 	_ = resources // suppress unused warning
 }
-

@@ -58,4 +58,20 @@ local openapi = import '../lib/openapi.libsonnet';
       system: openapi.schemaRef('System'),
     },
   },
+  GetDeploymentResponse: {
+    type: 'object',
+    required: ['deployment', 'variables'],
+    properties: {
+      deployment: openapi.schemaRef('Deployment'),
+      variables: { type: 'array', items: openapi.schemaRef('DeploymentVariableWithValues') },
+    },
+  },
+  DeploymentVariableWithValues: {
+    type: 'object',
+    required: ['variable', 'values'],
+    properties: {
+      variable: openapi.schemaRef('DeploymentVariable'),
+      values: { type: 'array', items: openapi.schemaRef('DeploymentVariableValue') },
+    },
+  },
 }

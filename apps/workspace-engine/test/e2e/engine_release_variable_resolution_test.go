@@ -1402,8 +1402,8 @@ func TestEngine_ReleaseVariableResolution_DirectResolveValue(t *testing.T) {
 	}
 }
 
-// TestEngine_ReleaseVariableResolution_DeploymentLiteralValues tests resolving deployment variable literal values
-func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) {
+// TestEngine_ReleaseVariableResolution_DeploymentDefaultLiteralValues tests resolving deployment variable default literal values
+func TestEngine_ReleaseVariableResolution_DeploymentDefaultLiteralValues(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -1424,15 +1424,15 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"app_port",
-					integration.DeploymentVariableIntValue(8080),
+					integration.DeploymentVariableDefaultIntValue(8080),
 				),
 				integration.WithDeploymentVariable(
 					"app_name",
-					integration.DeploymentVariableStringValue("my-api"),
+					integration.DeploymentVariableDefaultStringValue("my-api"),
 				),
 				integration.WithDeploymentVariable(
 					"enable_metrics",
-					integration.DeploymentVariableBoolValue(true),
+					integration.DeploymentVariableDefaultBoolValue(true),
 				),
 			),
 			integration.WithEnvironment(
@@ -1516,8 +1516,8 @@ func TestEngine_ReleaseVariableResolution_DeploymentLiteralValues(t *testing.T) 
 	}
 }
 
-// TestEngine_ReleaseVariableResolution_DeploymentObjectValue tests resolving deployment variable object values
-func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
+// TestEngine_ReleaseVariableResolution_DeploymentDefaultObjectValue tests resolving deployment variable default object values
+func TestEngine_ReleaseVariableResolution_DeploymentDefaultObjectValue(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
@@ -1538,7 +1538,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"api_config",
-					integration.DeploymentVariableLiteralValue(map[string]any{
+					integration.DeploymentVariableDefaultLiteralValue(map[string]any{
 						"timeout": 30,
 						"retries": 3,
 						"auth": map[string]any{
@@ -1629,7 +1629,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentObjectValue(t *testing.T) {
 	}
 }
 
-// TestEngine_ReleaseVariableResolution_DeploymentResourceOverride tests that resource variables override deployment variables
+// TestEngine_ReleaseVariableResolution_DeploymentResourceOverride tests that resource variables override deployment variable defaults
 func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	resourceID := uuid.New().String()
@@ -1651,11 +1651,11 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"replicas",
-					integration.DeploymentVariableIntValue(3),
+					integration.DeploymentVariableDefaultIntValue(3),
 				),
 				integration.WithDeploymentVariable(
 					"region",
-					integration.DeploymentVariableStringValue("us-west-2"),
+					integration.DeploymentVariableDefaultStringValue("us-west-2"),
 				),
 			),
 			integration.WithEnvironment(
@@ -1733,7 +1733,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentResourceOverride(t *testing.
 	}
 }
 
-// TestEngine_ReleaseVariableResolution_MultipleDeployments tests that different deployments have different variables
+// TestEngine_ReleaseVariableResolution_MultipleDeployments tests that different deployments have different default variable values
 func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 	jobAgent1ID := uuid.New().String()
 	jobAgent2ID := uuid.New().String()
@@ -1761,11 +1761,11 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"port",
-					integration.DeploymentVariableIntValue(8080),
+					integration.DeploymentVariableDefaultIntValue(8080),
 				),
 				integration.WithDeploymentVariable(
 					"type",
-					integration.DeploymentVariableStringValue("api"),
+					integration.DeploymentVariableDefaultStringValue("api"),
 				),
 			),
 			integration.WithDeployment(
@@ -1775,11 +1775,11 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"port",
-					integration.DeploymentVariableIntValue(9090),
+					integration.DeploymentVariableDefaultIntValue(9090),
 				),
 				integration.WithDeploymentVariable(
 					"type",
-					integration.DeploymentVariableStringValue("worker"),
+					integration.DeploymentVariableDefaultStringValue("worker"),
 				),
 			),
 			integration.WithEnvironment(
@@ -1890,7 +1890,7 @@ func TestEngine_ReleaseVariableResolution_MultipleDeployments(t *testing.T) {
 	}
 }
 
-// TestEngine_ReleaseVariableResolution_DeploymentMixedSources tests variables from both deployment and resource
+// TestEngine_ReleaseVariableResolution_DeploymentMixedSources tests variables from both deployment defaults and resource variables
 func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	resourceID := uuid.New().String()
@@ -1912,11 +1912,11 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"app_version",
-					integration.DeploymentVariableStringValue("v1.2.3"),
+					integration.DeploymentVariableDefaultStringValue("v1.2.3"),
 				),
 				integration.WithDeploymentVariable(
 					"timeout",
-					integration.DeploymentVariableIntValue(30),
+					integration.DeploymentVariableDefaultIntValue(30),
 				),
 			),
 			integration.WithEnvironment(
@@ -2077,7 +2077,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentNoVariables(t *testing.T) {
 	}
 }
 
-// TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue tests deployment variable with empty string
+// TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue tests deployment variable with empty string default value
 func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	resourceID := uuid.New().String()
@@ -2099,7 +2099,7 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 				integration.DeploymentCelResourceSelector("true"),
 				integration.WithDeploymentVariable(
 					"optional_value",
-					integration.DeploymentVariableStringValue(""),
+					integration.DeploymentVariableDefaultStringValue(""),
 				),
 			),
 			integration.WithEnvironment(

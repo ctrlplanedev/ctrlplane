@@ -125,20 +125,13 @@ const upsertDeployment: AsyncTypedHandler<
   const { workspaceId, deploymentId } = req.params;
   const { body } = req;
 
-  const existingDeployment = await existingDeploymentById(
+  const existingDeploymentResponse = await existingDeploymentById(
     workspaceId,
     deploymentId,
   );
+  const { deployment } = existingDeploymentResponse ?? {};
 
-  if (existingDeployment == null)
-    throw new ApiError("Deployment not found", 404);
-
-  const deployment: WorkspaceEngine["schemas"]["Deployment"] = {
-    ...existingDeployment,
-    ...body,
-    id: existingDeployment.id,
-    jobAgentConfig: body.jobAgentConfig ?? {},
-  };
+  if (deployment == null) throw new ApiError("Deployment not found", 404);
 
   const isValid = await validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);

@@ -53,7 +53,38 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 		return
 	}
 
-	c.JSON(http.StatusOK, deployment)
+	// Build index of variable values by deployment variable ID for O(1) lookups
+	valuesByVariableId := make(map[string][]oapi.DeploymentVariableValue)
+	for _, value := range ws.DeploymentVariableValues().Items() {
+		if value != nil {
+			valuesByVariableId[value.DeploymentVariableId] = append(
+				valuesByVariableId[value.DeploymentVariableId],
+				*value,
+			)
+		}
+	}
+
+	// Collect variables for this deployment
+	variables := make([]oapi.DeploymentVariableWithValues, 0)
+	for variable := range ws.DeploymentVariables().IterBuffered() {
+		if variable.Val != nil && variable.Val.DeploymentId == deploymentId {
+			values := valuesByVariableId[variable.Key]
+			if values == nil {
+				values = make([]oapi.DeploymentVariableValue, 0)
+			}
+			variables = append(variables, oapi.DeploymentVariableWithValues{
+				Variable: *variable.Val,
+				Values:   values,
+			})
+		}
+	}
+
+	deploymentWithVariables := &oapi.DeploymentWithVariables{
+		Deployment: *deployment,
+		Variables:  variables,
+	}
+
+	c.JSON(http.StatusOK, deploymentWithVariables)
 }
 
 func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetDeploymentResourcesParams) {

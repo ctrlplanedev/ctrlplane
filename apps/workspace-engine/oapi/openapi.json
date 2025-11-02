@@ -174,6 +174,24 @@
             ],
             "type": "object"
          },
+         "DeploymentVariableWithValues": {
+            "properties": {
+               "values": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentVariableValue"
+                  },
+                  "type": "array"
+               },
+               "variable": {
+                  "$ref": "#/components/schemas/DeploymentVariable"
+               }
+            },
+            "required": [
+               "variable",
+               "values"
+            ],
+            "type": "object"
+         },
          "DeploymentVersion": {
             "properties": {
                "config": {
@@ -229,6 +247,24 @@
                "paused"
             ],
             "type": "string"
+         },
+         "DeploymentWithVariables": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "variables": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentVariableWithValues"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "deployment",
+               "variables"
+            ],
+            "type": "object"
          },
          "EntityRelation": {
             "properties": {
@@ -1631,7 +1667,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Deployment"
+                           "$ref": "#/components/schemas/DeploymentWithVariables"
                         }
                      }
                   },

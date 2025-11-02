@@ -45,6 +45,10 @@ var handlers = handler.HandlerRegistry{
 	handler.DeploymentVariableUpdate: deploymentvariables.HandleDeploymentVariableUpdated,
 	handler.DeploymentVariableDelete: deploymentvariables.HandleDeploymentVariableDeleted,
 
+	handler.DeploymentVariableValueCreate: deploymentvariables.HandleDeploymentVariableValueCreated,
+	handler.DeploymentVariableValueUpdate: deploymentvariables.HandleDeploymentVariableValueUpdated,
+	handler.DeploymentVariableValueDelete: deploymentvariables.HandleDeploymentVariableValueDeleted,
+
 	handler.SystemCreate: system.HandleSystemCreated,
 	handler.SystemUpdate: system.HandleSystemUpdated,
 	handler.SystemDelete: system.HandleSystemDeleted,

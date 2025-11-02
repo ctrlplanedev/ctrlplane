@@ -55,7 +55,7 @@ type PropertyMatcherOption func(*TestWorkspace, *oapi.PropertyMatcher)
 type ResourceVariableOption func(*TestWorkspace, *oapi.ResourceVariable)
 
 // DeploymentVariableOption configures a DeploymentVariable
-type DeploymentVariableOption func(*TestWorkspace, *oapi.DeploymentVariable)
+type DeploymentVariableOption func(*TestWorkspace, *oapi.DeploymentVariable, *eventsBuilder)
 
 // DeploymentVariableValueOption configures a DeploymentVariableValue
 type DeploymentVariableValueOption func(*TestWorkspace, *oapi.DeploymentVariableValue)
@@ -71,12 +71,15 @@ type event struct {
 type eventsBuilder struct {
 	preEvents  []event
 	postEvents []event
+	// deploymentVariableValues stores values keyed by variable key
+	deploymentVariableValues map[string][]*oapi.DeploymentVariableValue
 }
 
 func newEventsBuilder() *eventsBuilder {
 	return &eventsBuilder{
-		preEvents:  []event{},
-		postEvents: []event{},
+		preEvents:               []event{},
+		postEvents:               []event{},
+		deploymentVariableValues: make(map[string][]*oapi.DeploymentVariableValue),
 	}
 }
 
@@ -208,14 +211,44 @@ func WithDeploymentVariable(key string, options ...DeploymentVariableOption) Dep
 	return func(ws *TestWorkspace, d *oapi.Deployment, eb *eventsBuilder) {
 		dv := c.NewDeploymentVariable(d.Id, key)
 
+		// Process options - values will be stored in eb.deploymentVariableValues
 		for _, option := range options {
-			option(ws, dv)
+			option(ws, dv, eb)
 		}
 
 		eb.postEvents = append(eb.postEvents, event{
 			Type: handler.DeploymentVariableCreate,
 			Data: dv,
 		})
+
+		// Add deployment variable values after the variable is created
+		if values, exists := eb.deploymentVariableValues[key]; exists {
+			for _, dvv := range values {
+				dvv.DeploymentVariableId = dv.Id
+				eb.postEvents = append(eb.postEvents, event{
+					Type: handler.DeploymentVariableValueCreate,
+					Data: dvv,
+				})
+			}
+			// Clean up
+			delete(eb.deploymentVariableValues, key)
+		}
+	}
+}
+
+func WithDeploymentVariableValue(options ...DeploymentVariableValueOption) DeploymentVariableOption {
+	return func(ws *TestWorkspace, dv *oapi.DeploymentVariable, eb *eventsBuilder) {
+		dvv := c.NewDeploymentVariableValue(dv.Id)
+
+		for _, option := range options {
+			option(ws, dvv)
+		}
+
+		// Store the value for later processing (variable ID will be set when variable is created)
+		if eb.deploymentVariableValues == nil {
+			eb.deploymentVariableValues = make(map[string][]*oapi.DeploymentVariableValue)
+		}
+		eb.deploymentVariableValues[dv.Key] = append(eb.deploymentVariableValues[dv.Key], dvv)
 	}
 }
 
@@ -938,35 +971,35 @@ func ResourceVariableSensitiveValue(valueHash string) ResourceVariableOption {
 // ===== DeploymentVariable Options =====
 
 func DeploymentVariableDefaultValue(value *oapi.LiteralValue) DeploymentVariableOption {
-	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable) {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable, _ *eventsBuilder) {
 		dv.DefaultValue = value
 	}
 }
 
-func DeploymentVariableLiteralValue(value any) DeploymentVariableOption {
-	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable) {
+func DeploymentVariableDefaultLiteralValue(value any) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable, _ *eventsBuilder) {
 		dv.DefaultValue = c.NewLiteralValue(value)
 	}
 }
 
-func DeploymentVariableStringValue(value string) DeploymentVariableOption {
-	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable) {
+func DeploymentVariableDefaultStringValue(value string) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable, _ *eventsBuilder) {
 		literalValue := &oapi.LiteralValue{}
 		_ = literalValue.FromStringValue(value)
 		dv.DefaultValue = literalValue
 	}
 }
 
-func DeploymentVariableIntValue(value int64) DeploymentVariableOption {
-	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable) {
+func DeploymentVariableDefaultIntValue(value int64) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable, _ *eventsBuilder) {
 		literalValue := &oapi.LiteralValue{}
 		_ = literalValue.FromIntegerValue(int(value))
 		dv.DefaultValue = literalValue
 	}
 }
 
-func DeploymentVariableBoolValue(value bool) DeploymentVariableOption {
-	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable) {
+func DeploymentVariableDefaultBoolValue(value bool) DeploymentVariableOption {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable, _ *eventsBuilder) {
 		literalValue := &oapi.LiteralValue{}
 		_ = literalValue.FromBooleanValue(value)
 		dv.DefaultValue = literalValue
@@ -974,7 +1007,67 @@ func DeploymentVariableBoolValue(value bool) DeploymentVariableOption {
 }
 
 func DeploymentVariableDescription(description string) DeploymentVariableOption {
-	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable) {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVariable, _ *eventsBuilder) {
 		dv.Description = &description
+	}
+}
+
+// ===== DeploymentVariableValue Options =====
+
+func DeploymentVariableValuePriority(priority int64) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		dvv.Priority = priority
+	}
+}
+
+func DeploymentVariableValueCelResourceSelector(cel string) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		s := &oapi.Selector{}
+		_ = s.FromCelSelector(oapi.CelSelector{Cel: cel})
+		dvv.ResourceSelector = s
+	}
+}
+
+func DeploymentVariableValueJsonResourceSelector(selector map[string]any) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		s := &oapi.Selector{}
+		_ = s.FromJsonSelector(oapi.JsonSelector{Json: selector})
+		dvv.ResourceSelector = s
+	}
+}
+
+func DeploymentVariableValueValue(value *oapi.Value) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		dvv.Value = *value
+	}
+}
+
+func DeploymentVariableValueLiteralValue(value any) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		dvv.Value = *c.NewValueFromLiteral(c.NewLiteralValue(value))
+	}
+}
+
+func DeploymentVariableValueStringValue(value string) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		dvv.Value = *c.NewValueFromString(value)
+	}
+}
+
+func DeploymentVariableValueIntValue(value int64) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		dvv.Value = *c.NewValueFromInt(value)
+	}
+}
+
+func DeploymentVariableValueBoolValue(value bool) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		dvv.Value = *c.NewValueFromBool(value)
+	}
+}
+
+func DeploymentVariableValueReferenceValue(reference string, path []string) DeploymentVariableValueOption {
+	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
+		dvv.Value = *c.NewValueFromReference(reference, path)
 	}
 }

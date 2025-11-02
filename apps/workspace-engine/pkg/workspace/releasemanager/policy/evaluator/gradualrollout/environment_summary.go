@@ -189,13 +189,13 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 			progressMsg = fmt.Sprintf("Rollout in progress — %d/%d deployed, %d pending • Next deployment ready now",
 				deployedTargets, totalTargets, pendingTargets)
 		}
-		
+
 		if estimatedCompletionTime != nil && estimatedCompletionTime.After(now) {
 			completionDuration := estimatedCompletionTime.Sub(now)
 			completionTime := formatDuration(completionDuration)
 			progressMsg += fmt.Sprintf(" • Est. completion in %s", completionTime)
 		}
-		
+
 		return result.WithActionRequired(oapi.Wait).WithMessage(progressMsg)
 	}
 

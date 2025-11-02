@@ -62,6 +62,10 @@ func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCond
 }
 
 func Match(ctx context.Context, selector *oapi.Selector, item any) (bool, error) {
+	if selector == nil {
+		return false, nil
+	}
+
 	matchable, err := Matchable(ctx, selector)
 	if err != nil {
 		return false, err

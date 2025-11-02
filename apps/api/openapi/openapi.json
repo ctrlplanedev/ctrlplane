@@ -314,6 +314,76 @@
             ],
             "type": "object"
          },
+         "DeploymentVariable": {
+            "properties": {
+               "defaultValue": {
+                  "$ref": "#/components/schemas/LiteralValue"
+               },
+               "deploymentId": {
+                  "type": "string"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "key": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "key",
+               "deploymentId"
+            ],
+            "type": "object"
+         },
+         "DeploymentVariableValue": {
+            "properties": {
+               "deploymentVariableId": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "priority": {
+                  "format": "int64",
+                  "type": "integer"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "value": {
+                  "$ref": "#/components/schemas/Value"
+               }
+            },
+            "required": [
+               "id",
+               "deploymentVariableId",
+               "priority",
+               "value"
+            ],
+            "type": "object"
+         },
+         "DeploymentVariableWithValues": {
+            "properties": {
+               "values": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentVariableValue"
+                  },
+                  "type": "array"
+               },
+               "variable": {
+                  "$ref": "#/components/schemas/DeploymentVariable"
+               }
+            },
+            "required": [
+               "variable",
+               "values"
+            ],
+            "type": "object"
+         },
          "DeploymentVersion": {
             "properties": {
                "config": {
@@ -484,6 +554,24 @@
                   "type": "string"
                }
             },
+            "type": "object"
+         },
+         "GetDeploymentResponse": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "variables": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentVariableWithValues"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "deployment",
+               "variables"
+            ],
             "type": "object"
          },
          "GradualRolloutRule": {
@@ -1228,6 +1316,42 @@
                "systemId",
                "slug",
                "name"
+            ],
+            "type": "object"
+         },
+         "UpsertDeploymentVariableRequest": {
+            "properties": {
+               "defaultValue": {
+                  "$ref": "#/components/schemas/LiteralValue"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "key": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "key"
+            ],
+            "type": "object"
+         },
+         "UpsertDeploymentVariableValueRequest": {
+            "properties": {
+               "priority": {
+                  "format": "int64",
+                  "type": "integer"
+               },
+               "resourceSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "value": {
+                  "$ref": "#/components/schemas/Value"
+               }
+            },
+            "required": [
+               "priority",
+               "value"
             ],
             "type": "object"
          },
@@ -2182,7 +2306,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Deployment"
+                           "$ref": "#/components/schemas/GetDeploymentResponse"
                         }
                      }
                   },
@@ -2256,6 +2380,558 @@
                }
             },
             "summary": "Upsert deployment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables": {
+         "get": {
+            "description": "Returns a list of variables for a deployment, including their configured values.",
+            "operationId": "listDeploymentVariables",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/DeploymentVariableWithValues"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               }
+            },
+            "summary": "List deployment variables"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}": {
+         "delete": {
+            "description": "Deletes a deployment variable by ID.",
+            "operationId": "deleteDeploymentVariable",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariable"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Delete deployment variable"
+         },
+         "get": {
+            "description": "Returns a specific deployment variable by ID, including its configured values.",
+            "operationId": "getDeploymentVariable",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariableWithValues"
+                        }
+                     }
+                  },
+                  "description": "The requested deployment variable"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment variable"
+         },
+         "put": {
+            "description": "Creates or updates a deployment variable by ID.",
+            "operationId": "upsertDeploymentVariable",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertDeploymentVariableRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariable"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Upsert deployment variable"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values": {
+         "get": {
+            "description": "Returns a list of value overrides for a specific deployment variable.",
+            "operationId": "listDeploymentVariableValues",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/DeploymentVariableValue"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               }
+            },
+            "summary": "List deployment variable values"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values/{valueId}": {
+         "delete": {
+            "description": "Deletes a variable value override by ID.",
+            "operationId": "deleteDeploymentVariableValue",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the variable value",
+                  "in": "path",
+                  "name": "valueId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariableValue"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Delete deployment variable value"
+         },
+         "get": {
+            "description": "Returns a specific variable value override by ID.",
+            "operationId": "getDeploymentVariableValue",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the variable value",
+                  "in": "path",
+                  "name": "valueId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariableValue"
+                        }
+                     }
+                  },
+                  "description": "The requested variable value"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment variable value"
+         },
+         "put": {
+            "description": "Creates or updates a variable value override by ID.",
+            "operationId": "upsertDeploymentVariableValue",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment variable",
+                  "in": "path",
+                  "name": "variableId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the variable value",
+                  "in": "path",
+                  "name": "valueId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpsertDeploymentVariableValueRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVariableValue"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Upsert deployment variable value"
          }
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions": {

@@ -161,6 +161,12 @@ type DeploymentVariableValue struct {
 	Value                Value     `json:"value"`
 }
 
+// DeploymentVariableWithValues defines model for DeploymentVariableWithValues.
+type DeploymentVariableWithValues struct {
+	Values   []DeploymentVariableValue `json:"values"`
+	Variable DeploymentVariable        `json:"variable"`
+}
+
 // DeploymentVersion defines model for DeploymentVersion.
 type DeploymentVersion struct {
 	Config         map[string]interface{}  `json:"config"`
@@ -176,6 +182,12 @@ type DeploymentVersion struct {
 
 // DeploymentVersionStatus defines model for DeploymentVersionStatus.
 type DeploymentVersionStatus string
+
+// DeploymentWithVariables defines model for DeploymentWithVariables.
+type DeploymentWithVariables struct {
+	Deployment Deployment                     `json:"deployment"`
+	Variables  []DeploymentVariableWithValues `json:"variables"`
+}
 
 // EntityRelation defines model for EntityRelation.
 type EntityRelation struct {

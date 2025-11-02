@@ -36,19 +36,19 @@ package e2e
 // 				}),
 // 				integration.WithDeploymentVariable(
 // 					"app_version",
-// 					integration.DeploymentVariableStringValue("2.5.0"),
+// 					integration.DeploymentVariableDefaultStringValue("2.5.0"),
 // 				),
 // 				integration.WithDeploymentVariable(
 // 					"log_level",
-// 					integration.DeploymentVariableStringValue("info"),
+// 					integration.DeploymentVariableDefaultStringValue("info"),
 // 				),
 // 				integration.WithDeploymentVariable(
 // 					"max_connections",
-// 					integration.DeploymentVariableIntValue(1000),
+// 					integration.DeploymentVariableDefaultIntValue(1000),
 // 				),
 // 				integration.WithDeploymentVariable(
 // 					"feature_flags",
-// 					integration.DeploymentVariableLiteralValue(map[string]any{
+// 					integration.DeploymentVariableDefaultLiteralValue(map[string]any{
 // 						"new_checkout":    true,
 // 						"recommendations": true,
 // 						"experimental":    false,
@@ -61,11 +61,11 @@ package e2e
 // 				integration.DeploymentJobAgent("agent-kubernetes"),
 // 				integration.WithDeploymentVariable(
 // 					"queue_name",
-// 					integration.DeploymentVariableStringValue("processing"),
+// 					integration.DeploymentVariableDefaultStringValue("processing"),
 // 				),
 // 				integration.WithDeploymentVariable(
 // 					"worker_count",
-// 					integration.DeploymentVariableIntValue(5),
+// 					integration.DeploymentVariableDefaultIntValue(5),
 // 				),
 // 			),
 // 			integration.WithDeployment(
@@ -74,7 +74,7 @@ package e2e
 // 				integration.DeploymentJobAgent("agent-kubernetes"),
 // 				integration.WithDeploymentVariable(
 // 					"cdn_enabled",
-// 					integration.DeploymentVariableBoolValue(true),
+// 					integration.DeploymentVariableDefaultBoolValue(true),
 // 				),
 // 			),
 // 			integration.WithEnvironment(

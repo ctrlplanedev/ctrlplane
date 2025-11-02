@@ -112,3 +112,7 @@ func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 func (w *Workspace) Changeset() *statechange.ChangeSet[any] {
 	return w.changeset
 }
+
+func (w *Workspace) DeploymentVariableValues() *store.DeploymentVariableValues {
+	return w.store.DeploymentVariableValues
+}

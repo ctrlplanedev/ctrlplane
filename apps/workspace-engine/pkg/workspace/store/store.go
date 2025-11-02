@@ -17,6 +17,7 @@ func New(changeset *statechange.ChangeSet[any]) *Store {
 	store.Policies = NewPolicies(store)
 	store.ReleaseTargets = NewReleaseTargets(store)
 	store.DeploymentVersions = NewDeploymentVersions(store)
+	store.DeploymentVariableValues = NewDeploymentVariableValues(store)
 	store.Systems = NewSystems(store)
 	store.DeploymentVariables = NewDeploymentVariables(store)
 	store.Releases = NewReleases(store)
@@ -36,23 +37,24 @@ type Store struct {
 	repo      *repository.InMemoryStore
 	changeset *statechange.ChangeSet[any]
 
-	Policies            *Policies
-	Resources           *Resources
-	ResourceProviders   *ResourceProviders
-	ResourceVariables   *ResourceVariables
-	Deployments         *Deployments
-	DeploymentVersions  *DeploymentVersions
-	DeploymentVariables *DeploymentVariables
-	Environments        *Environments
-	ReleaseTargets      *ReleaseTargets
-	Systems             *Systems
-	Releases            *Releases
-	Jobs                *Jobs
-	JobAgents           *JobAgents
-	UserApprovalRecords *UserApprovalRecords
-	Relationships       *RelationshipRules
-	Variables           *Variables
-	GithubEntities      *GithubEntities
+	Policies                 *Policies
+	Resources                *Resources
+	ResourceProviders        *ResourceProviders
+	ResourceVariables        *ResourceVariables
+	Deployments              *Deployments
+	DeploymentVersions       *DeploymentVersions
+	DeploymentVariables      *DeploymentVariables
+	DeploymentVariableValues *DeploymentVariableValues
+	Environments             *Environments
+	ReleaseTargets           *ReleaseTargets
+	Systems                  *Systems
+	Releases                 *Releases
+	Jobs                     *Jobs
+	JobAgents                *JobAgents
+	UserApprovalRecords      *UserApprovalRecords
+	Relationships            *RelationshipRules
+	Variables                *Variables
+	GithubEntities           *GithubEntities
 }
 
 func (s *Store) Repo() *repository.InMemoryStore {

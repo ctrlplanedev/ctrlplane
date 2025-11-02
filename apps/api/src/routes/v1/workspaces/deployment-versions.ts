@@ -26,7 +26,8 @@ const getEnvironmentIds = async (
   if (deploymentResponse.data == null)
     throw new ApiError("Deployment not found", 404);
 
-  const { systemId } = deploymentResponse.data;
+  const { deployment } = deploymentResponse.data;
+  const { systemId } = deployment;
 
   const systemResponse = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/systems/{systemId}",

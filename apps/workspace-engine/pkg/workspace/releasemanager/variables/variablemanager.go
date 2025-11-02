@@ -3,6 +3,7 @@ package variables
 import (
 	"context"
 	"fmt"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
@@ -64,7 +65,16 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		values := m.store.DeploymentVariables.Values(deploymentVar.Id)
 		found := false
 
+		// Sort values by priority (higher priority first)
+		valueList := make([]*oapi.DeploymentVariableValue, 0, len(values))
 		for _, value := range values {
+			valueList = append(valueList, value)
+		}
+		sort.Slice(valueList, func(i, j int) bool {
+			return valueList[i].Priority > valueList[j].Priority
+		})
+
+		for _, value := range valueList {
 			ok, err := selector.Match(ctx, value.ResourceSelector, resource)
 			if err != nil {
 				return nil, fmt.Errorf("failed to filter matching resources: %w", err)

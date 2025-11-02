@@ -64,14 +64,6 @@ export enum Event {
   Redeploy = "release-target.deploy",
 
   ResourceProviderSetResources = "resource-provider.set-resources",
-
-  // ReleaseCreated = "release.created",
-  // ReleaseUpdated = "release.updated",
-  // ReleaseDeleted = "release.deleted",
-
-  // SystemCreated = "system.created",
-  // SystemUpdated = "system.updated",
-  // SystemDeleted = "system.deleted",
 }
 
 export type FullPolicy = schema.Policy & {

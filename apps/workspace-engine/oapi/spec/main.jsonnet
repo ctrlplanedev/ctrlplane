@@ -33,6 +33,7 @@
       (import 'schemas/entities.jsonnet') +
       (import 'schemas/policy.jsonnet') +
       (import 'schemas/relationship.jsonnet') +
-      (import 'schemas/jobs.jsonnet'),
+      (import 'schemas/jobs.jsonnet') +
+      (import 'schemas/deployments.jsonnet'),
   },
 }

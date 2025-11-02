@@ -64,3 +64,7 @@ func (rr *RelationshipRule) CompactionKey() (string, string) {
 func (ge *GithubEntity) CompactionKey() (string, string) {
 	return "github_entity", ge.Slug + "-" + strconv.Itoa(ge.InstallationId)
 }
+
+func (dvv *DeploymentVariableValue) CompactionKey() (string, string) {
+	return "deployment_variable_value", dvv.Id
+}

@@ -40,6 +40,7 @@ local securitySchemes = {
          (import 'paths/systems.jsonnet') +
          (import 'paths/deployments.jsonnet') +
          (import 'paths/deploymentversions.jsonnet') +
+         (import 'paths/deploymentvariables.jsonnet') +
          (import 'paths/environments.jsonnet') +
          (import 'paths/policies.jsonnet') +
          (import 'paths/userapprovalrecords.jsonnet') +
@@ -55,6 +56,7 @@ local securitySchemes = {
       (import 'schemas/resources.jsonnet') +
       (import 'schemas/deployments.jsonnet') +
       (import 'schemas/deploymentversions.jsonnet') +
+      (import 'schemas/deploymentvariables.jsonnet') +
       (import 'schemas/environments.jsonnet') +
       (import 'schemas/systems.jsonnet') +
       (import 'schemas/policies.jsonnet') +
