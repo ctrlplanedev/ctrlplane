@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 )
 
@@ -70,6 +71,12 @@ func HandleJobUpdated(
 	}
 
 	ws.Jobs().Upsert(ctx, mergedJob)
+
+	go func() {
+		if err := MaybeAddCommitStatusFromJob(ws, mergedJob); err != nil {
+			log.Error("error adding commit status", "error", err.Error())
+		}
+	}()
 
 	return nil
 }
