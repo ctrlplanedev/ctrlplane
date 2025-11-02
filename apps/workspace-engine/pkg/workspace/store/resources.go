@@ -2,11 +2,14 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
@@ -110,6 +113,167 @@ func getResourceChanges(existing, new *oapi.Resource) []string {
 		return nil
 	}
 	return changes
+}
+
+// getDetailedResourceChanges returns a map of changed property paths in dot notation.
+// This provides detailed tracking of which specific config/metadata keys changed.
+func getDetailedResourceChanges(old, new *oapi.Resource) map[string]bool {
+	changed := make(map[string]bool)
+
+	// Top-level properties
+	if old.Name != new.Name {
+		changed["name"] = true
+	}
+	if old.Kind != new.Kind {
+		changed["kind"] = true
+	}
+	if old.Identifier != new.Identifier {
+		changed["identifier"] = true
+	}
+	if old.Version != new.Version {
+		changed["version"] = true
+	}
+
+	// Config - detect changed keys with dot notation
+	if !reflect.DeepEqual(old.Config, new.Config) {
+		// Check for changed or added keys in new config
+		for key := range new.Config {
+			if !reflect.DeepEqual(old.Config[key], new.Config[key]) {
+				changed[fmt.Sprintf("config.%s", key)] = true
+			}
+		}
+		// Check for deleted keys
+		for key := range old.Config {
+			if _, exists := new.Config[key]; !exists {
+				changed[fmt.Sprintf("config.%s", key)] = true
+			}
+		}
+	}
+
+	// Metadata - detect changed keys with dot notation
+	if !reflect.DeepEqual(old.Metadata, new.Metadata) {
+		// Check for changed or added keys in new metadata
+		for key := range new.Metadata {
+			if old.Metadata[key] != new.Metadata[key] {
+				changed[fmt.Sprintf("metadata.%s", key)] = true
+			}
+		}
+		// Check for deleted keys
+		for key := range old.Metadata {
+			if _, exists := new.Metadata[key]; !exists {
+				changed[fmt.Sprintf("metadata.%s", key)] = true
+			}
+		}
+	}
+
+	return changed
+}
+
+// checkDeploymentReferencesChangedPaths checks if a deployment has variables that reference
+// the given relationship with paths that overlap with the changed property paths.
+func checkDeploymentReferencesChangedPaths(
+	store *Store,
+	deploymentId string,
+	relationshipRef string,
+	changedPaths map[string]bool,
+) bool {
+	deploymentVars := store.Deployments.Variables(deploymentId)
+
+	for _, deploymentVar := range deploymentVars {
+		values := store.DeploymentVariables.Values(deploymentVar.Id)
+
+		for _, value := range values {
+			valueType, err := value.Value.GetType()
+			if err != nil || valueType != "reference" {
+				continue
+			}
+
+			refValue, err := value.Value.AsReferenceValue()
+			if err != nil {
+				continue
+			}
+
+			if refValue.Reference == relationshipRef {
+				// Check if any changed path matches this reference path
+				refPathStr := strings.Join(refValue.Path, ".")
+				for changedPath := range changedPaths {
+					// Exact match
+					if refPathStr == changedPath {
+						return true
+					}
+					// Changed path is a child of reference path (ref: "config", changed: "config.timeout")
+					if strings.HasPrefix(changedPath, refPathStr+".") {
+						return true
+					}
+					// Reference path is a child of changed path (ref: "config.timeout", changed: "config")
+					if strings.HasPrefix(refPathStr, changedPath+".") {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// taintDependentReleaseTargets finds and taints release targets that depend on the updated resource
+// through deployment variable references. This enables automatic re-evaluation when referenced
+// resource properties change.
+func taintDependentReleaseTargets(
+	ctx context.Context,
+	store *Store,
+	updatedResource *oapi.Resource,
+	changedPaths map[string]bool,
+) {
+	changeSet, ok := changeset.FromContext[any](ctx)
+	if !ok {
+		return
+	}
+
+	resourceEntity := relationships.NewResourceEntity(updatedResource)
+
+	// Find resources that reference this one via relationships
+	// GetRelatedEntities returns relationships in both directions
+	relatedMap, err := store.Relationships.GetRelatedEntities(ctx, resourceEntity)
+	if err != nil {
+		return
+	}
+
+	// Build map of resources that reference the updated resource
+	// Direction "from" means these resources point TO our updated resource
+	referencingResources := make(map[string]string) // resourceId -> relationshipRef
+	for reference, entities := range relatedMap {
+		for _, entity := range entities {
+			if entity.Direction == oapi.From && entity.EntityType == "resource" {
+				referencingResources[entity.EntityId] = reference
+			}
+		}
+	}
+
+	// If no resources reference this one, we're done
+	if len(referencingResources) == 0 {
+		return
+	}
+
+	// Check all release targets
+	releaseTargets, err := store.ReleaseTargets.Items(ctx)
+	if err != nil {
+		return
+	}
+
+	for _, rt := range releaseTargets {
+		// Does this release target's resource reference the updated resource?
+		relationshipRef, hasRef := referencingResources[rt.ResourceId]
+		if !hasRef {
+			continue
+		}
+
+		// Does this deployment have variables that use this reference with changed paths?
+		if checkDeploymentReferencesChangedPaths(store, rt.DeploymentId, relationshipRef, changedPaths) {
+			changeSet.Record(changeset.ChangeTypeTaint, rt)
+		}
+	}
 }
 
 // recomputeAll triggers recomputation for all environments, deployments, and release targets
@@ -322,6 +486,19 @@ func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariab
 	return variables
 }
 
+// TaintDependentReleaseTargetsOnChange checks if a resource property change affects any
+// deployment variables that reference it, and taints the corresponding release targets.
+func (r *Resources) TaintDependentReleaseTargetsOnChange(
+	ctx context.Context,
+	oldResource *oapi.Resource,
+	newResource *oapi.Resource,
+) {
+	changedPaths := getDetailedResourceChanges(oldResource, newResource)
+	if len(changedPaths) > 0 {
+		taintDependentReleaseTargets(ctx, r.store, newResource, changedPaths)
+	}
+}
+
 // Set replaces all resources for a given provider with the provided set of resources.
 // Resources belonging to the provider that are not in the new set will be deleted.
 // Resources in the new set will be upserted only if:
@@ -397,6 +574,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 	upsertedCount := 0
 	skippedCount := 0
 	changedCount := 0
+	changedResourcesWithPaths := make(map[string]map[string]bool) // resourceId -> changed paths
 
 	for _, resource := range resources {
 		// Check if a resource with this identifier already exists
@@ -417,6 +595,12 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 			// If it belongs to this provider or has no provider, we'll update it
 			// Use the existing resource ID to ensure we update, not create
 			resource.Id = existingResource.Id
+
+			// Track what changed for this resource (for dependency tainting)
+			changedPaths := getDetailedResourceChanges(existingResource, resource)
+			if len(changedPaths) > 0 {
+				changedResourcesWithPaths[resource.Id] = changedPaths
+			}
 		}
 
 		resource.ProviderId = &providerId
@@ -441,6 +625,17 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 		attribute.Int("resources.skipped", skippedCount),
 	)
 	upsertSpan.End()
+
+	// Phase 4.5: Taint release targets that depend on changed resources
+	_, taintSpan := tracer.Start(ctx, "Set.TaintDependentReleaseTargets")
+	for resourceId, changedPaths := range changedResourcesWithPaths {
+		resource, ok := r.Get(resourceId)
+		if ok {
+			taintDependentReleaseTargets(ctx, r.store, resource, changedPaths)
+		}
+	}
+	taintSpan.SetAttributes(attribute.Int("resources.with_dependents_checked", len(changedResourcesWithPaths)))
+	taintSpan.End()
 
 	// Phase 5: Recomputation (if needed)
 	if hasAnyChanges {

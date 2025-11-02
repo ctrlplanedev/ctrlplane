@@ -38,10 +38,17 @@ func HandleResourceUpdated(
 		return err
 	}
 
-	ws.Resources().Has(resource.Id)
+	// Get old resource for comparison (to detect property changes)
+	oldResource, exists := ws.Resources().Get(resource.Id)
 
 	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
 		return err
+	}
+
+	// Check if properties changed and taint dependent release targets
+	// This enables automatic re-evaluation when a referenced resource property changes
+	if exists && oldResource != nil {
+		ws.Resources().TaintDependentReleaseTargetsOnChange(ctx, oldResource, resource)
 	}
 
 	return nil
