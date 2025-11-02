@@ -859,6 +859,9 @@ export interface components {
         [key: string]: unknown;
       };
       message?: string;
+      metadata: {
+        [key: string]: string;
+      };
       name: string;
       status: components["schemas"]["DeploymentVersionStatus"];
       tag: string;
