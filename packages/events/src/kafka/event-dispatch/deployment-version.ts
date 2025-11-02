@@ -54,6 +54,7 @@ const getOapiDeploymentVersion = (
   status: deploymentVersion.status,
   message: deploymentVersion.message ?? undefined,
   createdAt: deploymentVersion.createdAt.toISOString(),
+  metadata: {} as Record<string, string>,
 });
 
 const convertVersionToGoEvent = (
