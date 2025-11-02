@@ -175,6 +175,7 @@ type DeploymentVersion struct {
 	Id             string                  `json:"id"`
 	JobAgentConfig map[string]interface{}  `json:"jobAgentConfig"`
 	Message        *string                 `json:"message,omitempty"`
+	Metadata       *map[string]string      `json:"metadata,omitempty"`
 	Name           string                  `json:"name"`
 	Status         DeploymentVersionStatus `json:"status"`
 	Tag            string                  `json:"tag"`

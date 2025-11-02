@@ -94,6 +94,10 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'object',
         additionalProperties: true,
       },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
       deploymentId: { type: 'string' },
       status: openapi.schemaRef('DeploymentVersionStatus'),
       message: { type: 'string' },
