@@ -114,30 +114,13 @@ export default function DeploymentDetail() {
     [policies],
   );
 
-  // Extract unique environment IDs from release targets (we'll need to fetch full environment data)
-  const environmentIdsFromReleaseTargets = useMemo(() => {
-    const envIds = new Set<string>();
-    releaseTargets.forEach((rt) => {
-      envIds.add(rt.releaseTarget.environmentId);
-    });
-    return Array.from(envIds);
-  }, [releaseTargets]);
-
-  // Filter environments to only those that have release targets for this deployment
-  const availableEnvironments = useMemo(() => {
-    if (environments.length === 0) return [];
-    return environments.filter((env) =>
-      environmentIdsFromReleaseTargets.includes(env.id),
-    );
-  }, [environments, environmentIdsFromReleaseTargets]);
-
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedVersionId = searchParams.get("version");
   const selectedVersion = versionsQuery.data?.items.find(
     (v) => v.id === selectedVersionId,
   );
   const selectedEnvironmentId = searchParams.get("env");
-  const selectedEnvironment = availableEnvironments.find(
+  const selectedEnvironment = environments.find(
     (e) => e.id === selectedEnvironmentId,
   );
 
@@ -183,8 +166,8 @@ export default function DeploymentDetail() {
         position: { x: 50, y: 150 },
         data: firstVersion,
       },
-      ...availableEnvironments.map((environment) => {
-        const envReleaseTargets = releaseTargetsByEnv[environment.id] ?? [];
+      ...environments.map((environment) => {
+        const envReleaseTargets = releaseTargetsByEnv[environment.id];
 
         // Count resources per version (current)
         const currentVersionCounts: Record<string, number> = {};
@@ -209,6 +192,7 @@ export default function DeploymentDetail() {
         // Map version IDs to tags with counts
         const currentVersionsWithCounts = Object.entries(currentVersionCounts)
           .map(([id, count]) => ({
+            name: versions.find((v) => v.id === id)?.name ?? id,
             tag: versions.find((v) => v.id === id)?.tag ?? id,
             count,
           }))
@@ -216,6 +200,7 @@ export default function DeploymentDetail() {
 
         const desiredVersionsWithCounts = Object.entries(desiredVersionCounts)
           .map(([id, count]) => ({
+            name: versions.find((v) => v.id === id)?.name ?? id,
             tag: versions.find((v) => v.id === id)?.tag ?? id,
             count,
           }))
@@ -245,7 +230,7 @@ export default function DeploymentDetail() {
 
     return nodes;
   }, [
-    availableEnvironments,
+    environments,
     releaseTargets,
     versionsQuery.data?.items,
     handleEnvironmentSelect,
@@ -257,7 +242,7 @@ export default function DeploymentDetail() {
     const environmentsWithIncoming = new Set<string>();
 
     // Create edges based on environment dependencies (if the field exists)
-    for (const environment of availableEnvironments) {
+    for (const environment of environments) {
       // Check if environment has dependency information
       const dependsOnIds = envDependsOn(environment.id);
       for (const dependsOnEnvironmentId of dependsOnIds) {
@@ -273,7 +258,7 @@ export default function DeploymentDetail() {
     }
 
     // Connect environments with no dependencies to the version node
-    for (const environment of availableEnvironments) {
+    for (const environment of environments) {
       if (!environmentsWithIncoming.has(environment.id)) {
         connections.push({
           id: `version-source-${environment.id}`,
@@ -286,7 +271,7 @@ export default function DeploymentDetail() {
     }
 
     return connections;
-  }, [availableEnvironments, envDependsOn]);
+  }, [environments, envDependsOn]);
 
   const versions = versionsQuery.data?.items ?? [];
   const noVersions = !versionsQuery.isLoading && versions.length === 0;
@@ -375,7 +360,7 @@ export default function DeploymentDetail() {
               {selectedVersionId && selectedVersion && (
                 <VersionActionsPanel
                   version={selectedVersion}
-                  environments={availableEnvironments as any}
+                  environments={environments as any}
                   open={!!selectedVersionId}
                   onOpenChange={(open) => {
                     if (!open) setSearchParams({});
@@ -385,7 +370,7 @@ export default function DeploymentDetail() {
 
               {selectedEnvironment != null && (
                 <EnvironmentVersionDecisions
-                  allEnvironments={availableEnvironments}
+                  allEnvironments={environments}
                   environment={selectedEnvironment}
                   deploymentId={deployment.id}
                   versions={versions}

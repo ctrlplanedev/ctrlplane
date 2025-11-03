@@ -1,5 +1,5 @@
 import type { Edge, Node, ReactFlowInstance } from "reactflow";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -26,15 +26,15 @@ export const DeploymentFlow: React.FC<DeploymentFlowProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(computedEdges);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
-  const onLayout = useCallback(() => {
-    const { nodes: layoutedNodes, edges: layoutedEdges } = layoutNodes(
-      nodes,
-      edges,
-    );
+  // const onLayout = useCallback(() => {
+  //   const { nodes: layoutedNodes, edges: layoutedEdges } = layoutNodes(
+  //     nodes,
+  //     edges,
+  //   );
 
-    setNodes(layoutedNodes as Node[]);
-    setEdges(layoutedEdges);
-  }, [nodes, edges, setNodes, setEdges]);
+  //   setNodes(layoutedNodes as Node[]);
+  //   setEdges(layoutedEdges);
+  // }, [nodes, edges, setNodes, setEdges]);
 
   useEffect(() => {
     if (computedNodes.length > 0) {
