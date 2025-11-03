@@ -149,14 +149,10 @@ export default function DeploymentDetail() {
 
     const firstVersion = versions[0];
 
-    // Group release targets by environment
-    const releaseTargetsByEnv = releaseTargets.reduce(
-      (acc, rt) => {
-        const envId = rt.releaseTarget.environmentId;
-        (acc[envId] ??= []).push(rt);
-        return acc;
-      },
-      {} as Record<string, typeof releaseTargets>,
+    // Group release targets by environment using lodash groupBy
+    const releaseTargetsByEnv = _.groupBy(
+      releaseTargets,
+      (rt) => rt.releaseTarget.environmentId,
     );
 
     const nodes: Node[] = [
@@ -167,7 +163,7 @@ export default function DeploymentDetail() {
         data: firstVersion,
       },
       ...environments.map((environment) => {
-        const envReleaseTargets = releaseTargetsByEnv[environment.id];
+        const envReleaseTargets = releaseTargetsByEnv[environment.id] ?? [];
 
         // Count resources per version (current)
         const currentVersionCounts: Record<string, number> = {};
