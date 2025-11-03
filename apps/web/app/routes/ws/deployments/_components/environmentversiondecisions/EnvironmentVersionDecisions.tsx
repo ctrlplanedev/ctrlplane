@@ -1,7 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type React from "react";
 import { AlertCircleIcon, Check, X } from "lucide-react";
-import { useInView } from "react-intersection-observer";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -20,7 +19,6 @@ const DeploymentVersion: React.FC<{
   version: WorkspaceEngine["schemas"]["DeploymentVersion"];
   environment: WorkspaceEngine["schemas"]["Environment"];
 }> = ({ version, environment }) => {
-  const { ref, inView } = useInView();
   const { workspace } = useWorkspace();
   const { data, isLoading } = trpc.policies.evaluate.useQuery(
     {
@@ -30,7 +28,7 @@ const DeploymentVersion: React.FC<{
         versionId: version.id,
       },
     },
-    { refetchInterval: 30_000, enabled: inView },
+    { refetchInterval: 30_000 },
   );
 
   const utils = trpc.useUtils();
@@ -65,10 +63,7 @@ const DeploymentVersion: React.FC<{
   if (data == null) return null;
 
   return (
-    <div
-      ref={ref}
-      className="flex flex-col items-center gap-2 text-xs text-muted-foreground"
-    >
+    <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
       {data.policyResults.map(({ policy, ruleResults }, idx) => (
         <div key={idx} className="w-full space-y-1 rounded-lg border p-2">
           <div className="mb-2 font-semibold">
