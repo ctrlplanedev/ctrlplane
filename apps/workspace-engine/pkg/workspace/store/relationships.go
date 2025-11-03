@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -94,11 +95,13 @@ func (r *RelationshipRules) GetRelatedEntities(
 	ctx, span := relationshipsTracer.Start(ctx, "GetRelatedEntities")
 	defer span.End()
 
-	result := make(map[string][]*oapi.EntityRelation)
 	entityType := entity.GetType()
 
-	var wg sync.WaitGroup
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(10)
+
 	var mu sync.Mutex
+	result := make(map[string][]*oapi.EntityRelation)
 
 	// Find all relationship rules where this entity matches
 	for _, rule := range r.repo.RelationshipRules.Items() {
@@ -108,19 +111,13 @@ func (r *RelationshipRules) GetRelatedEntities(
 		}
 
 		// Check if this entity matches the "from" selector
-		fromMatches, err := r.matchesSelector(ctx, rule.FromType, rule.FromSelector, entity)
-		if err != nil {
-			return nil, err
-		}
-
+		fromMatches, _ := r.matchesSelector(ctx, rule.FromType, rule.FromSelector, entity)
 		// If entity is on the "from" side, find matching "to" entities
 		if fromMatches {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			g.Go(func() error {
 				toEntities, err := r.findMatchingEntities(ctx, rule, rule.ToType, rule.ToSelector, entity, true)
 				if err != nil {
-					return
+					return err
 				}
 				if len(toEntities) > 0 {
 					relatedEntities := make([]*oapi.EntityRelation, 0, len(toEntities))
@@ -138,23 +135,18 @@ func (r *RelationshipRules) GetRelatedEntities(
 					result[rule.Reference] = append(result[rule.Reference], relatedEntities...)
 					mu.Unlock()
 				}
-			}()
+				return nil
+			})
 		}
 
 		// Check if this entity matches the "to" selector
-		toMatches, err := r.matchesSelector(ctx, rule.ToType, rule.ToSelector, entity)
-		if err != nil {
-			return nil, err
-		}
-
+		toMatches, _ := r.matchesSelector(ctx, rule.ToType, rule.ToSelector, entity)
 		// If entity is on the "to" side, find matching "from" entities
 		if toMatches && !fromMatches {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			g.Go(func() error {
 				fromEntities, err := r.findMatchingEntities(ctx, rule, rule.FromType, rule.FromSelector, entity, false)
 				if err != nil {
-					return
+					return err
 				}
 				if len(fromEntities) > 0 {
 					relatedEntities := make([]*oapi.EntityRelation, 0, len(fromEntities))
@@ -172,11 +164,14 @@ func (r *RelationshipRules) GetRelatedEntities(
 					result[rule.Reference] = append(result[rule.Reference], relatedEntities...)
 					mu.Unlock()
 				}
-			}()
+				return nil
+			})
 		}
 	}
 
-	wg.Wait()
+    if err := g.Wait(); err != nil {
+        return nil, err
+    }
 
 	return result, nil
 }

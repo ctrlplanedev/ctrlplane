@@ -117,24 +117,21 @@ func (m *Manager) tryResolveDeploymentVariableValue(
 	// Sort values by priority (higher priority first)
 	sortedValues := make([]*oapi.DeploymentVariableValue, 0, len(values))
 	for _, value := range values {
+		matches, _ := selector.Match(ctx, value.ResourceSelector, resource)
+		if !matches {
+			continue
+		}
 		sortedValues = append(sortedValues, value)
 	}
+
 	sort.Slice(sortedValues, func(i, j int) bool {
 		return sortedValues[i].Priority > sortedValues[j].Priority
 	})
 
 	// Find first matching value based on resource selector
 	for _, value := range sortedValues {
-		matches, err := selector.Match(ctx, value.ResourceSelector, resource)
-		if err != nil {
-			span.RecordError(fmt.Errorf("failed to filter matching resources: %w", err))
-			return nil
-		}
-		if !matches {
-			continue
-		}
-
 		result, err := m.store.Variables.ResolveValue(ctx, entity, &value.Value)
+	
 		if err != nil {
 			span.AddEvent("deployment_variable_resolution_skipped", trace.WithAttributes(
 				attribute.String("variable.key", key),
