@@ -9,7 +9,6 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -53,7 +52,6 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 	// Process each deployment variable (only deployment variables are included in releases)
 	deploymentVariables := m.store.Deployments.Variables(releaseTarget.DeploymentId)
 	for key, deploymentVar := range deploymentVariables {
-		log.Info("===== evaluating deployment variable ======", "key", key, "deployment_variable", deploymentVar)
 		// Resolution priority:
 		// 1. Resource variable (if it exists with the same key)
 		// 2. Deployment variable values (sorted by priority, filtered by resource selector)
@@ -61,21 +59,18 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 
 		resolved := m.tryResolveResourceVariable(ctx, span, key, resourceVariables, entity)
 		if resolved != nil {
-			log.Info("resolved resource variable", "key", key, "value", resolved)
 			resolvedVariables[key] = resolved
 			continue
 		}
 
 		resolved = m.tryResolveDeploymentVariableValue(ctx, span, key, deploymentVar, resource, entity)
 		if resolved != nil {
-			log.Info("resolved deployment variable value", "key", key, "value", resolved)
 			resolvedVariables[key] = resolved
 			continue
 		}
 
 		// Fallback to default value if available
 		if deploymentVar.DefaultValue != nil {
-			log.Info("resolved deployment variable default value", "key", key, "value", deploymentVar.DefaultValue)
 			resolvedVariables[key] = deploymentVar.DefaultValue
 		}
 	}
@@ -138,7 +133,6 @@ func (m *Manager) tryResolveDeploymentVariableValue(
 	for _, value := range sortedValues {
 		result, _ := m.store.Variables.ResolveValue(ctx, entity, &value.Value)
 		if result != nil {
-			log.Info("resolved deployment variable value", "key", key, "value", result)
 			return result
 		}
 	}
