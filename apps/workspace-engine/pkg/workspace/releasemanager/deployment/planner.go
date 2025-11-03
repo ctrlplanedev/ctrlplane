@@ -5,6 +5,7 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -101,6 +102,47 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 	return desiredRelease, nil
 }
 
+// partitionEvaluatorsByVersionDependency separates evaluators into two groups:
+// version-independent evaluators (can be checked once) and version-dependent
+// evaluators (must be checked per version).
+func (p *Planner) partitionEvaluatorsByVersionDependency(
+	ctx context.Context,
+	evaluators []evaluator.Evaluator,
+	scope evaluator.EvaluatorScope,
+) (versionIndependent []evaluator.Evaluator, versionDependent []evaluator.Evaluator) {
+	_, span := tracer.Start(ctx, "partitionEvaluatorsByVersionDependency")
+	defer span.End()
+
+	versionIndependent = make([]evaluator.Evaluator, 0, len(evaluators))
+	versionDependent = make([]evaluator.Evaluator, 0, len(evaluators))
+
+	for _, eval := range evaluators {
+		scopeFields := eval.ScopeFields()
+		// Check if evaluator needs version field
+		needsVersion := false
+		if scopeFields&evaluator.ScopeVersion != 0 {
+			needsVersion = true
+		}
+
+		if needsVersion {
+			// Only check HasFields once per evaluator
+			if scope.HasFields(scopeFields) || true { // Will check with version later
+				versionDependent = append(versionDependent, eval)
+			}
+		} else {
+			// Check HasFields once for non-version evaluators
+			if scope.HasFields(scopeFields) {
+				versionIndependent = append(versionIndependent, eval)
+			}
+		}
+	}
+
+	span.SetAttributes(attribute.Int("versionIndependent.count", len(versionIndependent)))
+	span.SetAttributes(attribute.Int("versionDependent.count", len(versionDependent)))
+
+	return versionIndependent, versionDependent
+}
+
 // findDeployableVersion finds the first version that passes all checks (READ-ONLY).
 // Checks include:
 //   - System-level version checks (e.g., version status via evaluators)
@@ -139,29 +181,7 @@ func (p *Planner) findDeployableVersion(
 		ReleaseTarget: releaseTarget,
 	}
 
-	versionIndependentEvals := make([]evaluator.Evaluator, 0, len(evaluators))
-	versionDependentEvals := make([]evaluator.Evaluator, 0, len(evaluators))
-	
-	for _, eval := range evaluators {
-		scopeFields := eval.ScopeFields()
-		// Check if evaluator needs version field
-		needsVersion := false
-		if scopeFields&evaluator.ScopeVersion != 0 {
-			needsVersion = true
-		}
-	
-		if needsVersion {
-			// Only check HasFields once per evaluator
-			if scope.HasFields(scopeFields) || true { // Will check with version later
-				versionDependentEvals = append(versionDependentEvals, eval)
-			}
-		} else {
-			// Check HasFields once for non-version evaluators
-			if scope.HasFields(scopeFields) {
-				versionIndependentEvals = append(versionIndependentEvals, eval)
-			}
-		}
-	}
+	versionIndependentEvals, versionDependentEvals := p.partitionEvaluatorsByVersionDependency(ctx, evaluators, scope)
 
 	// Now check version-independent evaluators once upfront
 	for _, eval := range versionIndependentEvals {
@@ -172,21 +192,73 @@ func (p *Planner) findDeployableVersion(
 		}
 	}
 
-	for _, version := range candidateVersions {
-		eligible := true
-		scope.Version = version
+	// Evaluate all versions in parallel and find first eligible one
+	return p.findFirstEligibleVersion(ctx, candidateVersions, versionDependentEvals, scope)
+}
 
-		for _, eval := range versionDependentEvals {
-			result := eval.Evaluate(ctx, scope)
-			if !result.Allowed {
-				eligible = false
-				break
+// versionEligibilityResult holds the result of evaluating a version's eligibility.
+type versionEligibilityResult struct {
+	version  *oapi.DeploymentVersion
+	eligible bool
+}
+
+// findFirstEligibleVersion evaluates all candidate versions in parallel and returns
+// the first eligible version (in order). Returns nil if no versions are eligible.
+func (p *Planner) findFirstEligibleVersion(
+	ctx context.Context,
+	candidateVersions []*oapi.DeploymentVersion,
+	versionDependentEvals []evaluator.Evaluator,
+	baseScope evaluator.EvaluatorScope,
+) *oapi.DeploymentVersion {
+	ctx, span := tracer.Start(ctx, "findFirstEligibleVersion",
+		trace.WithAttributes(
+			attribute.Int("candidateVersions.count", len(candidateVersions)),
+			attribute.Int("versionDependentEvals.count", len(versionDependentEvals)),
+		))
+	defer span.End()
+
+	if len(candidateVersions) == 0 {
+		return nil
+	}
+
+	// Process versions in parallel using chunks to prevent system overload
+	// Based on common patterns in the codebase: chunk size 50, max concurrency 10
+	results, err := concurrency.ProcessInChunks(
+		candidateVersions,
+		50, // chunk size
+		10, // max concurrent goroutines
+		func(version *oapi.DeploymentVersion) (versionEligibilityResult, error) {
+			// Create a copy of the scope for this version
+			scope := baseScope
+			scope.Version = version
+
+			// Check all version-dependent evaluators
+			eligible := true
+			for _, eval := range versionDependentEvals {
+				result := eval.Evaluate(ctx, scope)
+				if !result.Allowed {
+					eligible = false
+					break
+				}
 			}
-		}
 
-		if eligible {
-			// Found a deployable version!
-			return version
+			return versionEligibilityResult{
+				version:  version,
+				eligible: eligible,
+			}, nil
+		},
+	)
+
+	if err != nil {
+		span.RecordError(err)
+		return nil
+	}
+
+	// Find first eligible version (order is preserved by ProcessInChunks)
+	for _, result := range results {
+		if result.eligible {
+			span.SetAttributes(attribute.String("selectedVersion.id", result.version.Id))
+			return result.version
 		}
 	}
 
