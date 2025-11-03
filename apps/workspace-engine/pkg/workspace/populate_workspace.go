@@ -43,9 +43,7 @@ func PopulateWorkspaceWithInitialState(ctx context.Context, ws *Workspace) error
 		}
 	}
 	for _, policy := range initialWorkspaceState.Policies() {
-		if err := ws.Policies().Upsert(ctx, policy); err != nil {
-			return err
-		}
+		ws.Policies().Upsert(ctx, policy)
 	}
 	for _, release := range initialWorkspaceState.Releases() {
 		if err := ws.Releases().Upsert(ctx, release); err != nil {

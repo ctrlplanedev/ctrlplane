@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
@@ -37,7 +36,7 @@ func (p *Policies) Has(id string) bool {
 	return p.repo.Policies.Has(id)
 }
 
-func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
+func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
 	p.repo.Policies.Set(policy.Id, policy)
 	if policy.Metadata == nil {
 		policy.Metadata = make(map[string]string)
@@ -49,13 +48,13 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 
 	p.store.changeset.RecordUpsert(policy)
 
-	return p.store.ReleaseTargets.RecomputeTargetPolicies(ctx)
+	p.store.ReleaseTargets.RecomputeTargetPolicies()
 }
 
-func (p *Policies) Remove(ctx context.Context, id string) error {
+func (p *Policies) Remove(ctx context.Context, id string) {
 	policy, ok := p.repo.Policies.Get(id)
 	if !ok || policy == nil {
-		return fmt.Errorf("policy %s not found", id)
+		return
 	}
 
 	p.repo.Policies.Remove(id)
@@ -65,5 +64,5 @@ func (p *Policies) Remove(ctx context.Context, id string) error {
 
 	p.store.changeset.RecordDelete(policy)
 
-	return p.store.ReleaseTargets.RecomputeTargetPolicies(ctx)
+	p.store.ReleaseTargets.RecomputeTargetPolicies()
 }

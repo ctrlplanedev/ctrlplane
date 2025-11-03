@@ -65,7 +65,8 @@ func (r *ReleaseTargets) Recompute(ctx context.Context) error {
 	if err := r.targets.StartRecompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
 		return err
 	}
-	return r.RecomputeTargetPolicies(ctx)
+	r.RecomputeTargetPolicies()
+	return nil
 }
 
 func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.ReleaseTarget, error) {
@@ -137,11 +138,7 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 	return releaseTargets, nil
 }
 
-func (r *ReleaseTargets) RecomputeTargetPolicies(ctx context.Context) error {
-	if err := r.targets.WaitIfRunning(); err != nil && !materialized.IsAlreadyStarted(err) {
-		return err
-	}
-
+func (r *ReleaseTargets) RecomputeTargetPolicies() {
 	allTargets := r.targets.Get()
 	for targetKey, target := range allTargets {
 		t := target
@@ -149,8 +146,6 @@ func (r *ReleaseTargets) RecomputeTargetPolicies(ctx context.Context) error {
 		mv := materialized.New(r.targetPoliciesRecomputeFunc(t))
 		r.targetPolicies.Set(key, mv)
 	}
-
-	return nil
 }
 
 func (r *ReleaseTargets) targetPoliciesRecomputeFunc(target *oapi.ReleaseTarget) materialized.RecomputeFunc[map[string]*oapi.Policy] {
