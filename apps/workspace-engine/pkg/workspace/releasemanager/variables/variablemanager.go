@@ -53,6 +53,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 	// Process each deployment variable (only deployment variables are included in releases)
 	deploymentVariables := m.store.Deployments.Variables(releaseTarget.DeploymentId)
 	for key, deploymentVar := range deploymentVariables {
+		log.Info("===== evaluating deployment variable ======", "key", key, "deployment_variable", deploymentVar)
 		// Resolution priority:
 		// 1. Resource variable (if it exists with the same key)
 		// 2. Deployment variable values (sorted by priority, filtered by resource selector)
