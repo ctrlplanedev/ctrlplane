@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -169,9 +170,9 @@ func (r *RelationshipRules) GetRelatedEntities(
 		}
 	}
 
-    if err := g.Wait(); err != nil {
-        return nil, err
-    }
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
@@ -378,6 +379,9 @@ func (r *RelationshipRules) findMatchingResources(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool,
 ) ([]*oapi.RelatableEntity, error) {
+	ctx, span := relationshipsTracer.Start(ctx, "findMatchingResources")
+	defer span.End()
+
 	resources := r.store.Resources.Items()
 	if len(resources) == 0 {
 		return nil, nil
@@ -391,6 +395,7 @@ func (r *RelationshipRules) findMatchingResources(
 
 	// Process function for each resource
 	processFn := func(resource *oapi.Resource) (*oapi.RelatableEntity, error) {
+		_, processFnSpan := relationshipsTracer.Start(ctx, "processFn")
 		resourceEntity := relationships.NewResourceEntity(resource)
 
 		if entitySelector != nil {
@@ -414,6 +419,8 @@ func (r *RelationshipRules) findMatchingResources(
 			return nil, nil // No match, skip
 		}
 
+		processFnSpan.End()
+
 		return resourceEntity, nil
 	}
 
@@ -426,6 +433,7 @@ func (r *RelationshipRules) findMatchingResources(
 	var err error
 
 	if len(resourceSlice) < parallelThreshold {
+		_, sequentialSpan := relationshipsTracer.Start(ctx, "sequential")
 		// Sequential processing for small datasets
 		results = make([]*oapi.RelatableEntity, 0, 8)
 		for _, resource := range resourceSlice {
@@ -437,12 +445,18 @@ func (r *RelationshipRules) findMatchingResources(
 				results = append(results, entity)
 			}
 		}
+		sequentialSpan.End()
 	} else {
+		_, parallelSpan := relationshipsTracer.Start(ctx, "parallel")
+		parallelSpan.SetAttributes(attribute.Int("resourceSlice.count", len(resourceSlice)))
+		parallelSpan.SetAttributes(attribute.Int("chunkSize", chunkSize))
+		parallelSpan.SetAttributes(attribute.Int("maxConcurrency", maxConcurrency))
 		// Parallel processing for large datasets
 		results, err = concurrency.ProcessInChunks(resourceSlice, chunkSize, maxConcurrency, processFn)
 		if err != nil {
 			return nil, err
 		}
+		parallelSpan.End()
 	}
 
 	// Filter out nil results
