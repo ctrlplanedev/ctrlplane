@@ -40,6 +40,12 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *oapi.RelatableEnti
 		if references == nil {
 			return nil, fmt.Errorf("references nil - not found: %v for entity: %v-%v", rv.Reference, entity.GetType(), entity.GetID())
 		}
+		for _, reference := range references {
+			for _, relation := range reference {
+				log.Info("===== relation ======", "relation", relation.Rule.Description, "relation", relation.Rule.Name)
+				log.Info("===== relation metadata ======", "relation", relation.Direction)
+			}
+		}
 		refEntities := references[rv.Reference]
 		log.Info("===== reference entities ======", "reference", rv.Reference, "refEntities", len(refEntities))
 		if len(refEntities) == 0 {

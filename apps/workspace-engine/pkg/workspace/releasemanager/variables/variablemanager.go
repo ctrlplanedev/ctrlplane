@@ -136,7 +136,6 @@ func (m *Manager) tryResolveDeploymentVariableValue(
 
 	// Find first matching value based on resource selector
 	for _, value := range sortedValues {
-		log.Info("===== evaluating deployment variable value ======", "key", key, "value", value)
 		result, _ := m.store.Variables.ResolveValue(ctx, entity, &value.Value)
 		if result != nil {
 			log.Info("resolved deployment variable value", "key", key, "value", result)
