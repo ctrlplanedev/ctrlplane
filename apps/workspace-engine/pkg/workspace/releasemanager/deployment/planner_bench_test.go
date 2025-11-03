@@ -201,13 +201,13 @@ func setupBenchmarkPlanner(
 			// Environment progression rule
 			ruleID := uuid.New().String()
 			createdAt := time.Now().Format(time.RFC3339)
-			
+
 			// Create selector for dependency environment
 			dependsOnSelector := &oapi.Selector{}
 			_ = dependsOnSelector.FromCelSelector(oapi.CelSelector{
 				Cel: fmt.Sprintf("environment.id == '%s'", environmentIDs[0]),
 			})
-			
+
 			pol.Rules = append(pol.Rules, oapi.PolicyRule{
 				Id:        ruleID,
 				PolicyId:  policyID,
@@ -233,9 +233,7 @@ func setupBenchmarkPlanner(
 			})
 		}
 
-		if err := st.Policies.Upsert(ctx, pol); err != nil {
-			b.Fatalf("Failed to create policy: %v", err)
-		}
+		st.Policies.Upsert(ctx, pol)
 	}
 
 	// Create planner with all managers
@@ -702,13 +700,13 @@ func setupPlannerWithVariables(
 			// Add some resource-specific variable overrides
 			for v := 0; v < 3; v++ {
 				stringVal := fmt.Sprintf("resource-%d-value-%d", i, v)
-				
+
 				// Create value
 				value := &oapi.Value{}
 				literalValue := &oapi.LiteralValue{}
 				_ = literalValue.FromStringValue(stringVal)
 				_ = value.FromLiteralValue(*literalValue)
-				
+
 				rv := &oapi.ResourceVariable{
 					ResourceId: resourceID,
 					Key:        fmt.Sprintf("var_%d", v),
@@ -752,7 +750,7 @@ func setupPlannerWithVariables(
 			// Create default literal value
 			defaultLiteralValue := &oapi.LiteralValue{}
 			_ = defaultLiteralValue.FromStringValue(defaultVal)
-			
+
 			dv := &oapi.DeploymentVariable{
 				Id:           dvID,
 				Key:          varKey,
@@ -786,7 +784,7 @@ func setupPlannerWithVariables(
 				valLiteralValue := &oapi.LiteralValue{}
 				_ = valLiteralValue.FromStringValue(value)
 				_ = valValue.FromLiteralValue(*valLiteralValue)
-				
+
 				dvv := &oapi.DeploymentVariableValue{
 					Id:                   dvvID,
 					DeploymentVariableId: dvID,
@@ -916,4 +914,3 @@ func BenchmarkPlanDeployment_WithVariables_Parallel(b *testing.B) {
 		}
 	})
 }
-
