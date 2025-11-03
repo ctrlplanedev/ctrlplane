@@ -206,6 +206,14 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 }
 
 func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.Policy, error) {
+	_, span := tracer.Start(ctx, "GetPolicies")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("releaseTarget.key", releaseTarget.Key()))
+	span.SetAttributes(attribute.String("releaseTarget.environmentId", releaseTarget.EnvironmentId))
+	span.SetAttributes(attribute.String("releaseTarget.deploymentId", releaseTarget.DeploymentId))
+	span.SetAttributes(attribute.String("releaseTarget.resourceId", releaseTarget.ResourceId))
+
 	mv, ok := r.targetPolicies.Get(releaseTarget.Key())
 	if !ok {
 		return nil, fmt.Errorf("target policies not found for release target %s", releaseTarget.Key())
