@@ -6,6 +6,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 type Variables struct {
@@ -39,6 +41,7 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *oapi.RelatableEnti
 			return nil, fmt.Errorf("references nil - not found: %v for entity: %v-%v", rv.Reference, entity.GetType(), entity.GetID())
 		}
 		refEntities := references[rv.Reference]
+		log.Info("===== reference entities ======", "reference", rv.Reference, "refEntities", len(refEntities))
 		if len(refEntities) == 0 {
 			return nil, fmt.Errorf("reference not found: %v for entity: %v-%v", rv.Reference, entity.GetType(), entity.GetID())
 		}
