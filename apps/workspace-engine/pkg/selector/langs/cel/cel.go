@@ -4,12 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/util"
 
 	"github.com/charmbracelet/log"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/ext"
+)
+
+var (
+	compilationCache, _ = ristretto.NewCache(&ristretto.Config[string, cel.Program]{
+		NumCounters: 50000,
+		MaxCost:     1 << 30, // 1GB
+		BufferItems: 64,
+	})
 )
 
 var Env, _ = cel.NewEnv(
@@ -24,6 +34,10 @@ var Env, _ = cel.NewEnv(
 )
 
 func Compile(expression string) (util.MatchableCondition, error) {
+	if program, ok := compilationCache.Get(expression); ok {
+		return &CelSelector{Program: program, Cel: expression}, nil
+	}
+
 	ast, iss := Env.Compile(expression)
 	if iss.Err() != nil {
 		return nil, iss.Err()
@@ -32,6 +46,9 @@ func Compile(expression string) (util.MatchableCondition, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	compilationCache.SetWithTTL(expression, program, 1, 12*time.Hour)
+
 	return &CelSelector{Program: program, Cel: expression}, nil
 }
 

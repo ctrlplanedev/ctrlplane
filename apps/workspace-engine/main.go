@@ -158,7 +158,7 @@ func main() {
 	}
 	defer consumer.Close()
 
-	go ticker.Every(ctx, time.Minute, func(ctx context.Context) {
+	go ticker.Every(ctx, 5*time.Minute, func(ctx context.Context) {
 		ids := manager.Workspaces().Keys()
 		log.Info("Sending workspace ticks", "count", len(ids))
 		for _, id := range ids {
