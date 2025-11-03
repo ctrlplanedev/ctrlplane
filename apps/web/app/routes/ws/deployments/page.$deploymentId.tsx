@@ -99,8 +99,11 @@ export default function DeploymentDetail() {
   );
 
   const environments = useMemo(
-    () => environmentsQuery.data?.items ?? [],
-    [environmentsQuery.data?.items],
+    () =>
+      (environmentsQuery.data?.items ?? []).filter(
+        (e) => e.systemId === deployment.systemId,
+      ),
+    [deployment.systemId, environmentsQuery.data?.items],
   );
 
   const envDependsOn = useCallback(
