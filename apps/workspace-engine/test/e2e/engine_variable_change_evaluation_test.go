@@ -607,6 +607,7 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("app_version"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -690,27 +691,6 @@ func TestEngine_VariableChange_ReferencedResourcePropertyChange(t *testing.T) {
 			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("Test Agent"),
 		),
-		integration.WithSystem(
-			integration.SystemName("test-system"),
-			integration.WithDeployment(
-				integration.DeploymentID(deploymentID),
-				integration.DeploymentName("api"),
-				integration.DeploymentJobAgent(jobAgentID),
-				integration.DeploymentCelResourceSelector("true"),
-				integration.WithDeploymentVariable(
-					"vpc_cidr",
-					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueCelResourceSelector("true"),
-						integration.DeploymentVariableValueReferenceValue("vpc", []string{"metadata", "cidr"}),
-					),
-				),
-			),
-			integration.WithEnvironment(
-				integration.EnvironmentID(environmentID),
-				integration.EnvironmentName("production"),
-				integration.EnvironmentCelResourceSelector("true"),
-			),
-		),
 		integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("cluster-to-vpc"),
@@ -731,6 +711,27 @@ func TestEngine_VariableChange_ReferencedResourcePropertyChange(t *testing.T) {
 				integration.PropertyMatcherFromProperty([]string{"metadata", "vpc_id"}),
 				integration.PropertyMatcherToProperty([]string{"id"}),
 				integration.PropertyMatcherOperator(oapi.Equals),
+			),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("resource.name == 'cluster-main'"),
+				integration.WithDeploymentVariable(
+					"vpc_cidr",
+					integration.WithDeploymentVariableValue(
+						integration.DeploymentVariableValueCelResourceSelector("true"),
+						integration.DeploymentVariableValueReferenceValue("vpc", []string{"metadata", "cidr"}),
+					),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -761,11 +762,17 @@ func TestEngine_VariableChange_ReferencedResourcePropertyChange(t *testing.T) {
 
 	// Mark initial job as successful
 	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected pending jobs to be one, got %d", len(pendingJobs))
+	}
+
 	var initialJob *oapi.Job
 	for _, job := range pendingJobs {
 		initialJob = job
 		break
 	}
+
 	now := time.Now()
 	initialJob.Status = oapi.Successful
 	initialJob.CompletedAt = &now
@@ -834,6 +841,7 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("env"),
 				integration.WithDeploymentVariable(
 					"app_name",
 					integration.DeploymentVariableDefaultStringValue("initial-app"),

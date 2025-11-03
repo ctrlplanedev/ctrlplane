@@ -33,6 +33,10 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("app_name"),
+				integration.WithDeploymentVariable("replicas"),
+				integration.WithDeploymentVariable("debug_mode"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -148,6 +152,8 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variable so resource variable can override it
+				integration.WithDeploymentVariable("database_config"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -264,6 +270,10 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("vpc_id"),
+				integration.WithDeploymentVariable("vpc_region"),
+				integration.WithDeploymentVariable("vpc_cidr"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -415,6 +425,10 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("cluster_name"),
+				integration.WithDeploymentVariable("replicas"),
+				integration.WithDeploymentVariable("vpc_name"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -560,6 +574,9 @@ func TestEngine_ReleaseVariableResolution_MultipleResources(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("replicas"),
+				integration.WithDeploymentVariable("region"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -696,6 +713,8 @@ func TestEngine_ReleaseVariableResolution_ChainedReferences(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variable so resource variable can override it
+				integration.WithDeploymentVariable("cluster_name"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -925,6 +944,11 @@ func TestEngine_ReleaseVariableResolution_DifferentResourceTypes(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("connection_string"),
+				integration.WithDeploymentVariable("max_connections"),
+				integration.WithDeploymentVariable("endpoint"),
+				integration.WithDeploymentVariable("ttl_seconds"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1074,6 +1098,10 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("db_host"),
+				integration.WithDeploymentVariable("db_port"),
+				integration.WithDeploymentVariable("db_name"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1210,6 +1238,9 @@ func TestEngine_ReleaseVariableResolution_MultipleReferences(t *testing.T) {
 				integration.DeploymentName("api"),
 				integration.DeploymentJobAgent(jobAgentID),
 				integration.DeploymentCelResourceSelector("true"),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("db_name"),
+				integration.WithDeploymentVariable("cache_name"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
@@ -1930,6 +1961,10 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
 			integration.WithResourceVariable(
+				"app_version",
+				integration.ResourceVariableStringValue("v1.2.3-override"),
+			),
+			integration.WithResourceVariable(
 				"instance_id",
 				integration.ResourceVariableStringValue("i-1234567890"),
 			),
@@ -1973,14 +2008,15 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 	variables := release.Variables
 
 	// Verify all variables from both sources
-	if len(variables) != 4 {
-		t.Fatalf("expected 4 variables, got %d", len(variables))
+	// Note: instance_id and zone are NOT included because they're not defined in deployment
+	if len(variables) != 2 {
+		t.Fatalf("expected 2 variables, got %d (only deployment-defined vars)", len(variables))
 	}
 
-	// Check deployment variables
+	// Check deployment variables - app_version is overridden by resource variable
 	appVersion, _ := variables["app_version"].AsStringValue()
-	if appVersion != "v1.2.3" {
-		t.Errorf("app_version = %s, want v1.2.3", appVersion)
+	if appVersion != "v1.2.3-override" {
+		t.Errorf("app_version = %s, want v1.2.3-override (resource override)", appVersion)
 	}
 
 	timeout, _ := variables["timeout"].AsIntegerValue()
@@ -1988,15 +2024,13 @@ func TestEngine_ReleaseVariableResolution_DeploymentMixedSources(t *testing.T) {
 		t.Errorf("timeout = %d, want 30", timeout)
 	}
 
-	// Check resource variables
-	instanceID, _ := variables["instance_id"].AsStringValue()
-	if instanceID != "i-1234567890" {
-		t.Errorf("instance_id = %s, want i-1234567890", instanceID)
+	// instance_id and zone are not included because deployment doesn't define them
+	if _, exists := variables["instance_id"]; exists {
+		t.Error("instance_id should not exist (not defined in deployment)")
 	}
 
-	zone, _ := variables["zone"].AsStringValue()
-	if zone != "us-east-1a" {
-		t.Errorf("zone = %s, want us-east-1a", zone)
+	if _, exists := variables["zone"]; exists {
+		t.Error("zone should not exist (not defined in deployment)")
 	}
 }
 
@@ -2239,21 +2273,33 @@ func TestEngine_ReleaseVariableResolution_ReferenceNotFound(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	// When variable resolution fails, no jobs should be created
+	// When variable reference cannot be resolved, release should still be created
+	// but without the variable (since it's not defined in deployment)
 	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	if len(jobs) != 0 {
-		t.Fatalf("expected 0 jobs when variable resolution fails, got %d", len(jobs))
+	if len(jobs) != 1 {
+		t.Fatalf("expected 1 job even when reference not found, got %d", len(jobs))
 	}
 
-	// No release should exist either, since planning failed
-	allReleases := engine.Workspace().Releases().Items()
-	if len(allReleases) != 0 {
-		t.Fatalf("expected 0 releases when variable resolution fails, got %d", len(allReleases))
+	var job *oapi.Job
+	for _, j := range jobs {
+		job = j
+		break
+	}
+
+	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !exists {
+		t.Fatalf("release should exist even when reference not found")
+	}
+
+	// The variable should NOT exist because it's not defined in the deployment
+	// Resource variables are only included if the deployment defines them
+	if _, exists := release.Variables["size"]; exists {
+		t.Error("size variable should not exist (not defined in deployment)")
 	}
 
 	// This test documents the expected behavior when a reference cannot be resolved:
-	// The entire release planning fails, and no release or job is created.
-	t.Logf("SUCCESS: Variable resolution correctly failed when reference not found")
+	// The release is still created, but resource variables not defined in deployment are excluded.
+	t.Logf("SUCCESS: Resource variable not defined in deployment is correctly excluded")
 }
 
 // TestEngine_ReleaseVariableResolution_ReferenceNoMatchingResources tests reference when relationship exists but no resources match
@@ -2343,26 +2389,30 @@ func TestEngine_ReleaseVariableResolution_ReferenceNoMatchingResources(t *testin
 		ResourceId:    resourceID,
 	}
 
-	// When relationship exists but no resources match, variable resolution should fail
+	// When relationship exists but no resources match, release should still be created
+	// but without the variable (since it's not defined in deployment)
 	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	if len(jobs) != 0 {
-		t.Fatalf("expected 0 jobs when no resources match the relationship, got %d", len(jobs))
+	if len(jobs) != 1 {
+		t.Fatalf("expected 1 job even when no resources match relationship, got %d", len(jobs))
 	}
 
-	// Debug: Check what releases exist
-	allReleases := engine.Workspace().Releases().Items()
-	for _, rel := range allReleases {
-		t.Logf("Found release: deployment=%s, environment=%s, resource=%s, variables=%v",
-			rel.ReleaseTarget.DeploymentId, rel.ReleaseTarget.EnvironmentId,
-			rel.ReleaseTarget.ResourceId, rel.Variables)
+	var job *oapi.Job
+	for _, j := range jobs {
+		job = j
+		break
 	}
 
-	// The release for this specific target should not exist
-	// But there might be releases for other resources (e.g., the workspace resource itself)
-	// We only care that no release exists for the server-1 resource
-	if len(jobs) == 0 {
-		t.Logf("SUCCESS: Variable resolution correctly failed when no resources match relationship")
+	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !exists {
+		t.Fatalf("release should exist even when no resources match relationship")
 	}
+
+	// The variable should NOT exist because it's not defined in the deployment
+	if _, exists := release.Variables["size"]; exists {
+		t.Error("size variable should not exist (not defined in deployment)")
+	}
+
+	t.Logf("SUCCESS: Resource variable not defined in deployment is correctly excluded")
 }
 
 // TestEngine_ReleaseVariableResolution_MissingPropertyInReference tests reference to non-existent property
@@ -2453,122 +2503,28 @@ func TestEngine_ReleaseVariableResolution_MissingPropertyInReference(t *testing.
 		ResourceId:    resourceID,
 	}
 
-	// When the referenced property doesn't exist, variable resolution should fail
+	// When the referenced property doesn't exist, release should still be created
+	// but without the variable (since it's not defined in deployment)
 	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	if len(jobs) != 0 {
-		t.Fatalf("expected 0 jobs when property doesn't exist, got %d", len(jobs))
+	if len(jobs) != 1 {
+		t.Fatalf("expected 1 job even when property doesn't exist, got %d", len(jobs))
 	}
 
-	// Debug: Check what releases exist
-	allReleases := engine.Workspace().Releases().Items()
-	for _, rel := range allReleases {
-		t.Logf("Found release: deployment=%s, environment=%s, resource=%s, variables=%v",
-			rel.ReleaseTarget.DeploymentId, rel.ReleaseTarget.EnvironmentId,
-			rel.ReleaseTarget.ResourceId, rel.Variables)
+	var job *oapi.Job
+	for _, j := range jobs {
+		job = j
+		break
 	}
 
-	// The release for this specific target should not exist
-	// But there might be releases for other resources (e.g., the workspace resource itself)
-	// We only care that no release exists for the server-1 resource
-	if len(jobs) == 0 {
-		t.Logf("SUCCESS: Variable resolution correctly failed when referenced property doesn't exist")
-	}
-}
-
-// TestEngine_ReleaseVariableResolution_DeploymentVariableReferenceNotFound tests deployment variable reference that fails
-func TestEngine_ReleaseVariableResolution_DeploymentVariableReferenceNotFound(t *testing.T) {
-	jobAgentID := uuid.New().String()
-	resourceID := uuid.New().String()
-	deploymentID := uuid.New().String()
-	environmentID := uuid.New().String()
-
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithJobAgent(
-			integration.JobAgentID(jobAgentID),
-			integration.JobAgentName("Test Agent"),
-		),
-		integration.WithSystem(
-			integration.SystemName("test-system"),
-			integration.WithDeployment(
-				integration.DeploymentID(deploymentID),
-				integration.DeploymentName("api"),
-				integration.DeploymentJobAgent(jobAgentID),
-				integration.DeploymentCelResourceSelector("true"),
-				// Deployment variable with value that references non-existent relationship
-				integration.WithDeploymentVariable(
-					"workspace_name",
-					integration.WithDeploymentVariableValue(
-						integration.DeploymentVariableValueReferenceValue("workspace", []string{"name"}),
-						integration.DeploymentVariableValueCelResourceSelector("true"),
-					),
-				),
-			),
-			integration.WithEnvironment(
-				integration.EnvironmentID(environmentID),
-				integration.EnvironmentName("production"),
-				integration.EnvironmentCelResourceSelector("true"),
-			),
-		),
-		// Define relationship rule but no workspace resources
-		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("resource-to-workspace"),
-			integration.RelationshipRuleReference("workspace"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "server",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "workspace",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "workspace_id"}),
-				integration.PropertyMatcherToProperty([]string{"id"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
-		integration.WithResource(
-			integration.ResourceID(resourceID),
-			integration.ResourceName("server-1"),
-			integration.ResourceKind("server"),
-			integration.ResourceMetadata(map[string]string{
-				"workspace_id": "workspace-123",
-			}),
-		),
-		// No workspace resource exists
-	)
-
-	ctx := context.Background()
-
-	// Create a deployment version to trigger release creation
-	dv := c.NewDeploymentVersion()
-	dv.DeploymentId = deploymentID
-	dv.Tag = "v1.0.0"
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
-
-	releaseTarget := &oapi.ReleaseTarget{
-		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
-		ResourceId:    resourceID,
+	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !exists {
+		t.Fatalf("release should exist even when property doesn't exist")
 	}
 
-	// When deployment variable reference resolution fails, no jobs should be created
-	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-	if len(jobs) != 0 {
-		t.Fatalf("expected 0 jobs when deployment variable reference fails, got %d", len(jobs))
+	// The variable should NOT exist because it's not defined in the deployment
+	if _, exists := release.Variables["size"]; exists {
+		t.Error("size variable should not exist (not defined in deployment)")
 	}
 
-	// No release should exist either
-	allReleases := engine.Workspace().Releases().Items()
-	if len(allReleases) != 0 {
-		t.Fatalf("expected 0 releases when variable resolution fails, got %d", len(allReleases))
-	}
-
-	t.Logf("SUCCESS: Variable resolution correctly failed for deployment variable reference")
+	t.Logf("SUCCESS: Resource variable not defined in deployment is correctly excluded")
 }

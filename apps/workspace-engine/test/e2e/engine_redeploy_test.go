@@ -520,6 +520,9 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 				integration.DeploymentJobAgentConfig(map[string]any{
 					"namespace": "production",
 				}),
+				// Define deployment variables so resource variables can override them
+				integration.WithDeploymentVariable("app_name"),
+				integration.WithDeploymentVariable("replicas"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),

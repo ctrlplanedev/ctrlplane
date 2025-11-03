@@ -35,6 +35,10 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
 				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("app_name"),
+				integration.WithDeploymentVariable("replicas"),
+				integration.WithDeploymentVariable("debug_mode"),
+				integration.WithDeploymentVariable("config"),
 				integration.DeploymentJobAgentConfig(map[string]any{
 					"namespace": "production",
 					"replicas":  3,
@@ -240,6 +244,10 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
 				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("db_host"),
+				integration.WithDeploymentVariable("db_port"),
+				integration.WithDeploymentVariable("db_name"),
+				integration.WithDeploymentVariable("app_version"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
@@ -414,6 +422,8 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 				integration.DeploymentName("api-service"),
 				integration.DeploymentJobAgent(jobAgentId),
 				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("region"),
+				integration.WithDeploymentVariable("instance_count"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),

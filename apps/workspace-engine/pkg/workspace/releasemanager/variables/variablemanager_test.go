@@ -8,6 +8,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store"
+
+	"github.com/google/uuid"
 )
 
 // Helper function to create a test store with a resource
@@ -33,15 +35,121 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 	return st
 }
 
+// Helper function to create a test store with a deployment
+func setupStoreWithDeployment(deploymentID string) *store.Store {
+	cs := statechange.NewChangeSet[any]()
+	st := store.New(cs)
+	ctx := context.Background()
+
+	deployment := &oapi.Deployment{
+		Id:             deploymentID,
+		Name:           "test-deployment",
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
+	}
+
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		panic(err)
+	}
+	return st
+}
+
+// Helper function to add a deployment variable to a store
+func addDeploymentVariable(st *store.Store, deploymentID, key string, defaultValue *oapi.LiteralValue) string {
+	ctx := context.Background()
+	varID := uuid.New().String()
+	
+	dv := &oapi.DeploymentVariable{
+		Id:           varID,
+		Key:          key,
+		DeploymentId: deploymentID,
+		DefaultValue: defaultValue,
+	}
+	
+	st.DeploymentVariables.Upsert(ctx, varID, dv)
+	return varID
+}
+
+// Helper function to add a deployment variable value to a store
+func addDeploymentVariableValue(st *store.Store, deploymentVariableID string, priority int64, selector *oapi.Selector, value *oapi.Value) {
+	ctx := context.Background()
+	valueID := uuid.New().String()
+	
+	dvv := &oapi.DeploymentVariableValue{
+		Id:                   valueID,
+		DeploymentVariableId: deploymentVariableID,
+		Priority:             priority,
+		ResourceSelector:     selector,
+		Value:                *value,
+	}
+	
+	st.DeploymentVariableValues.Upsert(ctx, valueID, dvv)
+}
+
+// Helper function to add a resource variable to a store
+func addResourceVariable(st *store.Store, resourceID, key string, value *oapi.Value) {
+	ctx := context.Background()
+	
+	rv := &oapi.ResourceVariable{
+		ResourceId: resourceID,
+		Key:        key,
+		Value:      *value,
+	}
+	
+	st.ResourceVariables.Upsert(ctx, rv)
+}
+
+// Helper function to create a CEL selector
+func mustCreateSelector(celExpression string) *oapi.Selector {
+	selector := &oapi.Selector{}
+	if err := selector.FromCelSelector(oapi.CelSelector{Cel: celExpression}); err != nil {
+		panic(err)
+	}
+	return selector
+}
+
 // Helper function to create a literal value from a Go value
 func mustCreateLiteralValue(value interface{}) *oapi.LiteralValue {
 	lv := &oapi.LiteralValue{}
-	data, err := json.Marshal(value)
-	if err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(data, &lv); err != nil {
-		panic(err)
+	switch v := value.(type) {
+	case string:
+		if err := lv.FromStringValue(v); err != nil {
+			panic(err)
+		}
+	case int:
+		if err := lv.FromIntegerValue(v); err != nil {
+			panic(err)
+		}
+	case int64:
+		if err := lv.FromIntegerValue(int(v)); err != nil {
+			panic(err)
+		}
+	case float32:
+		if err := lv.FromNumberValue(v); err != nil {
+			panic(err)
+		}
+	case float64:
+		if err := lv.FromNumberValue(float32(v)); err != nil {
+			panic(err)
+		}
+	case bool:
+		if err := lv.FromBooleanValue(v); err != nil {
+			panic(err)
+		}
+	case map[string]any:
+		if err := lv.FromObjectValue(oapi.ObjectValue{Object: v}); err != nil {
+			panic(err)
+		}
+	default:
+		// Fallback to JSON marshal/unmarshal for other types
+		data, err := json.Marshal(value)
+		if err != nil {
+			panic(err)
+		}
+		if err := json.Unmarshal(data, &lv); err != nil {
+			panic(err)
+		}
 	}
 	return lv
 }
@@ -69,661 +177,703 @@ func mustCreateValueFromReference(reference string, path []string) *oapi.Value {
 	return v
 }
 
-func TestEvaluate_OnlyResourceVariables(t *testing.T) {
-	// Setup: Resource with variables
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+// TestVariableManager_OnlyDeploymentKeysReturned tests that only variables
+// defined in the deployment are returned, even if resource has more variables
+func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
-	st := setupStoreWithResource(resourceID, map[string]string{
-		"region": "us-east-1",
-	})
-
+	// Create store with both resource and deployment
+	st := setupStoreWithResource(resourceID, map[string]string{})
 	ctx := context.Background()
 
-	// Add resource variables
-	rv1 := &oapi.ResourceVariable{
-		ResourceId: resourceID,
-		Key:        "app_name",
-		Value:      *mustCreateValueFromLiteral("my-app"),
-	}
-	rv2 := &oapi.ResourceVariable{
-		ResourceId: resourceID,
-		Key:        "replicas",
-		Value:      *mustCreateValueFromLiteral(3),
-	}
-	rv3 := &oapi.ResourceVariable{
-		ResourceId: resourceID,
-		Key:        "debug_mode",
-		Value:      *mustCreateValueFromLiteral(false),
-	}
-
-	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
-		Key:        rv1.Key,
-		ResourceId: rv1.ResourceId,
-		Value:      rv1.Value,
-	})
-	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
-		Key:        rv2.Key,
-		ResourceId: rv2.ResourceId,
-		Value:      rv2.Value,
-	})
-	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
-		Key:        rv3.Key,
-		ResourceId: rv3.ResourceId,
-		Value:      rv3.Value,
-	})
-
-	// Add a deployment (no variables)
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	manager := New(st)
+	// Resource has variables a, b, c
+	addResourceVariable(st, resourceID, "a", mustCreateValueFromLiteral("value-a"))
+	addResourceVariable(st, resourceID, "b", mustCreateValueFromLiteral("value-b"))
+	addResourceVariable(st, resourceID, "c", mustCreateValueFromLiteral("value-c"))
 
+	// Deployment only defines variables a, b
+	addDeploymentVariable(st, deploymentID, "a", nil)
+	addDeploymentVariable(st, deploymentID, "b", nil)
+
+	// Evaluate
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
+		EnvironmentId: uuid.New().String(),
 		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
+	result, err := mgr.Evaluate(ctx, releaseTarget)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("Evaluate failed: %v", err)
 	}
 
-	if len(result) != 3 {
-		t.Errorf("expected 3 variables, got %d", len(result))
+	// Should only contain a and b, not c
+	if len(result) != 2 {
+		t.Errorf("expected 2 variables, got %d", len(result))
 	}
 
-	// Verify app_name
-	if val, exists := result["app_name"]; !exists {
-		t.Error("app_name variable not found")
-	} else {
-		strVal, err := val.AsStringValue()
-		if err != nil {
-			t.Errorf("failed to get string value: %v", err)
-		} else if strVal != "my-app" {
-			t.Errorf("expected app_name='my-app', got '%s'", strVal)
-		}
+	if _, exists := result["a"]; !exists {
+		t.Error("expected variable 'a' to exist")
 	}
 
-	// Verify replicas
-	if val, exists := result["replicas"]; !exists {
-		t.Error("replicas variable not found")
-	} else {
-		intVal, err := val.AsIntegerValue()
-		if err != nil {
-			t.Errorf("failed to get integer value: %v", err)
-		} else if intVal != 3 {
-			t.Errorf("expected replicas=3, got %d", intVal)
-		}
+	if _, exists := result["b"]; !exists {
+		t.Error("expected variable 'b' to exist")
 	}
 
-	// Verify debug_mode
-	if val, exists := result["debug_mode"]; !exists {
-		t.Error("debug_mode variable not found")
-	} else {
-		boolVal, err := val.AsBooleanValue()
-		if err != nil {
-			t.Errorf("failed to get boolean value: %v", err)
-		} else if boolVal != false {
-			t.Errorf("expected debug_mode=false, got %v", boolVal)
-		}
+	if _, exists := result["c"]; exists {
+		t.Error("expected variable 'c' to not exist (not defined in deployment)")
 	}
 }
 
-func TestEvaluate_OnlyDeploymentVariablesWithMatch(t *testing.T) {
-	// Setup: Resource and deployment with variables
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+// TestVariableManager_ResourceVariableTakesPrecedence tests that resource
+// variables take precedence over deployment variables
+func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
-	st := setupStoreWithResource(resourceID, map[string]string{
-		"region": "us-west-2",
-	})
-
+	st := setupStoreWithResource(resourceID, map[string]string{})
 	ctx := context.Background()
 
-	// Add deployment
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	// Add deployment variable
-	deploymentVar := &oapi.DeploymentVariable{
-		Id:           "var-1",
-		DeploymentId: deploymentID,
-		Key:          "region_name",
-	}
-	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
+	// Resource has replicas = 5
+	addResourceVariable(st, resourceID, "replicas", mustCreateValueFromLiteral(5))
 
-	// Add deployment variable value with matching selector
-	// Note: This test assumes the store implementation handles Values correctly
-	// In reality, DeploymentVariableValue storage needs to be set up in the repo
-	// For this test, we'll focus on the logic that would work with proper storage
+	// Deployment has replicas with value = 3
+	varID := addDeploymentVariable(st, deploymentID, "replicas", nil)
+	selector := mustCreateSelector("true") // matches all resources
+	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral(3))
 
-	manager := New(st)
-
+	// Evaluate
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
+		EnvironmentId: uuid.New().String(),
 		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
+	result, err := mgr.Evaluate(ctx, releaseTarget)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("Evaluate failed: %v", err)
 	}
 
-	// With no deployment variable values, we expect empty result
-	if len(result) != 0 {
-		t.Errorf("expected 0 variables (no values defined), got %d", len(result))
+	replicas, exists := result["replicas"]
+	if !exists {
+		t.Fatal("expected variable 'replicas' to exist")
+	}
+
+	// Should get resource value (5), not deployment value (3)
+	replicasInt, err := replicas.AsIntegerValue()
+	if err != nil {
+		t.Fatalf("failed to get integer value: %v", err)
+	}
+
+	if int(replicasInt) != 5 {
+		t.Errorf("expected replicas = 5 (resource value), got %d", replicasInt)
 	}
 }
 
-func TestEvaluate_ResourceVariablesOverrideDeployment(t *testing.T) {
-	// Setup: Both resource and deployment variables with same key
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+// TestVariableManager_DeploymentVariablePriority tests that when multiple
+// deployment variable values match, the one with highest priority wins
+func TestVariableManager_DeploymentVariablePriority(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
-	st := setupStoreWithResource(resourceID, map[string]string{
-		"region": "us-east-1",
-	})
-
+	st := setupStoreWithResource(resourceID, map[string]string{})
 	ctx := context.Background()
 
-	// Add resource variable
-	rv := &oapi.ResourceVariable{
-		ResourceId: resourceID,
-		Key:        "region_name",
-		Value:      *mustCreateValueFromLiteral("us-east-1-from-resource"),
-	}
-	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
-		Key:        rv.Key,
-		ResourceId: rv.ResourceId,
-		Value:      rv.Value,
-	})
-
-	// Add deployment
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	// Add deployment variable with same key
-	deploymentVar := &oapi.DeploymentVariable{
-		Id:           "var-1",
-		DeploymentId: deploymentID,
-		Key:          "region_name", // Same key as resource variable
-		DefaultValue: mustCreateLiteralValue("us-west-2-from-deployment"),
-	}
-	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
+	// Deployment variable with multiple values
+	varID := addDeploymentVariable(st, deploymentID, "env", nil)
+	selector := mustCreateSelector("true") // both match
+	
+	// Add high priority value
+	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral("high-priority"))
+	// Add low priority value
+	addDeploymentVariableValue(st, varID, 5, selector, mustCreateValueFromLiteral("low-priority"))
 
-	manager := New(st)
-
+	// Evaluate
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
+		EnvironmentId: uuid.New().String(),
 		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
+	result, err := mgr.Evaluate(ctx, releaseTarget)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("Evaluate failed: %v", err)
 	}
 
-	if len(result) != 1 {
-		t.Errorf("expected 1 variable, got %d", len(result))
+	env, exists := result["env"]
+	if !exists {
+		t.Fatal("expected variable 'env' to exist")
 	}
 
-	// Verify resource variable wins
-	if val, exists := result["region_name"]; !exists {
-		t.Error("region_name variable not found")
-	} else {
-		strVal, err := val.AsStringValue()
-		if err != nil {
-			t.Errorf("failed to get string value: %v", err)
-		} else if strVal != "us-east-1-from-resource" {
-			t.Errorf("expected region_name from resource, got '%s'", strVal)
-		}
+	envStr, err := env.AsStringValue()
+	if err != nil {
+		t.Fatalf("failed to get string value: %v", err)
+	}
+
+	if envStr != "high-priority" {
+		t.Errorf("expected env = 'high-priority', got '%s'", envStr)
 	}
 }
 
-func TestEvaluate_DeploymentVariableDefaultValue(t *testing.T) {
-	// Setup: Deployment variable with default value and no matching selector values
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+// TestVariableManager_FallbackToDefault tests that when no deployment variable
+// values match, the default value is used
+func TestVariableManager_FallbackToDefault(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
-	st := setupStoreWithResource(resourceID, map[string]string{
-		"region": "us-east-1",
-	})
-
+	st := setupStoreWithResource(resourceID, map[string]string{"env": "dev"})
 	ctx := context.Background()
 
-	// Add deployment
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	// Add deployment variable with default value
-	defaultValue := mustCreateLiteralValue("default-region")
-	deploymentVar := &oapi.DeploymentVariable{
-		Id:           "var-1",
-		DeploymentId: deploymentID,
-		Key:          "region_name",
-		DefaultValue: defaultValue,
-	}
-	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
+	// Deployment variable with selector that doesn't match and a default value
+	defaultValue := mustCreateLiteralValue("default-value")
+	varID := addDeploymentVariable(st, deploymentID, "config", defaultValue)
+	
+	// Selector only matches prod resources
+	selector := mustCreateSelector("resource.metadata.env == 'prod'")
+	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral("prod-config"))
 
-	manager := New(st)
-
+	// Evaluate (resource has env=dev, so selector won't match)
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
+		EnvironmentId: uuid.New().String(),
 		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
+	result, err := mgr.Evaluate(ctx, releaseTarget)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("Evaluate failed: %v", err)
 	}
 
-	if len(result) != 1 {
-		t.Errorf("expected 1 variable, got %d", len(result))
+	config, exists := result["config"]
+	if !exists {
+		t.Fatal("expected variable 'config' to exist")
 	}
 
-	// Verify default value is used
-	if val, exists := result["region_name"]; !exists {
-		t.Error("region_name variable not found")
-	} else {
-		strVal, err := val.AsStringValue()
-		if err != nil {
-			t.Errorf("failed to get string value: %v", err)
-		} else if strVal != "default-region" {
-			t.Errorf("expected region_name='default-region', got '%s'", strVal)
-		}
+	configStr, err := config.AsStringValue()
+	if err != nil {
+		t.Fatalf("failed to get string value: %v", err)
+	}
+
+	if configStr != "default-value" {
+		t.Errorf("expected config = 'default-value', got '%s'", configStr)
 	}
 }
 
-func TestEvaluate_ResourceNotFound(t *testing.T) {
-	// Setup: Store without the resource
-	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+// TestVariableManager_NoDefaultNotIncluded tests that when no values match
+// and there's no default, the variable is not included in the result
+func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	st := setupStoreWithResource(resourceID, map[string]string{"env": "dev"})
 	ctx := context.Background()
 
-	// Add deployment
 	deployment := &oapi.Deployment{
-		Id:             "deployment-1",
+		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	manager := New(st)
+	// Deployment variable with selector that doesn't match and NO default value
+	varID := addDeploymentVariable(st, deploymentID, "config", nil)
+	
+	// Selector only matches prod resources
+	selector := mustCreateSelector("resource.metadata.env == 'prod'")
+	addDeploymentVariableValue(st, varID, 10, selector, mustCreateValueFromLiteral("prod-config"))
 
+	// Evaluate (resource has env=dev, so selector won't match)
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
-		DeploymentId:  "deployment-1",
-		EnvironmentId: "env-1",
-		ResourceId:    "non-existent-resource",
+		DeploymentId:  deploymentID,
+		EnvironmentId: uuid.New().String(),
+		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
+	result, err := mgr.Evaluate(ctx, releaseTarget)
+	if err != nil {
+		t.Fatalf("Evaluate failed: %v", err)
+	}
 
-	// Assert
+	// Variable should not be in result
+	if _, exists := result["config"]; exists {
+		t.Error("expected variable 'config' to not exist (no match and no default)")
+	}
+}
+
+// TestVariableManager_SelectorFiltering tests that deployment variable values
+// are correctly filtered by resource selectors
+func TestVariableManager_SelectorFiltering(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	st := setupStoreWithResource(resourceID, map[string]string{"region": "us-east-1"})
+	ctx := context.Background()
+
+	deployment := &oapi.Deployment{
+		Id:             deploymentID,
+		Name:           "test-deployment",
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
+	}
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("failed to upsert deployment: %v", err)
+	}
+
+	// Deployment variable with region-specific values
+	varID := addDeploymentVariable(st, deploymentID, "endpoint", nil)
+	
+	// East coast value
+	eastSelector := mustCreateSelector("resource.metadata.region == 'us-east-1'")
+	addDeploymentVariableValue(st, varID, 10, eastSelector, mustCreateValueFromLiteral("east.example.com"))
+	
+	// West coast value
+	westSelector := mustCreateSelector("resource.metadata.region == 'us-west-1'")
+	addDeploymentVariableValue(st, varID, 10, westSelector, mustCreateValueFromLiteral("west.example.com"))
+
+	// Evaluate (resource has region=us-east-1)
+	mgr := New(st)
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: uuid.New().String(),
+		ResourceId:    resourceID,
+	}
+
+	result, err := mgr.Evaluate(ctx, releaseTarget)
+	if err != nil {
+		t.Fatalf("Evaluate failed: %v", err)
+	}
+
+	endpoint, exists := result["endpoint"]
+	if !exists {
+		t.Fatal("expected variable 'endpoint' to exist")
+	}
+
+	endpointStr, err := endpoint.AsStringValue()
+	if err != nil {
+		t.Fatalf("failed to get string value: %v", err)
+	}
+
+	if endpointStr != "east.example.com" {
+		t.Errorf("expected endpoint = 'east.example.com', got '%s'", endpointStr)
+	}
+}
+
+// TestVariableManager_NoSelectorMatches tests that when all selectors fail
+// to match, it falls back to default or excludes the variable
+func TestVariableManager_NoSelectorMatches(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	st := setupStoreWithResource(resourceID, map[string]string{"region": "eu-central-1"})
+	ctx := context.Background()
+
+	deployment := &oapi.Deployment{
+		Id:             deploymentID,
+		Name:           "test-deployment",
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
+	}
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		t.Fatalf("failed to upsert deployment: %v", err)
+	}
+
+	// Deployment variable with default
+	defaultValue := mustCreateLiteralValue("default.example.com")
+	varID := addDeploymentVariable(st, deploymentID, "endpoint", defaultValue)
+	
+	// Only US selectors
+	eastSelector := mustCreateSelector("resource.metadata.region == 'us-east-1'")
+	addDeploymentVariableValue(st, varID, 10, eastSelector, mustCreateValueFromLiteral("east.example.com"))
+	
+	westSelector := mustCreateSelector("resource.metadata.region == 'us-west-1'")
+	addDeploymentVariableValue(st, varID, 10, westSelector, mustCreateValueFromLiteral("west.example.com"))
+
+	// Evaluate (resource has region=eu-central-1, no selector matches)
+	mgr := New(st)
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: uuid.New().String(),
+		ResourceId:    resourceID,
+	}
+
+	result, err := mgr.Evaluate(ctx, releaseTarget)
+	if err != nil {
+		t.Fatalf("Evaluate failed: %v", err)
+	}
+
+	endpoint, exists := result["endpoint"]
+	if !exists {
+		t.Fatal("expected variable 'endpoint' to exist")
+	}
+
+	endpointStr, err := endpoint.AsStringValue()
+	if err != nil {
+		t.Fatalf("failed to get string value: %v", err)
+	}
+
+	if endpointStr != "default.example.com" {
+		t.Errorf("expected endpoint = 'default.example.com', got '%s'", endpointStr)
+	}
+}
+
+// TestVariableManager_ResourceNotFound tests that an error is returned
+// when the resource doesn't exist
+func TestVariableManager_ResourceNotFound(t *testing.T) {
+	deploymentID := uuid.New().String()
+	nonExistentResourceID := uuid.New().String()
+
+	st := setupStoreWithDeployment(deploymentID)
+	ctx := context.Background()
+
+	// Evaluate with non-existent resource
+	mgr := New(st)
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: uuid.New().String(),
+		ResourceId:    nonExistentResourceID,
+	}
+
+	_, err := mgr.Evaluate(ctx, releaseTarget)
 	if err == nil {
 		t.Fatal("expected error for non-existent resource, got nil")
 	}
-
-	if result != nil {
-		t.Errorf("expected nil result on error, got %v", result)
-	}
-
-	expectedErrMsg := "resource \"non-existent-resource\" not found"
-	if err.Error() != expectedErrMsg {
-		t.Errorf("expected error message '%s', got '%s'", expectedErrMsg, err.Error())
-	}
 }
 
-func TestEvaluate_EmptyVariables(t *testing.T) {
-	// Setup: Resource with no variables
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+// TestVariableManager_EmptyDeploymentVariables tests that evaluating
+// a deployment with no variables returns an empty map
+func TestVariableManager_EmptyDeploymentVariables(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	st := setupStoreWithResource(resourceID, map[string]string{})
-
 	ctx := context.Background()
 
-	// Add deployment (no variables)
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	manager := New(st)
+	// No deployment variables added
 
+	// Evaluate
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
+		EnvironmentId: uuid.New().String(),
 		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
+	result, err := mgr.Evaluate(ctx, releaseTarget)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("Evaluate failed: %v", err)
 	}
 
 	if len(result) != 0 {
-		t.Errorf("expected 0 variables, got %d", len(result))
+		t.Errorf("expected empty result, got %d variables", len(result))
 	}
 }
 
-func TestEvaluate_MultipleResourceVariables(t *testing.T) {
-	// Setup: Resource with multiple variables
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+// TestVariableManager_ComplexVariableTypes tests resolving complex
+// object and array values
+func TestVariableManager_ComplexVariableTypes(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
-	st := setupStoreWithResource(resourceID, map[string]string{
-		"env": "production",
-	})
-
+	st := setupStoreWithResource(resourceID, map[string]string{})
 	ctx := context.Background()
 
-	// Add multiple resource variables
-	variables := []struct {
-		key   string
-		value interface{}
-	}{
-		{"string_var", "test-string"},
-		{"int_var", 42},
-		{"bool_var", true},
-		{"float_var", 3.14},
-		{"object_var", map[string]interface{}{"nested": "value"}},
-		{"array_var", []interface{}{"item1", "item2"}},
-	}
-
-	for _, v := range variables {
-		rv := &oapi.ResourceVariable{
-			ResourceId: resourceID,
-			Key:        v.key,
-			Value:      *mustCreateValueFromLiteral(v.value),
-		}
-		st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
-			Key:        rv.Key,
-			ResourceId: rv.ResourceId,
-			Value:      rv.Value,
-		})
-	}
-
-	// Add deployment
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	manager := New(st)
+	// Complex object value
+	complexValue := map[string]any{
+		"host":     "db.example.com",
+		"port":     5432,
+		"ssl":      true,
+		"database": "production",
+		"pool": map[string]any{
+			"min": 5,
+			"max": 20,
+		},
+	}
 
+	// Add as resource variable
+	addResourceVariable(st, resourceID, "db_config", mustCreateValueFromLiteral(complexValue))
+	addDeploymentVariable(st, deploymentID, "db_config", nil)
+
+	// Evaluate
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
+		EnvironmentId: uuid.New().String(),
 		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
+	result, err := mgr.Evaluate(ctx, releaseTarget)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("Evaluate failed: %v", err)
 	}
 
-	if len(result) != len(variables) {
-		t.Errorf("expected %d variables, got %d", len(variables), len(result))
+	dbConfig, exists := result["db_config"]
+	if !exists {
+		t.Fatal("expected variable 'db_config' to exist")
 	}
 
-	// Verify all variables exist
-	for _, v := range variables {
-		if _, exists := result[v.key]; !exists {
-			t.Errorf("variable '%s' not found in result", v.key)
-		}
+	// Verify it's an object
+	objValue, err := dbConfig.AsObjectValue()
+	if err != nil {
+		t.Fatalf("failed to get object value: %v", err)
+	}
+
+	// Check some fields
+	if host, ok := objValue.Object["host"].(string); !ok || host != "db.example.com" {
+		t.Errorf("expected host = 'db.example.com', got %v", objValue.Object["host"])
+	}
+
+	if port, ok := objValue.Object["port"].(float64); !ok || int(port) != 5432 {
+		t.Errorf("expected port = 5432, got %v", objValue.Object["port"])
 	}
 }
 
-func TestEvaluate_DeploymentVariableNoDefaultValue(t *testing.T) {
-	// Setup: Deployment variable without default value and no matching values
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+// TestVariableManager_MixedPriorities tests a scenario with mixed
+// resolution priorities (resource vars, deployment values, defaults)
+func TestVariableManager_MixedPriorities(t *testing.T) {
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
-	st := setupStoreWithResource(resourceID, map[string]string{
-		"region": "us-east-1",
-	})
-
+	st := setupStoreWithResource(resourceID, map[string]string{"tier": "premium"})
 	ctx := context.Background()
 
-	// Add deployment
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	// Add deployment variable without default value
-	deploymentVar := &oapi.DeploymentVariable{
-		Id:           "var-1",
-		DeploymentId: deploymentID,
-		Key:          "optional_var",
-		DefaultValue: nil, // No default value
-	}
-	st.DeploymentVariables.Upsert(ctx, deploymentVar.Id, deploymentVar)
+	// var1: resolved from resource variable
+	addResourceVariable(st, resourceID, "var1", mustCreateValueFromLiteral("from-resource"))
+	varID1 := addDeploymentVariable(st, deploymentID, "var1", mustCreateLiteralValue("default1"))
+	addDeploymentVariableValue(st, varID1, 10, mustCreateSelector("true"), mustCreateValueFromLiteral("from-deployment"))
 
-	manager := New(st)
+	// var2: resolved from deployment variable value (no resource var)
+	varID2 := addDeploymentVariable(st, deploymentID, "var2", mustCreateLiteralValue("default2"))
+	premiumSelector := mustCreateSelector("resource.metadata.tier == 'premium'")
+	addDeploymentVariableValue(st, varID2, 10, premiumSelector, mustCreateValueFromLiteral("from-deployment-value"))
 
+	// var3: resolved from default (selector doesn't match)
+	varID3 := addDeploymentVariable(st, deploymentID, "var3", mustCreateLiteralValue("default3"))
+	basicSelector := mustCreateSelector("resource.metadata.tier == 'basic'")
+	addDeploymentVariableValue(st, varID3, 10, basicSelector, mustCreateValueFromLiteral("from-deployment-value-basic"))
+
+	// var4: not included (no match, no default)
+	varID4 := addDeploymentVariable(st, deploymentID, "var4", nil)
+	addDeploymentVariableValue(st, varID4, 10, basicSelector, mustCreateValueFromLiteral("basic-only"))
+
+	// Evaluate
+	mgr := New(st)
 	releaseTarget := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
+		EnvironmentId: uuid.New().String(),
 		ResourceId:    resourceID,
 	}
 
-	// Act
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
+	result, err := mgr.Evaluate(ctx, releaseTarget)
 	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("Evaluate failed: %v", err)
 	}
 
-	// Variable should not be in result when no default and no matching values
-	if _, exists := result["optional_var"]; exists {
-		t.Error("optional_var should not be in result when no default value and no matches")
+	// Check var1 (resource variable)
+	var1, exists := result["var1"]
+	if !exists {
+		t.Fatal("expected variable 'var1' to exist")
+	}
+	var1Str, _ := var1.AsStringValue()
+	if var1Str != "from-resource" {
+		t.Errorf("expected var1 = 'from-resource', got '%s'", var1Str)
+	}
+
+	// Check var2 (deployment value)
+	var2, exists := result["var2"]
+	if !exists {
+		t.Fatal("expected variable 'var2' to exist")
+	}
+	var2Str, _ := var2.AsStringValue()
+	if var2Str != "from-deployment-value" {
+		t.Errorf("expected var2 = 'from-deployment-value', got '%s'", var2Str)
+	}
+
+	// Check var3 (default)
+	var3, exists := result["var3"]
+	if !exists {
+		t.Fatal("expected variable 'var3' to exist")
+	}
+	var3Str, _ := var3.AsStringValue()
+	if var3Str != "default3" {
+		t.Errorf("expected var3 = 'default3', got '%s'", var3Str)
+	}
+
+	// Check var4 (not included)
+	if _, exists := result["var4"]; exists {
+		t.Error("expected variable 'var4' to not exist")
 	}
 }
 
-func TestEvaluate_ReferenceValueResolution(t *testing.T) {
-	// Setup: Resource variables with reference to related entities
-	resourceID := "resource-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	relatedResourceID := "related-resource-1"
+// TestVariableManager_MultipleResources tests that different resources
+// get different variable values based on their metadata
+func TestVariableManager_MultipleResources(t *testing.T) {
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
-	st := setupStoreWithResource(resourceID, map[string]string{
-		"env": "production",
-	})
-
+	// Create store with first resource
+	st := setupStoreWithResource(resource1ID, map[string]string{"env": "production"})
 	ctx := context.Background()
 
-	// Add related resource
-	relatedResource := &oapi.Resource{
-		Id:         relatedResourceID,
-		Name:       "database-server",
-		Kind:       "database",
-		Identifier: relatedResourceID,
-		Config: map[string]interface{}{
-			"host": "db.example.com",
-			"port": 5432,
-		},
-		Metadata:  map[string]string{"type": "postgres"},
-		Version:   "v1",
-		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+	// Add second resource
+	resource2 := &oapi.Resource{
+		Id:         resource2ID,
+		Name:       "test-resource-2",
+		Kind:       "server",
+		Identifier: resource2ID,
+		Config:     map[string]any{},
+		Metadata:   map[string]string{"env": "staging"},
+		Version:    "v1",
+		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
-	if _, err := st.Resources.Upsert(ctx, relatedResource); err != nil {
-		t.Fatalf("Failed to upsert related resource: %v", err)
+	if _, err := st.Resources.Upsert(ctx, resource2); err != nil {
+		t.Fatalf("failed to upsert resource2: %v", err)
 	}
 
-	fromSelector := &oapi.Selector{}
-	if err := fromSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
-			"type":     "metadata",
-			"operator": "equals",
-			"key":      "env",
-			"value":    "production",
-		},
-	}); err != nil {
-		t.Fatalf("Failed to create from selector: %v", err)
-	}
-	toSelector := &oapi.Selector{}
-	if err := toSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "database",
-		},
-	}); err != nil {
-		t.Fatalf("Failed to create to selector: %v", err)
-	}
-
-	pm := &oapi.RelationshipRule_Matcher{}
-	if err := pm.FromPropertiesMatcher(oapi.PropertiesMatcher{
-		Properties: []oapi.PropertyMatcher{
-			{
-				FromProperty: []string{"metadata", "env"},
-				ToProperty:   []string{"metadata", "env"},
-				Operator:     oapi.Equals,
-			},
-		},
-	}); err != nil {
-		t.Fatalf("Failed to create properties matcher: %v", err)
-	}
-
-	// Note: Store needs relationship rules to be set up for reference resolution to work
-	// This test demonstrates the structure, but actual relationship storage would need
-	// to be configured properly in the store implementation
-
-	// Add resource variable with reference (this would reference the related resource)
-	rv := &oapi.ResourceVariable{
-		ResourceId: resourceID,
-		Key:        "db_host",
-		Value:      *mustCreateValueFromReference("database", []string{"config", "host"}),
-	}
-	st.ResourceVariables.Upsert(ctx, &oapi.ResourceVariable{
-		Key:        rv.Key,
-		ResourceId: rv.ResourceId,
-		Value:      rv.Value,
-	})
-
-	// Add deployment
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
-		Slug:           "test",
-		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		Slug:           "test-deployment",
+		SystemId:       uuid.New().String(),
+		JobAgentConfig: map[string]any{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
-		t.Fatalf("Failed to upsert deployment: %v", err)
+		t.Fatalf("failed to upsert deployment: %v", err)
 	}
 
-	manager := New(st)
+	// Deployment variable with env-specific values
+	varID := addDeploymentVariable(st, deploymentID, "replicas", mustCreateLiteralValue(1))
+	
+	prodSelector := mustCreateSelector("resource.metadata.env == 'production'")
+	addDeploymentVariableValue(st, varID, 10, prodSelector, mustCreateValueFromLiteral(10))
+	
+	stagingSelector := mustCreateSelector("resource.metadata.env == 'staging'")
+	addDeploymentVariableValue(st, varID, 10, stagingSelector, mustCreateValueFromLiteral(3))
 
-	releaseTarget := &oapi.ReleaseTarget{
+	mgr := New(st)
+
+	// Evaluate for resource1 (production)
+	releaseTarget1 := &oapi.ReleaseTarget{
 		DeploymentId:  deploymentID,
-		EnvironmentId: environmentID,
-		ResourceId:    resourceID,
+		EnvironmentId: uuid.New().String(),
+		ResourceId:    resource1ID,
 	}
 
-	// Act
-	// Note: This test will fail if relationships are not properly set up
-	// It's included to demonstrate the intended behavior
-	result, err := manager.Evaluate(ctx, releaseTarget)
-
-	// Assert
-	// The actual assertion would depend on whether the relationship system is fully set up
+	result1, err := mgr.Evaluate(ctx, releaseTarget1)
 	if err != nil {
-		// Expected if relationships are not configured
-		t.Logf("Reference resolution failed (expected if relationships not configured): %v", err)
-		return
+		t.Fatalf("Evaluate failed for resource1: %v", err)
 	}
 
-	// If no error, verify the reference was resolved
-	if val, exists := result["db_host"]; exists {
-		t.Logf("Successfully resolved reference value: %v", val)
+	replicas1 := result1["replicas"]
+	replicas1Int, _ := replicas1.AsIntegerValue()
+	if int(replicas1Int) != 10 {
+		t.Errorf("expected replicas for production = 10, got %d", replicas1Int)
+	}
+
+	// Evaluate for resource2 (staging)
+	releaseTarget2 := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: uuid.New().String(),
+		ResourceId:    resource2ID,
+	}
+
+	result2, err := mgr.Evaluate(ctx, releaseTarget2)
+	if err != nil {
+		t.Fatalf("Evaluate failed for resource2: %v", err)
+	}
+
+	replicas2 := result2["replicas"]
+	replicas2Int, _ := replicas2.AsIntegerValue()
+	if int(replicas2Int) != 3 {
+		t.Errorf("expected replicas for staging = 3, got %d", replicas2Int)
 	}
 }
