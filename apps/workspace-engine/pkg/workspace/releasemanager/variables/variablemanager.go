@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -59,18 +60,21 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 
 		resolved := m.tryResolveResourceVariable(ctx, span, key, resourceVariables, entity)
 		if resolved != nil {
+			log.Info("resolved resource variable", "key", key, "value", resolved)
 			resolvedVariables[key] = resolved
 			continue
 		}
 
 		resolved = m.tryResolveDeploymentVariableValue(ctx, span, key, deploymentVar, resource, entity)
 		if resolved != nil {
+			log.Info("resolved deployment variable value", "key", key, "value", resolved)
 			resolvedVariables[key] = resolved
 			continue
 		}
 
 		// Fallback to default value if available
 		if deploymentVar.DefaultValue != nil {
+			log.Info("resolved deployment variable default value", "key", key, "value", deploymentVar.DefaultValue)
 			resolvedVariables[key] = deploymentVar.DefaultValue
 		}
 	}
@@ -112,6 +116,7 @@ func (m *Manager) tryResolveDeploymentVariableValue(
 	resource *oapi.Resource,
 	entity *oapi.RelatableEntity,
 ) *oapi.LiteralValue {
+
 	values := m.store.DeploymentVariables.Values(deploymentVar.Id)
 
 	// Sort values by priority (higher priority first)
@@ -130,17 +135,11 @@ func (m *Manager) tryResolveDeploymentVariableValue(
 
 	// Find first matching value based on resource selector
 	for _, value := range sortedValues {
-		result, err := m.store.Variables.ResolveValue(ctx, entity, &value.Value)
-	
-		if err != nil {
-			span.AddEvent("deployment_variable_resolution_skipped", trace.WithAttributes(
-				attribute.String("variable.key", key),
-				attribute.String("error", err.Error()),
-			))
-			continue
+		result, _ := m.store.Variables.ResolveValue(ctx, entity, &value.Value)
+		if result != nil {
+			log.Info("resolved deployment variable value", "key", key, "value", result)
+			return result
 		}
-
-		return result
 	}
 
 	return nil
