@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
@@ -175,6 +176,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	}
 
 	// Set up pass rate evaluator
+	_, setupSpan := tracer.Start(ctx, "checkDependencyEnvironments.setupEvaluators")
 	var minSuccessPercentage float32 = 0.0 // Default: require at least one successful job (> 0%)
 	if e.rule.MinimumSuccessPercentage != nil {
 		minSuccessPercentage = *e.rule.MinimumSuccessPercentage
@@ -186,7 +188,11 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
 		soakTimeEvaluator = NewSoakTimeEvaluator(e.store, *e.rule.MinimumSockTimeMinutes, successStatuses)
 	}
+	setupSpan.End()
 
+	_, evalLoopSpan := tracer.Start(ctx, "checkDependencyEnvironments.evaluateEnvironments", trace.WithAttributes(
+		attribute.Int("dependency_envs.count", len(dependencyEnvs)),
+	))
 	for _, depEnv := range dependencyEnvs {
 		result := e.evaluateJobSuccessCriteria(
 			ctx,
@@ -202,9 +208,17 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			failedResults[depEnv.Id] = result
 		}
 	}
+	evalLoopSpan.SetAttributes(
+		attribute.Int("allowed_results.count", len(allowedResults)),
+		attribute.Int("failed_results.count", len(failedResults)),
+	)
+	evalLoopSpan.End()
 
 	// OR logic: If at least one dependency environment succeeded, allow progression
 	if len(allowedResults) > 0 {
+		_, combineSpan := tracer.Start(ctx, "checkDependencyEnvironments.combineSuccessResults", trace.WithAttributes(
+			attribute.Int("allowed_results.count", len(allowedResults)),
+		))
 		successResult := results.
 			NewAllowedResult("Version succeeded in dependency environment(s)").
 			WithDetail("environment_count", len(dependencyEnvs)).
@@ -220,12 +234,16 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 				}
 			}
 		}
+		combineSpan.End()
 
 		return successResult
 	}
 
 	// All dependency environments failed
 	if len(failedResults) > 0 {
+		_, combineFailSpan := tracer.Start(ctx, "checkDependencyEnvironments.combineFailureResults", trace.WithAttributes(
+			attribute.Int("failed_results.count", len(failedResults)),
+		))
 		failureResult := results.NewDeniedResult("Version not successful in any dependency environment").
 			WithDetail("environment_count", len(dependencyEnvs)).
 			WithDetail("version_id", version.Id).
@@ -234,6 +252,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 		for envId, failedResult := range failedResults {
 			failureResult.WithDetail(fmt.Sprintf("environment_%s", envId), failedResult.Details)
 		}
+		combineFailSpan.End()
 
 		return failureResult
 	}
