@@ -36,11 +36,11 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *oapi.RelatableEnti
 		}
 		references, _ := v.store.Relationships.GetRelatedEntities(ctx, entity)
 		if references == nil {
-			return nil, fmt.Errorf("references nil - not found: %v", rv.Reference)
+			return nil, fmt.Errorf("references nil - not found: %v for entity: %v", rv.Reference, entity.GetID())
 		}
 		refEntities := references[rv.Reference]
 		if len(refEntities) == 0 {
-			return nil, fmt.Errorf("reference not found: %v", rv.Reference)
+			return nil, fmt.Errorf("reference not found: %v for entity: %v", rv.Reference, entity.GetID())
 		}
 
 		computeEntityRelationship := refEntities[0]
