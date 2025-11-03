@@ -42,7 +42,7 @@ func createTestEnvironment(systemID, id, name string) *oapi.Environment {
 	}
 }
 
-func createTestDeployment(workspaceID, systemID, id, name string) *oapi.Deployment {
+func createTestDeployment(_, systemID, id, name string) *oapi.Deployment {
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 

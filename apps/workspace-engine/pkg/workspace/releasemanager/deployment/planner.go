@@ -98,9 +98,6 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 	// Step 4: Construct the desired release
 	desiredRelease := BuildRelease(ctx, releaseTarget, deployableVersion, resolvedVariables)
 
-	// This is the desired release based on policies!
-	span.SetAttributes(attribute.Bool("has_desired_release", true))
-
 	return desiredRelease, nil
 }
 
@@ -130,11 +127,6 @@ func (p *Planner) findDeployableVersion(
 		return nil
 	}
 
-	if environment == nil {
-		span.RecordError(fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId))
-		return nil
-	}
-
 	evaluators := p.policyManager.PlannerGlobalEvaluators()
 	for _, policy := range policies {
 		for _, rule := range policy.Rules {
@@ -146,14 +138,46 @@ func (p *Planner) findDeployableVersion(
 		Environment:   environment,
 		ReleaseTarget: releaseTarget,
 	}
+
+	versionIndependentEvals := make([]evaluator.Evaluator, 0, len(evaluators))
+	versionDependentEvals := make([]evaluator.Evaluator, 0, len(evaluators))
+	
+	for _, eval := range evaluators {
+		scopeFields := eval.ScopeFields()
+		// Check if evaluator needs version field
+		needsVersion := false
+		if scopeFields&evaluator.ScopeVersion != 0 {
+			needsVersion = true
+		}
+	
+		if needsVersion {
+			// Only check HasFields once per evaluator
+			if scope.HasFields(scopeFields) || true { // Will check with version later
+				versionDependentEvals = append(versionDependentEvals, eval)
+			}
+		} else {
+			// Check HasFields once for non-version evaluators
+			if scope.HasFields(scopeFields) {
+				versionIndependentEvals = append(versionIndependentEvals, eval)
+			}
+		}
+	}
+
+	// Now check version-independent evaluators once upfront
+	for _, eval := range versionIndependentEvals {
+		result := eval.Evaluate(ctx, scope)
+		if !result.Allowed {
+			// All versions blocked by version-independent policy
+			return nil
+		}
+	}
+
 	for _, version := range candidateVersions {
 		eligible := true
 		scope.Version = version
-		for _, evaluator := range evaluators {
-			if !scope.HasFields(evaluator.ScopeFields()) {
-				continue
-			}
-			result := evaluator.Evaluate(ctx, scope)
+
+		for _, eval := range versionDependentEvals {
+			result := eval.Evaluate(ctx, scope)
 			if !result.Allowed {
 				eligible = false
 				break
