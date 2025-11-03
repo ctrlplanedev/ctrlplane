@@ -36,7 +36,7 @@ func (p *Policies) Has(id string) bool {
 	return p.repo.Policies.Has(id)
 }
 
-func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
+func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
 	p.repo.Policies.Set(policy.Id, policy)
 	if policy.Metadata == nil {
 		policy.Metadata = make(map[string]string)
@@ -47,7 +47,8 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) error {
 	}
 
 	p.store.changeset.RecordUpsert(policy)
-	return nil
+
+	p.store.ReleaseTargets.RecomputeTargetPolicies()
 }
 
 func (p *Policies) Remove(ctx context.Context, id string) {
@@ -62,4 +63,6 @@ func (p *Policies) Remove(ctx context.Context, id string) {
 	}
 
 	p.store.changeset.RecordDelete(policy)
+
+	p.store.ReleaseTargets.RecomputeTargetPolicies()
 }

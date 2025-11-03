@@ -19,9 +19,7 @@ func HandlePolicyCreated(
 		return err
 	}
 
-	if err := ws.Policies().Upsert(ctx, policy); err != nil {
-		return err
-	}
+	ws.Policies().Upsert(ctx, policy)
 
 	return nil
 }
@@ -36,9 +34,7 @@ func HandlePolicyUpdated(
 		return err
 	}
 
-	if err := ws.Policies().Upsert(ctx, policy); err != nil {
-		return err
-	}
+	ws.Policies().Upsert(ctx, policy)
 
 	return nil
 }

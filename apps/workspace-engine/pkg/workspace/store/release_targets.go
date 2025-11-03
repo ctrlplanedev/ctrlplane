@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/materialized"
@@ -21,13 +22,15 @@ func NewReleaseTargets(store *Store) *ReleaseTargets {
 	rt := &ReleaseTargets{}
 	rt.store = store
 	rt.targets = materialized.New(rt.computeTargets)
+	rt.targetPolicies = cmap.New[*materialized.MaterializedView[map[string]*oapi.Policy]]()
 	return rt
 }
 
 type ReleaseTargets struct {
 	store *Store
 
-	targets *materialized.MaterializedView[map[string]*oapi.ReleaseTarget]
+	targets        *materialized.MaterializedView[map[string]*oapi.ReleaseTarget]
+	targetPolicies cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Policy]]
 }
 
 func (r *ReleaseTargets) FromId(id string) *oapi.ReleaseTarget {
@@ -59,7 +62,11 @@ func (r *ReleaseTargets) Items(ctx context.Context) (map[string]*oapi.ReleaseTar
 }
 
 func (r *ReleaseTargets) Recompute(ctx context.Context) error {
-	return r.targets.StartRecompute(ctx)
+	if err := r.targets.StartRecompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
+		return err
+	}
+	r.RecomputeTargetPolicies()
+	return nil
 }
 
 func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.ReleaseTarget, error) {
@@ -131,6 +138,25 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 	return releaseTargets, nil
 }
 
+func (r *ReleaseTargets) RecomputeTargetPolicies() {
+	allTargets := r.targets.Get()
+	for targetKey, target := range allTargets {
+		t := target
+		key := targetKey
+		mv := materialized.New(r.targetPoliciesRecomputeFunc(t))
+		r.targetPolicies.Set(key, mv)
+	}
+}
+
+func (r *ReleaseTargets) targetPoliciesRecomputeFunc(target *oapi.ReleaseTarget) materialized.RecomputeFunc[map[string]*oapi.Policy] {
+	return func(ctx context.Context) (map[string]*oapi.Policy, error) {
+		_, span := tracer.Start(ctx, "targetPoliciesRecomputeFunc")
+		defer span.End()
+
+		return r.computePolicies(ctx, target)
+	}
+}
+
 func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.Policy, error) {
 	_, span := tracer.Start(ctx, "computePolicies")
 	defer span.End()
@@ -180,7 +206,12 @@ func (r *ReleaseTargets) computePolicies(ctx context.Context, releaseTarget *oap
 }
 
 func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (map[string]*oapi.Policy, error) {
-	return r.computePolicies(ctx, releaseTarget)
+	mv, ok := r.targetPolicies.Get(releaseTarget.Key())
+	if !ok {
+		return nil, fmt.Errorf("target policies not found for release target %s", releaseTarget.Key())
+	}
+
+	return mv.Get(), nil
 }
 
 func (r *ReleaseTargets) Get(key string) *oapi.ReleaseTarget {
