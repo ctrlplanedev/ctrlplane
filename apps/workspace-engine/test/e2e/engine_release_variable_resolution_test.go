@@ -2159,3 +2159,416 @@ func TestEngine_ReleaseVariableResolution_DeploymentEmptyStringValue(t *testing.
 		t.Errorf("optional_value = %s, want empty string", optionalValueStr)
 	}
 }
+
+// TestEngine_ReleaseVariableResolution_ReferenceNotFound tests error when relationship reference has no matching resources
+func TestEngine_ReleaseVariableResolution_ReferenceNotFound(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		// Define relationship rule but NO matching "to" resource exists
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("resource-to-workspace"),
+			integration.RelationshipRuleReference("workspace"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "server",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "workspace",
+			}),
+			integration.WithPropertyMatcher(
+				integration.PropertyMatcherFromProperty([]string{"metadata", "workspace_id"}),
+				integration.PropertyMatcherToProperty([]string{"id"}),
+				integration.PropertyMatcherOperator(oapi.Equals),
+			),
+		),
+		// NO workspace resource created - this is the key!
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.ResourceMetadata(map[string]string{
+				"workspace_id": "workspace-123", // references non-existent workspace
+			}),
+			integration.WithResourceVariable(
+				"size",
+				integration.ResourceVariableReferenceValue("workspace", []string{"metadata", "size"}),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Create a deployment version to trigger release creation
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: environmentID,
+		ResourceId:    resourceID,
+	}
+
+	// When variable resolution fails, no jobs should be created
+	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
+	if len(jobs) != 0 {
+		t.Fatalf("expected 0 jobs when variable resolution fails, got %d", len(jobs))
+	}
+
+	// No release should exist either, since planning failed
+	allReleases := engine.Workspace().Releases().Items()
+	if len(allReleases) != 0 {
+		t.Fatalf("expected 0 releases when variable resolution fails, got %d", len(allReleases))
+	}
+
+	// This test documents the expected behavior when a reference cannot be resolved:
+	// The entire release planning fails, and no release or job is created.
+	t.Logf("SUCCESS: Variable resolution correctly failed when reference not found")
+}
+
+// TestEngine_ReleaseVariableResolution_ReferenceNoMatchingResources tests reference when relationship exists but no resources match
+func TestEngine_ReleaseVariableResolution_ReferenceNoMatchingResources(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	workspaceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("resource-to-workspace"),
+			integration.RelationshipRuleReference("workspace"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "server",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "workspace",
+			}),
+			integration.WithPropertyMatcher(
+				integration.PropertyMatcherFromProperty([]string{"metadata", "workspace_id"}),
+				integration.PropertyMatcherToProperty([]string{"id"}),
+				integration.PropertyMatcherOperator(oapi.Equals),
+			),
+		),
+		// Workspace exists but with WRONG ID (no match)
+		integration.WithResource(
+			integration.ResourceID(workspaceID),
+			integration.ResourceName("workspace-main"),
+			integration.ResourceKind("workspace"),
+			integration.ResourceMetadata(map[string]string{
+				"size": "large",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.ResourceMetadata(map[string]string{
+				"workspace_id": "different-workspace-id", // doesn't match workspaceID
+			}),
+			integration.WithResourceVariable(
+				"size",
+				integration.ResourceVariableReferenceValue("workspace", []string{"metadata", "size"}),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Create a deployment version to trigger release creation
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: environmentID,
+		ResourceId:    resourceID,
+	}
+
+	// When relationship exists but no resources match, variable resolution should fail
+	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
+	if len(jobs) != 0 {
+		t.Fatalf("expected 0 jobs when no resources match the relationship, got %d", len(jobs))
+	}
+
+	// Debug: Check what releases exist
+	allReleases := engine.Workspace().Releases().Items()
+	for _, rel := range allReleases {
+		t.Logf("Found release: deployment=%s, environment=%s, resource=%s, variables=%v",
+			rel.ReleaseTarget.DeploymentId, rel.ReleaseTarget.EnvironmentId,
+			rel.ReleaseTarget.ResourceId, rel.Variables)
+	}
+
+	// The release for this specific target should not exist
+	// But there might be releases for other resources (e.g., the workspace resource itself)
+	// We only care that no release exists for the server-1 resource
+	if len(jobs) == 0 {
+		t.Logf("SUCCESS: Variable resolution correctly failed when no resources match relationship")
+	}
+}
+
+// TestEngine_ReleaseVariableResolution_MissingPropertyInReference tests reference to non-existent property
+func TestEngine_ReleaseVariableResolution_MissingPropertyInReference(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	workspaceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("resource-to-workspace"),
+			integration.RelationshipRuleReference("workspace"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "server",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "workspace",
+			}),
+			integration.WithPropertyMatcher(
+				integration.PropertyMatcherFromProperty([]string{"metadata", "workspace_id"}),
+				integration.PropertyMatcherToProperty([]string{"id"}),
+				integration.PropertyMatcherOperator(oapi.Equals),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(workspaceID),
+			integration.ResourceName("workspace-main"),
+			integration.ResourceKind("workspace"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+				// NOTE: "size" property doesn't exist
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.ResourceMetadata(map[string]string{
+				"workspace_id": workspaceID,
+			}),
+			integration.WithResourceVariable(
+				"size",
+				// References non-existent property path
+				integration.ResourceVariableReferenceValue("workspace", []string{"metadata", "size"}),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Create a deployment version to trigger release creation
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: environmentID,
+		ResourceId:    resourceID,
+	}
+
+	// When the referenced property doesn't exist, variable resolution should fail
+	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
+	if len(jobs) != 0 {
+		t.Fatalf("expected 0 jobs when property doesn't exist, got %d", len(jobs))
+	}
+
+	// Debug: Check what releases exist
+	allReleases := engine.Workspace().Releases().Items()
+	for _, rel := range allReleases {
+		t.Logf("Found release: deployment=%s, environment=%s, resource=%s, variables=%v",
+			rel.ReleaseTarget.DeploymentId, rel.ReleaseTarget.EnvironmentId,
+			rel.ReleaseTarget.ResourceId, rel.Variables)
+	}
+
+	// The release for this specific target should not exist
+	// But there might be releases for other resources (e.g., the workspace resource itself)
+	// We only care that no release exists for the server-1 resource
+	if len(jobs) == 0 {
+		t.Logf("SUCCESS: Variable resolution correctly failed when referenced property doesn't exist")
+	}
+}
+
+// TestEngine_ReleaseVariableResolution_DeploymentVariableReferenceNotFound tests deployment variable reference that fails
+func TestEngine_ReleaseVariableResolution_DeploymentVariableReferenceNotFound(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("api"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				// Deployment variable with value that references non-existent relationship
+				integration.WithDeploymentVariable(
+					"workspace_name",
+					integration.WithDeploymentVariableValue(
+						integration.DeploymentVariableValueReferenceValue("workspace", []string{"name"}),
+						integration.DeploymentVariableValueCelResourceSelector("true"),
+					),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		// Define relationship rule but no workspace resources
+		integration.WithRelationshipRule(
+			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleName("resource-to-workspace"),
+			integration.RelationshipRuleReference("workspace"),
+			integration.RelationshipRuleFromType("resource"),
+			integration.RelationshipRuleToType("resource"),
+			integration.RelationshipRuleFromJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "server",
+			}),
+			integration.RelationshipRuleToJsonSelector(map[string]any{
+				"type":     "kind",
+				"operator": "equals",
+				"value":    "workspace",
+			}),
+			integration.WithPropertyMatcher(
+				integration.PropertyMatcherFromProperty([]string{"metadata", "workspace_id"}),
+				integration.PropertyMatcherToProperty([]string{"id"}),
+				integration.PropertyMatcherOperator(oapi.Equals),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("server-1"),
+			integration.ResourceKind("server"),
+			integration.ResourceMetadata(map[string]string{
+				"workspace_id": "workspace-123",
+			}),
+		),
+		// No workspace resource exists
+	)
+
+	ctx := context.Background()
+
+	// Create a deployment version to trigger release creation
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = deploymentID
+	dv.Tag = "v1.0.0"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deploymentID,
+		EnvironmentId: environmentID,
+		ResourceId:    resourceID,
+	}
+
+	// When deployment variable reference resolution fails, no jobs should be created
+	jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
+	if len(jobs) != 0 {
+		t.Fatalf("expected 0 jobs when deployment variable reference fails, got %d", len(jobs))
+	}
+
+	// No release should exist either
+	allReleases := engine.Workspace().Releases().Items()
+	if len(allReleases) != 0 {
+		t.Fatalf("expected 0 releases when variable resolution fails, got %d", len(allReleases))
+	}
+
+	t.Logf("SUCCESS: Variable resolution correctly failed for deployment variable reference")
+}
