@@ -515,6 +515,12 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 	// Phase 1: Prepare resources and lookup existing ones
 	_, prepSpan := tracer.Start(ctx, "Set.PrepareResources")
+
+	identifierMap := make(map[string]*oapi.Resource)
+	for item := range r.repo.Resources.IterBuffered() {
+		identifierMap[item.Val.Identifier] = item.Val
+	}
+
 	resources := make([]*oapi.Resource, 0, len(setResources))
 	newResourceIdentifiers := make(map[string]bool)
 
@@ -522,8 +528,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 		newResourceIdentifiers[resource.Identifier] = true
 
 		// If resource exists, use its existing ID; otherwise generate a new UUID
-		existingResource, ok := r.GetByIdentifier(resource.Identifier)
-		if ok {
+		if existingResource, ok := identifierMap[resource.Identifier]; ok {
 			resource.Id = existingResource.Id
 		} else if resource.Id == "" {
 			resource.Id = uuid.New().String()
@@ -578,7 +583,8 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 	for _, resource := range resources {
 		// Check if a resource with this identifier already exists
-		existingResource, exists := r.GetByIdentifier(resource.Identifier)
+		// Use the identifierMap we built earlier for O(1) lookup
+		existingResource, exists := identifierMap[resource.Identifier]
 
 		if exists {
 			// If it belongs to a different provider, skip it
