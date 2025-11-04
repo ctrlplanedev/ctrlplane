@@ -745,3 +745,129 @@ func TestSkipDeployedEvaluator_AllJobStatusesPreventRedeployOfSameRelease(t *tes
 		})
 	}
 }
+
+func TestSkipDeployedEvaluator_IdenticalVariablesPreventRedeployment(t *testing.T) {
+	// Test that deploying the same version with identical variables is denied
+	// (same variables = same release ID = same release)
+	// Tests all variable types: string, integer, number (float), and boolean
+	st := setupStoreWithResource(t, "resource-1")
+	ctx := context.Background()
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+
+	// Create variables of different types
+	replicas := oapi.LiteralValue{}
+	if err := replicas.FromIntegerValue(3); err != nil {
+		t.Fatalf("Failed to create replicas: %v", err)
+	}
+
+	region := oapi.LiteralValue{}
+	if err := region.FromStringValue("us-west-2"); err != nil {
+		t.Fatalf("Failed to create region: %v", err)
+	}
+
+	cpuLimit := oapi.LiteralValue{}
+	if err := cpuLimit.FromNumberValue(2.5); err != nil {
+		t.Fatalf("Failed to create cpuLimit: %v", err)
+	}
+
+	enabled := oapi.LiteralValue{}
+	if err := enabled.FromBooleanValue(true); err != nil {
+		t.Fatalf("Failed to create enabled: %v", err)
+	}
+
+	release1 := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
+			Id:  "version-1",
+			Tag: "v1.0.0",
+		},
+		Variables: map[string]oapi.LiteralValue{
+			"replicas": replicas, // integer
+			"region":   region,   // string
+			"cpuLimit": cpuLimit, // float
+			"enabled":  enabled,  // boolean
+		},
+	}
+
+	completedAt := time.Now()
+	if err := st.Releases.Upsert(ctx, release1); err != nil {
+		t.Fatalf("Failed to upsert release1: %v", err)
+	}
+	st.Jobs.Upsert(ctx, &oapi.Job{
+		Id:          "job-1",
+		ReleaseId:   release1.ID(),
+		Status:      oapi.Successful,
+		CreatedAt:   time.Now().Add(-1 * time.Hour),
+		CompletedAt: &completedAt,
+	})
+
+	// Create second release with IDENTICAL version and variables
+	replicas2 := oapi.LiteralValue{}
+	if err := replicas2.FromIntegerValue(3); err != nil {
+		t.Fatalf("Failed to create replicas2: %v", err)
+	}
+
+	region2 := oapi.LiteralValue{}
+	if err := region2.FromStringValue("us-west-2"); err != nil {
+		t.Fatalf("Failed to create region2: %v", err)
+	}
+
+	cpuLimit2 := oapi.LiteralValue{}
+	if err := cpuLimit2.FromNumberValue(2.5); err != nil {
+		t.Fatalf("Failed to create cpuLimit2: %v", err)
+	}
+
+	enabled2 := oapi.LiteralValue{}
+	if err := enabled2.FromBooleanValue(true); err != nil {
+		t.Fatalf("Failed to create enabled2: %v", err)
+	}
+
+	release2 := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version: oapi.DeploymentVersion{
+			Id:  "version-1", // Same version
+			Tag: "v1.0.0",
+		},
+		Variables: map[string]oapi.LiteralValue{
+			"replicas": replicas2, // Same value (3)
+			"region":   region2,   // Same value (us-west-2)
+			"cpuLimit": cpuLimit2, // Same value (2.5)
+			"enabled":  enabled2,  // Same value (true)
+		},
+	}
+	if err := st.Releases.Upsert(ctx, release2); err != nil {
+		t.Fatalf("Failed to upsert release2: %v", err)
+	}
+
+	eval := NewSkipDeployedEvaluator(st)
+
+	// Act: Try to deploy with identical variables
+	result := eval.Evaluate(ctx, release2)
+
+	// Assert: Should DENY (same release ID due to identical variables)
+	if result.Allowed {
+		t.Errorf("expected denied for identical variables, got allowed: %s", result.Message)
+	}
+
+	// Verify release IDs are the same (proving it's the same release)
+	if release1.ID() != release2.ID() {
+		t.Errorf("expected identical release IDs for identical variables, got %s and %s", release1.ID(), release2.ID())
+	}
+
+	if result.Details["existing_job_id"] != "job-1" {
+		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
+	}
+
+	if result.Details["version"] != "v1.0.0" {
+		t.Errorf("expected version=v1.0.0, got %v", result.Details["version"])
+	}
+
+	if result.Details["job_status"] != string(oapi.Successful) {
+		t.Errorf("expected job_status=SUCCESSFUL, got %v", result.Details["job_status"])
+	}
+}
