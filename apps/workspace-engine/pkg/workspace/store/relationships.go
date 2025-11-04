@@ -30,7 +30,7 @@ func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.Relat
 
 	r.store.changeset.RecordUpsert(relationship)
 
-	if err := r.buildGraph(ctx); err != nil {
+	if err := r.buildGraph(ctx, nil); err != nil {
 		return err
 	}
 
@@ -58,7 +58,7 @@ func (r *RelationshipRules) Remove(ctx context.Context, id string) error {
 
 	r.store.changeset.RecordDelete(relationship)
 
-	return r.buildGraph(ctx)
+	return r.buildGraph(ctx, nil)
 }
 
 func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
@@ -75,7 +75,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 	error,
 ) {
 	if r.graph == nil {
-		if err := r.buildGraph(ctx); err != nil {
+		if err := r.buildGraph(ctx, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -85,16 +85,21 @@ func (r *RelationshipRules) GetRelatedEntities(
 
 func (r *RelationshipRules) InvalidateGraph(ctx context.Context) error {
 	r.graph = nil
-	return r.buildGraph(ctx)
+	return r.buildGraph(ctx, nil)
 }
 
-func (r *RelationshipRules) buildGraph(ctx context.Context) (err error) {
-	r.graph, err = relationgraph.
-		NewBuilder(
-			r.store.Resources.Items(),
-			r.store.Deployments.Items(),
-			r.store.Environments.Items(),
-			r.repo.RelationshipRules.Items(),
-		).Build(ctx)
+func (r *RelationshipRules) buildGraph(ctx context.Context, setStatus func(msg string)) (err error) {
+	builder := relationgraph.NewBuilder(
+		r.store.Resources.Items(),
+		r.store.Deployments.Items(),
+		r.store.Environments.Items(),
+		r.repo.RelationshipRules.Items(),
+	)
+
+	if setStatus != nil {
+		builder = builder.WithSetStatus(setStatus)
+	}
+
+	r.graph, err = builder.Build(ctx)
 	return err
 }

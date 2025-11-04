@@ -2,6 +2,7 @@ package relationgraph
 
 import (
 	"context"
+	"fmt"
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -28,6 +29,8 @@ type BuildOptions struct {
 	ParallelRules bool
 	// MaxConcurrency limits concurrent rule processing (future enhancement)
 	MaxConcurrency int
+
+	SetStatus func(msg string)
 }
 
 // DefaultBuildOptions returns sensible defaults
@@ -54,6 +57,11 @@ func NewBuilder(
 	}
 }
 
+func (b *Builder) WithSetStatus(setStatus func(msg string)) *Builder {
+	b.options.SetStatus = setStatus
+	return b
+}
+
 // WithOptions sets custom build options
 func (b *Builder) WithMaxConcurrency(maxConcurrency int) *Builder {
 	b.options.MaxConcurrency = maxConcurrency
@@ -71,6 +79,10 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 	ctx, span := tracer.Start(ctx, "relationgraph.Build")
 	defer span.End()
 
+	if b.options.SetStatus != nil {
+		b.options.SetStatus("Building relationship graph...")
+	}
+
 	graph := NewGraph()
 
 	// Get all entities once
@@ -81,10 +93,18 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 	)
 
 	// Process each rule
+	totalRules := len(b.rules)
+	processedRules := 0
 	for _, rule := range b.rules {
+		if b.options.SetStatus != nil {
+			percentage := int((float64(processedRules) / float64(totalRules)) * 100)
+			b.options.SetStatus(fmt.Sprintf("Processing rules... %d%%", percentage))
+		}
+
 		if err := b.processRule(ctx, graph, rule, allEntities); err != nil {
 			return nil, err
 		}
+		processedRules++
 	}
 
 	// Update graph metadata
@@ -94,6 +114,10 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 	span.SetAttributes(
 		attribute.Int("total_relations", graph.relationCount),
 	)
+
+	if b.options.SetStatus != nil {
+		b.options.SetStatus("Relationship graph built successfully")
+	}
 
 	return graph, nil
 }

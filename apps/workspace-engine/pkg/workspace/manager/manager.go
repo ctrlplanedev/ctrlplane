@@ -70,16 +70,6 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		}
 		workspaceStatus.UpdateMetadata("changes_loaded", len(changes))
 
-		// Populate initial state (unless skipped)
-		// if !globalManager.skipInitialStatePopulation {
-		// 	workspaceStatus.SetState(status.StatePopulatingInitialState, "Populating workspace with initial state")
-		// 	if err := workspace.PopulateWorkspaceWithInitialState(ctx, ws); err != nil {
-		// 		workspaceStatus.SetError(err)
-		// 		return nil, err
-		// 	}
-		// 	ws.Changeset().Clear()
-		// }
-
 		// Restore from snapshot
 		workspaceStatus.SetState(status.StateRestoringFromSnapshot, "Restoring workspace from snapshot")
 		setStatusMessage := func(msg string) {

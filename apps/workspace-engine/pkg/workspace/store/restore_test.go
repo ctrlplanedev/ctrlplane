@@ -123,7 +123,7 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 	// Apply changes to a new store using the Restore method
 	// This is the critical test - Restore() must call ReinitializeMaterializedViews()
 	testStore := store.New(statechange.NewChangeSet[any]())
-	err = testStore.Restore(ctx, loadedChanges)
+	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err, "Restore should succeed")
 
 	// Verify basic entities were restored
@@ -190,7 +190,7 @@ func TestStore_Restore_EmptyEnvironments(t *testing.T) {
 
 	// Restore should succeed even with no environments/deployments
 	testStore := store.New(statechange.NewChangeSet[any]())
-	err = testStore.Restore(ctx, loadedChanges)
+	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err, "Restore should succeed with no environments")
 
 	// Verify system was restored
@@ -299,7 +299,7 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 	require.NoError(t, err)
 
 	testStore := store.New(statechange.NewChangeSet[any]())
-	err = testStore.Restore(ctx, loadedChanges)
+	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err)
 
 	// Verify each environment has the correct resources
@@ -459,7 +459,7 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 	require.NoError(t, err)
 
 	testStore := store.New(statechange.NewChangeSet[any]())
-	err = testStore.Restore(ctx, loadedChanges)
+	err = testStore.Restore(ctx, loadedChanges, nil)
 	require.NoError(t, err, "Restore should succeed")
 
 	// ==========================================

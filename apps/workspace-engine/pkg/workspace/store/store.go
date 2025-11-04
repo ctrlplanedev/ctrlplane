@@ -5,6 +5,8 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func New(changeset *statechange.ChangeSet[any]) *Store {
@@ -73,11 +75,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	s.Deployments.ReinitializeMaterializedViews()
 
 	setStatus("Reinitializing materialized views")
-	// Recompute release targets after materialized views are initialized
-	_ = s.ReleaseTargets.Recompute(ctx)
+	if err := s.ReleaseTargets.Recompute(ctx); err != nil {
+		log.Error("Failed to recompute release targets", "error", err)
+		return err
+	}
 
 	setStatus("Building relationships graph")
-	_ = s.Relationships.buildGraph(ctx)
+	if err := s.Relationships.buildGraph(ctx, setStatus); err != nil {
+		log.Error("Failed to build relationships graph", "error", err)
+		return err
+	}
 
 	return nil
 }
