@@ -94,7 +94,9 @@ func (r *RelationshipRules) buildGraph(ctx context.Context, setStatus func(msg s
 		r.store.Deployments.Items(),
 		r.store.Environments.Items(),
 		r.repo.RelationshipRules.Items(),
-	).WithParallelProcessing(true)
+	).WithParallelProcessing(true).
+		WithChunkSize(200).       // Process 200 entities per chunk for large datasets
+		WithMaxConcurrency(16)    // Use more goroutines for heavy workloads
 
 	if setStatus != nil {
 		builder = builder.WithSetStatus(setStatus)
