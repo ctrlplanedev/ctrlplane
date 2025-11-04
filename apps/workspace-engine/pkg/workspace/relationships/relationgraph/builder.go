@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -88,6 +89,13 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 	ctx, span := tracer.Start(ctx, "relationgraph.Build")
 	defer span.End()
 
+	log.Info("Starting relationship graph build",
+		"resources", len(b.resources),
+		"deployments", len(b.deployments),
+		"environments", len(b.environments),
+		"rules", len(b.rules),
+	)
+
 	if b.options.SetStatus != nil {
 		b.options.SetStatus("Building relationship graph...")
 	}
@@ -96,6 +104,8 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 
 	// Get all entities once
 	allEntities := b.getAllEntities()
+	log.Info("Collected all entities", "total", len(allEntities))
+
 	span.SetAttributes(
 		attribute.Int("total_entities", len(allEntities)),
 		attribute.Int("total_rules", len(b.rules)),
@@ -110,10 +120,14 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 			b.options.SetStatus(fmt.Sprintf("Processing rules... %d%%", percentage))
 		}
 
+		log.Info("Processing rule", "reference", rule.Reference, "from", rule.FromType, "to", rule.ToType)
+		
 		if err := b.processRule(ctx, graph, rule, allEntities); err != nil {
+			log.Error("Failed to process rule", "reference", rule.Reference, "error", err)
 			return nil, err
 		}
 		processedRules++
+		log.Info("Completed rule", "reference", rule.Reference, "processed", processedRules, "total", len(b.rules))
 	}
 
 	// Update graph metadata
@@ -122,6 +136,12 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 
 	span.SetAttributes(
 		attribute.Int("total_relations", graph.relationCount),
+	)
+
+	log.Info("Relationship graph built successfully",
+		"total_relations", graph.relationCount,
+		"entity_count", graph.entityCount,
+		"rule_count", graph.ruleCount,
 	)
 
 	if b.options.SetStatus != nil {
@@ -149,19 +169,58 @@ func (b *Builder) processRule(
 
 	// Step 1: Filter entities that match the "from" selector
 	fromEntities := b.filterEntities(ctx, allEntities, rule.FromType, rule.FromSelector)
+	log.Info("Filtered 'from' entities",
+		"rule", rule.Reference,
+		"type", rule.FromType,
+		"count", len(fromEntities),
+	)
 
 	// Step 2: Filter entities that match the "to" selector
 	toEntities := b.filterEntities(ctx, allEntities, rule.ToType, rule.ToSelector)
+	log.Info("Filtered 'to' entities",
+		"rule", rule.Reference,
+		"type", rule.ToType,
+		"count", len(toEntities),
+	)
 
 	span.SetAttributes(
 		attribute.Int("from_entities", len(fromEntities)),
 		attribute.Int("to_entities", len(toEntities)),
 	)
 
+	// Optimization #1: Early termination if no entities to match
+	if len(fromEntities) == 0 || len(toEntities) == 0 {
+		log.Info("Early termination - no entities to match",
+			"rule", rule.Reference,
+			"from_count", len(fromEntities),
+			"to_count", len(toEntities),
+		)
+		span.SetAttributes(
+			attribute.Int("pairs_evaluated", 0),
+			attribute.Int("matches_found", 0),
+			attribute.Bool("early_terminated", true),
+		)
+		return nil
+	}
+
 	// Step 3: Evaluate matcher between all from/to pairs
 	var pairsEvaluated, matchesFound int
 
+	estimatedPairs := len(fromEntities) * len(toEntities)
+	log.Info("Evaluating entity pairs",
+		"rule", rule.Reference,
+		"estimated_pairs", estimatedPairs,
+		"parallel", b.options.UseParallelProcessing,
+	)
+
 	if b.options.UseParallelProcessing && len(fromEntities) > b.options.ChunkSize {
+		log.Info("Using parallel processing",
+			"rule", rule.Reference,
+			"from_entities", len(fromEntities),
+			"chunk_size", b.options.ChunkSize,
+			"max_concurrency", b.options.MaxConcurrency,
+		)
+
 		// Parallel processing for large datasets
 		type entityPairResult struct {
 			fromID     string
@@ -175,12 +234,24 @@ func (b *Builder) processRule(
 			b.options.ChunkSize,
 			b.options.MaxConcurrency,
 			func(fromEntity *oapi.RelatableEntity) ([]entityPairResult, error) {
-				matches := make([]entityPairResult, 0)
+				// Optimization #3: Pre-allocate with estimated capacity (10% match rate)
+				estimatedMatches := max(len(toEntities)/10, 1)
+				matches := make([]entityPairResult, 0, estimatedMatches)
+
+				fromID := fromEntity.GetID() // Cache ID lookup
+
 				for _, toEntity := range toEntities {
+					toID := toEntity.GetID() // Cache ID lookup
+
+					// Optimization #2: Skip self-references (only if same type)
+					if rule.FromType == rule.ToType && fromID == toID {
+						continue
+					}
+
 					if relationships.Matches(ctx, &rule.Matcher, fromEntity, toEntity) {
 						matches = append(matches, entityPairResult{
-							fromID:     fromEntity.GetID(),
-							toID:       toEntity.GetID(),
+							fromID:     fromID,
+							toID:       toID,
 							fromEntity: fromEntity,
 							toEntity:   toEntity,
 						})
@@ -219,31 +290,47 @@ func (b *Builder) processRule(
 			}
 		}
 		pairsEvaluated = len(fromEntities) * len(toEntities)
+		
+		log.Info("Parallel processing completed",
+			"rule", rule.Reference,
+			"matches_found", matchesFound,
+			"pairs_evaluated", pairsEvaluated,
+		)
 	} else {
+		log.Info("Using sequential processing", "rule", rule.Reference)
+		
 		// Sequential processing (default)
 		for _, fromEntity := range fromEntities {
+			fromID := fromEntity.GetID() // Cache ID lookup
+
 			for _, toEntity := range toEntities {
+				toID := toEntity.GetID() // Cache ID lookup
 				pairsEvaluated++
+
+				// Optimization #2: Skip self-references (only if same type)
+				if rule.FromType == rule.ToType && fromID == toID {
+					continue
+				}
 
 				// Check if the matcher allows this relationship
 				if relationships.Matches(ctx, &rule.Matcher, fromEntity, toEntity) {
 					matchesFound++
 
 					// Add forward relationship: from -> to
-					graph.addRelation(fromEntity.GetID(), rule.Reference, &oapi.EntityRelation{
+					graph.addRelation(fromID, rule.Reference, &oapi.EntityRelation{
 						Rule:       rule,
 						Direction:  oapi.To,
 						EntityType: toEntity.GetType(),
-						EntityId:   toEntity.GetID(),
+						EntityId:   toID,
 						Entity:     *toEntity,
 					})
 
 					// Add reverse relationship: to -> from
-					graph.addRelation(toEntity.GetID(), rule.Reference, &oapi.EntityRelation{
+					graph.addRelation(toID, rule.Reference, &oapi.EntityRelation{
 						Rule:       rule,
 						Direction:  oapi.From,
 						EntityType: fromEntity.GetType(),
-						EntityId:   fromEntity.GetID(),
+						EntityId:   fromID,
 						Entity:     *fromEntity,
 					})
 				}
@@ -255,6 +342,13 @@ func (b *Builder) processRule(
 		attribute.Int("pairs_evaluated", pairsEvaluated),
 		attribute.Int("matches_found", matchesFound),
 		attribute.Bool("used_parallel_processing", b.options.UseParallelProcessing && len(fromEntities) > b.options.ChunkSize),
+	)
+
+	log.Info("Rule processing completed",
+		"rule", rule.Reference,
+		"pairs_evaluated", pairsEvaluated,
+		"matches_found", matchesFound,
+		"match_rate", fmt.Sprintf("%.2f%%", float64(matchesFound)/float64(max(pairsEvaluated, 1))*100),
 	)
 
 	return nil
