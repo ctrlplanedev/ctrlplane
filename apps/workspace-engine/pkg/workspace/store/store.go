@@ -61,7 +61,7 @@ func (s *Store) Repo() *repository.InMemoryStore {
 	return s.repo
 }
 
-func (s *Store) Restore(ctx context.Context, changes persistence.Changes) error {
+func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setStatus func(status string)) error {
 	err := s.repo.Router().Apply(ctx, changes)
 	if err != nil {
 		return err
@@ -72,8 +72,11 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes) error 
 	s.Environments.ReinitializeMaterializedViews()
 	s.Deployments.ReinitializeMaterializedViews()
 
+	setStatus("Reinitializing materialized views")
 	// Recompute release targets after materialized views are initialized
 	_ = s.ReleaseTargets.Recompute(ctx)
+
+	setStatus("Building relationships graph")
 	_ = s.Relationships.buildGraph(ctx)
 
 	return nil

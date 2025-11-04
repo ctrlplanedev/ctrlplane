@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/status"
+
+	"github.com/charmbracelet/log"
 )
 
 var globalManager = &manager{
@@ -80,8 +82,12 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 
 		// Restore from snapshot
 		workspaceStatus.SetState(status.StateRestoringFromSnapshot, "Restoring workspace from snapshot")
-		if err := ws.Store().Restore(ctx, changes); err != nil {
+		setStatusMessage := func(msg string) {
+			workspaceStatus.SetState(status.StateRestoringFromSnapshot, msg)
+		}
+		if err := ws.Store().Restore(ctx, changes, setStatusMessage); err != nil {
 			workspaceStatus.SetError(err)
+			log.Error("Failed to restore workspace from snapshot", "error", err)
 			return nil, err
 		}
 
