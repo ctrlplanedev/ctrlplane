@@ -2,6 +2,7 @@ package releasetargets
 
 import (
 	"net/http"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	celselector "workspace-engine/pkg/selector/langs/cel"
 	"workspace-engine/pkg/selector/langs/util"
@@ -157,6 +158,10 @@ func (s *ReleaseTargets) GetJobsForReleaseTarget(c *gin.Context, workspaceId str
 		}
 		items = append(items, job)
 	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].CreatedAt.After(items[j].CreatedAt)
+	})
 
 	offset := 0
 	if params.Offset != nil {
