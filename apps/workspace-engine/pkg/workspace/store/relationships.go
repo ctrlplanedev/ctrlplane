@@ -94,7 +94,7 @@ func (r *RelationshipRules) buildGraph(ctx context.Context, setStatus func(msg s
 		r.store.Deployments.Items(),
 		r.store.Environments.Items(),
 		r.repo.RelationshipRules.Items(),
-	)
+	).WithParallelProcessing(true)
 
 	if setStatus != nil {
 		builder = builder.WithSetStatus(setStatus)
