@@ -122,7 +122,7 @@ func (b *Builder) Build(ctx context.Context) (*Graph, error) {
 		}
 
 		log.Info("Processing rule", "reference", rule.Reference, "from", rule.FromType, "to", rule.ToType)
-		
+
 		if err := b.processRule(ctx, graph, rule, allEntities); err != nil {
 			log.Error("Failed to process rule", "reference", rule.Reference, "error", err)
 			return nil, err
@@ -213,7 +213,7 @@ func (b *Builder) processRule(
 		if rule.FromType != rule.ToType {
 			allRelevantEntities = append(allRelevantEntities, toEntities...)
 		}
-		
+
 		log.Info("Building entity map cache for CEL matcher",
 			"rule", rule.Reference,
 			"entities", len(allRelevantEntities),
@@ -239,7 +239,7 @@ func (b *Builder) processRule(
 				break
 			}
 		}
-		
+
 		if isSameSet {
 			pairsEvaluated, matchesFound = b.processSameTypeRelationships(ctx, graph, rule, fromEntities, entityMapCache)
 		} else {
@@ -277,7 +277,7 @@ func (b *Builder) processSameTypeRelationships(
 ) (pairsEvaluated int, matchesFound int) {
 	// Upper triangle: n*(n-1)/2
 	estimatedPairs := (len(entities) * (len(entities) - 1)) / 2
-	
+
 	log.Info("Evaluating same-type entity pairs (optimized)",
 		"rule", rule.Reference,
 		"entities", len(entities),
@@ -431,7 +431,7 @@ func (b *Builder) processSameTypeParallel(
 						toEntity:   toEntity,
 					})
 				}
-				
+
 				if reverseMatch {
 					// Swap from/to for reverse direction
 					matches = append(matches, entityPairResult{
@@ -475,7 +475,7 @@ func (b *Builder) processSameTypeParallel(
 				EntityId:   match.toID,
 				Entity:     *match.toEntity,
 			})
-			
+
 			// Add reverse perspective: to -> from
 			graph.addRelation(match.toID, rule.Reference, &oapi.EntityRelation{
 				Rule:       rule,
@@ -511,7 +511,7 @@ func (b *Builder) processDifferentTypeRelationships(
 	entityMapCache relationships.EntityMapCache,
 ) (pairsEvaluated int, matchesFound int) {
 	estimatedPairs := len(fromEntities) * len(toEntities)
-	
+
 	log.Info("Evaluating different-type entity pairs",
 		"rule", rule.Reference,
 		"from_entities", len(fromEntities),

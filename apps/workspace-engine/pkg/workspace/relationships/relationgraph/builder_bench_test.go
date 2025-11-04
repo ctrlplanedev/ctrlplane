@@ -243,4 +243,3 @@ func BenchmarkBuilder_LargeDataset_Parallel(b *testing.B) {
 		}
 	}
 }
-

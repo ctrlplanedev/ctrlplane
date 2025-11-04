@@ -51,7 +51,7 @@ func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matche
 			log.Warn("failed to new cel matcher", "error", err)
 			return false
 		}
-		
+
 		// Use cached maps if available, otherwise convert on-demand
 		var fromMap, toMap map[string]any
 		if cache != nil {
@@ -68,7 +68,7 @@ func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matche
 			fromMap, _ = entityToMap(from.Item())
 			toMap, _ = entityToMap(to.Item())
 		}
-		
+
 		return matcher.Evaluate(ctx, fromMap, toMap)
 	}
 
@@ -155,7 +155,7 @@ func NewCelMatcher(cm *oapi.CelMatcher) (*CelMatcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	compilationCache.SetWithTTL(cm.Cel, program, 1, 24 * time.Hour)
+	compilationCache.SetWithTTL(cm.Cel, program, 1, 24*time.Hour)
 	return &CelMatcher{
 		program: program,
 	}, nil

@@ -1454,6 +1454,9 @@ type ServerInterface interface {
 	// Get policies for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies)
 	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string)
+	// Get release
+	// (GET /v1/workspaces/{workspaceId}/releases/{releaseId})
+	GetRelease(c *gin.Context, workspaceId string, releaseId string)
 	// Get all resource providers
 	// (GET /v1/workspaces/{workspaceId}/resource-providers)
 	GetResourceProviders(c *gin.Context, workspaceId string, params GetResourceProvidersParams)
@@ -2687,6 +2690,39 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetKey)
 }
 
+// GetRelease operation middleware
+func (siw *ServerInterfaceWrapper) GetRelease(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseId" -------------
+	var releaseId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseId", c.Param("releaseId"), &releaseId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRelease(c, workspaceId, releaseId)
+}
+
 // GetResourceProviders operation middleware
 func (siw *ServerInterfaceWrapper) GetResourceProviders(c *gin.Context) {
 
@@ -3022,6 +3058,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/releases/:releaseId", wrapper.GetRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers", wrapper.GetResourceProviders)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/cache-batch", wrapper.CacheBatch)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/name/:name", wrapper.GetResourceProviderByName)

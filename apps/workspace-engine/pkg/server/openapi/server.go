@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/server/openapi/jobs"
 	"workspace-engine/pkg/server/openapi/policies"
 	"workspace-engine/pkg/server/openapi/relations"
+	"workspace-engine/pkg/server/openapi/releases"
 	"workspace-engine/pkg/server/openapi/releasetargets"
 	"workspace-engine/pkg/server/openapi/resourceproviders"
 	"workspace-engine/pkg/server/openapi/resources"
@@ -37,4 +38,5 @@ type Server struct {
 	validators.Validator
 	resourceproviders.ResourceProviders
 	githubentities.GithubEntities
+	releases.Releases
 }

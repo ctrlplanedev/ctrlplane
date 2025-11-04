@@ -27,6 +27,7 @@
   environmentIdParam():: self.stringParam('environmentId', 'ID of the environment'),
   systemIdParam():: self.stringParam('systemId', 'ID of the system'),
   releaseTargetKeyParam():: self.stringParam('releaseTargetKey', 'Key of the release target'),
+  releaseIdParam():: self.stringParam('releaseId', 'ID of the release'),
   jobAgentIdParam():: self.stringParam('jobAgentId', 'ID of the job agent'),
   jobIdParam():: self.stringParam('jobId', 'ID of the job'),
   nameParam():: self.stringParam('name', 'Name of the resource provider'),
