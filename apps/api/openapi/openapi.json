@@ -4209,6 +4209,65 @@
             "summary": "Get jobs for a release target"
          }
       },
+      "/v1/workspaces/{workspaceId}/releases/{releaseId}": {
+         "get": {
+            "description": "Returns a specific release by ID.",
+            "operationId": "getRelease",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the release",
+                  "in": "path",
+                  "name": "releaseId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Release"
+                        }
+                     }
+                  },
+                  "description": "The requested release"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get release"
+         }
+      },
       "/v1/workspaces/{workspaceId}/resource-providers": {
          "put": {
             "operationId": "upsertResourceProvider",
