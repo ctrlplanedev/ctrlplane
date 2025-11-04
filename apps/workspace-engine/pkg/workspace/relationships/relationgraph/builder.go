@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
@@ -25,9 +26,11 @@ type Builder struct {
 
 // BuildOptions configures the graph building process
 type BuildOptions struct {
-	// ParallelRules enables parallel processing of rules (future enhancement)
-	ParallelRules bool
-	// MaxConcurrency limits concurrent rule processing (future enhancement)
+	// UseParallelProcessing enables parallel processing of entity pairs
+	UseParallelProcessing bool
+	// ChunkSize controls how many entity pairs to process per chunk
+	ChunkSize int
+	// MaxConcurrency limits concurrent chunk processing
 	MaxConcurrency int
 
 	SetStatus func(msg string)
@@ -36,8 +39,9 @@ type BuildOptions struct {
 // DefaultBuildOptions returns sensible defaults
 func DefaultBuildOptions() BuildOptions {
 	return BuildOptions{
-		ParallelRules:  false, // Keep simple for now
-		MaxConcurrency: 10,
+		UseParallelProcessing: false, // Sequential by default for simplicity
+		ChunkSize:             100,   // Process 100 entity pairs per chunk
+		MaxConcurrency:        10,    // Max 10 concurrent goroutines
 	}
 }
 
@@ -68,8 +72,13 @@ func (b *Builder) WithMaxConcurrency(maxConcurrency int) *Builder {
 	return b
 }
 
-func (b *Builder) WithParallelRules(parallelRules bool) *Builder {
-	b.options.ParallelRules = parallelRules
+func (b *Builder) WithParallelProcessing(enabled bool) *Builder {
+	b.options.UseParallelProcessing = enabled
+	return b
+}
+
+func (b *Builder) WithChunkSize(chunkSize int) *Builder {
+	b.options.ChunkSize = chunkSize
 	return b
 }
 
@@ -150,34 +159,94 @@ func (b *Builder) processRule(
 	)
 
 	// Step 3: Evaluate matcher between all from/to pairs
-	pairsEvaluated := 0
-	matchesFound := 0
+	var pairsEvaluated, matchesFound int
 
-	for _, fromEntity := range fromEntities {
-		for _, toEntity := range toEntities {
-			pairsEvaluated++
+	if b.options.UseParallelProcessing && len(fromEntities) > b.options.ChunkSize {
+		// Parallel processing for large datasets
+		type entityPairResult struct {
+			fromID     string
+			toID       string
+			fromEntity *oapi.RelatableEntity
+			toEntity   *oapi.RelatableEntity
+		}
 
-			// Check if the matcher allows this relationship
-			if relationships.Matches(ctx, &rule.Matcher, fromEntity, toEntity) {
-				matchesFound++
+		results, err := concurrency.ProcessInChunks(
+			fromEntities,
+			b.options.ChunkSize,
+			b.options.MaxConcurrency,
+			func(fromEntity *oapi.RelatableEntity) ([]entityPairResult, error) {
+				matches := make([]entityPairResult, 0)
+				for _, toEntity := range toEntities {
+					if relationships.Matches(ctx, &rule.Matcher, fromEntity, toEntity) {
+						matches = append(matches, entityPairResult{
+							fromID:     fromEntity.GetID(),
+							toID:       toEntity.GetID(),
+							fromEntity: fromEntity,
+							toEntity:   toEntity,
+						})
+					}
+				}
+				return matches, nil
+			},
+		)
 
+		if err != nil {
+			return err
+		}
+
+		// Flatten results and add to graph
+		for _, chunkResults := range results {
+			for _, match := range chunkResults {
 				// Add forward relationship: from -> to
-				graph.addRelation(fromEntity.GetID(), rule.Reference, &oapi.EntityRelation{
+				graph.addRelation(match.fromID, rule.Reference, &oapi.EntityRelation{
 					Rule:       rule,
 					Direction:  oapi.To,
-					EntityType: toEntity.GetType(),
-					EntityId:   toEntity.GetID(),
-					Entity:     *toEntity,
+					EntityType: match.toEntity.GetType(),
+					EntityId:   match.toID,
+					Entity:     *match.toEntity,
 				})
 
 				// Add reverse relationship: to -> from
-				graph.addRelation(toEntity.GetID(), rule.Reference, &oapi.EntityRelation{
+				graph.addRelation(match.toID, rule.Reference, &oapi.EntityRelation{
 					Rule:       rule,
 					Direction:  oapi.From,
-					EntityType: fromEntity.GetType(),
-					EntityId:   fromEntity.GetID(),
-					Entity:     *fromEntity,
+					EntityType: match.fromEntity.GetType(),
+					EntityId:   match.fromID,
+					Entity:     *match.fromEntity,
 				})
+
+				matchesFound++
+			}
+		}
+		pairsEvaluated = len(fromEntities) * len(toEntities)
+	} else {
+		// Sequential processing (default)
+		for _, fromEntity := range fromEntities {
+			for _, toEntity := range toEntities {
+				pairsEvaluated++
+
+				// Check if the matcher allows this relationship
+				if relationships.Matches(ctx, &rule.Matcher, fromEntity, toEntity) {
+					matchesFound++
+
+					// Add forward relationship: from -> to
+					graph.addRelation(fromEntity.GetID(), rule.Reference, &oapi.EntityRelation{
+						Rule:       rule,
+						Direction:  oapi.To,
+						EntityType: toEntity.GetType(),
+						EntityId:   toEntity.GetID(),
+						Entity:     *toEntity,
+					})
+
+					// Add reverse relationship: to -> from
+					graph.addRelation(toEntity.GetID(), rule.Reference, &oapi.EntityRelation{
+						Rule:       rule,
+						Direction:  oapi.From,
+						EntityType: fromEntity.GetType(),
+						EntityId:   fromEntity.GetID(),
+						Entity:     *fromEntity,
+					})
+				}
 			}
 		}
 	}
@@ -185,6 +254,7 @@ func (b *Builder) processRule(
 	span.SetAttributes(
 		attribute.Int("pairs_evaluated", pairsEvaluated),
 		attribute.Int("matches_found", matchesFound),
+		attribute.Bool("used_parallel_processing", b.options.UseParallelProcessing && len(fromEntities) > b.options.ChunkSize),
 	)
 
 	return nil

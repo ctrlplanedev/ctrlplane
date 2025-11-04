@@ -74,13 +74,17 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	s.Environments.ReinitializeMaterializedViews()
 	s.Deployments.ReinitializeMaterializedViews()
 
-	setStatus("Reinitializing materialized views")
+	if setStatus != nil {
+		setStatus("Reinitializing materialized views")
+	}
 	if err := s.ReleaseTargets.Recompute(ctx); err != nil {
 		log.Error("Failed to recompute release targets", "error", err)
 		return err
 	}
 
-	setStatus("Building relationships graph")
+	if setStatus != nil {
+		setStatus("Building relationships graph")
+	}
 	if err := s.Relationships.buildGraph(ctx, setStatus); err != nil {
 		log.Error("Failed to build relationships graph", "error", err)
 		return err

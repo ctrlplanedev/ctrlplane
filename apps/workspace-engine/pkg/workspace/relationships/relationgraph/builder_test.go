@@ -2,6 +2,7 @@ package relationgraph
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"workspace-engine/pkg/oapi"
@@ -71,15 +72,26 @@ func TestBuilder_WithOptions(t *testing.T) {
 		t.Errorf("expected MaxConcurrency 20, got %d", builder.options.MaxConcurrency)
 	}
 
-	// Test WithParallelRules
-	result2 := builder.WithParallelRules(true)
+	// Test WithParallelProcessing
+	result2 := builder.WithParallelProcessing(true)
 
 	if result2 != builder {
-		t.Error("WithParallelRules should return the builder")
+		t.Error("WithParallelProcessing should return the builder")
 	}
 
-	if !builder.options.ParallelRules {
-		t.Error("ParallelRules should be true")
+	if !builder.options.UseParallelProcessing {
+		t.Error("UseParallelProcessing should be true")
+	}
+
+	// Test WithChunkSize
+	result3 := builder.WithChunkSize(50)
+
+	if result3 != builder {
+		t.Error("WithChunkSize should return the builder")
+	}
+
+	if builder.options.ChunkSize != 50 {
+		t.Errorf("expected ChunkSize 50, got %d", builder.options.ChunkSize)
 	}
 }
 
@@ -625,5 +637,209 @@ func TestBuilder_Build_WithSelectors(t *testing.T) {
 	r2Relations := graph.GetRelatedEntities("r2")
 	if len(r2Relations) != 0 {
 		t.Errorf("expected r2 to have no relations, got %d", len(r2Relations))
+	}
+}
+
+// TestBuilder_Build_WithStatusUpdates tests status update callback functionality
+func TestBuilder_Build_WithStatusUpdates(t *testing.T) {
+	resources := map[string]*oapi.Resource{
+		"r1": {Id: "r1", WorkspaceId: "ws1"},
+		"r2": {Id: "r2", WorkspaceId: "ws1"},
+	}
+
+	deployments := map[string]*oapi.Deployment{
+		"d1": {Id: "d1", SystemId: "ws1"},
+		"d2": {Id: "d2", SystemId: "ws1"},
+	}
+
+	var matcher1 oapi.RelationshipRule_Matcher
+	_ = matcher1.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"workspace_id"},
+				ToProperty:   []string{"system_id"},
+				Operator:     "equals",
+			},
+		},
+	})
+
+	var matcher2 oapi.RelationshipRule_Matcher
+	_ = matcher2.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"id"},
+				ToProperty:   []string{"id"},
+				Operator:     "not_equals",
+			},
+		},
+	})
+
+	rules := map[string]*oapi.RelationshipRule{
+		"rule1": {
+			Reference: "rule1",
+			FromType:  oapi.RelatableEntityTypeResource,
+			ToType:    oapi.RelatableEntityTypeDeployment,
+			Matcher:   matcher1,
+		},
+		"rule2": {
+			Reference: "rule2",
+			FromType:  oapi.RelatableEntityTypeResource,
+			ToType:    oapi.RelatableEntityTypeDeployment,
+			Matcher:   matcher2,
+		},
+	}
+
+	// Capture status messages
+	var statusMessages []string
+	setStatus := func(msg string) {
+		statusMessages = append(statusMessages, msg)
+	}
+
+	builder := NewBuilder(
+		resources,
+		deployments,
+		map[string]*oapi.Environment{},
+		rules,
+	).WithSetStatus(setStatus)
+
+	graph, err := builder.Build(context.Background())
+
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+
+	if graph == nil {
+		t.Fatal("Build returned nil graph")
+	}
+
+	// Verify status messages were called
+	if len(statusMessages) == 0 {
+		t.Error("expected status messages, got none")
+	}
+
+	// Should have: initial message, rule processing messages, and final message
+	if len(statusMessages) < 3 {
+		t.Errorf("expected at least 3 status messages, got %d", len(statusMessages))
+	}
+
+	// Check first message
+	if statusMessages[0] != "Building relationship graph..." {
+		t.Errorf("expected first message to be 'Building relationship graph...', got %s", statusMessages[0])
+	}
+
+	// Check last message
+	lastMsg := statusMessages[len(statusMessages)-1]
+	if lastMsg != "Relationship graph built successfully" {
+		t.Errorf("expected last message to be 'Relationship graph built successfully', got %s", lastMsg)
+	}
+
+	// Check for percentage in middle messages
+	hasPercentage := false
+	for i := 1; i < len(statusMessages)-1; i++ {
+		if len(statusMessages[i]) > 0 && (statusMessages[i][len(statusMessages[i])-1] == '%' || statusMessages[i][len(statusMessages[i])-2] == '%') {
+			hasPercentage = true
+			break
+		}
+	}
+
+	if !hasPercentage {
+		t.Error("expected at least one status message with percentage")
+	}
+}
+
+// TestBuilder_Build_ParallelProcessing tests parallel processing of entity pairs
+func TestBuilder_Build_ParallelProcessing(t *testing.T) {
+	// Create a larger dataset to benefit from parallel processing
+	resources := make(map[string]*oapi.Resource)
+	deployments := make(map[string]*oapi.Deployment)
+
+	// Create 150 resources
+	for i := 0; i < 150; i++ {
+		id := fmt.Sprintf("r%d", i)
+		resources[id] = &oapi.Resource{
+			Id:          id,
+			WorkspaceId: "ws1",
+		}
+	}
+
+	// Create 50 deployments
+	for i := 0; i < 50; i++ {
+		id := fmt.Sprintf("d%d", i)
+		deployments[id] = &oapi.Deployment{
+			Id:       id,
+			SystemId: "ws1",
+		}
+	}
+
+	var matcher oapi.RelationshipRule_Matcher
+	_ = matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"workspace_id"},
+				ToProperty:   []string{"system_id"},
+				Operator:     "equals",
+			},
+		},
+	})
+
+	rules := map[string]*oapi.RelationshipRule{
+		"resource-to-deployment": {
+			Reference: "resource-to-deployment",
+			FromType:  oapi.RelatableEntityTypeResource,
+			ToType:    oapi.RelatableEntityTypeDeployment,
+			Matcher:   matcher,
+		},
+	}
+
+	// Build with sequential processing
+	sequentialBuilder := NewBuilder(
+		resources,
+		deployments,
+		map[string]*oapi.Environment{},
+		rules,
+	)
+
+	sequentialGraph, err := sequentialBuilder.Build(context.Background())
+	if err != nil {
+		t.Fatalf("Sequential build failed: %v", err)
+	}
+
+	// Build with parallel processing
+	parallelBuilder := NewBuilder(
+		resources,
+		deployments,
+		map[string]*oapi.Environment{},
+		rules,
+	).WithParallelProcessing(true).WithChunkSize(50).WithMaxConcurrency(4)
+
+	parallelGraph, err := parallelBuilder.Build(context.Background())
+	if err != nil {
+		t.Fatalf("Parallel build failed: %v", err)
+	}
+
+	// Both should produce identical results
+	seqStats := sequentialGraph.GetStats()
+	parStats := parallelGraph.GetStats()
+
+	if seqStats.RelationCount != parStats.RelationCount {
+		t.Errorf("RelationCount mismatch: sequential=%d, parallel=%d", seqStats.RelationCount, parStats.RelationCount)
+	}
+
+	if seqStats.EntityCount != parStats.EntityCount {
+		t.Errorf("EntityCount mismatch: sequential=%d, parallel=%d", seqStats.EntityCount, parStats.EntityCount)
+	}
+
+	// Verify a sample resource has the same relationships in both graphs
+	seqRelations := sequentialGraph.GetRelatedEntities("r0")
+	parRelations := parallelGraph.GetRelatedEntities("r0")
+
+	if len(seqRelations) != len(parRelations) {
+		t.Errorf("r0 relation count mismatch: sequential=%d, parallel=%d", len(seqRelations), len(parRelations))
+	}
+
+	// Expected: 150 resources × 50 deployments × 2 (bidirectional) = 15,000 relations
+	expectedRelations := 150 * 50 * 2
+	if seqStats.RelationCount != expectedRelations {
+		t.Errorf("expected %d relations, got %d", expectedRelations, seqStats.RelationCount)
 	}
 }
