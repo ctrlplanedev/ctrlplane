@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -94,6 +95,8 @@ func (r *RelationshipRules) GetRelatedEntities(
 ) {
 	ctx, span := relationshipsTracer.Start(ctx, "GetRelatedEntities")
 	defer span.End()
+
+	
 
 	entityType := entity.GetType()
 
@@ -208,42 +211,77 @@ func (r *RelationshipRules) findMatchingDeployments(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool,
 ) ([]*oapi.RelatableEntity, error) {
+	ctx, span := relationshipsTracer.Start(ctx, "findMatchingDeployments")
+	defer span.End()
+
 	deployments := r.store.Deployments.Items()
 	if len(deployments) == 0 {
 		return nil, nil
 	}
 
 	// Convert map to slice for processing
+	_, sliceSpan := relationshipsTracer.Start(ctx, "findMatchingDeployments.convertToSlice")
 	deploymentSlice := make([]*oapi.Deployment, 0, len(deployments))
 	for _, deployment := range deployments {
 		deploymentSlice = append(deploymentSlice, deployment)
 	}
+	sliceSpan.SetAttributes(attribute.Int("deployment_count", len(deploymentSlice)))
+	sliceSpan.End()
+
+	// Track matching metrics
+	var (
+		entitySelectorMatches int
+		entitySelectorMisses  int
+		ruleMisses            int
+		finalMatches          int
+	)
 
 	// Process function for each deployment
 	processFn := func(deployment *oapi.Deployment) (*oapi.RelatableEntity, error) {
+		_, entitySpan := relationshipsTracer.Start(ctx, "findMatchingDeployments.processDeployment")
+		defer entitySpan.End()
+
 		deploymentEntity := relationships.NewDeploymentEntity(deployment)
 
 		if entitySelector != nil {
+			_, selectorSpan := relationshipsTracer.Start(ctx, "findMatchingDeployments.entitySelectorMatch")
 			matched, err := selector.Match(ctx, entitySelector, deploymentEntity.Item())
+			selectorSpan.SetAttributes(
+				attribute.Bool("matched", matched),
+				attribute.String("deployment_id", deployment.Id),
+			)
+			selectorSpan.End()
+
 			if err != nil {
 				return nil, err
 			}
 			if !matched {
+				entitySelectorMisses++
 				return nil, nil // No match, skip
 			}
+			entitySelectorMatches++
 		}
 
+		_, matcherSpan := relationshipsTracer.Start(ctx, "findMatchingDeployments.ruleMatcherMatch")
 		var matches bool
 		if evaluateFromTo {
 			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, deploymentEntity)
 		} else {
 			matches = relationships.Matches(ctx, &rule.Matcher, deploymentEntity, sourceEntity)
 		}
+		matcherSpan.SetAttributes(
+			attribute.Bool("matched", matches),
+			attribute.String("deployment_id", deployment.Id),
+			attribute.Bool("evaluate_from_to", evaluateFromTo),
+		)
+		matcherSpan.End()
 
 		if !matches {
+			ruleMisses++
 			return nil, nil // No match, skip
 		}
 
+		finalMatches++
 		return deploymentEntity, nil
 	}
 
@@ -257,23 +295,55 @@ func (r *RelationshipRules) findMatchingDeployments(
 
 	if len(deploymentSlice) < parallelThreshold {
 		// Sequential processing for small datasets
+		_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingDeployments.sequentialProcessing")
 		results = make([]*oapi.RelatableEntity, 0, 8)
 		for _, deployment := range deploymentSlice {
 			entity, err := processFn(deployment)
 			if err != nil {
+				processingSpan.End()
 				return nil, err
 			}
 			if entity != nil {
 				results = append(results, entity)
 			}
 		}
+		processingSpan.SetAttributes(
+			attribute.Int("total_processed", len(deploymentSlice)),
+			attribute.Int("entity_selector_matches", entitySelectorMatches),
+			attribute.Int("entity_selector_misses", entitySelectorMisses),
+			attribute.Int("rule_matcher_misses", ruleMisses),
+			attribute.Int("final_matches", finalMatches),
+		)
+		processingSpan.End()
 	} else {
 		// Parallel processing for large datasets
+		_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingDeployments.parallelProcessing")
+		processingSpan.SetAttributes(
+			attribute.Int("chunk_size", chunkSize),
+			attribute.Int("max_concurrency", maxConcurrency),
+		)
 		results, err = concurrency.ProcessInChunks(deploymentSlice, chunkSize, maxConcurrency, processFn)
+		processingSpan.SetAttributes(
+			attribute.Int("total_processed", len(deploymentSlice)),
+			attribute.Int("entity_selector_matches", entitySelectorMatches),
+			attribute.Int("entity_selector_misses", entitySelectorMisses),
+			attribute.Int("rule_matcher_misses", ruleMisses),
+			attribute.Int("final_matches", finalMatches),
+		)
+		processingSpan.End()
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	span.SetAttributes(
+		attribute.Int("repo.deployment_count", len(deploymentSlice)),
+		attribute.Int("results.count", len(results)),
+		attribute.Int("entity_selector_matches", entitySelectorMatches),
+		attribute.Int("entity_selector_misses", entitySelectorMisses),
+		attribute.Int("rule_matcher_misses", ruleMisses),
+		attribute.Bool("used_parallel", len(deploymentSlice) >= parallelThreshold),
+	)
 
 	// Filter out nil results
 	filtered := make([]*oapi.RelatableEntity, 0, len(results))
@@ -293,42 +363,77 @@ func (r *RelationshipRules) findMatchingEnvironments(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool,
 ) ([]*oapi.RelatableEntity, error) {
+	ctx, span := relationshipsTracer.Start(ctx, "findMatchingEnvironments")
+	defer span.End()
+
 	environments := r.store.Environments.Items()
 	if len(environments) == 0 {
 		return nil, nil
 	}
 
 	// Convert map to slice for processing
+	_, sliceSpan := relationshipsTracer.Start(ctx, "findMatchingEnvironments.convertToSlice")
 	environmentSlice := make([]*oapi.Environment, 0, len(environments))
 	for _, environment := range environments {
 		environmentSlice = append(environmentSlice, environment)
 	}
+	sliceSpan.SetAttributes(attribute.Int("environment_count", len(environmentSlice)))
+	sliceSpan.End()
+
+	// Track matching metrics
+	var (
+		entitySelectorMatches int
+		entitySelectorMisses  int
+		ruleMisses            int
+		finalMatches          int
+	)
 
 	// Process function for each environment
 	processFn := func(environment *oapi.Environment) (*oapi.RelatableEntity, error) {
+		_, entitySpan := relationshipsTracer.Start(ctx, "findMatchingEnvironments.processEnvironment")
+		defer entitySpan.End()
+
 		environmentEntity := relationships.NewEnvironmentEntity(environment)
 
 		if entitySelector != nil {
+			_, selectorSpan := relationshipsTracer.Start(ctx, "findMatchingEnvironments.entitySelectorMatch")
 			matched, err := selector.Match(ctx, entitySelector, environmentEntity.Item())
+			selectorSpan.SetAttributes(
+				attribute.Bool("matched", matched),
+				attribute.String("environment_id", environment.Id),
+			)
+			selectorSpan.End()
+
 			if err != nil {
 				return nil, err
 			}
 			if !matched {
+				entitySelectorMisses++
 				return nil, nil // No match, skip
 			}
+			entitySelectorMatches++
 		}
 
+		_, matcherSpan := relationshipsTracer.Start(ctx, "findMatchingEnvironments.ruleMatcherMatch")
 		var matches bool
 		if evaluateFromTo {
 			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, environmentEntity)
 		} else {
 			matches = relationships.Matches(ctx, &rule.Matcher, environmentEntity, sourceEntity)
 		}
+		matcherSpan.SetAttributes(
+			attribute.Bool("matched", matches),
+			attribute.String("environment_id", environment.Id),
+			attribute.Bool("evaluate_from_to", evaluateFromTo),
+		)
+		matcherSpan.End()
 
 		if !matches {
+			ruleMisses++
 			return nil, nil // No match, skip
 		}
 
+		finalMatches++
 		return environmentEntity, nil
 	}
 
@@ -342,23 +447,55 @@ func (r *RelationshipRules) findMatchingEnvironments(
 
 	if len(environmentSlice) < parallelThreshold {
 		// Sequential processing for small datasets
+		_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingEnvironments.sequentialProcessing")
 		results = make([]*oapi.RelatableEntity, 0, 8)
 		for _, environment := range environmentSlice {
 			entity, err := processFn(environment)
 			if err != nil {
+				processingSpan.End()
 				return nil, err
 			}
 			if entity != nil {
 				results = append(results, entity)
 			}
 		}
+		processingSpan.SetAttributes(
+			attribute.Int("total_processed", len(environmentSlice)),
+			attribute.Int("entity_selector_matches", entitySelectorMatches),
+			attribute.Int("entity_selector_misses", entitySelectorMisses),
+			attribute.Int("rule_matcher_misses", ruleMisses),
+			attribute.Int("final_matches", finalMatches),
+		)
+		processingSpan.End()
 	} else {
 		// Parallel processing for large datasets
+		_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingEnvironments.parallelProcessing")
+		processingSpan.SetAttributes(
+			attribute.Int("chunk_size", chunkSize),
+			attribute.Int("max_concurrency", maxConcurrency),
+		)
 		results, err = concurrency.ProcessInChunks(environmentSlice, chunkSize, maxConcurrency, processFn)
+		processingSpan.SetAttributes(
+			attribute.Int("total_processed", len(environmentSlice)),
+			attribute.Int("entity_selector_matches", entitySelectorMatches),
+			attribute.Int("entity_selector_misses", entitySelectorMisses),
+			attribute.Int("rule_matcher_misses", ruleMisses),
+			attribute.Int("final_matches", finalMatches),
+		)
+		processingSpan.End()
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	span.SetAttributes(
+		attribute.Int("repo.environment_count", len(environmentSlice)),
+		attribute.Int("results.count", len(results)),
+		attribute.Int("entity_selector_matches", entitySelectorMatches),
+		attribute.Int("entity_selector_misses", entitySelectorMisses),
+		attribute.Int("rule_matcher_misses", ruleMisses),
+		attribute.Bool("used_parallel", len(environmentSlice) >= parallelThreshold),
+	)
 
 	// Filter out nil results
 	filtered := make([]*oapi.RelatableEntity, 0, len(results))
@@ -378,57 +515,111 @@ func (r *RelationshipRules) findMatchingResources(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool,
 ) ([]*oapi.RelatableEntity, error) {
+	ctx, span := relationshipsTracer.Start(ctx, "findMatchingResources")
+	defer span.End()
+
 	resources := r.store.Resources.Items()
 	if len(resources) == 0 {
 		return nil, nil
 	}
 
 	// Convert map to slice for processing
+	_, sliceSpan := relationshipsTracer.Start(ctx, "findMatchingResources.convertToSlice")
 	resourceSlice := make([]*oapi.Resource, 0, len(resources))
 	for _, resource := range resources {
 		resourceSlice = append(resourceSlice, resource)
 	}
+	sliceSpan.SetAttributes(attribute.Int("resource_count", len(resourceSlice)))
+	sliceSpan.End()
+
+	// Track matching metrics
+	var (
+		entitySelectorMatches int
+		entitySelectorMisses  int
+		ruleMisses            int
+		finalMatches          int
+	)
 
 	// Process function for each resource
 	processFn := func(resource *oapi.Resource) (*oapi.RelatableEntity, error) {
+		_, entitySpan := relationshipsTracer.Start(ctx, "findMatchingResources.processResource")
+		defer entitySpan.End()
+
 		resourceEntity := relationships.NewResourceEntity(resource)
 
 		if entitySelector != nil {
+			_, selectorSpan := relationshipsTracer.Start(ctx, "findMatchingResources.entitySelectorMatch")
 			matched, err := selector.Match(ctx, entitySelector, resourceEntity.Item())
+			selectorSpan.SetAttributes(
+				attribute.Bool("matched", matched),
+				attribute.String("resource_id", resource.Id),
+			)
+			selectorSpan.End()
+
 			if err != nil {
 				return nil, err
 			}
 			if !matched {
+				entitySelectorMisses++
 				return nil, nil // No match, skip
 			}
+			entitySelectorMatches++
 		}
 
+		_, matcherSpan := relationshipsTracer.Start(ctx, "findMatchingResources.ruleMatcherMatch")
 		var matches bool
 		if evaluateFromTo {
 			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, resourceEntity)
 		} else {
 			matches = relationships.Matches(ctx, &rule.Matcher, resourceEntity, sourceEntity)
 		}
+		matcherSpan.SetAttributes(
+			attribute.Bool("matched", matches),
+			attribute.String("resource_id", resource.Id),
+			attribute.Bool("evaluate_from_to", evaluateFromTo),
+		)
+		matcherSpan.End()
 
 		if !matches {
+			ruleMisses++
 			return nil, nil // No match, skip
 		}
 
+		finalMatches++
 		return resourceEntity, nil
 	}
 
 	var results []*oapi.RelatableEntity
 
+	_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingResources.processAllResources")
 	results = make([]*oapi.RelatableEntity, 0, 8)
 	for _, resource := range resourceSlice {
 		entity, err := processFn(resource)
 		if err != nil {
+			processingSpan.End()
 			return nil, err
 		}
 		if entity != nil {
 			results = append(results, entity)
 		}
 	}
+	processingSpan.SetAttributes(
+		attribute.Int("total_processed", len(resourceSlice)),
+		attribute.Int("entity_selector_matches", entitySelectorMatches),
+		attribute.Int("entity_selector_misses", entitySelectorMisses),
+		attribute.Int("rule_matcher_misses", ruleMisses),
+		attribute.Int("final_matches", finalMatches),
+	)
+	processingSpan.End()
+
+	span.SetAttributes(
+		attribute.Int("repo.resource_count", len(resourceSlice)),
+		attribute.Int("results.count", len(results)),
+		attribute.Int("entity_selector_matches", entitySelectorMatches),
+		attribute.Int("entity_selector_misses", entitySelectorMisses),
+		attribute.Int("rule_matcher_misses", ruleMisses),
+	)
+
 	// Filter out nil results
 	filtered := make([]*oapi.RelatableEntity, 0, len(results))
 	for _, entity := range results {
