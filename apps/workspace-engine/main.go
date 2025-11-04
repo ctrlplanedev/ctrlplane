@@ -22,8 +22,11 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -109,6 +112,91 @@ func initTracer() (func(), error) {
 	}, nil
 }
 
+// initMetrics initializes an OTLP metrics exporter and registers it as a global meter provider
+// This will automatically report runtime metrics including goroutine count
+func initMetrics() (func(), error) {
+	ctx := context.Background()
+
+	serviceName := config.Global.OTELServiceName
+	endpoint := config.Global.OTELExporterOTLPEndpoint
+
+	// Strip http:// or https:// prefix
+	endpoint = stripScheme(endpoint)
+
+	// Create resource with service name (same as tracing)
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String(serviceName),
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource: %w", err)
+	}
+
+	// Create OTLP HTTP metrics exporter options
+	opts := []otlpmetrichttp.Option{
+		otlpmetrichttp.WithInsecure(), // Use HTTP instead of HTTPS
+	}
+
+	// Only set endpoint if it's explicitly provided
+	if endpoint != "" {
+		opts = append(opts, otlpmetrichttp.WithEndpoint(endpoint))
+	}
+
+	// Create OTLP metrics exporter
+	exporter, err := otlpmetrichttp.New(ctx, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OTLP metrics exporter: %w", err)
+	}
+
+	// Create meter provider with periodic reader (exports every 10 seconds)
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter,
+			sdkmetric.WithInterval(10*time.Second),
+		)),
+		sdkmetric.WithResource(res),
+	)
+
+	// Set global meter provider
+	otel.SetMeterProvider(mp)
+
+	// Start runtime metrics collection
+	// This will automatically collect and report:
+	// - runtime.uptime
+	// - process.runtime.go.cgo.calls
+	// - process.runtime.go.gc.count
+	// - process.runtime.go.gc.pause_ns
+	// - process.runtime.go.gc.pause_total_ns
+	// - process.runtime.go.goroutines ← Goroutine count!
+	// - process.runtime.go.lookups
+	// - process.runtime.go.mem.heap_alloc
+	// - process.runtime.go.mem.heap_idle
+	// - process.runtime.go.mem.heap_inuse
+	// - process.runtime.go.mem.heap_objects
+	// - process.runtime.go.mem.heap_released
+	// - process.runtime.go.mem.heap_sys
+	// - process.runtime.go.mem.live_objects
+	// - and more...
+	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
+	if err != nil {
+		return nil, fmt.Errorf("failed to start runtime metrics: %w", err)
+	}
+
+	log.Info("OpenTelemetry metrics initialized",
+		"service", serviceName,
+		"endpoint", endpoint,
+		"export_interval", "10s")
+
+	// Return cleanup function
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := mp.Shutdown(ctx); err != nil {
+			log.Error("Failed to shutdown meter provider", "error", err)
+		}
+	}, nil
+}
+
 func main() {
 	ctx := context.Background()
 	store, err := dbpersistence.NewStore(ctx)
@@ -126,12 +214,19 @@ func main() {
 		),
 	)
 
-	// Initialize OpenTelemetry
-	cleanup, err := initTracer()
+	// Initialize OpenTelemetry Tracing
+	cleanupTracer, err := initTracer()
 	if err != nil {
 		log.Fatal("Failed to initialize tracer", "error", err)
 	}
-	defer cleanup()
+	defer cleanupTracer()
+
+	// Initialize OpenTelemetry Metrics (includes goroutine count monitoring)
+	cleanupMetrics, err := initMetrics()
+	if err != nil {
+		log.Fatal("Failed to initialize metrics", "error", err)
+	}
+	defer cleanupMetrics()
 
 	host := config.Global.Host
 	port := config.Global.Port
