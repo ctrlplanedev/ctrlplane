@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var jobEligibilityTracer = otel.Tracer("workspace/releasemanager/deployment/jobeligibility")
@@ -53,6 +54,14 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	ctx, span := jobEligibilityTracer.Start(ctx, "ShouldCreateJob")
 	defer span.End()
 
+	span.SetAttributes(attribute.String("release.id", release.ID()))
+	span.SetAttributes(attribute.String("release.version.id", release.Version.Id))
+	span.SetAttributes(attribute.String("release.version.tag", release.Version.Tag))
+	span.SetAttributes(attribute.String("release.target.key", release.ReleaseTarget.Key()))
+	span.SetAttributes(attribute.String("release.target.resource.id", release.ReleaseTarget.ResourceId))
+	span.SetAttributes(attribute.String("release.target.environment.id", release.ReleaseTarget.EnvironmentId))
+	span.SetAttributes(attribute.String("release.target.deployment.id", release.ReleaseTarget.DeploymentId))
+
 	decision := &oapi.DeployDecision{
 		PolicyResults: make([]oapi.PolicyEvaluation, 0),
 	}
@@ -68,6 +77,8 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	}
 
 	canCreate := decision.CanDeploy()
+
+	span.SetAttributes(attribute.Bool("can_create", canCreate))
 
 	return canCreate, decision, nil
 }
