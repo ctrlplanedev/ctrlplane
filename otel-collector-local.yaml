@@ -13,6 +13,9 @@ exporters:
   otlphttp:
     endpoint: http://jaeger:4318
     # default path is /v1/traces; no TLS for local
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    # Prometheus will scrape metrics from this endpoint
 
 service:
   pipelines:
@@ -20,3 +23,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [logging, otlphttp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, prometheus]
