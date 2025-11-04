@@ -3,6 +3,7 @@ package relationgraph
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
@@ -229,6 +230,17 @@ func (b *Builder) processRule(
 			toEntity   *oapi.RelatableEntity
 		}
 
+		var processedEntities atomic.Int64
+		totalEntities := len(fromEntities)
+		
+		log.Info("Starting parallel processing",
+			"rule", rule.Reference,
+			"total_entities", totalEntities,
+			"chunk_size", b.options.ChunkSize,
+			"max_concurrency", b.options.MaxConcurrency,
+			"pairs_to_evaluate", estimatedPairs,
+		)
+		
 		results, err := concurrency.ProcessInChunks(
 			fromEntities,
 			b.options.ChunkSize,
@@ -257,6 +269,19 @@ func (b *Builder) processRule(
 						})
 					}
 				}
+				
+				// Log progress every 500 entities (thread-safe)
+				entityNum := processedEntities.Add(1)
+				if entityNum%500 == 0 || entityNum == int64(totalEntities) {
+					percentage := (entityNum * 100) / int64(totalEntities)
+					log.Info("Parallel processing progress",
+						"rule", rule.Reference,
+						"processed_entities", entityNum,
+						"total_entities", totalEntities,
+						"progress", fmt.Sprintf("%d%%", percentage),
+					)
+				}
+				
 				return matches, nil
 			},
 		)
