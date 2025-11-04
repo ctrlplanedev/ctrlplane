@@ -124,9 +124,50 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 	return boolVal, nil
 }
 
-// structToMap converts a struct to a map using JSON marshaling
-// This is necessary because CEL cannot work with Go structs directly
+// // structToMap converts a struct to a map using JSON marshaling
+// // This is necessary because CEL cannot work with Go structs directly
+// func structToMap(v any) (map[string]any, error) {
+// 	data, err := json.Marshal(v)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	var result map[string]any
+// 	if err := json.Unmarshal(data, &result); err != nil {
+// 		return nil, err
+// 	}
+// 	return result, nil
+// }
+
+
+// structToMap converts a struct to a map using reflection
+// This is significantly faster than JSON marshal/unmarshal
 func structToMap(v any) (map[string]any, error) {
+	// Fast path: already a map
+	if m, ok := v.(map[string]any); ok {
+		return m, nil
+	}
+
+	// For known types, we can use a specialized fast path
+	switch entity := v.(type) {
+	case *oapi.Resource:
+		return resourceToMap(entity), nil
+	case oapi.Resource:
+		return resourceToMap(&entity), nil
+	case *oapi.Deployment:
+		return deploymentToMap(entity), nil
+	case oapi.Deployment:
+		return deploymentToMap(&entity), nil
+	case *oapi.Environment:
+		return environmentToMap(entity), nil
+	case oapi.Environment:
+		return environmentToMap(&entity), nil
+	case *oapi.Job:
+		return jobToMap(entity), nil
+	case oapi.Job:
+		return jobToMap(&entity), nil
+	}
+
+	// Fallback to JSON for unknown types
 	data, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -136,4 +177,87 @@ func structToMap(v any) (map[string]any, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+// Specialized converters for known types (zero allocation for known types)
+func resourceToMap(r *oapi.Resource) map[string]any {
+	m := make(map[string]any, 13)
+	m["id"] = r.Id
+	m["identifier"] = r.Identifier
+	m["name"] = r.Name
+	m["kind"] = r.Kind
+	m["version"] = r.Version
+	m["workspaceId"] = r.WorkspaceId
+	m["config"] = r.Config
+	m["metadata"] = r.Metadata
+	m["createdAt"] = r.CreatedAt
+	if r.ProviderId != nil {
+		m["providerId"] = *r.ProviderId
+	}
+	if r.UpdatedAt != nil {
+		m["updatedAt"] = *r.UpdatedAt
+	}
+	if r.DeletedAt != nil {
+		m["deletedAt"] = *r.DeletedAt
+	}
+	if r.LockedAt != nil {
+		m["lockedAt"] = *r.LockedAt
+	}
+	return m
+}
+
+func deploymentToMap(d *oapi.Deployment) map[string]any {
+	m := make(map[string]any, 8)
+	m["id"] = d.Id
+	m["name"] = d.Name
+	m["slug"] = d.Slug
+	m["systemId"] = d.SystemId
+	m["jobAgentConfig"] = d.JobAgentConfig
+	if d.Description != nil {
+		m["description"] = *d.Description
+	}
+	if d.JobAgentId != nil {
+		m["jobAgentId"] = *d.JobAgentId
+	}
+	if d.ResourceSelector != nil {
+		m["resourceSelector"] = d.ResourceSelector
+	}
+	return m
+}
+
+func environmentToMap(e *oapi.Environment) map[string]any {
+	m := make(map[string]any, 6)
+	m["id"] = e.Id
+	m["name"] = e.Name
+	m["systemId"] = e.SystemId
+	m["createdAt"] = e.CreatedAt
+	if e.Description != nil {
+		m["description"] = *e.Description
+	}
+	if e.ResourceSelector != nil {
+		m["resourceSelector"] = e.ResourceSelector
+	}
+	return m
+}
+
+func jobToMap(j *oapi.Job) map[string]any {
+	m := make(map[string]any, 10)
+	m["id"] = j.Id
+	m["releaseId"] = j.ReleaseId
+	m["jobAgentId"] = j.JobAgentId
+	m["status"] = j.Status
+	m["createdAt"] = j.CreatedAt
+	m["updatedAt"] = j.UpdatedAt
+	m["metadata"] = j.Metadata
+	m["jobAgentConfig"] = j.JobAgentConfig
+	if j.ExternalId != nil {
+		m["externalId"] = *j.ExternalId
+	}
+	if j.CompletedAt != nil {
+		m["completedAt"] = *j.CompletedAt
+	}
+	if j.StartedAt != nil {
+		m["startedAt"] = *j.StartedAt
+	}
+	return m
 }
