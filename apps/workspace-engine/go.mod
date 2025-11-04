@@ -9,6 +9,7 @@ require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/cockroachdb/pebble v1.1.5
 	github.com/confluentinc/confluent-kafka-go/v2 v2.11.1
+	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/exaring/otelpgx v0.9.3
 	github.com/gin-gonic/gin v1.11.0
 	github.com/goccy/go-json v0.10.5
@@ -24,10 +25,12 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
-	github.com/teambition/rrule-go v1.8.2
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.63.0
 	go.opentelemetry.io/otel v1.38.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.38.0
 	go.opentelemetry.io/otel/sdk v1.38.0
+	go.opentelemetry.io/otel/sdk/metric v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
 	google.golang.org/protobuf v1.36.10
 )
@@ -92,7 +95,7 @@ require (
 	golang.org/x/arch v0.20.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/sync v0.17.0 // indirect
+	golang.org/x/sync v0.17.0
 	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
@@ -120,7 +123,6 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
-	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
@@ -149,9 +151,6 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/runtime v0.63.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.38.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
