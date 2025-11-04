@@ -5,13 +5,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/cel-go/cel"
 )
 
+// EntityMapCache stores pre-computed map representations of entities for CEL evaluation
+// Key is entity ID, value is the map representation
+type EntityMapCache map[string]map[string]any
+
 func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *oapi.RelatableEntity, to *oapi.RelatableEntity) bool {
+	return MatchesWithCache(ctx, matcher, from, to, nil)
+}
+
+// MatchesWithCache evaluates a matcher with optional cached entity maps for performance
+// If cache is provided and contains the entities, it will use cached maps instead of converting
+func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *oapi.RelatableEntity, to *oapi.RelatableEntity, cache EntityMapCache) bool {
 	pm, err := matcher.AsPropertiesMatcher()
 
 	if err != nil {
@@ -39,11 +51,41 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 			log.Warn("failed to new cel matcher", "error", err)
 			return false
 		}
-		return matcher.Evaluate(ctx, from, to)
+		
+		// Use cached maps if available, otherwise convert on-demand
+		var fromMap, toMap map[string]any
+		if cache != nil {
+			var ok bool
+			fromMap, ok = cache[from.GetID()]
+			if !ok {
+				fromMap, _ = entityToMap(from.Item())
+			}
+			toMap, ok = cache[to.GetID()]
+			if !ok {
+				toMap, _ = entityToMap(to.Item())
+			}
+		} else {
+			fromMap, _ = entityToMap(from.Item())
+			toMap, _ = entityToMap(to.Item())
+		}
+		
+		return matcher.Evaluate(ctx, fromMap, toMap)
 	}
 
 	// No matcher specified - match by selectors only
 	return true
+}
+
+// BuildEntityMapCache pre-computes map representations for all entities
+// This is expensive but only needs to be done once per rule evaluation
+func BuildEntityMapCache(entities []*oapi.RelatableEntity) EntityMapCache {
+	cache := make(EntityMapCache, len(entities))
+	for _, entity := range entities {
+		if entityMap, err := entityToMap(entity.Item()); err == nil {
+			cache[entity.GetID()] = entityMap
+		}
+	}
+	return cache
 }
 
 func NewPropertyMatcher(pm *oapi.PropertyMatcher) *PropertyMatcher {
@@ -94,7 +136,17 @@ var Env, _ = cel.NewEnv(
 	cel.Variable("to", cel.MapType(cel.StringType, cel.AnyType)),
 )
 
+var compilationCache, _ = ristretto.NewCache(&ristretto.Config[string, cel.Program]{
+	NumCounters: 50000,
+	MaxCost:     1 << 30, // 1GB
+	BufferItems: 64,
+})
+
 func NewCelMatcher(cm *oapi.CelMatcher) (*CelMatcher, error) {
+	if program, ok := compilationCache.Get(cm.Cel); ok {
+		return &CelMatcher{program: program}, nil
+	}
+
 	ast, iss := Env.Compile(cm.Cel)
 	if iss.Err() != nil {
 		return nil, fmt.Errorf("failed to compile cel expression: %w", iss.Err())
@@ -103,6 +155,7 @@ func NewCelMatcher(cm *oapi.CelMatcher) (*CelMatcher, error) {
 	if err != nil {
 		return nil, err
 	}
+	compilationCache.SetWithTTL(cm.Cel, program, 1, 24 * time.Hour)
 	return &CelMatcher{
 		program: program,
 	}, nil
@@ -113,23 +166,11 @@ type CelMatcher struct {
 	program cel.Program
 }
 
-func (m *CelMatcher) Evaluate(ctx context.Context, from *oapi.RelatableEntity, to *oapi.RelatableEntity) bool {
+func (m *CelMatcher) Evaluate(ctx context.Context, from map[string]any, to map[string]any) bool {
 	// Convert entities to maps for CEL evaluation
-	fromMap, err := entityToMap(from.Item())
-	if err != nil {
-		log.Warn("Failed to convert from entity to map", "error", err)
-		return false
-	}
-
-	toMap, err := entityToMap(to.Item())
-	if err != nil {
-		log.Warn("Failed to convert to entity to map", "error", err)
-		return false
-	}
-
 	celCtx := map[string]any{
-		"from": fromMap,
-		"to":   toMap,
+		"from": from,
+		"to":   to,
 	}
 	val, _, err := m.program.Eval(celCtx)
 	if err != nil {

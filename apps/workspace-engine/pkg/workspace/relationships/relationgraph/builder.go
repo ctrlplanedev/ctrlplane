@@ -204,163 +204,50 @@ func (b *Builder) processRule(
 		return nil
 	}
 
-	// Step 3: Evaluate matcher between all from/to pairs
+	// Step 3: Build entity map cache if using CEL matcher (for performance)
+	var entityMapCache relationships.EntityMapCache
+	if cm, err := rule.Matcher.AsCelMatcher(); err == nil && cm.Cel != "" {
+		// Combine all entities that will be evaluated
+		allRelevantEntities := make([]*oapi.RelatableEntity, 0, len(fromEntities)+len(toEntities))
+		allRelevantEntities = append(allRelevantEntities, fromEntities...)
+		if rule.FromType != rule.ToType {
+			allRelevantEntities = append(allRelevantEntities, toEntities...)
+		}
+		
+		log.Info("Building entity map cache for CEL matcher",
+			"rule", rule.Reference,
+			"entities", len(allRelevantEntities),
+		)
+		entityMapCache = relationships.BuildEntityMapCache(allRelevantEntities)
+	}
+
+	// Step 4: Evaluate matcher between all from/to pairs
 	var pairsEvaluated, matchesFound int
 
-	estimatedPairs := len(fromEntities) * len(toEntities)
-	log.Info("Evaluating entity pairs",
-		"rule", rule.Reference,
-		"estimated_pairs", estimatedPairs,
-		"parallel", b.options.UseParallelProcessing,
-	)
-
-	if b.options.UseParallelProcessing && len(fromEntities) > b.options.ChunkSize {
-		log.Info("Using parallel processing",
-			"rule", rule.Reference,
-			"from_entities", len(fromEntities),
-			"chunk_size", b.options.ChunkSize,
-			"max_concurrency", b.options.MaxConcurrency,
-		)
-
-		// Parallel processing for large datasets
-		type entityPairResult struct {
-			fromID     string
-			toID       string
-			fromEntity *oapi.RelatableEntity
-			toEntity   *oapi.RelatableEntity
+	// Use optimized same-type processing if applicable
+	// Only optimize if from and to selectors produce the same entity set
+	if rule.FromType == rule.ToType && len(fromEntities) == len(toEntities) {
+		// Check if fromEntities and toEntities are the same set
+		isSameSet := true
+		entitySet := make(map[string]bool, len(fromEntities))
+		for _, e := range fromEntities {
+			entitySet[e.GetID()] = true
 		}
-
-		var processedEntities atomic.Int64
-		totalEntities := len(fromEntities)
-		
-		log.Info("Starting parallel processing",
-			"rule", rule.Reference,
-			"total_entities", totalEntities,
-			"chunk_size", b.options.ChunkSize,
-			"max_concurrency", b.options.MaxConcurrency,
-			"pairs_to_evaluate", estimatedPairs,
-		)
-		
-		results, err := concurrency.ProcessInChunks(
-			fromEntities,
-			b.options.ChunkSize,
-			b.options.MaxConcurrency,
-			func(fromEntity *oapi.RelatableEntity) ([]entityPairResult, error) {
-				// Optimization #3: Pre-allocate with estimated capacity (10% match rate)
-				estimatedMatches := max(len(toEntities)/10, 1)
-				matches := make([]entityPairResult, 0, estimatedMatches)
-
-				fromID := fromEntity.GetID() // Cache ID lookup
-
-				for _, toEntity := range toEntities {
-					toID := toEntity.GetID() // Cache ID lookup
-
-					// Optimization #2: Skip self-references (only if same type)
-					if rule.FromType == rule.ToType && fromID == toID {
-						continue
-					}
-
-					if relationships.Matches(ctx, &rule.Matcher, fromEntity, toEntity) {
-						matches = append(matches, entityPairResult{
-							fromID:     fromID,
-							toID:       toID,
-							fromEntity: fromEntity,
-							toEntity:   toEntity,
-						})
-					}
-				}
-				
-				// Log progress every 500 entities (thread-safe)
-				entityNum := processedEntities.Add(1)
-				if entityNum%500 == 0 || entityNum == int64(totalEntities) {
-					percentage := (entityNum * 100) / int64(totalEntities)
-					log.Info("Parallel processing progress",
-						"rule", rule.Reference,
-						"processed_entities", entityNum,
-						"total_entities", totalEntities,
-						"progress", fmt.Sprintf("%d%%", percentage),
-					)
-				}
-				
-				return matches, nil
-			},
-		)
-
-		if err != nil {
-			return err
-		}
-
-		// Flatten results and add to graph
-		for _, chunkResults := range results {
-			for _, match := range chunkResults {
-				// Add forward relationship: from -> to
-				graph.addRelation(match.fromID, rule.Reference, &oapi.EntityRelation{
-					Rule:       rule,
-					Direction:  oapi.To,
-					EntityType: match.toEntity.GetType(),
-					EntityId:   match.toID,
-					Entity:     *match.toEntity,
-				})
-
-				// Add reverse relationship: to -> from
-				graph.addRelation(match.toID, rule.Reference, &oapi.EntityRelation{
-					Rule:       rule,
-					Direction:  oapi.From,
-					EntityType: match.fromEntity.GetType(),
-					EntityId:   match.fromID,
-					Entity:     *match.fromEntity,
-				})
-
-				matchesFound++
+		for _, e := range toEntities {
+			if !entitySet[e.GetID()] {
+				isSameSet = false
+				break
 			}
 		}
-		pairsEvaluated = len(fromEntities) * len(toEntities)
 		
-		log.Info("Parallel processing completed",
-			"rule", rule.Reference,
-			"matches_found", matchesFound,
-			"pairs_evaluated", pairsEvaluated,
-		)
+		if isSameSet {
+			pairsEvaluated, matchesFound = b.processSameTypeRelationships(ctx, graph, rule, fromEntities, entityMapCache)
+		} else {
+			// Different selectors produce different sets, treat as different-type
+			pairsEvaluated, matchesFound = b.processDifferentTypeRelationships(ctx, graph, rule, fromEntities, toEntities, entityMapCache)
+		}
 	} else {
-		log.Info("Using sequential processing", "rule", rule.Reference)
-		
-		// Sequential processing (default)
-		for _, fromEntity := range fromEntities {
-			fromID := fromEntity.GetID() // Cache ID lookup
-
-			for _, toEntity := range toEntities {
-				toID := toEntity.GetID() // Cache ID lookup
-				pairsEvaluated++
-
-				// Optimization #2: Skip self-references (only if same type)
-				if rule.FromType == rule.ToType && fromID == toID {
-					continue
-				}
-
-				// Check if the matcher allows this relationship
-				if relationships.Matches(ctx, &rule.Matcher, fromEntity, toEntity) {
-					matchesFound++
-
-					// Add forward relationship: from -> to
-					graph.addRelation(fromID, rule.Reference, &oapi.EntityRelation{
-						Rule:       rule,
-						Direction:  oapi.To,
-						EntityType: toEntity.GetType(),
-						EntityId:   toID,
-						Entity:     *toEntity,
-					})
-
-					// Add reverse relationship: to -> from
-					graph.addRelation(toID, rule.Reference, &oapi.EntityRelation{
-						Rule:       rule,
-						Direction:  oapi.From,
-						EntityType: fromEntity.GetType(),
-						EntityId:   fromID,
-						Entity:     *fromEntity,
-					})
-				}
-			}
-		}
+		pairsEvaluated, matchesFound = b.processDifferentTypeRelationships(ctx, graph, rule, fromEntities, toEntities, entityMapCache)
 	}
 
 	span.SetAttributes(
@@ -377,6 +264,423 @@ func (b *Builder) processRule(
 	)
 
 	return nil
+}
+
+// processSameTypeRelationships handles relationships where fromType == toType
+// Uses optimized upper-triangle processing to avoid evaluating each pair twice
+func (b *Builder) processSameTypeRelationships(
+	ctx context.Context,
+	graph *Graph,
+	rule *oapi.RelationshipRule,
+	entities []*oapi.RelatableEntity,
+	entityMapCache relationships.EntityMapCache,
+) (pairsEvaluated int, matchesFound int) {
+	// Upper triangle: n*(n-1)/2
+	estimatedPairs := (len(entities) * (len(entities) - 1)) / 2
+	
+	log.Info("Evaluating same-type entity pairs (optimized)",
+		"rule", rule.Reference,
+		"entities", len(entities),
+		"estimated_pairs", estimatedPairs,
+		"parallel", b.options.UseParallelProcessing,
+	)
+
+	if b.options.UseParallelProcessing && len(entities) > b.options.ChunkSize {
+		return b.processSameTypeParallel(ctx, graph, rule, entities, entityMapCache)
+	}
+	return b.processSameTypeSequential(ctx, graph, rule, entities, entityMapCache)
+}
+
+// processSameTypeSequential processes same-type relationships sequentially
+func (b *Builder) processSameTypeSequential(
+	ctx context.Context,
+	graph *Graph,
+	rule *oapi.RelationshipRule,
+	entities []*oapi.RelatableEntity,
+	entityMapCache relationships.EntityMapCache,
+) (pairsEvaluated int, matchesFound int) {
+	log.Info("Using sequential processing (same-type optimized)", "rule", rule.Reference)
+
+	// Process upper triangle only
+	for fromIdx, fromEntity := range entities {
+		fromID := fromEntity.GetID()
+
+		// Start from fromIdx + 1 to skip self and already-evaluated pairs
+		for toIdx := fromIdx + 1; toIdx < len(entities); toIdx++ {
+			toEntity := entities[toIdx]
+			toID := toEntity.GetID()
+			pairsEvaluated++
+
+			// Check both directions for same-type relationships
+			// since matchers might be asymmetric
+			forwardMatch := relationships.MatchesWithCache(ctx, &rule.Matcher, fromEntity, toEntity, entityMapCache)
+			reverseMatch := relationships.MatchesWithCache(ctx, &rule.Matcher, toEntity, fromEntity, entityMapCache)
+
+			if forwardMatch {
+				matchesFound++
+				// Add forward relationship: from -> to
+				graph.addRelation(fromID, rule.Reference, &oapi.EntityRelation{
+					Rule:       rule,
+					Direction:  oapi.To,
+					EntityType: toEntity.GetType(),
+					EntityId:   toID,
+					Entity:     *toEntity,
+				})
+				// Add reverse perspective: to -> from
+				graph.addRelation(toID, rule.Reference, &oapi.EntityRelation{
+					Rule:       rule,
+					Direction:  oapi.From,
+					EntityType: fromEntity.GetType(),
+					EntityId:   fromID,
+					Entity:     *fromEntity,
+				})
+			}
+
+			if reverseMatch {
+				matchesFound++
+				// Add reverse relationship: to -> from (as forward)
+				graph.addRelation(toID, rule.Reference, &oapi.EntityRelation{
+					Rule:       rule,
+					Direction:  oapi.To,
+					EntityType: fromEntity.GetType(),
+					EntityId:   fromID,
+					Entity:     *fromEntity,
+				})
+				// Add reverse perspective: from -> to (as from)
+				graph.addRelation(fromID, rule.Reference, &oapi.EntityRelation{
+					Rule:       rule,
+					Direction:  oapi.From,
+					EntityType: toEntity.GetType(),
+					EntityId:   toID,
+					Entity:     *toEntity,
+				})
+			}
+		}
+	}
+
+	log.Info("Sequential processing completed",
+		"rule", rule.Reference,
+		"matches_found", matchesFound,
+		"pairs_evaluated", pairsEvaluated,
+	)
+
+	return pairsEvaluated, matchesFound
+}
+
+// processSameTypeParallel processes same-type relationships in parallel
+func (b *Builder) processSameTypeParallel(
+	ctx context.Context,
+	graph *Graph,
+	rule *oapi.RelationshipRule,
+	entities []*oapi.RelatableEntity,
+	entityMapCache relationships.EntityMapCache,
+) (pairsEvaluated int, matchesFound int) {
+	log.Info("Using parallel processing (same-type optimized)",
+		"rule", rule.Reference,
+		"entities", len(entities),
+		"chunk_size", b.options.ChunkSize,
+		"max_concurrency", b.options.MaxConcurrency,
+	)
+
+	type entityPairResult struct {
+		fromID     string
+		toID       string
+		fromEntity *oapi.RelatableEntity
+		toEntity   *oapi.RelatableEntity
+	}
+
+	type indexedEntity struct {
+		entity *oapi.RelatableEntity
+		index  int
+	}
+
+	indexedEntities := make([]indexedEntity, len(entities))
+	for i, entity := range entities {
+		indexedEntities[i] = indexedEntity{entity: entity, index: i}
+	}
+
+	var processedEntities atomic.Int64
+	totalEntities := len(entities)
+
+	results, err := concurrency.ProcessInChunks(
+		indexedEntities,
+		b.options.ChunkSize,
+		b.options.MaxConcurrency,
+		func(indexedFrom indexedEntity) ([]entityPairResult, error) {
+			fromEntity := indexedFrom.entity
+			fromIdx := indexedFrom.index
+
+			estimatedMatches := max(len(entities)/10, 1)
+			matches := make([]entityPairResult, 0, estimatedMatches)
+			fromID := fromEntity.GetID()
+
+			// Process upper triangle: start from fromIdx + 1
+			// Check both directions since matchers might be asymmetric
+			for toIdx := fromIdx + 1; toIdx < len(entities); toIdx++ {
+				toEntity := entities[toIdx]
+				toID := toEntity.GetID()
+
+				forwardMatch := relationships.MatchesWithCache(ctx, &rule.Matcher, fromEntity, toEntity, entityMapCache)
+				reverseMatch := relationships.MatchesWithCache(ctx, &rule.Matcher, toEntity, fromEntity, entityMapCache)
+
+				if forwardMatch {
+					matches = append(matches, entityPairResult{
+						fromID:     fromID,
+						toID:       toID,
+						fromEntity: fromEntity,
+						toEntity:   toEntity,
+					})
+				}
+				
+				if reverseMatch {
+					// Swap from/to for reverse direction
+					matches = append(matches, entityPairResult{
+						fromID:     toID,
+						toID:       fromID,
+						fromEntity: toEntity,
+						toEntity:   fromEntity,
+					})
+				}
+			}
+
+			// Log progress every 500 entities
+			entityNum := processedEntities.Add(1)
+			if entityNum%500 == 0 || entityNum == int64(totalEntities) {
+				percentage := (entityNum * 100) / int64(totalEntities)
+				log.Info("Parallel processing progress",
+					"rule", rule.Reference,
+					"processed_entities", entityNum,
+					"total_entities", totalEntities,
+					"progress", fmt.Sprintf("%d%%", percentage),
+				)
+			}
+
+			return matches, nil
+		},
+	)
+
+	if err != nil {
+		log.Error("Parallel processing failed", "rule", rule.Reference, "error", err)
+		return 0, 0
+	}
+
+	// Flatten results and add to graph
+	for _, chunkResults := range results {
+		for _, match := range chunkResults {
+			// Add forward relationship: from -> to
+			graph.addRelation(match.fromID, rule.Reference, &oapi.EntityRelation{
+				Rule:       rule,
+				Direction:  oapi.To,
+				EntityType: match.toEntity.GetType(),
+				EntityId:   match.toID,
+				Entity:     *match.toEntity,
+			})
+			
+			// Add reverse perspective: to -> from
+			graph.addRelation(match.toID, rule.Reference, &oapi.EntityRelation{
+				Rule:       rule,
+				Direction:  oapi.From,
+				EntityType: match.fromEntity.GetType(),
+				EntityId:   match.fromID,
+				Entity:     *match.fromEntity,
+			})
+
+			matchesFound++
+		}
+	}
+
+	// Upper triangle: n*(n-1)/2
+	pairsEvaluated = (len(entities) * (len(entities) - 1)) / 2
+
+	log.Info("Parallel processing completed",
+		"rule", rule.Reference,
+		"matches_found", matchesFound,
+		"pairs_evaluated", pairsEvaluated,
+	)
+
+	return pairsEvaluated, matchesFound
+}
+
+// processDifferentTypeRelationships handles relationships where fromType != toType
+func (b *Builder) processDifferentTypeRelationships(
+	ctx context.Context,
+	graph *Graph,
+	rule *oapi.RelationshipRule,
+	fromEntities []*oapi.RelatableEntity,
+	toEntities []*oapi.RelatableEntity,
+	entityMapCache relationships.EntityMapCache,
+) (pairsEvaluated int, matchesFound int) {
+	estimatedPairs := len(fromEntities) * len(toEntities)
+	
+	log.Info("Evaluating different-type entity pairs",
+		"rule", rule.Reference,
+		"from_entities", len(fromEntities),
+		"to_entities", len(toEntities),
+		"estimated_pairs", estimatedPairs,
+		"parallel", b.options.UseParallelProcessing,
+	)
+
+	if b.options.UseParallelProcessing && len(fromEntities) > b.options.ChunkSize {
+		return b.processDifferentTypeParallel(ctx, graph, rule, fromEntities, toEntities, entityMapCache)
+	}
+	return b.processDifferentTypeSequential(ctx, graph, rule, fromEntities, toEntities, entityMapCache)
+}
+
+// processDifferentTypeSequential processes different-type relationships sequentially
+func (b *Builder) processDifferentTypeSequential(
+	ctx context.Context,
+	graph *Graph,
+	rule *oapi.RelationshipRule,
+	fromEntities []*oapi.RelatableEntity,
+	toEntities []*oapi.RelatableEntity,
+	entityMapCache relationships.EntityMapCache,
+) (pairsEvaluated int, matchesFound int) {
+	log.Info("Using sequential processing (different-type)", "rule", rule.Reference)
+
+	for _, fromEntity := range fromEntities {
+		fromID := fromEntity.GetID()
+
+		for _, toEntity := range toEntities {
+			toID := toEntity.GetID()
+			pairsEvaluated++
+
+			if relationships.MatchesWithCache(ctx, &rule.Matcher, fromEntity, toEntity, entityMapCache) {
+				matchesFound++
+
+				// Add forward relationship: from -> to
+				graph.addRelation(fromID, rule.Reference, &oapi.EntityRelation{
+					Rule:       rule,
+					Direction:  oapi.To,
+					EntityType: toEntity.GetType(),
+					EntityId:   toID,
+					Entity:     *toEntity,
+				})
+
+				// Add reverse relationship: to -> from
+				graph.addRelation(toID, rule.Reference, &oapi.EntityRelation{
+					Rule:       rule,
+					Direction:  oapi.From,
+					EntityType: fromEntity.GetType(),
+					EntityId:   fromID,
+					Entity:     *fromEntity,
+				})
+			}
+		}
+	}
+
+	log.Info("Sequential processing completed",
+		"rule", rule.Reference,
+		"matches_found", matchesFound,
+		"pairs_evaluated", pairsEvaluated,
+	)
+
+	return pairsEvaluated, matchesFound
+}
+
+// processDifferentTypeParallel processes different-type relationships in parallel
+func (b *Builder) processDifferentTypeParallel(
+	ctx context.Context,
+	graph *Graph,
+	rule *oapi.RelationshipRule,
+	fromEntities []*oapi.RelatableEntity,
+	toEntities []*oapi.RelatableEntity,
+	entityMapCache relationships.EntityMapCache,
+) (pairsEvaluated int, matchesFound int) {
+	log.Info("Using parallel processing (different-type)",
+		"rule", rule.Reference,
+		"from_entities", len(fromEntities),
+		"to_entities", len(toEntities),
+		"chunk_size", b.options.ChunkSize,
+		"max_concurrency", b.options.MaxConcurrency,
+	)
+
+	type entityPairResult struct {
+		fromID     string
+		toID       string
+		fromEntity *oapi.RelatableEntity
+		toEntity   *oapi.RelatableEntity
+	}
+
+	var processedEntities atomic.Int64
+	totalEntities := len(fromEntities)
+
+	results, err := concurrency.ProcessInChunks(
+		fromEntities,
+		b.options.ChunkSize,
+		b.options.MaxConcurrency,
+		func(fromEntity *oapi.RelatableEntity) ([]entityPairResult, error) {
+			estimatedMatches := max(len(toEntities)/10, 1)
+			matches := make([]entityPairResult, 0, estimatedMatches)
+			fromID := fromEntity.GetID()
+
+			for _, toEntity := range toEntities {
+				toID := toEntity.GetID()
+
+				if relationships.MatchesWithCache(ctx, &rule.Matcher, fromEntity, toEntity, entityMapCache) {
+					matches = append(matches, entityPairResult{
+						fromID:     fromID,
+						toID:       toID,
+						fromEntity: fromEntity,
+						toEntity:   toEntity,
+					})
+				}
+			}
+
+			// Log progress every 500 entities
+			entityNum := processedEntities.Add(1)
+			if entityNum%500 == 0 || entityNum == int64(totalEntities) {
+				percentage := (entityNum * 100) / int64(totalEntities)
+				log.Info("Parallel processing progress",
+					"rule", rule.Reference,
+					"processed_entities", entityNum,
+					"total_entities", totalEntities,
+					"progress", fmt.Sprintf("%d%%", percentage),
+				)
+			}
+
+			return matches, nil
+		},
+	)
+
+	if err != nil {
+		log.Error("Parallel processing failed", "rule", rule.Reference, "error", err)
+		return 0, 0
+	}
+
+	// Flatten results and add to graph
+	for _, chunkResults := range results {
+		for _, match := range chunkResults {
+			// Add forward relationship: from -> to
+			graph.addRelation(match.fromID, rule.Reference, &oapi.EntityRelation{
+				Rule:       rule,
+				Direction:  oapi.To,
+				EntityType: match.toEntity.GetType(),
+				EntityId:   match.toID,
+				Entity:     *match.toEntity,
+			})
+
+			// Add reverse relationship: to -> from
+			graph.addRelation(match.toID, rule.Reference, &oapi.EntityRelation{
+				Rule:       rule,
+				Direction:  oapi.From,
+				EntityType: match.fromEntity.GetType(),
+				EntityId:   match.fromID,
+				Entity:     *match.fromEntity,
+			})
+
+			matchesFound++
+		}
+	}
+
+	pairsEvaluated = len(fromEntities) * len(toEntities)
+
+	log.Info("Parallel processing completed",
+		"rule", rule.Reference,
+		"matches_found", matchesFound,
+		"pairs_evaluated", pairsEvaluated,
+	)
+
+	return pairsEvaluated, matchesFound
 }
 
 // getAllEntities collects all entities from all stores
