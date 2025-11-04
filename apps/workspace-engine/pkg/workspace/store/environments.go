@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -170,9 +169,9 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 
 	e.store.ReleaseTargets.Recompute(ctx)
 
-	if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
-		log.Error("Failed to invalidate relationships graph", "error", err)
-	}
+	// if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
+	// 	log.Error("Failed to invalidate relationships graph", "error", err)
+	// }
 
 	return nil
 }
@@ -207,7 +206,7 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 
 	e.store.ReleaseTargets.Recompute(ctx)
 
-	if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
-		log.Error("Failed to invalidate relationships graph", "error", err)
-	}
+	// if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
+	// 	log.Error("Failed to invalidate relationships graph", "error", err)
+	// }
 }

@@ -400,11 +400,11 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		span.SetAttributes(attribute.Bool("recompute.triggered", true))
 		r.recomputeAll(ctx)
 
-		if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "Failed to invalidate relationships graph")
-			log.Error("Failed to invalidate relationships graph", "error", err)
-		}
+		// if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
+		// 	span.RecordError(err)
+		// 	span.SetStatus(codes.Error, "Failed to invalidate relationships graph")
+		// 	log.Error("Failed to invalidate relationships graph", "error", err)
+		// }
 	} else {
 		span.SetAttributes(attribute.Bool("recompute.triggered", false))
 		span.AddEvent("Skipped recomputation - no meaningful changes detected")
@@ -463,9 +463,9 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 
 	r.store.changeset.RecordDelete(resource)
 
-	if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
-		log.Error("Failed to invalidate relationships graph", "error", err)
-	}
+	// if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
+	// 	log.Error("Failed to invalidate relationships graph", "error", err)
+	// }
 }
 
 func (r *Resources) Items() map[string]*oapi.Resource {
