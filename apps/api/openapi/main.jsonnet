@@ -45,7 +45,8 @@ local securitySchemes = {
          (import 'paths/policies.jsonnet') +
          (import 'paths/userapprovalrecords.jsonnet') +
          (import 'paths/relationship-rules.jsonnet') +
-         (import 'paths/jobs.jsonnet'),
+         (import 'paths/jobs.jsonnet') +
+         (import 'paths/release-targets.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
