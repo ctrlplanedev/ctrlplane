@@ -170,9 +170,9 @@ func (r *RelationshipRules) GetRelatedEntities(
 		}
 	}
 
-    if err := g.Wait(); err != nil {
-        return nil, err
-    }
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }

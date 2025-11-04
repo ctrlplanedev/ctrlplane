@@ -141,7 +141,7 @@ func (p *Planner) findDeployableVersion(
 
 	versionIndependentEvals := make([]evaluator.Evaluator, 0, len(evaluators))
 	versionDependentEvals := make([]evaluator.Evaluator, 0, len(evaluators))
-	
+
 	for _, eval := range evaluators {
 		scopeFields := eval.ScopeFields()
 		// Check if evaluator needs version field
@@ -149,7 +149,7 @@ func (p *Planner) findDeployableVersion(
 		if scopeFields&evaluator.ScopeVersion != 0 {
 			needsVersion = true
 		}
-	
+
 		if needsVersion {
 			// Only check HasFields once per evaluator
 			if scope.HasFields(scopeFields) || true { // Will check with version later

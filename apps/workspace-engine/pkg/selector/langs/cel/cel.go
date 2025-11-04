@@ -138,7 +138,6 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 // 	return result, nil
 // }
 
-
 // structToMap converts a struct to a map using reflection
 // This is significantly faster than JSON marshal/unmarshal
 func structToMap(v any) (map[string]any, error) {

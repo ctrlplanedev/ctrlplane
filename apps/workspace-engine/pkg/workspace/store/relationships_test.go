@@ -580,4 +580,3 @@ func createSimpleRelationshipRule(reference, fromKind, toKind string) *oapi.Rela
 		Matcher:      *matcher,
 	}
 }
-
