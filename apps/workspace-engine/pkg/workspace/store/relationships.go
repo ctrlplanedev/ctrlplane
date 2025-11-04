@@ -96,8 +96,6 @@ func (r *RelationshipRules) GetRelatedEntities(
 	ctx, span := relationshipsTracer.Start(ctx, "GetRelatedEntities")
 	defer span.End()
 
-	
-
 	entityType := entity.GetType()
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -523,14 +521,10 @@ func (r *RelationshipRules) findMatchingResources(
 		return nil, nil
 	}
 
-	// Convert map to slice for processing
-	_, sliceSpan := relationshipsTracer.Start(ctx, "findMatchingResources.convertToSlice")
 	resourceSlice := make([]*oapi.Resource, 0, len(resources))
 	for _, resource := range resources {
 		resourceSlice = append(resourceSlice, resource)
 	}
-	sliceSpan.SetAttributes(attribute.Int("resource_count", len(resourceSlice)))
-	sliceSpan.End()
 
 	// Track matching metrics
 	var (
@@ -589,28 +583,56 @@ func (r *RelationshipRules) findMatchingResources(
 		return resourceEntity, nil
 	}
 
-	var results []*oapi.RelatableEntity
+	// Use parallel processing for large datasets
+	const parallelThreshold = 100
+	const chunkSize = 50
+	const maxConcurrency = 8
 
-	_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingResources.processAllResources")
-	results = make([]*oapi.RelatableEntity, 0, 8)
-	for _, resource := range resourceSlice {
-		entity, err := processFn(resource)
+	var results []*oapi.RelatableEntity
+	var err error
+
+	if len(resourceSlice) < parallelThreshold {
+		// Sequential processing for small datasets
+		_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingResources.sequentialProcessing")
+		results = make([]*oapi.RelatableEntity, 0, 8)
+		for _, resource := range resourceSlice {
+			entity, err := processFn(resource)
+			if err != nil {
+				processingSpan.End()
+				return nil, err
+			}
+			if entity != nil {
+				results = append(results, entity)
+			}
+		}
+		processingSpan.SetAttributes(
+			attribute.Int("total_processed", len(resourceSlice)),
+			attribute.Int("entity_selector_matches", entitySelectorMatches),
+			attribute.Int("entity_selector_misses", entitySelectorMisses),
+			attribute.Int("rule_matcher_misses", ruleMisses),
+			attribute.Int("final_matches", finalMatches),
+		)
+		processingSpan.End()
+	} else {
+		// Parallel processing for large datasets
+		_, processingSpan := relationshipsTracer.Start(ctx, "findMatchingResources.parallelProcessing")
+		processingSpan.SetAttributes(
+			attribute.Int("chunk_size", chunkSize),
+			attribute.Int("max_concurrency", maxConcurrency),
+		)
+		results, err = concurrency.ProcessInChunks(resourceSlice, chunkSize, maxConcurrency, processFn)
+		processingSpan.SetAttributes(
+			attribute.Int("total_processed", len(resourceSlice)),
+			attribute.Int("entity_selector_matches", entitySelectorMatches),
+			attribute.Int("entity_selector_misses", entitySelectorMisses),
+			attribute.Int("rule_matcher_misses", ruleMisses),
+			attribute.Int("final_matches", finalMatches),
+		)
+		processingSpan.End()
 		if err != nil {
-			processingSpan.End()
 			return nil, err
 		}
-		if entity != nil {
-			results = append(results, entity)
-		}
 	}
-	processingSpan.SetAttributes(
-		attribute.Int("total_processed", len(resourceSlice)),
-		attribute.Int("entity_selector_matches", entitySelectorMatches),
-		attribute.Int("entity_selector_misses", entitySelectorMisses),
-		attribute.Int("rule_matcher_misses", ruleMisses),
-		attribute.Int("final_matches", finalMatches),
-	)
-	processingSpan.End()
 
 	span.SetAttributes(
 		attribute.Int("repo.resource_count", len(resourceSlice)),
@@ -618,6 +640,7 @@ func (r *RelationshipRules) findMatchingResources(
 		attribute.Int("entity_selector_matches", entitySelectorMatches),
 		attribute.Int("entity_selector_misses", entitySelectorMisses),
 		attribute.Int("rule_matcher_misses", ruleMisses),
+		attribute.Bool("used_parallel", len(resourceSlice) >= parallelThreshold),
 	)
 
 	// Filter out nil results
