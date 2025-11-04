@@ -417,34 +417,18 @@ func (r *RelationshipRules) findMatchingResources(
 		return resourceEntity, nil
 	}
 
-	// Use parallel processing for large datasets
-	const parallelThreshold = 100
-	const chunkSize = 50
-	const maxConcurrency = 8
-
 	var results []*oapi.RelatableEntity
-	var err error
 
-	if len(resourceSlice) < parallelThreshold {
-		// Sequential processing for small datasets
-		results = make([]*oapi.RelatableEntity, 0, 8)
-		for _, resource := range resourceSlice {
-			entity, err := processFn(resource)
-			if err != nil {
-				return nil, err
-			}
-			if entity != nil {
-				results = append(results, entity)
-			}
-		}
-	} else {
-		// Parallel processing for large datasets
-		results, err = concurrency.ProcessInChunks(resourceSlice, chunkSize, maxConcurrency, processFn)
+	results = make([]*oapi.RelatableEntity, 0, 8)
+	for _, resource := range resourceSlice {
+		entity, err := processFn(resource)
 		if err != nil {
 			return nil, err
 		}
+		if entity != nil {
+			results = append(results, entity)
+		}
 	}
-
 	// Filter out nil results
 	filtered := make([]*oapi.RelatableEntity, 0, len(results))
 	for _, entity := range results {
