@@ -2,6 +2,7 @@ package releasemanager
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -19,7 +20,9 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/dgraph-io/ristretto/v2"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Manager handles the business logic for release target changes and deployment decisions.
@@ -192,6 +195,20 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 	return m.reconcileTarget(ctx, releaseTarget, true)
 }
 
+func (m *Manager) setDesiredReleaseSpanAttributes(span trace.Span, desiredRelease *oapi.Release) {
+	if desiredRelease == nil {
+		return
+	}
+
+	span.SetAttributes(attribute.String("desired_release.id", desiredRelease.ID()))
+	span.SetAttributes(attribute.String("desired_release.version.id", desiredRelease.Version.Id))
+	span.SetAttributes(attribute.String("desired_release.version.tag", desiredRelease.Version.Tag))
+	variablesJSON, err := json.Marshal(desiredRelease.Variables)
+	if err == nil {
+		span.SetAttributes(attribute.String("desired_release.variables", string(variablesJSON)))
+	}
+}
+
 // reconcileTarget ensures a release target is in its desired state (WRITES TO STORE).
 // Uses a three-phase deployment pattern: planning, eligibility checking, and execution.
 //
@@ -219,6 +236,8 @@ func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	ctx, span := tracer.Start(ctx, "ReconcileTarget")
 	defer span.End()
 
+	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
+
 	targetKey := releaseTarget.Key()
 	lockInterface, _ := m.releaseTargetLocks.LoadOrStore(targetKey, &sync.Mutex{})
 	lock := lockInterface.(*sync.Mutex)
@@ -233,6 +252,8 @@ func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 		span.RecordError(err)
 		return err
 	}
+
+	m.setDesiredReleaseSpanAttributes(span, desiredRelease)
 
 	// No desired release (no versions or blocked by user policies)
 	if desiredRelease == nil {
