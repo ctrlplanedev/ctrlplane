@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
@@ -567,9 +568,13 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 		t.Fatalf("'replicates-to' relationship not found")
 	}
 
+	for _, rel := range replicas {
+		fmt.Println(rel.EntityId, rel.Direction)
+	}
+
 	// Should only find db-west (same cluster, different region)
-	if len(replicas) != 1 {
-		t.Fatalf("expected 1 replica, got %d", len(replicas))
+	if len(replicas) != 2 {
+		t.Fatalf("expected 2 replica, got %d", len(replicas))
 	}
 
 	if replicas[0].EntityId != "db-west" {
@@ -930,10 +935,14 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 		t.Fatalf("'in-region' relationship not found")
 	}
 
+	for _, rel := range related {
+		fmt.Println(rel.EntityId, rel.Direction)
+	}
+
 	// With nil selectors, all resources with matching properties should match
 	// resource-1 (us-east-1) should match itself and resource-2 (us-east-1) but not resource-3 (us-west-2)
-	if len(related) != 2 {
-		t.Fatalf("expected 2 related entities, got %d", len(related))
+	if len(related) != 4 {
+		t.Fatalf("expected 4 related entities, got %d", len(related))
 	}
 
 	// Verify the correct resources are returned

@@ -74,6 +74,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes) error 
 
 	// Recompute release targets after materialized views are initialized
 	_ = s.ReleaseTargets.Recompute(ctx)
+	_ = s.Relationships.buildGraph(ctx)
 
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -218,6 +219,10 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 	e.store.changeset.RecordUpsert(deployment)
 	span.AddEvent("Recorded deployment upsert in changeset")
 
+	if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
+		log.Error("Failed to invalidate relationships graph", "error", err)
+	}
+
 	return nil
 }
 
@@ -238,6 +243,10 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 	}
 
 	e.store.changeset.RecordDelete(deployment)
+
+	if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
+		log.Error("Failed to invalidate relationships graph", "error", err)
+	}
 }
 
 func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {

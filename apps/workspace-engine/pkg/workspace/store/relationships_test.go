@@ -12,6 +12,7 @@ import (
 
 // setupTestStoreForRelationships creates a test store with basic setup
 func setupTestStoreForRelationships(t *testing.T) *Store {
+	t.Helper()
 	cs := statechange.NewChangeSet[any]()
 	return New(cs)
 }
