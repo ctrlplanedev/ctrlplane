@@ -213,4 +213,3 @@ func (b *Builder) filterEntities(
 
 	return filtered
 }
-

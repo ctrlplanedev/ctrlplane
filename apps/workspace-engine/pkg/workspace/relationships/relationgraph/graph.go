@@ -133,4 +133,3 @@ func (g *Graph) addRelation(entityID string, reference string, relation *oapi.En
 	)
 	g.relationCount++
 }
-

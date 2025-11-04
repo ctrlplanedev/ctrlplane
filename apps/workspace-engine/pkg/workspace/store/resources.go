@@ -399,7 +399,7 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	if hasChanges {
 		span.SetAttributes(attribute.Bool("recompute.triggered", true))
 		r.recomputeAll(ctx)
-	
+
 		if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "Failed to invalidate relationships graph")

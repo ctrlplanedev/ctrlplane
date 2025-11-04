@@ -627,4 +627,3 @@ func TestBuilder_Build_WithSelectors(t *testing.T) {
 		t.Errorf("expected r2 to have no relations, got %d", len(r2Relations))
 	}
 }
-

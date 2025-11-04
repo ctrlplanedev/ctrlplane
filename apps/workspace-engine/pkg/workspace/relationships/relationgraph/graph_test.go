@@ -467,4 +467,3 @@ func TestGraph_GetRelatedEntities_ImmutableReturn(t *testing.T) {
 		t.Error("expected 'test-rule' to still exist - graph was mutated")
 	}
 }
-
