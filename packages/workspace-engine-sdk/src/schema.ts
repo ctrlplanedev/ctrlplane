@@ -944,7 +944,7 @@ export interface components {
       /** @description ID of the related entity */
       entityId: string;
       entityType: components["schemas"]["RelatableEntityType"];
-      rule?: components["schemas"]["RelationshipRule"];
+      rule: components["schemas"]["RelationshipRule"];
     };
     Environment: {
       createdAt: string;
