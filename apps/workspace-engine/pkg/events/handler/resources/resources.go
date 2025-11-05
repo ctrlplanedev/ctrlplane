@@ -48,7 +48,7 @@ func HandleResourceUpdated(
 	// Check if properties changed and taint dependent release targets
 	// This enables automatic re-evaluation when a referenced resource property changes
 	if exists && oldResource != nil {
-		ws.Resources().TaintDependentReleaseTargetsOnChange(ctx, oldResource, resource)
+		// ws.Resources().TaintDependentReleaseTargetsOnChange(ctx, oldResource, resource)
 	}
 
 	return nil

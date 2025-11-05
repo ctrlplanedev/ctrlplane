@@ -53,7 +53,7 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		return nil
 	}
 
-	releaseTargets, err := ws.ReleaseTargets().Items(ctx)
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get release targets")

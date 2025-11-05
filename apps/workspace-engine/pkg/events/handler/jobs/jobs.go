@@ -97,5 +97,5 @@ func getJob(ws *workspace.Workspace, job *oapi.JobUpdateEvent) (*oapi.Job, bool)
 	}
 
 	// Try finding by job agent ID + external ID
-	return ws.Jobs().GetByJobAgentAndExternalId(*job.AgentId, *job.ExternalId)
+	return ws.Jobs().Get(*job.Id)
 }
