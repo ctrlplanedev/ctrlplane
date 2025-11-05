@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -30,27 +29,31 @@ type Environments struct {
 }
 
 func (e *Environments) Items() map[string]*oapi.Environment {
-	envMap := make(map[string]*oapi.Environment)
-	tableName := e.repo.Environments.TableName()
-	query := fmt.Sprintf("SELECT * FROM %s", tableName)
-	environments, err := e.repo.Environments.Query(query)
-	if err != nil {
-		return envMap
-	}
-	for _, environment := range environments {
-		envMap[environment.Id] = environment
-	}
-	return envMap
+	// envMap := make(map[string]*oapi.Environment)
+	// tableName := e.repo.Environments.TableName()
+	// query := fmt.Sprintf("SELECT * FROM %s", tableName)
+	// environments, err := e.repo.Environments.Query(query)
+	// if err != nil {
+	// 	return envMap
+	// }
+	// for _, environment := range environments {
+	// 	envMap[environment.Id] = environment
+	// }
+	// return envMap
+
+	return e.repo.Environments.Items()
 }
 
 func (e *Environments) Get(id string) (*oapi.Environment, bool) {
-	tableName := e.repo.Environments.TableName()
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", tableName)
-	environment, err := e.repo.Environments.QueryOne(query, id)
-	if err != nil {
-		return nil, false
-	}
-	return environment, true
+	// tableName := e.repo.Environments.TableName()
+	// query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", tableName)
+	// environment, err := e.repo.Environments.QueryOne(query, id)
+	// if err != nil {
+	// 	return nil, false
+	// }
+	// return environment, true
+
+	return e.repo.Environments.Get(id)
 }
 
 // ReinitializeMaterializedViews recreates all materialized views after deserialization
@@ -159,10 +162,12 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 	}
 
 	// Store the environment in the repository
-	err := e.repo.Environments.Insert(environment)
-	if err != nil {
-		log.Error("Failed to upsert environment", "error", err)
-	}
+	// err := e.repo.Environments.Insert(environment)
+	// if err != nil {
+	// 	log.Error("Failed to upsert environment", "error", err)
+	// }
+
+	e.repo.Environments.Set(environment.Id, environment)
 
 	e.store.Systems.ApplyEnvironmentUpdate(ctx, previousSystemId, environment)
 
@@ -180,6 +185,7 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 	e.resources.Set(environment.Id, mv)
 
 	e.store.ReleaseTargets.Recompute(ctx)
+	e.store.ReleaseTargets.targets.WaitIfRunning()
 
 	// if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
 	// 	log.Error("Failed to invalidate relationships graph", "error", err)
@@ -213,10 +219,11 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 
 	e.store.changeset.RecordDelete(env)
 
-	err := e.repo.Environments.DeleteOne("id = ?", id)
-	if err != nil {
-		log.Error("Failed to remove environment", "id", id, "error", err)
-	}
+	// err := e.repo.Environments.DeleteOne("id = ?", id)
+	// if err != nil {
+	// 	log.Error("Failed to remove environment", "id", id, "error", err)
+	// }
+	e.repo.Environments.Remove(id)
 	e.resources.Remove(id)
 
 	e.store.ReleaseTargets.Recompute(ctx)
