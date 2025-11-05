@@ -17,5 +17,24 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
-  }
+  },
+  '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release': {
+    get: {
+      summary: 'Get the desired release for a release target',
+      operationId: 'getReleaseTargetDesiredRelease',
+      description: 'Returns the desired release for a release target {releaseTargetKey}.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.releaseTargetKeyParam(),
+      ],
+      responses: openapi.okResponse(
+        {
+          properties: {
+            desiredRelease: openapi.schemaRef('Release'),
+          },
+        },
+        'The desired release for the release target',
+      ) + openapi.notFoundResponse(),
+    },
+  },
 }
