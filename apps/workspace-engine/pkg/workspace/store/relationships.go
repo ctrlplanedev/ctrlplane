@@ -2,6 +2,9 @@ package store
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships/relationgraph"
@@ -9,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var relationshipsTracer = otel.Tracer("workspace.store.relationships")
@@ -36,7 +40,6 @@ func (s *StoreEntityProvider) GetRelationshipRules() map[string]*oapi.Relationsh
 func (s *StoreEntityProvider) GetRelationshipRule(reference string) (*oapi.RelationshipRule, bool) {
 	return s.store.repo.RelationshipRules.Get(reference)
 }
-
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
 	graph := relationgraph.NewGraph(&StoreEntityProvider{store: store})
@@ -151,5 +154,19 @@ func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi
 		attribute.String("entity.type", string(entity.GetType())),
 	)
 
-	return r.graph.GetRelatedEntitiesWithCompute(ctx, entity.GetID())
+	relatedEntities, err := r.graph.GetRelatedEntitiesWithCompute(ctx, entity.GetID())
+	if err != nil {
+		return nil, err
+	}
+
+	for reference, relations := range relatedEntities {
+		var rels []string
+		for _, relation := range relations {
+			if jsonBytes, err := json.Marshal(relation); err == nil {
+				rels = append(rels, string(jsonBytes))
+			}
+		}
+		span.AddEvent(fmt.Sprintf("related_entities.reference.%s", reference), trace.WithAttributes(attribute.String("relations", strings.Join(rels, ", "))))
+	}
+	return relatedEntities, nil
 }
