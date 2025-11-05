@@ -201,7 +201,7 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 // ApplyResourceUpdate applies an incremental update for a single resource.
 // This is more efficient than RecomputeResources when only one resource changed.
 // It checks if the resource matches the environment's selector and updates the cached map accordingly.
-func (e *Environments) ApplyResourceUpsert(ctx context.Context, resource *oapi.Resource) ([]*oapi.Environment) {
+func (e *Environments) ApplyResourceUpsert(ctx context.Context, resource *oapi.Resource) []*oapi.Environment {
 	addedTo := []*oapi.Environment{}
 	for _, environment := range e.Items() {
 		mv, ok := e.resources.Get(environment.Id)

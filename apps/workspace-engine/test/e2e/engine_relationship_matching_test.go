@@ -118,9 +118,8 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 		),
 	)
 
-
 	engines := map[string]*integration.TestWorkspace{
-		"direct": engineDirect,
+		"direct":        engineDirect,
 		"with_provider": engineWithProvider,
 	}
 
@@ -132,29 +131,29 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
-	
+
 		entity := relationships.NewResourceEntity(vpcEast)
 		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
 		if err != nil {
 			t.Fatalf("GetRelatedEntities failed: %v", err)
 		}
-	
+
 		// Should have 2 clusters in us-east-1
 		clusters, ok := relatedEntities["contains"]
 		if !ok {
 			t.Fatalf("'contains' relationship not found")
 		}
-	
+
 		if len(clusters) != 2 {
 			t.Fatalf("expected 2 related clusters, got %d", len(clusters))
 		}
-	
+
 		// Verify the correct clusters are returned
 		clusterIDs := make(map[string]bool)
 		for _, cluster := range clusters {
 			clusterIDs[cluster.EntityId] = true
 		}
-	
+
 		if !clusterIDs["cluster-east-1"] {
 			t.Errorf("cluster-east-1 not in related entities")
 		}
@@ -171,16 +170,16 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("vpc-to-cluster"),
-			integration.RelationshipRuleReference("part-of"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
-			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("part-of"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
 	)
-	
+
 	engineDirect := integration.NewTestWorkspace(
 		t,
 		rule,
@@ -228,39 +227,39 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 	)
 
 	engines := map[string]*integration.TestWorkspace{
-		"direct": engineDirect,
+		"direct":        engineDirect,
 		"with_provider": engineWithProvider,
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	// Test from cluster to VPC (reverse direction)
-	cluster, ok := engine.Workspace().Resources().Get("cluster-east-1")
-	if !ok {
-		t.Fatalf("cluster-east-1 not found")
-	}
+		// Test from cluster to VPC (reverse direction)
+		cluster, ok := engine.Workspace().Resources().Get("cluster-east-1")
+		if !ok {
+			t.Fatalf("cluster-east-1 not found")
+		}
 
-	entity := relationships.NewResourceEntity(cluster)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(cluster)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	// Should find the VPC in the reverse direction
-	vpcs, ok := relatedEntities["part-of"]
-	if !ok {
-		t.Fatalf("'part-of' relationship not found")
-	}
+		// Should find the VPC in the reverse direction
+		vpcs, ok := relatedEntities["part-of"]
+		if !ok {
+			t.Fatalf("'part-of' relationship not found")
+		}
 
-	if len(vpcs) != 1 {
-		t.Fatalf("expected 1 related VPC, got %d", len(vpcs))
-	}
+		if len(vpcs) != 1 {
+			t.Fatalf("expected 1 related VPC, got %d", len(vpcs))
+		}
 
-	if vpcs[0].EntityId != "vpc-us-east-1" {
-		t.Errorf("expected vpc-us-east-1, got %s", vpcs[0].EntityId)
-	}
-		
+		if vpcs[0].EntityId != "vpc-us-east-1" {
+			t.Errorf("expected vpc-us-east-1, got %s", vpcs[0].EntityId)
+		}
+
 	})
 }
 
@@ -277,21 +276,21 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 	)
 
 	system := integration.WithSystem(
-			integration.SystemName("test-system"),
-			integration.WithDeployment(
-				integration.DeploymentID("deployment-api"),
-				integration.DeploymentName("api"),
-				integration.DeploymentJobAgentConfig(map[string]any{
-					"region": "us-east-1",
-				}),
-			),
-			integration.WithDeployment(
-				integration.DeploymentID("deployment-worker"),
-				integration.DeploymentName("worker"),
-				integration.DeploymentJobAgentConfig(map[string]any{
-					"region": "us-west-2",
-				}),
-			),
+		integration.SystemName("test-system"),
+		integration.WithDeployment(
+			integration.DeploymentID("deployment-api"),
+			integration.DeploymentName("api"),
+			integration.DeploymentJobAgentConfig(map[string]any{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithDeployment(
+			integration.DeploymentID("deployment-worker"),
+			integration.DeploymentName("worker"),
+			integration.DeploymentJobAgentConfig(map[string]any{
+				"region": "us-west-2",
+			}),
+		),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -348,32 +347,32 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	// Test from deployment to resources
-	deployment, ok := engine.Workspace().Deployments().Get("deployment-api")
-	if !ok {
-		t.Fatalf("deployment-api not found")
-	}
+		// Test from deployment to resources
+		deployment, ok := engine.Workspace().Deployments().Get("deployment-api")
+		if !ok {
+			t.Fatalf("deployment-api not found")
+		}
 
-	entity := relationships.NewDeploymentEntity(deployment)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewDeploymentEntity(deployment)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	clusters, ok := relatedEntities["runs-on"]
-	if !ok {
-		t.Fatalf("'runs-on' relationship not found")
-	}
+		clusters, ok := relatedEntities["runs-on"]
+		if !ok {
+			t.Fatalf("'runs-on' relationship not found")
+		}
 
-	if len(clusters) != 1 {
-		t.Fatalf("expected 1 related cluster, got %d", len(clusters))
-	}
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster, got %d", len(clusters))
+		}
 
-	if clusters[0].EntityId != "cluster-east-1" {
-		t.Errorf("expected cluster-east-1, got %s", clusters[0].EntityId)
-	}
+		if clusters[0].EntityId != "cluster-east-1" {
+			t.Errorf("expected cluster-east-1, got %s", clusters[0].EntityId)
+		}
 	})
 }
 
@@ -390,15 +389,15 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 	)
 
 	system := integration.WithSystem(
-			integration.SystemName("test-system"),
-			integration.WithEnvironment(
-				integration.EnvironmentID("env-prod"),
-				integration.EnvironmentName("production"),
-			),
-			integration.WithEnvironment(
-				integration.EnvironmentID("env-staging"),
-				integration.EnvironmentName("staging"),
-			),
+		integration.SystemName("test-system"),
+		integration.WithEnvironment(
+			integration.EnvironmentID("env-prod"),
+			integration.EnvironmentName("production"),
+		),
+		integration.WithEnvironment(
+			integration.EnvironmentID("env-staging"),
+			integration.EnvironmentName("staging"),
+		),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -471,68 +470,68 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	// Test from environment to resources
-	environment, ok := engine.Workspace().Environments().Get("env-prod")
-	if !ok {
-		t.Fatalf("env-prod not found")
-	}
+		// Test from environment to resources
+		environment, ok := engine.Workspace().Environments().Get("env-prod")
+		if !ok {
+			t.Fatalf("env-prod not found")
+		}
 
-	entity := relationships.NewEnvironmentEntity(environment)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewEnvironmentEntity(environment)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	resources, ok := relatedEntities["has-resources"]
-	if !ok {
-		t.Fatalf("'has-resources' relationship not found")
-	}
+		resources, ok := relatedEntities["has-resources"]
+		if !ok {
+			t.Fatalf("'has-resources' relationship not found")
+		}
 
-	if len(resources) != 2 {
-		t.Fatalf("expected 2 related resources, got %d", len(resources))
-	}
+		if len(resources) != 2 {
+			t.Fatalf("expected 2 related resources, got %d", len(resources))
+		}
 
-	resourceIDs := make(map[string]bool)
-	for _, resource := range resources {
-		resourceIDs[resource.EntityId] = true
-	}
+		resourceIDs := make(map[string]bool)
+		for _, resource := range resources {
+			resourceIDs[resource.EntityId] = true
+		}
 
-	if !resourceIDs["db-prod"] {
-		t.Errorf("db-prod not in related entities")
-	}
-	if !resourceIDs["cache-prod"] {
-		t.Errorf("cache-prod not in related entities")
-	}
-	if resourceIDs["db-staging"] {
-		t.Errorf("db-staging should not be in related entities")
-	}
+		if !resourceIDs["db-prod"] {
+			t.Errorf("db-prod not in related entities")
+		}
+		if !resourceIDs["cache-prod"] {
+			t.Errorf("cache-prod not in related entities")
+		}
+		if resourceIDs["db-staging"] {
+			t.Errorf("db-staging should not be in related entities")
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_MultipleRelationships tests entity with multiple relationship rules
 func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 	rule1 := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("vpc-to-cluster"),
-			integration.RelationshipRuleReference("contains-clusters"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
-			integration.WithCelMatcher("from.id == to.metadata.vpc_id"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains-clusters"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.id == to.metadata.vpc_id"),
 	)
 
 	rule2 := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-2"),
-			integration.RelationshipRuleName("vpc-to-database"),
-			integration.RelationshipRuleReference("contains-databases"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
-			integration.WithCelMatcher("from.id == to.metadata.vpc_id"),
+		integration.RelationshipRuleID("rel-rule-2"),
+		integration.RelationshipRuleName("vpc-to-database"),
+		integration.RelationshipRuleReference("contains-databases"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
+		integration.WithCelMatcher("from.id == to.metadata.vpc_id"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -615,55 +614,55 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	vpc, ok := engine.Workspace().Resources().Get("vpc-1")
-	if !ok {
-		t.Fatalf("vpc-1 not found")
-	}
+		vpc, ok := engine.Workspace().Resources().Get("vpc-1")
+		if !ok {
+			t.Fatalf("vpc-1 not found")
+		}
 
-	entity := relationships.NewResourceEntity(vpc)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	// Should have two different relationship references
-	if len(relatedEntities) != 2 {
-		t.Fatalf("expected 2 relationship references, got %d", len(relatedEntities))
-	}
+		// Should have two different relationship references
+		if len(relatedEntities) != 2 {
+			t.Fatalf("expected 2 relationship references, got %d", len(relatedEntities))
+		}
 
-	clusters, ok := relatedEntities["contains-clusters"]
-	if !ok {
-		t.Fatalf("'contains-clusters' relationship not found")
-	}
+		clusters, ok := relatedEntities["contains-clusters"]
+		if !ok {
+			t.Fatalf("'contains-clusters' relationship not found")
+		}
 
-	if len(clusters) != 2 {
-		t.Fatalf("expected 2 clusters, got %d", len(clusters))
-	}
+		if len(clusters) != 2 {
+			t.Fatalf("expected 2 clusters, got %d", len(clusters))
+		}
 
-	databases, ok := relatedEntities["contains-databases"]
-	if !ok {
-		t.Fatalf("'contains-databases' relationship not found")
-	}
+		databases, ok := relatedEntities["contains-databases"]
+		if !ok {
+			t.Fatalf("'contains-databases' relationship not found")
+		}
 
-	if len(databases) != 1 {
-		t.Fatalf("expected 1 database, got %d", len(databases))
-	}
+		if len(databases) != 1 {
+			t.Fatalf("expected 1 database, got %d", len(databases))
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherNotEquals tests not_equals operator
 func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("cross-region-replication"),
-			integration.RelationshipRuleReference("replicates-to"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'database'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
-			integration.WithCelMatcher("from.metadata.region != to.metadata.region && from.metadata.cluster_name == to.metadata.cluster_name"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("cross-region-replication"),
+		integration.RelationshipRuleReference("replicates-to"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'database'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
+		integration.WithCelMatcher("from.metadata.region != to.metadata.region && from.metadata.cluster_name == to.metadata.cluster_name"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -740,55 +739,55 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	dbEast, ok := engine.Workspace().Resources().Get("db-east")
-	if !ok {
-		t.Fatalf("db-east not found")
-	}
-
-	entity := relationships.NewResourceEntity(dbEast)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
-
-	replicas, ok := relatedEntities["replicates-to"]
-	if !ok {
-		t.Fatalf("'replicates-to' relationship not found")
-	}
-
-	for _, rel := range replicas {
-		fmt.Println(rel.EntityId, rel.Direction)
-	}
-
-	// Should find db-west in both directions (same cluster, different region)
-	// Resource-to-resource relationships are bidirectional: db-east->db-west (to) and db-east<-db-west (from)
-	// Self-relationships are skipped, so db-east does not relate to itself
-	if len(replicas) != 2 {
-		t.Fatalf("expected 2 replicas, got %d", len(replicas))
-	}
-
-	// Verify both are db-west
-	for _, replica := range replicas {
-		if replica.EntityId != "db-west" {
-			t.Errorf("expected db-west, got %s", replica.EntityId)
+		dbEast, ok := engine.Workspace().Resources().Get("db-east")
+		if !ok {
+			t.Fatalf("db-east not found")
 		}
-	}
+
+		entity := relationships.NewResourceEntity(dbEast)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		replicas, ok := relatedEntities["replicates-to"]
+		if !ok {
+			t.Fatalf("'replicates-to' relationship not found")
+		}
+
+		for _, rel := range replicas {
+			fmt.Println(rel.EntityId, rel.Direction)
+		}
+
+		// Should find db-west in both directions (same cluster, different region)
+		// Resource-to-resource relationships are bidirectional: db-east->db-west (to) and db-east<-db-west (from)
+		// Self-relationships are skipped, so db-east does not relate to itself
+		if len(replicas) != 2 {
+			t.Fatalf("expected 2 replicas, got %d", len(replicas))
+		}
+
+		// Verify both are db-west
+		for _, replica := range replicas {
+			if replica.EntityId != "db-west" {
+				t.Errorf("expected db-west, got %s", replica.EntityId)
+			}
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherContains tests contains operator
 func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("service-to-endpoint"),
-			integration.RelationshipRuleReference("exposes"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'endpoint'"),
-			integration.WithCelMatcher("from.metadata.prefix.contains(to.name)"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("service-to-endpoint"),
+		integration.RelationshipRuleReference("exposes"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'endpoint'"),
+		integration.WithCelMatcher("from.metadata.prefix.contains(to.name)"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -857,57 +856,57 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	service, ok := engine.Workspace().Resources().Get("service-api")
-	if !ok {
-		t.Fatalf("service-api not found")
-	}
+		service, ok := engine.Workspace().Resources().Get("service-api")
+		if !ok {
+			t.Fatalf("service-api not found")
+		}
 
-	entity := relationships.NewResourceEntity(service)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(service)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	endpoints, ok := relatedEntities["exposes"]
-	if !ok {
-		t.Fatalf("'exposes' relationship not found")
-	}
+		endpoints, ok := relatedEntities["exposes"]
+		if !ok {
+			t.Fatalf("'exposes' relationship not found")
+		}
 
-	// Should find endpoint-1 and endpoint-2 (service prefix contains their names)
-	if len(endpoints) != 2 {
-		t.Fatalf("expected 2 endpoints, got %d", len(endpoints))
-	}
+		// Should find endpoint-1 and endpoint-2 (service prefix contains their names)
+		if len(endpoints) != 2 {
+			t.Fatalf("expected 2 endpoints, got %d", len(endpoints))
+		}
 
-	endpointIDs := make(map[string]bool)
-	for _, endpoint := range endpoints {
-		endpointIDs[endpoint.EntityId] = true
-	}
+		endpointIDs := make(map[string]bool)
+		for _, endpoint := range endpoints {
+			endpointIDs[endpoint.EntityId] = true
+		}
 
-	if !endpointIDs["endpoint-1"] {
-		t.Errorf("endpoint-1 not in related entities")
-	}
-	if !endpointIDs["endpoint-2"] {
-		t.Errorf("endpoint-2 not in related entities")
-	}
-	if endpointIDs["endpoint-3"] {
-		t.Errorf("endpoint-3 should not be in related entities")
-	}
+		if !endpointIDs["endpoint-1"] {
+			t.Errorf("endpoint-1 not in related entities")
+		}
+		if !endpointIDs["endpoint-2"] {
+			t.Errorf("endpoint-2 not in related entities")
+		}
+		if endpointIDs["endpoint-3"] {
+			t.Errorf("endpoint-3 should not be in related entities")
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherStartsWith tests starts_with operator
 func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("region-to-resource"),
-			integration.RelationshipRuleReference("contains"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'region'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'datacenter'"),
-			integration.WithCelMatcher("from.metadata.region_code.startsWith(to.metadata.code_prefix)"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("region-to-resource"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'region'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'datacenter'"),
+		integration.WithCelMatcher("from.metadata.region_code.startsWith(to.metadata.code_prefix)"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -994,57 +993,57 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	region, ok := engine.Workspace().Resources().Get("region-us-east")
-	if !ok {
-		t.Fatalf("region-us-east not found")
-	}
+		region, ok := engine.Workspace().Resources().Get("region-us-east")
+		if !ok {
+			t.Fatalf("region-us-east not found")
+		}
 
-	entity := relationships.NewResourceEntity(region)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(region)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	datacenters, ok := relatedEntities["contains"]
-	if !ok {
-		t.Fatalf("'contains' relationship not found")
-	}
+		datacenters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
 
-	// Should find dc-1 and dc-2 (region_code starts with their prefixes)
-	if len(datacenters) != 2 {
-		t.Fatalf("expected 2 datacenters, got %d", len(datacenters))
-	}
+		// Should find dc-1 and dc-2 (region_code starts with their prefixes)
+		if len(datacenters) != 2 {
+			t.Fatalf("expected 2 datacenters, got %d", len(datacenters))
+		}
 
-	dcIDs := make(map[string]bool)
-	for _, dc := range datacenters {
-		dcIDs[dc.EntityId] = true
-	}
+		dcIDs := make(map[string]bool)
+		for _, dc := range datacenters {
+			dcIDs[dc.EntityId] = true
+		}
 
-	if !dcIDs["dc-1"] {
-		t.Errorf("dc-1 not in related entities")
-	}
-	if !dcIDs["dc-2"] {
-		t.Errorf("dc-2 not in related entities")
-	}
-	if dcIDs["dc-3"] {
-		t.Errorf("dc-3 should not be in related entities")
-	}
+		if !dcIDs["dc-1"] {
+			t.Errorf("dc-1 not in related entities")
+		}
+		if !dcIDs["dc-2"] {
+			t.Errorf("dc-2 not in related entities")
+		}
+		if dcIDs["dc-3"] {
+			t.Errorf("dc-3 should not be in related entities")
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherEndsWith tests ends_with operator
 func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("app-to-logs"),
-			integration.RelationshipRuleReference("has-logs"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'application'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'log-stream'"),
-			integration.WithCelMatcher("from.metadata.app_id.endsWith(to.metadata.suffix)"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("app-to-logs"),
+		integration.RelationshipRuleReference("has-logs"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'application'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'log-stream'"),
+		integration.WithCelMatcher("from.metadata.app_id.endsWith(to.metadata.suffix)"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -1131,60 +1130,60 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	app, ok := engine.Workspace().Resources().Get("app-1")
-	if !ok {
-		t.Fatalf("app-1 not found")
-	}
-
-	entity := relationships.NewResourceEntity(app)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
-
-	logs, ok := relatedEntities["has-logs"]
-	if !ok {
-		t.Fatalf("'has-logs' relationship not found")
-	}
-
-	// Should find log-1 and log-2 (app_id ends with their suffix)
-	if len(logs) != 2 {
-		var ids []string
-		for _, log := range logs {
-			ids = append(ids, log.EntityId)
+		app, ok := engine.Workspace().Resources().Get("app-1")
+		if !ok {
+			t.Fatalf("app-1 not found")
 		}
-		t.Fatalf("expected 2 logs, got %d: %v", len(logs), ids)
-	}
 
-	logIDs := make(map[string]bool)
-	for _, log := range logs {
-		logIDs[log.EntityId] = true
-	}
+		entity := relationships.NewResourceEntity(app)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	if !logIDs["log-1"] {
-		t.Errorf("log-1 not in related entities")
-	}
-	if !logIDs["log-2"] {
-		t.Errorf("log-2 not in related entities")
-	}
-	if logIDs["log-3"] {
-		t.Errorf("log-3 should not be in related entities")
-	}
+		logs, ok := relatedEntities["has-logs"]
+		if !ok {
+			t.Fatalf("'has-logs' relationship not found")
+		}
+
+		// Should find log-1 and log-2 (app_id ends with their suffix)
+		if len(logs) != 2 {
+			var ids []string
+			for _, log := range logs {
+				ids = append(ids, log.EntityId)
+			}
+			t.Fatalf("expected 2 logs, got %d: %v", len(logs), ids)
+		}
+
+		logIDs := make(map[string]bool)
+		for _, log := range logs {
+			logIDs[log.EntityId] = true
+		}
+
+		if !logIDs["log-1"] {
+			t.Errorf("log-1 not in related entities")
+		}
+		if !logIDs["log-2"] {
+			t.Errorf("log-2 not in related entities")
+		}
+		if logIDs["log-3"] {
+			t.Errorf("log-3 should not be in related entities")
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_NoSelectorMatchNone tests nil selectors that match all entities of that type
 func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("all-resources-in-region"),
-			integration.RelationshipRuleReference("in-region"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			// No selectors - matches all resources of the specified types
-			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("all-resources-in-region"),
+		integration.RelationshipRuleReference("in-region"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		// No selectors - matches all resources of the specified types
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -1255,56 +1254,56 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	resource1, ok := engine.Workspace().Resources().Get("resource-1")
-	if !ok {
-		t.Fatalf("resource-1 not found")
-	}
-
-	entity := relationships.NewResourceEntity(resource1)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
-
-	related, ok := relatedEntities["in-region"]
-	if !ok {
-		t.Fatalf("'in-region' relationship not found")
-	}
-
-	for _, rel := range related {
-		fmt.Println(rel.EntityId, rel.Direction)
-	}
-
-	// With nil selectors, all resources with matching properties should match
-	// resource-1 (us-east-1) relates to resource-2 (us-east-1) but not resource-3 (us-west-2)
-	// Self-relationships are skipped, so resource-1 does not relate to itself
-	// Bidirectional: resource-1->resource-2 (to) and resource-1<-resource-2 (from)
-	if len(related) != 2 {
-		t.Fatalf("expected 2 related entities, got %d", len(related))
-	}
-
-	// Verify both are resource-2 (in both directions)
-	for _, res := range related {
-		if res.EntityId != "resource-2" {
-			t.Errorf("expected resource-2, got %s", res.EntityId)
+		resource1, ok := engine.Workspace().Resources().Get("resource-1")
+		if !ok {
+			t.Fatalf("resource-1 not found")
 		}
-	}
+
+		entity := relationships.NewResourceEntity(resource1)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		related, ok := relatedEntities["in-region"]
+		if !ok {
+			t.Fatalf("'in-region' relationship not found")
+		}
+
+		for _, rel := range related {
+			fmt.Println(rel.EntityId, rel.Direction)
+		}
+
+		// With nil selectors, all resources with matching properties should match
+		// resource-1 (us-east-1) relates to resource-2 (us-east-1) but not resource-3 (us-west-2)
+		// Self-relationships are skipped, so resource-1 does not relate to itself
+		// Bidirectional: resource-1->resource-2 (to) and resource-1<-resource-2 (from)
+		if len(related) != 2 {
+			t.Fatalf("expected 2 related entities, got %d", len(related))
+		}
+
+		// Verify both are resource-2 (in both directions)
+		for _, res := range related {
+			if res.EntityId != "resource-2" {
+				t.Errorf("expected resource-2, got %s", res.EntityId)
+			}
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_ConfigPropertyPath tests accessing nested config properties
 func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("service-to-dependency"),
-			integration.RelationshipRuleReference("depends-on"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'service'"),
-			integration.WithCelMatcher("from.config.dependencies.database == to.name"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("service-to-dependency"),
+		integration.RelationshipRuleReference("depends-on"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'service'"),
+		integration.WithCelMatcher("from.config.dependencies.database == to.name"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -1369,46 +1368,46 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	apiService, ok := engine.Workspace().Resources().Get("service-api")
-	if !ok {
-		t.Fatalf("service-api not found")
-	}
+		apiService, ok := engine.Workspace().Resources().Get("service-api")
+		if !ok {
+			t.Fatalf("service-api not found")
+		}
 
-	entity := relationships.NewResourceEntity(apiService)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(apiService)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	dependencies, ok := relatedEntities["depends-on"]
-	if !ok {
-		t.Fatalf("'depends-on' relationship not found")
-	}
+		dependencies, ok := relatedEntities["depends-on"]
+		if !ok {
+			t.Fatalf("'depends-on' relationship not found")
+		}
 
-	// Should find postgres-service (not redis-service)
-	if len(dependencies) != 1 {
-		t.Fatalf("expected 1 dependency, got %d", len(dependencies))
-	}
+		// Should find postgres-service (not redis-service)
+		if len(dependencies) != 1 {
+			t.Fatalf("expected 1 dependency, got %d", len(dependencies))
+		}
 
-	if dependencies[0].EntityId != "service-postgres" {
-		t.Errorf("expected service-postgres, got %s", dependencies[0].EntityId)
-	}
+		if dependencies[0].EntityId != "service-postgres" {
+			t.Errorf("expected service-postgres, got %s", dependencies[0].EntityId)
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_NoMatchingRelationships tests entity with no matching relationships
 func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("vpc-to-cluster"),
-			integration.RelationshipRuleReference("contains"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
-			integration.WithCelMatcher("true"), // No property matcher needed
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("true"), // No property matcher needed
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -1441,37 +1440,37 @@ func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	database, ok := engine.Workspace().Resources().Get("database-1")
-	if !ok {
-		t.Fatalf("database-1 not found")
-	}
+		database, ok := engine.Workspace().Resources().Get("database-1")
+		if !ok {
+			t.Fatalf("database-1 not found")
+		}
 
-	entity := relationships.NewResourceEntity(database)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(database)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	// Should have no relationships since database doesn't match any rule
-	if len(relatedEntities) != 0 {
-		t.Fatalf("expected 0 relationships, got %d", len(relatedEntities))
-	}
+		// Should have no relationships since database doesn't match any rule
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected 0 relationships, got %d", len(relatedEntities))
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_EmptyResults tests relationship rule that matches but finds no targets
 func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("vpc-to-cluster"),
-			integration.RelationshipRuleReference("contains"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
-			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -1526,38 +1525,38 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	vpc, ok := engine.Workspace().Resources().Get("vpc-1")
-	if !ok {
-		t.Fatalf("vpc-1 not found")
-	}
+		vpc, ok := engine.Workspace().Resources().Get("vpc-1")
+		if !ok {
+			t.Fatalf("vpc-1 not found")
+		}
 
-	entity := relationships.NewResourceEntity(vpc)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	// VPC matches the rule but no clusters in the same region
-	// The result should be empty (no "contains" key)
-	if len(relatedEntities) != 0 {
-		t.Fatalf("expected empty results, got %d relationships", len(relatedEntities))
-	}
+		// VPC matches the rule but no clusters in the same region
+		// The result should be empty (no "contains" key)
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected empty results, got %d relationships", len(relatedEntities))
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison tests basic CEL expression matching
 func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("vpc-to-cluster-cel"),
-			integration.RelationshipRuleReference("contains"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
-			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster-cel"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -1660,60 +1659,60 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	// Test from VPC in us-east-1 to clusters
-	vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
-	if !ok {
-		t.Fatalf("vpc-us-east-1 not found")
-	}
+		// Test from VPC in us-east-1 to clusters
+		vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
 
-	entity := relationships.NewResourceEntity(vpcEast)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(vpcEast)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	// Should have 2 clusters in us-east-1
-	clusters, ok := relatedEntities["contains"]
-	if !ok {
-		t.Fatalf("'contains' relationship not found")
-	}
+		// Should have 2 clusters in us-east-1
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
 
-	if len(clusters) != 2 {
-		t.Fatalf("expected 2 related clusters, got %d", len(clusters))
-	}
+		if len(clusters) != 2 {
+			t.Fatalf("expected 2 related clusters, got %d", len(clusters))
+		}
 
-	// Verify the correct clusters are returned
-	clusterIDs := make(map[string]bool)
-	for _, cluster := range clusters {
-		clusterIDs[cluster.EntityId] = true
-	}
+		// Verify the correct clusters are returned
+		clusterIDs := make(map[string]bool)
+		for _, cluster := range clusters {
+			clusterIDs[cluster.EntityId] = true
+		}
 
-	if !clusterIDs["cluster-east-1"] {
-		t.Errorf("cluster-east-1 not in related entities")
-	}
-	if !clusterIDs["cluster-east-2"] {
-		t.Errorf("cluster-east-2 not in related entities")
-	}
-	if clusterIDs["cluster-west-1"] {
-		t.Errorf("cluster-west-1 should not be in related entities")
-	}
+		if !clusterIDs["cluster-east-1"] {
+			t.Errorf("cluster-east-1 not in related entities")
+		}
+		if !clusterIDs["cluster-east-2"] {
+			t.Errorf("cluster-east-2 not in related entities")
+		}
+		if clusterIDs["cluster-west-1"] {
+			t.Errorf("cluster-west-1 should not be in related entities")
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression tests CEL with complex logic
 func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("service-to-dependency-cel"),
-			integration.RelationshipRuleReference("depends-on"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
-			// CEL expression with multiple conditions and string operations
-			integration.WithCelMatcher(`
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("service-to-dependency-cel"),
+		integration.RelationshipRuleReference("depends-on"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
+		// CEL expression with multiple conditions and string operations
+		integration.WithCelMatcher(`
 				from.metadata.region == to.metadata.region &&
 				to.metadata.tier == "critical" &&
 				from.config.database_name.startsWith(to.name)
@@ -1816,32 +1815,32 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	apiService, ok := engine.Workspace().Resources().Get("service-api")
-	if !ok {
-		t.Fatalf("service-api not found")
-	}
+		apiService, ok := engine.Workspace().Resources().Get("service-api")
+		if !ok {
+			t.Fatalf("service-api not found")
+		}
 
-	entity := relationships.NewResourceEntity(apiService)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(apiService)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	dependencies, ok := relatedEntities["depends-on"]
-	if !ok {
-		t.Fatalf("'depends-on' relationship not found")
-	}
+		dependencies, ok := relatedEntities["depends-on"]
+		if !ok {
+			t.Fatalf("'depends-on' relationship not found")
+		}
 
-	// Should only find db-postgres (same region, tier=critical, name starts with "postgres-prod")
-	if len(dependencies) != 1 {
-		t.Fatalf("expected 1 dependency, got %d", len(dependencies))
-	}
+		// Should only find db-postgres (same region, tier=critical, name starts with "postgres-prod")
+		if len(dependencies) != 1 {
+			t.Fatalf("expected 1 dependency, got %d", len(dependencies))
+		}
 
-	if dependencies[0].EntityId != "db-postgres" {
-		t.Errorf("expected db-postgres, got %s", dependencies[0].EntityId)
-	}
+		if dependencies[0].EntityId != "db-postgres" {
+			t.Errorf("expected db-postgres, got %s", dependencies[0].EntityId)
+		}
 	})
 }
 
@@ -1862,23 +1861,23 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 	)
 
 	system := integration.WithSystem(
-			integration.SystemName("test-system"),
-			integration.WithDeployment(
-				integration.DeploymentID("deployment-api"),
-				integration.DeploymentName("api"),
-				integration.DeploymentJobAgentConfig(map[string]any{
-					"region":     "us-east-1",
-					"cluster_id": "cluster-123",
-				}),
-			),
-			integration.WithDeployment(
-				integration.DeploymentID("deployment-worker"),
-				integration.DeploymentName("worker"),
-				integration.DeploymentJobAgentConfig(map[string]any{
-					"region":     "us-west-2",
-					"cluster_id": "cluster-456",
-				}),
-			),
+		integration.SystemName("test-system"),
+		integration.WithDeployment(
+			integration.DeploymentID("deployment-api"),
+			integration.DeploymentName("api"),
+			integration.DeploymentJobAgentConfig(map[string]any{
+				"region":     "us-east-1",
+				"cluster_id": "cluster-123",
+			}),
+		),
+		integration.WithDeployment(
+			integration.DeploymentID("deployment-worker"),
+			integration.DeploymentName("worker"),
+			integration.DeploymentJobAgentConfig(map[string]any{
+				"region":     "us-west-2",
+				"cluster_id": "cluster-456",
+			}),
+		),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -1935,47 +1934,47 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	// Test from deployment to resources
-	deployment, ok := engine.Workspace().Deployments().Get("deployment-api")
-	if !ok {
-		t.Fatalf("deployment-api not found")
-	}
+		// Test from deployment to resources
+		deployment, ok := engine.Workspace().Deployments().Get("deployment-api")
+		if !ok {
+			t.Fatalf("deployment-api not found")
+		}
 
-	entity := relationships.NewDeploymentEntity(deployment)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewDeploymentEntity(deployment)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	clusters, ok := relatedEntities["runs-on"]
-	if !ok {
-		t.Fatalf("'runs-on' relationship not found")
-	}
+		clusters, ok := relatedEntities["runs-on"]
+		if !ok {
+			t.Fatalf("'runs-on' relationship not found")
+		}
 
-	if len(clusters) != 1 {
-		t.Fatalf("expected 1 related cluster, got %d", len(clusters))
-	}
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster, got %d", len(clusters))
+		}
 
-	if clusters[0].EntityId != "cluster-123" {
-		t.Errorf("expected cluster-123, got %s", clusters[0].EntityId)
-	}
+		if clusters[0].EntityId != "cluster-123" {
+			t.Errorf("expected cluster-123, got %s", clusters[0].EntityId)
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_ListOperations tests CEL with list operations
 func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("service-to-allowed-regions"),
-			integration.RelationshipRuleReference("allowed-in"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'region'"),
-			// CEL expression checking if to.name is in from's allowed_regions list
-			integration.WithCelMatcher(`
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("service-to-allowed-regions"),
+		integration.RelationshipRuleReference("allowed-in"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'region'"),
+		// CEL expression checking if to.name is in from's allowed_regions list
+		integration.WithCelMatcher(`
 				to.name in from.config.allowed_regions
 			`),
 	)
@@ -2046,58 +2045,58 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	service, ok := engine.Workspace().Resources().Get("service-global")
-	if !ok {
-		t.Fatalf("service-global not found")
-	}
+		service, ok := engine.Workspace().Resources().Get("service-global")
+		if !ok {
+			t.Fatalf("service-global not found")
+		}
 
-	entity := relationships.NewResourceEntity(service)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(service)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	regions, ok := relatedEntities["allowed-in"]
-	if !ok {
-		t.Fatalf("'allowed-in' relationship not found")
-	}
+		regions, ok := relatedEntities["allowed-in"]
+		if !ok {
+			t.Fatalf("'allowed-in' relationship not found")
+		}
 
-	// Should find us-east-1 and eu-west-1 (not us-west-2)
-	if len(regions) != 2 {
-		t.Fatalf("expected 2 related regions, got %d", len(regions))
-	}
+		// Should find us-east-1 and eu-west-1 (not us-west-2)
+		if len(regions) != 2 {
+			t.Fatalf("expected 2 related regions, got %d", len(regions))
+		}
 
-	regionIDs := make(map[string]bool)
-	for _, region := range regions {
-		regionIDs[region.EntityId] = true
-	}
+		regionIDs := make(map[string]bool)
+		for _, region := range regions {
+			regionIDs[region.EntityId] = true
+		}
 
-	if !regionIDs["region-us-east-1"] {
-		t.Errorf("region-us-east-1 not in related entities")
-	}
-	if !regionIDs["region-eu-west-1"] {
-		t.Errorf("region-eu-west-1 not in related entities")
-	}
-	if regionIDs["region-us-west-2"] {
-		t.Errorf("region-us-west-2 should not be in related entities")
-	}
+		if !regionIDs["region-us-east-1"] {
+			t.Errorf("region-us-east-1 not in related entities")
+		}
+		if !regionIDs["region-eu-west-1"] {
+			t.Errorf("region-eu-west-1 not in related entities")
+		}
+		if regionIDs["region-us-west-2"] {
+			t.Errorf("region-us-west-2 should not be in related entities")
+		}
 	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_NumericComparison tests CEL with numeric operations
 func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 	rule := integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("service-to-sufficient-database"),
-			integration.RelationshipRuleReference("can-use"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
-			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
-			// CEL expression with numeric comparison
-			integration.WithCelMatcher(`
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("service-to-sufficient-database"),
+		integration.RelationshipRuleReference("can-use"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
+		// CEL expression with numeric comparison
+		integration.WithCelMatcher(`
 				int(to.metadata.max_connections) >= int(from.metadata.required_connections) &&
 				from.metadata.region == to.metadata.region
 			`),
@@ -2195,43 +2194,43 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 	}
 
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
-	ctx := context.Background()
+		ctx := context.Background()
 
-	service, ok := engine.Workspace().Resources().Get("service-heavy")
-	if !ok {
-		t.Fatalf("service-heavy not found")
-	}
+		service, ok := engine.Workspace().Resources().Get("service-heavy")
+		if !ok {
+			t.Fatalf("service-heavy not found")
+		}
 
-	entity := relationships.NewResourceEntity(service)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+		entity := relationships.NewResourceEntity(service)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
 
-	databases, ok := relatedEntities["can-use"]
-	if !ok {
-		t.Fatalf("'can-use' relationship not found")
-	}
+		databases, ok := relatedEntities["can-use"]
+		if !ok {
+			t.Fatalf("'can-use' relationship not found")
+		}
 
-	// Should find medium and large databases (>= 500 connections)
-	if len(databases) != 2 {
-		t.Fatalf("expected 2 related databases, got %d", len(databases))
-	}
+		// Should find medium and large databases (>= 500 connections)
+		if len(databases) != 2 {
+			t.Fatalf("expected 2 related databases, got %d", len(databases))
+		}
 
-	dbIDs := make(map[string]bool)
-	for _, db := range databases {
-		dbIDs[db.EntityId] = true
-	}
+		dbIDs := make(map[string]bool)
+		for _, db := range databases {
+			dbIDs[db.EntityId] = true
+		}
 
-	if dbIDs["db-small"] {
-		t.Errorf("db-small should not be in related entities")
-	}
-	if !dbIDs["db-medium"] {
-		t.Errorf("db-medium not in related entities")
-	}
-	if !dbIDs["db-large"] {
-		t.Errorf("db-large not in related entities")
-	}
+		if dbIDs["db-small"] {
+			t.Errorf("db-small should not be in related entities")
+		}
+		if !dbIDs["db-medium"] {
+			t.Errorf("db-medium not in related entities")
+		}
+		if !dbIDs["db-large"] {
+			t.Errorf("db-large not in related entities")
+		}
 	})
 }
 
@@ -2907,13 +2906,13 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 		// Add a relationship rule
 		fromSelector := &oapi.Selector{}
 		_ = fromSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'vpc'"})
-		
+
 		toSelector := &oapi.Selector{}
 		_ = toSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'kubernetes-cluster'"})
-		
+
 		matcher := &oapi.RelationshipRule_Matcher{}
 		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region"})
-		
+
 		err = engine.Workspace().RelationshipRules().Upsert(ctx, &oapi.RelationshipRule{
 			Id:           "rel-rule-1",
 			Name:         "vpc-to-cluster",
@@ -3248,13 +3247,13 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 		// Update the rule to add a tier filter
 		fromSelector := &oapi.Selector{}
 		_ = fromSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'vpc'"})
-		
+
 		toSelector := &oapi.Selector{}
 		_ = toSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'kubernetes-cluster'"})
-		
+
 		matcher := &oapi.RelationshipRule_Matcher{}
 		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region && to.metadata.tier == 'prod'"})
-		
+
 		err = engine.Workspace().RelationshipRules().Upsert(ctx, &oapi.RelationshipRule{
 			Id:           "rel-rule-1",
 			Name:         "vpc-to-cluster",
@@ -3289,4 +3288,3 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 		}
 	})
 }
-

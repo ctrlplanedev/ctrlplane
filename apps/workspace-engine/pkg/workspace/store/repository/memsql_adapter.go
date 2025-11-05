@@ -27,7 +27,6 @@ func (a *MemSQLAdapter[T]) typeAndKey(entity any) (typed T, key string, err erro
 	return typed, key, nil
 }
 
-
 func (a *MemSQLAdapter[T]) Set(ctx context.Context, entity any) error {
 	typed, _, err := a.typeAndKey(entity)
 	if err != nil {

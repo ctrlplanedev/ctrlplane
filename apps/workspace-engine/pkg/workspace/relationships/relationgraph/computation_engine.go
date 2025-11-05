@@ -223,4 +223,3 @@ func (e *ComputationEngine) matchesSelector(
 	}
 	return selector.Match(ctx, targetSelector, entity.Item())
 }
-

@@ -60,7 +60,7 @@ func BenchmarkEnvironments_Items_100(b *testing.B) {
 	benchmarkEnvironmentsItems(b, 100)
 }
 
-// BenchmarkEnvironments_Items_500 benchmarks getting all environments with 500 environments  
+// BenchmarkEnvironments_Items_500 benchmarks getting all environments with 500 environments
 // Note: May experience database locking issues due to architectural limitation where
 // each environment insert triggers a full ReleaseTargets.Recompute that reads all environments.
 // This creates O(N²) work and concurrent read/write contention on the environments table.
@@ -90,7 +90,7 @@ func benchmarkEnvironmentsItems(b *testing.B, numEnvironments int) {
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
 	}
-	
+
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -175,7 +175,7 @@ func benchmarkEnvironmentsResources(b *testing.B, numResources int) {
 	// Create resources
 	kinds := []string{"application", "database", "cache", "service", "vpc"}
 	tiers := []string{"frontend", "backend", "database"}
-	
+
 	for i := 0; i < numResources; i++ {
 		resource := c.NewResource(workspaceID)
 		resource.Name = fmt.Sprintf("resource-%d", i)
@@ -502,7 +502,7 @@ func BenchmarkEnvironments_LargeScale(b *testing.B) {
 			})
 		} else if i%5 == 2 {
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{
-				Cel: fmt.Sprintf("metadata.tier == '%s' && metadata.region == '%s'", 
+				Cel: fmt.Sprintf("metadata.tier == '%s' && metadata.region == '%s'",
 					tiers[i%len(tiers)], regions[i%len(regions)]),
 			})
 		} else {
@@ -515,7 +515,7 @@ func BenchmarkEnvironments_LargeScale(b *testing.B) {
 	// Create 5000 resources
 	b.Log("Creating 5000 resources...")
 	kinds := []string{"application", "database", "cache", "service", "vpc", "cluster", "region"}
-	
+
 	for i := 0; i < 5000; i++ {
 		resource := c.NewResource(workspaceID)
 		resource.Name = fmt.Sprintf("resource-%d", i)
@@ -569,15 +569,15 @@ func BenchmarkEnvironments_ResourceSelectorPerformance_SimpleEquality(b *testing
 
 // BenchmarkEnvironments_ResourceSelectorPerformance_ComplexAnd benchmarks complex AND selectors
 func BenchmarkEnvironments_ResourceSelectorPerformance_ComplexAnd(b *testing.B) {
-	benchmarkEnvironmentsResourceSelector(b, 
-		"metadata.tier == 'frontend' && metadata.region == 'us-east-1' && kind == 'application'", 
+	benchmarkEnvironmentsResourceSelector(b,
+		"metadata.tier == 'frontend' && metadata.region == 'us-east-1' && kind == 'application'",
 		1000)
 }
 
 // BenchmarkEnvironments_ResourceSelectorPerformance_ComplexOr benchmarks complex OR selectors
 func BenchmarkEnvironments_ResourceSelectorPerformance_ComplexOr(b *testing.B) {
-	benchmarkEnvironmentsResourceSelector(b, 
-		"metadata.tier == 'frontend' || metadata.tier == 'backend' || kind == 'database'", 
+	benchmarkEnvironmentsResourceSelector(b,
+		"metadata.tier == 'frontend' || metadata.tier == 'backend' || kind == 'database'",
 		1000)
 }
 
@@ -630,4 +630,3 @@ func benchmarkEnvironmentsResourceSelector(b *testing.B, selector string, numRes
 		_ = len(resources)
 	}
 }
-

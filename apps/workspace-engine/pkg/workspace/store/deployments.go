@@ -44,7 +44,7 @@ func (e *Deployments) RecomputeResources(ctx context.Context, deploymentId strin
 	return mv.StartRecompute(ctx)
 }
 
-func (e *Deployments) ApplyResourceUpsert(ctx context.Context, resource *oapi.Resource) ([]*oapi.Deployment) {
+func (e *Deployments) ApplyResourceUpsert(ctx context.Context, resource *oapi.Resource) []*oapi.Deployment {
 	addedTo := []*oapi.Deployment{}
 	for _, deployment := range e.Items() {
 		mv, ok := e.resources.Get(deployment.Id)
@@ -63,7 +63,6 @@ func (e *Deployments) ApplyResourceUpsert(ctx context.Context, resource *oapi.Re
 	}
 	return addedTo
 }
-
 
 // deploymentResourceRecomputeFunc returns a function that computes resources for a specific deployment
 func (e *Deployments) deploymentResourceRecomputeFunc(deploymentId string) materialized.RecomputeFunc[map[string]*oapi.Resource] {

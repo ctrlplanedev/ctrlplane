@@ -677,7 +677,7 @@ func TestGraph_AddRule(t *testing.T) {
 
 	// Add rule to provider (simulating what store layer does)
 	provider.rules = map[string]*oapi.RelationshipRule{"new-rule": rule}
-	
+
 	// Then invalidate in graph (store layer would call this)
 	graph.InvalidateRule(rule.Reference)
 
@@ -719,7 +719,7 @@ func TestGraph_RemoveRule(t *testing.T) {
 
 	// Remove the rule from provider (simulating what store layer does)
 	delete(provider.rules, "test-rule")
-	
+
 	// Then invalidate in graph (store layer would call this)
 	graph.InvalidateRule("test-rule")
 

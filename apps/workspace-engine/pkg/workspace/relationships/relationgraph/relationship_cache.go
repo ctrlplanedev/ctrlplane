@@ -14,10 +14,10 @@ type RelationshipCache struct {
 	relations map[string]map[string][]*oapi.EntityRelation
 
 	// Lazy loading tracking
-	computedEntities map[string]bool                    // tracks which entities have been computed
-	dirtyRules       map[string]bool                    // tracks which rules need recomputation
-	entityUsedIn     map[string]map[string]bool         // reverse index: entityID -> set of entityIDs that reference it
-	computedForRule  map[string]map[string]bool         // tracks entity+rule computations: entityID -> ruleRef -> computed
+	computedEntities map[string]bool            // tracks which entities have been computed
+	dirtyRules       map[string]bool            // tracks which rules need recomputation
+	entityUsedIn     map[string]map[string]bool // reverse index: entityID -> set of entityIDs that reference it
+	computedForRule  map[string]map[string]bool // tracks entity+rule computations: entityID -> ruleRef -> computed
 
 	// Statistics
 	relationCount int
@@ -229,4 +229,3 @@ func (c *RelationshipCache) GetRelationsByReference(reference string) map[string
 
 	return result
 }
-

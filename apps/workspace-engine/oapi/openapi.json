@@ -4280,6 +4280,91 @@
             "summary": "Get resource by identifier"
          }
       },
+      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships": {
+         "get": {
+            "description": "Returns all relationships for the specified resource.",
+            "operationId": "getRelationshipsForResource",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Identifier of the resource",
+                  "in": "path",
+                  "name": "resourceIdentifier",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "relationships": {
+                                 "items": {
+                                    "properties": {
+                                       "reference": {
+                                          "type": "string"
+                                       },
+                                       "relations": {
+                                          "items": {
+                                             "$ref": "#/components/schemas/EntityRelation"
+                                          },
+                                          "type": "array"
+                                       }
+                                    },
+                                    "required": [
+                                       "reference",
+                                       "relations"
+                                    ],
+                                    "type": "object"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "required": [
+                              "relationships"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "The requested relationships"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get relationships for a resource"
+         }
+      },
       "/v1/workspaces/{workspaceId}/status": {
          "get": {
             "description": "Returns the status of the engine.",

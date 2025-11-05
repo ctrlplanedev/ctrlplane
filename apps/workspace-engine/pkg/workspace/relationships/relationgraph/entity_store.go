@@ -62,4 +62,3 @@ func (s *EntityStore) EntityCount() int {
 func (s *EntityStore) RuleCount() int {
 	return len(s.provider.GetRelationshipRules())
 }
-

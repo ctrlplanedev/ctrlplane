@@ -17,7 +17,7 @@ var dbCounter uint64
 
 func NewMemSQL[T any](tableBuilder *TableBuilder) *MemSQL[T] {
 	tableName := tableBuilder.TableName()
-	
+
 	// Use a temporary file-based database to support WAL mode (in-memory databases don't support WAL)
 	// WAL mode enables concurrent readers without blocking on writes, critical for performance
 	// Each database gets a unique ID to prevent conflicts when tests reuse table names
@@ -45,20 +45,20 @@ func NewMemSQL[T any](tableBuilder *TableBuilder) *MemSQL[T] {
 	}
 
 	// Optimize for concurrent access and performance
-	db.SetMaxOpenConns(50)      // Allow many concurrent readers
-	db.SetMaxIdleConns(10)      // Keep some connections ready
-	db.SetConnMaxLifetime(0)    // Don't close connections (in-memory database)
-	
+	db.SetMaxOpenConns(50)   // Allow many concurrent readers
+	db.SetMaxIdleConns(10)   // Keep some connections ready
+	db.SetConnMaxLifetime(0) // Don't close connections (in-memory database)
+
 	// Additional performance optimizations
-	db.Exec("PRAGMA synchronous=NORMAL")  // Faster, still safe for in-memory
-	db.Exec("PRAGMA cache_size=-64000")   // 64MB cache
-	db.Exec("PRAGMA temp_store=MEMORY")   // Use RAM for temp tables
+	db.Exec("PRAGMA synchronous=NORMAL") // Faster, still safe for in-memory
+	db.Exec("PRAGMA cache_size=-64000")  // 64MB cache
+	db.Exec("PRAGMA temp_store=MEMORY")  // Use RAM for temp tables
 
 	// Drop table if it exists, then create it fresh
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)); err != nil {
 		panic(fmt.Sprintf("failed to drop table %s: %v", tableName, err))
 	}
-	
+
 	if _, err := db.Exec(tableBuilder.Build()); err != nil {
 		panic(fmt.Sprintf("failed to create table %s: %v", tableName, err))
 	}
@@ -708,12 +708,12 @@ func needsJSONSerialization(v reflect.Value) bool {
 	if v.Kind() == reflect.Ptr && v.IsNil() {
 		return false
 	}
-	
+
 	// Dereference pointers
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	switch v.Kind() {
 	case reflect.Struct:
 		// Don't serialize time.Time as JSON (it's handled specially elsewhere)
@@ -746,7 +746,7 @@ func needsJSONSerializationType(t reflect.Type) bool {
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	
+
 	switch t.Kind() {
 	case reflect.Struct:
 		// Don't serialize time.Time as JSON (it's handled specially elsewhere)

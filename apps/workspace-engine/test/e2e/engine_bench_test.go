@@ -24,7 +24,7 @@ import (
 // - ~8000 jobs (mix of successful and failed)
 func BenchmarkEngine_LargeScale(b *testing.B) {
 	b.Log("Setting up large-scale benchmark environment...")
-	
+
 	// Create test workspace using nil testing.T (allowed by NewTestWorkspace)
 	ctx := context.Background()
 	engine := integration.NewTestWorkspace(nil)
@@ -84,13 +84,13 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 			dvID := uuid.New().String()
 			dv := c.NewDeploymentVariable(deploymentID, fmt.Sprintf("var_%d", v))
 			dv.Id = dvID
-			
+
 			// Set default literal value
 			defaultVal := fmt.Sprintf("default-value-%d-%d", i, v)
 			defaultLiteralValue := &oapi.LiteralValue{}
 			_ = defaultLiteralValue.FromStringValue(defaultVal)
 			dv.DefaultValue = defaultLiteralValue
-			
+
 			engine.PushEvent(ctx, handler.DeploymentVariableCreate, dv)
 
 			// Create 3 deployment variable values with selectors
@@ -257,7 +257,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 			version.DeploymentId = deploymentID
 			version.Tag = fmt.Sprintf("v%d.%d.0", i, v)
 			version.Name = fmt.Sprintf("version-%d-%d", i, v)
-			
+
 			// Most versions are ready, some are building/failed for realism
 			if v%10 == 0 && v > 0 {
 				version.Status = oapi.DeploymentVersionStatusBuilding
@@ -289,10 +289,10 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 
 	for jobsCreated < jobsToCreate && processRounds < 100 {
 		processRounds++
-		
+
 		// Get pending jobs
 		pendingJobs := engine.Workspace().Jobs().GetPending()
-		
+
 		if len(pendingJobs) == 0 {
 			// Trigger more jobs by creating new versions or redeploying
 			if processRounds%10 == 0 {
@@ -400,7 +400,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 // BenchmarkEngine_LargeScale_Reconcile benchmarks the full reconciliation process after tick
 func BenchmarkEngine_LargeScale_Reconcile(b *testing.B) {
 	b.Log("Setting up large-scale reconciliation benchmark...")
-	
+
 	engine := integration.NewTestWorkspace(nil)
 	ctx := context.Background()
 	workspaceID := engine.Workspace().ID
@@ -483,7 +483,6 @@ func BenchmarkEngine_LargeScale_Reconcile(b *testing.B) {
 	}
 }
 
-
 func BenchmarkResourceInsertion_10(b *testing.B) {
 	benchmarkResourceInsertion(b, 10)
 }
@@ -511,29 +510,29 @@ func BenchmarkResourceInsertion_15000(b *testing.B) {
 // benchmarkResourceInsertion is a helper function that benchmarks resource insertion
 func benchmarkResourceInsertion(b *testing.B, numResources int) {
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		
+
 		// Setup: Create test workspace
 		ctx := context.Background()
 		engine := integration.NewTestWorkspace(nil)
 		workspaceID := engine.Workspace().ID
-		
+
 		// Setup: Create job agent
 		jobAgentID := uuid.New().String()
 		jobAgent := c.NewJobAgent(workspaceID)
 		jobAgent.Id = jobAgentID
 		jobAgent.Name = "Benchmark Job Agent"
 		engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-		
+
 		// Setup: Create system
 		sysID := uuid.New().String()
 		sys := c.NewSystem(workspaceID)
 		sys.Id = sysID
 		sys.Name = "bench-system"
 		engine.PushEvent(ctx, handler.SystemCreate, sys)
-		
+
 		// Setup: Create 5 environments
 		for envIdx := 0; envIdx < 5; envIdx++ {
 			envID := uuid.New().String()
@@ -544,7 +543,7 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 			engine.PushEvent(ctx, handler.EnvironmentCreate, env)
 		}
-		
+
 		// Setup: Create 30 deployments
 		for depIdx := 0; depIdx < 30; depIdx++ {
 			deploymentID := uuid.New().String()
@@ -560,7 +559,7 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			}
 			engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
 		}
-		
+
 		// Setup: Create 5 relationship rules
 		relationshipTypes := []struct {
 			fromKind  string
@@ -573,7 +572,7 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			{"cluster", "region", "region"},
 			{"deployment", "config", "config"},
 		}
-		
+
 		for _, relType := range relationshipTypes {
 			rrID := uuid.New().String()
 			rr := c.NewRelationshipRule(workspaceID)
@@ -582,28 +581,28 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			rr.Reference = relType.reference
 			rr.FromType = "resource"
 			rr.ToType = "resource"
-			
+
 			// From selector - use CEL
 			rr.FromSelector = &oapi.Selector{}
 			_ = rr.FromSelector.FromCelSelector(oapi.CelSelector{
 				Cel: fmt.Sprintf("kind == '%s'", relType.fromKind),
 			})
-			
+
 			// To selector - use CEL
 			rr.ToSelector = &oapi.Selector{}
 			_ = rr.ToSelector.FromCelSelector(oapi.CelSelector{
 				Cel: fmt.Sprintf("kind == '%s'", relType.toKind),
 			})
-			
+
 			// Matcher - use CEL expression for property matching
 			matcher := &oapi.CelMatcher{
 				Cel: "from.metadata.link_id == to.id",
 			}
 			_ = rr.Matcher.FromCelMatcher(*matcher)
-			
+
 			engine.PushEvent(ctx, handler.RelationshipRuleCreate, rr)
 		}
-		
+
 		// Pre-generate all resource data to exclude UUID and string generation from benchmark
 		resourceData := make([]struct {
 			id       string
@@ -612,14 +611,14 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			metadata map[string]string
 			config   map[string]interface{}
 		}, numResources)
-		
+
 		kinds := []string{
 			"application", "database", "cache", "service", "vpc",
 			"cluster", "region", "deployment", "config", "server",
 		}
 		tiers := []string{"frontend", "backend", "database", "middleware", "storage"}
 		regions := []string{"us-east-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-south-1"}
-		
+
 		for j := 0; j < numResources; j++ {
 			resourceData[j].id = uuid.New().String()
 			resourceData[j].name = fmt.Sprintf("resource-%d", j)
@@ -634,9 +633,9 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 				"version":  fmt.Sprintf("v1.%d.0", j%100),
 			}
 		}
-		
+
 		b.StartTimer()
-		
+
 		// Benchmark: Insert resources
 		startTime := time.Now()
 		for j := 0; j < numResources; j++ {
@@ -647,13 +646,13 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			resource.Kind = data.kind
 			resource.Metadata = data.metadata
 			resource.Config = data.config
-			
+
 			engine.PushEvent(ctx, handler.ResourceCreate, resource)
 		}
 		elapsed := time.Since(startTime)
-		
+
 		b.StopTimer()
-		
+
 		// Report metrics
 		resourcesPerSecond := float64(numResources) / elapsed.Seconds()
 		b.ReportMetric(resourcesPerSecond, "resources/sec")
@@ -664,17 +663,17 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 // BenchmarkResourceInsertionParallel benchmarks parallel resource insertion
 func BenchmarkResourceInsertionParallel(b *testing.B) {
 	numResources := 1000
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		
+
 		// Setup: Create test workspace
 		ctx := context.Background()
 		engine := integration.NewTestWorkspace(nil)
 		workspaceID := engine.Workspace().ID
-		
+
 		// Pre-generate all resource data
 		resourceData := make([]struct {
 			id       string
@@ -683,11 +682,11 @@ func BenchmarkResourceInsertionParallel(b *testing.B) {
 			metadata map[string]string
 			config   map[string]interface{}
 		}, numResources)
-		
+
 		kinds := []string{
 			"application", "database", "cache", "service", "vpc",
 		}
-		
+
 		for j := 0; j < numResources; j++ {
 			resourceData[j].id = uuid.New().String()
 			resourceData[j].name = fmt.Sprintf("resource-%d", j)
@@ -699,9 +698,9 @@ func BenchmarkResourceInsertionParallel(b *testing.B) {
 				"replicas": j%10 + 1,
 			}
 		}
-		
+
 		b.StartTimer()
-		
+
 		// Benchmark: Insert resources in parallel
 		startTime := time.Now()
 		b.RunParallel(func(pb *testing.PB) {
@@ -717,19 +716,18 @@ func BenchmarkResourceInsertionParallel(b *testing.B) {
 				resource.Kind = data.kind
 				resource.Metadata = data.metadata
 				resource.Config = data.config
-				
+
 				engine.PushEvent(ctx, handler.ResourceCreate, resource)
 				idx++
 			}
 		})
 		elapsed := time.Since(startTime)
-		
+
 		b.StopTimer()
-		
+
 		// Report metrics
 		resourcesPerSecond := float64(numResources) / elapsed.Seconds()
 		b.ReportMetric(resourcesPerSecond, "resources/sec")
 		b.ReportMetric(float64(elapsed.Microseconds())/float64(numResources), "μs/resource")
 	}
 }
-

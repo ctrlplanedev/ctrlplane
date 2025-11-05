@@ -2557,9 +2557,9 @@ func TestMemSQL_NestedStruct_WithSlice(t *testing.T) {
 
 func TestMemSQL_NestedStruct_PointerField(t *testing.T) {
 	type Settings struct {
-		Theme      string `json:"theme"`
-		FontSize   int    `json:"font_size"`
-		AutoSave   bool   `json:"auto_save"`
+		Theme    string `json:"theme"`
+		FontSize int    `json:"font_size"`
+		AutoSave bool   `json:"auto_save"`
 	}
 
 	type Account struct {

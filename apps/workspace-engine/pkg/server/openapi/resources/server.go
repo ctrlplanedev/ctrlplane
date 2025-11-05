@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/relationships"
 
 	"github.com/gin-gonic/gin"
 )
@@ -140,4 +141,33 @@ func (r *Resources) QueryResources(c *gin.Context, workspaceId string, params oa
 		"limit":  limit,
 		"items":  paginatedResources,
 	})
+}
+
+func (r *Resources) GetRelationshipsForResource(c *gin.Context, workspaceId string, resourceIdentifier string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	resource, ok := ws.Resources().Get(resourceIdentifier)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Resource not found",
+		})
+		return
+	}
+
+	relatableEntity := relationships.NewResourceEntity(resource)
+	relatedEntities, err := ws.RelationshipRules().GetRelatedEntities(c.Request.Context(), relatableEntity)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get relationships: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, relatedEntities)
 }

@@ -10,9 +10,8 @@ type EntityProvider interface {
 	GetResources() map[string]*oapi.Resource
 	GetDeployments() map[string]*oapi.Deployment
 	GetEnvironments() map[string]*oapi.Environment
-	
+
 	// Rule access
 	GetRelationshipRules() map[string]*oapi.RelationshipRule
 	GetRelationshipRule(reference string) (*oapi.RelationshipRule, bool)
 }
-

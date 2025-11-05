@@ -48,6 +48,28 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships': {
+    get: {
+      summary: 'Get relationships for a resource',
+      operationId: 'getRelationshipsForResource',
+      description: 'Returns all relationships for the specified resource.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.resourceIdentifierParam(),
+      ],
+      responses: openapi.okResponse(
+        {
+          type: 'object',
+          additionalProperties: {
+            type: 'array',
+            items: openapi.schemaRef('EntityRelation'),
+          },
+        },
+        'The requested relationships',
+      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/resources/query': {
     post: {
       summary: 'Query resources with CEL expression',

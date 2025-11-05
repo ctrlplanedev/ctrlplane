@@ -289,7 +289,7 @@ func (r *Resources) recomputeAll(ctx context.Context) {
 			log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
 		}
 	}
-	
+
 	for _, deployment := range r.store.Deployments.Items() {
 		if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
 			span.RecordError(err)
@@ -390,8 +390,8 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 			for _, deployment := range deploys {
 				rt = append(rt, &oapi.ReleaseTarget{
 					EnvironmentId: environment.Id,
-					DeploymentId: deployment.Id,
-					ResourceId: resource.Id,
+					DeploymentId:  deployment.Id,
+					ResourceId:    resource.Id,
 				})
 			}
 		}
@@ -429,7 +429,7 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 			log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
 		}
 	}
-	
+
 	for _, deployment := range r.store.Deployments.Items() {
 		if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
 			log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
@@ -545,7 +545,6 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 	// Track if any resources were deleted (which requires recomputation)
 	hadDeletions := len(resourcesToDelete) > 0
-
 
 	for _, resourceId := range resourcesToDelete {
 		resource, ok := r.repo.Resources.Get(resourceId)

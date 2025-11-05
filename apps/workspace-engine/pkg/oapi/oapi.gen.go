@@ -1475,6 +1475,9 @@ type ServerInterface interface {
 	// Get resource by identifier
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
 	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
+	// Get relationships for a resource
+	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships)
+	GetRelationshipsForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
 	// Get engine status
 	// (GET /v1/workspaces/{workspaceId}/status)
 	GetEngineStatus(c *gin.Context, workspaceId string)
@@ -2935,6 +2938,39 @@ func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
 	siw.Handler.GetResourceByIdentifier(c, workspaceId, resourceIdentifier)
 }
 
+// GetRelationshipsForResource operation middleware
+func (siw *ServerInterfaceWrapper) GetRelationshipsForResource(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "resourceIdentifier" -------------
+	var resourceIdentifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetRelationshipsForResource(c, workspaceId, resourceIdentifier)
+}
+
 // GetEngineStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetEngineStatus(c *gin.Context) {
 
@@ -3101,6 +3137,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/name/:name", wrapper.GetResourceProviderByName)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/relationships", wrapper.GetRelationshipsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)

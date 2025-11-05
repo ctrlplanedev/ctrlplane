@@ -1400,4 +1400,3 @@ func TestInvalidateRule_OnlyAffectsSpecificRule(t *testing.T) {
 	assert.False(t, cache.IsRuleComputedForEntity("res-1", "resource-to-deployment"), "Invalidated rule should not be computed")
 	assert.True(t, cache.IsRuleComputedForEntity("res-1", "resource-to-environment"), "Other rule should still be computed")
 }
-
