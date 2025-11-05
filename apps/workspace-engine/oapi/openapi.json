@@ -4309,32 +4309,12 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "properties": {
-                              "relationships": {
-                                 "items": {
-                                    "properties": {
-                                       "reference": {
-                                          "type": "string"
-                                       },
-                                       "relations": {
-                                          "items": {
-                                             "$ref": "#/components/schemas/EntityRelation"
-                                          },
-                                          "type": "array"
-                                       }
-                                    },
-                                    "required": [
-                                       "reference",
-                                       "relations"
-                                    ],
-                                    "type": "object"
-                                 },
-                                 "type": "array"
-                              }
+                           "additionalProperties": {
+                              "items": {
+                                 "$ref": "#/components/schemas/EntityRelation"
+                              },
+                              "type": "array"
                            },
-                           "required": [
-                              "relationships"
-                           ],
                            "type": "object"
                         }
                      }
