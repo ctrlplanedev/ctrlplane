@@ -426,7 +426,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	st.Resources.Upsert(ctx, resource3)
 	// ReleaseTargets are computed automatically from resources and deployments
 	// Call Items() to ensure ReleaseTargets are computed and available
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
 
 	// Create successful jobs with specific timestamps
@@ -791,7 +791,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	st.Resources.Upsert(ctx, resource3)
 	// ReleaseTargets are computed automatically from resources and deployments
 	// Call Items() to ensure ReleaseTargets are computed and available
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
 
 	// Job 1 completes early (most recent success for soak time)

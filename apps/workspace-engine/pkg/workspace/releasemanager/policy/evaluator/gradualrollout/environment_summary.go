@@ -64,7 +64,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	environment := scope.Environment
 	version := scope.Version
 
-	allReleaseTargets, err := e.store.ReleaseTargets.Items(ctx)
+	allReleaseTargets, err := e.store.ReleaseTargets.Items()
 	if err != nil {
 		return results.NewDeniedResult(fmt.Sprintf("Failed to get release targets: %v", err)).
 			WithDetail("error", err.Error())

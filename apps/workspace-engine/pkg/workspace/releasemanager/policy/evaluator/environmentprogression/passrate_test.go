@@ -138,7 +138,7 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 	}
 	st.Resources.Upsert(ctx, resource2)
 	st.Resources.Upsert(ctx, resource3)
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err)
 
 	// Create 2 successful jobs out of 3 targets (66.67% success)
@@ -262,7 +262,7 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 	}
 	st.Resources.Upsert(ctx, resource2)
 	st.Resources.Upsert(ctx, resource3)
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err)
 
 	// Create only 1 successful job out of 3 targets (33.33% success)
@@ -374,7 +374,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 	}
 	st.Resources.Upsert(ctx, resource2)
 	st.Resources.Upsert(ctx, resource3)
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err)
 
 	// Create jobs with specific timestamps
@@ -475,7 +475,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 	}
 	st.Resources.Upsert(ctx, resource1)
 	// Ensure ReleaseTargets are computed after adding resource
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
 
 	env, _ := st.Environments.Get("env-staging")
@@ -576,7 +576,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		CreatedAt:   time.Now(),
 	}
 	st.Resources.Upsert(ctx, resource1)
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
 
 	// Create a job with InProgress status (which we'll treat as successful)
