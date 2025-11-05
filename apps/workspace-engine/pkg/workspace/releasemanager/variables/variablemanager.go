@@ -75,6 +75,8 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		}
 	}
 
+	span.SetAttributes(attribute.String("resolved_variables", fmt.Sprintf("%v", resolvedVariables)))
+
 	return resolvedVariables, nil
 }
 
