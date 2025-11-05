@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -227,7 +228,9 @@ func (r *RelationshipRules) GetRelatedEntities(
 		var ents []string
 		for _, entity := range entities {
 			if entity != nil {
-				ents = append(ents, fmt.Sprintf("%+v", *entity))
+				if jsonBytes, err := json.Marshal(entity); err == nil {
+					ents = append(ents, string(jsonBytes))
+				}
 			}
 		}
 		span.AddEvent(fmt.Sprintf("result.reference.%s", reference), trace.WithAttributes(attribute.String("entities", strings.Join(ents, ", "))))

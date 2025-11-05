@@ -2,6 +2,7 @@ package variables
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -79,7 +80,9 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 	var vars []string
 	for key, value := range resolvedVariables {
 		if value != nil {
-			vars = append(vars, fmt.Sprintf("%s: %+v", key, *value))
+			if jsonBytes, err := json.Marshal(value); err == nil {
+				vars = append(vars, fmt.Sprintf("%s: %s", key, string(jsonBytes)))
+			}
 		}
 	}
 	span.SetAttributes(attribute.String("resolved_variables", strings.Join(vars, ", ")))
