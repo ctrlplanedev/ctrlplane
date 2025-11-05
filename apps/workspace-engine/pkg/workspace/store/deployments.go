@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel"
@@ -12,8 +14,8 @@ var deploymentsTracer = otel.Tracer("workspace/store/deployments")
 
 func NewDeployments(store *Store) *Deployments {
 	deployments := &Deployments{
-		repo:      store.repo,
-		store:     store,
+		repo:  store.repo,
+		store: store,
 	}
 
 	return deployments
@@ -60,4 +62,28 @@ func (e *Deployments) Variables(deploymentId string) map[string]*oapi.Deployment
 
 func (e *Deployments) Items() map[string]*oapi.Deployment {
 	return e.repo.Deployments
+}
+
+func (e *Deployments) Resources(ctx context.Context, deploymentId string) ([]*oapi.Resource, error) {
+	deployment, ok := e.Get(deploymentId)
+	if !ok {
+		return nil, fmt.Errorf("deployment %s not found", deploymentId)
+	}
+
+	allResourcesSlice := make([]*oapi.Resource, 0)
+	for _, resource := range e.store.Resources.Items() {
+		allResourcesSlice = append(allResourcesSlice, resource)
+	}
+
+	resources, err := selector.FilterResources(ctx, deployment.ResourceSelector, allResourcesSlice)
+	if err != nil {
+		return nil, err
+	}
+
+	resourcesSlice := make([]*oapi.Resource, 0, len(resources))
+	for _, resource := range resources {
+		resourcesSlice = append(resourcesSlice, resource)
+	}
+
+	return resourcesSlice, nil
 }

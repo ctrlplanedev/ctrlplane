@@ -99,12 +99,10 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 		),
 	)
 
-	ctx := context.Background()
-
 	// Expected behavior: Only d1 should match r1 (both contain "prod" AND "web")
 	// BUG: Currently d1 matches all resources because AND condition doesn't work
 
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 
 	// Count release targets for each deployment
 	d1Count := 0
@@ -228,12 +226,10 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 		),
 	)
 
-	ctx := context.Background()
-
 	// Expected behavior: Only e1 should match r1 (both contain "prod" AND "us-east")
 	// BUG: Currently e1 matches all resources because AND condition doesn't work
 
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 
 	// Count release targets for each environment
 	e1Count := 0
@@ -331,7 +327,7 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 	ctx := context.Background()
 
 	// 3 release targets should exist (one for each deployment)
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 3 {
 		t.Fatalf("expected 3 release targets, got %d", len(releaseTargets))
 	}
@@ -452,7 +448,7 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 	ctx := context.Background()
 
 	// 3 release targets should exist (one for each environment)
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 3 {
 		t.Fatalf("expected 3 release targets, got %d", len(releaseTargets))
 	}

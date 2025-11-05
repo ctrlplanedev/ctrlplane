@@ -22,7 +22,7 @@ func getReleaseTargets(ctx context.Context, store *store.Store, version *oapi.De
 	))
 	defer span.End()
 
-	releaseTargets, err := store.ReleaseTargets.Items(ctx)
+	releaseTargets, err := store.ReleaseTargets.Items()
 	if err != nil {
 		return nil
 	}

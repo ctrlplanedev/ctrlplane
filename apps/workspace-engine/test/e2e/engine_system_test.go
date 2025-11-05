@@ -21,7 +21,7 @@ func TestEngine_SystemInitialState(t *testing.T) {
 	system, _ := engine.Workspace().Systems().Get(systemId)
 
 	// Initially, systems should have no deployments
-	deployments := engine.Workspace().Systems().Deployments(system.Id)
+	deployments := engine.Workspace().Deployments().Items()
 	if len(deployments) != 0 {
 		t.Fatalf("system deployments count is %d, want 0", len(deployments))
 	}
@@ -311,7 +311,7 @@ func TestEngine_SystemDeletionCascade(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, s1)
 
 	// Verify system 1 is removed
-	if engine.Workspace().Systems().Has(s1.Id) {
+	if _, ok := engine.Workspace().Systems().Get(s1.Id); ok {
 		t.Fatalf("system s1 should be removed")
 	}
 
@@ -326,7 +326,7 @@ func TestEngine_SystemDeletionCascade(t *testing.T) {
 	}
 
 	// Verify system 2 still exists with correct data
-	if !engine.Workspace().Systems().Has(s2.Id) {
+	if _, ok := engine.Workspace().Systems().Get(s2.Id); !ok {
 		t.Fatalf("system s2 should still exist")
 	}
 
@@ -387,7 +387,6 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 			}),
 		),
 	)
-	ctx := context.Background()
 
 	// Verify system has correct deployments and environments
 	sysDeployments := engine.Workspace().Systems().Deployments(systemId)
@@ -401,7 +400,7 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 	}
 
 	// Verify release targets are created correctly
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 
 	// Expected:
 	// - d1 (no filter) matches both r1 and r2 = 2 resources
@@ -448,7 +447,7 @@ func TestEngine_SystemDeleteSimple(t *testing.T) {
 	system, _ := engine.Workspace().Systems().Get(systemId)
 
 	// Verify system exists
-	if !engine.Workspace().Systems().Has(systemId) {
+	if _, ok := engine.Workspace().Systems().Get(systemId); !ok {
 		t.Fatalf("system should exist before deletion")
 	}
 
@@ -456,7 +455,7 @@ func TestEngine_SystemDeleteSimple(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, system)
 
 	// Verify system is removed
-	if engine.Workspace().Systems().Has(systemId) {
+	if _, ok := engine.Workspace().Systems().Get(systemId); ok {
 		t.Fatalf("system should be removed after deletion")
 	}
 
@@ -490,7 +489,7 @@ func TestEngine_SystemDeleteWithReleaseTargets(t *testing.T) {
 	system, _ := engine.Workspace().Systems().Get(systemId)
 
 	// Verify release targets exist before deletion
-	releaseTargetsBefore, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargetsBefore, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargetsBefore) == 0 {
 		t.Fatalf("expected at least one release target before deletion")
 	}
@@ -499,12 +498,12 @@ func TestEngine_SystemDeleteWithReleaseTargets(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, system)
 
 	// Verify system is removed
-	if engine.Workspace().Systems().Has(systemId) {
+	if _, ok := engine.Workspace().Systems().Get(systemId); ok {
 		t.Fatalf("system should be removed after deletion")
 	}
 
 	// Verify all release targets are removed
-	releaseTargetsAfter, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargetsAfter, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargetsAfter) != 0 {
 		t.Fatalf("all release targets should be removed after system deletion, got %d", len(releaseTargetsAfter))
 	}
@@ -538,13 +537,13 @@ func TestEngine_SystemDeleteMultiple(t *testing.T) {
 	s2, _ := engine.Workspace().Systems().Get(s2Id)
 
 	// Verify all systems exist
-	if !engine.Workspace().Systems().Has(s1Id) {
+	if _, ok := engine.Workspace().Systems().Get(s1Id); !ok {
 		t.Fatalf("system s1 should exist")
 	}
-	if !engine.Workspace().Systems().Has(s2Id) {
+	if _, ok := engine.Workspace().Systems().Get(s2Id); !ok {
 		t.Fatalf("system s2 should exist")
 	}
-	if !engine.Workspace().Systems().Has(s3Id) {
+	if _, ok := engine.Workspace().Systems().Get(s3Id); !ok {
 		t.Fatalf("system s3 should exist")
 	}
 
@@ -552,13 +551,13 @@ func TestEngine_SystemDeleteMultiple(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, s1)
 
 	// Verify only system 1 is removed
-	if engine.Workspace().Systems().Has(s1Id) {
+	if _, ok := engine.Workspace().Systems().Get(s1Id); ok {
 		t.Fatalf("system s1 should be removed")
 	}
-	if !engine.Workspace().Systems().Has(s2Id) {
+	if _, ok := engine.Workspace().Systems().Get(s2Id); !ok {
 		t.Fatalf("system s2 should still exist")
 	}
-	if !engine.Workspace().Systems().Has(s3Id) {
+	if _, ok := engine.Workspace().Systems().Get(s3Id); !ok {
 		t.Fatalf("system s3 should still exist")
 	}
 
@@ -566,13 +565,13 @@ func TestEngine_SystemDeleteMultiple(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, s2)
 
 	// Verify system 2 is also removed, system 3 remains
-	if engine.Workspace().Systems().Has(s1Id) {
+	if _, ok := engine.Workspace().Systems().Get(s1Id); ok {
 		t.Fatalf("system s1 should still be removed")
 	}
-	if engine.Workspace().Systems().Has(s2Id) {
+	if _, ok := engine.Workspace().Systems().Get(s2Id); ok {
 		t.Fatalf("system s2 should be removed")
 	}
-	if !engine.Workspace().Systems().Has(s3Id) {
+	if _, ok := engine.Workspace().Systems().Get(s3Id); !ok {
 		t.Fatalf("system s3 should still exist")
 	}
 }
@@ -606,7 +605,7 @@ func TestEngine_SystemDeleteOnlyDeployments(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, system)
 
 	// Verify system is removed
-	if engine.Workspace().Systems().Has(systemId) {
+	if _, ok := engine.Workspace().Systems().Get(systemId); ok {
 		t.Fatalf("system should be removed")
 	}
 
@@ -648,7 +647,7 @@ func TestEngine_SystemDeleteOnlyEnvironments(t *testing.T) {
 	engine.PushEvent(ctx, handler.SystemDelete, system)
 
 	// Verify system is removed
-	if engine.Workspace().Systems().Has(systemId) {
+	if _, ok := engine.Workspace().Systems().Get(systemId); ok {
 		t.Fatalf("system should be removed")
 	}
 

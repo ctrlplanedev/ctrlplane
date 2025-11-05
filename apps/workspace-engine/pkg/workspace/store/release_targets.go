@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 
 	"go.opentelemetry.io/otel"
 )
@@ -102,4 +103,37 @@ func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.R
 	}
 
 	return jobsList[0], nil
+}
+
+func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.ReleaseTarget) ([]*oapi.Policy, error) {
+	policiesSlice := []*oapi.Policy{}
+
+	environment, ok := r.store.Environments.Get(releaseTarget.EnvironmentId)
+	if !ok {
+		return nil, fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId)
+	}
+	deployment, ok := r.store.Deployments.Get(releaseTarget.DeploymentId)
+	if !ok {
+		return nil, fmt.Errorf("deployment %s not found", releaseTarget.DeploymentId)
+	}
+	resource, ok := r.store.Resources.Get(releaseTarget.ResourceId)
+	if !ok {
+		return nil, fmt.Errorf("resource %s not found", releaseTarget.ResourceId)
+	}
+
+	for _, policy := range r.store.Policies.Items() {
+		for _, sel := range policy.Selectors {
+			if sel.ResourceSelector == nil || sel.EnvironmentSelector == nil || sel.DeploymentSelector == nil {
+				continue
+			}
+
+			isMatch := selector.MatchPolicy(ctx, policy, selector.NewResolvedReleaseTarget(environment, deployment, resource))
+			if isMatch {
+				policiesSlice = append(policiesSlice, policy)
+				break
+			}
+		}
+	}
+
+	return policiesSlice, nil
 }

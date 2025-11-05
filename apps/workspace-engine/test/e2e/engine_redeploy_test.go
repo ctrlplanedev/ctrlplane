@@ -50,7 +50,7 @@ func TestEngine_Redeploy_BasicFlow(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release target was created
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -165,7 +165,7 @@ func TestEngine_Redeploy_AfterFailedJob(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt
@@ -266,7 +266,7 @@ func TestEngine_Redeploy_MultipleReleaseTargets(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets were created
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 3 {
 		t.Fatalf("expected 3 release targets, got %d", len(releaseTargets))
 	}
@@ -369,7 +369,7 @@ func TestEngine_Redeploy_WithNoVersion(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt
@@ -426,7 +426,7 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt
@@ -547,7 +547,7 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt
@@ -645,7 +645,7 @@ func TestEngine_Redeploy_WithPendingJob(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt
@@ -726,7 +726,7 @@ func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt
@@ -852,7 +852,7 @@ func TestEngine_Redeploy_BlockedByActionRequiredJob(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt
@@ -924,7 +924,7 @@ func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
 	ctx := context.Background()
 
 	// Get release target
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var releaseTarget *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
 		releaseTarget = rt

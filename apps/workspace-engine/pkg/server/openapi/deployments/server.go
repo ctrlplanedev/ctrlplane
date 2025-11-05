@@ -15,7 +15,7 @@ import (
 )
 
 func getReleaseTargetsForDeployment(c *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
-	releaseTargets, err := ws.ReleaseTargets().Items(c.Request.Context())
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +66,14 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 
 	// Collect variables for this deployment
 	variables := make([]oapi.DeploymentVariableWithValues, 0)
-	for variable := range ws.DeploymentVariables().IterBuffered() {
-		if variable.Val != nil && variable.Val.DeploymentId == deploymentId {
+	for _, variable := range ws.DeploymentVariables().Items() {
+		if variable != nil && variable.DeploymentId == deploymentId {
 			values := valuesByVariableId[variable.Key]
 			if values == nil {
 				values = make([]oapi.DeploymentVariableValue, 0)
 			}
 			variables = append(variables, oapi.DeploymentVariableWithValues{
-				Variable: *variable.Val,
+				Variable: *variable,
 				Values:   values,
 			})
 		}
@@ -96,7 +96,7 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 		return
 	}
 
-	resources, err := ws.Deployments().Resources(deploymentId)
+	resources, err := ws.Deployments().Resources(c.Request.Context(), deploymentId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

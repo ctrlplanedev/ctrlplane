@@ -72,7 +72,7 @@ func (p *Policies) GetReleaseTargetsForPolicy(c *gin.Context, workspaceId string
 		return
 	}
 
-	releaseTargets, err := ws.ReleaseTargets().Items(c.Request.Context())
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get release targets for policy: " + err.Error(),
@@ -184,7 +184,7 @@ func (p *Policies) EvaluatePolicies(c *gin.Context, workspaceId string) {
 
 	policies := map[string]*oapi.Policy{}
 
-	rt, _ := ws.ReleaseTargets().Items(c.Request.Context())
+	rt, _ := ws.ReleaseTargets().Items()
 	for _, releaseTarget := range rt {
 		if scope.Environment != nil && releaseTarget.EnvironmentId != scope.Environment.Id {
 			continue

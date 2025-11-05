@@ -42,7 +42,7 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release target was created
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -108,7 +108,7 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify 2 release targets were created (d1+e1+r1 and d2+e1+r1)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -179,7 +179,7 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	r1, _ := engine.Workspace().Resources().Get(r1ID)
 
 	// Verify 2 release targets were created
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -269,7 +269,7 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
 	// Verify 2 release targets were created
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -377,7 +377,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
 	// Total: 2 deployments × 2 environments × 2 resources = 8 release targets
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -520,7 +520,7 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 	ctx := context.Background()
 
 	// 2 release targets should exist
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -710,8 +710,8 @@ func TestEngine_PolicyDelete(t *testing.T) {
 		t.Fatalf("expected 0 matching policies after deletion, got %d", len(policiesAfter))
 	}
 
-	// Verify policy is removed from store
-	if engine.Workspace().Policies().Has(policy.Id) {
+	_, ok := engine.Workspace().Policies().Get(policy.Id)
+	if ok {
 		t.Fatalf("policy should be removed from store after deletion")
 	}
 }
@@ -1124,7 +1124,7 @@ func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
 	ctx := context.Background()
 
 	// 2 release targets should exist
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}

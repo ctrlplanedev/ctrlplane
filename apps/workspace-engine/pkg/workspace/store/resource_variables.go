@@ -36,3 +36,7 @@ func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key s
 	r.repo.ResourceVariables.Remove(resourceId + "-" + key)
 	r.store.changeset.RecordDelete(resourceVariable)
 }
+
+func (r *ResourceVariables) Items() map[string]*oapi.ResourceVariable {
+	return r.repo.ResourceVariables
+}

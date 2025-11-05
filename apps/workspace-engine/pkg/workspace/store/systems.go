@@ -8,14 +8,18 @@ import (
 
 func NewSystems(store *Store) *Systems {
 	return &Systems{
-		repo:         store.repo,
-		store:        store,
+		repo:  store.repo,
+		store: store,
 	}
 }
 
 type Systems struct {
 	repo  *repository.InMemoryStore
 	store *Store
+}
+
+func (s *Systems) Get(id string) (*oapi.System, bool) {
+	return s.repo.Systems.Get(id)
 }
 
 func (s *Systems) Upsert(ctx context.Context, system *oapi.System) error {
@@ -35,7 +39,26 @@ func (s *Systems) Remove(ctx context.Context, id string) {
 	s.store.changeset.RecordDelete(system)
 }
 
-
 func (s *Systems) Items() map[string]*oapi.System {
 	return s.repo.Systems
+}
+
+func (s *Systems) Deployments(systemId string) map[string]*oapi.Deployment {
+	deployments := make(map[string]*oapi.Deployment)
+	for _, deployment := range s.repo.Deployments {
+		if deployment.SystemId == systemId {
+			deployments[deployment.Id] = deployment
+		}
+	}
+	return deployments
+}
+
+func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
+	environments := make(map[string]*oapi.Environment)
+	for _, environment := range s.repo.Environments {
+		if environment.SystemId == systemId {
+			environments[environment.Id] = environment
+		}
+	}
+	return environments
 }

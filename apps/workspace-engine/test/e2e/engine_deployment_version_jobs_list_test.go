@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"context"
 	"reflect"
 	"sort"
 	"testing"
@@ -62,7 +61,6 @@ func TestEngine_DeploymentVersionJobsList_BasicCreation(t *testing.T) {
 		integration.WithResource(integration.ResourceName("server-1")),
 	)
 
-	ctx := context.Background()
 	ws := engine.Workspace()
 
 	// Wait for initial processing
@@ -75,7 +73,7 @@ func TestEngine_DeploymentVersionJobsList_BasicCreation(t *testing.T) {
 	}
 
 	// Verify release targets were created
-	releaseTargets, err := ws.ReleaseTargets().Items(ctx)
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -120,14 +118,13 @@ func TestEngine_DeploymentVersionJobsList_JobsCreatedForAllTargets(t *testing.T)
 		integration.WithResource(integration.ResourceName("server-3")),
 	)
 
-	ctx := context.Background()
 	ws := engine.Workspace()
 
 	// Wait for jobs to be created
 	time.Sleep(500 * time.Millisecond)
 
 	// Verify release targets (1 environment * 3 resources = 3 targets)
-	releaseTargets, err := ws.ReleaseTargets().Items(ctx)
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -173,13 +170,12 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 		integration.WithResource(integration.ResourceName("m-server")),
 	)
 
-	ctx := context.Background()
 	ws := engine.Workspace()
 
 	// Wait for jobs to be created
 	time.Sleep(500 * time.Millisecond)
 
-	releaseTargets, err := ws.ReleaseTargets().Items(ctx)
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -349,14 +345,13 @@ func TestEngine_DeploymentVersionJobsList_MultipleEnvironments(t *testing.T) {
 		integration.WithResource(integration.ResourceName("server-2")),
 	)
 
-	ctx := context.Background()
 	ws := engine.Workspace()
 
 	// Wait for jobs to be created
 	time.Sleep(500 * time.Millisecond)
 
 	// Verify release targets (3 environments * 2 resources = 6 targets)
-	releaseTargets, err := ws.ReleaseTargets().Items(ctx)
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}

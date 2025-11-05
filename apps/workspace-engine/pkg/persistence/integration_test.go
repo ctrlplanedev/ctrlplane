@@ -231,8 +231,10 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
+	_, ok := testStore.Repo().Resources.Get(resource.Id)
+
 	// Resource should not exist (because Load didn't return it)
-	assert.False(t, testStore.Repo().Resources.Has(resource.Id))
+	assert.False(t, ok)
 }
 
 // TestPersistence_MultipleNamespaces tests isolation between namespaces
@@ -685,8 +687,14 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "Completed job should be restored")
 	assert.Equal(t, "completed", string(restoredJobCompleted.Status))
 
+	allJobs := newStore.Repo().Jobs
+	count := 0
+	for range allJobs {
+		count++
+	}
+
 	// Verify all jobs are present
-	assert.Equal(t, 3, newStore.Repo().Jobs.Count(), "All 3 jobs should be restored")
+	assert.Equal(t, 3, count, "All 3 jobs should be restored")
 }
 
 // TestPersistence_ConcurrentSaveAndLoad tests thread-safety of persistence operations
