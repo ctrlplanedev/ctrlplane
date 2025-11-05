@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
@@ -75,7 +76,13 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		}
 	}
 
-	span.SetAttributes(attribute.String("resolved_variables", fmt.Sprintf("%v", resolvedVariables)))
+	var vars []string
+	for key, value := range resolvedVariables {
+		if value != nil {
+			vars = append(vars, fmt.Sprintf("%s: %+v", key, *value))
+		}
+	}
+	span.SetAttributes(attribute.String("resolved_variables", strings.Join(vars, ", ")))
 
 	return resolvedVariables, nil
 }

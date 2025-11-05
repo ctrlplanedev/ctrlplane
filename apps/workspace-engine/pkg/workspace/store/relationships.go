@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/concurrency"
@@ -223,8 +224,13 @@ func (r *RelationshipRules) GetRelatedEntities(
 
 	span.SetAttributes(attribute.Int("result.count", len(result)))
 	for reference, entities := range result {
-		entitiesStr := fmt.Sprintf("%v", entities)
-		span.AddEvent(fmt.Sprintf("result.reference.%s", reference), trace.WithAttributes(attribute.String("entities", entitiesStr)))
+		var ents []string
+		for _, entity := range entities {
+			if entity != nil {
+				ents = append(ents, fmt.Sprintf("%+v", *entity))
+			}
+		}
+		span.AddEvent(fmt.Sprintf("result.reference.%s", reference), trace.WithAttributes(attribute.String("entities", strings.Join(ents, ", "))))
 	}
 
 	return result, nil
