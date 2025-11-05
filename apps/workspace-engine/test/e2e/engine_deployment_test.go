@@ -680,6 +680,8 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 
 	ctx := context.Background()
 
+	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
+
 	// Create a resource that matches both deployments
 	r1 := c.NewResource(engine.Workspace().ID)
 	r1.Id = resourceID
@@ -705,7 +707,6 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 	}
 
 	// Remove deployment 1
-	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
 	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
 
 	// Verify deployment 1 is gone
