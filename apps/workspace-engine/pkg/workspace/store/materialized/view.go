@@ -55,6 +55,24 @@ func (m *MaterializedView[V]) Get() V {
 	return m.val
 }
 
+// ApplyUpdate applies an incremental update to the cached value.
+// This is faster than RunRecompute for small changes that don't require
+// a full recomputation. The update is applied synchronously.
+func (m *MaterializedView[V]) ApplyUpdate(update UpdateFunc[V]) error {
+	_ = m.WaitIfRunning()
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	newVal, err := update(m.val)
+	if err != nil {
+		return err
+	}
+
+	m.val = newVal
+	return nil
+}
+
 var ErrAlreadyStarted = errors.New("recompute already in progress")
 var ErrNotStarted = errors.New("recompute not in progress")
 
@@ -127,37 +145,6 @@ func (m *MaterializedView[V]) RunRecompute(ctx context.Context) error {
 	}
 	return m.WaitRecompute()
 }
-
-// ApplyUpdate applies an incremental update to the cached value without full recomputation.
-// If a full recompute is in progress, marks pending to trigger a full recompute after completion.
-// This is useful for incremental updates that are cheaper than full recomputation.
-// Returns the updated value and any error from the update function.
-// func (m *MaterializedView[V]) ApplyUpdate(updateFn UpdateFunc[V]) (V, error) {
-// 	m.mu.Lock()
-
-// 	// If a full recompute is in progress, mark pending and return current value
-// 	// The full recompute will capture this update when it completes
-// 	if m.inProg {
-// 		m.pending = true
-// 		val := m.val
-// 		m.mu.Unlock()
-// 		return val, nil
-// 	}
-
-// 	// Apply the update function to the current value
-// 	newVal, err := updateFn(m.val)
-// 	if err != nil {
-// 		m.mu.Unlock()
-// 		var zero V
-// 		return zero, err
-// 	}
-
-// 	// Update the cached value
-// 	m.val = newVal
-// 	m.mu.Unlock()
-
-// 	return newVal, nil
-// }
 
 // runCompute executes the recompute function and publishes the result.
 // If pending requests came in while running, keeps recomputing until no more pending work.

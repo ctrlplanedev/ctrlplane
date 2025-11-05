@@ -61,6 +61,16 @@ func (r *ReleaseTargets) Items(ctx context.Context) (map[string]*oapi.ReleaseTar
 	return targets, nil
 }
 
+func (r *ReleaseTargets) AddReleaseTargets(ctx context.Context, releaseTargets []*oapi.ReleaseTarget) error {
+	r.targets.ApplyUpdate(func(current map[string]*oapi.ReleaseTarget) (map[string]*oapi.ReleaseTarget, error) {
+		for _, target := range releaseTargets {
+			current[target.Key()] = target
+		}
+		return current, nil
+	})
+	return nil
+}
+
 func (r *ReleaseTargets) Recompute(ctx context.Context) error {
 	if err := r.targets.StartRecompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
 		return err
