@@ -68,7 +68,12 @@ func (r *ReleaseTargets) AddReleaseTargets(ctx context.Context, releaseTargets [
 		}
 		return current, nil
 	})
-	r.RecomputeTargetPolicies()
+
+	mapTargets := make(map[string]*oapi.ReleaseTarget)
+	for _, target := range releaseTargets {
+		mapTargets[target.Key()] = target
+	}
+	r.RecomputeTargetPolicies(mapTargets)
 	return nil
 }
 
@@ -76,7 +81,7 @@ func (r *ReleaseTargets) Recompute(ctx context.Context) error {
 	if err := r.targets.StartRecompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
 		return err
 	}
-	r.RecomputeTargetPolicies()
+	r.RecomputeTargetPolicies(nil)
 	return nil
 }
 
@@ -147,9 +152,11 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 	return releaseTargets, nil
 }
 
-func (r *ReleaseTargets) RecomputeTargetPolicies() {
-	allTargets := r.targets.Get()
-	for targetKey, target := range allTargets {
+func (r *ReleaseTargets) RecomputeTargetPolicies(targets map[string]*oapi.ReleaseTarget) {
+	if targets == nil {
+		targets = r.targets.Get()
+	}
+	for targetKey, target := range targets {
 		t := target
 		key := targetKey
 		mv := materialized.New(r.targetPoliciesRecomputeFunc(t))

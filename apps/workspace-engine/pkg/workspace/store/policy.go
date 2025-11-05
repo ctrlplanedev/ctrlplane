@@ -48,7 +48,7 @@ func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
 
 	p.store.changeset.RecordUpsert(policy)
 
-	p.store.ReleaseTargets.RecomputeTargetPolicies()
+	p.store.ReleaseTargets.RecomputeTargetPolicies(nil)
 }
 
 func (p *Policies) Remove(ctx context.Context, id string) {
@@ -64,5 +64,5 @@ func (p *Policies) Remove(ctx context.Context, id string) {
 
 	p.store.changeset.RecordDelete(policy)
 
-	p.store.ReleaseTargets.RecomputeTargetPolicies()
+	p.store.ReleaseTargets.RecomputeTargetPolicies(nil)
 }
