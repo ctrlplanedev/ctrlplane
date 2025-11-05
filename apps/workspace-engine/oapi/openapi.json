@@ -3628,6 +3628,59 @@
             "summary": "Evaluate policies for a release target"
          }
       },
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
+         "get": {
+            "description": "Returns the desired release for a release target {releaseTargetKey}.",
+            "operationId": "getReleaseTargetDesiredRelease",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Key of the release target",
+                  "in": "path",
+                  "name": "releaseTargetKey",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "summary": "Get the desired release for a release target"
+         },
+         "responses": {
+            "200": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "desiredRelease": {
+                              "$ref": "#/components/schemas/Release"
+                           }
+                        }
+                     }
+                  }
+               },
+               "description": "The desired release for the release target"
+            },
+            "404": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ErrorResponse"
+                     }
+                  }
+               },
+               "description": "Resource not found"
+            }
+         }
+      },
       "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/jobs": {
          "get": {
             "description": "Returns a list of jobs for a release target {releaseTargetKey}.",

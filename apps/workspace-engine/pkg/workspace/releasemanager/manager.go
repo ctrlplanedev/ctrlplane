@@ -323,3 +323,7 @@ func (m *Manager) GetCachedReleaseTargetState(ctx context.Context, releaseTarget
 
 	return m.GetReleaseTargetState(ctx, releaseTarget)
 }
+
+func (m *Manager) Planner() *deployment.Planner {
+	return m.planner
+}

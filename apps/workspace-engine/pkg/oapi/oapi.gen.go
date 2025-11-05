@@ -1448,6 +1448,9 @@ type ServerInterface interface {
 	// Evaluate policies for a release target
 	// (POST /v1/workspaces/{workspaceId}/release-targets/evaluate)
 	EvaluateReleaseTarget(c *gin.Context, workspaceId string)
+	// Get the desired release for a release target
+	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release)
+	GetReleaseTargetDesiredRelease(c *gin.Context, workspaceId string, releaseTargetKey string)
 	// Get jobs for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/jobs)
 	GetJobsForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string, params GetJobsForReleaseTargetParams)
@@ -2597,6 +2600,39 @@ func (siw *ServerInterfaceWrapper) EvaluateReleaseTarget(c *gin.Context) {
 	siw.Handler.EvaluateReleaseTarget(c, workspaceId)
 }
 
+// GetReleaseTargetDesiredRelease operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetDesiredRelease(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseTargetKey" -------------
+	var releaseTargetKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetKey", c.Param("releaseTargetKey"), &releaseTargetKey, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetKey: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReleaseTargetDesiredRelease(c, workspaceId, releaseTargetKey)
+}
+
 // GetJobsForReleaseTarget operation middleware
 func (siw *ServerInterfaceWrapper) GetJobsForReleaseTarget(c *gin.Context) {
 
@@ -3056,6 +3092,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.GetRelationshipRules)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:relationshipRuleId", wrapper.GetRelationshipRule)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/desired-release", wrapper.GetReleaseTargetDesiredRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/releases/:releaseId", wrapper.GetRelease)

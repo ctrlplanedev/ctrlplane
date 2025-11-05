@@ -16,6 +16,36 @@ import (
 type ReleaseTargets struct {
 }
 
+func (s *ReleaseTargets) GetReleaseTargetDesiredRelease(c *gin.Context, workspaceId string, releaseTargetKey string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	releaseTarget := ws.ReleaseTargets().Get(releaseTargetKey)
+	if releaseTarget == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Release target not found",
+		})
+		return
+	}
+
+	desiredRelease, err := ws.ReleaseManager().Planner().PlanDeployment(c.Request.Context(), releaseTarget)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to plan release target: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"desiredRelease": desiredRelease,
+	})
+}
+
 // EvaluateReleaseTarget implements oapi.ServerInterface.
 func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId string) {
 	// Get workspace
