@@ -2,13 +2,12 @@ package store
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"strings"
 	"time"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/store/diffcheck"
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
@@ -31,142 +30,6 @@ type Resources struct {
 	store *Store
 }
 
-// resourceHasChanges checks if a resource has meaningful changes that would affect matching.
-// It compares fields that are used in CEL filters and ignores timestamp/administrative fields.
-func resourceHasChanges(existing, new *oapi.Resource) bool {
-	// Compare simple string fields
-	if existing.Name != new.Name ||
-		existing.Kind != new.Kind ||
-		existing.Version != new.Version ||
-		existing.Identifier != new.Identifier {
-		return true
-	}
-
-	// Compare optional ProviderId
-	if (existing.ProviderId == nil) != (new.ProviderId == nil) {
-		return true
-	}
-	if existing.ProviderId != nil && new.ProviderId != nil && *existing.ProviderId != *new.ProviderId {
-		return true
-	}
-
-	// Compare DeletedAt status
-	if (existing.DeletedAt == nil) != (new.DeletedAt == nil) {
-		return true
-	}
-
-	// Compare Metadata map
-	if !reflect.DeepEqual(existing.Metadata, new.Metadata) {
-		return true
-	}
-
-	// Compare Config map
-	if !reflect.DeepEqual(existing.Config, new.Config) {
-		return true
-	}
-
-	return false
-}
-
-// getResourceChanges returns a list of field names that have changed between existing and new resource.
-// Returns nil if no changes detected.
-func getResourceChanges(existing, new *oapi.Resource) []string {
-	var changes []string
-
-	if existing.Name != new.Name {
-		changes = append(changes, "name")
-	}
-	if existing.Kind != new.Kind {
-		changes = append(changes, "kind")
-	}
-	if existing.Version != new.Version {
-		changes = append(changes, "version")
-	}
-	if existing.Identifier != new.Identifier {
-		changes = append(changes, "identifier")
-	}
-
-	// Check ProviderId changes
-	if (existing.ProviderId == nil) != (new.ProviderId == nil) {
-		changes = append(changes, "providerId")
-	} else if existing.ProviderId != nil && new.ProviderId != nil && *existing.ProviderId != *new.ProviderId {
-		changes = append(changes, "providerId")
-	}
-
-	// Check DeletedAt status
-	if (existing.DeletedAt == nil) != (new.DeletedAt == nil) {
-		changes = append(changes, "deletedAt")
-	}
-
-	// Check Metadata
-	if !reflect.DeepEqual(existing.Metadata, new.Metadata) {
-		changes = append(changes, "metadata")
-	}
-
-	// Check Config
-	if !reflect.DeepEqual(existing.Config, new.Config) {
-		changes = append(changes, "config")
-	}
-
-	if len(changes) == 0 {
-		return nil
-	}
-	return changes
-}
-
-// getDetailedResourceChanges returns a map of changed property paths in dot notation.
-// This provides detailed tracking of which specific config/metadata keys changed.
-func getDetailedResourceChanges(old, new *oapi.Resource) map[string]bool {
-	changed := make(map[string]bool)
-
-	// Top-level properties
-	if old.Name != new.Name {
-		changed["name"] = true
-	}
-	if old.Kind != new.Kind {
-		changed["kind"] = true
-	}
-	if old.Identifier != new.Identifier {
-		changed["identifier"] = true
-	}
-	if old.Version != new.Version {
-		changed["version"] = true
-	}
-
-	// Config - detect changed keys with dot notation
-	if !reflect.DeepEqual(old.Config, new.Config) {
-		// Check for changed or added keys in new config
-		for key := range new.Config {
-			if !reflect.DeepEqual(old.Config[key], new.Config[key]) {
-				changed[fmt.Sprintf("config.%s", key)] = true
-			}
-		}
-		// Check for deleted keys
-		for key := range old.Config {
-			if _, exists := new.Config[key]; !exists {
-				changed[fmt.Sprintf("config.%s", key)] = true
-			}
-		}
-	}
-
-	// Metadata - detect changed keys with dot notation
-	if !reflect.DeepEqual(old.Metadata, new.Metadata) {
-		// Check for changed or added keys in new metadata
-		for key := range new.Metadata {
-			if old.Metadata[key] != new.Metadata[key] {
-				changed[fmt.Sprintf("metadata.%s", key)] = true
-			}
-		}
-		// Check for deleted keys
-		for key := range old.Metadata {
-			if _, exists := new.Metadata[key]; !exists {
-				changed[fmt.Sprintf("metadata.%s", key)] = true
-			}
-		}
-	}
-
-	return changed
-}
 
 // checkDeploymentReferencesChangedPaths checks if a deployment has variables that reference
 // the given relationship with paths that overlap with the changed property paths.
@@ -325,16 +188,20 @@ func (r *Resources) upsertWithoutRecompute(ctx context.Context, resource *oapi.R
 	span.SetAttributes(attribute.Bool("operation.is_create", isCreate))
 
 	// Check if there are meaningful changes that would affect matching
-	hasChanges := isCreate || resourceHasChanges(existingResource, resource)
+	hasChanges := isCreate || len(diffcheck.HasResourceChanges(existingResource, resource)) > 0
 	span.SetAttributes(attribute.Bool("resource.has_changes", hasChanges))
 
 	// Track specific field changes for updates
 	if !isCreate && hasChanges {
-		changedFields := getResourceChanges(existingResource, resource)
-		if changedFields != nil {
-			span.SetAttributes(attribute.StringSlice("resource.changed_fields", changedFields))
+		changedFields := diffcheck.HasResourceChanges(existingResource, resource)
+		if len(changedFields) > 0 {
+			fields := make([]string, 0, len(changedFields))
+			for field := range changedFields {
+				fields = append(fields, field)
+			}
+			span.SetAttributes(attribute.StringSlice("resource.changed_fields", fields))
 			span.AddEvent("Resource updated", trace.WithAttributes(
-				attribute.StringSlice("fields", changedFields),
+				attribute.StringSlice("fields", fields),
 			))
 		}
 	} else if isCreate {
@@ -487,7 +354,7 @@ func (r *Resources) TaintDependentReleaseTargetsOnChange(
 	oldResource *oapi.Resource,
 	newResource *oapi.Resource,
 ) {
-	changedPaths := getDetailedResourceChanges(oldResource, newResource)
+	changedPaths := diffcheck.HasResourceChanges(oldResource, newResource)
 	if len(changedPaths) > 0 {
 		taintDependentReleaseTargets(ctx, r.store, newResource, changedPaths)
 	}
@@ -592,7 +459,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 			resource.Id = existingResource.Id
 
 			// Track what changed for this resource (for dependency tainting)
-			changedPaths := getDetailedResourceChanges(existingResource, resource)
+			changedPaths := diffcheck.HasResourceChanges(existingResource, resource)
 			if len(changedPaths) > 0 {
 				changedResourcesWithPaths[resource.Id] = changedPaths
 			}
