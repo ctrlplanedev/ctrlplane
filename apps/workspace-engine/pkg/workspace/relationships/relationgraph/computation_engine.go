@@ -109,6 +109,10 @@ func (e *ComputationEngine) processRuleForEntity(
 	ctx, span := tracer.Start(ctx, "relationgraph.processRuleForEntity")
 	defer span.End()
 
+	if rule == nil {
+		return fmt.Errorf("rule is nil")
+	}
+
 	span.SetAttributes(
 		attribute.String("rule.reference", rule.Reference),
 		attribute.String("entity.id", targetEntity.GetID()),
@@ -139,7 +143,7 @@ func (e *ComputationEngine) processRuleForEntity(
 			if relationships.MatchesWithCache(ctx, &rule.Matcher, targetEntity, toEntity, entityMapCache) {
 				// Add forward relationship: target -> to
 				e.cache.Add(entityID, rule.Reference, &oapi.EntityRelation{
-					Rule:       rule,
+					Rule:       *rule,
 					Direction:  oapi.To,
 					EntityType: toEntity.GetType(),
 					EntityId:   toEntity.GetID(),
@@ -165,7 +169,7 @@ func (e *ComputationEngine) processRuleForEntity(
 			if relationships.MatchesWithCache(ctx, &rule.Matcher, fromEntity, targetEntity, entityMapCache) {
 				// Add reverse relationship: target <- from
 				e.cache.Add(entityID, rule.Reference, &oapi.EntityRelation{
-					Rule:       rule,
+					Rule:       *rule,
 					Direction:  oapi.From,
 					EntityType: fromEntity.GetType(),
 					EntityId:   fromEntity.GetID(),

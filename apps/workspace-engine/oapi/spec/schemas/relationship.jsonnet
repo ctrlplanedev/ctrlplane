@@ -59,7 +59,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   EntityRelation: {
     type: 'object',
-    required: ['relationshipRule', 'direction', 'entityType', 'entityId', 'entity'],
+    required: ['rule', 'direction', 'entityType', 'entityId', 'entity'],
     properties: {
       rule: openapi.schemaRef('RelationshipRule'),
       direction: openapi.schemaRef('RelationDirection'),

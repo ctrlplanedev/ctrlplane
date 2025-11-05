@@ -100,7 +100,7 @@ func TestGraph_AddRelation(t *testing.T) {
 	}
 
 	relation := &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
@@ -133,21 +133,21 @@ func TestGraph_GetRelatedEntities(t *testing.T) {
 
 	// Add multiple relations
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
 	})
 
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-2",
 	})
 
 	graph.addRelation("resource-1", "another-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeEnvironment,
 		EntityId:   "env-1",
@@ -185,14 +185,14 @@ func TestGraph_GetRelatedEntitiesBatch(t *testing.T) {
 
 	// Add relations for multiple entities
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
 	})
 
 	graph.addRelation("resource-2", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-2",
@@ -232,21 +232,21 @@ func TestGraph_GetRelationsByReference(t *testing.T) {
 
 	// Add relations with same reference for different entities
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
 	})
 
 	graph.addRelation("resource-2", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-2",
 	})
 
 	graph.addRelation("resource-1", "another-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeEnvironment,
 		EntityId:   "env-1",
@@ -277,7 +277,7 @@ func TestGraph_HasRelationships(t *testing.T) {
 
 	// Add relation for one entity
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
@@ -410,7 +410,7 @@ func TestGraph_Concurrency(t *testing.T) {
 
 	// Add initial relation
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
@@ -445,7 +445,7 @@ func TestGraph_GetRelatedEntities_ImmutableReturn(t *testing.T) {
 	}
 
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
@@ -528,7 +528,7 @@ func TestGraph_InvalidateEntity(t *testing.T) {
 
 	// Add relationships for entity
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
@@ -573,7 +573,7 @@ func TestGraph_InvalidateEntity_CascadeInvalidation(t *testing.T) {
 	// Add relationship: resource-1 -> deployment-1
 	// This should also track that deployment-1 is "used in" resource-1
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
@@ -621,14 +621,14 @@ func TestGraph_InvalidateRule(t *testing.T) {
 
 	// Add relationships for both rules
 	graph.addRelation("resource-1", "rule-1", &oapi.EntityRelation{
-		Rule:       rule1,
+		Rule:       *rule1,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
 	})
 
 	graph.addRelation("resource-1", "rule-2", &oapi.EntityRelation{
-		Rule:       rule2,
+		Rule:       *rule2,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeEnvironment,
 		EntityId:   "env-1",
@@ -706,7 +706,7 @@ func TestGraph_RemoveRule(t *testing.T) {
 
 	// Create relationships using the rule
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
@@ -785,21 +785,21 @@ func TestGraph_ReverseIndex(t *testing.T) {
 
 	// Add multiple entities that reference the same deployment
 	graph.addRelation("resource-1", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
 	})
 
 	graph.addRelation("resource-2", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",
 	})
 
 	graph.addRelation("resource-3", "test-rule", &oapi.EntityRelation{
-		Rule:       rule,
+		Rule:       *rule,
 		Direction:  oapi.To,
 		EntityType: oapi.RelatableEntityTypeDeployment,
 		EntityId:   "deployment-1",

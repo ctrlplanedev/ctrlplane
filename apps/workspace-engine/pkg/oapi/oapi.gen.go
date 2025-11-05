@@ -198,7 +198,7 @@ type EntityRelation struct {
 	// EntityId ID of the related entity
 	EntityId   string              `json:"entityId"`
 	EntityType RelatableEntityType `json:"entityType"`
-	Rule       *RelationshipRule   `json:"rule,omitempty"`
+	Rule       RelationshipRule    `json:"rule"`
 }
 
 // Environment defines model for Environment.
