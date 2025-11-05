@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -218,6 +219,12 @@ func (r *RelationshipRules) GetRelatedEntities(
 
 	if err := g.Wait(); err != nil {
 		return nil, err
+	}
+
+	span.SetAttributes(attribute.Int("result.count", len(result)))
+	for reference, entities := range result {
+		entitiesStr := fmt.Sprintf("%v", entities)
+		span.AddEvent(fmt.Sprintf("result.reference.%s", reference), trace.WithAttributes(attribute.String("entities", entitiesStr)))
 	}
 
 	return result, nil
