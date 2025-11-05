@@ -72,6 +72,40 @@ const createUserApprovalRecord: AsyncTypedHandler<
   res.status(200).json({ success: true });
 };
 
+const updateDeploymentVersion: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}",
+  "patch"
+> = async (req, res) => {
+  const { workspaceId, deploymentVersionId } = req.params;
+  if (req.apiContext == null) throw new ApiError("Unauthorized", 401);
+
+  const deploymentVersionResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}",
+    { params: { path: { workspaceId, deploymentVersionId } } },
+  );
+
+  if (deploymentVersionResponse.error != null)
+    throw new ApiError(
+      deploymentVersionResponse.error.error ?? "Unknown error",
+      deploymentVersionResponse.response.status,
+    );
+  const { data: deploymentVersion } = deploymentVersionResponse;
+
+  const definedFields = Object.fromEntries(
+    Object.entries(req.body).filter(([_, v]) => v !== undefined),
+  );
+  const updatedDeploymentVersion = { ...deploymentVersion, ...definedFields };
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.DeploymentVersionUpdated,
+    timestamp: Date.now(),
+    data: updatedDeploymentVersion,
+  });
+
+  res.status(200).json(updatedDeploymentVersion);
+};
+
 export const deploymentVersionsRouter = Router({ mergeParams: true })
   .post(
     "/:deploymentVersionId/user-approval-records",
@@ -80,4 +114,5 @@ export const deploymentVersionsRouter = Router({ mergeParams: true })
   .put(
     "/:deploymentVersionId/user-approval-records",
     asyncHandler(createUserApprovalRecord),
-  );
+  )
+  .patch("/:deploymentVersionId", asyncHandler(updateDeploymentVersion));

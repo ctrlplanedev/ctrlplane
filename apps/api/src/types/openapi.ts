@@ -250,6 +250,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update deployment version */
+        patch: operations["updateDeploymentVersion"];
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/environments": {
         parameters: {
             query?: never;
@@ -1000,6 +1017,22 @@ export interface components {
             name: string;
             slug: string;
             workspaceId: string;
+        };
+        UpdateDeploymentVersionRequest: {
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt?: string;
+            jobAgentConfig?: {
+                [key: string]: unknown;
+            };
+            metadata?: {
+                [key: string]: string;
+            };
+            name?: string;
+            status?: components["schemas"]["DeploymentVersionStatus"];
+            tag?: string;
         };
         UpdateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -2030,6 +2063,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateDeploymentVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeploymentVersion"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateDeploymentVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the deployment version */
+                deploymentVersionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDeploymentVersionRequest"];
             };
         };
         responses: {

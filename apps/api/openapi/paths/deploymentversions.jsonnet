@@ -34,4 +34,24 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}': {
+    patch: {
+      summary: 'Update deployment version',
+      operationId: 'updateDeploymentVersion',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.deploymentVersionIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('UpdateDeploymentVersionRequest'),
+          },
+        },
+      },
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVersion'))
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

@@ -1269,6 +1269,41 @@
             ],
             "type": "object"
          },
+         "UpdateDeploymentVersionRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/DeploymentVersionStatus"
+               },
+               "tag": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id"
+            ],
+            "type": "object"
+         },
          "UpdateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -3095,6 +3130,64 @@
                }
             },
             "summary": "Create a deployment version"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}": {
+         "patch": {
+            "operationId": "updateDeploymentVersion",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment version",
+                  "in": "path",
+                  "name": "deploymentVersionId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpdateDeploymentVersionRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/DeploymentVersion"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Update deployment version"
          }
       },
       "/v1/workspaces/{workspaceId}/environments": {
