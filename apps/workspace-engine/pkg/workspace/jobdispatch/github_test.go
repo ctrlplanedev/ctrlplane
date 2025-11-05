@@ -39,7 +39,7 @@ func (m *mockGithubClient) DispatchWorkflow(ctx context.Context, owner, repo str
 func TestGithubDispatcher_DispatchJob_Success(t *testing.T) {
 	// Setup mock repository with GitHub entity
 	sc := statechange.NewChangeSet[any]()
-	mockStore := store.New(sc)
+	mockStore := store.New("test-workspace", sc)
 	mockStore.GithubEntities.Upsert(context.Background(), &oapi.GithubEntity{
 		InstallationId: 12345,
 		Slug:           "test-owner",
@@ -95,7 +95,7 @@ func TestGithubDispatcher_DispatchJob_Success(t *testing.T) {
 
 func TestGithubDispatcher_DispatchJob_WithCustomRef(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
-	mockStore := store.New(sc)
+	mockStore := store.New("test-workspace", sc)
 	mockStore.GithubEntities.Upsert(context.Background(), &oapi.GithubEntity{
 		InstallationId: 12345,
 		Slug:           "test-owner",
@@ -136,7 +136,7 @@ func TestGithubDispatcher_DispatchJob_WithCustomRef(t *testing.T) {
 
 func TestGithubDispatcher_DispatchJob_EntityNotFound(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
-	mockStore := store.New(sc)
+	mockStore := store.New("test-workspace", sc)
 
 	mockClient := &mockGithubClient{}
 
@@ -405,7 +405,7 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sc := statechange.NewChangeSet[any]()
-			mockStore := store.New(sc)
+			mockStore := store.New("test-workspace", sc)
 			mockStore.GithubEntities.Upsert(context.Background(), &oapi.GithubEntity{
 				InstallationId: tt.entities[0].installationID,
 				Slug:           tt.entities[0].slug,

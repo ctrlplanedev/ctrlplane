@@ -15,7 +15,7 @@ import (
 // Helper function to create a test store with a resource
 func setupStoreWithResource(resourceID string, metadata map[string]string) *store.Store {
 	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+	st := store.New("test-workspace", cs)
 	ctx := context.Background()
 
 	resource := &oapi.Resource{
@@ -38,7 +38,7 @@ func setupStoreWithResource(resourceID string, metadata map[string]string) *stor
 // Helper function to create a test store with a deployment
 func setupStoreWithDeployment(deploymentID string) *store.Store {
 	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+	st := store.New("test-workspace", cs)
 	ctx := context.Background()
 
 	deployment := &oapi.Deployment{

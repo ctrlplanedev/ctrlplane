@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 	"time"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
@@ -281,37 +280,23 @@ func (r *Resources) recomputeAll(ctx context.Context) {
 	ctx, span := tracer.Start(ctx, "RecomputeAll")
 	defer span.End()
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		ctx, span := tracer.Start(ctx, "RecomputeEnvironmentsResources")
-		defer span.End()
-
-		defer wg.Done()
-		for item := range r.store.Environments.IterBuffered() {
-			environment := item.Val
-			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, "Failed to recompute resources for environment")
-				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
-			}
+	// Use IterCb instead of IterBuffered to avoid snapshot overhead
+	// This eliminates 64+ goroutines and gigabytes of temporary allocations
+	for _, environment := range r.store.Environments.Items() {
+		if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "Failed to recompute resources for environment")
+			log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
 		}
-	}()
-	go func() {
-		ctx, span := tracer.Start(ctx, "RecomputeDeploymentsResources")
-		defer span.End()
-
-		defer wg.Done()
-		for item := range r.store.Deployments.IterBuffered() {
-			deployment := item.Val
-			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, "Failed to recompute resources for deployment")
-				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
-			}
+	}
+	
+	for _, deployment := range r.store.Deployments.Items() {
+		if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "Failed to recompute resources for deployment")
+			log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
 		}
-	}()
-	wg.Wait()
+	}
 
 	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
 		span.RecordError(err)
@@ -430,27 +415,18 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 
 	r.repo.Resources.Remove(id)
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		for item := range r.store.Environments.IterBuffered() {
-			environment := item.Val
-			if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-				log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
-			}
+	// Use IterCb instead of IterBuffered to avoid snapshot overhead
+	for _, environment := range r.store.Environments.Items() {
+		if err := r.store.Environments.RecomputeResources(ctx, environment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+			log.Error("Failed to recompute resources for environment", "environmentId", environment.Id, "error", err)
 		}
-	}()
-	go func() {
-		defer wg.Done()
-		for item := range r.store.Deployments.IterBuffered() {
-			deployment := item.Val
-			if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
-				log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
-			}
+	}
+	
+	for _, deployment := range r.store.Deployments.Items() {
+		if err := r.store.Deployments.RecomputeResources(ctx, deployment.Id); err != nil && !materialized.IsAlreadyStarted(err) {
+			log.Error("Failed to recompute resources for deployment", "deploymentId", deployment.Id, "error", err)
 		}
-	}()
-	wg.Wait()
+	}
 
 	if err := r.store.ReleaseTargets.Recompute(ctx); err != nil && !materialized.IsAlreadyStarted(err) {
 		span.RecordError(err)
@@ -477,12 +453,13 @@ func (r *Resources) Has(id string) bool {
 }
 
 func (r *Resources) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
-	for item := range r.repo.Resources.IterBuffered() {
-		if item.Val.Identifier == identifier {
-			return item.Val, true
+	var found *oapi.Resource
+	r.repo.Resources.IterCb(func(id string, resource *oapi.Resource) {
+		if found == nil && resource.Identifier == identifier {
+			found = resource
 		}
-	}
-	return nil, false
+	})
+	return found, found != nil
 }
 
 func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariable {

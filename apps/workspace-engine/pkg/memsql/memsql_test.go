@@ -2274,3 +2274,676 @@ func TestMemSQL_PointerType_InsertManyWithNil(t *testing.T) {
 		t.Errorf("Wrong users inserted")
 	}
 }
+
+func TestMemSQL_NestedStruct_Simple(t *testing.T) {
+	type Address struct {
+		Street  string `json:"street"`
+		City    string `json:"city"`
+		ZipCode string `json:"zip_code"`
+	}
+
+	type Person struct {
+		ID      string  `json:"id"`
+		Name    string  `json:"name"`
+		Address Address `json:"address"`
+	}
+
+	tableBuilder := NewTableBuilder("people").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("name", "TEXT").
+		WithColumn("address", "TEXT"). // Will be stored as JSON
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[Person](tableBuilder)
+
+	// Insert person with nested address
+	person := Person{
+		ID:   "p1",
+		Name: "Alice",
+		Address: Address{
+			Street:  "123 Main St",
+			City:    "Seattle",
+			ZipCode: "98101",
+		},
+	}
+
+	err := memSQL.Insert(person)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Query back
+	people, err := memSQL.Query("SELECT * FROM people WHERE id = ?", "p1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(people) != 1 {
+		t.Fatalf("Expected 1 person, got %d", len(people))
+	}
+
+	// Verify nested struct was properly restored
+	if people[0].Name != "Alice" {
+		t.Errorf("Expected name Alice, got %s", people[0].Name)
+	}
+	if people[0].Address.Street != "123 Main St" {
+		t.Errorf("Expected street 123 Main St, got %s", people[0].Address.Street)
+	}
+	if people[0].Address.City != "Seattle" {
+		t.Errorf("Expected city Seattle, got %s", people[0].Address.City)
+	}
+	if people[0].Address.ZipCode != "98101" {
+		t.Errorf("Expected zip 98101, got %s", people[0].Address.ZipCode)
+	}
+}
+
+func TestMemSQL_NestedStruct_MultiLevel(t *testing.T) {
+	type Coordinates struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	}
+
+	type Address struct {
+		Street      string      `json:"street"`
+		City        string      `json:"city"`
+		Coordinates Coordinates `json:"coordinates"`
+	}
+
+	type Company struct {
+		ID      string  `json:"id"`
+		Name    string  `json:"name"`
+		Address Address `json:"address"`
+	}
+
+	tableBuilder := NewTableBuilder("companies").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("name", "TEXT").
+		WithColumn("address", "TEXT"). // Nested struct as JSON
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[Company](tableBuilder)
+
+	// Insert company with multi-level nesting
+	company := Company{
+		ID:   "c1",
+		Name: "Acme Corp",
+		Address: Address{
+			Street: "456 Market St",
+			City:   "San Francisco",
+			Coordinates: Coordinates{
+				Lat: 37.7749,
+				Lng: -122.4194,
+			},
+		},
+	}
+
+	err := memSQL.Insert(company)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Query back
+	companies, err := memSQL.Query("SELECT * FROM companies WHERE id = ?", "c1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(companies) != 1 {
+		t.Fatalf("Expected 1 company, got %d", len(companies))
+	}
+
+	// Verify multi-level nesting
+	c := companies[0]
+	if c.Name != "Acme Corp" {
+		t.Errorf("Expected name Acme Corp, got %s", c.Name)
+	}
+	if c.Address.Street != "456 Market St" {
+		t.Errorf("Expected street 456 Market St, got %s", c.Address.Street)
+	}
+	if c.Address.City != "San Francisco" {
+		t.Errorf("Expected city San Francisco, got %s", c.Address.City)
+	}
+	if c.Address.Coordinates.Lat != 37.7749 {
+		t.Errorf("Expected lat 37.7749, got %f", c.Address.Coordinates.Lat)
+	}
+	if c.Address.Coordinates.Lng != -122.4194 {
+		t.Errorf("Expected lng -122.4194, got %f", c.Address.Coordinates.Lng)
+	}
+}
+
+func TestMemSQL_NestedStruct_WithMap(t *testing.T) {
+	type Metadata struct {
+		Version string            `json:"version"`
+		Tags    map[string]string `json:"tags"`
+	}
+
+	type Service struct {
+		ID       string   `json:"id"`
+		Name     string   `json:"name"`
+		Metadata Metadata `json:"metadata"`
+	}
+
+	tableBuilder := NewTableBuilder("services").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("name", "TEXT").
+		WithColumn("metadata", "TEXT"). // Nested struct with map as JSON
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[Service](tableBuilder)
+
+	// Insert service with nested struct containing map
+	service := Service{
+		ID:   "s1",
+		Name: "API Gateway",
+		Metadata: Metadata{
+			Version: "2.0.0",
+			Tags: map[string]string{
+				"env":  "production",
+				"tier": "frontend",
+				"team": "platform",
+			},
+		},
+	}
+
+	err := memSQL.Insert(service)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Query back
+	services, err := memSQL.Query("SELECT * FROM services WHERE id = ?", "s1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(services) != 1 {
+		t.Fatalf("Expected 1 service, got %d", len(services))
+	}
+
+	// Verify nested struct with map
+	s := services[0]
+	if s.Name != "API Gateway" {
+		t.Errorf("Expected name API Gateway, got %s", s.Name)
+	}
+	if s.Metadata.Version != "2.0.0" {
+		t.Errorf("Expected version 2.0.0, got %s", s.Metadata.Version)
+	}
+	if s.Metadata.Tags["env"] != "production" {
+		t.Errorf("Expected env=production, got %s", s.Metadata.Tags["env"])
+	}
+	if s.Metadata.Tags["tier"] != "frontend" {
+		t.Errorf("Expected tier=frontend, got %s", s.Metadata.Tags["tier"])
+	}
+	if s.Metadata.Tags["team"] != "platform" {
+		t.Errorf("Expected team=platform, got %s", s.Metadata.Tags["team"])
+	}
+}
+
+func TestMemSQL_NestedStruct_WithSlice(t *testing.T) {
+	type Contact struct {
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	}
+
+	type Profile struct {
+		Bio      string    `json:"bio"`
+		Contacts []Contact `json:"contacts"`
+	}
+
+	type User struct {
+		ID      string  `json:"id"`
+		Name    string  `json:"name"`
+		Profile Profile `json:"profile"`
+	}
+
+	tableBuilder := NewTableBuilder("users_with_profile").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("name", "TEXT").
+		WithColumn("profile", "TEXT"). // Nested struct with slice as JSON
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[User](tableBuilder)
+
+	// Insert user with nested struct containing slice
+	user := User{
+		ID:   "u1",
+		Name: "Bob",
+		Profile: Profile{
+			Bio: "Software Engineer",
+			Contacts: []Contact{
+				{Type: "email", Value: "bob@example.com"},
+				{Type: "phone", Value: "+1-555-0100"},
+				{Type: "github", Value: "@bobdev"},
+			},
+		},
+	}
+
+	err := memSQL.Insert(user)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Query back
+	users, err := memSQL.Query("SELECT * FROM users_with_profile WHERE id = ?", "u1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(users) != 1 {
+		t.Fatalf("Expected 1 user, got %d", len(users))
+	}
+
+	// Verify nested struct with slice
+	u := users[0]
+	if u.Name != "Bob" {
+		t.Errorf("Expected name Bob, got %s", u.Name)
+	}
+	if u.Profile.Bio != "Software Engineer" {
+		t.Errorf("Expected bio Software Engineer, got %s", u.Profile.Bio)
+	}
+	if len(u.Profile.Contacts) != 3 {
+		t.Fatalf("Expected 3 contacts, got %d", len(u.Profile.Contacts))
+	}
+	if u.Profile.Contacts[0].Type != "email" || u.Profile.Contacts[0].Value != "bob@example.com" {
+		t.Errorf("Contact 0 mismatch: %+v", u.Profile.Contacts[0])
+	}
+	if u.Profile.Contacts[1].Type != "phone" || u.Profile.Contacts[1].Value != "+1-555-0100" {
+		t.Errorf("Contact 1 mismatch: %+v", u.Profile.Contacts[1])
+	}
+	if u.Profile.Contacts[2].Type != "github" || u.Profile.Contacts[2].Value != "@bobdev" {
+		t.Errorf("Contact 2 mismatch: %+v", u.Profile.Contacts[2])
+	}
+}
+
+func TestMemSQL_NestedStruct_PointerField(t *testing.T) {
+	type Settings struct {
+		Theme      string `json:"theme"`
+		FontSize   int    `json:"font_size"`
+		AutoSave   bool   `json:"auto_save"`
+	}
+
+	type Account struct {
+		ID       string    `json:"id"`
+		Username string    `json:"username"`
+		Settings *Settings `json:"settings"` // Pointer to nested struct
+	}
+
+	tableBuilder := NewTableBuilder("accounts").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("username", "TEXT").
+		WithColumn("settings", "TEXT"). // Pointer to struct as JSON
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[Account](tableBuilder)
+
+	// Insert account with non-nil settings
+	account1 := Account{
+		ID:       "a1",
+		Username: "alice",
+		Settings: &Settings{
+			Theme:    "dark",
+			FontSize: 14,
+			AutoSave: true,
+		},
+	}
+
+	err := memSQL.Insert(account1)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Insert account with nil settings
+	account2 := Account{
+		ID:       "a2",
+		Username: "bob",
+		Settings: nil,
+	}
+
+	err = memSQL.Insert(account2)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Query back both accounts
+	accounts, err := memSQL.Query("SELECT * FROM accounts ORDER BY id")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(accounts) != 2 {
+		t.Fatalf("Expected 2 accounts, got %d", len(accounts))
+	}
+
+	// Verify account with settings
+	if accounts[0].Username != "alice" {
+		t.Errorf("Expected username alice, got %s", accounts[0].Username)
+	}
+	if accounts[0].Settings == nil {
+		t.Fatal("Settings should not be nil")
+	}
+	if accounts[0].Settings.Theme != "dark" {
+		t.Errorf("Expected theme dark, got %s", accounts[0].Settings.Theme)
+	}
+	if accounts[0].Settings.FontSize != 14 {
+		t.Errorf("Expected font size 14, got %d", accounts[0].Settings.FontSize)
+	}
+	if accounts[0].Settings.AutoSave != true {
+		t.Errorf("Expected auto save true, got %v", accounts[0].Settings.AutoSave)
+	}
+
+	// Verify account with nil settings
+	if accounts[1].Username != "bob" {
+		t.Errorf("Expected username bob, got %s", accounts[1].Username)
+	}
+	if accounts[1].Settings != nil {
+		t.Errorf("Settings should be nil, got %+v", accounts[1].Settings)
+	}
+}
+
+func TestMemSQL_NestedStruct_MultipleFields(t *testing.T) {
+	type Location struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	}
+
+	type Dimensions struct {
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	}
+
+	type Asset struct {
+		ID         string     `json:"id"`
+		Name       string     `json:"name"`
+		Location   Location   `json:"location"`
+		Dimensions Dimensions `json:"dimensions"`
+	}
+
+	tableBuilder := NewTableBuilder("assets").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("name", "TEXT").
+		WithColumn("location", "TEXT").   // First nested struct
+		WithColumn("dimensions", "TEXT"). // Second nested struct
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[Asset](tableBuilder)
+
+	// Insert asset with multiple nested structs
+	asset := Asset{
+		ID:   "asset1",
+		Name: "Building A",
+		Location: Location{
+			Lat: 40.7128,
+			Lng: -74.0060,
+		},
+		Dimensions: Dimensions{
+			Width:  100,
+			Height: 200,
+		},
+	}
+
+	err := memSQL.Insert(asset)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Query back
+	assets, err := memSQL.Query("SELECT * FROM assets WHERE id = ?", "asset1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(assets) != 1 {
+		t.Fatalf("Expected 1 asset, got %d", len(assets))
+	}
+
+	// Verify both nested structs
+	a := assets[0]
+	if a.Name != "Building A" {
+		t.Errorf("Expected name Building A, got %s", a.Name)
+	}
+	if a.Location.Lat != 40.7128 {
+		t.Errorf("Expected lat 40.7128, got %f", a.Location.Lat)
+	}
+	if a.Location.Lng != -74.0060 {
+		t.Errorf("Expected lng -74.0060, got %f", a.Location.Lng)
+	}
+	if a.Dimensions.Width != 100 {
+		t.Errorf("Expected width 100, got %d", a.Dimensions.Width)
+	}
+	if a.Dimensions.Height != 200 {
+		t.Errorf("Expected height 200, got %d", a.Dimensions.Height)
+	}
+}
+
+func TestMemSQL_NestedStruct_InsertMany(t *testing.T) {
+	type Config struct {
+		Timeout int  `json:"timeout"`
+		Retry   bool `json:"retry"`
+	}
+
+	type Endpoint struct {
+		ID     string `json:"id"`
+		URL    string `json:"url"`
+		Config Config `json:"config"`
+	}
+
+	tableBuilder := NewTableBuilder("endpoints").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("url", "TEXT").
+		WithColumn("config", "TEXT").
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[Endpoint](tableBuilder)
+
+	// Insert multiple endpoints with nested configs
+	endpoints := []Endpoint{
+		{
+			ID:  "e1",
+			URL: "https://api.example.com/v1",
+			Config: Config{
+				Timeout: 30,
+				Retry:   true,
+			},
+		},
+		{
+			ID:  "e2",
+			URL: "https://api.example.com/v2",
+			Config: Config{
+				Timeout: 60,
+				Retry:   false,
+			},
+		},
+		{
+			ID:  "e3",
+			URL: "https://api.example.com/v3",
+			Config: Config{
+				Timeout: 45,
+				Retry:   true,
+			},
+		},
+	}
+
+	err := memSQL.InsertMany(endpoints)
+	if err != nil {
+		t.Fatalf("InsertMany failed: %v", err)
+	}
+
+	// Query back
+	result, err := memSQL.Query("SELECT * FROM endpoints ORDER BY id")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(result) != 3 {
+		t.Fatalf("Expected 3 endpoints, got %d", len(result))
+	}
+
+	// Verify all nested configs
+	if result[0].Config.Timeout != 30 || result[0].Config.Retry != true {
+		t.Errorf("Endpoint 1 config mismatch: %+v", result[0].Config)
+	}
+	if result[1].Config.Timeout != 60 || result[1].Config.Retry != false {
+		t.Errorf("Endpoint 2 config mismatch: %+v", result[1].Config)
+	}
+	if result[2].Config.Timeout != 45 || result[2].Config.Retry != true {
+		t.Errorf("Endpoint 3 config mismatch: %+v", result[2].Config)
+	}
+}
+
+func TestMemSQL_NestedStruct_Upsert(t *testing.T) {
+	type Preferences struct {
+		Language     string `json:"language"`
+		Timezone     string `json:"timezone"`
+		Notification bool   `json:"notification"`
+	}
+
+	type UserProfile struct {
+		ID          string      `json:"id"`
+		Email       string      `json:"email"`
+		Preferences Preferences `json:"preferences"`
+	}
+
+	tableBuilder := NewTableBuilder("user_profiles").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("email", "TEXT").
+		WithColumn("preferences", "TEXT").
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[UserProfile](tableBuilder)
+
+	// Initial insert
+	profile1 := UserProfile{
+		ID:    "u1",
+		Email: "user@example.com",
+		Preferences: Preferences{
+			Language:     "en",
+			Timezone:     "UTC",
+			Notification: true,
+		},
+	}
+
+	err := memSQL.Insert(profile1)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Upsert with updated nested struct
+	profile2 := UserProfile{
+		ID:    "u1",
+		Email: "user.updated@example.com",
+		Preferences: Preferences{
+			Language:     "es",
+			Timezone:     "PST",
+			Notification: false,
+		},
+	}
+
+	err = memSQL.Insert(profile2)
+	if err != nil {
+		t.Fatalf("Upsert failed: %v", err)
+	}
+
+	// Query back
+	profiles, err := memSQL.Query("SELECT * FROM user_profiles WHERE id = ?", "u1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(profiles) != 1 {
+		t.Fatalf("Expected 1 profile, got %d", len(profiles))
+	}
+
+	// Verify nested struct was updated
+	p := profiles[0]
+	if p.Email != "user.updated@example.com" {
+		t.Errorf("Expected email user.updated@example.com, got %s", p.Email)
+	}
+	if p.Preferences.Language != "es" {
+		t.Errorf("Expected language es, got %s", p.Preferences.Language)
+	}
+	if p.Preferences.Timezone != "PST" {
+		t.Errorf("Expected timezone PST, got %s", p.Preferences.Timezone)
+	}
+	if p.Preferences.Notification != false {
+		t.Errorf("Expected notification false, got %v", p.Preferences.Notification)
+	}
+}
+
+func TestMemSQL_NestedStruct_ComplexRealWorld(t *testing.T) {
+	type ResourceSelector struct {
+		MatchLabels      map[string]string   `json:"match_labels"`
+		MatchExpressions []map[string]string `json:"match_expressions"`
+	}
+
+	type Environment struct {
+		ID               string           `json:"id"`
+		Name             string           `json:"name"`
+		Description      string           `json:"description"`
+		SystemID         string           `json:"system_id"`
+		ResourceSelector ResourceSelector `json:"resource_selector"`
+	}
+
+	tableBuilder := NewTableBuilder("environments_nested").
+		WithColumn("id", "TEXT NOT NULL").
+		WithColumn("name", "TEXT").
+		WithColumn("description", "TEXT").
+		WithColumn("system_id", "TEXT").
+		WithColumn("resource_selector", "TEXT"). // Complex nested struct as JSON
+		WithPrimaryKey("id")
+
+	memSQL := NewMemSQL[Environment](tableBuilder)
+
+	// Insert environment with complex nested struct
+	env := Environment{
+		ID:          "env1",
+		Name:        "production",
+		Description: "Production environment",
+		SystemID:    "sys1",
+		ResourceSelector: ResourceSelector{
+			MatchLabels: map[string]string{
+				"env":  "production",
+				"tier": "backend",
+			},
+			MatchExpressions: []map[string]string{
+				{"key": "app", "operator": "In", "values": "api,web"},
+				{"key": "version", "operator": "Exists"},
+			},
+		},
+	}
+
+	err := memSQL.Insert(env)
+	if err != nil {
+		t.Fatalf("Insert failed: %v", err)
+	}
+
+	// Query back
+	envs, err := memSQL.Query("SELECT * FROM environments_nested WHERE id = ?", "env1")
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	if len(envs) != 1 {
+		t.Fatalf("Expected 1 environment, got %d", len(envs))
+	}
+
+	// Verify complex nested structure
+	e := envs[0]
+	if e.Name != "production" {
+		t.Errorf("Expected name production, got %s", e.Name)
+	}
+	if e.ResourceSelector.MatchLabels["env"] != "production" {
+		t.Errorf("Expected label env=production, got %s", e.ResourceSelector.MatchLabels["env"])
+	}
+	if e.ResourceSelector.MatchLabels["tier"] != "backend" {
+		t.Errorf("Expected label tier=backend, got %s", e.ResourceSelector.MatchLabels["tier"])
+	}
+	if len(e.ResourceSelector.MatchExpressions) != 2 {
+		t.Fatalf("Expected 2 match expressions, got %d", len(e.ResourceSelector.MatchExpressions))
+	}
+	if e.ResourceSelector.MatchExpressions[0]["key"] != "app" {
+		t.Errorf("Expression 0 key mismatch: %+v", e.ResourceSelector.MatchExpressions[0])
+	}
+	if e.ResourceSelector.MatchExpressions[1]["key"] != "version" {
+		t.Errorf("Expression 1 key mismatch: %+v", e.ResourceSelector.MatchExpressions[1])
+	}
+}

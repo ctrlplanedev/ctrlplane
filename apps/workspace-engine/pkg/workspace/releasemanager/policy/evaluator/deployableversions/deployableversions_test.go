@@ -15,7 +15,7 @@ import (
 // setupStore creates a test store.
 func setupStore() *store.Store {
 	sc := statechange.NewChangeSet[any]()
-	return store.New(sc)
+	return store.New("test-workspace", sc)
 }
 
 func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 // Helper function to create a test store with a resource
 func setupStoreWithResource(t *testing.T, resourceID string) *store.Store {
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	resource := &oapi.Resource{

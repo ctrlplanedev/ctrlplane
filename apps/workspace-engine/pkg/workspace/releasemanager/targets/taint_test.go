@@ -143,7 +143,7 @@ func TestBuildTargetIndex(t *testing.T) {
 func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -178,7 +178,7 @@ func TestTaintProcessor_PolicyChange_TaintsAll(t *testing.T) {
 func TestTaintProcessor_SystemChange_TaintsAll(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -213,7 +213,7 @@ func TestTaintProcessor_SystemChange_TaintsAll(t *testing.T) {
 func TestTaintProcessor_EnvironmentChange_TaintsEnvironmentTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets across different environments
 	envID1 := uuid.New().String()
@@ -249,7 +249,7 @@ func TestTaintProcessor_EnvironmentChange_TaintsEnvironmentTargets(t *testing.T)
 func TestTaintProcessor_DeploymentChange_TaintsDeploymentTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets across different deployments
 	envID := uuid.New().String()
@@ -284,7 +284,7 @@ func TestTaintProcessor_DeploymentChange_TaintsDeploymentTargets(t *testing.T) {
 func TestTaintProcessor_DeploymentVersionChange_TaintsDeploymentTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -319,7 +319,7 @@ func TestTaintProcessor_DeploymentVersionChange_TaintsDeploymentTargets(t *testi
 func TestTaintProcessor_ResourceChange_TaintsResourceTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets across different resources
 	envID := uuid.New().String()
@@ -354,7 +354,7 @@ func TestTaintProcessor_ResourceChange_TaintsResourceTargets(t *testing.T) {
 func TestTaintProcessor_JobChange_TaintsJobReleaseTarget(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -397,7 +397,7 @@ func TestTaintProcessor_JobChange_TaintsJobReleaseTarget(t *testing.T) {
 func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -426,7 +426,7 @@ func TestTaintProcessor_JobChange_NonExistentRelease(t *testing.T) {
 func TestTaintProcessor_ReleaseTargetChange_TaintsSpecificTarget(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -460,7 +460,7 @@ func TestTaintProcessor_ReleaseTargetChange_TaintsSpecificTarget(t *testing.T) {
 func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets across different dimensions
 	envID1 := uuid.New().String()
@@ -505,7 +505,7 @@ func TestTaintProcessor_MultipleChanges_SinglePass(t *testing.T) {
 func TestTaintProcessor_EmptyChangeset(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -532,7 +532,7 @@ func TestTaintProcessor_EmptyChangeset(t *testing.T) {
 func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup targets
 	envID := uuid.New().String()
@@ -570,7 +570,7 @@ func TestTaintProcessor_PolicyChange_ShortCircuits(t *testing.T) {
 func TestTaintProcessor_NoTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	targets := map[string]*oapi.ReleaseTarget{}
 
 	// Create changeset with changes
@@ -590,7 +590,7 @@ func TestTaintProcessor_NoTargets(t *testing.T) {
 func TestTaintProcessor_Deduplication(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Setup a single target
 	envID := uuid.New().String()

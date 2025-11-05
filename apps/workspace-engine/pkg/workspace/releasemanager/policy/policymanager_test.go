@@ -14,7 +14,7 @@ import (
 
 func setupTestStore(_ *testing.T) *store.Store {
 	cs := statechange.NewChangeSet[any]()
-	return store.New(cs)
+	return store.New("test-workspace", cs)
 }
 
 func TestNew(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 func setupTestStoreForRelationships(t *testing.T) *Store {
 	t.Helper()
 	cs := statechange.NewChangeSet[any]()
-	return New(cs)
+	return New("test-workspace", cs)
 }
 
 // TestGetRelatedEntities_DirectionFiltering tests that Direction field correctly indicates relationship direction

@@ -122,7 +122,7 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 
 	// Apply changes to a new store using the Restore method
 	// This is the critical test - Restore() must call ReinitializeMaterializedViews()
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
 	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err, "Restore should succeed")
 
@@ -189,7 +189,7 @@ func TestStore_Restore_EmptyEnvironments(t *testing.T) {
 	require.NoError(t, err)
 
 	// Restore should succeed even with no environments/deployments
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
 	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err, "Restore should succeed with no environments")
 
@@ -298,7 +298,7 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 	loadedChanges, err := persistenceStore.Load(ctx, namespace)
 	require.NoError(t, err)
 
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
 	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err)
 
@@ -458,7 +458,7 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 	loadedChanges, err := persistenceStore.Load(ctx, namespace)
 	require.NoError(t, err)
 
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
 	err = testStore.Restore(ctx, loadedChanges, nil)
 	require.NoError(t, err, "Restore should succeed")
 
@@ -592,7 +592,7 @@ func TestStore_Restore_DetectsMissingMaterializedViewInitialization(t *testing.T
 
 	// Create a store and apply changes WITHOUT calling Restore()
 	// This simulates the bug where ReinitializeMaterializedViews() is not called
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 

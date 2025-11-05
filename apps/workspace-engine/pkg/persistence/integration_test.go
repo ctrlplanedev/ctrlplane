@@ -27,7 +27,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	persistenceStore := memory.NewStore()
 
 	// Initialize store (needed for restoration)
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New(namespace, statechange.NewChangeSet[any]())
 
 	// Create some test entities
 	system := &oapi.System{
@@ -104,7 +104,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	assert.Equal(t, deployment.Name, restoredDeployment.Name)
 	assert.Equal(t, deployment.Slug, restoredDeployment.Slug)
 
-	restoredEnvironment, ok := testStore.Repo().Environments.Get(environment.Id)
+	restoredEnvironment, ok := testStore.Environments.Get(environment.Id)
 	require.True(t, ok, "Environment should be restored")
 	assert.Equal(t, environment.Name, restoredEnvironment.Name)
 }
@@ -169,7 +169,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 	require.Len(t, loadedChanges, 1)
 
 	// Apply to store and check it's the updated version
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
@@ -225,7 +225,7 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	assert.Equal(t, 1, persistenceStore.EntityCount(namespace), "Deletion should be tracked for compaction")
 
 	// Apply loaded changes to a new store and verify resource doesn't exist
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New(namespace, statechange.NewChangeSet[any]())
 
 	// Apply the (empty) changes - resource should not be added
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
@@ -285,7 +285,7 @@ func TestPersistence_MultipleNamespaces(t *testing.T) {
 	require.Len(t, loaded2, 1)
 
 	// Verify correct entities in each namespace
-	testStore1 := store.New(statechange.NewChangeSet[any]())
+	testStore1 := store.New(namespace1, statechange.NewChangeSet[any]())
 	err = testStore1.Repo().Router().Apply(ctx, loaded1)
 	require.NoError(t, err)
 
@@ -293,7 +293,7 @@ func TestPersistence_MultipleNamespaces(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "system-1", restoredSystem1.Name)
 
-	testStore2 := store.New(statechange.NewChangeSet[any]())
+	testStore2 := store.New(namespace2, statechange.NewChangeSet[any]())
 	err = testStore2.Repo().Router().Apply(ctx, loaded2)
 	require.NoError(t, err)
 
@@ -457,7 +457,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	require.Len(t, loadedChanges, 14)
 
 	// Apply to fresh store
-	testStore := store.New(statechange.NewChangeSet[any]())
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
@@ -483,7 +483,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().DeploymentVariables.Get(deploymentVariable.Id)
 	assert.True(t, ok, "DeploymentVariable should be restored")
 
-	_, ok = testStore.Repo().Environments.Get(environment.Id)
+	_, ok = testStore.Environments.Get(environment.Id)
 	assert.True(t, ok, "Environment should be restored")
 
 	_, ok = testStore.Repo().Policies.Get(policy.Id)
@@ -638,7 +638,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.Len(t, loadedChanges, 10)
 
 	// Apply to a new store
-	newStore := store.New(statechange.NewChangeSet[any]())
+	newStore := store.New(namespace, statechange.NewChangeSet[any]())
 	err = newStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
@@ -651,7 +651,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "Deployment should be restored")
 	assert.Equal(t, "web-app", restoredDeployment.Name)
 
-	restoredEnv, ok := newStore.Repo().Environments.Get(envId)
+	restoredEnv, ok := newStore.Environments.Get(envId)
 	require.True(t, ok, "Environment should be restored")
 	assert.Equal(t, "production", restoredEnv.Name)
 

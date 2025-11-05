@@ -17,7 +17,7 @@ import (
 // setupStore creates a test store with approval records and a test environment.
 func setupStore(versionId string, environmentId string, approvers []string) *store.Store {
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Create test environment
 	env := &oapi.Environment{
@@ -178,7 +178,7 @@ func TestAnyApprovalEvaluator_NoApprovalsGiven(t *testing.T) {
 func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 	// Setup: Different approval counts for different versions
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	environmentId := "env-1"
@@ -296,7 +296,7 @@ func TestAnyApprovalEvaluator_ExceedsMinimum(t *testing.T) {
 func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
 	// Test that satisfiedAt is set to the timestamp of the Nth approval (where N = minApprovals)
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	versionId := "version-1"
@@ -364,7 +364,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
 func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 	// Test that satisfiedAt uses the Nth approval even when there are more approvals
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	versionId := "version-1"
@@ -419,7 +419,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
 	// Test with minApprovals = 1, so the first approval should be the satisfying one
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	versionId := "version-1"
@@ -473,7 +473,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
 func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
 	// Test that satisfiedAt is nil when approvals are not satisfied
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	versionId := "version-1"
@@ -517,7 +517,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
 func TestAnyApprovalEvaluator_SatisfiedAt_NoApprovalsRequired(t *testing.T) {
 	// Test that satisfiedAt uses version.CreatedAt when no approvals are required
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	versionId := "version-1"
@@ -558,7 +558,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 	// Test that satisfiedAt uses the correct approval even if approvals are created out of order
 	// The store sorts by CreatedAt, so we should get the Nth approval by creation time, not insertion order
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	versionId := "version-1"

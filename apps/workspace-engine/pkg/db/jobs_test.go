@@ -7,7 +7,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
-	wsStore "workspace-engine/pkg/workspace/store"
+	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -239,7 +239,7 @@ func TestDBJobs_BasicWrite(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -311,7 +311,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -396,7 +396,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -500,7 +500,7 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -583,7 +583,7 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -663,7 +663,7 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -730,7 +730,7 @@ func TestDBJobs_AllJobStatuses(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -816,7 +816,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 
 	// Create store for workspace 1 (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore1 := wsStore.New(sc)
+	testStore1 := store.New("test-workspace", sc)
 	testStore1.Releases.Upsert(t.Context(), &release1)
 	// Also index by UUID for job lookup
 	testStore1.Repo().Releases.Set(releaseID1, &release1)
@@ -827,7 +827,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 
 	// Create store for workspace 2 (indexed by both hash ID and UUID)
 	sc2 := statechange.NewChangeSet[any]()
-	testStore2 := wsStore.New(sc2)
+	testStore2 := store.New("test-workspace", sc2)
 	testStore2.Releases.Upsert(t.Context(), &release2)
 	// Also index by UUID for job lookup
 	testStore2.Repo().Releases.Set(releaseID2, &release2)
@@ -954,7 +954,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
@@ -1118,7 +1118,7 @@ func TestDBJobs_BasicMetadata(t *testing.T) {
 
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1196,7 +1196,7 @@ func TestDBJobs_EmptyMetadata(t *testing.T) {
 
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1256,7 +1256,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1362,7 +1362,7 @@ func TestDBJobs_MetadataRemoval(t *testing.T) {
 
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -1460,7 +1460,7 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
-	testStore := wsStore.New(sc)
+	testStore := store.New("test-workspace", sc)
 	testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 

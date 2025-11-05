@@ -9,7 +9,7 @@ import (
 
 func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
 	cs := statechange.NewChangeSet[any]()
-	s := store.New(cs)
+	s := store.New(id, cs)
 	rm := releasemanager.New(s)
 	ws := &Workspace{
 		ID:             id,

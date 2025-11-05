@@ -34,9 +34,9 @@ func (s *DeploymentVersions) GetDeploymentVersion(c *gin.Context, workspaceId st
 
 func getSystemEnvironments(ws *workspace.Workspace, systemId string) []*oapi.Environment {
 	environments := make([]*oapi.Environment, 0)
-	for environment := range ws.Environments().IterBuffered() {
-		if environment.Val.SystemId == systemId {
-			environments = append(environments, environment.Val)
+	for _, environment := range ws.Environments().Items() {
+		if environment.SystemId == systemId {
+			environments = append(environments, environment)
 		}
 	}
 

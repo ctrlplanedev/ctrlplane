@@ -1,5 +1,7 @@
 package memsql
 
+import "strings"
+
 // TableBuilder helps build a SQLite table definition string using options and examples.
 type TableBuilder struct {
 	tableName   string
@@ -33,6 +35,10 @@ func (tb *TableBuilder) WithIndex(indexDef string) *TableBuilder {
 	return tb
 }
 
+func (tb *TableBuilder) TableName() string {
+	return strings.ReplaceAll(strings.ToLower(tb.tableName), "-", "_")
+}
+
 // Build returns the CREATE TABLE statement and any index statements as a single SQL string.
 func (tb *TableBuilder) Build() string {
 	var stmts []string
@@ -40,7 +46,7 @@ func (tb *TableBuilder) Build() string {
 	if len(tb.primaryKeys) > 0 {
 		cols = append(cols, "PRIMARY KEY ("+joinComma(tb.primaryKeys)+")")
 	}
-	createTable := "CREATE TABLE " + tb.tableName + " (" + joinComma(cols) + ")"
+	createTable := "CREATE TABLE " + tb.TableName() + " (" + joinComma(cols) + ")"
 	stmts = append(stmts, createTable)
 	stmts = append(stmts, tb.indices...)
 	return joinStatements(stmts)

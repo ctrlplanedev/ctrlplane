@@ -67,7 +67,7 @@ func TestPluralize(t *testing.T) {
 func TestGradualRolloutEnvironmentSummaryEvaluator_NoReleaseTargets(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -95,7 +95,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NoReleaseTargets(t *testing.T
 func TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -138,7 +138,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed(t *testing.T) {
 func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -203,7 +203,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 func TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -254,7 +254,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout(t *testing.T) 
 func TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -299,7 +299,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady(t *testin
 func TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -340,7 +340,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails(t *testing.
 func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -394,7 +394,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T
 func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -439,7 +439,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 // declares the correct scope fields
 func TestGradualRolloutEnvironmentSummaryEvaluator_ScopeFields(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	rule := createGradualRolloutRule(oapi.Linear, 60)
 	eval := NewSummaryEvaluator(st, rule)
@@ -455,7 +455,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_ScopeFields(t *testing.T) {
 // handles nil inputs gracefully
 func TestGradualRolloutEnvironmentSummaryEvaluator_NilInputs(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	// Nil rule
 	eval := NewSummaryEvaluator(st, nil)
@@ -472,7 +472,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NilInputs(t *testing.T) {
 func TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -518,7 +518,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized(t *testing.T
 func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -593,7 +593,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing
 func TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)
@@ -634,7 +634,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget(t *testing.T) {
 func TestGradualRolloutEnvironmentSummaryEvaluator_ZeroTimeScaleInterval(t *testing.T) {
 	ctx := t.Context()
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 
 	systemID := uuid.New().String()
 	environment := generateEnvironment(ctx, systemID, st)

@@ -9,7 +9,7 @@ import (
 )
 
 func TestNew_AllFieldsInitialized(t *testing.T) {
-	repo := New()
+	repo := New("test-workspace")
 
 	require.NotNil(t, repo, "New() returned nil repository")
 
@@ -34,14 +34,14 @@ func TestNew_AllFieldsInitialized(t *testing.T) {
 }
 
 func TestRouter(t *testing.T) {
-	repo := New()
+	repo := New("test-workspace")
 
 	router := repo.Router()
 	assert.NotNil(t, router, "Router() returned nil")
 }
 
 func TestRepositoryFields_NotNil(t *testing.T) {
-	repo := New()
+	repo := New("test-workspace")
 
 	// Use reflection to dynamically get all fields
 	v := reflect.ValueOf(repo).Elem()

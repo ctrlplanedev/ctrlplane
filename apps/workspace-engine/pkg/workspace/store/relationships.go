@@ -9,7 +9,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/relationships/relationgraph"
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel"
@@ -30,7 +29,7 @@ type RelationshipRules struct {
 	repo  *repository.InMemoryStore
 	store *Store
 
-	graph *relationgraph.Graph
+	// graph *relationgraph.Graph
 }
 
 func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.RelationshipRule) error {
@@ -95,25 +94,24 @@ func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
 // }
 
 func (r *RelationshipRules) InvalidateGraph(ctx context.Context) error {
-	r.graph = nil
 	return r.buildGraph(ctx, nil)
 }
 
 func (r *RelationshipRules) buildGraph(ctx context.Context, setStatus func(msg string)) (err error) {
-	builder := relationgraph.NewBuilder(
-		r.store.Resources.Items(),
-		r.store.Deployments.Items(),
-		r.store.Environments.Items(),
-		r.repo.RelationshipRules.Items(),
-	).WithParallelProcessing(true).
-		WithChunkSize(50).     // Smaller chunks to show progress more frequently
-		WithMaxConcurrency(16) // Use more goroutines for heavy workloads
+	// builder := relationgraph.NewBuilder(
+	// 	r.store.Resources.Items(),
+	// 	r.store.Deployments.Items(),
+	// 	r.store.Environments.Items(),
+	// 	r.repo.RelationshipRules.Items(),
+	// ).WithParallelProcessing(true).
+	// 	WithChunkSize(50).     // Smaller chunks to show progress more frequently
+	// 	WithMaxConcurrency(16) // Use more goroutines for heavy workloads
 
-	if setStatus != nil {
-		builder = builder.WithSetStatus(setStatus)
-	}
+	// if setStatus != nil {
+	// 	builder = builder.WithSetStatus(setStatus)
+	// }
 
-	r.graph, err = builder.Build(ctx)
+	// r.graph, err = builder.Build(ctx)
 	return err
 }
 

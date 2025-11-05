@@ -9,8 +9,8 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func New(changeset *statechange.ChangeSet[any]) *Store {
-	repo := repository.New()
+func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
+	repo := repository.New(wsId)
 	store := &Store{repo: repo, changeset: changeset}
 
 	store.Deployments = NewDeployments(store)
@@ -82,13 +82,13 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		return err
 	}
 
-	if setStatus != nil {
-		setStatus("Building relationships graph")
-	}
-	if err := s.Relationships.buildGraph(ctx, setStatus); err != nil {
-		log.Error("Failed to build relationships graph", "error", err)
-		return err
-	}
+	// if setStatus != nil {
+	// 	setStatus("Building relationships graph")
+	// }
+	// if err := s.Relationships.buildGraph(ctx, setStatus); err != nil {
+	// 	log.Error("Failed to build relationships graph", "error", err)
+	// 	return err
+	// }
 
 	return nil
 }

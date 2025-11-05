@@ -86,9 +86,7 @@ func (r *ReleaseTargets) computeTargets(ctx context.Context) (map[string]*oapi.R
 	// Pre-allocate based on a reasonable estimate
 	releaseTargets := make(map[string]*oapi.ReleaseTarget, 1000)
 
-	for envItem := range environments.IterBuffered() {
-		environment := envItem.Val
-
+	for _, environment := range environments.Items() {
 		// Only process deployments in the same system
 		systemDeployments, ok := deploymentsBySystem[environment.SystemId]
 		if !ok {

@@ -12,7 +12,7 @@ import (
 
 func TestPausedVersionsEvaluator_WithNewInterface(t *testing.T) {
 	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+	st := store.New("test-workspace", cs)
 
 	// Create test data
 	pausedVersion := &oapi.DeploymentVersion{
@@ -81,7 +81,7 @@ func TestPausedVersionsEvaluator_WithNewInterface(t *testing.T) {
 
 func TestPausedVersionsEvaluator_MissingFields(t *testing.T) {
 	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+	st := store.New("test-workspace", cs)
 	ctx := context.Background()
 
 	eval := pausedversions.NewEvaluator(st)
@@ -126,7 +126,7 @@ func TestPausedVersionsEvaluator_MissingFields(t *testing.T) {
 
 func TestPausedVersionsEvaluator_WithMemoization(t *testing.T) {
 	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+	st := store.New("test-workspace", cs)
 	ctx := context.Background()
 
 	pausedVersion := &oapi.DeploymentVersion{

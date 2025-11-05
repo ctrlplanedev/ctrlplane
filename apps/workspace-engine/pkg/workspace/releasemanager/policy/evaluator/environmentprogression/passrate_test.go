@@ -16,7 +16,7 @@ import (
 // setupTestStoreForPassRate creates a minimal test store for pass rate evaluator tests
 func setupTestStoreForPassRate() *store.Store {
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	// Create system

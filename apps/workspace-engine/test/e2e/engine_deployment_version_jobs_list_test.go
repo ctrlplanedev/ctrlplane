@@ -215,8 +215,8 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 
 	// Get environment
 	var env *oapi.Environment
-	for e := range ws.Environments().IterBuffered() {
-		env = e.Val
+	for _, e := range ws.Environments().Items() {
+		env = e
 		break
 	}
 	if env == nil {
@@ -421,9 +421,9 @@ func TestEngine_DeploymentVersionJobsList_EnvironmentSorting(t *testing.T) {
 
 	// Get all environments for this system
 	environments := []*oapi.Environment{}
-	for env := range ws.Environments().IterBuffered() {
-		if env.Val.SystemId == deployment.SystemId {
-			environments = append(environments, env.Val)
+	for _, env := range ws.Environments().Items() {
+		if env.SystemId == deployment.SystemId {
+			environments = append(environments, env)
 		}
 	}
 

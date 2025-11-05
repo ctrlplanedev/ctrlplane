@@ -16,7 +16,7 @@ import (
 // setupTestStore creates a test store with environments, jobs, and releases
 func setupTestStore() *store.Store {
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	// Create system

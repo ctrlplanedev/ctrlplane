@@ -16,7 +16,7 @@ import (
 // setupTestStoreForSoakTime creates a minimal test store for soak time evaluator tests
 func setupTestStoreForSoakTime() *store.Store {
 	sc := statechange.NewChangeSet[any]()
-	st := store.New(sc)
+	st := store.New("test-workspace", sc)
 	ctx := context.Background()
 
 	// Create system

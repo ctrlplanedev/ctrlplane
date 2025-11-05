@@ -138,7 +138,7 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	assert.GreaterOrEqual(t, ws.Store().Repo().Systems.Count(), 1)
 	assert.GreaterOrEqual(t, ws.Store().Repo().Resources.Count(), 2)
 	assert.GreaterOrEqual(t, ws.Store().Repo().Deployments.Count(), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Environments.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws.Environments().Items()), 1)
 	assert.GreaterOrEqual(t, ws.Store().Repo().JobAgents.Count(), 1)
 }
 
@@ -427,9 +427,9 @@ func TestEngine_Persistence_ReleaseshipsAndPolicies(t *testing.T) {
 	require.NotNil(t, configVar, "config-name resource variable should exist")
 
 	// Verify entity counts (may include other workspace data in global store)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Systems.Count(), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Deployments.Count(), 2)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Environments.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws.Systems().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws.Deployments().Items()), 2)
+	assert.GreaterOrEqual(t, len(ws.Environments().Items()), 1)
 	assert.GreaterOrEqual(t, ws.Store().Repo().Policies.Count(), 1)
 	assert.GreaterOrEqual(t, ws.Store().Repo().RelationshipRules.Count(), 1)
 }

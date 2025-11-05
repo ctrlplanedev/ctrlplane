@@ -79,12 +79,13 @@ func (s *Systems) Deployments(systemId string) map[string]*oapi.Deployment {
 
 func (s *Systems) computeEnvironments(systemId string) materialized.RecomputeFunc[map[string]*oapi.Environment] {
 	return func(ctx context.Context) (map[string]*oapi.Environment, error) {
-		environments := make(map[string]*oapi.Environment, s.repo.Environments.Count())
-		for environmentItem := range s.repo.Environments.IterBuffered() {
-			if environmentItem.Val.SystemId != systemId {
+		envs := s.store.Environments.Items()
+		environments := make(map[string]*oapi.Environment)
+		for _, environment := range envs {
+			if environment.SystemId != systemId {
 				continue
 			}
-			environments[environmentItem.Key] = environmentItem.Val
+			environments[environment.Id] = environment
 		}
 		return environments, nil
 	}

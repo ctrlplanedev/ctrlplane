@@ -6,38 +6,58 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+var dbCounter uint64
+
 func NewMemSQL[T any](tableBuilder *TableBuilder) *MemSQL[T] {
-	db, err := sql.Open("sqlite3", ":memory:")
+	tableName := tableBuilder.TableName()
+	
+	// Use a unique in-memory database per instance to avoid locking issues
+	// Each database gets a unique ID to prevent conflicts when tests reuse table names
+	dbID := atomic.AddUint64(&dbCounter, 1)
+	dbName := fmt.Sprintf("file:%s_%d?mode=memory&cache=shared", tableName, dbID)
+	db, err := sql.Open("sqlite3", dbName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to open database: %v", err))
 	}
-	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(tableBuilder.Build()); err != nil {
-		panic(fmt.Sprintf("failed to create table: %v", err))
+
+	// Set busy timeout to handle concurrent access
+	if _, err := db.Exec("PRAGMA busy_timeout=5000"); err != nil {
+		panic(fmt.Sprintf("failed to set busy timeout: %v", err))
 	}
 
-	// Check if table exists; if not, create it
-	var tableName = tableBuilder.tableName
-	var exists int
-	err = db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?", tableName).Scan(&exists)
-	if err != nil {
-		panic(fmt.Sprintf("failed to check if table %s exists: %v", tableName, err))
+	// Enable WAL mode for concurrent reads without blocking
+	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+		panic(fmt.Sprintf("failed to enable WAL mode: %v", err))
 	}
-	if exists == 0 {
-		_, err := db.Exec(tableBuilder.Build())
-		if err != nil {
-			panic(fmt.Sprintf("failed to create table %s: %v", tableName, err))
-		}
+
+	// Optimize for concurrent access and performance
+	db.SetMaxOpenConns(50)      // Allow many concurrent readers
+	db.SetMaxIdleConns(10)      // Keep some connections ready
+	db.SetConnMaxLifetime(0)    // Don't close connections (in-memory database)
+	
+	// Additional performance optimizations
+	db.Exec("PRAGMA synchronous=NORMAL")  // Faster, still safe for in-memory
+	db.Exec("PRAGMA cache_size=-64000")   // 64MB cache
+	db.Exec("PRAGMA temp_store=MEMORY")   // Use RAM for temp tables
+
+	// Drop table if it exists, then create it fresh
+	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)); err != nil {
+		panic(fmt.Sprintf("failed to drop table %s: %v", tableName, err))
+	}
+	
+	if _, err := db.Exec(tableBuilder.Build()); err != nil {
+		panic(fmt.Sprintf("failed to create table %s: %v", tableName, err))
 	}
 	return &MemSQL[T]{
 		db:          db,
-		tableName:   tableBuilder.tableName,
+		tableName:   tableName,
 		primaryKeys: tableBuilder.primaryKeys,
 	}
 }
@@ -50,6 +70,10 @@ type MemSQL[T any] struct {
 
 func (m *MemSQL[T]) DB() *sql.DB {
 	return m.db
+}
+
+func (m *MemSQL[T]) TableName() string {
+	return m.tableName
 }
 
 // Query executes a SQL query and parses the results into a slice of T.
@@ -136,6 +160,11 @@ func (m *MemSQL[T]) parseRows(rows *sql.Rows) ([]T, error) {
 					var jsonStr sql.NullString
 					valuePtrs[i] = &jsonStr
 					values[i] = &jsonStr
+				} else if needsJSONSerializationType(fieldType.Type) {
+					// Scan structs, maps, and slices as JSON string
+					var jsonStr sql.NullString
+					valuePtrs[i] = &jsonStr
+					values[i] = &jsonStr
 				} else if field.CanAddr() {
 					valuePtrs[i] = field.Addr().Interface()
 				} else {
@@ -171,6 +200,25 @@ func (m *MemSQL[T]) parseRows(rows *sql.Rows) ([]T, error) {
 						var pbStruct structpb.Struct
 						if err := json.Unmarshal([]byte(nullStr.String), &pbStruct); err == nil {
 							field.Set(reflect.ValueOf(&pbStruct))
+						}
+					}
+				} else if needsJSONSerializationType(fieldType.Type) {
+					// Handle struct, map, and slice fields that were stored as JSON
+					if nullStr, ok := values[i].(*sql.NullString); ok && nullStr.Valid && nullStr.String != "" {
+						// For pointer types, we need to create a new instance
+						if field.Kind() == reflect.Ptr {
+							// Create a new instance of the pointed-to type
+							newVal := reflect.New(field.Type().Elem())
+							if err := json.Unmarshal([]byte(nullStr.String), newVal.Interface()); err == nil {
+								field.Set(newVal)
+							}
+						} else if field.CanAddr() {
+							// For non-pointer types, unmarshal directly into the field
+							fieldPtr := field.Addr().Interface()
+							if err := json.Unmarshal([]byte(nullStr.String), fieldPtr); err != nil {
+								// Log error but continue - field will remain zero value
+								continue
+							}
 						}
 					}
 				}
@@ -332,6 +380,13 @@ func (m *MemSQL[T]) Insert(item T) error {
 				} else {
 					values = append(values, nil)
 				}
+			}
+		} else if needsJSONSerialization(fieldValue) {
+			// Convert structs, maps, and slices to JSON
+			if jsonBytes, err := json.Marshal(fieldValue.Interface()); err == nil {
+				values = append(values, string(jsonBytes))
+			} else {
+				values = append(values, nil)
 			}
 		} else {
 			values = append(values, fieldValue.Interface())
@@ -539,6 +594,13 @@ func (m *MemSQL[T]) InsertMany(items []T) error {
 						values[i] = nil
 					}
 				}
+			} else if needsJSONSerialization(fieldValue) {
+				// Convert structs, maps, and slices to JSON
+				if jsonBytes, err := json.Marshal(fieldValue.Interface()); err == nil {
+					values[i] = string(jsonBytes)
+				} else {
+					values[i] = nil
+				}
 			} else {
 				values[i] = fieldValue.Interface()
 			}
@@ -630,4 +692,74 @@ func parseTimestamp(timeStr string) (int64, error) {
 // isStructPBField checks if a field is a *structpb.Struct type.
 func isStructPBField(field reflect.StructField) bool {
 	return field.Type == reflect.TypeOf((*structpb.Struct)(nil))
+}
+
+// needsJSONSerialization checks if a field value should be JSON-serialized before storage.
+// Returns true for structs, maps, slices (except []byte), and pointers to these types.
+func needsJSONSerialization(v reflect.Value) bool {
+	// Handle nil pointers
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		return false
+	}
+	
+	// Dereference pointers
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	
+	switch v.Kind() {
+	case reflect.Struct:
+		// Don't serialize time.Time as JSON (it's handled specially elsewhere)
+		if v.Type() == reflect.TypeOf(time.Time{}) {
+			return false
+		}
+		// Don't serialize *structpb.Struct as it's handled separately
+		if v.Type() == reflect.TypeOf(structpb.Struct{}) {
+			return false
+		}
+		return true
+	case reflect.Map:
+		return true
+	case reflect.Slice:
+		// Don't serialize []byte as JSON (store as BLOB)
+		if v.Type().Elem().Kind() == reflect.Uint8 {
+			return false
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+// needsJSONSerializationType checks if a field type should be JSON-serialized before storage.
+// This is similar to needsJSONSerialization but works with types instead of values.
+// Returns true for structs, maps, slices (except []byte), and pointers to these types.
+func needsJSONSerializationType(t reflect.Type) bool {
+	// Dereference pointers
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	
+	switch t.Kind() {
+	case reflect.Struct:
+		// Don't serialize time.Time as JSON (it's handled specially elsewhere)
+		if t == reflect.TypeOf(time.Time{}) {
+			return false
+		}
+		// Don't serialize structpb.Struct as it's handled separately
+		if t == reflect.TypeOf(structpb.Struct{}) {
+			return false
+		}
+		return true
+	case reflect.Map:
+		return true
+	case reflect.Slice:
+		// Don't serialize []byte as JSON (store as BLOB)
+		if t.Elem().Kind() == reflect.Uint8 {
+			return false
+		}
+		return true
+	default:
+		return false
+	}
 }

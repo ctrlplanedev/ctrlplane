@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -29,17 +30,36 @@ type Environments struct {
 }
 
 func (e *Environments) Items() map[string]*oapi.Environment {
-	return e.repo.Environments.Items()
+	envMap := make(map[string]*oapi.Environment)
+	tableName := e.repo.Environments.TableName()
+	query := fmt.Sprintf("SELECT * FROM %s", tableName)
+	environments, err := e.repo.Environments.Query(query)
+	if err != nil {
+		return envMap
+	}
+	for _, environment := range environments {
+		envMap[environment.Id] = environment
+	}
+	return envMap
+}
+
+func (e *Environments) Get(id string) (*oapi.Environment, bool) {
+	tableName := e.repo.Environments.TableName()
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", tableName)
+	environment, err := e.repo.Environments.QueryOne(query, id)
+	if err != nil {
+		return nil, false
+	}
+	return environment, true
 }
 
 // ReinitializeMaterializedViews recreates all materialized views after deserialization
 func (e *Environments) ReinitializeMaterializedViews() {
-	for item := range e.repo.Environments.IterBuffered() {
-		environment := item.Val
+	for id := range e.Items() {
 		mv := materialized.New(
-			e.environmentResourceRecomputeFunc(environment.Id),
+			e.environmentResourceRecomputeFunc(id),
 		)
-		e.resources.Set(environment.Id, mv)
+		e.resources.Set(id, mv)
 	}
 }
 
@@ -49,7 +69,7 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 		_, span := tracer.Start(ctx, "environmentResourceRecomputeFunc")
 		defer span.End()
 
-		environment, exists := e.repo.Environments.Get(environmentId)
+		environment, exists := e.Get(environmentId)
 		if !exists || environment == nil {
 			return nil, fmt.Errorf("environment %s not found", environmentId)
 		}
@@ -85,18 +105,6 @@ func (e *Environments) environmentResourceRecomputeFunc(environmentId string) ma
 
 		return environmentResources, nil
 	}
-}
-
-func (e *Environments) IterBuffered() <-chan cmap.Tuple[string, *oapi.Environment] {
-	return e.repo.Environments.IterBuffered()
-}
-
-func (e *Environments) Get(id string) (*oapi.Environment, bool) {
-	return e.repo.Environments.Get(id)
-}
-
-func (e *Environments) Has(id string) bool {
-	return e.repo.Environments.Has(id)
 }
 
 func (e *Environments) HasResource(envId string, resourceId string) bool {
@@ -137,7 +145,7 @@ func (e *Environments) RecomputeResources(ctx context.Context, environmentId str
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
-	previous, _ := e.repo.Environments.Get(environment.Id)
+	previous, _ := e.Get(environment.Id)
 	previousSystemId := ""
 	if previous != nil {
 		previousSystemId = previous.SystemId
@@ -151,7 +159,11 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 	}
 
 	// Store the environment in the repository
-	e.repo.Environments.Set(environment.Id, environment)
+	err := e.repo.Environments.Insert(environment)
+	if err != nil {
+		log.Error("Failed to upsert environment", "error", err)
+	}
+
 	e.store.Systems.ApplyEnvironmentUpdate(ctx, previousSystemId, environment)
 
 	if cs, ok := changeset.FromContext[any](ctx); ok {
@@ -201,7 +213,10 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 
 	e.store.changeset.RecordDelete(env)
 
-	e.repo.Environments.Remove(id)
+	err := e.repo.Environments.DeleteOne("id = ?", id)
+	if err != nil {
+		log.Error("Failed to remove environment", "id", id, "error", err)
+	}
 	e.resources.Remove(id)
 
 	e.store.ReleaseTargets.Recompute(ctx)

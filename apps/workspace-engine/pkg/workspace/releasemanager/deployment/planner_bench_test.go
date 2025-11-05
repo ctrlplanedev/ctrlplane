@@ -120,7 +120,7 @@ func setupBenchmarkPlanner(
 ) (*Planner, []*oapi.ReleaseTarget) {
 	ctx := context.Background()
 	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+	st := store.New("test-workspace", cs)
 
 	// Create system
 	systemID := uuid.New().String()
@@ -672,7 +672,7 @@ func setupPlannerWithVariables(
 ) (*Planner, []*oapi.ReleaseTarget) {
 	ctx := context.Background()
 	cs := statechange.NewChangeSet[any]()
-	st := store.New(cs)
+	st := store.New("test-workspace", cs)
 
 	// Create system
 	systemID := uuid.New().String()
