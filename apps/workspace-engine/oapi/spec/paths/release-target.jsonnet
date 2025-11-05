@@ -78,14 +78,14 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.releaseTargetKeyParam(),
       ],
-    },
-    responses: openapi.okResponse(
-      {
-        properties: {
-          desiredRelease: openapi.schemaRef('Release'),
+      responses: openapi.okResponse(
+        {
+          properties: {
+            desiredRelease: openapi.schemaRef('Release'),
+          },
         },
-      },
-      'The desired release for the release target',
-    ) + openapi.notFoundResponse(),
+        'The desired release for the release target',
+      ) + openapi.notFoundResponse(),
+    },
   },
 }

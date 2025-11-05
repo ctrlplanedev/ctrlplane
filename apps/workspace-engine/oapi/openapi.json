@@ -3652,33 +3652,33 @@
                   }
                }
             ],
-            "summary": "Get the desired release for a release target"
-         },
-         "responses": {
-            "200": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "properties": {
-                           "desiredRelease": {
-                              "$ref": "#/components/schemas/Release"
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "desiredRelease": {
+                                 "$ref": "#/components/schemas/Release"
+                              }
                            }
                         }
                      }
-                  }
+                  },
+                  "description": "The desired release for the release target"
                },
-               "description": "The desired release for the release target"
-            },
-            "404": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/ErrorResponse"
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
                      }
-                  }
-               },
-               "description": "Resource not found"
-            }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get the desired release for a release target"
          }
       },
       "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/jobs": {
