@@ -67,7 +67,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 	ctx := context.Background()
 
 	// Verify release targets were created (2 resources matching the selector)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, updatedEnv)
 
 	// Verify release targets - should now only have 1 (for r1)
-	releaseTargetsAfter, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargetsAfter, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets after update: %v", err)
 	}
@@ -467,7 +467,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets were created (2 resources matching the deployment selector)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -509,7 +509,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentUpdate, updatedDeployment)
 
 	// Verify release targets - should now only have 1 (for r1)
-	releaseTargetsAfter, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargetsAfter, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets after update: %v", err)
 	}
