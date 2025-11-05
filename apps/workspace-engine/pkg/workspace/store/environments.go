@@ -41,8 +41,6 @@ func (e *Environments) Items() map[string]*oapi.Environment {
 		envMap[environment.Id] = environment
 	}
 	return envMap
-
-	// return e.repo.Environments.Items()
 }
 
 func (e *Environments) Get(id string) (*oapi.Environment, bool) {
@@ -53,8 +51,6 @@ func (e *Environments) Get(id string) (*oapi.Environment, bool) {
 		return nil, false
 	}
 	return environment, true
-
-	// return e.repo.Environments.Get(id)
 }
 
 func (e *Environments) ForSystem(systemId string) []*oapi.Environment {
@@ -196,9 +192,8 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 	e.store.ReleaseTargets.Recompute(ctx)
 	e.store.ReleaseTargets.targets.WaitIfRunning()
 
-	// if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
-	// 	log.Error("Failed to invalidate relationships graph", "error", err)
-	// }
+	// Invalidate this environment AND all entities that might have relationships to it
+	e.store.Relationships.InvalidateEntityAndPotentialSources(environment.Id, oapi.RelatableEntityTypeEnvironment)
 
 	return nil
 }
@@ -247,7 +242,6 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 
 	e.store.ReleaseTargets.Recompute(ctx)
 
-	// if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
-	// 	log.Error("Failed to invalidate relationships graph", "error", err)
-	// }
+	// Invalidate this environment AND all entities that might have had relationships to it
+	e.store.Relationships.InvalidateEntityAndPotentialSources(id, oapi.RelatableEntityTypeEnvironment)
 }

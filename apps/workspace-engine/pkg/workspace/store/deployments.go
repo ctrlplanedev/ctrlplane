@@ -239,9 +239,8 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 	e.store.changeset.RecordUpsert(deployment)
 	span.AddEvent("Recorded deployment upsert in changeset")
 
-	// if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
-	// 	log.Error("Failed to invalidate relationships graph", "error", err)
-	// }
+	// Invalidate this deployment AND all entities that might have relationships to it
+	e.store.Relationships.InvalidateEntityAndPotentialSources(deployment.Id, oapi.RelatableEntityTypeDeployment)
 
 	return nil
 }
@@ -264,9 +263,8 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 
 	e.store.changeset.RecordDelete(deployment)
 
-	// if err := e.store.Relationships.InvalidateGraph(ctx); err != nil {
-	// 	log.Error("Failed to invalidate relationships graph", "error", err)
-	// }
+	// Invalidate this deployment AND all entities that might have had relationships to it
+	e.store.Relationships.InvalidateEntityAndPotentialSources(id, oapi.RelatableEntityTypeDeployment)
 }
 
 func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {

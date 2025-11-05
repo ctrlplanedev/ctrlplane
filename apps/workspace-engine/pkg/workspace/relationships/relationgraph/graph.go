@@ -1,113 +1,126 @@
 package relationgraph
 
 import (
-	"maps"
-	"sync"
+	"context"
 	"time"
 
 	"workspace-engine/pkg/oapi"
+
+	"go.opentelemetry.io/otel"
 )
 
-// Graph is a precomputed index of all entity relationships.
-// It provides O(1) lookups after an initial O(N×M) build phase.
-// The graph uses an adjacency list representation internally.
+var tracer = otel.Tracer("workspace/relationships/relationgraph")
+
+// Graph is a lazy-loading index of entity relationships.
+// It computes relationships on-demand and caches them per entity.
+// The graph orchestrates between EntityStore, RelationshipCache, and ComputationEngine.
 type Graph struct {
-	// entityRelations maps entity ID -> relationship reference -> related entities
-	entityRelations map[string]map[string][]*oapi.EntityRelation
+	entityStore *EntityStore
+	cache       *RelationshipCache
+	engine      *ComputationEngine
 
-	// metadata
-	buildTime     time.Time
-	entityCount   int
-	ruleCount     int
-	relationCount int
-
-	mu sync.RWMutex
+	buildTime time.Time
 }
 
-// NewGraph creates an empty relationship graph
-func NewGraph() *Graph {
+// NewGraph creates a relationship graph from an EntityProvider (e.g., Store)
+// This uses dependency inversion to avoid circular dependencies
+func NewGraph(provider EntityProvider) *Graph {
+	entityStore := NewEntityStore(provider)
+	cache := NewRelationshipCache()
+	engine := NewComputationEngine(entityStore, cache)
+
 	return &Graph{
-		entityRelations: make(map[string]map[string][]*oapi.EntityRelation),
-		buildTime:       time.Now(),
+		entityStore: entityStore,
+		cache:       cache,
+		engine:      engine,
+		buildTime:   time.Now(),
 	}
+}
+
+// NewGraphWithComponents creates a graph with custom components (for testing/advanced use)
+func NewGraphWithComponents(entityStore *EntityStore, cache *RelationshipCache, engine *ComputationEngine) *Graph {
+	return &Graph{
+		entityStore: entityStore,
+		cache:       cache,
+		engine:      engine,
+		buildTime:   time.Now(),
+	}
+}
+
+// InvalidateEntity clears the cached relationships for a specific entity
+// Call this when an entity is updated/deleted in the store layer
+func (g *Graph) InvalidateEntity(entityID string) {
+	g.cache.InvalidateEntity(entityID)
+}
+
+// InvalidateRule marks a rule as dirty and clears all relationships using that rule
+// Call this when a rule is added/updated/removed in the store layer
+func (g *Graph) InvalidateRule(ruleRef string) {
+	g.cache.InvalidateRule(ruleRef)
+}
+
+// IsComputed checks if an entity has had its relationships computed
+func (g *Graph) IsComputed(entityID string) bool {
+	return g.cache.IsComputed(entityID)
+}
+
+// IsRuleDirty checks if a rule needs recomputation
+func (g *Graph) IsRuleDirty(ruleRef string) bool {
+	return g.cache.IsRuleDirty(ruleRef)
 }
 
 // GetRelatedEntities returns all relationships for a single entity
 // Returns empty map if entity has no relationships
-// This is an O(1) lookup operation
+// This is an O(1) lookup operation for cached entities
 func (g *Graph) GetRelatedEntities(entityID string) map[string][]*oapi.EntityRelation {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
+	return g.cache.Get(entityID)
+}
 
-	if relations, ok := g.entityRelations[entityID]; ok {
-		// Return a copy to prevent external mutation
-		result := make(map[string][]*oapi.EntityRelation, len(relations))
-		maps.Copy(result, relations)
-		return result
+// GetRelatedEntitiesWithCompute returns relationships for an entity, computing them if needed
+// This is the main entry point for lazy-loading relationship computation
+func (g *Graph) GetRelatedEntitiesWithCompute(ctx context.Context, entityID string) (map[string][]*oapi.EntityRelation, error) {
+	// Check if we need to compute
+	needsCompute := !g.cache.IsComputed(entityID) || g.cache.HasDirtyRules()
+
+	if needsCompute {
+		// Compute relationships for this entity
+		if err := g.ComputeForEntity(ctx, entityID); err != nil {
+			return nil, err
+		}
 	}
 
-	return make(map[string][]*oapi.EntityRelation)
+	// Return the (now computed) relationships
+	return g.GetRelatedEntities(entityID), nil
 }
 
 // GetRelatedEntitiesBatch returns relationships for multiple entities at once
 // More efficient than calling GetRelatedEntities in a loop
 func (g *Graph) GetRelatedEntitiesBatch(entityIDs []string) map[string]map[string][]*oapi.EntityRelation {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
-
-	results := make(map[string]map[string][]*oapi.EntityRelation, len(entityIDs))
-	for _, entityID := range entityIDs {
-		if relations, ok := g.entityRelations[entityID]; ok {
-			results[entityID] = relations
-		} else {
-			results[entityID] = make(map[string][]*oapi.EntityRelation)
-		}
-	}
-
-	return results
+	return g.cache.GetBatch(entityIDs)
 }
 
 // GetRelationsByReference returns all relationships for a specific reference
 // across all entities that have that relationship
 func (g *Graph) GetRelationsByReference(reference string) map[string][]*oapi.EntityRelation {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
-
-	result := make(map[string][]*oapi.EntityRelation)
-	for entityID, relations := range g.entityRelations {
-		if rels, ok := relations[reference]; ok {
-			result[entityID] = rels
-		}
-	}
-
-	return result
+	return g.cache.GetRelationsByReference(reference)
 }
 
 // HasRelationships checks if an entity has any relationships
 func (g *Graph) HasRelationships(entityID string) bool {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
-
-	relations, ok := g.entityRelations[entityID]
-	return ok && len(relations) > 0
+	return g.cache.HasRelationships(entityID)
 }
 
 // IsStale checks if the graph is older than the given TTL
 func (g *Graph) IsStale(ttl time.Duration) bool {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
 	return time.Since(g.buildTime) > ttl
 }
 
 // GetStats returns statistics about the graph
 func (g *Graph) GetStats() Stats {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
-
 	return Stats{
-		EntityCount:   g.entityCount,
-		RuleCount:     g.ruleCount,
-		RelationCount: g.relationCount,
+		EntityCount:   g.entityStore.EntityCount(),
+		RuleCount:     g.entityStore.RuleCount(),
+		RelationCount: g.cache.RelationCount(),
 		BuildTime:     g.buildTime,
 		Age:           time.Since(g.buildTime),
 	}
@@ -122,14 +135,26 @@ type Stats struct {
 	Age           time.Duration
 }
 
-// addRelation adds a relationship to the graph (internal use only)
+// ComputeForEntity computes relationships for a single entity across all rules
+// This delegates to the ComputationEngine
+func (g *Graph) ComputeForEntity(ctx context.Context, entityID string) error {
+	return g.engine.ComputeForEntity(ctx, entityID)
+}
+
+// Internal test helpers - these expose internal cache/engine methods for testing
+
+// addRelation adds a relationship directly to the cache (for testing)
 func (g *Graph) addRelation(entityID string, reference string, relation *oapi.EntityRelation) {
-	if g.entityRelations[entityID] == nil {
-		g.entityRelations[entityID] = make(map[string][]*oapi.EntityRelation)
-	}
-	g.entityRelations[entityID][reference] = append(
-		g.entityRelations[entityID][reference],
-		relation,
-	)
-	g.relationCount++
+	g.cache.Add(entityID, reference, relation)
+}
+
+// markEntityComputed marks an entity as computed (for testing)
+func (g *Graph) markEntityComputed(entityID string) {
+	g.cache.MarkEntityComputed(entityID)
+}
+
+// hasRule checks if a rule exists (for testing)
+func (g *Graph) hasRule(reference string) bool {
+	_, ok := g.entityStore.GetRule(reference)
+	return ok
 }

@@ -396,13 +396,8 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 			}
 		}
 		r.store.ReleaseTargets.AddReleaseTargets(ctx, rt)
-		// r.recomputeAll(ctx)
-
-		// if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
-		// 	span.RecordError(err)
-		// 	span.SetStatus(codes.Error, "Failed to invalidate relationships graph")
-		// 	log.Error("Failed to invalidate relationships graph", "error", err)
-		// }
+		// Invalidate this resource AND all entities that might have relationships to it
+		r.store.Relationships.InvalidateEntityAndPotentialSources(resource.Id, oapi.RelatableEntityTypeResource)
 	} else {
 		span.SetAttributes(attribute.Bool("recompute.triggered", false))
 		span.AddEvent("Skipped recomputation - no meaningful changes detected")
@@ -452,9 +447,8 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 
 	r.store.changeset.RecordDelete(resource)
 
-	// if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
-	// 	log.Error("Failed to invalidate relationships graph", "error", err)
-	// }
+	// Invalidate this resource AND all entities that might have had relationships to it
+	r.store.Relationships.InvalidateEntityAndPotentialSources(id, oapi.RelatableEntityTypeResource)
 }
 
 func (r *Resources) Items() map[string]*oapi.Resource {
@@ -539,7 +533,6 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 	prepSpan.End()
 
 	// Phase 2: Find resources to delete
-	_, findDeleteSpan := tracer.Start(ctx, "Set.FindResourcesToDelete")
 	var resourcesToDelete []string
 	for item := range r.repo.Resources.IterBuffered() {
 		resource := item.Val
@@ -549,14 +542,11 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 			}
 		}
 	}
-	findDeleteSpan.SetAttributes(attribute.Int("resources.toDelete.count", len(resourcesToDelete)))
-	findDeleteSpan.End()
 
 	// Track if any resources were deleted (which requires recomputation)
 	hadDeletions := len(resourcesToDelete) > 0
 
-	// Phase 3: Delete old resources (but skip recomputation for now)
-	_, deleteSpan := tracer.Start(ctx, "Set.DeleteResources")
+
 	for _, resourceId := range resourcesToDelete {
 		resource, ok := r.repo.Resources.Get(resourceId)
 		if !ok || resource == nil {
@@ -570,8 +560,8 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 		}
 
 		r.store.changeset.RecordDelete(resource)
+		r.store.Relationships.InvalidateEntityAndPotentialSources(resourceId, oapi.RelatableEntityTypeResource)
 	}
-	deleteSpan.End()
 
 	// Phase 4: Upsert new resources without triggering recomputation
 	_, upsertSpan := tracer.Start(ctx, "Set.UpsertResources")
@@ -651,10 +641,8 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 		r.recomputeAll(ctx)
 		recomputeSpan.End()
 
-		if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "Failed to invalidate relationships graph")
-			log.Error("Failed to invalidate relationships graph", "error", err)
+		for id := range changedResourcesWithPaths {
+			r.store.Relationships.InvalidateEntityAndPotentialSources(id, oapi.RelatableEntityTypeResource)
 		}
 	} else {
 		span.SetAttributes(attribute.Bool("recompute.triggered", false))

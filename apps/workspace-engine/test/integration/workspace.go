@@ -103,3 +103,25 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 
 	return tw
 }
+
+// RunWithEngines runs the same test function against multiple pre-configured engines.
+// This is useful for testing the same behavior with different configurations
+// (e.g., standalone resources vs provider-owned resources).
+//
+// Example:
+//
+//	RunWithEngines(t, map[string]*TestWorkspace{
+//	    "standalone": integration.NewTestWorkspace(t, opts1...),
+//	    "with provider": integration.NewTestWorkspace(t, opts2...),
+//	}, func(t *testing.T, engine *TestWorkspace) {
+//	    // Your test code here
+//	})
+func RunWithEngines(t *testing.T, engines map[string]*TestWorkspace, testFn func(t *testing.T, engine *TestWorkspace)) {
+	t.Helper()
+
+	for name, engine := range engines {
+		t.Run(name, func(t *testing.T) {
+			testFn(t, engine)
+		})
+	}
+}

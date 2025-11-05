@@ -7,6 +7,7 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store"
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
@@ -260,11 +261,29 @@ func WithResourceProvider(options ...ResourceProviderOption) WorkspaceOption {
 			option(ws, rp)
 		}
 
+		// Create the resource provider first
 		ws.PushEvent(
 			context.Background(),
 			handler.ResourceProviderCreate,
 			rp,
 		)
+
+		// If resources were added via WithResourceProviderResource, push the Set event
+		if batchId, ok := rp.Metadata["_test_batch_id"]; ok {
+			payload := map[string]interface{}{
+				"providerId": rp.Id,
+				"batchId":    batchId,
+			}
+
+			ws.PushEvent(
+				context.Background(),
+				handler.ResourceProviderSetResources,
+				payload,
+			)
+
+			// Clean up the metadata marker
+			delete(rp.Metadata, "_test_batch_id")
+		}
 
 		return nil
 	}
@@ -564,6 +583,82 @@ func ProviderMetadata(metadata map[string]string) ResourceProviderOption {
 	}
 }
 
+// WithResourceProviderResource adds resources to a provider using the Set functionality.
+// This is useful for testing the resource provider's Set function with cached batches.
+//
+// Example:
+//
+//	integration.WithResourceProvider(
+//	    integration.ProviderID("my-provider"),
+//	    integration.WithResourceProviderResource(
+//	        integration.ResourceID("resource-1"),
+//	        integration.ResourceName("Resource 1"),
+//	        integration.ResourceKind("service"),
+//	    ),
+//	    integration.WithResourceProviderResource(
+//	        integration.ResourceID("resource-2"),
+//	        integration.ResourceName("Resource 2"),
+//	        integration.ResourceKind("database"),
+//	    ),
+//	)
+func WithResourceProviderResource(options ...ResourceOption) ResourceProviderOption {
+	return func(ws *TestWorkspace, rp *oapi.ResourceProvider) {
+		// Create a resource with provider-owned defaults
+		resource := c.NewResource(ws.workspace.ID)
+		resource.ProviderId = &rp.Id
+
+		eb := newEventsBuilder()
+		for _, option := range options {
+			option(ws, resource, eb)
+		}
+
+		// Get the batch cache to store resources
+		ctx := context.Background()
+		cache := store.GetResourceProviderBatchCache()
+
+		// Check if we already have a batch for this provider
+		// We'll use a marker in the provider's metadata to track the batch ID
+		var batchId string
+		if rp.Metadata == nil {
+			rp.Metadata = make(map[string]string)
+		}
+
+		if existingBatchId, ok := rp.Metadata["_test_batch_id"]; ok {
+			// Retrieve existing batch, add resource, and store back
+			batchId = existingBatchId
+			batch, err := cache.Retrieve(ctx, batchId)
+			if err != nil {
+				// If batch doesn't exist anymore, start with empty slice
+				batch = &store.CachedBatch{
+					ProviderId: rp.Id,
+					Resources:  []*oapi.Resource{},
+				}
+			}
+			batch.Resources = append(batch.Resources, resource)
+
+			// Store the updated batch back
+			newBatchId, err := cache.Store(ctx, rp.Id, batch.Resources)
+			if err != nil {
+				ws.t.Fatalf("failed to store resource batch: %v", err)
+			}
+			batchId = newBatchId
+			rp.Metadata["_test_batch_id"] = batchId
+		} else {
+			// First resource for this provider - create new batch
+			resources := []*oapi.Resource{resource}
+			var err error
+			batchId, err = cache.Store(ctx, rp.Id, resources)
+			if err != nil {
+				ws.t.Fatalf("failed to store resource batch: %v", err)
+			}
+			rp.Metadata["_test_batch_id"] = batchId
+		}
+
+		// Note: We don't push the event here because we need to accumulate all resources first.
+		// The event will be pushed after the provider is created in a post-processing step.
+	}
+}
+
 // ===== JobAgent Options =====
 
 func JobAgentName(name string) JobAgentOption {
@@ -848,10 +943,32 @@ func RelationshipRuleFromJsonSelector(selector map[string]any) RelationshipRuleO
 	}
 }
 
+func RelationshipRuleFromCelSelector(cel string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
+		s := &oapi.Selector{}
+		if err := s.FromCelSelector(oapi.CelSelector{Cel: cel}); err != nil {
+			return err
+		}
+		rr.FromSelector = s
+		return nil
+	}
+}
+
 func RelationshipRuleToJsonSelector(selector map[string]any) RelationshipRuleOption {
 	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
 		s := &oapi.Selector{}
 		if err := s.FromJsonSelector(oapi.JsonSelector{Json: selector}); err != nil {
+			return err
+		}
+		rr.ToSelector = s
+		return nil
+	}
+}
+
+func RelationshipRuleToCelSelector(cel string) RelationshipRuleOption {
+	return func(_ *TestWorkspace, rr *oapi.RelationshipRule) error {
+		s := &oapi.Selector{}
+		if err := s.FromCelSelector(oapi.CelSelector{Cel: cel}); err != nil {
 			return err
 		}
 		rr.ToSelector = s

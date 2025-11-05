@@ -11,31 +11,22 @@ import (
 
 // TestEngine_GetRelatedEntities_ResourceToResource tests finding related resources
 func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
-	engine := integration.NewTestWorkspace(
+
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleType("contains"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
 		t,
-		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("vpc-to-cluster"),
-			integration.RelationshipRuleReference("contains"),
-			integration.RelationshipRuleFromType("resource"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleType("contains"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "vpc",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator("equals"),
-			),
-		),
+		rule,
 		integration.WithResource(
 			integration.ResourceID("vpc-us-east-1"),
 			integration.ResourceName("vpc-us-east-1"),
@@ -78,73 +69,121 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 		),
 	)
 
-	ctx := context.Background()
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-west-2"),
+				integration.ResourceName("vpc-us-west-2"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-2"),
+				integration.ResourceName("cluster-east-2"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-west-1"),
+				integration.ResourceName("cluster-west-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+		),
+	)
 
-	// Test from VPC in us-east-1 to clusters
-	vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
-	if !ok {
-		t.Fatalf("vpc-us-east-1 not found")
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct": engineDirect,
+		"with_provider": engineWithProvider,
 	}
 
-	entity := relationships.NewResourceEntity(vpcEast)
-	relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
-	if err != nil {
-		t.Fatalf("GetRelatedEntities failed: %v", err)
-	}
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
 
-	// Should have 2 clusters in us-east-1
-	clusters, ok := relatedEntities["contains"]
-	if !ok {
-		t.Fatalf("'contains' relationship not found")
-	}
-
-	if len(clusters) != 2 {
-		t.Fatalf("expected 2 related clusters, got %d", len(clusters))
-	}
-
-	// Verify the correct clusters are returned
-	clusterIDs := make(map[string]bool)
-	for _, cluster := range clusters {
-		clusterIDs[cluster.EntityId] = true
-	}
-
-	if !clusterIDs["cluster-east-1"] {
-		t.Errorf("cluster-east-1 not in related entities")
-	}
-	if !clusterIDs["cluster-east-2"] {
-		t.Errorf("cluster-east-2 not in related entities")
-	}
-	if clusterIDs["cluster-west-1"] {
-		t.Errorf("cluster-west-1 should not be in related entities")
-	}
+		// Test from VPC in us-east-1 to clusters
+		vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+	
+		entity := relationships.NewResourceEntity(vpcEast)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+	
+		// Should have 2 clusters in us-east-1
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
+	
+		if len(clusters) != 2 {
+			t.Fatalf("expected 2 related clusters, got %d", len(clusters))
+		}
+	
+		// Verify the correct clusters are returned
+		clusterIDs := make(map[string]bool)
+		for _, cluster := range clusters {
+			clusterIDs[cluster.EntityId] = true
+		}
+	
+		if !clusterIDs["cluster-east-1"] {
+			t.Errorf("cluster-east-1 not in related entities")
+		}
+		if !clusterIDs["cluster-east-2"] {
+			t.Errorf("cluster-east-2 not in related entities")
+		}
+		if clusterIDs["cluster-west-1"] {
+			t.Errorf("cluster-west-1 should not be in related entities")
+		}
+	})
 }
 
 // TestEngine_GetRelatedEntities_BidirectionalRelationship tests that relationships work in both directions
 func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("vpc-to-cluster"),
 			integration.RelationshipRuleReference("part-of"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "vpc",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+	
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("vpc-us-east-1"),
 			integration.ResourceName("vpc-us-east-1"),
@@ -163,6 +202,37 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct": engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	// Test from cluster to VPC (reverse direction)
@@ -190,13 +260,23 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 	if vpcs[0].EntityId != "vpc-us-east-1" {
 		t.Errorf("expected vpc-us-east-1, got %s", vpcs[0].EntityId)
 	}
+		
+	})
 }
 
 // TestEngine_GetRelatedEntities_DeploymentToResource tests deployment to resource relationships
 func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithSystem(
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("deployment-to-cluster"),
+		integration.RelationshipRuleReference("runs-on"),
+		integration.RelationshipRuleFromType("deployment"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.jobAgentConfig.region == to.metadata.region"),
+	)
+
+	system := integration.WithSystem(
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
 				integration.DeploymentID("deployment-api"),
@@ -212,24 +292,12 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 					"region": "us-west-2",
 				}),
 			),
-		),
-		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("deployment-to-cluster"),
-			integration.RelationshipRuleReference("runs-on"),
-			integration.RelationshipRuleFromType("deployment"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"job_agent_config", "region"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		system,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("cluster-east-1"),
 			integration.ResourceName("cluster-east-1"),
@@ -248,6 +316,38 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		system,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-west-1"),
+				integration.ResourceName("cluster-west-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	// Test from deployment to resources
@@ -274,13 +374,22 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 	if clusters[0].EntityId != "cluster-east-1" {
 		t.Errorf("expected cluster-east-1, got %s", clusters[0].EntityId)
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_EnvironmentToResource tests environment to resource relationships
 func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithSystem(
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("environment-to-resource"),
+		integration.RelationshipRuleReference("has-resources"),
+		integration.RelationshipRuleFromType("environment"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("environment.name == 'production'"),
+		integration.RelationshipRuleToCelSelector("resource.metadata.environment == 'prod'"),
+	)
+
+	system := integration.WithSystem(
 			integration.SystemName("test-system"),
 			integration.WithEnvironment(
 				integration.EnvironmentID("env-prod"),
@@ -290,25 +399,12 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 				integration.EnvironmentID("env-staging"),
 				integration.EnvironmentName("staging"),
 			),
-		),
-		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("environment-to-resource"),
-			integration.RelationshipRuleReference("has-resources"),
-			integration.RelationshipRuleFromType("environment"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "name",
-				"operator": "equals",
-				"value":    "production",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "metadata",
-				"operator": "equals",
-				"key":      "environment",
-				"value":    "prod",
-			}),
-		),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		system,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("db-prod"),
 			integration.ResourceName("db-prod"),
@@ -335,6 +431,46 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		system,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-prod"),
+				integration.ResourceName("db-prod"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"environment": "prod",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cache-prod"),
+				integration.ResourceName("cache-prod"),
+				integration.ResourceKind("cache"),
+				integration.ResourceMetadata(map[string]string{
+					"environment": "prod",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-staging"),
+				integration.ResourceName("db-staging"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"environment": "staging",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	// Test from environment to resources
@@ -372,56 +508,37 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 	if resourceIDs["db-staging"] {
 		t.Errorf("db-staging should not be in related entities")
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_MultipleRelationships tests entity with multiple relationship rules
 func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule1 := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("vpc-to-cluster"),
 			integration.RelationshipRuleReference("contains-clusters"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "vpc",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"id"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "vpc_id"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
-		integration.WithRelationshipRule(
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+			integration.WithCelMatcher("from.id == to.metadata.vpc_id"),
+	)
+
+	rule2 := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-2"),
 			integration.RelationshipRuleName("vpc-to-database"),
 			integration.RelationshipRuleReference("contains-databases"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "vpc",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "database",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"id"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "vpc_id"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
+			integration.WithCelMatcher("from.id == to.metadata.vpc_id"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule1,
+		rule2,
 		integration.WithResource(
 			integration.ResourceID("vpc-1"),
 			integration.ResourceName("vpc-1"),
@@ -453,6 +570,51 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule1,
+		rule2,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-1"),
+				integration.ResourceName("vpc-1"),
+				integration.ResourceKind("vpc"),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-1"),
+				integration.ResourceName("cluster-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"vpc_id": "vpc-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-2"),
+				integration.ResourceName("cluster-2"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"vpc_id": "vpc-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-1"),
+				integration.ResourceName("db-1"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"vpc_id": "vpc-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	vpc, ok := engine.Workspace().Resources().Get("vpc-1")
@@ -488,39 +650,25 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 	if len(databases) != 1 {
 		t.Fatalf("expected 1 database, got %d", len(databases))
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherNotEquals tests not_equals operator
 func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("cross-region-replication"),
 			integration.RelationshipRuleReference("replicates-to"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "database",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "database",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator(oapi.NotEquals),
-			),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "cluster_name"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "cluster_name"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'database'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
+			integration.WithCelMatcher("from.metadata.region != to.metadata.region && from.metadata.cluster_name == to.metadata.cluster_name"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("db-east"),
 			integration.ResourceName("db-east"),
@@ -550,6 +698,48 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-east"),
+				integration.ResourceName("db-east"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region":       "us-east-1",
+					"cluster_name": "my-cluster",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-west"),
+				integration.ResourceName("db-west"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region":       "us-west-2",
+					"cluster_name": "my-cluster",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-east-other"),
+				integration.ResourceName("db-east-other"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region":       "us-east-1",
+					"cluster_name": "other-cluster",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	dbEast, ok := engine.Workspace().Resources().Get("db-east")
@@ -572,45 +762,38 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 		fmt.Println(rel.EntityId, rel.Direction)
 	}
 
-	// Should only find db-west (same cluster, different region)
-	if len(replicas) != 1 {
-		t.Fatalf("expected 1 replica, got %d", len(replicas))
+	// Should find db-west in both directions (same cluster, different region)
+	// Resource-to-resource relationships are bidirectional: db-east->db-west (to) and db-east<-db-west (from)
+	// Self-relationships are skipped, so db-east does not relate to itself
+	if len(replicas) != 2 {
+		t.Fatalf("expected 2 replicas, got %d", len(replicas))
 	}
-	// if len(replicas) != 2 {
-	// 	t.Fatalf("expected 2 replica, got %d", len(replicas))
-	// }
 
-	if replicas[0].EntityId != "db-west" {
-		t.Errorf("expected db-west, got %s", replicas[0].EntityId)
+	// Verify both are db-west
+	for _, replica := range replicas {
+		if replica.EntityId != "db-west" {
+			t.Errorf("expected db-west, got %s", replica.EntityId)
+		}
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherContains tests contains operator
 func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("service-to-endpoint"),
 			integration.RelationshipRuleReference("exposes"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "service",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "endpoint",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "prefix"}),
-				integration.PropertyMatcherToProperty([]string{"name"}),
-				integration.PropertyMatcherOperator(oapi.Contains),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'endpoint'"),
+			integration.WithCelMatcher("from.metadata.prefix.contains(to.name)"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("service-api"),
 			integration.ResourceName("api-service"),
@@ -636,6 +819,44 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("service-api"),
+				integration.ResourceName("api-service"),
+				integration.ResourceKind("service"),
+				integration.ResourceMetadata(map[string]string{
+					"prefix": "api-service-v1,api-service-v2",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("endpoint-1"),
+				integration.ResourceName("api-service-v1"),
+				integration.ResourceKind("endpoint"),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("endpoint-2"),
+				integration.ResourceName("api-service-v2"),
+				integration.ResourceKind("endpoint"),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("endpoint-3"),
+				integration.ResourceName("other-service"),
+				integration.ResourceKind("endpoint"),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	service, ok := engine.Workspace().Resources().Get("service-api")
@@ -673,34 +894,25 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 	if endpointIDs["endpoint-3"] {
 		t.Errorf("endpoint-3 should not be in related entities")
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherStartsWith tests starts_with operator
 func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("region-to-resource"),
 			integration.RelationshipRuleReference("contains"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "region",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "datacenter",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "region_code"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "code_prefix"}),
-				integration.PropertyMatcherOperator(oapi.StartsWith),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'region'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'datacenter'"),
+			integration.WithCelMatcher("from.metadata.region_code.startsWith(to.metadata.code_prefix)"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("region-us-east"),
 			integration.ResourceName("us-east"),
@@ -735,6 +947,53 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("region-us-east"),
+				integration.ResourceName("us-east"),
+				integration.ResourceKind("region"),
+				integration.ResourceMetadata(map[string]string{
+					"region_code": "us-east-1a",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("dc-1"),
+				integration.ResourceName("dc-1"),
+				integration.ResourceKind("datacenter"),
+				integration.ResourceMetadata(map[string]string{
+					"code_prefix": "us-east",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("dc-2"),
+				integration.ResourceName("dc-2"),
+				integration.ResourceKind("datacenter"),
+				integration.ResourceMetadata(map[string]string{
+					"code_prefix": "us",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("dc-3"),
+				integration.ResourceName("dc-3"),
+				integration.ResourceKind("datacenter"),
+				integration.ResourceMetadata(map[string]string{
+					"code_prefix": "eu-west",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	region, ok := engine.Workspace().Resources().Get("region-us-east")
@@ -772,34 +1031,25 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 	if dcIDs["dc-3"] {
 		t.Errorf("dc-3 should not be in related entities")
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_PropertyMatcherEndsWith tests ends_with operator
 func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("app-to-logs"),
 			integration.RelationshipRuleReference("has-logs"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "application",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "log-stream",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "app_id"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "suffix"}),
-				integration.PropertyMatcherOperator(oapi.EndsWith),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'application'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'log-stream'"),
+			integration.WithCelMatcher("from.metadata.app_id.endsWith(to.metadata.suffix)"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("app-1"),
 			integration.ResourceName("app-1"),
@@ -834,6 +1084,53 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("app-1"),
+				integration.ResourceName("app-1"),
+				integration.ResourceKind("application"),
+				integration.ResourceMetadata(map[string]string{
+					"app_id": "service-a-app-123",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("log-1"),
+				integration.ResourceName("log-1"),
+				integration.ResourceKind("log-stream"),
+				integration.ResourceMetadata(map[string]string{
+					"suffix": "-app-123",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("log-2"),
+				integration.ResourceName("log-2"),
+				integration.ResourceKind("log-stream"),
+				integration.ResourceMetadata(map[string]string{
+					"suffix": "-app-123",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("log-3"),
+				integration.ResourceName("log-3"),
+				integration.ResourceKind("log-stream"),
+				integration.ResourceMetadata(map[string]string{
+					"suffix": "-app-456",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	app, ok := engine.Workspace().Resources().Get("app-1")
@@ -875,25 +1172,24 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 	if logIDs["log-3"] {
 		t.Errorf("log-3 should not be in related entities")
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_NoSelectorMatchNone tests nil selectors that match all entities of that type
 func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("all-resources-in-region"),
 			integration.RelationshipRuleReference("in-region"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
 			// No selectors - matches all resources of the specified types
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
+			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("resource-1"),
 			integration.ResourceName("resource-1"),
@@ -920,6 +1216,45 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("resource-1"),
+				integration.ResourceName("resource-1"),
+				integration.ResourceKind("service"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("resource-2"),
+				integration.ResourceName("resource-2"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("resource-3"),
+				integration.ResourceName("resource-3"),
+				integration.ResourceKind("cache"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	resource1, ok := engine.Workspace().Resources().Get("resource-1")
@@ -943,82 +1278,38 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 	}
 
 	// With nil selectors, all resources with matching properties should match
-	// resource-1 (us-east-1) should match itself and resource-2 (us-east-1) but not resource-3 (us-west-2)
+	// resource-1 (us-east-1) relates to resource-2 (us-east-1) but not resource-3 (us-west-2)
+	// Self-relationships are skipped, so resource-1 does not relate to itself
+	// Bidirectional: resource-1->resource-2 (to) and resource-1<-resource-2 (from)
 	if len(related) != 2 {
 		t.Fatalf("expected 2 related entities, got %d", len(related))
 	}
-	// if len(related) != 4 {
-	// 	t.Fatalf("expected 4 related entities, got %d", len(related))
-	// }
 
-	// Verify the correct resources are returned
-	resourceIDs := make(map[string]bool)
+	// Verify both are resource-2 (in both directions)
 	for _, res := range related {
-		resourceIDs[res.EntityId] = true
+		if res.EntityId != "resource-2" {
+			t.Errorf("expected resource-2, got %s", res.EntityId)
+		}
 	}
-
-	if !resourceIDs["resource-1"] {
-		t.Errorf("resource-1 not in related entities (self-relationship)")
-	}
-	if !resourceIDs["resource-2"] {
-		t.Errorf("resource-2 not in related entities")
-	}
-
-	// With nil selectors, all resources with matching properties should match
-	// resource-1 (us-east-1) relates to resource-2 (us-east-1) but not resource-3 (us-west-2)
-	// Self-references are skipped by optimization
-	// Bidirectional storage: resource-1->resource-2 (to) and resource-2->resource-1 (from)
-	// if len(related) != 2 {
-	// 	t.Fatalf("expected 2 related entities, got %d", len(related))
-	// }
-
-	// // Verify resource-2 is in both directions
-	// hasToResource2 := false
-	// hasFromResource2 := false
-
-	// for _, rel := range related {
-	// 	if rel.EntityId == "resource-2" && rel.Direction == oapi.To {
-	// 		hasToResource2 = true
-	// 	}
-	// 	if rel.EntityId == "resource-2" && rel.Direction == oapi.From {
-	// 		hasFromResource2 = true
-	// 	}
-	// }
-
-	// if !hasToResource2 {
-	// 	t.Errorf("resource-1 should have 'to' relationship with resource-2")
-	// }
-	// if !hasFromResource2 {
-	// 	t.Errorf("resource-1 should have 'from' relationship with resource-2")
-	// }
+	})
 }
 
 // TestEngine_GetRelatedEntities_ConfigPropertyPath tests accessing nested config properties
 func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("service-to-dependency"),
 			integration.RelationshipRuleReference("depends-on"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "service",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "service",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"config", "dependencies", "database"}),
-				integration.PropertyMatcherToProperty([]string{"name"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'service'"),
+			integration.WithCelMatcher("from.config.dependencies.database == to.name"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("service-api"),
 			integration.ResourceName("api-service"),
@@ -1042,6 +1333,42 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("service-api"),
+				integration.ResourceName("api-service"),
+				integration.ResourceKind("service"),
+				integration.ResourceConfig(map[string]interface{}{
+					"dependencies": map[string]interface{}{
+						"database": "postgres-service",
+						"cache":    "redis-service",
+					},
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("service-postgres"),
+				integration.ResourceName("postgres-service"),
+				integration.ResourceKind("service"),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("service-redis"),
+				integration.ResourceName("redis-service"),
+				integration.ResourceKind("service"),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	apiService, ok := engine.Workspace().Resources().Get("service-api")
@@ -1068,29 +1395,25 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 	if dependencies[0].EntityId != "service-postgres" {
 		t.Errorf("expected service-postgres, got %s", dependencies[0].EntityId)
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_NoMatchingRelationships tests entity with no matching relationships
 func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("vpc-to-cluster"),
 			integration.RelationshipRuleReference("contains"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "vpc",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+			integration.WithCelMatcher("true"), // No property matcher needed
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("database-1"),
 			integration.ResourceName("database-1"),
@@ -1098,6 +1421,26 @@ func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("database-1"),
+				integration.ResourceName("database-1"),
+				integration.ResourceKind("database"),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	database, ok := engine.Workspace().Resources().Get("database-1")
@@ -1115,34 +1458,25 @@ func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 	if len(relatedEntities) != 0 {
 		t.Fatalf("expected 0 relationships, got %d", len(relatedEntities))
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_EmptyResults tests relationship rule that matches but finds no targets
 func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("vpc-to-cluster"),
 			integration.RelationshipRuleReference("contains"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "vpc",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
-			integration.WithPropertyMatcher(
-				integration.PropertyMatcherFromProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherToProperty([]string{"metadata", "region"}),
-				integration.PropertyMatcherOperator(oapi.Equals),
-			),
-		),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("vpc-1"),
 			integration.ResourceName("vpc-1"),
@@ -1161,6 +1495,37 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-1"),
+				integration.ResourceName("vpc-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-1"),
+				integration.ResourceName("cluster-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	vpc, ok := engine.Workspace().Resources().Get("vpc-1")
@@ -1179,30 +1544,25 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 	if len(relatedEntities) != 0 {
 		t.Fatalf("expected empty results, got %d relationships", len(relatedEntities))
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison tests basic CEL expression matching
 func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("vpc-to-cluster-cel"),
 			integration.RelationshipRuleReference("contains"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "vpc",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
 			integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
-		),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("vpc-us-east-1"),
 			integration.ResourceName("vpc-us-east-1"),
@@ -1245,6 +1605,61 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-west-2"),
+				integration.ResourceName("vpc-us-west-2"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-2"),
+				integration.ResourceName("cluster-east-2"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-west-1"),
+				integration.ResourceName("cluster-west-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	// Test from VPC in us-east-1 to clusters
@@ -1284,35 +1699,30 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 	if clusterIDs["cluster-west-1"] {
 		t.Errorf("cluster-west-1 should not be in related entities")
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression tests CEL with complex logic
 func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("service-to-dependency-cel"),
 			integration.RelationshipRuleReference("depends-on"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "service",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "database",
-			}),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
 			// CEL expression with multiple conditions and string operations
 			integration.WithCelMatcher(`
 				from.metadata.region == to.metadata.region &&
 				to.metadata.tier == "critical" &&
 				from.config.database_name.startsWith(to.name)
 			`),
-		),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("service-api"),
 			integration.ResourceName("api-service"),
@@ -1353,6 +1763,59 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("service-api"),
+				integration.ResourceName("api-service"),
+				integration.ResourceKind("service"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+				integration.ResourceConfig(map[string]interface{}{
+					"database_name": "postgres-prod-db",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-postgres"),
+				integration.ResourceName("postgres-prod"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+					"tier":   "critical",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-mysql"),
+				integration.ResourceName("mysql-prod"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+					"tier":   "standard",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-postgres-west"),
+				integration.ResourceName("postgres-west"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+					"tier":   "critical",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	apiService, ok := engine.Workspace().Resources().Get("service-api")
@@ -1379,13 +1842,26 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 	if dependencies[0].EntityId != "db-postgres" {
 		t.Errorf("expected db-postgres, got %s", dependencies[0].EntityId)
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType tests CEL matching deployment to resource
 func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithSystem(
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("deployment-to-cluster-cel"),
+		integration.RelationshipRuleReference("runs-on"),
+		integration.RelationshipRuleFromType("deployment"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		// CEL expression accessing deployment properties
+		integration.WithCelMatcher(`
+			from.jobAgentConfig.region == to.metadata.region &&
+			from.jobAgentConfig.cluster_id == to.id
+		`),
+	)
+
+	system := integration.WithSystem(
 			integration.SystemName("test-system"),
 			integration.WithDeployment(
 				integration.DeploymentID("deployment-api"),
@@ -1403,24 +1879,12 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 					"cluster_id": "cluster-456",
 				}),
 			),
-		),
-		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
-			integration.RelationshipRuleName("deployment-to-cluster-cel"),
-			integration.RelationshipRuleReference("runs-on"),
-			integration.RelationshipRuleFromType("deployment"),
-			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "kubernetes-cluster",
-			}),
-			// CEL expression accessing deployment properties
-			integration.WithCelMatcher(`
-				from.jobAgentConfig.region == to.metadata.region &&
-				from.jobAgentConfig.cluster_id == to.id
-			`),
-		),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		system,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("cluster-123"),
 			integration.ResourceName("cluster-east-1"),
@@ -1439,6 +1903,38 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		system,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-123"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-456"),
+				integration.ResourceName("cluster-west-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	// Test from deployment to resources
@@ -1465,33 +1961,28 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 	if clusters[0].EntityId != "cluster-123" {
 		t.Errorf("expected cluster-123, got %s", clusters[0].EntityId)
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_ListOperations tests CEL with list operations
 func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("service-to-allowed-regions"),
 			integration.RelationshipRuleReference("allowed-in"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "service",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "region",
-			}),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'region'"),
 			// CEL expression checking if to.name is in from's allowed_regions list
 			integration.WithCelMatcher(`
 				to.name in from.config.allowed_regions
 			`),
-		),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("service-global"),
 			integration.ResourceName("global-service"),
@@ -1517,6 +2008,44 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("service-global"),
+				integration.ResourceName("global-service"),
+				integration.ResourceKind("service"),
+				integration.ResourceConfig(map[string]interface{}{
+					"allowed_regions": []string{"us-east-1", "eu-west-1", "ap-south-1"},
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("region-us-east-1"),
+				integration.ResourceName("us-east-1"),
+				integration.ResourceKind("region"),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("region-eu-west-1"),
+				integration.ResourceName("eu-west-1"),
+				integration.ResourceKind("region"),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("region-us-west-2"),
+				integration.ResourceName("us-west-2"),
+				integration.ResourceKind("region"),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	service, ok := engine.Workspace().Resources().Get("service-global")
@@ -1554,34 +2083,29 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 	if regionIDs["region-us-west-2"] {
 		t.Errorf("region-us-west-2 should not be in related entities")
 	}
+	})
 }
 
 // TestEngine_GetRelatedEntities_CelMatcher_NumericComparison tests CEL with numeric operations
 func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
-	engine := integration.NewTestWorkspace(
-		t,
-		integration.WithRelationshipRule(
+	rule := integration.WithRelationshipRule(
 			integration.RelationshipRuleID("rel-rule-1"),
 			integration.RelationshipRuleName("service-to-sufficient-database"),
 			integration.RelationshipRuleReference("can-use"),
 			integration.RelationshipRuleFromType("resource"),
 			integration.RelationshipRuleToType("resource"),
-			integration.RelationshipRuleFromJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "service",
-			}),
-			integration.RelationshipRuleToJsonSelector(map[string]any{
-				"type":     "kind",
-				"operator": "equals",
-				"value":    "database",
-			}),
+			integration.RelationshipRuleFromCelSelector("resource.kind == 'service'"),
+			integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
 			// CEL expression with numeric comparison
 			integration.WithCelMatcher(`
 				int(to.metadata.max_connections) >= int(from.metadata.required_connections) &&
 				from.metadata.region == to.metadata.region
 			`),
-		),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
 		integration.WithResource(
 			integration.ResourceID("service-heavy"),
 			integration.ResourceName("heavy-service"),
@@ -1620,6 +2144,57 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 		),
 	)
 
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("service-heavy"),
+				integration.ResourceName("heavy-service"),
+				integration.ResourceKind("service"),
+				integration.ResourceMetadata(map[string]string{
+					"required_connections": "500",
+					"region":               "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-small"),
+				integration.ResourceName("small-db"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"max_connections": "100",
+					"region":          "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-medium"),
+				integration.ResourceName("medium-db"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"max_connections": "500",
+					"region":          "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-large"),
+				integration.ResourceName("large-db"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"max_connections": "1000",
+					"region":          "us-east-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 	ctx := context.Background()
 
 	service, ok := engine.Workspace().Resources().Get("service-heavy")
@@ -1657,4 +2232,1061 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 	if !dbIDs["db-large"] {
 		t.Errorf("db-large not in related entities")
 	}
+	})
 }
+
+// TestEngine_GetRelatedEntities_DeleteResource tests that deleting a resource updates relationships
+func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-1"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-2"),
+			integration.ResourceName("cluster-east-2"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-2"),
+				integration.ResourceName("cluster-east-2"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// First verify we have 2 related clusters
+		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
+
+		if len(clusters) != 2 {
+			t.Fatalf("expected 2 related clusters initially, got %d", len(clusters))
+		}
+
+		// Delete one of the clusters
+		engine.Workspace().Resources().Remove(ctx, "cluster-east-1")
+
+		// Verify we now have only 1 related cluster
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after delete: %v", err)
+		}
+
+		clusters, ok = relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found after delete")
+		}
+
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster after delete, got %d", len(clusters))
+		}
+
+		if clusters[0].EntityId != "cluster-east-2" {
+			t.Errorf("expected cluster-east-2, got %s", clusters[0].EntityId)
+		}
+
+		// Delete the last cluster
+		engine.Workspace().Resources().Remove(ctx, "cluster-east-2")
+
+		// Verify we now have no relationships
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after second delete: %v", err)
+		}
+
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected no relationships after deleting all clusters, got %d", len(relatedEntities))
+		}
+	})
+}
+
+// TestEngine_GetRelatedEntities_DeleteFromResource tests deleting the source resource
+func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("database-replication"),
+		integration.RelationshipRuleReference("replicates-to"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'database'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'database'"),
+		integration.WithCelMatcher("from.metadata.region != to.metadata.region && from.metadata.name == to.metadata.name"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResource(
+			integration.ResourceID("db-east"),
+			integration.ResourceName("db-east"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+				"name":   "my-db",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("db-west"),
+			integration.ResourceName("db-west"),
+			integration.ResourceKind("database"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+				"name":   "my-db",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-east"),
+				integration.ResourceName("db-east"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+					"name":   "my-db",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("db-west"),
+				integration.ResourceName("db-west"),
+				integration.ResourceKind("database"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+					"name":   "my-db",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// Check db-west has relationship to db-east
+		dbWest, ok := engine.Workspace().Resources().Get("db-west")
+		if !ok {
+			t.Fatalf("db-west not found")
+		}
+
+		entity := relationships.NewResourceEntity(dbWest)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		replicas, ok := relatedEntities["replicates-to"]
+		if !ok {
+			t.Fatalf("'replicates-to' relationship not found")
+		}
+
+		if len(replicas) != 2 {
+			t.Fatalf("expected 2 replicas initially, got %d", len(replicas))
+		}
+
+		// Delete db-east (the from resource from db-west's perspective)
+		engine.Workspace().Resources().Remove(ctx, "db-east")
+
+		// Verify db-west no longer has any relationships
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after delete: %v", err)
+		}
+
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected no relationships after deleting db-east, got %d", len(relatedEntities))
+		}
+	})
+}
+
+// TestEngine_GetRelatedEntities_AddResource tests that adding a resource creates new relationships
+func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-1"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// Initially should have 1 related cluster
+		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
+
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster initially, got %d", len(clusters))
+		}
+
+		// Add a new cluster in the same region
+		// The engine automatically invalidates all potential source entities (like VPC)
+		// that might have relationships to this new resource
+		_, err = engine.Workspace().Resources().Upsert(ctx, &oapi.Resource{
+			Id:   "cluster-east-2",
+			Name: "cluster-east-2",
+			Kind: "kubernetes-cluster",
+			Metadata: map[string]string{
+				"region": "us-east-1",
+			},
+		})
+		if err != nil {
+			t.Fatalf("failed to add cluster-east-2: %v", err)
+		}
+
+		// Verify we now have 2 related clusters
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after add: %v", err)
+		}
+
+		clusters, ok = relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found after add")
+		}
+
+		if len(clusters) != 2 {
+			t.Fatalf("expected 2 related clusters after add, got %d", len(clusters))
+		}
+
+		clusterIDs := make(map[string]bool)
+		for _, cluster := range clusters {
+			clusterIDs[cluster.EntityId] = true
+		}
+
+		if !clusterIDs["cluster-east-1"] {
+			t.Errorf("cluster-east-1 not in related entities")
+		}
+		if !clusterIDs["cluster-east-2"] {
+			t.Errorf("cluster-east-2 not in related entities")
+		}
+	})
+}
+
+// TestEngine_GetRelatedEntities_UpdateResourceMetadata tests that updating resource metadata updates relationships
+func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-1"),
+			integration.ResourceName("cluster-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-1"),
+				integration.ResourceName("cluster-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// Initially should have 1 related cluster
+		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
+
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster initially, got %d", len(clusters))
+		}
+
+		// Update cluster to different region
+		_, err = engine.Workspace().Resources().Upsert(ctx, &oapi.Resource{
+			Id:   "cluster-1",
+			Name: "cluster-1",
+			Kind: "kubernetes-cluster",
+			Metadata: map[string]string{
+				"region": "us-west-2",
+			},
+		})
+		if err != nil {
+			t.Fatalf("failed to update cluster-1: %v", err)
+		}
+
+		// Verify relationship is now gone
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after update: %v", err)
+		}
+
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected no relationships after changing region, got %d", len(relatedEntities))
+		}
+	})
+}
+
+// TestEngine_GetRelatedEntities_DeleteRelationshipRule tests that deleting a rule removes relationships
+func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-1"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// Initially should have relationships
+		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
+
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster initially, got %d", len(clusters))
+		}
+
+		// Delete the relationship rule
+		err = engine.Workspace().RelationshipRules().Remove(ctx, "rel-rule-1")
+		if err != nil {
+			t.Fatalf("failed to delete relationship rule: %v", err)
+		}
+
+		// Verify relationships are gone
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after rule delete: %v", err)
+		}
+
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected no relationships after deleting rule, got %d", len(relatedEntities))
+		}
+	})
+}
+
+// TestEngine_GetRelatedEntities_AddRelationshipRule tests that adding a rule creates new relationships
+func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-1"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// Initially should have no relationships
+		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected no relationships initially, got %d", len(relatedEntities))
+		}
+
+		// Add a relationship rule
+		fromSelector := &oapi.Selector{}
+		_ = fromSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'vpc'"})
+		
+		toSelector := &oapi.Selector{}
+		_ = toSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'kubernetes-cluster'"})
+		
+		matcher := &oapi.RelationshipRule_Matcher{}
+		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region"})
+		
+		err = engine.Workspace().RelationshipRules().Upsert(ctx, &oapi.RelationshipRule{
+			Id:           "rel-rule-1",
+			Name:         "vpc-to-cluster",
+			Reference:    "contains",
+			FromType:     "resource",
+			ToType:       "resource",
+			FromSelector: fromSelector,
+			ToSelector:   toSelector,
+			Matcher:      *matcher,
+		})
+		if err != nil {
+			t.Fatalf("failed to add relationship rule: %v", err)
+		}
+
+		// Verify relationships now exist
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after rule add: %v", err)
+		}
+
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found after adding rule")
+		}
+
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster after adding rule, got %d", len(clusters))
+		}
+
+		if clusters[0].EntityId != "cluster-east-1" {
+			t.Errorf("expected cluster-east-1, got %s", clusters[0].EntityId)
+		}
+	})
+}
+
+// TestEngine_GetRelatedEntities_DeleteMultipleResources tests cascading deletions
+func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("vpc-us-west-2"),
+			integration.ResourceName("vpc-us-west-2"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-1"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-2"),
+			integration.ResourceName("cluster-east-2"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-west-1"),
+			integration.ResourceName("cluster-west-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-west-2",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-west-2"),
+				integration.ResourceName("vpc-us-west-2"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-2"),
+				integration.ResourceName("cluster-east-2"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-west-1"),
+				integration.ResourceName("cluster-west-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-west-2",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// Verify vpc-us-east-1 has 2 related clusters
+		vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+
+		entity := relationships.NewResourceEntity(vpcEast)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
+
+		if len(clusters) != 2 {
+			t.Fatalf("expected 2 related clusters initially, got %d", len(clusters))
+		}
+
+		// Verify vpc-us-west-2 has 1 related cluster
+		vpcWest, ok := engine.Workspace().Resources().Get("vpc-us-west-2")
+		if !ok {
+			t.Fatalf("vpc-us-west-2 not found")
+		}
+
+		entityWest := relationships.NewResourceEntity(vpcWest)
+		relatedEntitiesWest, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entityWest)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed for west: %v", err)
+		}
+
+		clustersWest, ok := relatedEntitiesWest["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found for west vpc")
+		}
+
+		if len(clustersWest) != 1 {
+			t.Fatalf("expected 1 related cluster for west vpc, got %d", len(clustersWest))
+		}
+
+		// Delete all clusters in us-east-1
+		engine.Workspace().Resources().Remove(ctx, "cluster-east-1")
+		engine.Workspace().Resources().Remove(ctx, "cluster-east-2")
+
+		// Verify vpc-us-east-1 has no relationships
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after deletes: %v", err)
+		}
+
+		if len(relatedEntities) != 0 {
+			t.Fatalf("expected no relationships for vpc-us-east-1, got %d", len(relatedEntities))
+		}
+
+		// Verify vpc-us-west-2 still has its cluster
+		relatedEntitiesWest, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entityWest)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed for west after deletes: %v", err)
+		}
+
+		clustersWest, ok = relatedEntitiesWest["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found for west vpc after deletes")
+		}
+
+		if len(clustersWest) != 1 {
+			t.Fatalf("expected 1 related cluster for west vpc after deletes, got %d", len(clustersWest))
+		}
+	})
+}
+
+// TestEngine_GetRelatedEntities_UpdateRelationshipRule tests updating a relationship rule
+func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
+	rule := integration.WithRelationshipRule(
+		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleName("vpc-to-cluster"),
+		integration.RelationshipRuleReference("contains"),
+		integration.RelationshipRuleFromType("resource"),
+		integration.RelationshipRuleToType("resource"),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'vpc'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.WithCelMatcher("from.metadata.region == to.metadata.region"),
+	)
+
+	engineDirect := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResource(
+			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceName("vpc-us-east-1"),
+			integration.ResourceKind("vpc"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-1"),
+			integration.ResourceName("cluster-east-1"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+				"tier":   "prod",
+			}),
+		),
+		integration.WithResource(
+			integration.ResourceID("cluster-east-2"),
+			integration.ResourceName("cluster-east-2"),
+			integration.ResourceKind("kubernetes-cluster"),
+			integration.ResourceMetadata(map[string]string{
+				"region": "us-east-1",
+				"tier":   "staging",
+			}),
+		),
+	)
+
+	engineWithProvider := integration.NewTestWorkspace(
+		t,
+		rule,
+		integration.WithResourceProvider(
+			integration.ProviderID("test-provider"),
+			integration.ProviderName("test-provider"),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceName("vpc-us-east-1"),
+				integration.ResourceKind("vpc"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-1"),
+				integration.ResourceName("cluster-east-1"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+					"tier":   "prod",
+				}),
+			),
+			integration.WithResourceProviderResource(
+				integration.ResourceID("cluster-east-2"),
+				integration.ResourceName("cluster-east-2"),
+				integration.ResourceKind("kubernetes-cluster"),
+				integration.ResourceMetadata(map[string]string{
+					"region": "us-east-1",
+					"tier":   "staging",
+				}),
+			),
+		),
+	)
+
+	engines := map[string]*integration.TestWorkspace{
+		"direct":        engineDirect,
+		"with_provider": engineWithProvider,
+	}
+
+	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
+		ctx := context.Background()
+
+		// Initially should have 2 related clusters
+		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		if !ok {
+			t.Fatalf("vpc-us-east-1 not found")
+		}
+
+		entity := relationships.NewResourceEntity(vpc)
+		relatedEntities, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed: %v", err)
+		}
+
+		clusters, ok := relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found")
+		}
+
+		if len(clusters) != 2 {
+			t.Fatalf("expected 2 related clusters initially, got %d", len(clusters))
+		}
+
+		// Update the rule to add a tier filter
+		fromSelector := &oapi.Selector{}
+		_ = fromSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'vpc'"})
+		
+		toSelector := &oapi.Selector{}
+		_ = toSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.kind == 'kubernetes-cluster'"})
+		
+		matcher := &oapi.RelationshipRule_Matcher{}
+		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region && to.metadata.tier == 'prod'"})
+		
+		err = engine.Workspace().RelationshipRules().Upsert(ctx, &oapi.RelationshipRule{
+			Id:           "rel-rule-1",
+			Name:         "vpc-to-cluster",
+			Reference:    "contains",
+			FromType:     "resource",
+			ToType:       "resource",
+			FromSelector: fromSelector,
+			ToSelector:   toSelector,
+			Matcher:      *matcher,
+		})
+		if err != nil {
+			t.Fatalf("failed to update relationship rule: %v", err)
+		}
+
+		// Verify now only 1 cluster matches (tier == 'prod')
+		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			t.Fatalf("GetRelatedEntities failed after rule update: %v", err)
+		}
+
+		clusters, ok = relatedEntities["contains"]
+		if !ok {
+			t.Fatalf("'contains' relationship not found after update")
+		}
+
+		if len(clusters) != 1 {
+			t.Fatalf("expected 1 related cluster after rule update, got %d", len(clusters))
+		}
+
+		if clusters[0].EntityId != "cluster-east-1" {
+			t.Errorf("expected cluster-east-1 (prod tier), got %s", clusters[0].EntityId)
+		}
+	})
+}
+
