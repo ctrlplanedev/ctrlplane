@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -29,31 +30,39 @@ type Environments struct {
 }
 
 func (e *Environments) Items() map[string]*oapi.Environment {
-	// envMap := make(map[string]*oapi.Environment)
-	// tableName := e.repo.Environments.TableName()
-	// query := fmt.Sprintf("SELECT * FROM %s", tableName)
-	// environments, err := e.repo.Environments.Query(query)
-	// if err != nil {
-	// 	return envMap
-	// }
-	// for _, environment := range environments {
-	// 	envMap[environment.Id] = environment
-	// }
-	// return envMap
+	envMap := make(map[string]*oapi.Environment)
+	tableName := e.repo.Environments.TableName()
+	query := fmt.Sprintf("SELECT * FROM %s", tableName)
+	environments, err := e.repo.Environments.Query(query)
+	if err != nil {
+		return envMap
+	}
+	for _, environment := range environments {
+		envMap[environment.Id] = environment
+	}
+	return envMap
 
-	return e.repo.Environments.Items()
+	// return e.repo.Environments.Items()
 }
 
 func (e *Environments) Get(id string) (*oapi.Environment, bool) {
-	// tableName := e.repo.Environments.TableName()
-	// query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", tableName)
-	// environment, err := e.repo.Environments.QueryOne(query, id)
-	// if err != nil {
-	// 	return nil, false
-	// }
-	// return environment, true
+	tableName := e.repo.Environments.TableName()
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", tableName)
+	environment, err := e.repo.Environments.QueryOne(query, id)
+	if err != nil {
+		return nil, false
+	}
+	return environment, true
 
-	return e.repo.Environments.Get(id)
+	// return e.repo.Environments.Get(id)
+}
+
+func (e *Environments) ForSystem(systemId string) []*oapi.Environment {
+	results, err := e.repo.Environments.Query("SELECT * FROM environments WHERE systemId = ?", systemId)
+	if err != nil {
+		return []*oapi.Environment{}
+	}
+	return results
 }
 
 // ReinitializeMaterializedViews recreates all materialized views after deserialization
@@ -162,12 +171,12 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 	}
 
 	// Store the environment in the repository
-	// err := e.repo.Environments.Insert(environment)
-	// if err != nil {
-	// 	log.Error("Failed to upsert environment", "error", err)
-	// }
+	err := e.repo.Environments.Insert(environment)
+	if err != nil {
+		log.Error("Failed to upsert environment", "error", err)
+	}
 
-	e.repo.Environments.Set(environment.Id, environment)
+	// e.repo.Environments.Set(environment.Id, environment)
 
 	e.store.Systems.ApplyEnvironmentUpdate(ctx, previousSystemId, environment)
 
@@ -197,14 +206,24 @@ func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment
 // ApplyResourceUpdate applies an incremental update for a single resource.
 // This is more efficient than RecomputeResources when only one resource changed.
 // It checks if the resource matches the environment's selector and updates the cached map accordingly.
-func (e *Environments) ApplyResourceUpdate(ctx context.Context, environmentId string, resource *oapi.Resource) error {
-	// Apply the incremental update
-	mv, ok := e.resources.Get(environmentId)
-	if !ok {
-		return fmt.Errorf("environment %s not found", environmentId)
+func (e *Environments) ApplyResourceUpsert(ctx context.Context, resource *oapi.Resource) ([]*oapi.Environment) {
+	addedTo := []*oapi.Environment{}
+	for _, environment := range e.Items() {
+		mv, ok := e.resources.Get(environment.Id)
+		if !ok {
+			continue
+		}
+		_ = mv.ApplyUpdate(func(current map[string]*oapi.Resource) (map[string]*oapi.Resource, error) {
+			ok, err := selector.Match(ctx, environment.ResourceSelector, resource)
+			if err != nil || !ok {
+				return current, err
+			}
+			current[resource.Id] = resource
+			addedTo = append(addedTo, environment)
+			return current, nil
+		})
 	}
-
-	return mv.StartRecompute(ctx)
+	return addedTo
 }
 
 func (e *Environments) Remove(ctx context.Context, id string) {
@@ -219,11 +238,11 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 
 	e.store.changeset.RecordDelete(env)
 
-	// err := e.repo.Environments.DeleteOne("id = ?", id)
-	// if err != nil {
-	// 	log.Error("Failed to remove environment", "id", id, "error", err)
-	// }
-	e.repo.Environments.Remove(id)
+	err := e.repo.Environments.DeleteOne("id = ?", id)
+	if err != nil {
+		log.Error("Failed to remove environment", "id", id, "error", err)
+	}
+	// e.repo.Environments.Remove(id)
 	e.resources.Remove(id)
 
 	e.store.ReleaseTargets.Recompute(ctx)

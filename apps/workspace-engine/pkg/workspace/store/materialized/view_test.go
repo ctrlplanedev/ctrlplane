@@ -700,3 +700,424 @@ func TestWithoutImmediateCompute(t *testing.T) {
 		t.Errorf("expected 2 recompute calls, got %d", callCount)
 	}
 }
+
+// TestApplyUpdateBasic tests basic ApplyUpdate functionality
+func TestApplyUpdateBasic(t *testing.T) {
+	var callCount int32
+	rf := func(ctx context.Context) (int, error) {
+		return int(atomic.AddInt32(&callCount, 1)) * 100, nil
+	}
+
+	mv := New(rf)
+
+	// Wait for initial computation to complete
+	err := mv.WaitRecompute()
+	if err != nil && !strings.Contains(err.Error(), "recompute not in progress") {
+		t.Fatalf("WaitRecompute failed: %v", err)
+	}
+
+	val := mv.Get()
+	if val != 100 {
+		t.Errorf("expected val=100, got val=%d", val)
+	}
+
+	// Apply an incremental update
+	err = mv.ApplyUpdate(func(current int) (int, error) {
+		return current + 50, nil
+	})
+	if err != nil {
+		t.Fatalf("ApplyUpdate failed: %v", err)
+	}
+
+	val = mv.Get()
+	if val != 150 {
+		t.Errorf("expected cached val=150, got val=%d", val)
+	}
+
+	// Verify that the recompute function wasn't called again
+	if atomic.LoadInt32(&callCount) != 1 {
+		t.Errorf("expected 1 recompute call (only initial), got %d", callCount)
+	}
+}
+
+// TestApplyUpdateError tests error handling in ApplyUpdate
+func TestApplyUpdateError(t *testing.T) {
+	rf := func(ctx context.Context) (int, error) {
+		return 100, nil
+	}
+
+	mv := New(rf)
+	_ = mv.WaitRecompute()
+
+	// Apply an update that errors
+	err := mv.ApplyUpdate(func(current int) (int, error) {
+		return 0, errors.New("update failed")
+	})
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+
+	// Value should remain unchanged
+	val := mv.Get()
+	if val != 100 {
+		t.Errorf("expected val=100 (unchanged), got val=%d", val)
+	}
+}
+
+// TestApplyUpdateWhileRecomputing tests ApplyUpdate behavior during recompute
+func TestApplyUpdateWhileRecomputing(t *testing.T) {
+	var once sync.Once
+	started := make(chan struct{})
+	block := make(chan struct{})
+	var callCount int32
+
+	rf := func(ctx context.Context) (int, error) {
+		n := atomic.AddInt32(&callCount, 1)
+		once.Do(func() { close(started) })
+		<-block
+		return int(n) * 100, nil
+	}
+
+	mv := New(rf)
+
+	// Wait for initial compute to start
+	<-started
+
+	// Try to apply an update while recompute is in progress
+	// It should wait for the recompute to finish first
+	updateStarted := make(chan struct{})
+	updateDone := make(chan struct{})
+	go func() {
+		close(updateStarted)
+		err := mv.ApplyUpdate(func(current int) (int, error) {
+			return current + 50, nil
+		})
+		if err != nil {
+			t.Errorf("ApplyUpdate failed: %v", err)
+		}
+		close(updateDone)
+	}()
+
+	// Wait for ApplyUpdate to start
+	<-updateStarted
+	time.Sleep(50 * time.Millisecond)
+
+	// Release the recompute
+	close(block)
+
+	// Wait for ApplyUpdate to complete
+	<-updateDone
+
+	// Should have applied the update after recompute finished
+	val := mv.Get()
+	if val != 150 { // 100 from recompute + 50 from update
+		t.Errorf("expected val=150, got val=%d", val)
+	}
+
+	// Should have run recompute once
+	count := atomic.LoadInt32(&callCount)
+	if count != 1 {
+		t.Errorf("expected 1 recompute call, got %d", count)
+	}
+}
+
+// TestRecomputeWhileApplyingUpdate tests starting a recompute while ApplyUpdate is in progress
+func TestRecomputeWhileApplyingUpdate(t *testing.T) {
+	var recomputeCount int32
+	rf := func(ctx context.Context) (int, error) {
+		return int(atomic.AddInt32(&recomputeCount, 1)) * 1000, nil
+	}
+
+	mv := New(rf)
+	_ = mv.WaitRecompute()
+
+	// Create a slow update
+	updateStarted := make(chan struct{})
+	updateBlock := make(chan struct{})
+	updateDone := make(chan struct{})
+
+	go func() {
+		err := mv.ApplyUpdate(func(current int) (int, error) {
+			close(updateStarted)
+			<-updateBlock
+			return current + 50, nil
+		})
+		if err != nil {
+			t.Errorf("ApplyUpdate failed: %v", err)
+		}
+		close(updateDone)
+	}()
+
+	// Wait for update to start
+	<-updateStarted
+
+	// Try to start a recompute while update is in progress
+	recomputeStarted := make(chan struct{})
+	recomputeDone := make(chan struct{})
+	go func() {
+		close(recomputeStarted)
+		err := mv.RunRecompute(context.Background())
+		if err != nil {
+			t.Errorf("RunRecompute failed: %v", err)
+		}
+		close(recomputeDone)
+	}()
+
+	// Wait for recompute to start
+	<-recomputeStarted
+	time.Sleep(50 * time.Millisecond)
+
+	// Release the update
+	close(updateBlock)
+
+	// Wait for both to complete
+	<-updateDone
+	<-recomputeDone
+
+	// Recompute should have run (overwriting the update)
+	val := mv.Get()
+	if val != 2000 { // Second recompute should give 2000
+		t.Errorf("expected val=2000, got val=%d", val)
+	}
+
+	// Should have run recompute twice (initial + triggered)
+	count := atomic.LoadInt32(&recomputeCount)
+	if count != 2 {
+		t.Errorf("expected 2 recompute calls, got %d", count)
+	}
+}
+
+// TestConcurrentApplyUpdates tests multiple concurrent ApplyUpdate calls
+func TestConcurrentApplyUpdates(t *testing.T) {
+	rf := func(ctx context.Context) (int, error) {
+		return 0, nil
+	}
+
+	mv := New(rf)
+	_ = mv.WaitRecompute()
+
+	// Apply many concurrent updates
+	var wg sync.WaitGroup
+	numUpdates := 100
+	for i := 0; i < numUpdates; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := mv.ApplyUpdate(func(current int) (int, error) {
+				return current + 1, nil
+			})
+			if err != nil {
+				t.Errorf("ApplyUpdate failed: %v", err)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	// Final value should be numUpdates (all updates applied)
+	val := mv.Get()
+	if val != numUpdates {
+		t.Errorf("expected val=%d, got val=%d", numUpdates, val)
+	}
+}
+
+// TestInterleavedUpdatesAndRecomputes tests mixed concurrent operations
+func TestInterleavedUpdatesAndRecomputes(t *testing.T) {
+	var recomputeCount int32
+	rf := func(ctx context.Context) (int, error) {
+		n := atomic.AddInt32(&recomputeCount, 1)
+		time.Sleep(10 * time.Millisecond) // Simulate some work
+		return int(n) * 1000, nil
+	}
+
+	mv := New(rf)
+	_ = mv.WaitRecompute()
+
+	var wg sync.WaitGroup
+
+	// Start multiple recomputes
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = mv.RunRecompute(context.Background())
+		}()
+	}
+
+	// Start multiple updates
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(val int) {
+			defer wg.Done()
+			_ = mv.ApplyUpdate(func(current int) (int, error) {
+				return current + val, nil
+			})
+		}(i)
+	}
+
+	// Start concurrent reads
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mv.Get()
+		}()
+	}
+
+	wg.Wait()
+
+	// The test passes if we don't deadlock and the race detector is happy
+	val := mv.Get()
+	t.Logf("Final value: %d after %d recomputes", val, atomic.LoadInt32(&recomputeCount))
+}
+
+// TestApplyUpdateMapType tests ApplyUpdate with map types
+func TestApplyUpdateMapType(t *testing.T) {
+	var callCount int32
+	rf := func(ctx context.Context) (map[string]int, error) {
+		atomic.AddInt32(&callCount, 1)
+		return map[string]int{"a": 1, "b": 2}, nil
+	}
+
+	mv := New(rf)
+	_ = mv.WaitRecompute()
+
+	// Apply an incremental update - add a new entry
+	err := mv.ApplyUpdate(func(current map[string]int) (map[string]int, error) {
+		current["c"] = 3
+		return current, nil
+	})
+	if err != nil {
+		t.Fatalf("ApplyUpdate failed: %v", err)
+	}
+
+	val := mv.Get()
+	if len(val) != 3 {
+		t.Errorf("expected 3 entries, got %d", len(val))
+	}
+
+	// Apply another update - remove an entry
+	err = mv.ApplyUpdate(func(current map[string]int) (map[string]int, error) {
+		delete(current, "a")
+		return current, nil
+	})
+	if err != nil {
+		t.Fatalf("second ApplyUpdate failed: %v", err)
+	}
+
+	val = mv.Get()
+	if len(val) != 2 {
+		t.Errorf("expected 2 entries after delete, got %d", len(val))
+	}
+
+	if _, ok := val["a"]; ok {
+		t.Error("expected 'a' to be deleted")
+	}
+
+	// Verify that the recompute function was only called once (during initialization)
+	if atomic.LoadInt32(&callCount) != 1 {
+		t.Errorf("expected 1 recompute call, got %d", callCount)
+	}
+}
+
+// TestApplyUpdateDuringPendingRecompute tests ApplyUpdate when there's a pending recompute
+func TestApplyUpdateDuringPendingRecompute(t *testing.T) {
+	var once sync.Once
+	started := make(chan struct{})
+	block := make(chan struct{})
+	var callCount int32
+
+	rf := func(ctx context.Context) (int, error) {
+		n := atomic.AddInt32(&callCount, 1)
+		once.Do(func() { close(started) })
+		<-block
+		return int(n) * 100, nil
+	}
+
+	mv := New(rf)
+	<-started
+
+	// Trigger another recompute while first is running (this marks pending=true)
+	_ = mv.StartRecompute(context.Background())
+
+	// Now try to apply an update while recompute is in progress AND pending
+	updateDone := make(chan struct{})
+	go func() {
+		err := mv.ApplyUpdate(func(current int) (int, error) {
+			return current + 25, nil
+		})
+		if err != nil {
+			t.Errorf("ApplyUpdate failed: %v", err)
+		}
+		close(updateDone)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Release the recompute
+	close(block)
+
+	// Wait for update to complete
+	<-updateDone
+
+	// Should have run recompute twice (original + pending rerun)
+	count := atomic.LoadInt32(&callCount)
+	if count != 2 {
+		t.Errorf("expected 2 recompute calls, got %d", count)
+	}
+
+	// Final value should be from the second recompute + the update
+	val := mv.Get()
+	if val != 225 { // 200 from second recompute + 25 from update
+		t.Errorf("expected val=225, got val=%d", val)
+	}
+}
+
+// TestRaceConditionsWithApplyUpdate uses race detector to find race conditions with ApplyUpdate
+func TestRaceConditionsWithApplyUpdate(t *testing.T) {
+	var callNum int32
+	rf := func(ctx context.Context) (int, error) {
+		return int(atomic.AddInt32(&callNum, 1)), nil
+	}
+
+	mv := New(rf)
+
+	// Many concurrent operations mixing everything
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		// RunRecompute
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = mv.RunRecompute(context.Background())
+		}()
+
+		// Get
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			mv.Get()
+		}()
+
+		// ApplyUpdate
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = mv.ApplyUpdate(func(current int) (int, error) {
+				return current + 1, nil
+			})
+		}()
+
+		// StartRecompute + WaitRecompute
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := mv.StartRecompute(context.Background()); err == nil {
+				_ = mv.WaitRecompute()
+			}
+		}()
+	}
+
+	wg.Wait()
+	// If we get here without deadlock or race, test passes
+}

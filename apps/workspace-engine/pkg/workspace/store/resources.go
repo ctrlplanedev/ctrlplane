@@ -383,7 +383,20 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	// Only trigger recomputation if there are actual changes
 	if hasChanges {
 		span.SetAttributes(attribute.Bool("recompute.triggered", true))
-		r.recomputeAll(ctx)
+		envs := r.store.Environments.ApplyResourceUpsert(ctx, resource)
+		deploys := r.store.Deployments.ApplyResourceUpsert(ctx, resource)
+		rt := []*oapi.ReleaseTarget{}
+		for _, environment := range envs {
+			for _, deployment := range deploys {
+				rt = append(rt, &oapi.ReleaseTarget{
+					EnvironmentId: environment.Id,
+					DeploymentId: deployment.Id,
+					ResourceId: resource.Id,
+				})
+			}
+		}
+		r.store.ReleaseTargets.AddReleaseTargets(ctx, rt)
+		// r.recomputeAll(ctx)
 
 		// if err := r.store.Relationships.InvalidateGraph(ctx); err != nil {
 		// 	span.RecordError(err)

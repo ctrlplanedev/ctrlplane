@@ -24,6 +24,9 @@ vendor/
 *.swp
 *.swo
 *~
+*.db
+*.db-shm
+*.db-wal
 
 # OS specific files
 .DS_Store

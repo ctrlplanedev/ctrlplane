@@ -80,7 +80,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
 
 		// Create 25 variables per deployment (mix of literal and reference types)
-		for v := 0; v < 25; v++ {
+		for v := range 25 {
 			dvID := uuid.New().String()
 			dv := c.NewDeploymentVariable(deploymentID, fmt.Sprintf("var_%d", v))
 			dv.Id = dvID

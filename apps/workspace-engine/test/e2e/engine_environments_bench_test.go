@@ -305,46 +305,6 @@ func benchmarkEnvironmentsRecomputeResources(b *testing.B, numResources int) {
 	}
 }
 
-// BenchmarkEnvironments_ApplyResourceUpdate benchmarks applying resource updates to an environment
-func BenchmarkEnvironments_ApplyResourceUpdate(b *testing.B) {
-	ctx := context.Background()
-	engine := integration.NewTestWorkspace(nil)
-	workspaceID := engine.Workspace().ID
-
-	// Create system
-	sysID := uuid.New().String()
-	sys := c.NewSystem(workspaceID)
-	sys.Id = sysID
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	// Create environment
-	envID := uuid.New().String()
-	env := c.NewEnvironment(sysID)
-	env.Id = envID
-	env.ResourceSelector = &oapi.Selector{}
-	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
-
-	// Create resource
-	resourceID := uuid.New().String()
-	resource := c.NewResource(workspaceID)
-	resource.Id = resourceID
-	resource.Name = "test-resource"
-	engine.PushEvent(ctx, handler.ResourceCreate, resource)
-
-	time.Sleep(200 * time.Millisecond)
-
-	b.ResetTimer()
-	b.ReportAllocs()
-
-	for i := 0; i < b.N; i++ {
-		err := engine.Workspace().Environments().ApplyResourceUpdate(ctx, envID, resource)
-		if err != nil {
-			b.Fatalf("Failed to apply resource update: %v", err)
-		}
-	}
-}
-
 // BenchmarkEnvironments_Remove benchmarks removing environments
 func BenchmarkEnvironments_Remove(b *testing.B) {
 	ctx := context.Background()

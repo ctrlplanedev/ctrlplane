@@ -18,23 +18,30 @@ var dbCounter uint64
 func NewMemSQL[T any](tableBuilder *TableBuilder) *MemSQL[T] {
 	tableName := tableBuilder.TableName()
 	
-	// Use a unique in-memory database per instance to avoid locking issues
+	// Use a temporary file-based database to support WAL mode (in-memory databases don't support WAL)
+	// WAL mode enables concurrent readers without blocking on writes, critical for performance
 	// Each database gets a unique ID to prevent conflicts when tests reuse table names
 	dbID := atomic.AddUint64(&dbCounter, 1)
-	dbName := fmt.Sprintf("file:%s_%d?mode=memory&cache=shared", tableName, dbID)
+	dbName := fmt.Sprintf("/tmp/%s_%d_%d.db", tableName, dbID, time.Now().UnixNano())
 	db, err := sql.Open("sqlite3", dbName)
 	if err != nil {
 		panic(fmt.Sprintf("failed to open database: %v", err))
 	}
 
-	// Set busy timeout to handle concurrent access
-	if _, err := db.Exec("PRAGMA busy_timeout=5000"); err != nil {
+	// Set busy timeout to handle concurrent access (10 seconds)
+	if _, err := db.Exec("PRAGMA busy_timeout=10000"); err != nil {
 		panic(fmt.Sprintf("failed to set busy timeout: %v", err))
 	}
 
-	// Enable WAL mode for concurrent reads without blocking
-	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+	// Enable WAL mode for concurrent reads without blocking writes
+	// This is the key setting that allows multiple readers + one writer concurrently
+	var journalMode string
+	err = db.QueryRow("PRAGMA journal_mode=WAL").Scan(&journalMode)
+	if err != nil {
 		panic(fmt.Sprintf("failed to enable WAL mode: %v", err))
+	}
+	if journalMode != "wal" {
+		panic(fmt.Sprintf("WAL mode not enabled, got: %s", journalMode))
 	}
 
 	// Optimize for concurrent access and performance
