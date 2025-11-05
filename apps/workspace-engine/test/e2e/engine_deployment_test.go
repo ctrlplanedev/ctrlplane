@@ -47,7 +47,7 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -55,6 +55,9 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 	if len(releaseTargets) != 0 {
 		t.Fatalf("release targets count is %d, want 0", len(releaseTargets))
 	}
+
+	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
+	d2, _ := engine.Workspace().Deployments().Get(deploymentID2)
 
 	r1 := c.NewResource(engine.Workspace().ID)
 	r1.Id = "r1"
@@ -68,7 +71,7 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 	r2.Metadata = map[string]string{"env": "qa"}
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
-	releaseTargets, err = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err = engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -78,15 +81,12 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 		t.Fatalf("release targets count is %d, want 0", len(releaseTargets))
 	}
 
-	d1Resources, err := engine.Workspace().Deployments().Resources(deploymentID1)
-	if err != nil {
-		t.Fatalf("failed to get deployment resources")
-	}
-	d2Resources, err := engine.Workspace().Deployments().Resources(deploymentID2)
+	d1Resources := engine.Workspace().Resources().ForDeployment(ctx, d1)
 	if err != nil {
 		t.Fatalf("failed to get deployment resources")
 	}
 
+	d2Resources := engine.Workspace().Resources().ForDeployment(ctx, d2)
 	if len(d1Resources) != 1 {
 		t.Fatalf("resources count is %d, want 1", len(d1Resources))
 	}
@@ -528,7 +528,7 @@ func TestEngine_DeploymentRemovalWithReleaseTargets(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets were created
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -561,7 +561,7 @@ func TestEngine_DeploymentRemovalWithReleaseTargets(t *testing.T) {
 	}
 
 	// Verify release targets for this deployment are gone
-	releaseTargetsAfter, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargetsAfter, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets after deletion: %v", err)
 	}
@@ -680,6 +680,9 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 
 	ctx := context.Background()
 
+	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
+	d2, _ := engine.Workspace().Deployments().Get(deploymentID2)
+
 	// Create a resource that matches both deployments
 	r1 := c.NewResource(engine.Workspace().ID)
 	r1.Id = resourceID
@@ -688,24 +691,17 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
 
 	// Verify both deployments have the resource
-	d1Resources, err := engine.Workspace().Deployments().Resources(deploymentID1)
-	if err != nil {
-		t.Fatalf("failed to get deployment 1 resources: %v", err)
-	}
+	d1Resources := engine.Workspace().Resources().ForDeployment(ctx, d1)
 	if len(d1Resources) != 1 {
 		t.Fatalf("deployment 1 resources count is %d, want 1", len(d1Resources))
 	}
 
-	d2Resources, err := engine.Workspace().Deployments().Resources(deploymentID2)
-	if err != nil {
-		t.Fatalf("failed to get deployment 2 resources: %v", err)
-	}
+	d2Resources := engine.Workspace().Resources().ForDeployment(ctx, d2)
 	if len(d2Resources) != 1 {
 		t.Fatalf("deployment 2 resources count is %d, want 1", len(d2Resources))
 	}
 
 	// Remove deployment 1
-	d1, _ := engine.Workspace().Deployments().Get(deploymentID1)
 	engine.PushEvent(ctx, handler.DeploymentDelete, d1)
 
 	// Verify deployment 1 is gone
@@ -724,10 +720,7 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 	}
 
 	// Verify deployment 2 still has the resource
-	d2ResourcesAfter, err := engine.Workspace().Deployments().Resources(deploymentID2)
-	if err != nil {
-		t.Fatalf("failed to get deployment 2 resources after deletion: %v", err)
-	}
+	d2ResourcesAfter := engine.Workspace().Resources().ForDeployment(ctx, d2)
 	if len(d2ResourcesAfter) != 1 {
 		t.Fatalf("deployment 2 resources count after deletion is %d, want 1", len(d2ResourcesAfter))
 	}
