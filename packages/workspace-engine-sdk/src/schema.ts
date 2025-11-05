@@ -598,6 +598,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the desired release for a release target
+     * @description Returns the desired release for a release target {releaseTargetKey}.
+     */
+    get: operations["getReleaseTargetDesiredRelease"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/jobs": {
     parameters: {
       query?: never;
@@ -2624,6 +2644,42 @@ export interface operations {
             decision?: components["schemas"]["DeployDecision"];
             /** @description The number of policies evaluated */
             policiesEvaluated?: number;
+          };
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getReleaseTargetDesiredRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Key of the release target */
+        releaseTargetKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The desired release for the release target */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            desiredRelease?: components["schemas"]["Release"];
           };
         };
       };
