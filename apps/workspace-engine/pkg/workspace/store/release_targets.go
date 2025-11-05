@@ -68,6 +68,7 @@ func (r *ReleaseTargets) AddReleaseTargets(ctx context.Context, releaseTargets [
 		}
 		return current, nil
 	})
+	r.RecomputeTargetPolicies()
 	return nil
 }
 
