@@ -489,7 +489,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().Policies.Get(policy.Id)
 	assert.True(t, ok, "Policy should be restored")
 
-	_, ok = testStore.Repo().JobAgents.Get(jobAgent.Id)
+	_, ok = testStore.JobAgents.Get(jobAgent.Id)
 	assert.True(t, ok, "JobAgent should be restored")
 
 	_, ok = testStore.Repo().Jobs.Get(job.Id)
@@ -664,7 +664,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "DeploymentVersion should be restored")
 	assert.Equal(t, "v1.2.3", restoredVersion.Tag)
 
-	restoredJobAgent, ok := newStore.Repo().JobAgents.Get(jobAgentId)
+	restoredJobAgent, ok := newStore.JobAgents.Get(jobAgentId)
 	require.True(t, ok, "JobAgent should be restored")
 	assert.Equal(t, "k8s-agent", restoredJobAgent.Name)
 

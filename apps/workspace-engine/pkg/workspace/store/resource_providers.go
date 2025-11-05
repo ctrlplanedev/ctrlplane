@@ -26,7 +26,7 @@ func (r *ResourceProviders) Get(id string) (*oapi.ResourceProvider, bool) {
 }
 
 func (r *ResourceProviders) Items() map[string]*oapi.ResourceProvider {
-	return r.repo.ResourceProviders.Items()
+	return r.repo.ResourceProviders
 }
 
 func (r *ResourceProviders) Upsert(ctx context.Context, id string, resourceProvider *oapi.ResourceProvider) {
@@ -44,7 +44,11 @@ func (r *ResourceProviders) Remove(ctx context.Context, id string) error {
 		return nil
 	}
 
+	// Remove the resource provider from the repository.
 	r.repo.ResourceProviders.Remove(id)
+
+	// Iterate over all resources and unset their ProviderId if they were using the deleted provider.
+	// This ensures that resources no longer reference a provider that has been deleted.
 	for _, resource := range r.resources.Items() {
 		if resource.ProviderId != nil && *resource.ProviderId == id {
 			resource.ProviderId = nil
@@ -52,9 +56,6 @@ func (r *ResourceProviders) Remove(ctx context.Context, id string) error {
 				return err
 			}
 		}
-	}
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, resourceProvider)
 	}
 
 	r.store.changeset.RecordDelete(resourceProvider)

@@ -28,12 +28,12 @@ func HasDeploymentChanges(old, new *oapi.Deployment) map[string]bool {
 	// Convert diff changelog to our field path format
 	for _, change := range changelog {
 		fieldPath := convertPathToFieldName(change.Path)
-		
+
 		// Ignore system-managed fields
 		if isIgnoredDeploymentField(fieldPath) {
 			continue
 		}
-		
+
 		if fieldPath != "" {
 			changed[fieldPath] = true
 		}
@@ -47,13 +47,13 @@ func isIgnoredDeploymentField(fieldPath string) bool {
 	ignoredFields := []string{
 		"id",
 	}
-	
+
 	for _, ignored := range ignoredFields {
 		if fieldPath == ignored {
 			return true
 		}
 	}
-	
+
 	return false
 }
 

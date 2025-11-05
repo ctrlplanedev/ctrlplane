@@ -7,6 +7,21 @@ import (
 	"workspace-engine/pkg/persistence"
 )
 
+type Map[T any] map[string]T
+
+func (m Map[T]) Get(key string) (T, bool) {
+	val, ok := m[key]
+	return val, ok
+}
+
+func (m Map[T]) Set(key string, val T) {
+	m[key] = val
+}
+
+func (m Map[T]) Remove(key string) {
+	delete(m, key)
+}
+
 // createTypedStore creates an in-memory store and registers it with the persistence router.
 // Returns the store for direct type-safe access while enabling generic persistence updates.
 func createTypedStore[E any](router *persistence.RepositoryRouter, entityType string) cmap.ConcurrentMap[string, E] {
@@ -21,27 +36,33 @@ func createMemSQLStore[T any](router *persistence.RepositoryRouter, entityType s
 	return store
 }
 
+func createMapStore[T any](router *persistence.RepositoryRouter, entityType string) Map[T] {
+	store := Map[T]{}
+	router.Register(entityType, &MapStoreAdapter[T]{store: store})
+	return store
+}
+
 func New(wsId string) *InMemoryStore {
 	router := persistence.NewRepositoryRouter()
 
 	return &InMemoryStore{
 		router:                   router,
-		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
-		ResourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
-		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
-		Deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
-		DeploymentVersions:       createTypedStore[*oapi.DeploymentVersion](router, "deployment_version"),
-		DeploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
-		DeploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
-		Environments:             createMemSQLStore[*oapi.Environment](router, "environment", EnvironmentsTable()),
-		Policies:                 createTypedStore[*oapi.Policy](router, "policy"),
-		Systems:                  createTypedStore[*oapi.System](router, "system"),
-		Releases:                 createTypedStore[*oapi.Release](router, "release"),
-		Jobs:                     createTypedStore[*oapi.Job](router, "job"),
-		JobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
-		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
-		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
-		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
+		Resources:                createMapStore[*oapi.Resource](router, "resource"),
+		ResourceProviders:        createMapStore[*oapi.ResourceProvider](router, "resource_provider"),
+		ResourceVariables:        createMapStore[*oapi.ResourceVariable](router, "resource_variable"),
+		Deployments:              createMapStore[*oapi.Deployment](router, "deployment"),
+		DeploymentVersions:       createMapStore[*oapi.DeploymentVersion](router, "deployment_version"),
+		DeploymentVariables:      createMapStore[*oapi.DeploymentVariable](router, "deployment_variable"),
+		DeploymentVariableValues: createMapStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
+		Environments:             createMapStore[*oapi.Environment](router, "environment"),
+		Policies:                 createMapStore[*oapi.Policy](router, "policy"),
+		Systems:                  createMapStore[*oapi.System](router, "system"),
+		Releases:                 createMapStore[*oapi.Release](router, "release"),
+		Jobs:                     createMapStore[*oapi.Job](router, "job"),
+		JobAgents:                createMapStore[*oapi.JobAgent](router, "job_agent"),
+		UserApprovalRecords:      createMapStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
+		RelationshipRules:        createMapStore[*oapi.RelationshipRule](router, "relationship_rule"),
+		GithubEntities:           createMapStore[*oapi.GithubEntity](router, "github_entity"),
 	}
 }
 
@@ -51,27 +72,27 @@ func New(wsId string) *InMemoryStore {
 type InMemoryStore struct {
 	router *persistence.RepositoryRouter
 
-	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
-	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
-	ResourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
+	Resources         Map[*oapi.Resource]
+	ResourceVariables Map[*oapi.ResourceVariable]
+	ResourceProviders Map[*oapi.ResourceProvider]
 
-	Deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
-	DeploymentVariables      cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
-	DeploymentVersions       cmap.ConcurrentMap[string, *oapi.DeploymentVersion]
-	DeploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
+	Deployments              Map[*oapi.Deployment]
+	DeploymentVariables      Map[*oapi.DeploymentVariable]
+	DeploymentVersions       Map[*oapi.DeploymentVersion]
+	DeploymentVariableValues Map[*oapi.DeploymentVariableValue]
 
-	Environments *memsql.MemSQL[*oapi.Environment]
-	Policies     cmap.ConcurrentMap[string, *oapi.Policy]
-	Systems      cmap.ConcurrentMap[string, *oapi.System]
-	Releases     cmap.ConcurrentMap[string, *oapi.Release]
+	Environments Map[*oapi.Environment]
+	Policies     Map[*oapi.Policy]
+	Systems      Map[*oapi.System]
+	Releases     Map[*oapi.Release]
 
-	Jobs      cmap.ConcurrentMap[string, *oapi.Job]
-	JobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
+	Jobs      Map[*oapi.Job]
+	JobAgents Map[*oapi.JobAgent]
 
-	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
-	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
+	UserApprovalRecords Map[*oapi.UserApprovalRecord]
+	RelationshipRules   Map[*oapi.RelationshipRule]
 
-	GithubEntities cmap.ConcurrentMap[string, *oapi.GithubEntity]
+	GithubEntities Map[*oapi.GithubEntity]
 }
 
 func (s *InMemoryStore) Router() *persistence.RepositoryRouter {

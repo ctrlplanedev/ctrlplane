@@ -28,19 +28,18 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.
 	_, span := tracer.Start(ctx, "GetCandidateVersions")
 	defer span.End()
 
-	// ✅ FAST: Direct iteration, no goroutines, brief locks per shard
-	filtered := make([]*oapi.DeploymentVersion, 0, 100) // Pre-allocate reasonable size
+	allVersions := m.store.DeploymentVersions.Items()
 
-	allVersions := m.store.Repo().DeploymentVersions
-	allVersions.IterCb(func(key string, version *oapi.DeploymentVersion) {
+	span.SetAttributes(
+		attribute.Int("versions.count", len(allVersions)),
+	)
+
+	filtered := []*oapi.DeploymentVersion{}
+	for _, version := range allVersions {
 		if version.DeploymentId == releaseTarget.DeploymentId {
 			filtered = append(filtered, version)
 		}
-	})
-
-	span.SetAttributes(
-		attribute.Int("versions.count", len(filtered)),
-	)
+	}
 
 	// Sort by CreatedAt (descending: newest first), then by Id (descending) if CreatedAt is the same
 	sort.Slice(filtered, func(i, j int) bool {

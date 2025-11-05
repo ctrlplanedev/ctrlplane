@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 	"time"
-	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -23,10 +22,6 @@ func NewUserApprovalRecords(store *Store) *UserApprovalRecords {
 
 func (u *UserApprovalRecords) Upsert(ctx context.Context, userApprovalRecord *oapi.UserApprovalRecord) {
 	u.repo.UserApprovalRecords.Set(userApprovalRecord.Key(), userApprovalRecord)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, userApprovalRecord)
-	}
-
 	u.store.changeset.RecordUpsert(userApprovalRecord)
 }
 
@@ -41,18 +36,14 @@ func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 	}
 
 	u.repo.UserApprovalRecords.Remove(key)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, userApprovalRecord)
-	}
-
 	u.store.changeset.RecordDelete(userApprovalRecord)
 }
 
 func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []string {
 	approvers := make([]string, 0)
-	for record := range u.repo.UserApprovalRecords.IterBuffered() {
-		if record.Val.VersionId == versionId && record.Val.EnvironmentId == environmentId && record.Val.Status == oapi.ApprovalStatusApproved {
-			approvers = append(approvers, record.Val.UserId)
+	for _, record := range u.repo.UserApprovalRecords {
+		if record.VersionId == versionId && record.EnvironmentId == environmentId && record.Status == oapi.ApprovalStatusApproved {
+			approvers = append(approvers, record.UserId)
 		}
 	}
 	return approvers
@@ -60,9 +51,9 @@ func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []st
 
 func (u *UserApprovalRecords) GetApprovalRecords(versionId, environmentId string) []*oapi.UserApprovalRecord {
 	records := make([]*oapi.UserApprovalRecord, 0)
-	for record := range u.repo.UserApprovalRecords.IterBuffered() {
-		if record.Val.VersionId == versionId && record.Val.EnvironmentId == environmentId && record.Val.Status == oapi.ApprovalStatusApproved {
-			records = append(records, record.Val)
+	for _, record := range u.repo.UserApprovalRecords {
+		if record.VersionId == versionId && record.EnvironmentId == environmentId && record.Status == oapi.ApprovalStatusApproved {
+			records = append(records, record)
 		}
 	}
 	sort.Slice(records, func(i, j int) bool {

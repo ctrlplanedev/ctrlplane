@@ -2,8 +2,6 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/changeset"
-	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -20,8 +18,8 @@ type DeploymentVariables struct {
 	store *Store
 }
 
-func (d *DeploymentVariables) IterBuffered() <-chan cmap.Tuple[string, *oapi.DeploymentVariable] {
-	return d.repo.DeploymentVariables.IterBuffered()
+func (d *DeploymentVariables) Items() map[string]*oapi.DeploymentVariable {
+	return d.repo.DeploymentVariables
 }
 
 func (d *DeploymentVariables) Get(id string) (*oapi.DeploymentVariable, bool) {
@@ -30,10 +28,6 @@ func (d *DeploymentVariables) Get(id string) (*oapi.DeploymentVariable, bool) {
 
 func (d *DeploymentVariables) Upsert(ctx context.Context, id string, deploymentVariable *oapi.DeploymentVariable) {
 	d.repo.DeploymentVariables.Set(id, deploymentVariable)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, deploymentVariable)
-	}
-
 	d.store.changeset.RecordUpsert(deploymentVariable)
 }
 
@@ -43,18 +37,14 @@ func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
 		return
 	}
 	d.repo.DeploymentVariables.Remove(id)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, deploymentVariable)
-	}
-
 	d.store.changeset.RecordDelete(deploymentVariable)
 }
 
 func (d *DeploymentVariables) Values(variableId string) map[string]*oapi.DeploymentVariableValue {
 	values := make(map[string]*oapi.DeploymentVariableValue)
-	for value := range d.repo.DeploymentVariableValues.IterBuffered() {
-		if value.Val.DeploymentVariableId == variableId {
-			values[value.Key] = value.Val
+	for _, value := range d.repo.DeploymentVariableValues {
+		if value.DeploymentVariableId == variableId {
+			values[value.Id] = value
 		}
 	}
 	return values

@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -27,10 +26,6 @@ func (g *GithubEntities) key(slug string, installationId int) string {
 func (g *GithubEntities) Upsert(ctx context.Context, githubEntity *oapi.GithubEntity) {
 	key := g.key(githubEntity.Slug, githubEntity.InstallationId)
 	g.repo.GithubEntities.Set(key, githubEntity)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, githubEntity)
-	}
-
 	g.store.changeset.RecordUpsert(githubEntity)
 }
 
@@ -47,13 +42,9 @@ func (g *GithubEntities) Remove(ctx context.Context, slug string, installationId
 	}
 
 	g.repo.GithubEntities.Remove(key)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, githubEntity)
-	}
-
 	g.store.changeset.RecordDelete(githubEntity)
 }
 
 func (g *GithubEntities) Items() map[string]*oapi.GithubEntity {
-	return g.repo.GithubEntities.Items()
+	return g.repo.GithubEntities
 }

@@ -64,10 +64,10 @@ func setupTestStore(t *testing.T) (*store.Store, string, string, string, string)
 		t.Fatalf("Failed to upsert resource: %v", err)
 	}
 
-	// Get release targets (this will wait if recompute is already running)
-	// Don't call Recompute() directly as it may already be in progress
-	if _, err := st.ReleaseTargets.Items(ctx); err != nil {
-		t.Fatalf("Failed to get release targets: %v", err)
+	// Create release target explicitly
+	target := createTestReleaseTarget(environmentID, deploymentID, resourceID)
+	if err := st.ReleaseTargets.Upsert(ctx, target); err != nil {
+		t.Fatalf("Failed to upsert release target: %v", err)
 	}
 
 	return st, systemID, environmentID, deploymentID, resourceID
@@ -168,7 +168,7 @@ func TestManager_DetectChanges_TaintedTargets(t *testing.T) {
 	manager := New(st)
 
 	// Get the computed target and set as current
-	targets, _ := st.ReleaseTargets.Items(ctx)
+	targets, _ := st.ReleaseTargets.Items()
 	manager.currentTargets = targets
 
 	// Create changeset with an environment change (should taint the target)
@@ -196,7 +196,7 @@ func TestManager_DetectChanges_MixedChanges(t *testing.T) {
 	manager := New(st)
 
 	// Setup current state with one target
-	targets, _ := st.ReleaseTargets.Items(ctx)
+	targets, _ := st.ReleaseTargets.Items()
 	manager.currentTargets = targets
 
 	// Create changeset with environment change (should taint existing target)
@@ -251,7 +251,7 @@ func TestManager_ConcurrentAccess(t *testing.T) {
 	manager := New(st)
 
 	// Get initial targets and set as current
-	targets, _ := st.ReleaseTargets.Items(ctx)
+	targets, _ := st.ReleaseTargets.Items()
 	manager.currentTargets = targets
 
 	// Run concurrent operations
@@ -295,7 +295,7 @@ func TestManager_DetectChanges_WithDeduplication(t *testing.T) {
 	manager := New(st)
 
 	// Setup current state with the computed target
-	targets, _ := st.ReleaseTargets.Items(ctx)
+	targets, _ := st.ReleaseTargets.Items()
 	manager.currentTargets = targets
 
 	// Create changeset with multiple changes affecting the same target
@@ -328,7 +328,7 @@ func TestManager_DetectChanges_PolicyChange_TaintsAll(t *testing.T) {
 	manager := New(st)
 
 	// Setup current state with existing target
-	targets, _ := st.ReleaseTargets.Items(ctx)
+	targets, _ := st.ReleaseTargets.Items()
 	manager.currentTargets = targets
 
 	// Create changeset with policy change (should taint all targets)
@@ -352,7 +352,7 @@ func TestManager_DetectChanges_NoChanges(t *testing.T) {
 	manager := New(st)
 
 	// Setup current state with the computed target
-	targets, _ := st.ReleaseTargets.Items(ctx)
+	targets, _ := st.ReleaseTargets.Items()
 	manager.currentTargets = targets
 
 	// Create empty changeset
@@ -373,7 +373,7 @@ func TestManager_DetectChanges_IgnoresIrrelevantChanges(t *testing.T) {
 	manager := New(st)
 
 	// Setup current state with the computed target
-	targets, _ := st.ReleaseTargets.Items(ctx)
+	targets, _ := st.ReleaseTargets.Items()
 	manager.currentTargets = targets
 
 	// Create changeset with changes to different entities (different env, dep, resource)

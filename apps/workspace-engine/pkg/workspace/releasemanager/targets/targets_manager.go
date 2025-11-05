@@ -29,14 +29,14 @@ type Manager struct {
 }
 
 func (m *Manager) GetTargets(ctx context.Context) (map[string]*oapi.ReleaseTarget, error) {
-	return m.store.ReleaseTargets.Items(ctx)
+	return m.store.ReleaseTargets.Items()
 }
 
 func (m *Manager) DetectChanges(ctx context.Context, changeSet *changeset.ChangeSet[any]) (*changeset.ChangeSet[*oapi.ReleaseTarget], error) {
 	ctx, span := tracer.Start(ctx, "TargetsManager.DetectChanges")
 	defer span.End()
 
-	targets, err := m.store.ReleaseTargets.Items(ctx)
+	targets, err := m.store.ReleaseTargets.Items()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get targets")
@@ -91,7 +91,7 @@ func (m *Manager) RefreshTargets(ctx context.Context) error {
 	m.currentTargetsMutex.Lock()
 	defer m.currentTargetsMutex.Unlock()
 
-	rt, err := m.store.ReleaseTargets.Items(ctx)
+	rt, err := m.store.ReleaseTargets.Items()
 	if err != nil {
 		return err
 	}

@@ -135,11 +135,11 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	assert.Equal(t, "us-west-2", dbServer.Metadata["region"])
 
 	// Verify entities exist (counts may include other workspace data in global store)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Systems.Count(), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Resources.Count(), 2)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Deployments.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws.Systems().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws.Resources().Items()), 2)
+	assert.GreaterOrEqual(t, len(ws.Deployments().Items()), 1)
 	assert.GreaterOrEqual(t, len(ws.Environments().Items()), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().JobAgents.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws.JobAgents().Items()), 1)
 }
 
 // TestEngine_Persistence_ReleaseTargetsComputation tests that release targets
