@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -65,6 +67,42 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	err := s.repo.Router().Apply(ctx, changes)
 	if err != nil {
 		return err
+	}
+
+	// Group deployments by SystemId for O(1) lookup
+	deploymentsBySystem := make(map[string][]*oapi.Deployment)
+	for _, deployment := range s.Deployments.Items() {
+		deploymentsBySystem[deployment.SystemId] = append(deploymentsBySystem[deployment.SystemId], deployment)
+	}
+
+	// Iterate environments, then matching deployments, then resources
+	for _, environment := range s.Environments.Items() {
+		matchingDeployments := deploymentsBySystem[environment.SystemId]
+		if len(matchingDeployments) == 0 {
+			continue
+		}
+
+		// Check environment selector once per resource
+		for _, resource := range s.Resources.Items() {
+			isInEnv, err := selector.Match(ctx, environment.ResourceSelector, resource)
+			if err != nil || !isInEnv {
+				continue
+			}
+
+			// Only check deployment selectors for matching deployments
+			for _, deployment := range matchingDeployments {
+				isInDeployment, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+				if err != nil || !isInDeployment {
+					continue
+				}
+
+				s.ReleaseTargets.Upsert(ctx, &oapi.ReleaseTarget{
+					EnvironmentId: environment.Id,
+					DeploymentId:  deployment.Id,
+					ResourceId:    resource.Id,
+				})
+			}
+		}
 	}
 
 	return nil
