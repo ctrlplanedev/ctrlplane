@@ -970,11 +970,11 @@ func TestStore_Restore_LargeDataset(t *testing.T) {
 	require.Len(t, loadedChanges, numResources+1, "Should have all resources + system")
 
 	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
-	
+
 	startTime := time.Now()
 	err = testStore.Restore(ctx, loadedChanges, nil)
 	duration := time.Since(startTime)
-	
+
 	require.NoError(t, err)
 	t.Logf("Restored %d entities in %v", numResources+1, duration)
 

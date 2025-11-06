@@ -217,11 +217,7 @@ func TestEngine_Persistence_ReleaseTargetsComputation(t *testing.T) {
 
 	// Get computed release targets (may need to wait for materialized view)
 	releaseTargets, err := ws.ReleaseTargets().Items()
-	if err != nil {
-		t.Logf("Warning: Could not get release targets immediately after load: %v", err)
-		t.Skip("Skipping release target computation verification due to timing issue")
-		return
-	}
+	assert.NoError(t, err)
 
 	// Should only have 1 release target (resource1 matches both selectors)
 	assert.Equal(t, 1, len(releaseTargets), "Only resource-prod-east should match both selectors")

@@ -322,10 +322,10 @@ func TestProcessChanges_MixedOperations(t *testing.T) {
 
 	// Create changeset with mixed operations
 	changes := statechange.NewChangeSet[any]()
-	changes.RecordUpsert(target1)           // should be processed
-	changes.RecordDelete(target2)           // should cancel job
-	changes.RecordUpsert(target3)           // should be skipped
-	changes.RecordDelete(target3)           // should be processed (delete wins)
+	changes.RecordUpsert(target1) // should be processed
+	changes.RecordDelete(target2) // should cancel job
+	changes.RecordUpsert(target3) // should be skipped
+	changes.RecordDelete(target3) // should be processed (delete wins)
 
 	// Process changes
 	err = manager.ProcessChanges(ctx, changes)
@@ -366,7 +366,7 @@ func TestProcessChanges_NonReleaseTargetChanges(t *testing.T) {
 
 	// Create changeset with non-ReleaseTarget entities
 	changes := statechange.NewChangeSet[any]()
-	
+
 	resource := &oapi.Resource{
 		Id:   uuid.New().String(),
 		Name: "test-resource",
@@ -375,7 +375,7 @@ func TestProcessChanges_NonReleaseTargetChanges(t *testing.T) {
 		Id:   uuid.New().String(),
 		Name: "test-deployment",
 	}
-	
+
 	changes.RecordUpsert(resource)
 	changes.RecordUpsert(deployment)
 
@@ -383,4 +383,3 @@ func TestProcessChanges_NonReleaseTargetChanges(t *testing.T) {
 	err := manager.ProcessChanges(ctx, changes)
 	require.NoError(t, err)
 }
-

@@ -176,7 +176,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		log.Error("Failed to process target changes", "error", err)
 	}
 
-
 	changes := make([]persistence.Change, 0)
 	span.SetAttributes(attribute.Int("changeset.count", len(ws.Changeset().Changes())))
 	for _, change := range ws.Changeset().Changes() {

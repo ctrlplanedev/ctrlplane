@@ -153,10 +153,10 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 			// If it belongs to this provider or has no provider, we'll update it
 			// Use the existing resource ID to ensure we update, not create
 			resource.Id = existingResource.Id
-			
+
 			// Preserve CreatedAt from existing resource
 			resource.CreatedAt = existingResource.CreatedAt
-			
+
 			// Always set UpdatedAt when resource is touched by SET operation
 			now := time.Now()
 			resource.UpdatedAt = &now

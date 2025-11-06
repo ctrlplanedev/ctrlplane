@@ -86,30 +86,30 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	// immediately be cancelled. The map key is the release target key, and the value tracks
 	// whether the final operation is a delete.
 	targetStates := make(map[string]struct {
-		entity *oapi.ReleaseTarget
+		entity   *oapi.ReleaseTarget
 		isDelete bool
 	})
-	
+
 	for _, change := range changes.Changes() {
 		entity, ok := change.Entity.(*oapi.ReleaseTarget)
 		if !ok {
 			continue
 		}
-		
+
 		key := entity.Key()
 		switch change.Type {
 		case statechange.StateChangeUpsert:
 			// Only record upsert if not already marked for deletion
 			if state, exists := targetStates[key]; !exists || !state.isDelete {
 				targetStates[key] = struct {
-					entity *oapi.ReleaseTarget
+					entity   *oapi.ReleaseTarget
 					isDelete bool
 				}{entity: entity, isDelete: false}
 			}
 		case statechange.StateChangeDelete:
 			// Delete always wins - it's the final state
 			targetStates[key] = struct {
-				entity *oapi.ReleaseTarget
+				entity   *oapi.ReleaseTarget
 				isDelete bool
 			}{entity: entity, isDelete: true}
 		}

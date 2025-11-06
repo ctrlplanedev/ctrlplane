@@ -1154,7 +1154,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 
 	// Environment progression happens at 1 hour (later than approval)
 	envProgTime := baseTime.Add(1 * time.Hour)
-	
+
 	// Create staging release targets for each resource
 	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
 	for i, resource := range resources {
@@ -1282,7 +1282,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 
 	// Environment progression happens at 30 minutes (earlier)
 	envProgTime := baseTime.Add(30 * time.Minute)
-	
+
 	// Create staging release targets for each resource
 	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
 	for i, resource := range resources {
@@ -1426,7 +1426,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 
 	// Environment progression is satisfied
 	envProgTime := baseTime.Add(30 * time.Minute)
-	
+
 	// Create staging release targets for each resource
 	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
 	for i, resource := range resources {
