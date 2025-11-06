@@ -86,6 +86,8 @@ func (cs *ChangeSet[T]) Changes() []StateChange[T] {
 	return result
 }
 
+
+
 // Clear removes all recorded changes
 func (cs *ChangeSet[T]) Clear() {
 	cs.mutex.Lock()

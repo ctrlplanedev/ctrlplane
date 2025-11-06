@@ -15,10 +15,14 @@ import (
 )
 
 func ReleaseTargetFromKey(key string) *ReleaseTarget {
+	parts := strings.Split(key, "-")
+	if len(parts) != 3 {
+		return nil
+	}
 	return &ReleaseTarget{
-		ResourceId:    strings.Split(key, "-")[0],
-		EnvironmentId: strings.Split(key, "-")[1],
-		DeploymentId:  strings.Split(key, "-")[2],
+		ResourceId:    parts[0],
+		EnvironmentId: parts[1],
+		DeploymentId:  parts[2],
 	}
 }
 

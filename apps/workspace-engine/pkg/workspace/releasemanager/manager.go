@@ -7,12 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"workspace-engine/pkg/changeset"
-	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
-	"workspace-engine/pkg/workspace/releasemanager/targets"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
@@ -30,9 +28,6 @@ import (
 type Manager struct {
 	store *store.Store
 
-	// Sub-managers
-	targetsManager *targets.Manager
-
 	// Deployment components
 	planner               *deployment.Planner
 	jobEligibilityChecker *deployment.JobEligibilityChecker
@@ -48,7 +43,6 @@ var tracer = otel.Tracer("workspace/releasemanager")
 
 // New creates a new release manager for a workspace.
 func New(store *store.Store) *Manager {
-	targetsManager := targets.New(store)
 	policyManager := policy.New(store)
 	versionManager := versions.New(store)
 	variableManager := variables.New(store)
@@ -58,14 +52,13 @@ func New(store *store.Store) *Manager {
 		MaxCost:     1 << 30, // 1GB
 		BufferItems: 64,
 	}
-	stateCache, err := ristretto.NewCache[string, *oapi.ReleaseTargetState](stateCacheConfig)
+	stateCache, err := ristretto.NewCache(stateCacheConfig)
 	if err != nil {
 		log.Warn("error creating release target state cache", "error", err.Error())
 	}
 
 	return &Manager{
 		store:                 store,
-		targetsManager:        targetsManager,
 		planner:               deployment.NewPlanner(store, policyManager, versionManager, variableManager),
 		jobEligibilityChecker: deployment.NewJobEligibilityChecker(store),
 		executor:              deployment.NewExecutor(store),
@@ -82,73 +75,44 @@ func New(store *store.Store) *Manager {
 // ProcessChanges handles detected changes to release targets (WRITES TO STORE).
 // Reconciles added/tainted targets (triggers deployments) and removes deleted targets.
 // Returns a map of cancelled jobs (for removed targets).
-func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeSet[any]) (cmap.ConcurrentMap[string, *oapi.Job], error) {
+func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.ChangeSet[any]) error {
 	ctx, span := tracer.Start(ctx, "ProcessChanges")
 	defer span.End()
 
-	targetChanges, err := m.targetsManager.DetectChanges(ctx, changes)
-	if err != nil {
-		log.Error("error detecting changes to release targets", "error", err.Error())
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to detect changes to release targets")
-		return cmap.New[*oapi.Job](), err
+	targetsUpserted := make(map[string]*oapi.ReleaseTarget)
+	targetsDeleted := make(map[string]*oapi.ReleaseTarget)
+	for _, change := range changes.Changes() {
+		entity, ok := change.Entity.(*oapi.ReleaseTarget)
+		if !ok {
+			continue
+		}
+		switch change.Type {
+		case statechange.StateChangeUpsert:
+			targetsUpserted[entity.Key()] = entity
+		case statechange.StateChangeDelete:
+			targetsDeleted[entity.Key()] = entity
+		}
 	}
 
-	if err := m.targetsManager.RefreshTargets(ctx); err != nil {
-		log.Error("error refreshing targets cache", "error", err.Error())
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to refresh targets cache")
-		return cmap.New[*oapi.Job](), err
+	for _, target := range targetsUpserted {
+		fmt.Printf("upserting release target: %+v\n", target)
+		if err := m.ReconcileTarget(ctx, target, false); err != nil {
+			log.Warn("error reconciling release target", "error", err.Error())
+		}
 	}
 
-	cancelledJobs := cmap.New[*oapi.Job]()
-	var wg sync.WaitGroup
-
-	added := targetChanges.Process().FilterByType(changeset.ChangeTypeCreate).CollectEntities()
-	tainted := targetChanges.Process().FilterByType(changeset.ChangeTypeTaint).CollectEntities()
-	removed := targetChanges.Process().FilterByType(changeset.ChangeTypeDelete).CollectEntities()
-	allToProcess := append(added, tainted...)
-
-	targetChanges.Finalize()
-	for _, change := range targetChanges.Changes {
-		changes.Record(change.Type, change.Entity)
-	}
-
-	// Process added/tainted release targets
-	for _, rt := range allToProcess {
-		wg.Add(1)
-		go func(target *oapi.ReleaseTarget) {
-			defer wg.Done()
-			if err := m.ReconcileTarget(ctx, target, false); err != nil {
-				log.Warn("error reconciling release target", "error", err.Error())
+	for _, target := range targetsDeleted {
+		for _, job := range m.store.Jobs.GetJobsForReleaseTarget(target) {
+			if job != nil && job.IsInProcessingState() {
+				job.Status = oapi.Cancelled
+				job.UpdatedAt = time.Now()
+				m.store.Jobs.Upsert(ctx, job)
+				fmt.Printf("cancelled job: %+v\n", job)
 			}
-		}(rt)
+		}
 	}
 
-	// Cancel jobs for removed release targets
-	// Only cancel jobs that are in processing states (Pending, InProgress, ActionRequired)
-	// Jobs in exited states (Successful, Failure, InvalidJobAgent, etc.) should never be modified
-	for _, rt := range removed {
-		wg.Add(1)
-		go func(target *oapi.ReleaseTarget) {
-			defer wg.Done()
-			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(target) {
-				if job != nil && job.IsInProcessingState() {
-					job.Status = oapi.Cancelled
-					job.UpdatedAt = time.Now()
-					cancelledJobs.Set(job.Id, job)
-				}
-			}
-		}(rt)
-	}
-
-	wg.Wait()
-
-	cancelledJobs.IterCb(func(_ string, job *oapi.Job) {
-		changes.Record(changeset.ChangeTypeUpdate, job)
-	})
-
-	return cancelledJobs, nil
+	return nil
 }
 
 // Redeploy forces a new deployment for a release target, skipping eligibility checks (WRITES TO STORE).
