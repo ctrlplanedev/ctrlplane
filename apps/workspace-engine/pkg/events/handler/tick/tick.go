@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -51,6 +52,8 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		span.SetStatus(codes.Error, "failed to get release targets")
 		return err
 	}
+
+	log.Info("Processing release targets", "count", len(releaseTargets))
 
 	for _, rt := range releaseTargets {
 		ws.Changeset().RecordUpsert(rt)

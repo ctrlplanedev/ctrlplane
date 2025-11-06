@@ -161,6 +161,7 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}
 
+	log.Info("Processing event", "eventType", rawEvent.EventType)
 	if err := handler(ctx, ws, rawEvent); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "handler failed")

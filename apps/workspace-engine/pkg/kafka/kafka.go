@@ -31,6 +31,7 @@ func NewConsumer(brokers string, topic string) (messaging.Consumer, error) {
 		"enable.auto.commit":              false,
 		"partition.assignment.strategy":   "cooperative-sticky",
 		"go.application.rebalance.enable": true,
+		"max.poll.interval.ms":            900_000, // 15 minutes
 
 		// "debug":                      "cgrp,broker,protocol",
 	})
