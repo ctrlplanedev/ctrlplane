@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
@@ -79,16 +80,18 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	ctx, span := tracer.Start(ctx, "ProcessChanges")
 	defer span.End()
 
+	type targetState struct {
+		entity   *oapi.ReleaseTarget
+		isDelete bool
+	}
+
 	// Track the final state of each release target by key
 	// We use a map to deduplicate changes - if a target is created then deleted in the same
 	// changeset, we only want to process the final state (delete). This avoids unnecessary work
 	// like reconciling a target that will immediately be deleted, or creating jobs that will
 	// immediately be cancelled. The map key is the release target key, and the value tracks
 	// whether the final operation is a delete.
-	targetStates := make(map[string]struct {
-		entity   *oapi.ReleaseTarget
-		isDelete bool
-	})
+	targetStates := make(map[string]targetState)
 
 	for _, change := range changes.Changes() {
 		entity, ok := change.Entity.(*oapi.ReleaseTarget)
@@ -101,22 +104,15 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		case statechange.StateChangeUpsert:
 			// Only record upsert if not already marked for deletion
 			if state, exists := targetStates[key]; !exists || !state.isDelete {
-				targetStates[key] = struct {
-					entity   *oapi.ReleaseTarget
-					isDelete bool
-				}{entity: entity, isDelete: false}
+				targetStates[key] = targetState{entity: entity, isDelete: false}
 			}
 		case statechange.StateChangeDelete:
 			// Delete always wins - it's the final state
-			targetStates[key] = struct {
-				entity   *oapi.ReleaseTarget
-				isDelete bool
-			}{entity: entity, isDelete: true}
+			targetStates[key] = targetState{entity: entity, isDelete: true}
 		}
 	}
 
-	// Process final states
-	for _, state := range targetStates {
+	processFn := func(state targetState) (targetState, error) {
 		if state.isDelete {
 			// Handle deletion - cancel pending jobs
 			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(state.entity) {
@@ -127,13 +123,23 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 					fmt.Printf("cancelled job: %+v\n", job)
 				}
 			}
-		} else {
-			// Handle upsert - reconcile the target
-			if err := m.ReconcileTarget(ctx, state.entity, false); err != nil {
-				log.Warn("error reconciling release target", "error", err.Error())
-			}
+			return state, nil
 		}
+
+		// Handle upsert - reconcile the target
+		if err := m.ReconcileTarget(ctx, state.entity, false); err != nil {
+			log.Warn("error reconciling release target", "error", err.Error())
+		}
+
+		return state, nil
 	}
+
+	states := make([]targetState, 0, len(targetStates))
+	for _, state := range targetStates {
+		states = append(states, state)
+	}
+
+	concurrency.ProcessInChunks(states, 100, 10, processFn)
 
 	return nil
 }
@@ -224,14 +230,6 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	defer span.End()
 
 	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
-
-	// targetKey := releaseTarget.Key()
-	// lockInterface, _ := m.releaseTargetLocks.LoadOrStore(targetKey, &sync.Mutex{})
-	// lock := lockInterface.(*sync.Mutex)
-
-	// // Serialize processing for this specific release target
-	// lock.Lock()
-	// defer lock.Unlock()
 
 	// Phase 1: PLANNING - What should be deployed? (READ-ONLY)
 	desiredRelease, err := m.planner.PlanDeployment(ctx, releaseTarget)

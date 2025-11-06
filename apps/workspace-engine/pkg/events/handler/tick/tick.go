@@ -32,6 +32,7 @@ func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId st
 	return producer.Publish([]byte(wsId), eventBytes)
 }
 
+
 // HandleWorkspaceTick handles periodic workspace tick events by marking all release targets
 // as tainted to trigger re-evaluation. This is needed for time-sensitive policies like:
 // - RRule deployment windows (time-based allow/deny windows)
@@ -40,7 +41,6 @@ func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId st
 func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
 	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
 	defer span.End()
-
 	span.SetAttributes(
 		attribute.String("workspace.id", ws.ID),
 		attribute.String("event.type", string(event.EventType)),
