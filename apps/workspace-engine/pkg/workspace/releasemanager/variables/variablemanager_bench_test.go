@@ -7,6 +7,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -281,7 +282,13 @@ func BenchmarkEvaluate_10Variables_NoOverrides(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -297,7 +304,13 @@ func BenchmarkEvaluate_50Variables_NoOverrides(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -313,7 +326,13 @@ func BenchmarkEvaluate_100Variables_NoOverrides(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -329,7 +348,13 @@ func BenchmarkEvaluate_50Variables_25Overrides(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -345,7 +370,13 @@ func BenchmarkEvaluate_50Variables_50Overrides(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -361,7 +392,13 @@ func BenchmarkEvaluate_50Variables_5Values(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -377,7 +414,13 @@ func BenchmarkEvaluate_50Variables_10Values(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -393,7 +436,13 @@ func BenchmarkEvaluate_WithRelationships(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -410,7 +459,13 @@ func BenchmarkEvaluate_ComplexScenario(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -430,7 +485,13 @@ func BenchmarkEvaluate_VaryingVariableCount(b *testing.B) {
 			b.ReportAllocs()
 
 			for i := 0; i < b.N; i++ {
-				_, err := manager.Evaluate(ctx, releaseTarget)
+				resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+				if !exists {
+					b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+				}
+				entity := relationships.NewResourceEntity(resource)
+				relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+				_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 				if err != nil {
 					b.Fatalf("Evaluate failed: %v", err)
 				}
@@ -454,7 +515,13 @@ func BenchmarkEvaluate_VaryingOverrideRatio(b *testing.B) {
 			b.ReportAllocs()
 
 			for i := 0; i < b.N; i++ {
-				_, err := manager.Evaluate(ctx, releaseTarget)
+				resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+				if !exists {
+					b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+				}
+				entity := relationships.NewResourceEntity(resource)
+				relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+				_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 				if err != nil {
 					b.Fatalf("Evaluate failed: %v", err)
 				}
@@ -476,7 +543,13 @@ func BenchmarkEvaluate_VaryingValueCount(b *testing.B) {
 			b.ReportAllocs()
 
 			for i := 0; i < b.N; i++ {
-				_, err := manager.Evaluate(ctx, releaseTarget)
+				resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+				if !exists {
+					b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+				}
+				entity := relationships.NewResourceEntity(resource)
+				relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+				_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 				if err != nil {
 					b.Fatalf("Evaluate failed: %v", err)
 				}
@@ -724,7 +797,13 @@ func BenchmarkEvaluate_10ReferenceVariables_2Rules_1000Resources(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.Evaluate(ctx, releaseTarget)
+		resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+		_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 		if err != nil {
 			b.Fatalf("Evaluate failed: %v", err)
 		}
@@ -744,7 +823,13 @@ func BenchmarkEvaluate_10ReferenceVariables_2Rules_VaryingResourceCount(b *testi
 			b.ReportAllocs()
 
 			for b.Loop() {
-				_, err := manager.Evaluate(ctx, releaseTarget)
+				resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+				if !exists {
+					b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+				}
+				entity := relationships.NewResourceEntity(resource)
+				relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+				_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 				if err != nil {
 					b.Fatalf("Evaluate failed: %v", err)
 				}
@@ -1069,7 +1154,13 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	// = ~27,000,000 resource comparisons per iteration
 	for i := 0; i < b.N; i++ {
 		for _, releaseTarget := range releaseTargets {
-			_, err := manager.Evaluate(ctx, releaseTarget)
+			resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+			if !exists {
+				b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+			}
+			entity := relationships.NewResourceEntity(resource)
+			relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+			_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 			if err != nil {
 				b.Fatalf("Evaluate failed: %v", err)
 			}
@@ -1310,7 +1401,13 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 			// This simulates what happens in production
 			for b.Loop() {
 				for _, releaseTarget := range releaseTargets {
-					_, err := manager.Evaluate(ctx, releaseTarget)
+					resource, exists := manager.store.Resources.Get(releaseTarget.ResourceId)
+					if !exists {
+						b.Fatalf("resource %q not found", releaseTarget.ResourceId)
+					}
+					entity := relationships.NewResourceEntity(resource)
+					relatedEntities, _ := manager.store.Relationships.GetRelatedEntities(ctx, entity)
+					_, err := manager.Evaluate(ctx, releaseTarget, relatedEntities)
 					if err != nil {
 						b.Fatalf("Evaluate failed: %v", err)
 					}

@@ -7,6 +7,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -215,7 +216,14 @@ func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -274,7 +282,14 @@ func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -332,7 +347,14 @@ func TestVariableManager_DeploymentVariablePriority(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -388,7 +410,14 @@ func TestVariableManager_FallbackToDefault(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -443,7 +472,14 @@ func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -493,7 +529,14 @@ func TestVariableManager_SelectorFiltering(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -552,7 +595,14 @@ func TestVariableManager_NoSelectorMatches(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -589,7 +639,8 @@ func TestVariableManager_ResourceNotFound(t *testing.T) {
 		ResourceId:    nonExistentResourceID,
 	}
 
-	_, err := mgr.Evaluate(ctx, releaseTarget)
+	// Pass nil for relatedEntities since the resource doesn't exist
+	_, err := mgr.Evaluate(ctx, releaseTarget, nil)
 	if err == nil {
 		t.Fatal("expected error for non-existent resource, got nil")
 	}
@@ -625,7 +676,14 @@ func TestVariableManager_EmptyDeploymentVariables(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -679,7 +737,14 @@ func TestVariableManager_ComplexVariableTypes(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -752,7 +817,14 @@ func TestVariableManager_MixedPriorities(t *testing.T) {
 		ResourceId:    resourceID,
 	}
 
-	result, err := mgr.Evaluate(ctx, releaseTarget)
+	resource, exists := st.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result, err := mgr.Evaluate(ctx, releaseTarget, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed: %v", err)
 	}
@@ -848,7 +920,14 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 		ResourceId:    resource1ID,
 	}
 
-	result1, err := mgr.Evaluate(ctx, releaseTarget1)
+	resource, exists := st.Resources.Get(releaseTarget1.ResourceId)
+	if !exists {
+		t.Fatalf("resource %q not found", releaseTarget1.ResourceId)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	relatedEntities, _ := st.Relationships.GetRelatedEntities(ctx, entity)
+
+	result1, err := mgr.Evaluate(ctx, releaseTarget1, relatedEntities)
 	if err != nil {
 		t.Fatalf("Evaluate failed for resource1: %v", err)
 	}
@@ -866,7 +945,17 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 		ResourceId:    resource2ID,
 	}
 
-	result2, err := mgr.Evaluate(ctx, releaseTarget2)
+	resource2, exists2 := st.Resources.Get(releaseTarget2.ResourceId)
+	if !exists2 {
+		t.Fatalf("resource %q not found", releaseTarget2.ResourceId)
+	}
+	entity2 := relationships.NewResourceEntity(resource2)
+	relatedEntities2, err2 := st.Relationships.GetRelatedEntities(ctx, entity2)
+	if err2 != nil {
+		t.Fatalf("failed to get related entities for resource2: %v", err2)
+	}
+
+	result2, err := mgr.Evaluate(ctx, releaseTarget2, relatedEntities2)
 	if err != nil {
 		t.Fatalf("Evaluate failed for resource2: %v", err)
 	}

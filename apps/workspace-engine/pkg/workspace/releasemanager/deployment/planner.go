@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
@@ -47,19 +48,17 @@ func NewPlanner(
 	}
 }
 
-// PlanDeployment determines the desired release for a target based on user-defined policies (READ-ONLY).
-//
-// This function focuses on determining WHAT should be deployed:
-//  1. Which version should be deployed (based on version availability and user policies)
-//  2. What variables should be used
-//
-// Returns nil if:
-//   - No versions available
-//   - All versions are blocked by user-defined policies (approval, environment progression, etc.)
-//
-// Note: This does NOT check job eligibility (retry logic, duplicate prevention, etc.)
-// Those checks are handled separately by JobEligibilityChecker.
-//
+type planDeploymentOptions func(*planDeploymentConfig)
+
+type planDeploymentConfig struct {
+	resourceRelatedEntities map[string][]*oapi.EntityRelation
+}
+
+func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) planDeploymentOptions {
+	return func(cfg *planDeploymentConfig) {
+		cfg.resourceRelatedEntities = entities
+	}
+}
 // Returns:
 //   - *oapi.Release: The desired release to deploy
 //   - nil: No deployable release (no versions or all blocked by policies)
@@ -67,7 +66,7 @@ func NewPlanner(
 //
 // Design Pattern: Three-Phase Deployment (PLANNING Phase)
 // This function only READS state and determines the desired release. No writes occur here.
-func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Release, error) {
+func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.ReleaseTarget, options ...planDeploymentOptions) (*oapi.Release, error) {
 	ctx, span := tracer.Start(ctx, "PlanDeployment",
 		trace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),
@@ -75,6 +74,12 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 			attribute.String("resource.id", releaseTarget.ResourceId),
 		))
 	defer span.End()
+
+	// Apply options
+	cfg := &planDeploymentConfig{}
+	for _, opt := range options {
+		opt(cfg)
+	}
 
 	// Step 1: Get candidate versions (sorted newest to oldest)
 	candidateVersions := p.versionManager.GetCandidateVersions(ctx, releaseTarget)
@@ -88,8 +93,18 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		return nil, nil
 	}
 
+	resourceRelatedEntities := cfg.resourceRelatedEntities
+	if resourceRelatedEntities == nil {
+		resource, exists := p.store.Resources.Get(releaseTarget.ResourceId)
+		if !exists {
+			return nil, fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
+		}
+		entity := relationships.NewResourceEntity(resource)
+		resourceRelatedEntities, _ = p.store.Relationships.GetRelatedEntities(ctx, entity)
+	}
+
 	// Step 3: Resolve variables for this deployment
-	resolvedVariables, err := p.variableManager.Evaluate(ctx, releaseTarget)
+	resolvedVariables, err := p.variableManager.Evaluate(ctx, releaseTarget, resourceRelatedEntities)
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

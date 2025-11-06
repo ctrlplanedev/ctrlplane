@@ -1396,7 +1396,7 @@ func TestEngine_ReleaseVariableResolution_DirectResolveValue(t *testing.T) {
 	// Test literal string value
 	stringValue := c.NewValueFromString("test-string")
 
-	resolved, err := engine.Workspace().Variables().ResolveValue(ctx, entity, stringValue)
+	resolved, err := engine.Workspace().Variables().ResolveValue(ctx, entity, stringValue, nil)
 	if err != nil {
 		t.Fatalf("failed to resolve string value: %v", err)
 	}
@@ -1409,7 +1409,7 @@ func TestEngine_ReleaseVariableResolution_DirectResolveValue(t *testing.T) {
 	// Test literal int value
 	intValue := c.NewValueFromInt(42)
 
-	resolved, err = engine.Workspace().Variables().ResolveValue(ctx, entity, intValue)
+	resolved, err = engine.Workspace().Variables().ResolveValue(ctx, entity, intValue, nil)
 	if err != nil {
 		t.Fatalf("failed to resolve int value: %v", err)
 	}
@@ -1422,7 +1422,7 @@ func TestEngine_ReleaseVariableResolution_DirectResolveValue(t *testing.T) {
 	// Test literal bool value
 	boolValue := c.NewValueFromBool(true)
 
-	resolved, err = engine.Workspace().Variables().ResolveValue(ctx, entity, boolValue)
+	resolved, err = engine.Workspace().Variables().ResolveValue(ctx, entity, boolValue, nil)
 	if err != nil {
 		t.Fatalf("failed to resolve bool value: %v", err)
 	}

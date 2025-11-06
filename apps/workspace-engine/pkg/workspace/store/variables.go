@@ -17,7 +17,16 @@ func NewVariables(store *Store) *Variables {
 	return &Variables{repo: store.repo, store: store}
 }
 
-func (v *Variables) ResolveValue(ctx context.Context, entity *oapi.RelatableEntity, value *oapi.Value) (*oapi.LiteralValue, error) {
+// ResolveValue resolves a value, accepting optional pre-computed related entities for performance.
+// Pass nil for entities to fetch them on-demand.
+func (v *Variables) ResolveValue(
+	ctx context.Context,
+	entity *oapi.RelatableEntity,
+	value *oapi.Value,
+	entities map[string][]*oapi.EntityRelation,
+) (*oapi.LiteralValue, error) {
+
+
 	valueType, err := value.GetType()
 	if err != nil {
 		return nil, err
@@ -34,23 +43,24 @@ func (v *Variables) ResolveValue(ctx context.Context, entity *oapi.RelatableEnti
 		if err != nil {
 			return nil, err
 		}
-		references, _ := v.store.Relationships.GetRelatedEntities(ctx, entity)
-		if references == nil {
-			return nil, fmt.Errorf("references nil - not found: %v for entity: %v-%v", rv.Reference, entity.GetType(), entity.GetID())
+
+		if entities == nil {
+			entities, _ = v.store.Relationships.GetRelatedEntities(ctx, entity)
 		}
 
-		refEntities := references[rv.Reference]
+		refEntities := entities[rv.Reference]
 		if len(refEntities) == 0 {
 			return nil, fmt.Errorf("reference not found: %v for entity: %v-%v", rv.Reference, entity.GetType(), entity.GetID())
 		}
 
 		computeEntityRelationship := refEntities[0]
-		value, err := relationships.GetPropertyValue(&computeEntityRelationship.Entity, rv.Path)
+		literalValue, err := relationships.GetPropertyValue(&computeEntityRelationship.Entity, rv.Path)
 		if err != nil {
 			return nil, err
 		}
 
-		return value, nil
+		return literalValue, nil
 	}
 	return nil, fmt.Errorf("unsupported variable type: %T", value)
 }
+

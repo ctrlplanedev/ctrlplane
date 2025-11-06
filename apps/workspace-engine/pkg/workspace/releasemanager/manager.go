@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
@@ -73,17 +74,17 @@ func New(store *store.Store) *Manager {
 // Public API
 // ============================================================================
 
+type targetState struct {
+	entity   *oapi.ReleaseTarget
+	isDelete bool
+}
+
 // ProcessChanges handles detected changes to release targets (WRITES TO STORE).
 // Reconciles added/tainted targets (triggers deployments) and removes deleted targets.
 // Returns a map of cancelled jobs (for removed targets).
 func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.ChangeSet[any]) error {
 	ctx, span := tracer.Start(ctx, "ProcessChanges")
 	defer span.End()
-
-	type targetState struct {
-		entity   *oapi.ReleaseTarget
-		isDelete bool
-	}
 
 	// Track the final state of each release target by key
 	// We use a map to deduplicate changes - if a target is created then deleted in the same
@@ -112,6 +113,10 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		}
 	}
 
+	// Pre-compute resource relationships for all unique resources
+	// This avoids recomputing relationships for every release target that shares the same resource
+	resourceRelationships := m.computeResourceRelationships(ctx, targetStates)
+
 	processFn := func(state targetState) (targetState, error) {
 		if state.isDelete {
 			// Handle deletion - cancel pending jobs
@@ -126,8 +131,9 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			return state, nil
 		}
 
-		// Handle upsert - reconcile the target
-		if err := m.ReconcileTarget(ctx, state.entity, false); err != nil {
+		// Handle upsert - reconcile the target with pre-computed relationships
+		relationships := resourceRelationships[state.entity.ResourceId]
+		if err := m.reconcileTargetWithRelationships(ctx, state.entity, false, relationships); err != nil {
 			log.Warn("error reconciling release target", "error", err.Error())
 		}
 
@@ -142,6 +148,43 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	concurrency.ProcessInChunks(states, 100, 10, processFn)
 
 	return nil
+}
+
+// computeResourceRelationships pre-computes relationships for all unique resources in the target states.
+// This optimization avoids redundant relationship computation when multiple release targets share the same resource.
+func (m *Manager) computeResourceRelationships(ctx context.Context, targetStates map[string]targetState) map[string]map[string][]*oapi.EntityRelation {
+	ctx, span := tracer.Start(ctx, "computeResourceRelationships")
+	defer span.End()
+
+	// Collect unique resource IDs
+	uniqueResourceIds := make(map[string]bool)
+	for _, state := range targetStates {
+		if !state.isDelete {
+			uniqueResourceIds[state.entity.ResourceId] = true
+		}
+	}
+
+	// Pre-compute relationships for all unique resources
+	resourceRelationships := make(map[string]map[string][]*oapi.EntityRelation)
+	for resourceId := range uniqueResourceIds {
+		resource, exists := m.store.Resources.Get(resourceId)
+		if !exists {
+			log.Warn("resource not found during relationship computation", "resourceId", resourceId)
+			continue
+		}
+
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, err := m.store.Relationships.GetRelatedEntities(ctx, entity)
+		if err != nil {
+			log.Warn("error getting related entities", "resourceId", resourceId, "error", err.Error())
+			continue
+		}
+
+		resourceRelationships[resourceId] = relatedEntities
+	}
+
+	span.SetAttributes(attribute.Int("unique_resources", len(uniqueResourceIds)))
+	return resourceRelationships
 }
 
 // Redeploy forces a new deployment for a release target, skipping eligibility checks (WRITES TO STORE).
@@ -202,37 +245,26 @@ func (m *Manager) setDesiredReleaseSpanAttributes(span trace.Span, desiredReleas
 	}
 }
 
-// reconcileTarget ensures a release target is in its desired state (WRITES TO STORE).
-// Uses a three-phase deployment pattern: planning, eligibility checking, and execution.
-//
-// Three-Phase Design:
-//
-//	Phase 1 (PLANNING): planner.PlanDeployment() - "What should be deployed?" (read-only)
-//	  Determines the desired release based on versions, variables, and user-defined policies.
-//	  User policies: approval requirements, environment progression, etc.
-//
-//	Phase 2 (ELIGIBILITY): jobEligibilityChecker.ShouldCreateJob() - "Should we create a job?" (read-only)
-//	  System-level checks for job creation: retry logic, duplicate prevention, etc.
-//	  This is separate from user policies - it's about when to create jobs.
-//	  Can be skipped when forceRedeploy is true (e.g., for explicit redeploy operations).
-//
-//	Phase 3 (EXECUTION): executor.ExecuteRelease() - "Create the job" (writes)
-//	  Persists release, creates job, dispatches to integration.
-//
-// Parameters:
-//   - forceRedeploy: if true, skips eligibility checks and always creates a new job
-//
-// Returns early if:
-//   - No desired release (no versions available or blocked by user policies)
-//   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
-func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool) error {
-	ctx, span := tracer.Start(ctx, "ReconcileTarget")
+// reconcileTargetWithRelationships is like ReconcileTarget but accepts pre-computed resource relationships.
+// This is an optimization to avoid recomputing relationships for multiple release targets that share the same resource.
+func (m *Manager) reconcileTargetWithRelationships(
+	ctx context.Context,
+	releaseTarget *oapi.ReleaseTarget,
+	forceRedeploy bool,
+	resourceRelationships map[string][]*oapi.EntityRelation,
+) error {
+	ctx, span := tracer.Start(ctx, "reconcileTargetWithRelationships")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
 
 	// Phase 1: PLANNING - What should be deployed? (READ-ONLY)
-	desiredRelease, err := m.planner.PlanDeployment(ctx, releaseTarget)
+	// Pass pre-computed relationships to avoid redundant computation
+	desiredRelease, err := m.planner.PlanDeployment(
+		ctx,
+		releaseTarget,
+		deployment.WithResourceRelatedEntities(resourceRelationships),
+	)
 	if err != nil {
 		span.RecordError(err)
 		return err
@@ -262,6 +294,54 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 
 	// Phase 3: EXECUTION - Create the job (WRITES)
 	return m.executor.ExecuteRelease(ctx, desiredRelease)
+}
+
+// reconcileTarget ensures a release target is in its desired state (WRITES TO STORE).
+// Uses a three-phase deployment pattern: planning, eligibility checking, and execution.
+//
+// Three-Phase Design:
+//
+//	Phase 1 (PLANNING): planner.PlanDeployment() - "What should be deployed?" (read-only)
+//	  Determines the desired release based on versions, variables, and user-defined policies.
+//	  User policies: approval requirements, environment progression, etc.
+//
+//	Phase 2 (ELIGIBILITY): jobEligibilityChecker.ShouldCreateJob() - "Should we create a job?" (read-only)
+//	  System-level checks for job creation: retry logic, duplicate prevention, etc.
+//	  This is separate from user policies - it's about when to create jobs.
+//	  Can be skipped when forceRedeploy is true (e.g., for explicit redeploy operations).
+//
+//	Phase 3 (EXECUTION): executor.ExecuteRelease() - "Create the job" (writes)
+//	  Persists release, creates job, dispatches to integration.
+//
+// Parameters:
+//   - forceRedeploy: if true, skips eligibility checks and always creates a new job
+//
+// Returns early if:
+//   - No desired release (no versions available or blocked by user policies)
+//   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
+func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool) error {
+	ctx, span := tracer.Start(ctx, "ReconcileTarget")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
+
+	// Compute relationships on-demand for this single resource
+	resource, exists := m.store.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		err := fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
+		span.RecordError(err)
+		return err
+	}
+
+	entity := relationships.NewResourceEntity(resource)
+	resourceRelationships, err := m.store.Relationships.GetRelatedEntities(ctx, entity)
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	// Delegate to the implementation that accepts pre-computed relationships
+	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships)
 }
 
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
