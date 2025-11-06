@@ -79,35 +79,59 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	ctx, span := tracer.Start(ctx, "ProcessChanges")
 	defer span.End()
 
-	targetsUpserted := make(map[string]*oapi.ReleaseTarget)
-	targetsDeleted := make(map[string]*oapi.ReleaseTarget)
+	// Track the final state of each release target by key
+	// We use a map to deduplicate changes - if a target is created then deleted in the same
+	// changeset, we only want to process the final state (delete). This avoids unnecessary work
+	// like reconciling a target that will immediately be deleted, or creating jobs that will
+	// immediately be cancelled. The map key is the release target key, and the value tracks
+	// whether the final operation is a delete.
+	targetStates := make(map[string]struct {
+		entity *oapi.ReleaseTarget
+		isDelete bool
+	})
+	
 	for _, change := range changes.Changes() {
 		entity, ok := change.Entity.(*oapi.ReleaseTarget)
 		if !ok {
 			continue
 		}
+		
+		key := entity.Key()
 		switch change.Type {
 		case statechange.StateChangeUpsert:
-			targetsUpserted[entity.Key()] = entity
+			// Only record upsert if not already marked for deletion
+			if state, exists := targetStates[key]; !exists || !state.isDelete {
+				targetStates[key] = struct {
+					entity *oapi.ReleaseTarget
+					isDelete bool
+				}{entity: entity, isDelete: false}
+			}
 		case statechange.StateChangeDelete:
-			targetsDeleted[entity.Key()] = entity
+			// Delete always wins - it's the final state
+			targetStates[key] = struct {
+				entity *oapi.ReleaseTarget
+				isDelete bool
+			}{entity: entity, isDelete: true}
 		}
 	}
 
-	for _, target := range targetsUpserted {
-		fmt.Printf("upserting release target: %+v\n", target)
-		if err := m.ReconcileTarget(ctx, target, false); err != nil {
-			log.Warn("error reconciling release target", "error", err.Error())
-		}
-	}
-
-	for _, target := range targetsDeleted {
-		for _, job := range m.store.Jobs.GetJobsForReleaseTarget(target) {
-			if job != nil && job.IsInProcessingState() {
-				job.Status = oapi.Cancelled
-				job.UpdatedAt = time.Now()
-				m.store.Jobs.Upsert(ctx, job)
-				fmt.Printf("cancelled job: %+v\n", job)
+	// Process final states
+	for _, state := range targetStates {
+		if state.isDelete {
+			// Handle deletion - cancel pending jobs
+			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(state.entity) {
+				if job != nil && job.IsInProcessingState() {
+					job.Status = oapi.Cancelled
+					job.UpdatedAt = time.Now()
+					m.store.Jobs.Upsert(ctx, job)
+					fmt.Printf("cancelled job: %+v\n", job)
+				}
+			}
+		} else {
+			// Handle upsert - reconcile the target
+			fmt.Printf("upserting release target: %+v\n", state.entity)
+			if err := m.ReconcileTarget(ctx, state.entity, false); err != nil {
+				log.Warn("error reconciling release target", "error", err.Error())
 			}
 		}
 	}
