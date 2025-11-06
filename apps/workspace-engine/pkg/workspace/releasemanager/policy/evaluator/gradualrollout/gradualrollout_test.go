@@ -122,6 +122,18 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 	versionCreatedAt := baseTime
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
 
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
 	hashingFn := getHashingFunc(st)
 	threeMinutesLater := baseTime.Add(3 * time.Minute) // Enough time for all deployments
 	timeGetter := func() time.Time {
@@ -134,12 +146,6 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 		rule:       rule,
 		hashingFn:  hashingFn,
 		timeGetter: timeGetter,
-	}
-
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
 	}
 
 	// Position 0: deploys immediately (offset = 0 * 60 = 0 seconds)
@@ -192,6 +198,18 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 	versionCreatedAt := baseTime
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
 
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
 	hashingFn := getHashingFunc(st)
 	thirtySecondsLater := baseTime.Add(30 * time.Second) // Not enough time for position 2
 	timeGetter := func() time.Time {
@@ -204,12 +222,6 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 		rule:       rule,
 		hashingFn:  hashingFn,
 		timeGetter: timeGetter,
-	}
-
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
 	}
 
 	// Position 0: deploys immediately - should be allowed
@@ -264,6 +276,18 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 	versionCreatedAt := baseTime
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
 
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
 	hashingFn := getHashingFunc(st)
 	twoMinutesLater := baseTime.Add(2 * time.Minute)
 	timeGetter := func() time.Time {
@@ -276,12 +300,6 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 		rule:       rule,
 		hashingFn:  hashingFn,
 		timeGetter: timeGetter,
-	}
-
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
 	}
 
 	// Position 0: offset = (0/3) * 60 = 0 seconds
@@ -334,6 +352,18 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	versionCreatedAt := baseTime
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
 
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
 	hashingFn := getHashingFunc(st)
 	oneHourLater := baseTime.Add(1 * time.Hour)
 	timeGetter := func() time.Time {
@@ -346,12 +376,6 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 		rule:       rule,
 		hashingFn:  hashingFn,
 		timeGetter: timeGetter,
-	}
-
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
 	}
 
 	// All positions should deploy immediately when timeScaleInterval is 0
@@ -425,10 +449,16 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 		CreatedAt:     baseTime.Format(time.RFC3339),
 	})
 
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
 	}
 
 	// All targets should be pending since approval requirement isn't met
@@ -525,10 +555,16 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 		CreatedAt:     twoHoursLater.Format(time.RFC3339),
 	})
 
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
 	}
 
 	// Position 0: deploys immediately after approval (offset = 0)
@@ -634,12 +670,19 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 
 	st.Policies.Upsert(ctx, envProgPolicy)
 
-	// Create releases and successful jobs in staging to satisfy 100% success rate
-	stagingReleaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	// Create staging release targets for each resource
+	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		stagingReleaseTargets[i] = releaseTarget
 	}
+
+	// Create releases and successful jobs in staging to satisfy 100% success rate
 
 	successTime := baseTime.Add(1 * time.Hour) // Success happens 1 hour after version creation
 	for i, rt := range stagingReleaseTargets {
@@ -661,10 +704,16 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 		st.Jobs.Upsert(ctx, job)
 	}
 
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, prodEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, prodEnv.Id, deployment.Id)),
+	// Create production release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: prodEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
 	}
 
 	// Position 0: deploys immediately after environment progression is satisfied
@@ -748,8 +797,15 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 
 	st.Policies.Upsert(ctx, envProgPolicy)
 
+	// Create staging release target
+	stagingRT := &oapi.ReleaseTarget{
+		EnvironmentId: stagingEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, stagingRT)
+
 	// Create release and successful job in staging
-	stagingRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id))
 	release := &oapi.Release{
 		ReleaseTarget: *stagingRT,
 		Version:       *version,
@@ -768,7 +824,13 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 	}
 	st.Jobs.Upsert(ctx, job)
 
-	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+	// Create production release target
+	prodRT := &oapi.ReleaseTarget{
+		EnvironmentId: prodEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after soak time is satisfied
 	scope1 := evaluator.EvaluatorScope{
@@ -853,12 +915,19 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 
 	st.Policies.Upsert(ctx, envProgPolicy)
 
-	// Create releases and successful jobs in staging
-	stagingReleaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	// Create staging release targets for each resource
+	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		stagingReleaseTargets[i] = releaseTarget
 	}
+
+	// Create releases and successful jobs in staging
 
 	successTime := baseTime.Add(1 * time.Hour)
 	lastJobCompletedAt := successTime.Add(2 * time.Minute) // Last job completes at this time
@@ -881,7 +950,13 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 		st.Jobs.Upsert(ctx, job)
 	}
 
-	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+	// Create production release target
+	prodRT := &oapi.ReleaseTarget{
+		EnvironmentId: prodEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after both conditions are satisfied (soak time is later)
 	scope1 := evaluator.EvaluatorScope{
@@ -966,7 +1041,13 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 
 	// Don't create any jobs in staging - condition won't be satisfied
 
-	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+	// Create production release target
+	prodRT := &oapi.ReleaseTarget{
+		EnvironmentId: prodEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
 		Environment:   prodEnv,
@@ -1073,10 +1154,17 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 
 	// Environment progression happens at 1 hour (later than approval)
 	envProgTime := baseTime.Add(1 * time.Hour)
-	stagingReleaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	
+	// Create staging release targets for each resource
+	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		stagingReleaseTargets[i] = releaseTarget
 	}
 
 	for i, rt := range stagingReleaseTargets {
@@ -1098,7 +1186,13 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 		st.Jobs.Upsert(ctx, job)
 	}
 
-	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+	// Create production release target
+	prodRT := &oapi.ReleaseTarget{
+		EnvironmentId: prodEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after the later condition (environment progression)
 	scope1 := evaluator.EvaluatorScope{
@@ -1188,10 +1282,17 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 
 	// Environment progression happens at 30 minutes (earlier)
 	envProgTime := baseTime.Add(30 * time.Minute)
-	stagingReleaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	
+	// Create staging release targets for each resource
+	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		stagingReleaseTargets[i] = releaseTarget
 	}
 
 	for i, rt := range stagingReleaseTargets {
@@ -1230,7 +1331,13 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 		CreatedAt:     approvalTime.Format(time.RFC3339),
 	})
 
-	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+	// Create production release target
+	prodRT := &oapi.ReleaseTarget{
+		EnvironmentId: prodEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after the later condition (approval)
 	scope1 := evaluator.EvaluatorScope{
@@ -1319,10 +1426,17 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 
 	// Environment progression is satisfied
 	envProgTime := baseTime.Add(30 * time.Minute)
-	stagingReleaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, stagingEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, stagingEnv.Id, deployment.Id)),
+	
+	// Create staging release targets for each resource
+	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		stagingReleaseTargets[i] = releaseTarget
 	}
 
 	for i, rt := range stagingReleaseTargets {
@@ -1353,7 +1467,13 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 		CreatedAt:     baseTime.Format(time.RFC3339),
 	})
 
-	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+	// Create production release target
+	prodRT := &oapi.ReleaseTarget{
+		EnvironmentId: prodEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
 		Environment:   prodEnv,
@@ -1460,7 +1580,13 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 
 	// Environment progression is NOT satisfied (no jobs in staging)
 
-	prodRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id))
+	// Create production release target
+	prodRT := &oapi.ReleaseTarget{
+		EnvironmentId: prodEnv.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
 		Environment:   prodEnv,
@@ -1545,12 +1671,16 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 		CreatedAt:     approvalTime.Format(time.RFC3339),
 	})
 
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[3].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[4].Id, environment.Id, deployment.Id)),
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
 	}
 
 	// Check all positions at the exact moment approval is satisfied
@@ -1640,12 +1770,16 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 		CreatedAt:     approvalTime.Format(time.RFC3339),
 	})
 
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[3].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[4].Id, environment.Id, deployment.Id)),
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
 	}
 
 	// Time T+0: Only position 0 should be allowed
@@ -1769,9 +1903,20 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 
 	st.Policies.Upsert(ctx, envProgPolicy)
 
+	// Create staging release targets for each resource
+	stagingReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		stagingReleaseTargets[i] = releaseTarget
+	}
+
 	// Create successful staging jobs (all complete at stagingCompletionTime)
-	for i := 0; i < 5; i++ {
-		stagingRT := st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[i].Id, stagingEnv.Id, deployment.Id))
+	for i, stagingRT := range stagingReleaseTargets {
 		release := &oapi.Release{
 			ReleaseTarget: *stagingRT,
 			Version:       *version,
@@ -1790,12 +1935,16 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 		st.Jobs.Upsert(ctx, job)
 	}
 
-	prodReleaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, prodEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, prodEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, prodEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[3].Id, prodEnv.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[4].Id, prodEnv.Id, deployment.Id)),
+	// Create production release targets for each resource
+	prodReleaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: prodEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		prodReleaseTargets[i] = releaseTarget
 	}
 
 	// Check all positions at the exact moment staging completes
