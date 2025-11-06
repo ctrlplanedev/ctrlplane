@@ -191,6 +191,33 @@ func (r *RelationshipRules) GetRelatedEntities(
 		return nil, err
 	}
 
+	fromRelations, err := r.collectFromRelations(ctx, fromRules, entity)
+	if err != nil {
+		return nil, err
+	}
+
+	toRelations, err := r.collectToRelations(ctx, toRules, entity)
+	if err != nil {
+		return nil, err
+	}
+
+	for ref, relations := range fromRelations {
+		result[ref] = append(result[ref], relations...)
+	}
+
+	for ref, relations := range toRelations {
+		result[ref] = append(result[ref], relations...)
+	}
+
+	return result, nil
+}
+
+func (r *RelationshipRules) collectFromRelations(
+	ctx context.Context,
+	fromRules []*oapi.RelationshipRule,
+	entity *oapi.RelatableEntity,
+) (map[string][]*oapi.EntityRelation, error) {
+	result := make(map[string][]*oapi.EntityRelation)
 	for _, rule := range fromRules {
 		var toEntities []*oapi.RelatableEntity
 		if rule.ToType == oapi.RelatableEntityTypeResource {
@@ -229,7 +256,15 @@ func (r *RelationshipRules) GetRelatedEntities(
 			})
 		}
 	}
+	return result, nil
+}
 
+func (r *RelationshipRules) collectToRelations(
+	ctx context.Context,
+	toRules []*oapi.RelationshipRule,
+	entity *oapi.RelatableEntity,
+) (map[string][]*oapi.EntityRelation, error) {
+	result := make(map[string][]*oapi.EntityRelation)
 	for _, rule := range toRules {
 		var fromEntities []*oapi.RelatableEntity
 		if rule.FromType == oapi.RelatableEntityTypeResource {
@@ -269,7 +304,6 @@ func (r *RelationshipRules) GetRelatedEntities(
 			})
 		}
 	}
-
 	return result, nil
 }
 
