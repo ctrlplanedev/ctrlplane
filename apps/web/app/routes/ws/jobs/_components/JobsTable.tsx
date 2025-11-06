@@ -17,6 +17,7 @@ import { EnvironmentFilter } from "./EnvironmentFilter";
 import { JobActions } from "./JobActions";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { ResourceFilter } from "./ResourceFilter";
+import { VariablesCell } from "./VariablesCell";
 
 type JobsTableProps = {
   jobs: WorkspaceEngine["schemas"]["JobWithRelease"][];
@@ -30,6 +31,7 @@ function JobsTableHeader() {
         <TableHead className="font-medium">Environment</TableHead>
         <TableHead className="font-medium">Resource</TableHead>
         <TableHead className="font-medium">Version</TableHead>
+        <TableHead className="font-medium">Variables</TableHead>
         <TableHead className="font-medium">External ID</TableHead>
         <TableHead className="font-medium">Status</TableHead>
         <TableHead className="font-medium">Links</TableHead>
@@ -92,6 +94,7 @@ function JobsTableRow({
       <TableCell className="font-mono  font-medium">
         {release.version.name || release.version.tag}
       </TableCell>
+      <VariablesCell jobWithRelease={jobWithRelease} />
       <TableCell className="font-mono  font-medium">
         {job.externalId ?? <span className="text-muted-foreground">—</span>}
       </TableCell>
