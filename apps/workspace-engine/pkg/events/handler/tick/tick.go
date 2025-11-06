@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/workspace"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -47,12 +45,6 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		attribute.String("event.type", string(event.EventType)),
 	)
 
-	changeSet, ok := changeset.FromContext[any](ctx)
-	if !ok {
-		span.SetStatus(codes.Error, "changeset not found in context")
-		return nil
-	}
-
 	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		span.RecordError(err)
@@ -60,18 +52,9 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		return err
 	}
 
-	// Mark all release targets as tainted to trigger re-evaluation
-	taintedCount := 0
 	for _, rt := range releaseTargets {
-		changeSet.Record(changeset.ChangeTypeTaint, rt)
-		taintedCount++
+		ws.Changeset().RecordUpsert(rt)
 	}
-
-	span.SetAttributes(attribute.Int("release_targets.tainted", taintedCount))
-
-	log.Debug("Workspace tick processed",
-		"workspaceID", ws.ID,
-		"tainted_count", taintedCount)
 
 	span.SetStatus(codes.Ok, "tick processed")
 	return nil
