@@ -753,3 +753,570 @@ func BenchmarkEvaluate_10ReferenceVariables_2Rules_VaryingResourceCount(b *testi
 	}
 }
 
+// BenchmarkEvaluate_NxM_AmplifiedScaling demonstrates the N×M scaling problem
+// This benchmark should take ~1 second to show the catastrophic scaling issue
+func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
+	ctx := context.Background()
+	workspaceID := "bench-workspace-" + uuid.New().String()
+	cs := statechange.NewChangeSet[any]()
+	st := store.New(workspaceID, cs)
+
+	systemID := uuid.New().String()
+	environmentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	// Create deployment
+	deployment := createBenchDeployment(systemID, deploymentID, "main-deployment")
+	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+		b.Fatalf("Failed to create deployment: %v", err)
+	}
+
+	// Create a realistic production scenario:
+	// - 3,000 resources (typical mid-size deployment)
+	// - 300 release targets (all services in the deployment)
+	// - 30 reference variables (realistic for a complex app with multiple DBs, caches, queues, etc.)
+	numResources := 100
+	numTargets := 300
+	numReferenceVariables := 30
+
+	numServices := int(float64(numResources) * 0.7)   // 70% services
+	numDatabases := int(float64(numResources) * 0.15) // 15% databases
+	numCaches := int(float64(numResources) * 0.10)    // 10% caches
+	numQueues := numResources - numServices - numDatabases - numCaches
+
+	serviceIDs := make([]string, 0, numServices)
+
+	// Create service resources
+	for i := 0; i < numServices; i++ {
+		resourceID := uuid.New().String()
+		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("service-%d", i))
+		resource.Kind = "service"
+		resource.Metadata["service_type"] = "web"
+		resource.Metadata["db_id"] = fmt.Sprintf("db-%d", i%numDatabases)
+		resource.Metadata["cache_id"] = fmt.Sprintf("cache-%d", i%numCaches)
+		resource.Metadata["queue_id"] = fmt.Sprintf("queue-%d", i%numQueues)
+		if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+			b.Fatalf("Failed to create service resource: %v", err)
+		}
+		serviceIDs = append(serviceIDs, resourceID)
+	}
+
+	// Create database resources
+	for i := 0; i < numDatabases; i++ {
+		resourceID := uuid.New().String()
+		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("database-%d", i))
+		resource.Kind = "database"
+		resource.Metadata["host"] = fmt.Sprintf("db-%d.example.com", i)
+		resource.Metadata["port"] = "5432"
+		resource.Metadata["connection_string"] = fmt.Sprintf("postgresql://db-%d.example.com:5432/mydb", i)
+		resource.Metadata["read_replica_host"] = fmt.Sprintf("db-%d-replica.example.com", i)
+		if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+			b.Fatalf("Failed to create database resource: %v", err)
+		}
+	}
+
+	// Create cache resources (Redis, Memcached, etc.)
+	for i := 0; i < numCaches; i++ {
+		resourceID := uuid.New().String()
+		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("cache-%d", i))
+		resource.Kind = "cache"
+		resource.Metadata["cache_id"] = fmt.Sprintf("cache-%d", i)
+		resource.Metadata["host"] = fmt.Sprintf("cache-%d.example.com", i)
+		resource.Metadata["port"] = "6379"
+		if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+			b.Fatalf("Failed to create cache resource: %v", err)
+		}
+	}
+
+	// Create queue resources (SQS, RabbitMQ, etc.)
+	for i := 0; i < numQueues; i++ {
+		resourceID := uuid.New().String()
+		resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("queue-%d", i))
+		resource.Kind = "queue"
+		resource.Metadata["queue_id"] = fmt.Sprintf("queue-%d", i)
+		resource.Metadata["url"] = fmt.Sprintf("https://queue-%d.example.com", i)
+		if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+			b.Fatalf("Failed to create queue resource: %v", err)
+		}
+	}
+
+	// Create relationship rules - service -> database
+	dbRelRuleID := uuid.New().String()
+	dbFromSelector := &oapi.Selector{}
+	_ = dbFromSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]any{
+			"type":     "kind",
+			"operator": "equals",
+			"value":    "service",
+		},
+	})
+	dbToSelector := &oapi.Selector{}
+	_ = dbToSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]any{
+			"type":     "kind",
+			"operator": "equals",
+			"value":    "database",
+		},
+	})
+	dbMatcher := oapi.RelationshipRule_Matcher{}
+	_ = dbMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "db_id"},
+				ToProperty:   []string{"id"},
+				Operator:     oapi.Equals,
+			},
+		},
+	})
+	dbRelRule := &oapi.RelationshipRule{
+		Id:               dbRelRuleID,
+		WorkspaceId:      workspaceID,
+		Name:             "service-to-database",
+		Reference:        "database",
+		FromType:         "resource",
+		ToType:           "resource",
+		RelationshipType: "depends-on",
+		FromSelector:     dbFromSelector,
+		ToSelector:       dbToSelector,
+		Matcher:          dbMatcher,
+		Metadata:         map[string]string{},
+	}
+	st.Relationships.Upsert(ctx, dbRelRule)
+
+	// Create relationship rules - service -> cache
+	cacheRelRuleID := uuid.New().String()
+	cacheFromSelector := &oapi.Selector{}
+	_ = cacheFromSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]any{
+			"type":     "kind",
+			"operator": "equals",
+			"value":    "service",
+		},
+	})
+	cacheToSelector := &oapi.Selector{}
+	_ = cacheToSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]any{
+			"type":     "kind",
+			"operator": "equals",
+			"value":    "cache",
+		},
+	})
+	cacheMatcher := oapi.RelationshipRule_Matcher{}
+	_ = cacheMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "cache_id"},
+				ToProperty:   []string{"metadata", "cache_id"},
+				Operator:     oapi.Equals,
+			},
+		},
+	})
+	cacheRelRule := &oapi.RelationshipRule{
+		Id:               cacheRelRuleID,
+		WorkspaceId:      workspaceID,
+		Name:             "service-to-cache",
+		Reference:        "cache",
+		FromType:         "resource",
+		ToType:           "resource",
+		RelationshipType: "depends-on",
+		FromSelector:     cacheFromSelector,
+		ToSelector:       cacheToSelector,
+		Matcher:          cacheMatcher,
+		Metadata:         map[string]string{},
+	}
+	st.Relationships.Upsert(ctx, cacheRelRule)
+
+	// Create relationship rules - service -> queue
+	queueRelRuleID := uuid.New().String()
+	queueFromSelector := &oapi.Selector{}
+	_ = queueFromSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]any{
+			"type":     "kind",
+			"operator": "equals",
+			"value":    "service",
+		},
+	})
+	queueToSelector := &oapi.Selector{}
+	_ = queueToSelector.FromJsonSelector(oapi.JsonSelector{
+		Json: map[string]any{
+			"type":     "kind",
+			"operator": "equals",
+			"value":    "queue",
+		},
+	})
+	queueMatcher := oapi.RelationshipRule_Matcher{}
+	_ = queueMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "queue_id"},
+				ToProperty:   []string{"metadata", "queue_id"},
+				Operator:     oapi.Equals,
+			},
+		},
+	})
+	queueRelRule := &oapi.RelationshipRule{
+		Id:               queueRelRuleID,
+		WorkspaceId:      workspaceID,
+		Name:             "service-to-queue",
+		Reference:        "queue",
+		FromType:         "resource",
+		ToType:           "resource",
+		RelationshipType: "depends-on",
+		FromSelector:     queueFromSelector,
+		ToSelector:       queueToSelector,
+		Matcher:          queueMatcher,
+		Metadata:         map[string]string{},
+	}
+	st.Relationships.Upsert(ctx, queueRelRule)
+
+	// Create 30 deployment variables that use references
+	// This simulates a complex application with many dependencies
+	referenceConfigs := []struct {
+		key       string
+		reference string
+		path      []string
+	}{
+		// Database variables (10)
+		{"db_host", "database", []string{"metadata", "host"}},
+		{"db_port", "database", []string{"metadata", "port"}},
+		{"db_connection_string", "database", []string{"metadata", "connection_string"}},
+		{"db_read_replica_host", "database", []string{"metadata", "read_replica_host"}},
+		{"db_name", "database", []string{"name"}},
+		{"db_id", "database", []string{"id"}},
+		{"db_region", "database", []string{"metadata", "region"}},
+		{"db_tier", "database", []string{"metadata", "tier"}},
+		{"db_version", "database", []string{"version"}},
+		{"db_identifier", "database", []string{"identifier"}},
+		// Cache variables (10)
+		{"cache_host", "cache", []string{"metadata", "host"}},
+		{"cache_port", "cache", []string{"metadata", "port"}},
+		{"cache_id", "cache", []string{"metadata", "cache_id"}},
+		{"cache_name", "cache", []string{"name"}},
+		{"cache_region", "cache", []string{"metadata", "region"}},
+		{"cache_tier", "cache", []string{"metadata", "tier"}},
+		{"cache_version", "cache", []string{"version"}},
+		{"cache_identifier", "cache", []string{"identifier"}},
+		{"cache_endpoint", "cache", []string{"metadata", "host"}},
+		{"cache_resource_id", "cache", []string{"id"}},
+		// Queue variables (10)
+		{"queue_url", "queue", []string{"metadata", "url"}},
+		{"queue_id", "queue", []string{"metadata", "queue_id"}},
+		{"queue_name", "queue", []string{"name"}},
+		{"queue_region", "queue", []string{"metadata", "region"}},
+		{"queue_tier", "queue", []string{"metadata", "tier"}},
+		{"queue_version", "queue", []string{"version"}},
+		{"queue_identifier", "queue", []string{"identifier"}},
+		{"queue_resource_id", "queue", []string{"id"}},
+		{"queue_arn", "queue", []string{"metadata", "url"}},
+		{"queue_type", "queue", []string{"kind"}},
+	}
+
+	for _, refConfig := range referenceConfigs {
+		varID := uuid.New().String()
+		refValue := &oapi.ReferenceValue{
+			Reference: refConfig.reference,
+			Path:      refConfig.path,
+		}
+		value := &oapi.Value{}
+		_ = value.FromReferenceValue(*refValue)
+
+		deploymentVar := &oapi.DeploymentVariable{
+			Id:           varID,
+			Key:          refConfig.key,
+			DeploymentId: deploymentID,
+		}
+		st.DeploymentVariables.Upsert(ctx, varID, deploymentVar)
+
+		// Add deployment variable value with reference
+		valueID := uuid.New().String()
+		deploymentVarValue := &oapi.DeploymentVariableValue{
+			Id:                   valueID,
+			DeploymentVariableId: varID,
+			Priority:             1,
+			Value:                *value,
+		}
+		st.DeploymentVariableValues.Upsert(ctx, valueID, deploymentVarValue)
+	}
+
+	// Create release targets for the first N services
+	releaseTargets := make([]*oapi.ReleaseTarget, 0, numTargets)
+	if numTargets > len(serviceIDs) {
+		numTargets = len(serviceIDs)
+	}
+	for i := 0; i < numTargets; i++ {
+		releaseTarget := createBenchReleaseTarget(environmentID, deploymentID, serviceIDs[i])
+		releaseTargets = append(releaseTargets, releaseTarget)
+	}
+
+	manager := New(st)
+
+	b.Logf("N×M Amplified Scaling Test:")
+	b.Logf("  Resources: %d (%d services, %d databases, %d caches, %d queues)", 
+		numResources, numServices, numDatabases, numCaches, numQueues)
+	b.Logf("  Release Targets: %d", len(releaseTargets))
+	b.Logf("  Reference Variables per Target: %d", numReferenceVariables)
+	b.Logf("  Total Variable Evaluations per Iteration: %d", len(releaseTargets) * numReferenceVariables)
+	b.Logf("  Expected GetRelatedEntities calls: %d", len(releaseTargets) * numReferenceVariables)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	// This amplifies the N×M issue:
+	// N = 300 targets
+	// M = 30 reference variables per target
+	// = 9,000 GetRelatedEntities calls
+	// Each call scans through ~3,000 resources
+	// = ~27,000,000 resource comparisons per iteration
+	for i := 0; i < b.N; i++ {
+		for _, releaseTarget := range releaseTargets {
+			_, err := manager.Evaluate(ctx, releaseTarget)
+			if err != nil {
+				b.Fatalf("Evaluate failed: %v", err)
+			}
+		}
+	}
+}
+
+// BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario simulates the real production performance issue
+// where many release targets need to be evaluated, each one recomputing relationships from scratch
+func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
+	scenarios := []struct {
+		numResources      int
+		numReleaseTargets int
+	}{
+		{100, 10},
+		{500, 25},
+		{1000, 50},
+		{2000, 100},
+		{5000, 100},
+		{10000, 200},
+	}
+
+	for _, scenario := range scenarios {
+		b.Run(fmt.Sprintf("Resources_%d_Targets_%d", scenario.numResources, scenario.numReleaseTargets), func(b *testing.B) {
+			ctx := context.Background()
+			workspaceID := "bench-workspace-" + uuid.New().String()
+			cs := statechange.NewChangeSet[any]()
+			st := store.New(workspaceID, cs)
+
+			systemID := uuid.New().String()
+			environmentID := uuid.New().String()
+			deploymentID := uuid.New().String()
+
+			// Create deployment
+			deployment := createBenchDeployment(systemID, deploymentID, "main-deployment")
+			if err := st.Deployments.Upsert(ctx, deployment); err != nil {
+				b.Fatalf("Failed to create deployment: %v", err)
+			}
+
+			// Create resources with different types for relationships
+			numServices := int(float64(scenario.numResources) * 0.8)
+			numDatabases := int(float64(scenario.numResources) * 0.1)
+			numVPCs := scenario.numResources - numServices - numDatabases
+
+			serviceIDs := make([]string, 0, numServices)
+
+			// Create service resources (80%)
+			for i := 0; i < numServices; i++ {
+				resourceID := uuid.New().String()
+				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("service-%d", i))
+				resource.Kind = "service"
+				resource.Metadata["service_type"] = "web"
+				resource.Metadata["db_id"] = fmt.Sprintf("db-%d", i%numDatabases)
+				resource.Metadata["vpc_id"] = fmt.Sprintf("vpc-%d", i%numVPCs)
+				if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+					b.Fatalf("Failed to create service resource: %v", err)
+				}
+				serviceIDs = append(serviceIDs, resourceID)
+			}
+
+			// Create database resources (10%)
+			for i := 0; i < numDatabases; i++ {
+				resourceID := uuid.New().String()
+				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("database-%d", i))
+				resource.Kind = "database"
+				resource.Metadata["host"] = fmt.Sprintf("db-%d.example.com", i)
+				resource.Metadata["port"] = "5432"
+				resource.Metadata["connection_string"] = fmt.Sprintf("postgresql://db-%d.example.com:5432/mydb", i)
+				if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+					b.Fatalf("Failed to create database resource: %v", err)
+				}
+			}
+
+			// Create VPC resources (10%)
+			for i := 0; i < numVPCs; i++ {
+				resourceID := uuid.New().String()
+				resource := createBenchResource(workspaceID, resourceID, fmt.Sprintf("vpc-%d", i))
+				resource.Kind = "vpc"
+				resource.Metadata["vpc_id"] = fmt.Sprintf("vpc-%d", i)
+				resource.Metadata["cidr"] = fmt.Sprintf("10.%d.0.0/16", i)
+				resource.Metadata["region"] = "us-west-1"
+				if _, err := st.Resources.Upsert(ctx, resource); err != nil {
+					b.Fatalf("Failed to create VPC resource: %v", err)
+				}
+			}
+
+			// Create relationship rules - service -> database
+			dbRelRuleID := uuid.New().String()
+			dbFromSelector := &oapi.Selector{}
+			_ = dbFromSelector.FromJsonSelector(oapi.JsonSelector{
+				Json: map[string]any{
+					"type":     "kind",
+					"operator": "equals",
+					"value":    "service",
+				},
+			})
+			dbToSelector := &oapi.Selector{}
+			_ = dbToSelector.FromJsonSelector(oapi.JsonSelector{
+				Json: map[string]any{
+					"type":     "kind",
+					"operator": "equals",
+					"value":    "database",
+				},
+			})
+			dbMatcher := oapi.RelationshipRule_Matcher{}
+			_ = dbMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+				Properties: []oapi.PropertyMatcher{
+					{
+						FromProperty: []string{"metadata", "db_id"},
+						ToProperty:   []string{"id"},
+						Operator:     oapi.Equals,
+					},
+				},
+			})
+			dbRelRule := &oapi.RelationshipRule{
+				Id:               dbRelRuleID,
+				WorkspaceId:      workspaceID,
+				Name:             "service-to-database",
+				Reference:        "database",
+				FromType:         "resource",
+				ToType:           "resource",
+				RelationshipType: "depends-on",
+				FromSelector:     dbFromSelector,
+				ToSelector:       dbToSelector,
+				Matcher:          dbMatcher,
+				Metadata:         map[string]string{},
+			}
+			st.Relationships.Upsert(ctx, dbRelRule)
+
+			// Create relationship rules - service -> vpc
+			vpcRelRuleID := uuid.New().String()
+			vpcFromSelector := &oapi.Selector{}
+			_ = vpcFromSelector.FromJsonSelector(oapi.JsonSelector{
+				Json: map[string]any{
+					"type":     "kind",
+					"operator": "equals",
+					"value":    "service",
+				},
+			})
+			vpcToSelector := &oapi.Selector{}
+			_ = vpcToSelector.FromJsonSelector(oapi.JsonSelector{
+				Json: map[string]any{
+					"type":     "kind",
+					"operator": "equals",
+					"value":    "vpc",
+				},
+			})
+			vpcMatcher := oapi.RelationshipRule_Matcher{}
+			_ = vpcMatcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+				Properties: []oapi.PropertyMatcher{
+					{
+						FromProperty: []string{"metadata", "vpc_id"},
+						ToProperty:   []string{"metadata", "vpc_id"},
+						Operator:     oapi.Equals,
+					},
+				},
+			})
+			vpcRelRule := &oapi.RelationshipRule{
+				Id:               vpcRelRuleID,
+				WorkspaceId:      workspaceID,
+				Name:             "service-to-vpc",
+				Reference:        "vpc",
+				FromType:         "resource",
+				ToType:           "resource",
+				RelationshipType: "depends-on",
+				FromSelector:     vpcFromSelector,
+				ToSelector:       vpcToSelector,
+				Matcher:          vpcMatcher,
+				Metadata:         map[string]string{},
+			}
+			st.Relationships.Upsert(ctx, vpcRelRule)
+
+			// Create 10 deployment variables that use references
+			referenceConfigs := []struct {
+				key       string
+				reference string
+				path      []string
+			}{
+				{"db_host", "database", []string{"metadata", "host"}},
+				{"db_port", "database", []string{"metadata", "port"}},
+				{"db_connection_string", "database", []string{"metadata", "connection_string"}},
+				{"db_name", "database", []string{"name"}},
+				{"db_id", "database", []string{"id"}},
+				{"vpc_id", "vpc", []string{"metadata", "vpc_id"}},
+				{"vpc_cidr", "vpc", []string{"metadata", "cidr"}},
+				{"vpc_name", "vpc", []string{"name"}},
+				{"vpc_region", "vpc", []string{"metadata", "region"}},
+				{"vpc_resource_id", "vpc", []string{"id"}},
+			}
+
+			for _, refConfig := range referenceConfigs {
+				varID := uuid.New().String()
+				refValue := &oapi.ReferenceValue{
+					Reference: refConfig.reference,
+					Path:      refConfig.path,
+				}
+				value := &oapi.Value{}
+				_ = value.FromReferenceValue(*refValue)
+
+				deploymentVar := &oapi.DeploymentVariable{
+					Id:           varID,
+					Key:          refConfig.key,
+					DeploymentId: deploymentID,
+				}
+				st.DeploymentVariables.Upsert(ctx, varID, deploymentVar)
+
+				// Add deployment variable value with reference
+				valueID := uuid.New().String()
+				deploymentVarValue := &oapi.DeploymentVariableValue{
+					Id:                   valueID,
+					DeploymentVariableId: varID,
+					Priority:             1,
+					Value:                *value,
+				}
+				st.DeploymentVariableValues.Upsert(ctx, valueID, deploymentVarValue)
+			}
+
+			// Create multiple release targets (one per service)
+			releaseTargets := make([]*oapi.ReleaseTarget, 0, scenario.numReleaseTargets)
+			numTargets := scenario.numReleaseTargets
+			if numTargets > len(serviceIDs) {
+				numTargets = len(serviceIDs)
+			}
+			for i := 0; i < numTargets; i++ {
+				releaseTarget := createBenchReleaseTarget(environmentID, deploymentID, serviceIDs[i])
+				releaseTargets = append(releaseTargets, releaseTarget)
+			}
+
+			manager := New(st)
+
+			b.Logf("Created %d total resources (%d services, %d databases, %d VPCs), 2 relationship rules, 10 reference variables, %d release targets",
+				scenario.numResources, numServices, numDatabases, numVPCs, len(releaseTargets))
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			// This is the key difference - evaluate MANY release targets per iteration
+			// This simulates what happens in production
+			for b.Loop() {
+				for _, releaseTarget := range releaseTargets {
+					_, err := manager.Evaluate(ctx, releaseTarget)
+					if err != nil {
+						b.Fatalf("Evaluate failed: %v", err)
+					}
+				}
+			}
+		})
+	}
+}
+
