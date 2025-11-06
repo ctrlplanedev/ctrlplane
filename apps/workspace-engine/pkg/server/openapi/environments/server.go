@@ -206,42 +206,52 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 	start := min(offset, total)
 	end := min(start+limit, total)
 
-	releaseTargetsWithState, err := concurrency.ProcessInChunks(
+	// Process each release target, logging errors but continuing with valid ones
+	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
+	skippedCount := 0
+
+	type result struct {
+		item *oapi.ReleaseTargetWithState
+		err  error
+	}
+
+	results, err := concurrency.ProcessInChunks(
 		releaseTargetsList[start:end],
 		50,
 		10, // Max 10 concurrent goroutines
-		func(releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetWithState, error) {
+		func(releaseTarget *oapi.ReleaseTarget) (result, error) {
 			if releaseTarget == nil {
-				return nil, fmt.Errorf("release target is nil")
+				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}
 
 			state, err := ws.ReleaseManager().GetCachedReleaseTargetState(c.Request.Context(), releaseTarget)
 			if err != nil {
-				return nil, fmt.Errorf("error getting release target state: %w", err)
+				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
 			}
 
 			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
 			if !ok {
-				return nil, fmt.Errorf("environment not found for release target")
+				return result{nil, fmt.Errorf("environment not found: environmentId=%s for release target key=%s", releaseTarget.EnvironmentId, releaseTarget.Key())}, nil
 			}
 
 			resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
 			if !ok {
-				return nil, fmt.Errorf("resource not found for release target")
+				return result{nil, fmt.Errorf("resource not found: resourceId=%s for release target key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
 			}
 
 			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
 			if !ok {
-				return nil, fmt.Errorf("deployment not found for release target")
+				return result{nil, fmt.Errorf("deployment not found: deploymentId=%s for release target key=%s", releaseTarget.DeploymentId, releaseTarget.Key())}, nil
 			}
 
-			return &oapi.ReleaseTargetWithState{
+			item := &oapi.ReleaseTargetWithState{
 				ReleaseTarget: *releaseTarget,
 				State:         *state,
 				Environment:   *environment,
 				Resource:      *resource,
 				Deployment:    *deployment,
-			}, nil
+			}
+			return result{item, nil}, nil
 		},
 	)
 
@@ -250,6 +260,25 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 			"error": err.Error(),
 		})
 		return
+	}
+
+	// Filter out results with errors, log them
+	for _, r := range results {
+		if r.err != nil {
+			log.Warn("Skipping invalid release target", "error", r.err.Error())
+			skippedCount++
+			continue
+		}
+		if r.item != nil {
+			releaseTargetsWithState = append(releaseTargetsWithState, r.item)
+		}
+	}
+
+	if skippedCount > 0 {
+		log.Warn("Skipped invalid release targets in GetReleaseTargetsForEnvironment", 
+			"environmentId", environmentId, 
+			"skippedCount", skippedCount,
+			"validCount", len(releaseTargetsWithState))
 	}
 
 	c.JSON(http.StatusOK, gin.H{
