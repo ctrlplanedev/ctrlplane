@@ -40,7 +40,7 @@ export function EnvironmentFilter() {
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-40 items-center justify-start gap-2 px-2"
+          className="w-48 items-center justify-start gap-2 px-2"
         >
           <Filter className="size-4" />
           <span className="truncate">
