@@ -20,7 +20,7 @@ type Jobs struct {
 }
 
 func (j *Jobs) Items() map[string]*oapi.Job {
-	return j.repo.Jobs.Items()
+	return j.repo.Jobs
 }
 
 func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
@@ -37,71 +37,49 @@ func (j *Jobs) Get(id string) (*oapi.Job, bool) {
 	return j.repo.Jobs.Get(id)
 }
 
-func (j *Jobs) Has(id string) bool {
-	return j.repo.Jobs.Has(id)
-}
-
-func (j *Jobs) GetByJobAgentAndExternalId(jobAgentId string, externalId string) (*oapi.Job, bool) {
-	for jobItem := range j.repo.Jobs.IterBuffered() {
-		if jobItem.Val.JobAgentId == jobAgentId &&
-			jobItem.Val.ExternalId != nil &&
-			*jobItem.Val.ExternalId == externalId {
-			return jobItem.Val, true
-		}
-	}
-
-	return nil, false
-}
-
 func (j *Jobs) GetPending() map[string]*oapi.Job {
-	jobs := make(map[string]*oapi.Job, j.repo.Jobs.Count())
-	for jobItem := range j.repo.Jobs.IterBuffered() {
-		if jobItem.Val.Status != oapi.Pending {
+	jobs := make(map[string]*oapi.Job)
+	for _, job := range j.repo.Jobs {
+		if job.Status != oapi.Pending {
 			continue
 		}
-		jobs[jobItem.Key] = jobItem.Val
+		jobs[job.Id] = job
 	}
 	return jobs
 }
 
 func (j *Jobs) GetJobsForAgent(agentId string) map[string]*oapi.Job {
-	jobs := make(map[string]*oapi.Job, j.repo.Jobs.Count())
+	jobs := make(map[string]*oapi.Job)
 
-	for jobItem := range j.repo.Jobs.IterBuffered() {
-		if jobItem.Val.JobAgentId != agentId {
+	for _, job := range j.repo.Jobs {
+		if job.JobAgentId != agentId {
 			continue
 		}
-
-		if jobItem.Val.Status != oapi.Pending {
-			continue
-		}
-
-		jobs[jobItem.Key] = jobItem.Val
+		jobs[job.Id] = job
 	}
-
 	return jobs
 }
 
 func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
-	jobs := make(map[string]*oapi.Job, j.repo.Jobs.Count())
+	jobs := make(map[string]*oapi.Job)
 	if releaseTarget == nil {
 		return jobs
 	}
-	for jobItem := range j.repo.Jobs.IterBuffered() {
-		release, ok := j.repo.Releases.Get(jobItem.Val.ReleaseId)
+	for _, job := range j.repo.Jobs {
+		release, ok := j.repo.Releases.Get(job.ReleaseId)
 		if !ok || release == nil {
 			continue
 		}
 		if release.ReleaseTarget.Key() != releaseTarget.Key() {
 			continue
 		}
-		jobs[jobItem.Key] = jobItem.Val
+		jobs[job.Id] = job
 	}
 	return jobs
 }
 
 func (j *Jobs) GetJobsInProcessingStateForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {
-	jobs := make(map[string]*oapi.Job, j.repo.Jobs.Count())
+	jobs := make(map[string]*oapi.Job)
 	for _, job := range j.GetJobsForReleaseTarget(releaseTarget) {
 		if !job.IsInProcessingState() {
 			continue

@@ -3,222 +3,36 @@ package store
 import (
 	"context"
 	"fmt"
-	"workspace-engine/pkg/changeset"
-	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/store/materialized"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"github.com/charmbracelet/log"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func NewEnvironments(store *Store) *Environments {
 	return &Environments{
-		repo:      store.repo,
-		store:     store,
-		resources: cmap.New[*materialized.MaterializedView[map[string]*oapi.Resource]](),
+		repo:  store.repo,
+		store: store,
 	}
 }
 
 type Environments struct {
 	repo  *repository.InMemoryStore
 	store *Store
-
-	resources cmap.ConcurrentMap[string, *materialized.MaterializedView[map[string]*oapi.Resource]]
 }
 
 func (e *Environments) Items() map[string]*oapi.Environment {
-	envMap := make(map[string]*oapi.Environment)
-	tableName := e.repo.Environments.TableName()
-	query := fmt.Sprintf("SELECT * FROM %s", tableName)
-	environments, err := e.repo.Environments.Query(query)
-	if err != nil {
-		return envMap
-	}
-	for _, environment := range environments {
-		envMap[environment.Id] = environment
-	}
-	return envMap
+	return e.repo.Environments
 }
 
 func (e *Environments) Get(id string) (*oapi.Environment, bool) {
-	tableName := e.repo.Environments.TableName()
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", tableName)
-	environment, err := e.repo.Environments.QueryOne(query, id)
-	if err != nil {
-		return nil, false
-	}
-	return environment, true
-}
-
-func (e *Environments) ForSystem(systemId string) []*oapi.Environment {
-	results, err := e.repo.Environments.Query("SELECT * FROM environments WHERE systemId = ?", systemId)
-	if err != nil {
-		return []*oapi.Environment{}
-	}
-	return results
-}
-
-// ReinitializeMaterializedViews recreates all materialized views after deserialization
-func (e *Environments) ReinitializeMaterializedViews() {
-	for id := range e.Items() {
-		mv := materialized.New(
-			e.environmentResourceRecomputeFunc(id),
-		)
-		e.resources.Set(id, mv)
-	}
-}
-
-// environmentResourceRecomputeFunc returns a function that computes resources for a specific environment
-func (e *Environments) environmentResourceRecomputeFunc(environmentId string) materialized.RecomputeFunc[map[string]*oapi.Resource] {
-	return func(ctx context.Context) (map[string]*oapi.Resource, error) {
-		_, span := tracer.Start(ctx, "environmentResourceRecomputeFunc")
-		defer span.End()
-
-		environment, exists := e.Get(environmentId)
-		if !exists || environment == nil {
-			return nil, fmt.Errorf("environment %s not found", environmentId)
-		}
-
-		// Pre-allocate slice with exact capacity to avoid reallocations
-		resourceCount := e.repo.Resources.Count()
-		repoResources := make([]*oapi.Resource, 0, resourceCount)
-
-		// Use IterCb for more efficient iteration (no channel overhead)
-		e.repo.Resources.IterCb(func(key string, resource *oapi.Resource) {
-			repoResources = append(repoResources, resource)
-		})
-
-		span.SetAttributes(
-			attribute.Int("repo.resource_count", resourceCount),
-			attribute.Int("repo.resources_loaded", len(repoResources)),
-		)
-
-		environmentResources, err := selector.FilterResources(
-			ctx, environment.ResourceSelector, repoResources,
-			selector.WithChunking(100, 10),
-		)
-		if err != nil {
-			span.SetAttributes(
-				attribute.String("environment.resource_selector", fmt.Sprintf("%v", environment.ResourceSelector)),
-			)
-			return nil, fmt.Errorf("failed to filter resources for environment %s: %w", environmentId, err)
-		}
-
-		span.SetAttributes(
-			attribute.Int("environment.matched_resource_count", len(environmentResources)),
-		)
-
-		return environmentResources, nil
-	}
-}
-
-func (e *Environments) HasResource(envId string, resourceId string) bool {
-	mv, ok := e.resources.Get(envId)
-	if !ok {
-		return false
-	}
-
-	_ = mv.WaitRecompute()
-	allResources := mv.Get()
-	if envResources, ok := allResources[resourceId]; ok {
-		return envResources != nil
-	}
-	return false
-}
-
-func (e *Environments) Resources(id string) (map[string]*oapi.Resource, error) {
-	mv, ok := e.resources.Get(id)
-	if !ok {
-		return nil, fmt.Errorf("environment %s not found", id)
-	}
-
-	if err := mv.WaitRecompute(); err != nil && !materialized.IsNotStarted(err) {
-		return nil, err
-	}
-
-	allResources := mv.Get()
-	return allResources, nil
-}
-
-func (e *Environments) RecomputeResources(ctx context.Context, environmentId string) error {
-	mv, ok := e.resources.Get(environmentId)
-	if !ok {
-		return fmt.Errorf("environment %s not found", environmentId)
-	}
-
-	return mv.StartRecompute(ctx)
+	return e.repo.Environments.Get(id)
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
-	previous, _ := e.Get(environment.Id)
-	previousSystemId := ""
-	if previous != nil {
-		previousSystemId = previous.SystemId
-	}
-
-	if environment.ResourceSelector == nil {
-		environment.ResourceSelector = &oapi.Selector{}
-		environment.ResourceSelector.FromCelSelector(oapi.CelSelector{
-			Cel: "false",
-		})
-	}
-
-	// Store the environment in the repository
-	err := e.repo.Environments.Insert(environment)
-	if err != nil {
-		log.Error("Failed to upsert environment", "error", err)
-	}
-
-	// e.repo.Environments.Set(environment.Id, environment)
-
-	e.store.Systems.ApplyEnvironmentUpdate(ctx, previousSystemId, environment)
-
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, environment)
-	}
-
+	e.repo.Environments.Set(environment.Id, environment)
 	e.store.changeset.RecordUpsert(environment)
 
-	// Create materialized view with immediate computation of environment resources
-	mv := materialized.New(
-		e.environmentResourceRecomputeFunc(environment.Id),
-	)
-
-	e.resources.Set(environment.Id, mv)
-
-	e.store.ReleaseTargets.Recompute(ctx)
-	e.store.ReleaseTargets.targets.WaitIfRunning()
-
-	// Invalidate this environment AND all entities that might have relationships to it
-	e.store.Relationships.InvalidateEntityAndPotentialSources(environment.Id, oapi.RelatableEntityTypeEnvironment)
-
 	return nil
-}
-
-// ApplyResourceUpdate applies an incremental update for a single resource.
-// This is more efficient than RecomputeResources when only one resource changed.
-// It checks if the resource matches the environment's selector and updates the cached map accordingly.
-func (e *Environments) ApplyResourceUpsert(ctx context.Context, resource *oapi.Resource) []*oapi.Environment {
-	addedTo := []*oapi.Environment{}
-	for _, environment := range e.Items() {
-		mv, ok := e.resources.Get(environment.Id)
-		if !ok {
-			continue
-		}
-		_ = mv.ApplyUpdate(func(current map[string]*oapi.Resource) (map[string]*oapi.Resource, error) {
-			ok, err := selector.Match(ctx, environment.ResourceSelector, resource)
-			if err != nil || !ok {
-				return current, err
-			}
-			current[resource.Id] = resource
-			addedTo = append(addedTo, environment)
-			return current, nil
-		})
-	}
-	return addedTo
 }
 
 func (e *Environments) Remove(ctx context.Context, id string) {
@@ -227,21 +41,44 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 		return
 	}
 
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, env)
-	}
-
+	e.repo.Environments.Remove(id)
 	e.store.changeset.RecordDelete(env)
+}
 
-	err := e.repo.Environments.DeleteOne("id = ?", id)
-	if err != nil {
-		log.Error("Failed to remove environment", "id", id, "error", err)
+func (e *Environments) Resources(ctx context.Context, environmentId string) ([]*oapi.Resource, error) {
+	environment, ok := e.Get(environmentId)
+	if !ok {
+		return nil, fmt.Errorf("environment %s not found", environmentId)
 	}
-	// e.repo.Environments.Remove(id)
-	e.resources.Remove(id)
 
-	e.store.ReleaseTargets.Recompute(ctx)
+	allResourcesSlice := make([]*oapi.Resource, 0)
+	for _, resource := range e.store.Resources.Items() {
+		allResourcesSlice = append(allResourcesSlice, resource)
+	}
 
-	// Invalidate this environment AND all entities that might have had relationships to it
-	e.store.Relationships.InvalidateEntityAndPotentialSources(id, oapi.RelatableEntityTypeEnvironment)
+	resources, err := selector.FilterResources(ctx, environment.ResourceSelector, allResourcesSlice)
+	if err != nil {
+		return nil, err
+	}
+
+	resourcesSlice := make([]*oapi.Resource, 0, len(resources))
+	for _, resource := range resources {
+		resourcesSlice = append(resourcesSlice, resource)
+	}
+
+	return resourcesSlice, nil
+}
+
+func (e *Environments) ForResource(ctx context.Context, resource *oapi.Resource) ([]*oapi.Environment, error) {
+	environments := make([]*oapi.Environment, 0)
+	for _, environment := range e.Items() {
+		matched, err := selector.Match(ctx, environment.ResourceSelector, resource)
+		if err != nil {
+			return nil, err
+		}
+		if matched {
+			environments = append(environments, environment)
+		}
+	}
+	return environments, nil
 }

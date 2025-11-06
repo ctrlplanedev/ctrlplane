@@ -53,6 +53,23 @@ func HandleSystemDeleted(
 		return err
 	}
 
+	deployments := ws.Systems().Deployments(system.Id)
+	environments := ws.Systems().Environments(system.Id)
+	releaseTargets, err := ws.ReleaseTargets().GetForSystem(ctx, system.Id)
+	if err != nil {
+		return err
+	}
+
+	for _, deployment := range deployments {
+		ws.Deployments().Remove(ctx, deployment.Id)
+	}
+	for _, environment := range environments {
+		ws.Environments().Remove(ctx, environment.Id)
+	}
+	for _, releaseTarget := range releaseTargets {
+		ws.ReleaseTargets().Remove(releaseTarget.Key())
+	}
+
 	ws.Systems().Remove(ctx, system.Id)
 
 	return nil

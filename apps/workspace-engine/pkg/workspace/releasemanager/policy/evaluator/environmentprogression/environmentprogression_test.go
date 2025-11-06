@@ -160,6 +160,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -369,16 +370,21 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
+
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+
 	stagingReleaseTarget3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -426,7 +432,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	st.Resources.Upsert(ctx, resource3)
 	// ReleaseTargets are computed automatically from resources and deployments
 	// Call Items() to ensure ReleaseTargets are computed and available
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
 
 	// Create successful jobs with specific timestamps
@@ -527,6 +533,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -609,11 +616,14 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
+
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget1,
@@ -736,16 +746,21 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
+
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+
 	stagingReleaseTarget3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget1,
@@ -791,7 +806,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	st.Resources.Upsert(ctx, resource3)
 	// ReleaseTargets are computed automatically from resources and deployments
 	// Call Items() to ensure ReleaseTargets are computed and available
-	_, err := st.ReleaseTargets.Items(ctx)
+	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
 
 	// Job 1 completes early (most recent success for soak time)

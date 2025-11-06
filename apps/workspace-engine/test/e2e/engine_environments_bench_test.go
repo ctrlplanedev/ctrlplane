@@ -194,7 +194,7 @@ func benchmarkEnvironmentsResources(b *testing.B, numResources int) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		resources, err := engine.Workspace().Environments().Resources(envID)
+		resources, err := engine.Workspace().Environments().Resources(ctx, envID)
 		if err != nil {
 			b.Fatalf("Failed to get resources: %v", err)
 		}
@@ -238,7 +238,18 @@ func BenchmarkEnvironments_HasResource(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		has := engine.Workspace().Environments().HasResource(envID, resourceID)
+		has := false
+		resources, err := engine.Workspace().Environments().Resources(ctx, envID)
+		if err != nil {
+			b.Fatalf("Failed to get resources: %v", err)
+		}
+		for _, resource := range resources {
+			if resource.Id == resourceID {
+				has = true
+				break
+			}
+		}
+
 		if !has {
 			b.Fatal("Resource should be in environment")
 		}
@@ -298,7 +309,7 @@ func benchmarkEnvironmentsRecomputeResources(b *testing.B, numResources int) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		err := engine.Workspace().Environments().RecomputeResources(ctx, envID)
+		_, err := engine.Workspace().Environments().Resources(ctx, envID)
 		if err != nil {
 			b.Fatalf("Failed to recompute resources: %v", err)
 		}
@@ -401,7 +412,7 @@ func BenchmarkEnvironments_MultipleResourceSelectors(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Query resources for each environment
 		for _, envID := range envIDs {
-			resources, err := engine.Workspace().Environments().Resources(envID)
+			resources, err := engine.Workspace().Environments().Resources(ctx, envID)
 			if err != nil {
 				b.Fatalf("Failed to get resources: %v", err)
 			}
@@ -446,7 +457,7 @@ func BenchmarkEnvironments_ConcurrentAccess(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			// Mix of different operations
-			resources, err := engine.Workspace().Environments().Resources(envID)
+			resources, err := engine.Workspace().Environments().Resources(ctx, envID)
 			if err != nil {
 				b.Errorf("Failed to get resources: %v", err)
 			}
@@ -539,7 +550,7 @@ func BenchmarkEnvironments_LargeScale(b *testing.B) {
 	environments := engine.Workspace().Environments().Items()
 	b.Logf("=== Benchmark Environment Statistics ===")
 	b.Logf("Environments: %d", len(environments))
-	b.Logf("Resources: %d", engine.Workspace().Store().Repo().Resources.Count())
+	b.Logf("Resources: %d", len(engine.Workspace().Store().Repo().Resources))
 	b.Logf("========================================")
 
 	b.ResetTimer()
@@ -554,7 +565,7 @@ func BenchmarkEnvironments_LargeScale(b *testing.B) {
 
 		// Test getting resources for a random environment
 		envIdx := i % len(envIDs)
-		resources, err := engine.Workspace().Environments().Resources(envIDs[envIdx])
+		resources, err := engine.Workspace().Environments().Resources(ctx, envIDs[envIdx])
 		if err != nil {
 			b.Fatalf("Failed to get resources: %v", err)
 		}
@@ -623,7 +634,7 @@ func benchmarkEnvironmentsResourceSelector(b *testing.B, selector string, numRes
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		resources, err := engine.Workspace().Environments().Resources(envID)
+		resources, err := engine.Workspace().Environments().Resources(ctx, envID)
 		if err != nil {
 			b.Fatalf("Failed to get resources: %v", err)
 		}

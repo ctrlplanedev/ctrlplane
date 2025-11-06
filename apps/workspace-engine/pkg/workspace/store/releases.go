@@ -29,16 +29,12 @@ func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
 	return nil
 }
 
-func (r *Releases) Has(id string) bool {
-	return r.repo.Releases.Has(id)
-}
-
 func (r *Releases) Get(id string) (*oapi.Release, bool) {
 	return r.repo.Releases.Get(id)
 }
 
 func (r *Releases) Items() map[string]*oapi.Release {
-	return r.repo.Releases.Items()
+	return r.repo.Releases
 }
 
 func (r *Releases) Remove(ctx context.Context, id string) {
@@ -48,20 +44,16 @@ func (r *Releases) Remove(ctx context.Context, id string) {
 	}
 
 	r.repo.Releases.Remove(id)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, release)
-	}
-
 	r.store.changeset.RecordDelete(release)
 }
 
 func (r *Releases) Jobs(releaseId string) map[string]*oapi.Job {
-	jobs := make(map[string]*oapi.Job, r.repo.Jobs.Count())
-	for jobItem := range r.repo.Jobs.IterBuffered() {
-		if jobItem.Val.ReleaseId != releaseId {
+	jobs := make(map[string]*oapi.Job)
+	for _, job := range r.repo.Jobs {
+		if job.ReleaseId != releaseId {
 			continue
 		}
-		jobs[jobItem.Key] = jobItem.Val
+		jobs[job.Id] = job
 	}
 	return jobs
 }

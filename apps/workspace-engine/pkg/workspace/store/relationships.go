@@ -2,39 +2,31 @@ package store
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strings"
 	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships/relationgraph"
+	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
-
-var relationshipsTracer = otel.Tracer("workspace.store.relationships")
 
 type StoreEntityProvider struct {
 	store *Store
 }
 
 func (s *StoreEntityProvider) GetResources() map[string]*oapi.Resource {
-	return s.store.repo.Resources.Items()
+	return s.store.repo.Resources
 }
 
 func (s *StoreEntityProvider) GetDeployments() map[string]*oapi.Deployment {
-	return s.store.repo.Deployments.Items()
+	return s.store.repo.Deployments
 }
 
 func (s *StoreEntityProvider) GetEnvironments() map[string]*oapi.Environment {
-	return s.store.Environments.Items()
+	return s.store.repo.Environments
 }
 
 func (s *StoreEntityProvider) GetRelationshipRules() map[string]*oapi.RelationshipRule {
-	return s.store.repo.RelationshipRules.Items()
+	return s.store.repo.RelationshipRules
 }
 
 func (s *StoreEntityProvider) GetRelationshipRule(reference string) (*oapi.RelationshipRule, bool) {
@@ -42,19 +34,15 @@ func (s *StoreEntityProvider) GetRelationshipRule(reference string) (*oapi.Relat
 }
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
-	graph := relationgraph.NewGraph(&StoreEntityProvider{store: store})
 	return &RelationshipRules{
 		repo:  store.repo,
 		store: store,
-		graph: graph,
 	}
 }
 
 type RelationshipRules struct {
 	repo  *repository.InMemoryStore
 	store *Store
-
-	graph *relationgraph.Graph
 }
 
 func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.RelationshipRule) error {
@@ -64,17 +52,12 @@ func (r *RelationshipRules) Upsert(ctx context.Context, relationship *oapi.Relat
 	}
 
 	r.store.changeset.RecordUpsert(relationship)
-	r.graph.InvalidateRule(relationship.Reference)
 
 	return nil
 }
 
 func (r *RelationshipRules) Get(id string) (*oapi.RelationshipRule, bool) {
 	return r.repo.RelationshipRules.Get(id)
-}
-
-func (r *RelationshipRules) Has(id string) bool {
-	return r.repo.RelationshipRules.Has(id)
 }
 
 func (r *RelationshipRules) Remove(ctx context.Context, id string) error {
@@ -84,89 +67,381 @@ func (r *RelationshipRules) Remove(ctx context.Context, id string) error {
 	}
 
 	r.repo.RelationshipRules.Remove(id)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, relationship)
-	}
-
 	r.store.changeset.RecordDelete(relationship)
-
-	r.graph.InvalidateRule(relationship.Reference)
 
 	return nil
 }
 
 func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
-	return r.repo.RelationshipRules.Items()
+	return r.repo.RelationshipRules
 }
 
-// InvalidateEntity clears the cached relationships for a specific entity
-// This is useful when entities are modified in ways that might affect their relationships
-func (r *RelationshipRules) InvalidateEntity(entityID string) {
-	r.graph.InvalidateEntity(entityID)
+func (r *RelationshipRules) matchesSelector(
+	ctx context.Context,
+	targetType oapi.RelatableEntityType,
+	targetSelector *oapi.Selector,
+	entity *oapi.RelatableEntity,
+) (bool, error) {
+	if targetType != entity.GetType() {
+		return false, nil
+	}
+	if targetSelector == nil {
+		return true, nil
+	}
+	return selector.Match(ctx, targetSelector, entity.Item())
 }
 
-// InvalidateEntityAndPotentialSources invalidates an entity and all entities that might have relationships to it.
-// This should be called when an entity is created or updated, as it may become a new target in existing relationships.
-func (r *RelationshipRules) InvalidateEntityAndPotentialSources(entityID string, entityType oapi.RelatableEntityType) {
-	// Always invalidate the entity itself
-	r.graph.InvalidateEntity(entityID)
+func (r *RelationshipRules) collectFromRules(
+	ctx context.Context,
+	allRules map[string]*oapi.RelationshipRule,
+	entity *oapi.RelatableEntity,
+) ([]*oapi.RelationshipRule, error) {
+	entityType := entity.GetType()
+	var rules []*oapi.RelationshipRule
+	for _, rule := range allRules {
+		if rule.FromType != entityType {
+			continue
+		}
+		if rule.FromSelector == nil {
+			rules = append(rules, rule)
+			continue
+		}
+		matched, err := r.matchesSelector(ctx, rule.FromType, rule.FromSelector, entity)
+		if err != nil {
+			return nil, err
+		}
+		if !matched {
+			continue
+		}
+		rules = append(rules, rule)
+	}
+	return rules, nil
+}
 
-	// Find all rules where this entity type could be a target
-	// For each such rule, we need to invalidate entities of the FromType
-	// since they might now have new relationships to this entity
-	for _, rule := range r.repo.RelationshipRules.Items() {
+func (r *RelationshipRules) collectToRules(
+	ctx context.Context,
+	allRules map[string]*oapi.RelationshipRule,
+	entity *oapi.RelatableEntity,
+) ([]*oapi.RelationshipRule, error) {
+	entityType := entity.GetType()
+	var rules []*oapi.RelationshipRule
+	for _, rule := range allRules {
 		if rule.ToType != entityType {
 			continue
 		}
-
-		// This rule could create relationships TO our entity
-		// Invalidate all entities of the FromType since their relationships may have changed
-		// We use InvalidateByType to efficiently clear all entities of that type
-		r.InvalidateEntitiesByType(rule.FromType)
+		if rule.ToSelector == nil {
+			rules = append(rules, rule)
+			continue
+		}
+		matched, err := r.matchesSelector(ctx, rule.ToType, rule.ToSelector, entity)
+		if err != nil {
+			return nil, err
+		}
+		if !matched {
+			continue
+		}
+		rules = append(rules, rule)
 	}
+	return rules, nil
 }
 
-// InvalidateEntitiesByType invalidates all entities of a specific type
-// This is used when a new potential target is added to ensure all sources recompute
-func (r *RelationshipRules) InvalidateEntitiesByType(entityType oapi.RelatableEntityType) {
-	switch entityType {
-	case oapi.RelatableEntityTypeResource:
-		for id := range r.store.repo.Resources.Items() {
-			r.graph.InvalidateEntity(id)
-		}
-	case oapi.RelatableEntityTypeDeployment:
-		for id := range r.store.repo.Deployments.Items() {
-			r.graph.InvalidateEntity(id)
-		}
-	case oapi.RelatableEntityTypeEnvironment:
-		for id := range r.store.Environments.Items() {
-			r.graph.InvalidateEntity(id)
-		}
+func (r *RelationshipRules) getAllResources() []*oapi.Resource {
+	resources := r.store.Resources.Items()
+	resourceSlice := make([]*oapi.Resource, 0, len(resources))
+	for _, resource := range resources {
+		resourceSlice = append(resourceSlice, resource)
 	}
+	return resourceSlice
 }
 
-func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi.RelatableEntity) (map[string][]*oapi.EntityRelation, error) {
-	ctx, span := relationshipsTracer.Start(ctx, "GetRelatedEntities")
-	defer span.End()
+func (r *RelationshipRules) getAllDeployments() []*oapi.Deployment {
+	deployments := r.store.Deployments.Items()
+	deploymentSlice := make([]*oapi.Deployment, 0, len(deployments))
+	for _, deployment := range deployments {
+		deploymentSlice = append(deploymentSlice, deployment)
+	}
+	return deploymentSlice
+}
 
-	span.SetAttributes(
-		attribute.String("entity.id", entity.GetID()),
-		attribute.String("entity.type", string(entity.GetType())),
-	)
+func (r *RelationshipRules) getAllEnvironments() []*oapi.Environment {
+	environments := r.store.Environments.Items()
+	environmentSlice := make([]*oapi.Environment, 0, len(environments))
+	for _, environment := range environments {
+		environmentSlice = append(environmentSlice, environment)
+	}
+	return environmentSlice
+}
 
-	relatedEntities, err := r.graph.GetRelatedEntitiesWithCompute(ctx, entity.GetID())
+func (r *RelationshipRules) GetRelatedEntities(
+	ctx context.Context,
+	entity *oapi.RelatableEntity,
+) (
+	map[string][]*oapi.EntityRelation,
+	error,
+) {
+	result := make(map[string][]*oapi.EntityRelation)
+
+	allRules := r.repo.RelationshipRules
+	fromRules, err := r.collectFromRules(ctx, allRules, entity)
+	if err != nil {
+		return nil, err
+	}
+	toRules, err := r.collectToRules(ctx, allRules, entity)
 	if err != nil {
 		return nil, err
 	}
 
-	for reference, relations := range relatedEntities {
-		var rels []string
-		for _, relation := range relations {
-			if jsonBytes, err := json.Marshal(relation); err == nil {
-				rels = append(rels, string(jsonBytes))
+	fromRelations, err := r.collectFromRelations(ctx, fromRules, entity)
+	if err != nil {
+		return nil, err
+	}
+
+	toRelations, err := r.collectToRelations(ctx, toRules, entity)
+	if err != nil {
+		return nil, err
+	}
+
+	for ref, relations := range fromRelations {
+		result[ref] = append(result[ref], relations...)
+	}
+
+	for ref, relations := range toRelations {
+		result[ref] = append(result[ref], relations...)
+	}
+
+	return result, nil
+}
+
+func (r *RelationshipRules) collectFromRelations(
+	ctx context.Context,
+	fromRules []*oapi.RelationshipRule,
+	entity *oapi.RelatableEntity,
+) (map[string][]*oapi.EntityRelation, error) {
+	result := make(map[string][]*oapi.EntityRelation)
+	for _, rule := range fromRules {
+		var toEntities []*oapi.RelatableEntity
+		if rule.ToType == oapi.RelatableEntityTypeResource {
+			toResources, err := r.findMatchingResources(ctx, rule, rule.ToSelector, entity, true)
+			if err != nil {
+				return nil, err
+			}
+			toEntities = append(toEntities, toResources...)
+		}
+		if rule.ToType == oapi.RelatableEntityTypeDeployment {
+			toDeployments, err := r.findMatchingDeployments(ctx, rule, rule.ToSelector, entity, true)
+			if err != nil {
+				return nil, err
+			}
+			toEntities = append(toEntities, toDeployments...)
+		}
+		if rule.ToType == oapi.RelatableEntityTypeEnvironment {
+			toEnvironments, err := r.findMatchingEnvironments(ctx, rule, rule.ToSelector, entity, true)
+			if err != nil {
+				return nil, err
+			}
+			toEntities = append(toEntities, toEnvironments...)
+		}
+
+		if len(toEntities) == 0 {
+			continue
+		}
+
+		for _, toEntity := range toEntities {
+			result[rule.Reference] = append(result[rule.Reference], &oapi.EntityRelation{
+				Rule:       *rule,
+				Direction:  oapi.To,
+				EntityType: toEntity.GetType(),
+				EntityId:   toEntity.GetID(),
+				Entity:     *toEntity,
+			})
+		}
+	}
+	return result, nil
+}
+
+func (r *RelationshipRules) collectToRelations(
+	ctx context.Context,
+	toRules []*oapi.RelationshipRule,
+	entity *oapi.RelatableEntity,
+) (map[string][]*oapi.EntityRelation, error) {
+	result := make(map[string][]*oapi.EntityRelation)
+	for _, rule := range toRules {
+		var fromEntities []*oapi.RelatableEntity
+		if rule.FromType == oapi.RelatableEntityTypeResource {
+			fromResources, err := r.findMatchingResources(ctx, rule, rule.FromSelector, entity, false)
+			if err != nil {
+				return nil, err
+			}
+			fromEntities = append(fromEntities, fromResources...)
+		}
+
+		if rule.FromType == oapi.RelatableEntityTypeDeployment {
+			fromDeployments, err := r.findMatchingDeployments(ctx, rule, rule.FromSelector, entity, false)
+			if err != nil {
+				return nil, err
+			}
+			fromEntities = append(fromEntities, fromDeployments...)
+		}
+
+		if rule.FromType == oapi.RelatableEntityTypeEnvironment {
+			fromEnvironments, err := r.findMatchingEnvironments(ctx, rule, rule.FromSelector, entity, false)
+			if err != nil {
+				return nil, err
+			}
+			fromEntities = append(fromEntities, fromEnvironments...)
+		}
+
+		if len(fromEntities) == 0 {
+			continue
+		}
+		for _, fromEntity := range fromEntities {
+			result[rule.Reference] = append(result[rule.Reference], &oapi.EntityRelation{
+				Rule:       *rule,
+				Direction:  oapi.From,
+				EntityType: fromEntity.GetType(),
+				EntityId:   fromEntity.GetID(),
+				Entity:     *fromEntity,
+			})
+		}
+	}
+	return result, nil
+}
+
+func (r *RelationshipRules) findMatchingResources(
+	ctx context.Context,
+	rule *oapi.RelationshipRule,
+	entitySelector *oapi.Selector,
+	sourceEntity *oapi.RelatableEntity,
+	evaluateFromTo bool,
+) ([]*oapi.RelatableEntity, error) {
+	resources := r.getAllResources()
+
+	results := make([]*oapi.RelatableEntity, 0)
+
+	for _, resource := range resources {
+		if sourceEntity.GetType() == oapi.RelatableEntityTypeResource && sourceEntity.GetID() == resource.Id {
+			continue
+		}
+
+		// Check entity selector if provided
+		if entitySelector != nil {
+			matched, err := selector.Match(ctx, entitySelector, resource)
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
 			}
 		}
-		span.AddEvent(fmt.Sprintf("related_entities.reference.%s", reference), trace.WithAttributes(attribute.String("relations", strings.Join(rels, ", "))))
+
+		resourceEntity := relationships.NewResourceEntity(resource)
+
+		// Check matcher rule
+		var matches bool
+		if evaluateFromTo {
+			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, resourceEntity)
+		} else {
+			matches = relationships.Matches(ctx, &rule.Matcher, resourceEntity, sourceEntity)
+		}
+
+		if !matches {
+			continue
+		}
+
+		results = append(results, resourceEntity)
 	}
-	return relatedEntities, nil
+
+	return results, nil
+}
+
+func (r *RelationshipRules) findMatchingEnvironments(
+	ctx context.Context,
+	rule *oapi.RelationshipRule,
+	entitySelector *oapi.Selector,
+	sourceEntity *oapi.RelatableEntity,
+	evaluateFromTo bool,
+) ([]*oapi.RelatableEntity, error) {
+	environments := r.getAllEnvironments()
+
+	results := make([]*oapi.RelatableEntity, 0)
+
+	for _, environment := range environments {
+		if sourceEntity.GetType() == oapi.RelatableEntityTypeEnvironment && sourceEntity.GetID() == environment.Id {
+			continue
+		}
+		// Check entity selector if provided
+		if entitySelector != nil {
+			matched, err := selector.Match(ctx, entitySelector, environment)
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
+			}
+		}
+
+		environmentEntity := relationships.NewEnvironmentEntity(environment)
+
+		// Check matcher rule
+		var matches bool
+		if evaluateFromTo {
+			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, environmentEntity)
+		} else {
+			matches = relationships.Matches(ctx, &rule.Matcher, environmentEntity, sourceEntity)
+		}
+
+		if !matches {
+			continue
+		}
+
+		results = append(results, environmentEntity)
+	}
+
+	return results, nil
+}
+
+func (r *RelationshipRules) findMatchingDeployments(
+	ctx context.Context,
+	rule *oapi.RelationshipRule,
+	entitySelector *oapi.Selector,
+	sourceEntity *oapi.RelatableEntity,
+	evaluateFromTo bool,
+) ([]*oapi.RelatableEntity, error) {
+	deployments := r.getAllDeployments()
+
+	results := make([]*oapi.RelatableEntity, 0)
+
+	for _, deployment := range deployments {
+		if sourceEntity.GetType() == oapi.RelatableEntityTypeDeployment && sourceEntity.GetID() == deployment.Id {
+			continue
+		}
+		// Check entity selector if provided
+		if entitySelector != nil {
+			matched, err := selector.Match(ctx, entitySelector, deployment)
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
+			}
+		}
+
+		deploymentEntity := relationships.NewDeploymentEntity(deployment)
+
+		// Check matcher rule
+		var matches bool
+		if evaluateFromTo {
+			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, deploymentEntity)
+		} else {
+			matches = relationships.Matches(ctx, &rule.Matcher, deploymentEntity, sourceEntity)
+		}
+
+		if !matches {
+			continue
+		}
+
+		results = append(results, deploymentEntity)
+	}
+
+	return results, nil
 }

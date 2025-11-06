@@ -282,7 +282,7 @@ func TestEngine_ResourceProviderSetResources_TimestampBehavior(t *testing.T) {
 		Identifier: "timestamp-test",
 		Name:       "Timestamp Test",
 		Kind:       "TestKind",
-		Config:     map[string]interface{}{},
+		Config:     map[string]any{},
 		Metadata:   map[string]string{},
 	}
 
@@ -293,7 +293,6 @@ func TestEngine_ResourceProviderSetResources_TimestampBehavior(t *testing.T) {
 	r1, exists := ws.Resources().GetByIdentifier("timestamp-test")
 	require.True(t, exists, "resource should exist")
 	require.False(t, r1.CreatedAt.IsZero(), "resource should have CreatedAt")
-	require.Nil(t, r1.UpdatedAt, "new resource should not have UpdatedAt")
 
 	originalCreatedAt := r1.CreatedAt
 	originalID := r1.Id

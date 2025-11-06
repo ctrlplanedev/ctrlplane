@@ -231,8 +231,10 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
+	_, ok := testStore.Repo().Resources.Get(resource.Id)
+
 	// Resource should not exist (because Load didn't return it)
-	assert.False(t, testStore.Repo().Resources.Has(resource.Id))
+	assert.False(t, ok)
 }
 
 // TestPersistence_MultipleNamespaces tests isolation between namespaces
@@ -489,7 +491,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().Policies.Get(policy.Id)
 	assert.True(t, ok, "Policy should be restored")
 
-	_, ok = testStore.Repo().JobAgents.Get(jobAgent.Id)
+	_, ok = testStore.JobAgents.Get(jobAgent.Id)
 	assert.True(t, ok, "JobAgent should be restored")
 
 	_, ok = testStore.Repo().Jobs.Get(job.Id)
@@ -664,7 +666,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "DeploymentVersion should be restored")
 	assert.Equal(t, "v1.2.3", restoredVersion.Tag)
 
-	restoredJobAgent, ok := newStore.Repo().JobAgents.Get(jobAgentId)
+	restoredJobAgent, ok := newStore.JobAgents.Get(jobAgentId)
 	require.True(t, ok, "JobAgent should be restored")
 	assert.Equal(t, "k8s-agent", restoredJobAgent.Name)
 
@@ -685,8 +687,14 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "Completed job should be restored")
 	assert.Equal(t, "completed", string(restoredJobCompleted.Status))
 
+	allJobs := newStore.Repo().Jobs
+	count := 0
+	for range allJobs {
+		count++
+	}
+
 	// Verify all jobs are present
-	assert.Equal(t, 3, newStore.Repo().Jobs.Count(), "All 3 jobs should be restored")
+	assert.Equal(t, 3, count, "All 3 jobs should be restored")
 }
 
 // TestPersistence_ConcurrentSaveAndLoad tests thread-safety of persistence operations

@@ -351,7 +351,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 	// Get final statistics
 	allJobs := engine.Workspace().Jobs().Items()
 	resources := engine.Workspace().Resources().Items()
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	deployments := engine.Workspace().Deployments().Items()
 	environments := engine.Workspace().Environments().Items()
 	releases := engine.Workspace().Releases().Items()
@@ -458,7 +458,7 @@ func BenchmarkEngine_LargeScale_Reconcile(b *testing.B) {
 
 	time.Sleep(500 * time.Millisecond)
 
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	b.Logf("Created %d release targets for reconciliation", len(releaseTargets))
 
 	// Benchmark the tick + reconciliation flow

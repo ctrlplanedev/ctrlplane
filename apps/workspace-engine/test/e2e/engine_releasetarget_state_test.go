@@ -47,7 +47,7 @@ func TestEngine_ReleaseTargetState_NoCurrentNoDesired(t *testing.T) {
 	ctx := context.Background()
 
 	// Get the release target
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Get the release target
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -218,7 +218,7 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 	engine.PushEvent(ctx, handler.JobUpdate, job)
 
 	// Get the release target
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -329,7 +329,7 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version2)
 
 	// Get the release target
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -414,7 +414,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Get the release target
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -574,7 +574,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 
 	// Get the release targets
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}
@@ -769,7 +769,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 	engine.PushEvent(ctx, handler.JobUpdate, job3Fresh)
 
 	// Get the release target
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
 	}

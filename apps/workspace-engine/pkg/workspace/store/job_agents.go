@@ -20,7 +20,7 @@ type JobAgents struct {
 }
 
 func (j *JobAgents) Upsert(ctx context.Context, jobAgent *oapi.JobAgent) {
-	j.repo.JobAgents.Set(jobAgent.Id, jobAgent)
+	j.repo.JobAgents[jobAgent.Id] = jobAgent
 
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeUpsert, jobAgent)
@@ -30,16 +30,17 @@ func (j *JobAgents) Upsert(ctx context.Context, jobAgent *oapi.JobAgent) {
 }
 
 func (j *JobAgents) Get(id string) (*oapi.JobAgent, bool) {
-	return j.repo.JobAgents.Get(id)
+	jobAgent, ok := j.repo.JobAgents[id]
+	return jobAgent, ok
 }
 
 func (j *JobAgents) Remove(ctx context.Context, id string) {
-	jobAgent, ok := j.repo.JobAgents.Get(id)
+	jobAgent, ok := j.repo.JobAgents[id]
 	if !ok || jobAgent == nil {
 		return
 	}
 
-	j.repo.JobAgents.Remove(id)
+	delete(j.repo.JobAgents, id)
 
 	if cs, ok := changeset.FromContext[any](ctx); ok {
 		cs.Record(changeset.ChangeTypeDelete, jobAgent)
@@ -49,5 +50,5 @@ func (j *JobAgents) Remove(ctx context.Context, id string) {
 }
 
 func (j *JobAgents) Items() map[string]*oapi.JobAgent {
-	return j.repo.JobAgents.Items()
+	return j.repo.JobAgents
 }

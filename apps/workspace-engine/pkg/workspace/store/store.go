@@ -2,11 +2,11 @@ package store
 
 import (
 	"context"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"github.com/charmbracelet/log"
 )
 
 func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
@@ -69,26 +69,41 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		return err
 	}
 
-	// Reinitialize all materialized views after restore
-	s.Systems.ReinitializeMaterializedViews()
-	s.Environments.ReinitializeMaterializedViews()
-	s.Deployments.ReinitializeMaterializedViews()
-
-	if setStatus != nil {
-		setStatus("Reinitializing materialized views")
-	}
-	if err := s.ReleaseTargets.Recompute(ctx); err != nil {
-		log.Error("Failed to recompute release targets", "error", err)
-		return err
+	// Group deployments by SystemId for O(1) lookup
+	deploymentsBySystem := make(map[string][]*oapi.Deployment)
+	for _, deployment := range s.Deployments.Items() {
+		deploymentsBySystem[deployment.SystemId] = append(deploymentsBySystem[deployment.SystemId], deployment)
 	}
 
-	// if setStatus != nil {
-	// 	setStatus("Building relationships graph")
-	// }
-	// if err := s.Relationships.buildGraph(ctx, setStatus); err != nil {
-	// 	log.Error("Failed to build relationships graph", "error", err)
-	// 	return err
-	// }
+	// Iterate environments, then matching deployments, then resources
+	for _, environment := range s.Environments.Items() {
+		matchingDeployments := deploymentsBySystem[environment.SystemId]
+		if len(matchingDeployments) == 0 {
+			continue
+		}
+
+		// Check environment selector once per resource
+		for _, resource := range s.Resources.Items() {
+			isInEnv, err := selector.Match(ctx, environment.ResourceSelector, resource)
+			if err != nil || !isInEnv {
+				continue
+			}
+
+			// Only check deployment selectors for matching deployments
+			for _, deployment := range matchingDeployments {
+				isInDeployment, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+				if err != nil || !isInDeployment {
+					continue
+				}
+
+				s.ReleaseTargets.Upsert(ctx, &oapi.ReleaseTarget{
+					EnvironmentId: environment.Id,
+					DeploymentId:  deployment.Id,
+					ResourceId:    resource.Id,
+				})
+			}
+		}
+	}
 
 	return nil
 }

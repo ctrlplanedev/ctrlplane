@@ -50,7 +50,7 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
 
 	// Verify release target was created
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -159,7 +159,7 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r3)
 
 	// Verify release targets were created (1 deployment * 2 environments * 3 resources = 6)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -264,7 +264,7 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r3)
 
 	// Verify release targets - should only match prod resources (2)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -333,7 +333,7 @@ func TestEngine_NoJobsCreatedWithoutReleaseTargets(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv1)
 
 	// Verify no release targets exist
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -440,7 +440,7 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1)
 
 	// Verify release target was created
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -512,7 +512,7 @@ func TestEngine_JobCreatedWithInvalidJobAgent(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release target was created
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -658,7 +658,7 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r2)
 
 	// Verify release targets (2 deployments * 1 environment * 2 resources = 4)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -778,7 +778,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceDelete, r1)
 
 	// Verify release target is removed
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -802,7 +802,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	engine.PushEvent(ctx, handler.ResourceCreate, r1Readded)
 
 	// Verify release target is recreated
-	releaseTargets, err = engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err = engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -901,10 +901,8 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 	r1, _ := engine.Workspace().Resources().Get("resource-dev")
 	r2, _ := engine.Workspace().Resources().Get("resource-prod")
 
-	ctx := context.Background()
-
 	// Verify release targets (2 targets: 1 for dev, 1 for prod)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}

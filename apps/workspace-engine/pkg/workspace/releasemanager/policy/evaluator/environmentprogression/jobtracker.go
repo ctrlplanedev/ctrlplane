@@ -15,14 +15,14 @@ import (
 var jobTrackerTracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression/jobtracker")
 
 func getReleaseTargets(ctx context.Context, store *store.Store, version *oapi.DeploymentVersion, environment *oapi.Environment) []*oapi.ReleaseTarget {
-	ctx, span := jobTrackerTracer.Start(ctx, "getReleaseTargets", trace.WithAttributes(
+	_, span := jobTrackerTracer.Start(ctx, "getReleaseTargets", trace.WithAttributes(
 		attribute.String("environment.id", environment.Id),
 		attribute.String("deployment.id", version.DeploymentId),
 		attribute.String("version.id", version.Id),
 	))
 	defer span.End()
 
-	releaseTargets, err := store.ReleaseTargets.Items(ctx)
+	releaseTargets, err := store.ReleaseTargets.Items()
 	if err != nil {
 		return nil
 	}

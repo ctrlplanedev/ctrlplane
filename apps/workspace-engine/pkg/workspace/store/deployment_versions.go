@@ -2,8 +2,6 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/changeset"
-	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -18,20 +16,10 @@ func NewDeploymentVersions(store *Store) *DeploymentVersions {
 type DeploymentVersions struct {
 	repo  *repository.InMemoryStore
 	store *Store
-
-	deployableVersions cmap.ConcurrentMap[string, *oapi.DeploymentVersion]
-}
-
-func (d *DeploymentVersions) IterBuffered() <-chan cmap.Tuple[string, *oapi.DeploymentVersion] {
-	return d.repo.DeploymentVersions.IterBuffered()
-}
-
-func (d *DeploymentVersions) Has(id string) bool {
-	return d.repo.DeploymentVersions.Has(id)
 }
 
 func (d *DeploymentVersions) Items() map[string]*oapi.DeploymentVersion {
-	return d.repo.DeploymentVersions.Items()
+	return d.repo.DeploymentVersions
 }
 
 func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
@@ -40,10 +28,6 @@ func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
 
 func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
 	d.repo.DeploymentVersions.Set(id, version)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, version)
-	}
-
 	d.store.changeset.RecordUpsert(version)
 }
 
@@ -54,11 +38,5 @@ func (d *DeploymentVersions) Remove(ctx context.Context, id string) {
 	}
 
 	d.repo.DeploymentVersions.Remove(id)
-	d.deployableVersions.Remove(id)
-
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, version)
-	}
-
 	d.store.changeset.RecordDelete(version)
 }

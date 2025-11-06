@@ -21,6 +21,14 @@ func HandleResourceVariableCreated(
 
 	ws.ResourceVariables().Upsert(ctx, resourceVariable)
 
+	releaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
+	if err != nil {
+		return err
+	}
+	for _, releaseTarget := range releaseTargets {
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+	}
+
 	return nil
 }
 
@@ -36,6 +44,14 @@ func HandleResourceVariableUpdated(
 
 	ws.ResourceVariables().Upsert(ctx, resourceVariable)
 
+	releaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
+	if err != nil {
+		return err
+	}
+	for _, releaseTarget := range releaseTargets {
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+	}
+
 	return nil
 }
 
@@ -50,6 +66,14 @@ func HandleResourceVariableDeleted(
 	}
 
 	ws.ResourceVariables().Remove(ctx, resourceVariable.ResourceId, resourceVariable.Key)
+
+	releaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
+	if err != nil {
+		return err
+	}
+	for _, releaseTarget := range releaseTargets {
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+	}
 
 	return nil
 }

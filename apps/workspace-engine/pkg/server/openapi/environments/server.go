@@ -101,7 +101,7 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 		return
 	}
 
-	resources, err := ws.Environments().Resources(environmentId)
+	resources, err := ws.Environments().Resources(c.Request.Context(), environmentId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -168,7 +168,7 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 		return
 	}
 
-	releaseTargets, err := ws.ReleaseTargets().Items(c.Request.Context())
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

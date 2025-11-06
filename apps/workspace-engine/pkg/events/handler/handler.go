@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/statechange"
@@ -157,14 +156,10 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return nil, err
 	}
 
-	changeSet := changeset.NewChangeSet[any]()
-
 	ws, err := manager.GetOrLoad(ctx, rawEvent.WorkspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("workspace not found: %s: %w", rawEvent.WorkspaceID, err)
 	}
-
-	ctx = changeset.WithChangeSet(ctx, changeSet)
 
 	if err := handler(ctx, ws, rawEvent); err != nil {
 		span.RecordError(err)
@@ -175,12 +170,10 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return ws, fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
-	releaseTargetChanges, err := ws.ReleaseManager().ProcessChanges(ctx, changeSet)
-	if err != nil {
+	if err := ws.ReleaseManager().ProcessChanges(ctx, ws.Changeset()); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to process target changes")
 		log.Error("Failed to process target changes", "error", err)
-		return ws, fmt.Errorf("failed to process target changes: %w", err)
 	}
 
 	changes := make([]persistence.Change, 0)
@@ -223,8 +216,6 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 	}
 
 	ws.Changeset().Clear()
-
-	span.SetAttributes(attribute.Int("release-target.changed", len(releaseTargetChanges.Keys())))
 
 	span.SetStatus(codes.Ok, "event processed successfully")
 	log.Debug("Successfully processed event",

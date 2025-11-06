@@ -14,6 +14,18 @@ import (
 	"github.com/google/uuid"
 )
 
+func ReleaseTargetFromKey(key string) *ReleaseTarget {
+	parts := strings.Split(key, "-")
+	if len(parts) != 3 {
+		return nil
+	}
+	return &ReleaseTarget{
+		ResourceId:    parts[0],
+		EnvironmentId: parts[1],
+		DeploymentId:  parts[2],
+	}
+}
+
 func (r *Release) ID() string {
 	// Collect relevant fields for deterministic ID
 	var sb strings.Builder

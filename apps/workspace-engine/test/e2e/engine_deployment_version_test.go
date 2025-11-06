@@ -70,7 +70,7 @@ func TestEngine_DeploymentVersionCreatesJobsForAllReleaseTargets(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets: 1 deployment * 2 environments * 3 resources = 6 release targets
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -296,7 +296,7 @@ func TestEngine_MultipleDeploymentsIndependentVersions(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets: 2 deployments * 1 environment * 2 resources = 4
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -461,7 +461,7 @@ func TestEngine_DeploymentVersionWithFilteredReleaseTargets(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify only 2 release targets (matching production tier)
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}
@@ -559,7 +559,7 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 	ctx := context.Background()
 
 	// Verify release targets: 1 deployment * (1 dev env * 2 dev resources + 1 prod env * 3 prod resources) = 5
-	releaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets")
 	}

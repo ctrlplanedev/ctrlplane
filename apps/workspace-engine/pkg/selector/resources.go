@@ -9,9 +9,9 @@ import (
 
 type Selector any
 
-func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.Resource, opts ...FilterOption) (map[string]*oapi.Resource, error) {
+func FilterResources(ctx context.Context, sel *oapi.Selector, resources []*oapi.Resource, _opts ...FilterOption) (map[string]*oapi.Resource, error) {
 	// Use the generic Filter function
-	matchedSlice, err := Filter(ctx, sel, resources, opts...)
+	matchedSlice, err := Filter(ctx, sel, resources)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,35 @@ func WithChunking(chunkSize, maxConcurrency int) FilterOption {
 	}
 }
 
-func Filter[T any](ctx context.Context, sel *oapi.Selector, resources []T, opts ...FilterOption) ([]T, error) {
+// FilterSimple performs raw sequential filtering without any concurrency or optimizations.
+// This is a simplified version of Filter that just does the basic computation.
+func Filter[T any](ctx context.Context, sel *oapi.Selector, resources []T, _opts ...FilterOption) ([]T, error) {
+	// If no selector is provided, return empty slice
+	if sel == nil {
+		return []T{}, nil
+	}
+
+	selector, err := Matchable(ctx, sel)
+	if err != nil {
+		return nil, err
+	}
+
+	matchedResources := make([]T, 0)
+
+	for _, resource := range resources {
+		matched, err := selector.Matches(resource)
+		if err != nil {
+			return nil, err
+		}
+		if matched {
+			matchedResources = append(matchedResources, resource)
+		}
+	}
+
+	return matchedResources, nil
+}
+
+func FilterConcurrent[T any](ctx context.Context, sel *oapi.Selector, resources []T, opts ...FilterOption) ([]T, error) {
 	// If no selector is provided, return empty slice
 	if sel == nil {
 		return []T{}, nil

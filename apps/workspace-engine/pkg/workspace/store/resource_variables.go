@@ -2,8 +2,6 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/changeset"
-	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -20,16 +18,8 @@ type ResourceVariables struct {
 	store *Store
 }
 
-func (r *ResourceVariables) IterBuffered() <-chan cmap.Tuple[string, *oapi.ResourceVariable] {
-	return r.repo.ResourceVariables.IterBuffered()
-}
-
 func (r *ResourceVariables) Upsert(ctx context.Context, resourceVariable *oapi.ResourceVariable) {
 	r.repo.ResourceVariables.Set(resourceVariable.ID(), resourceVariable)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, resourceVariable)
-	}
-
 	r.store.changeset.RecordUpsert(resourceVariable)
 }
 
@@ -44,9 +34,9 @@ func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key s
 	}
 
 	r.repo.ResourceVariables.Remove(resourceId + "-" + key)
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeDelete, resourceVariable)
-	}
-
 	r.store.changeset.RecordDelete(resourceVariable)
+}
+
+func (r *ResourceVariables) Items() map[string]*oapi.ResourceVariable {
+	return r.repo.ResourceVariables
 }

@@ -55,7 +55,7 @@ func getEnvironmentReleaseTargets(releaseTargets []*oapi.ReleaseTarget, environm
 
 func getDeploymentReleaseTargets(c *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	allReleaseTargets, err := ws.ReleaseTargets().Items(c.Request.Context())
+	allReleaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		return nil, err
 	}

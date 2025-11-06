@@ -84,7 +84,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release target was created
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
@@ -320,7 +320,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets were created (2 resources * 1 deployment * 1 environment = 2)
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 2 {
 		t.Fatalf("expected 2 release targets, got %d", len(releaseTargets))
 	}
@@ -481,7 +481,7 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify release targets (3 resources * 1 deployment * 1 environment = 3)
-	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items(ctx)
+	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 3 {
 		t.Fatalf("expected 3 release targets, got %d", len(releaseTargets))
 	}

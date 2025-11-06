@@ -29,12 +29,12 @@ func HasResourceChanges(old, new *oapi.Resource) map[string]bool {
 	for _, change := range changelog {
 		// change.Path is like ["Name"], ["Config", "replicas"], ["Metadata", "env"]
 		fieldPath := convertPathToFieldName(change.Path)
-		
+
 		// Ignore system-managed fields that don't indicate meaningful resource changes
 		if isIgnoredField(fieldPath) {
 			continue
 		}
-		
+
 		if fieldPath != "" {
 			changed[fieldPath] = true
 		}
@@ -48,20 +48,20 @@ func isIgnoredField(fieldPath string) bool {
 	// Ignore timestamp and system-managed fields
 	ignoredFields := []string{
 		"createdat",
-		"updatedat", 
+		"updatedat",
 		"lockedat",
 		"deletedat",
 		"id",
 		"workspaceid",
 		"providerid",
 	}
-	
+
 	for _, ignored := range ignoredFields {
 		if fieldPath == ignored {
 			return true
 		}
 	}
-	
+
 	return false
 }
 

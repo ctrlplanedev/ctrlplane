@@ -18,7 +18,43 @@ import (
 type EntityMapCache map[string]map[string]any
 
 func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *oapi.RelatableEntity, to *oapi.RelatableEntity) bool {
-	return MatchesWithCache(ctx, matcher, from, to, nil)
+	pm, err := matcher.AsPropertiesMatcher()
+
+	if err != nil {
+		log.Warn("failed to get properties matcher", "error", err)
+	}
+
+	if err == nil && len(pm.Properties) > 0 {
+		for _, pm := range pm.Properties {
+			matcher := NewPropertyMatcher(&pm)
+			if !matcher.Evaluate(ctx, from, to) {
+				return false
+			}
+		}
+		return true
+	}
+
+	cm, err := matcher.AsCelMatcher()
+	if err != nil {
+		log.Warn("failed to get cel matcher", "error", err)
+	}
+
+	if err == nil && cm.Cel != "" {
+		matcher, err := NewCelMatcher(&cm)
+		if err != nil {
+			log.Warn("failed to new cel matcher", "error", err)
+			return false
+		}
+
+		// Always convert entities to maps without any cache
+		fromMap, _ := entityToMap(from.Item())
+		toMap, _ := entityToMap(to.Item())
+
+		return matcher.Evaluate(ctx, fromMap, toMap)
+	}
+
+	// No matcher specified - match by selectors only
+	return true
 }
 
 // MatchesWithCache evaluates a matcher with optional cached entity maps for performance

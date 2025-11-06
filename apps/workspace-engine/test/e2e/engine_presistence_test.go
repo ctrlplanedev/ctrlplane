@@ -111,7 +111,7 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	assert.Equal(t, systemID, loadedEnv.SystemId)
 
 	// Verify Resources
-	allResources := ws.Store().Repo().Resources.Items()
+	allResources := ws.Resources().Items()
 	assert.Equal(t, 2, len(allResources), "Should have 2 resources")
 
 	var webServer, dbServer *oapi.Resource
@@ -135,11 +135,11 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	assert.Equal(t, "us-west-2", dbServer.Metadata["region"])
 
 	// Verify entities exist (counts may include other workspace data in global store)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Systems.Count(), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Resources.Count(), 2)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Deployments.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws.Systems().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws.Resources().Items()), 2)
+	assert.GreaterOrEqual(t, len(ws.Deployments().Items()), 1)
 	assert.GreaterOrEqual(t, len(ws.Environments().Items()), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().JobAgents.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws.JobAgents().Items()), 1)
 }
 
 // TestEngine_Persistence_ReleaseTargetsComputation tests that release targets
@@ -204,7 +204,7 @@ func TestEngine_Persistence_ReleaseTargetsComputation(t *testing.T) {
 	workspaceID := engine.Workspace().ID
 
 	// Verify release targets are computed correctly BEFORE persisting
-	initialReleaseTargets, err := engine.Workspace().ReleaseTargets().Items(ctx)
+	initialReleaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(initialReleaseTargets), "Only resource-prod-east should match both selectors initially")
 
@@ -216,12 +216,8 @@ func TestEngine_Persistence_ReleaseTargetsComputation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Get computed release targets (may need to wait for materialized view)
-	releaseTargets, err := ws.ReleaseTargets().Items(ctx)
-	if err != nil {
-		t.Logf("Warning: Could not get release targets immediately after load: %v", err)
-		t.Skip("Skipping release target computation verification due to timing issue")
-		return
-	}
+	releaseTargets, err := ws.ReleaseTargets().Items()
+	assert.NoError(t, err)
 
 	// Should only have 1 release target (resource1 matches both selectors)
 	assert.Equal(t, 1, len(releaseTargets), "Only resource-prod-east should match both selectors")
@@ -295,7 +291,7 @@ func TestEngine_Persistence_ReleasesAndJobs(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify deployment versions were persisted and loaded
-	allVersions := ws.Store().Repo().DeploymentVersions.Items()
+	allVersions := ws.DeploymentVersions().Items()
 	assert.GreaterOrEqual(t, len(allVersions), 1, "At least 1 deployment version should be loaded")
 
 	// Find the version with tag v2.5.0
@@ -311,11 +307,11 @@ func TestEngine_Persistence_ReleasesAndJobs(t *testing.T) {
 	assert.Equal(t, deploymentID, loadedVersion.DeploymentId)
 
 	// Verify jobs were persisted and loaded
-	allJobs := ws.Store().Repo().Jobs.Items()
+	allJobs := ws.Jobs().Items()
 	assert.GreaterOrEqual(t, len(allJobs), 1, "At least 1 job should be loaded")
 
 	// Verify releases were persisted and loaded
-	allReleases := ws.Store().Repo().Releases.Items()
+	allReleases := ws.Releases().Items()
 	assert.GreaterOrEqual(t, len(allReleases), 1, "At least 1 release should be loaded")
 }
 
@@ -400,7 +396,7 @@ func TestEngine_Persistence_ReleaseshipsAndPolicies(t *testing.T) {
 	assert.Equal(t, oapi.RelatableEntityType("deployment"), loadedRelRule.ToType)
 
 	// Verify deployment variables
-	allDeploymentVars := ws.Store().Repo().DeploymentVariables.Items()
+	allDeploymentVars := ws.DeploymentVariables().Items()
 	assert.Equal(t, 1, len(allDeploymentVars), "Should have 1 deployment variable")
 
 	var portVar *oapi.DeploymentVariable
@@ -414,7 +410,7 @@ func TestEngine_Persistence_ReleaseshipsAndPolicies(t *testing.T) {
 	assert.Equal(t, deployment1ID, portVar.DeploymentId)
 
 	// Verify resource variables
-	allResourceVars := ws.Store().Repo().ResourceVariables.Items()
+	allResourceVars := ws.ResourceVariables().Items()
 	assert.Equal(t, 1, len(allResourceVars), "Should have 1 resource variable")
 
 	var configVar *oapi.ResourceVariable
@@ -430,8 +426,8 @@ func TestEngine_Persistence_ReleaseshipsAndPolicies(t *testing.T) {
 	assert.GreaterOrEqual(t, len(ws.Systems().Items()), 1)
 	assert.GreaterOrEqual(t, len(ws.Deployments().Items()), 2)
 	assert.GreaterOrEqual(t, len(ws.Environments().Items()), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().Policies.Count(), 1)
-	assert.GreaterOrEqual(t, ws.Store().Repo().RelationshipRules.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws.Policies().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws.RelationshipRules().Items()), 1)
 }
 
 // TestEngine_Persistence_MultipleWorkspaces tests that multiple workspaces
@@ -490,15 +486,15 @@ func TestEngine_Persistence_MultipleWorkspaces(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify workspace 1 has its entities (may include other workspace data in global store)
-	assert.GreaterOrEqual(t, ws1.Store().Repo().Systems.Count(), 1)
-	assert.GreaterOrEqual(t, ws1.Store().Repo().Resources.Count(), 1)
-	assert.GreaterOrEqual(t, ws1.Store().Repo().Deployments.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws1.Systems().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws1.Resources().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws1.Deployments().Items()), 1)
 
 	loadedSys1, ok := ws1.Systems().Get(sys1ID)
 	require.True(t, ok)
 	assert.Equal(t, "workspace-1-system", loadedSys1.Name)
 
-	allResources1 := ws1.Store().Repo().Resources.Items()
+	allResources1 := ws1.Resources().Items()
 	var res1 *oapi.Resource
 	for _, r := range allResources1 {
 		res1 = r
@@ -508,15 +504,15 @@ func TestEngine_Persistence_MultipleWorkspaces(t *testing.T) {
 	assert.Equal(t, "workspace-1-resource", res1.Name)
 
 	// Verify workspace 2 has its entities (may include other workspace data in global store)
-	assert.GreaterOrEqual(t, ws2.Store().Repo().Systems.Count(), 1)
-	assert.GreaterOrEqual(t, ws2.Store().Repo().Resources.Count(), 1)
-	assert.GreaterOrEqual(t, ws2.Store().Repo().Deployments.Count(), 1)
+	assert.GreaterOrEqual(t, len(ws2.Systems().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws2.Resources().Items()), 1)
+	assert.GreaterOrEqual(t, len(ws2.Deployments().Items()), 1)
 
 	loadedSys2, ok := ws2.Systems().Get(sys2ID)
 	require.True(t, ok)
 	assert.Equal(t, "workspace-2-system", loadedSys2.Name)
 
-	allResources2 := ws2.Store().Repo().Resources.Items()
+	allResources2 := ws2.Resources().Items()
 	var res2 *oapi.Resource
 	for _, r := range allResources2 {
 		res2 = r

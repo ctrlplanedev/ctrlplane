@@ -112,7 +112,7 @@ func (s *ReleaseTargets) GetPoliciesForReleaseTarget(c *gin.Context, workspaceId
 		return
 	}
 
-	releaseTarget := ws.ReleaseTargets().FromId(string(releaseTargetId))
+	releaseTarget := ws.ReleaseTargets().Get(releaseTargetId)
 	if releaseTarget == nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Release target not found",

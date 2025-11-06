@@ -253,7 +253,7 @@ func (e *GradualRolloutEvaluator) getReleaseTargets(
 	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 ) ([]*oapi.ReleaseTarget, error) {
-	targets, err := e.store.ReleaseTargets.Items(ctx)
+	targets, err := e.store.ReleaseTargets.Items()
 	if err != nil {
 		return nil, err
 	}
