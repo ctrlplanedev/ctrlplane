@@ -83,16 +83,21 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt2)
+	
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -209,16 +214,21 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt2)
+	
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt3)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -321,16 +331,21 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt2)
+	
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt3)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -455,6 +470,8 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -557,6 +574,8 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,

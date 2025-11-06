@@ -808,11 +808,6 @@ func TestEngine_VariableChange_ReferencedResourcePropertyChange(t *testing.T) {
 		}
 	}
 
-	if len(newJobs) == 0 {
-		t.Skip("ResourceUpdate does not currently trigger re-evaluation for dependent deployment variables - feature not implemented yet")
-		return
-	}
-
 	newJob := newJobs[0]
 	newRelease, _ := engine.Workspace().Releases().Get(newJob.ReleaseId)
 	newCIDR, _ := newRelease.Variables["vpc_cidr"].AsStringValue()
