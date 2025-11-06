@@ -19,7 +19,7 @@ type Policies struct {
 }
 
 func (p *Policies) Items() map[string]*oapi.Policy {
-	return p.repo.Policies
+	return p.repo.Policies.Items()
 }
 
 func (p *Policies) Get(id string) (*oapi.Policy, bool) {

@@ -19,7 +19,7 @@ type DeploymentVariables struct {
 }
 
 func (d *DeploymentVariables) Items() map[string]*oapi.DeploymentVariable {
-	return d.repo.DeploymentVariables
+	return d.repo.DeploymentVariables.Items()
 }
 
 func (d *DeploymentVariables) Get(id string) (*oapi.DeploymentVariable, bool) {
@@ -42,7 +42,7 @@ func (d *DeploymentVariables) Remove(ctx context.Context, id string) {
 
 func (d *DeploymentVariables) Values(variableId string) map[string]*oapi.DeploymentVariableValue {
 	values := make(map[string]*oapi.DeploymentVariableValue)
-	for _, value := range d.repo.DeploymentVariableValues {
+	for _, value := range d.repo.DeploymentVariableValues.Items() {
 		if value.DeploymentVariableId == variableId {
 			values[value.Id] = value
 		}

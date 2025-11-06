@@ -21,7 +21,7 @@ type Environments struct {
 }
 
 func (e *Environments) Items() map[string]*oapi.Environment {
-	return e.repo.Environments
+	return e.repo.Environments.Items()
 }
 
 func (e *Environments) Get(id string) (*oapi.Environment, bool) {

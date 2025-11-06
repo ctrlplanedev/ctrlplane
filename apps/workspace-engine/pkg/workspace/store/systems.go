@@ -40,12 +40,12 @@ func (s *Systems) Remove(ctx context.Context, id string) {
 }
 
 func (s *Systems) Items() map[string]*oapi.System {
-	return s.repo.Systems
+	return s.repo.Systems.Items()
 }
 
 func (s *Systems) Deployments(systemId string) map[string]*oapi.Deployment {
 	deployments := make(map[string]*oapi.Deployment)
-	for _, deployment := range s.repo.Deployments {
+	for _, deployment := range s.repo.Deployments.Items() {
 		if deployment.SystemId == systemId {
 			deployments[deployment.Id] = deployment
 		}
@@ -55,7 +55,7 @@ func (s *Systems) Deployments(systemId string) map[string]*oapi.Deployment {
 
 func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
 	environments := make(map[string]*oapi.Environment)
-	for _, environment := range s.repo.Environments {
+	for _, environment := range s.repo.Environments.Items() {
 		if environment.SystemId == systemId {
 			environments[environment.Id] = environment
 		}

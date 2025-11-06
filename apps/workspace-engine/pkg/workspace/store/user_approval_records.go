@@ -41,7 +41,7 @@ func (u *UserApprovalRecords) Remove(ctx context.Context, key string) {
 
 func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []string {
 	approvers := make([]string, 0)
-	for _, record := range u.repo.UserApprovalRecords {
+	for _, record := range u.repo.UserApprovalRecords.Items() {
 		if record.VersionId == versionId && record.EnvironmentId == environmentId && record.Status == oapi.ApprovalStatusApproved {
 			approvers = append(approvers, record.UserId)
 		}
@@ -51,7 +51,7 @@ func (u *UserApprovalRecords) GetApprovers(versionId, environmentId string) []st
 
 func (u *UserApprovalRecords) GetApprovalRecords(versionId, environmentId string) []*oapi.UserApprovalRecord {
 	records := make([]*oapi.UserApprovalRecord, 0)
-	for _, record := range u.repo.UserApprovalRecords {
+	for _, record := range u.repo.UserApprovalRecords.Items() {
 		if record.VersionId == versionId && record.EnvironmentId == environmentId && record.Status == oapi.ApprovalStatusApproved {
 			records = append(records, record)
 		}

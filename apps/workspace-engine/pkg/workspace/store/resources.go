@@ -57,11 +57,11 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 }
 
 func (r *Resources) Items() map[string]*oapi.Resource {
-	return r.repo.Resources
+	return r.repo.Resources.Items()
 }
 
 func (r *Resources) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
-	for _, resource := range r.repo.Resources {
+	for _, resource := range r.repo.Resources.Items() {
 		if resource.Identifier == identifier {
 			return resource, true
 		}
@@ -71,7 +71,7 @@ func (r *Resources) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
 
 func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariable {
 	variables := make(map[string]*oapi.ResourceVariable, 25)
-	for _, variable := range r.repo.ResourceVariables {
+	for _, variable := range r.repo.ResourceVariables.Items() {
 		if variable.ResourceId != resourceId {
 			continue
 		}
@@ -95,7 +95,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 	defer span.End()
 
 	identifierMap := make(map[string]*oapi.Resource)
-	for _, resource := range r.repo.Resources {
+	for _, resource := range r.repo.Resources.Items() {
 		identifierMap[resource.Identifier] = resource
 	}
 
@@ -117,7 +117,7 @@ func (r *Resources) Set(ctx context.Context, providerId string, setResources []*
 
 	// Phase 2: Find resources to delete
 	var resourcesToDelete []string
-	for _, resource := range r.repo.Resources {
+	for _, resource := range r.repo.Resources.Items() {
 		if resource.ProviderId != nil && *resource.ProviderId == providerId {
 			if !newResourceIdentifiers[resource.Identifier] {
 				resourcesToDelete = append(resourcesToDelete, resource.Id)

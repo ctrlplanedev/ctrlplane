@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"workspace-engine/pkg/changeset"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -20,16 +19,11 @@ type Jobs struct {
 }
 
 func (j *Jobs) Items() map[string]*oapi.Job {
-	return j.repo.Jobs
+	return j.repo.Jobs.Items()
 }
 
 func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
 	j.repo.Jobs.Set(job.Id, job)
-
-	if cs, ok := changeset.FromContext[any](ctx); ok {
-		cs.Record(changeset.ChangeTypeUpsert, job)
-	}
-
 	j.store.changeset.RecordUpsert(job)
 }
 
@@ -39,7 +33,7 @@ func (j *Jobs) Get(id string) (*oapi.Job, bool) {
 
 func (j *Jobs) GetPending() map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
-	for _, job := range j.repo.Jobs {
+	for _, job := range j.repo.Jobs.Items() {
 		if job.Status != oapi.Pending {
 			continue
 		}
@@ -51,7 +45,7 @@ func (j *Jobs) GetPending() map[string]*oapi.Job {
 func (j *Jobs) GetJobsForAgent(agentId string) map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
 
-	for _, job := range j.repo.Jobs {
+	for _, job := range j.repo.Jobs.Items() {
 		if job.JobAgentId != agentId {
 			continue
 		}
@@ -65,7 +59,7 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[st
 	if releaseTarget == nil {
 		return jobs
 	}
-	for _, job := range j.repo.Jobs {
+	for _, job := range j.repo.Jobs.Items() {
 		release, ok := j.repo.Releases.Get(job.ReleaseId)
 		if !ok || release == nil {
 			continue

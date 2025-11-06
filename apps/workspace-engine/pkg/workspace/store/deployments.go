@@ -52,7 +52,7 @@ func (e *Deployments) Remove(ctx context.Context, id string) {
 
 func (e *Deployments) Variables(deploymentId string) map[string]*oapi.DeploymentVariable {
 	vars := make(map[string]*oapi.DeploymentVariable)
-	for _, variable := range e.repo.DeploymentVariables {
+	for _, variable := range e.repo.DeploymentVariables.Items() {
 		if variable.DeploymentId == deploymentId {
 			vars[variable.Key] = variable
 		}
@@ -61,7 +61,7 @@ func (e *Deployments) Variables(deploymentId string) map[string]*oapi.Deployment
 }
 
 func (e *Deployments) Items() map[string]*oapi.Deployment {
-	return e.repo.Deployments
+	return e.repo.Deployments.Items()
 }
 
 func (e *Deployments) Resources(ctx context.Context, deploymentId string) ([]*oapi.Resource, error) {

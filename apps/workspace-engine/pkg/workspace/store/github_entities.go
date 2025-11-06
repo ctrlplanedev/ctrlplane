@@ -46,5 +46,5 @@ func (g *GithubEntities) Remove(ctx context.Context, slug string, installationId
 }
 
 func (g *GithubEntities) Items() map[string]*oapi.GithubEntity {
-	return g.repo.GithubEntities
+	return g.repo.GithubEntities.Items()
 }

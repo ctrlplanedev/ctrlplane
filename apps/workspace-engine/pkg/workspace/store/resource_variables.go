@@ -38,5 +38,5 @@ func (r *ResourceVariables) Remove(ctx context.Context, resourceId string, key s
 }
 
 func (r *ResourceVariables) Items() map[string]*oapi.ResourceVariable {
-	return r.repo.ResourceVariables
+	return r.repo.ResourceVariables.Items()
 }

@@ -16,7 +16,7 @@ type DeploymentVariableValues struct {
 }
 
 func (d *DeploymentVariableValues) Items() map[string]*oapi.DeploymentVariableValue {
-	return d.repo.DeploymentVariableValues
+	return d.repo.DeploymentVariableValues.Items()
 }
 
 func (d *DeploymentVariableValues) Upsert(ctx context.Context, id string, deploymentVariableValue *oapi.DeploymentVariableValue) {

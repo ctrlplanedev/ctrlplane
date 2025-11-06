@@ -19,7 +19,7 @@ type DeploymentVersions struct {
 }
 
 func (d *DeploymentVersions) Items() map[string]*oapi.DeploymentVersion {
-	return d.repo.DeploymentVersions
+	return d.repo.DeploymentVersions.Items()
 }
 
 func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {

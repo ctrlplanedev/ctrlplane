@@ -550,7 +550,7 @@ func BenchmarkEnvironments_LargeScale(b *testing.B) {
 	environments := engine.Workspace().Environments().Items()
 	b.Logf("=== Benchmark Environment Statistics ===")
 	b.Logf("Environments: %d", len(environments))
-	b.Logf("Resources: %d", len(engine.Workspace().Store().Repo().Resources))
+	b.Logf("Resources: %d", len(engine.Workspace().Resources().Items()))
 	b.Logf("========================================")
 
 	b.ResetTimer()

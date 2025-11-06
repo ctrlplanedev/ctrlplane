@@ -14,19 +14,19 @@ type StoreEntityProvider struct {
 }
 
 func (s *StoreEntityProvider) GetResources() map[string]*oapi.Resource {
-	return s.store.repo.Resources
+	return s.store.repo.Resources.Items()
 }
 
 func (s *StoreEntityProvider) GetDeployments() map[string]*oapi.Deployment {
-	return s.store.repo.Deployments
+	return s.store.repo.Deployments.Items()
 }
 
 func (s *StoreEntityProvider) GetEnvironments() map[string]*oapi.Environment {
-	return s.store.repo.Environments
+	return s.store.repo.Environments.Items()
 }
 
 func (s *StoreEntityProvider) GetRelationshipRules() map[string]*oapi.RelationshipRule {
-	return s.store.repo.RelationshipRules
+	return s.store.repo.RelationshipRules.Items()
 }
 
 func (s *StoreEntityProvider) GetRelationshipRule(reference string) (*oapi.RelationshipRule, bool) {
@@ -73,7 +73,7 @@ func (r *RelationshipRules) Remove(ctx context.Context, id string) error {
 }
 
 func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
-	return r.repo.RelationshipRules
+	return r.repo.RelationshipRules.Items()
 }
 
 func (r *RelationshipRules) matchesSelector(
@@ -181,7 +181,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 ) {
 	result := make(map[string][]*oapi.EntityRelation)
 
-	allRules := r.repo.RelationshipRules
+	allRules := r.repo.RelationshipRules.Items()
 	fromRules, err := r.collectFromRules(ctx, allRules, entity)
 	if err != nil {
 		return nil, err

@@ -687,11 +687,8 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "Completed job should be restored")
 	assert.Equal(t, "completed", string(restoredJobCompleted.Status))
 
-	allJobs := newStore.Repo().Jobs
-	count := 0
-	for range allJobs {
-		count++
-	}
+	allJobs := newStore.Repo().Jobs.Items()
+	count := len(allJobs)
 
 	// Verify all jobs are present
 	assert.Equal(t, 3, count, "All 3 jobs should be restored")
