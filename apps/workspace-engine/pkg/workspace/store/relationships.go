@@ -409,44 +409,76 @@ func (r *RelationshipRules) findMatchingResources(
 		attribute.String("rule_reference", rule.Reference),
 		attribute.String("entity_id", sourceEntity.GetID()),
 		attribute.String("entity_type", string(sourceEntity.GetType())),
+		attribute.Bool("has_entity_selector", entitySelector != nil),
 	)
 
+	span.AddEvent("Getting all resources")
 	resources := r.getAllResources()
+	span.SetAttributes(attribute.Int("total_resources", len(resources)))
 
 	results := make([]*oapi.RelatableEntity, 0)
+	
+	// Track metrics for optimization insights
+	skippedSelf := 0
+	selectorFiltered := 0
+	matcherFiltered := 0
+	selectorChecks := 0
+	matcherChecks := 0
+	
+	// Create entity map cache for CEL matcher performance
+	// This avoids repeated JSON marshaling of entities
+	entityCache := make(relationships.EntityMapCache)
 
 	for _, resource := range resources {
+		// Quick self-check
 		if sourceEntity.GetType() == oapi.RelatableEntityTypeResource && sourceEntity.GetID() == resource.Id {
+			skippedSelf++
 			continue
 		}
 
-		// Check entity selector if provided
+		// Check entity selector if provided (filter early)
 		if entitySelector != nil {
+			selectorChecks++
 			matched, err := selector.Match(ctx, entitySelector, resource)
 			if err != nil {
+				span.RecordError(err)
 				return nil, err
 			}
 			if !matched {
+				selectorFiltered++
 				continue
 			}
 		}
 
+		// Create entity only after selector passes (optimization: don't create if filtered by selector)
 		resourceEntity := relationships.NewResourceEntity(resource)
 
-		// Check matcher rule
+		// Check matcher rule with cache to avoid repeated entity->map conversions
+		matcherChecks++
 		var matches bool
 		if evaluateFromTo {
-			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, resourceEntity)
+			matches = relationships.MatchesWithCache(ctx, &rule.Matcher, sourceEntity, resourceEntity, entityCache)
 		} else {
-			matches = relationships.Matches(ctx, &rule.Matcher, resourceEntity, sourceEntity)
+			matches = relationships.MatchesWithCache(ctx, &rule.Matcher, resourceEntity, sourceEntity, entityCache)
 		}
 
 		if !matches {
+			matcherFiltered++
 			continue
 		}
 
 		results = append(results, resourceEntity)
 	}
+
+	span.SetAttributes(
+		attribute.Int("results_count", len(results)),
+		attribute.Int("skipped_self", skippedSelf),
+		attribute.Int("selector_checks", selectorChecks),
+		attribute.Int("selector_filtered", selectorFiltered),
+		attribute.Int("matcher_checks", matcherChecks),
+		attribute.Int("matcher_filtered", matcherFiltered),
+		attribute.Int("entity_cache_size", len(entityCache)),
+	)
 
 	return results, nil
 }
@@ -465,42 +497,72 @@ func (r *RelationshipRules) findMatchingEnvironments(
 		attribute.String("rule_reference", rule.Reference),
 		attribute.String("entity_id", sourceEntity.GetID()),
 		attribute.String("entity_type", string(sourceEntity.GetType())),
+		attribute.Bool("has_entity_selector", entitySelector != nil),
 	)
+	
 	environments := r.getAllEnvironments()
+	span.SetAttributes(attribute.Int("total_environments", len(environments)))
 
 	results := make([]*oapi.RelatableEntity, 0)
+	
+	skippedSelf := 0
+	selectorFiltered := 0
+	matcherFiltered := 0
+	selectorChecks := 0
+	matcherChecks := 0
+	
+	// Create entity map cache for CEL matcher performance
+	entityCache := make(relationships.EntityMapCache)
 
 	for _, environment := range environments {
 		if sourceEntity.GetType() == oapi.RelatableEntityTypeEnvironment && sourceEntity.GetID() == environment.Id {
+			skippedSelf++
 			continue
 		}
-		// Check entity selector if provided
+		
+		// Check entity selector if provided (filter early)
 		if entitySelector != nil {
+			selectorChecks++
 			matched, err := selector.Match(ctx, entitySelector, environment)
 			if err != nil {
+				span.RecordError(err)
 				return nil, err
 			}
 			if !matched {
+				selectorFiltered++
 				continue
 			}
 		}
 
+		// Create entity only after selector passes
 		environmentEntity := relationships.NewEnvironmentEntity(environment)
 
-		// Check matcher rule
+		// Check matcher rule with cache
+		matcherChecks++
 		var matches bool
 		if evaluateFromTo {
-			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, environmentEntity)
+			matches = relationships.MatchesWithCache(ctx, &rule.Matcher, sourceEntity, environmentEntity, entityCache)
 		} else {
-			matches = relationships.Matches(ctx, &rule.Matcher, environmentEntity, sourceEntity)
+			matches = relationships.MatchesWithCache(ctx, &rule.Matcher, environmentEntity, sourceEntity, entityCache)
 		}
 
 		if !matches {
+			matcherFiltered++
 			continue
 		}
 
 		results = append(results, environmentEntity)
 	}
+
+	span.SetAttributes(
+		attribute.Int("results_count", len(results)),
+		attribute.Int("skipped_self", skippedSelf),
+		attribute.Int("selector_checks", selectorChecks),
+		attribute.Int("selector_filtered", selectorFiltered),
+		attribute.Int("matcher_checks", matcherChecks),
+		attribute.Int("matcher_filtered", matcherFiltered),
+		attribute.Int("entity_cache_size", len(entityCache)),
+	)
 
 	return results, nil
 }
@@ -512,41 +574,79 @@ func (r *RelationshipRules) findMatchingDeployments(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool,
 ) ([]*oapi.RelatableEntity, error) {
+	ctx, span := tracer.Start(ctx, "RelationshipRules.findMatchingDeployments")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("rule_reference", rule.Reference),
+		attribute.String("entity_id", sourceEntity.GetID()),
+		attribute.String("entity_type", string(sourceEntity.GetType())),
+		attribute.Bool("has_entity_selector", entitySelector != nil),
+	)
+	
 	deployments := r.getAllDeployments()
+	span.SetAttributes(attribute.Int("total_deployments", len(deployments)))
 
 	results := make([]*oapi.RelatableEntity, 0)
+	
+	skippedSelf := 0
+	selectorFiltered := 0
+	matcherFiltered := 0
+	selectorChecks := 0
+	matcherChecks := 0
+	
+	// Create entity map cache for CEL matcher performance
+	entityCache := make(relationships.EntityMapCache)
 
 	for _, deployment := range deployments {
 		if sourceEntity.GetType() == oapi.RelatableEntityTypeDeployment && sourceEntity.GetID() == deployment.Id {
+			skippedSelf++
 			continue
 		}
-		// Check entity selector if provided
+		
+		// Check entity selector if provided (filter early)
 		if entitySelector != nil {
+			selectorChecks++
 			matched, err := selector.Match(ctx, entitySelector, deployment)
 			if err != nil {
+				span.RecordError(err)
 				return nil, err
 			}
 			if !matched {
+				selectorFiltered++
 				continue
 			}
 		}
 
+		// Create entity only after selector passes
 		deploymentEntity := relationships.NewDeploymentEntity(deployment)
 
-		// Check matcher rule
+		// Check matcher rule with cache
+		matcherChecks++
 		var matches bool
 		if evaluateFromTo {
-			matches = relationships.Matches(ctx, &rule.Matcher, sourceEntity, deploymentEntity)
+			matches = relationships.MatchesWithCache(ctx, &rule.Matcher, sourceEntity, deploymentEntity, entityCache)
 		} else {
-			matches = relationships.Matches(ctx, &rule.Matcher, deploymentEntity, sourceEntity)
+			matches = relationships.MatchesWithCache(ctx, &rule.Matcher, deploymentEntity, sourceEntity, entityCache)
 		}
 
 		if !matches {
+			matcherFiltered++
 			continue
 		}
 
 		results = append(results, deploymentEntity)
 	}
+
+	span.SetAttributes(
+		attribute.Int("results_count", len(results)),
+		attribute.Int("skipped_self", skippedSelf),
+		attribute.Int("selector_checks", selectorChecks),
+		attribute.Int("selector_filtered", selectorFiltered),
+		attribute.Int("matcher_checks", matcherChecks),
+		attribute.Int("matcher_filtered", matcherFiltered),
+		attribute.Int("entity_cache_size", len(entityCache)),
+	)
 
 	return results, nil
 }
