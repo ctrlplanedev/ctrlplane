@@ -70,15 +70,15 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 
 	// Evaluate release-scoped rules (e.g., skip deployed, retry limits)
 	span.SetAttributes(attribute.Int("eligibility_evaluators.count", len(c.releaseEvaluators)))
-	
+
 	if len(c.releaseEvaluators) > 0 {
 		span.AddEvent("Evaluating eligibility rules")
 		policyResult := results.NewPolicyEvaluation()
-		
+
 		for i, eval := range c.releaseEvaluators {
 			ruleResult := eval.Evaluate(ctx, release)
 			policyResult.AddRuleResult(*ruleResult)
-			
+
 			// Log individual evaluator results
 			if !ruleResult.Allowed {
 				span.AddEvent("Eligibility rule blocked job creation",
@@ -92,7 +92,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	}
 
 	canCreate := decision.CanDeploy()
-	
+
 	// Build a reason string based on the decision
 	reason := "eligible"
 	if !canCreate && len(decision.PolicyResults) > 0 {
@@ -118,7 +118,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	if canCreate {
 		span.AddEvent("Job creation allowed")
 	} else {
-		span.AddEvent("Job creation blocked", 
+		span.AddEvent("Job creation blocked",
 			trace.WithAttributes(attribute.String("reason", reason)))
 	}
 

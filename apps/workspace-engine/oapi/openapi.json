@@ -2954,6 +2954,15 @@
                   "schema": {
                      "type": "string"
                   }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "query",
+                  "name": "environmentId",
+                  "required": false,
+                  "schema": {
+                     "type": "string"
+                  }
                }
             ],
             "responses": {

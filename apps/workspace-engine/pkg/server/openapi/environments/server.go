@@ -275,8 +275,8 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 	}
 
 	if skippedCount > 0 {
-		log.Warn("Skipped invalid release targets in GetReleaseTargetsForEnvironment", 
-			"environmentId", environmentId, 
+		log.Warn("Skipped invalid release targets in GetReleaseTargetsForEnvironment",
+			"environmentId", environmentId,
 			"skippedCount", skippedCount,
 			"validCount", len(releaseTargetsWithState))
 	}

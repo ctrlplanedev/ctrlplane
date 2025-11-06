@@ -76,7 +76,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	if newJob.Status != oapi.InvalidJobAgent {
 		span.AddEvent("Dispatching job to integration (async)",
 			trace.WithAttributes(attribute.String("job.id", newJob.Id)))
-		
+
 		go func() {
 			if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
 				log.Error("error dispatching job to integration",

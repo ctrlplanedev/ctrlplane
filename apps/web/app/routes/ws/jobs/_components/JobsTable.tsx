@@ -12,9 +12,10 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { cn } from "~/lib/utils";
+import { EnvironmentFilter } from "./EnvironmentFilter";
 import { JobActions } from "./JobActions";
-import { JobFilters } from "./JobFilters";
 import { JobStatusBadge } from "./JobStatusBadge";
+import { ResourceFilter } from "./ResourceFilter";
 
 type JobsTableProps = {
   jobs: WorkspaceEngine["schemas"]["JobWithRelease"][];
@@ -120,7 +121,10 @@ function JobsTableRow({
 export function JobsTable({ jobs }: JobsTableProps) {
   return (
     <div className="space-y-2 py-2">
-      <JobFilters />
+      <div className="flex justify-end gap-2 px-2">
+        <ResourceFilter />
+        <EnvironmentFilter />
+      </div>
       <Table className="border-b">
         <JobsTableHeader />
         <TableBody>

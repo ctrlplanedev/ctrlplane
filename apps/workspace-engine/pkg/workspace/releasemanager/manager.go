@@ -208,7 +208,7 @@ func (m *Manager) computeResourceRelationships(ctx context.Context, targetStates
 	resourceRelationships := make(map[string]map[string][]*oapi.EntityRelation)
 	successCount := 0
 	errorCount := 0
-	
+
 	for resourceId := range uniqueResourceIds {
 		resource, exists := m.store.Resources.Get(resourceId)
 		if !exists {
@@ -233,7 +233,7 @@ func (m *Manager) computeResourceRelationships(ctx context.Context, targetStates
 		attribute.Int("relationships.computed_successfully", successCount),
 		attribute.Int("relationships.errors", errorCount),
 	)
-	
+
 	return resourceRelationships
 }
 
@@ -369,7 +369,7 @@ func (m *Manager) reconcileTargetWithRelationships(
 		span.SetAttributes(attribute.String("reconciliation_result", "execution_failed"))
 		return err
 	}
-	
+
 	span.SetAttributes(attribute.String("reconciliation_result", "job_created"))
 	return nil
 }
@@ -425,7 +425,7 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 		span.SetStatus(codes.Error, "failed to get relationships")
 		return err
 	}
-	
+
 	// Count total related entities
 	totalRelatedEntities := 0
 	for _, entities := range resourceRelationships {

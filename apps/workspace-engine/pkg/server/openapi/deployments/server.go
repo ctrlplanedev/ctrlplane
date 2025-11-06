@@ -12,7 +12,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
-) 
+)
 
 func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
 	releaseTargets, err := ws.ReleaseTargets().Items()
@@ -329,8 +329,8 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	}
 
 	if skippedCount > 0 {
-		log.Warn("Skipped invalid release targets in GetReleaseTargetsForDeployment", 
-			"deploymentId", deploymentId, 
+		log.Warn("Skipped invalid release targets in GetReleaseTargetsForDeployment",
+			"deploymentId", deploymentId,
 			"skippedCount", skippedCount,
 			"validCount", len(releaseTargetsWithState))
 	}

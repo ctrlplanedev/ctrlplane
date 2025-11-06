@@ -18,7 +18,7 @@ import {
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useResourceId } from "../hooks";
 
-function useAllResources() {
+function useResourcesSearch() {
   const { workspace } = useWorkspace();
 
   const [cel, setCel] = useState("true");
@@ -35,10 +35,10 @@ function useAllResources() {
   return { resources: data?.items ?? [], isLoading, cel, setCel };
 }
 
-function ResourceFilter() {
+export function ResourceFilter() {
   const [open, setOpen] = useState(false);
 
-  const { resources, isLoading, cel, setCel } = useAllResources();
+  const { resources, cel, setCel } = useResourcesSearch();
   const { resourceId, setResourceId } = useResourceId();
 
   const selectedResource = resources.find((r) => r.id === resourceId);
@@ -81,13 +81,5 @@ function ResourceFilter() {
         </Command>
       </PopoverContent>
     </Popover>
-  );
-}
-
-export function JobFilters() {
-  return (
-    <div className="flex justify-end gap-2 px-2">
-      <ResourceFilter />
-    </div>
   );
 }

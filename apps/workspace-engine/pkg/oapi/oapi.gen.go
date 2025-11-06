@@ -663,6 +663,9 @@ type GetJobsParams struct {
 
 	// ResourceId ID of the resource
 	ResourceId *string `form:"resourceId,omitempty" json:"resourceId,omitempty"`
+
+	// EnvironmentId ID of the environment
+	EnvironmentId *string `form:"environmentId,omitempty" json:"environmentId,omitempty"`
 }
 
 // GetRelationshipRulesParams defines parameters for GetRelationshipRules.
@@ -2279,6 +2282,14 @@ func (siw *ServerInterfaceWrapper) GetJobs(c *gin.Context) {
 	err = runtime.BindQueryParameter("form", true, false, "resourceId", c.Request.URL.Query(), &params.ResourceId)
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "environmentId" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "environmentId", c.Request.URL.Query(), &params.EnvironmentId)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environmentId: %w", err), http.StatusBadRequest)
 		return
 	}
 

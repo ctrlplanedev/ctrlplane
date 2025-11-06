@@ -26,7 +26,6 @@ func (v *Variables) ResolveValue(
 	entities map[string][]*oapi.EntityRelation,
 ) (*oapi.LiteralValue, error) {
 
-
 	valueType, err := value.GetType()
 	if err != nil {
 		return nil, err
@@ -63,4 +62,3 @@ func (v *Variables) ResolveValue(
 	}
 	return nil, fmt.Errorf("unsupported variable type: %T", value)
 }
-

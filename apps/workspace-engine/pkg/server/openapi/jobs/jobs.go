@@ -133,6 +133,10 @@ func (s *Jobs) getFilteredJobs(ws *workspace.Workspace, allJobs []*oapi.Job, par
 			continue
 		}
 
+		if params.EnvironmentId != nil && jobWithRelease.Environment.Id != *params.EnvironmentId {
+			continue
+		}
+
 		filteredJobs = append(filteredJobs, jobWithRelease)
 	}
 
@@ -169,7 +173,7 @@ func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsPa
 		limit = *params.Limit
 	}
 
-	hasFilterParams := params.ResourceId != nil
+	hasFilterParams := params.ResourceId != nil || params.EnvironmentId != nil
 	if hasFilterParams {
 		filteredJobs, err := s.getFilteredJobs(ws, items, params)
 		if err != nil {

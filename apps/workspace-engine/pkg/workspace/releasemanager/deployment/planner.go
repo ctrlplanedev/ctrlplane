@@ -59,6 +59,7 @@ func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) pla
 		cfg.resourceRelatedEntities = entities
 	}
 }
+
 // Returns:
 //   - *oapi.Release: The desired release to deploy
 //   - nil: No deployable release (no versions or all blocked by policies)
@@ -85,7 +86,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 	span.AddEvent("Getting candidate versions")
 	candidateVersions := p.versionManager.GetCandidateVersions(ctx, releaseTarget)
 	span.SetAttributes(attribute.Int("candidate_versions.count", len(candidateVersions)))
-	
+
 	if len(candidateVersions) == 0 {
 		span.AddEvent("No candidate versions available")
 		span.SetAttributes(attribute.Bool("has_desired_release", false))
@@ -100,7 +101,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		span.SetAttributes(attribute.Bool("has_desired_release", false))
 		return nil, nil
 	}
-	
+
 	span.SetAttributes(
 		attribute.String("deployable_version.id", deployableVersion.Id),
 		attribute.String("deployable_version.tag", deployableVersion.Tag),
@@ -115,7 +116,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		}
 		entity := relationships.NewResourceEntity(resource)
 		resourceRelatedEntities, _ = p.store.Relationships.GetRelatedEntities(ctx, entity)
-		
+
 		// Count total related entities
 		totalRelatedEntities := 0
 		for _, entities := range resourceRelatedEntities {

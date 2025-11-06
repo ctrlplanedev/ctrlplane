@@ -2214,6 +2214,8 @@ export interface operations {
         offset?: number;
         /** @description ID of the resource */
         resourceId?: string;
+        /** @description ID of the environment */
+        environmentId?: string;
       };
       header?: never;
       path: {

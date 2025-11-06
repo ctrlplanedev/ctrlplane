@@ -59,7 +59,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		// 2. Deployment variable values (sorted by priority, filtered by resource selector)
 		// 3. Deployment variable default value
 
-		resolved := m.tryResolveResourceVariable(ctx,key, resourceVariables, entity, relatedEntities)
+		resolved := m.tryResolveResourceVariable(ctx, key, resourceVariables, entity, relatedEntities)
 		if resolved != nil {
 			resolvedVariables[key] = resolved
 			continue
