@@ -10,11 +10,10 @@ import (
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
 
-	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
 
-func getReleaseTargetsForDeployment(c *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
+func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
 	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		return nil, err
@@ -22,10 +21,6 @@ func getReleaseTargetsForDeployment(c *gin.Context, ws *workspace.Workspace, dep
 	// Build list of release targets for this deployment, filtering out any nils
 	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
 	for _, releaseTarget := range releaseTargets {
-		if releaseTarget == nil {
-			log.Error("release target is nil", "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
-			continue
-		}
 		if releaseTarget.DeploymentId == deploymentId {
 			releaseTargetsList = append(releaseTargetsList, releaseTarget)
 		}
@@ -104,30 +99,25 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 		return
 	}
 
-	resourceList := make([]*oapi.Resource, 0, len(resources))
-	for _, resource := range resources {
-		resourceList = append(resourceList, resource)
-	}
-
 	// Sort the resourceList by resource.Name (nil-safe, ascending); if Name is the same, sort by CreatedAt
-	sort.Slice(resourceList, func(i, j int) bool {
-		if resourceList[i] == nil && resourceList[j] == nil {
+	sort.Slice(resources, func(i, j int) bool {
+		if resources[i] == nil && resources[j] == nil {
 			return false
 		}
-		if resourceList[i] == nil {
+		if resources[i] == nil {
 			return false
 		}
-		if resourceList[j] == nil {
+		if resources[j] == nil {
 			return true
 		}
-		if resourceList[i].Name < resourceList[j].Name {
+		if resources[i].Name < resources[j].Name {
 			return true
 		}
-		if resourceList[i].Name > resourceList[j].Name {
+		if resources[i].Name > resources[j].Name {
 			return false
 		}
 		// Names are equal; compare CreatedAt
-		return resourceList[i].CreatedAt.Before(resourceList[j].CreatedAt)
+		return resources[i].CreatedAt.Before(resources[j].CreatedAt)
 	})
 
 	// Get pagination parameters with defaults
@@ -140,12 +130,12 @@ func (s *Deployments) GetDeploymentResources(c *gin.Context, workspaceId string,
 		offset = *params.Offset
 	}
 
-	total := len(resourceList)
+	total := len(resources)
 
 	// Apply pagination
 	start := min(offset, total)
 	end := min(start+limit, total)
-	paginatedResources := resourceList[start:end]
+	paginatedResources := resources[start:end]
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
