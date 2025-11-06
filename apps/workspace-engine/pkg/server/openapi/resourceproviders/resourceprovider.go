@@ -115,12 +115,6 @@ func (s *ResourceProviders) CacheBatch(c *gin.Context, workspaceId string) {
 		return
 	}
 
-	log.Info("Cached resource batch",
-		"batchId", batchId,
-		"workspaceId", workspaceId,
-		"providerId", body.ProviderId,
-		"resourceCount", len(body.Resources))
-
 	c.JSON(http.StatusOK, gin.H{
 		"batchId":       batchId,
 		"resourceCount": len(body.Resources),

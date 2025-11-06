@@ -110,12 +110,6 @@ func (c *ResourceProviderCache) Store(ctx context.Context, providerId string, re
 	// Wait for value to be set (Ristretto is eventually consistent)
 	c.cache.Wait()
 
-	log.Info("Cached resource batch",
-		"batchId", batchId,
-		"providerId", providerId,
-		"resourceCount", len(resources),
-		"estimatedBytes", cost)
-
 	return batchId, nil
 }
 
