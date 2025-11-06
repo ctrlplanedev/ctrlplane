@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -34,22 +35,35 @@ func NewExecutor(store *store.Store) *Executor {
 // Precondition: Planner has already determined this release NEEDS to be deployed.
 // No additional "should we deploy" checks here - trust the planning phase.
 func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release) error {
-	ctx, span := tracer.Start(ctx, "ExecuteRelease")
+	ctx, span := tracer.Start(ctx, "ExecuteRelease",
+		trace.WithAttributes(
+			attribute.String("release.id", releaseToDeploy.ID()),
+			attribute.String("deployment.id", releaseToDeploy.ReleaseTarget.DeploymentId),
+			attribute.String("environment.id", releaseToDeploy.ReleaseTarget.EnvironmentId),
+			attribute.String("resource.id", releaseToDeploy.ReleaseTarget.ResourceId),
+			attribute.String("version.id", releaseToDeploy.Version.Id),
+			attribute.String("version.tag", releaseToDeploy.Version.Tag),
+		))
 	defer span.End()
 
 	// Step 1: Persist the release (WRITE)
+	span.AddEvent("Persisting release to store")
 	if err := e.store.Releases.Upsert(ctx, releaseToDeploy); err != nil {
 		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to persist release")
 		return err
 	}
 
-	// Step 3: Create and persist new job (WRITE)
+	// Step 2: Create and persist new job (WRITE)
+	span.AddEvent("Creating job for release")
 	newJob, err := e.jobFactory.CreateJobForRelease(ctx, releaseToDeploy)
 	if err != nil {
 		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create job")
 		return err
 	}
 
+	span.AddEvent("Persisting job to store")
 	e.store.Jobs.Upsert(ctx, newJob)
 	span.SetAttributes(
 		attribute.Bool("job.created", true),
@@ -57,19 +71,28 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		attribute.String("job.status", string(newJob.Status)),
 	)
 
-	// Step 4: Dispatch job to integration (ASYNC)
+	// Step 3: Dispatch job to integration (ASYNC)
 	// Skip dispatch if job already has InvalidJobAgent status
 	if newJob.Status != oapi.InvalidJobAgent {
+		span.AddEvent("Dispatching job to integration (async)",
+			trace.WithAttributes(attribute.String("job.id", newJob.Id)))
+		
 		go func() {
 			if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
-				log.Error("error dispatching job to integration", "error", err.Error())
+				log.Error("error dispatching job to integration",
+					"job_id", newJob.Id,
+					"error", err.Error())
 				newJob.Status = oapi.InvalidIntegration
 				newJob.UpdatedAt = time.Now()
 				e.store.Jobs.Upsert(ctx, newJob)
 			}
 		}()
+	} else {
+		span.AddEvent("Skipping job dispatch (InvalidJobAgent status)",
+			trace.WithAttributes(attribute.String("job.id", newJob.Id)))
 	}
 
+	span.SetStatus(codes.Ok, "release executed successfully")
 	return nil
 }
 

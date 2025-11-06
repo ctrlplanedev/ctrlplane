@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var jobEligibilityTracer = otel.Tracer("workspace/releasemanager/deployment/jobeligibility")
@@ -50,35 +51,76 @@ func NewJobEligibilityChecker(store *store.Store) *JobEligibilityChecker {
 func (c *JobEligibilityChecker) ShouldCreateJob(
 	ctx context.Context,
 	release *oapi.Release,
-) (bool, *oapi.DeployDecision, error) {
-	ctx, span := jobEligibilityTracer.Start(ctx, "ShouldCreateJob")
+) (bool, string, error) {
+	ctx, span := jobEligibilityTracer.Start(ctx, "ShouldCreateJob",
+		trace.WithAttributes(
+			attribute.String("release.id", release.ID()),
+			attribute.String("release.version.id", release.Version.Id),
+			attribute.String("release.version.tag", release.Version.Tag),
+			attribute.String("release.target.key", release.ReleaseTarget.Key()),
+			attribute.String("release.target.resource.id", release.ReleaseTarget.ResourceId),
+			attribute.String("release.target.environment.id", release.ReleaseTarget.EnvironmentId),
+			attribute.String("release.target.deployment.id", release.ReleaseTarget.DeploymentId),
+		))
 	defer span.End()
-
-	span.SetAttributes(attribute.String("release.id", release.ID()))
-	span.SetAttributes(attribute.String("release.version.id", release.Version.Id))
-	span.SetAttributes(attribute.String("release.version.tag", release.Version.Tag))
-	span.SetAttributes(attribute.String("release.target.key", release.ReleaseTarget.Key()))
-	span.SetAttributes(attribute.String("release.target.resource.id", release.ReleaseTarget.ResourceId))
-	span.SetAttributes(attribute.String("release.target.environment.id", release.ReleaseTarget.EnvironmentId))
-	span.SetAttributes(attribute.String("release.target.deployment.id", release.ReleaseTarget.DeploymentId))
 
 	decision := &oapi.DeployDecision{
 		PolicyResults: make([]oapi.PolicyEvaluation, 0),
 	}
 
 	// Evaluate release-scoped rules (e.g., skip deployed, retry limits)
+	span.SetAttributes(attribute.Int("eligibility_evaluators.count", len(c.releaseEvaluators)))
+	
 	if len(c.releaseEvaluators) > 0 {
+		span.AddEvent("Evaluating eligibility rules")
 		policyResult := results.NewPolicyEvaluation()
-		for _, eval := range c.releaseEvaluators {
+		
+		for i, eval := range c.releaseEvaluators {
 			ruleResult := eval.Evaluate(ctx, release)
 			policyResult.AddRuleResult(*ruleResult)
+			
+			// Log individual evaluator results
+			if !ruleResult.Allowed {
+				span.AddEvent("Eligibility rule blocked job creation",
+					trace.WithAttributes(
+						attribute.Int("evaluator_index", i),
+						attribute.String("message", ruleResult.Message),
+					))
+			}
 		}
 		decision.PolicyResults = append(decision.PolicyResults, *policyResult)
 	}
 
 	canCreate := decision.CanDeploy()
+	
+	// Build a reason string based on the decision
+	reason := "eligible"
+	if !canCreate && len(decision.PolicyResults) > 0 {
+		// Get the first blocked rule's message
+		for _, policyResult := range decision.PolicyResults {
+			for _, ruleResult := range policyResult.RuleResults {
+				if !ruleResult.Allowed {
+					reason = ruleResult.Message
+					break
+				}
+			}
+			if reason != "eligible" {
+				break
+			}
+		}
+	}
 
-	span.SetAttributes(attribute.Bool("can_create", canCreate))
+	span.SetAttributes(
+		attribute.Bool("can_create", canCreate),
+		attribute.String("decision_reason", reason),
+	)
 
-	return canCreate, decision, nil
+	if canCreate {
+		span.AddEvent("Job creation allowed")
+	} else {
+		span.AddEvent("Job creation blocked", 
+			trace.WithAttributes(attribute.String("reason", reason)))
+	}
+
+	return canCreate, reason, nil
 }

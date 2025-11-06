@@ -83,7 +83,10 @@ type targetState struct {
 // Reconciles added/tainted targets (triggers deployments) and removes deleted targets.
 // Returns a map of cancelled jobs (for removed targets).
 func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.ChangeSet[any]) error {
-	ctx, span := tracer.Start(ctx, "ProcessChanges")
+	ctx, span := tracer.Start(ctx, "ProcessChanges",
+		trace.WithAttributes(
+			attribute.Int("changes.total", len(changes.Changes())),
+		))
 	defer span.End()
 
 	// Track the final state of each release target by key
@@ -94,6 +97,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	// whether the final operation is a delete.
 	targetStates := make(map[string]targetState)
 
+	span.AddEvent("Deduplicating changes")
 	for _, change := range changes.Changes() {
 		entity, ok := change.Entity.(*oapi.ReleaseTarget)
 		if !ok {
@@ -113,20 +117,44 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		}
 	}
 
+	// Count upserts vs deletes
+	upsertCount := 0
+	deleteCount := 0
+	for _, state := range targetStates {
+		if state.isDelete {
+			deleteCount++
+		} else {
+			upsertCount++
+		}
+	}
+	span.SetAttributes(
+		attribute.Int("target_states.total", len(targetStates)),
+		attribute.Int("target_states.upserts", upsertCount),
+		attribute.Int("target_states.deletes", deleteCount),
+	)
+
 	// Pre-compute resource relationships for all unique resources
 	// This avoids recomputing relationships for every release target that shares the same resource
+	span.AddEvent("Pre-computing resource relationships")
 	resourceRelationships := m.computeResourceRelationships(ctx, targetStates)
 
 	processFn := func(state targetState) (targetState, error) {
 		if state.isDelete {
 			// Handle deletion - cancel pending jobs
+			jobsCancelled := 0
 			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(state.entity) {
 				if job != nil && job.IsInProcessingState() {
 					job.Status = oapi.Cancelled
 					job.UpdatedAt = time.Now()
 					m.store.Jobs.Upsert(ctx, job)
 					fmt.Printf("cancelled job: %+v\n", job)
+					jobsCancelled++
 				}
+			}
+			if jobsCancelled > 0 {
+				log.Debug("cancelled jobs for deleted release target",
+					"release_target", state.entity.Key(),
+					"jobs_cancelled", jobsCancelled)
 			}
 			return state, nil
 		}
@@ -134,7 +162,9 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		// Handle upsert - reconcile the target with pre-computed relationships
 		relationships := resourceRelationships[state.entity.ResourceId]
 		if err := m.reconcileTargetWithRelationships(ctx, state.entity, false, relationships); err != nil {
-			log.Warn("error reconciling release target", "error", err.Error())
+			log.Warn("error reconciling release target",
+				"release_target", state.entity.Key(),
+				"error", err.Error())
 		}
 
 		return state, nil
@@ -145,8 +175,15 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		states = append(states, state)
 	}
 
+	span.AddEvent("Processing release target states",
+		trace.WithAttributes(
+			attribute.Int("states.count", len(states)),
+			attribute.Int("chunk_size", 100),
+			attribute.Int("concurrency", 10),
+		))
 	concurrency.ProcessInChunks(states, 100, 10, processFn)
 
+	span.AddEvent("Completed processing changes")
 	return nil
 }
 
@@ -157,19 +194,26 @@ func (m *Manager) computeResourceRelationships(ctx context.Context, targetStates
 	defer span.End()
 
 	// Collect unique resource IDs
+	span.AddEvent("Collecting unique resource IDs")
 	uniqueResourceIds := make(map[string]bool)
 	for _, state := range targetStates {
 		if !state.isDelete {
 			uniqueResourceIds[state.entity.ResourceId] = true
 		}
 	}
+	span.SetAttributes(attribute.Int("unique_resources", len(uniqueResourceIds)))
 
 	// Pre-compute relationships for all unique resources
+	span.AddEvent("Computing relationships for unique resources")
 	resourceRelationships := make(map[string]map[string][]*oapi.EntityRelation)
+	successCount := 0
+	errorCount := 0
+	
 	for resourceId := range uniqueResourceIds {
 		resource, exists := m.store.Resources.Get(resourceId)
 		if !exists {
 			log.Warn("resource not found during relationship computation", "resourceId", resourceId)
+			errorCount++
 			continue
 		}
 
@@ -177,13 +221,19 @@ func (m *Manager) computeResourceRelationships(ctx context.Context, targetStates
 		relatedEntities, err := m.store.Relationships.GetRelatedEntities(ctx, entity)
 		if err != nil {
 			log.Warn("error getting related entities", "resourceId", resourceId, "error", err.Error())
+			errorCount++
 			continue
 		}
 
 		resourceRelationships[resourceId] = relatedEntities
+		successCount++
 	}
 
-	span.SetAttributes(attribute.Int("unique_resources", len(uniqueResourceIds)))
+	span.SetAttributes(
+		attribute.Int("relationships.computed_successfully", successCount),
+		attribute.Int("relationships.errors", errorCount),
+	)
+	
 	return resourceRelationships
 }
 
@@ -253,13 +303,16 @@ func (m *Manager) reconcileTargetWithRelationships(
 	forceRedeploy bool,
 	resourceRelationships map[string][]*oapi.EntityRelation,
 ) error {
-	ctx, span := tracer.Start(ctx, "reconcileTargetWithRelationships")
+	ctx, span := tracer.Start(ctx, "reconcileTargetWithRelationships",
+		trace.WithAttributes(
+			attribute.String("release_target.key", releaseTarget.Key()),
+			attribute.Bool("force_redeploy", forceRedeploy),
+		))
 	defer span.End()
-
-	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
 
 	// Phase 1: PLANNING - What should be deployed? (READ-ONLY)
 	// Pass pre-computed relationships to avoid redundant computation
+	span.AddEvent("Phase 1: Planning deployment")
 	desiredRelease, err := m.planner.PlanDeployment(
 		ctx,
 		releaseTarget,
@@ -267,6 +320,7 @@ func (m *Manager) reconcileTargetWithRelationships(
 	)
 	if err != nil {
 		span.RecordError(err)
+		span.SetStatus(codes.Error, "planning failed")
 		return err
 	}
 
@@ -274,26 +328,50 @@ func (m *Manager) reconcileTargetWithRelationships(
 
 	// No desired release (no versions or blocked by user policies)
 	if desiredRelease == nil {
+		span.AddEvent("No desired release (no versions or blocked by policies)")
+		span.SetAttributes(attribute.String("reconciliation_result", "no_desired_release"))
 		return nil
 	}
 
 	// Phase 2: ELIGIBILITY - Should we create a job for this release? (READ-ONLY)
 	// Skip eligibility check if this is a forced redeploy
 	if !forceRedeploy {
-		shouldCreate, _, err := m.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease)
+		span.AddEvent("Phase 2: Checking job eligibility")
+		shouldCreate, reason, err := m.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease)
 		if err != nil {
 			span.RecordError(err)
+			span.SetStatus(codes.Error, "eligibility check failed")
 			return err
 		}
 
+		span.SetAttributes(
+			attribute.Bool("job_eligibility.should_create", shouldCreate),
+			attribute.String("job_eligibility.reason", reason),
+		)
+
 		// Job should not be created (retry limit, already attempted, etc.)
 		if !shouldCreate {
+			span.AddEvent("Job should not be created",
+				trace.WithAttributes(attribute.String("reason", reason)))
+			span.SetAttributes(attribute.String("reconciliation_result", "job_not_eligible"))
 			return nil
 		}
+	} else {
+		span.AddEvent("Phase 2: Skipping eligibility check (forced redeploy)")
 	}
 
 	// Phase 3: EXECUTION - Create the job (WRITES)
-	return m.executor.ExecuteRelease(ctx, desiredRelease)
+	span.AddEvent("Phase 3: Executing release")
+	err = m.executor.ExecuteRelease(ctx, desiredRelease)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "execution failed")
+		span.SetAttributes(attribute.String("reconciliation_result", "execution_failed"))
+		return err
+	}
+	
+	span.SetAttributes(attribute.String("reconciliation_result", "job_created"))
+	return nil
 }
 
 // reconcileTarget ensures a release target is in its desired state (WRITES TO STORE).
@@ -320,16 +398,23 @@ func (m *Manager) reconcileTargetWithRelationships(
 //   - No desired release (no versions available or blocked by user policies)
 //   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
 func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool) error {
-	ctx, span := tracer.Start(ctx, "ReconcileTarget")
+	ctx, span := tracer.Start(ctx, "ReconcileTarget",
+		trace.WithAttributes(
+			attribute.String("release_target.key", releaseTarget.Key()),
+			attribute.String("release_target.deployment_id", releaseTarget.DeploymentId),
+			attribute.String("release_target.environment_id", releaseTarget.EnvironmentId),
+			attribute.String("release_target.resource_id", releaseTarget.ResourceId),
+			attribute.Bool("force_redeploy", forceRedeploy),
+		))
 	defer span.End()
 
-	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
-
 	// Compute relationships on-demand for this single resource
+	span.AddEvent("Getting resource and relationships")
 	resource, exists := m.store.Resources.Get(releaseTarget.ResourceId)
 	if !exists {
 		err := fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
 		span.RecordError(err)
+		span.SetStatus(codes.Error, "resource not found")
 		return err
 	}
 
@@ -337,8 +422,16 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	resourceRelationships, err := m.store.Relationships.GetRelatedEntities(ctx, entity)
 	if err != nil {
 		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get relationships")
 		return err
 	}
+	
+	// Count total related entities
+	totalRelatedEntities := 0
+	for _, entities := range resourceRelationships {
+		totalRelatedEntities += len(entities)
+	}
+	span.SetAttributes(attribute.Int("related_entities.count", totalRelatedEntities))
 
 	// Delegate to the implementation that accepts pre-computed relationships
 	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships)
