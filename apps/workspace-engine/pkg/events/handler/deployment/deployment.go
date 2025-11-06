@@ -148,6 +148,10 @@ func HandleDeploymentUpdated(
 		}
 	}
 
+	if shouldRetriggerJobs(ws, deployment) {
+		retriggerInvalidJobAgentJobs(ctx, ws, deployment)
+	}
+
 	return nil
 }
 

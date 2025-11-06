@@ -167,3 +167,16 @@ func (r *ReleaseTargets) GetForEnvironment(ctx context.Context, environmentId st
 	}
 	return releaseTargets, nil
 }
+
+func (r *ReleaseTargets) GetForSystem(ctx context.Context, systemId string) ([]*oapi.ReleaseTarget, error) {
+	environments := r.store.Systems.Environments(systemId)
+	releaseTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, environment := range environments {
+		envTargets, err := r.GetForEnvironment(ctx, environment.Id)
+		if err != nil {
+			return nil, err
+		}
+		releaseTargets = append(releaseTargets, envTargets...)
+	}
+	return releaseTargets, nil
+}
