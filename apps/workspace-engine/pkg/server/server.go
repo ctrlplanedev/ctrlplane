@@ -86,13 +86,15 @@ func LoggerMiddleware() gin.HandlerFunc {
 		duration := time.Since(start)
 		statusCode := c.Writer.Status()
 
-		log.Info("request",
-			"method", method,
-			"path", path,
-			"status", statusCode,
-			"duration_ms", duration.Milliseconds(),
-			"client_ip", c.ClientIP(),
-		)
+		if statusCode >= 400 {
+			log.Error("request",
+				"method", method,
+				"path", path,
+				"status", statusCode,
+				"duration_ms", duration.Milliseconds(),
+				"client_ip", c.ClientIP(),
+			)
+		}
 	}
 }
 

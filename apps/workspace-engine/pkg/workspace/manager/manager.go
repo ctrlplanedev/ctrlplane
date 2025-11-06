@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/persistence/memory"
@@ -75,6 +76,7 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		setStatusMessage := func(msg string) {
 			workspaceStatus.SetState(status.StateRestoringFromSnapshot, msg)
 		}
+		fmt.Println("Restoring workspace from snapshot", len(changes))
 		if err := ws.Store().Restore(ctx, changes, setStatusMessage); err != nil {
 			workspaceStatus.SetError(err)
 			log.Error("Failed to restore workspace from snapshot", "error", err)

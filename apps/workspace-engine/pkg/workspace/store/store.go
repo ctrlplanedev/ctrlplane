@@ -72,6 +72,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 
 	fmt.Println("Deployments: ", len(s.Deployments.Items()))
 	fmt.Println("Environments: ", len(s.Environments.Items()))
+	fmt.Println("Resources: ", len(s.Resources.Items()))
 
 	// Group deployments by SystemId for O(1) lookup
 	deploymentsBySystem := make(map[string][]*oapi.Deployment)
@@ -81,6 +82,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 
 	// Iterate environments, then matching deployments, then resources
 	for _, environment := range s.Environments.Items() {
+		fmt.Println("Progressing Environment: ", environment.Name)
 		matchingDeployments := deploymentsBySystem[environment.SystemId]
 		if len(matchingDeployments) == 0 {
 			continue
