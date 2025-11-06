@@ -7,6 +7,9 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type StoreEntityProvider struct {
@@ -179,28 +182,84 @@ func (r *RelationshipRules) GetRelatedEntities(
 	map[string][]*oapi.EntityRelation,
 	error,
 ) {
+	ctx, span := tracer.Start(ctx, "RelationshipRules.GetRelatedEntities")
+	defer span.End()
+
+	entityID := entity.GetID()
+	entityType := entity.GetType()
+	
+	span.SetAttributes(
+		attribute.String("entity_id", entityID),
+		attribute.String("entity_type", string(entityType)),
+	)
+
 	result := make(map[string][]*oapi.EntityRelation)
 
+	// Phase 1: Collect applicable rules
+	span.AddEvent("Collecting relationship rules")
 	allRules := r.repo.RelationshipRules.Items()
+	span.SetAttributes(attribute.Int("total_rules", len(allRules)))
+	
 	fromRules, err := r.collectFromRules(ctx, allRules, entity)
 	if err != nil {
+		span.RecordError(err)
+		log.Error("Failed to collect from rules", 
+			"entity_id", entityID,
+			"error", err.Error())
 		return nil, err
 	}
+	span.SetAttributes(attribute.Int("from_rules_count", len(fromRules)))
+	
 	toRules, err := r.collectToRules(ctx, allRules, entity)
 	if err != nil {
+		span.RecordError(err)
+		log.Error("Failed to collect to rules", 
+			"entity_id", entityID,
+			"error", err.Error())
 		return nil, err
 	}
+	span.SetAttributes(attribute.Int("to_rules_count", len(toRules)))
 
+	log.Debug("Collected relationship rules",
+		"entity_id", entityID,
+		"from_rules", len(fromRules),
+		"to_rules", len(toRules))
+
+	// Phase 2: Resolve relations from rules
+	span.AddEvent("Resolving from relations")
 	fromRelations, err := r.collectFromRelations(ctx, fromRules, entity)
 	if err != nil {
+		span.RecordError(err)
+		log.Error("Failed to collect from relations", 
+			"entity_id", entityID,
+			"error", err.Error())
 		return nil, err
 	}
+	
+	fromRelationsCount := 0
+	for _, relations := range fromRelations {
+		fromRelationsCount += len(relations)
+	}
+	span.SetAttributes(attribute.Int("from_relations_count", fromRelationsCount))
 
+	span.AddEvent("Resolving to relations")
 	toRelations, err := r.collectToRelations(ctx, toRules, entity)
 	if err != nil {
+		span.RecordError(err)
+		log.Error("Failed to collect to relations", 
+			"entity_id", entityID,
+			"error", err.Error())
 		return nil, err
 	}
+	
+	toRelationsCount := 0
+	for _, relations := range toRelations {
+		toRelationsCount += len(relations)
+	}
+	span.SetAttributes(attribute.Int("to_relations_count", toRelationsCount))
 
+	// Phase 3: Merge results
+	span.AddEvent("Merging relations")
 	for ref, relations := range fromRelations {
 		result[ref] = append(result[ref], relations...)
 	}
@@ -208,6 +267,18 @@ func (r *RelationshipRules) GetRelatedEntities(
 	for ref, relations := range toRelations {
 		result[ref] = append(result[ref], relations...)
 	}
+
+	totalRelations := 0
+	uniqueRefs := 0
+	for _, relations := range result {
+		totalRelations += len(relations)
+		uniqueRefs++
+	}
+	
+	span.SetAttributes(
+		attribute.Int("total_relations", totalRelations),
+		attribute.Int("unique_refs", uniqueRefs),
+	)
 
 	return result, nil
 }
