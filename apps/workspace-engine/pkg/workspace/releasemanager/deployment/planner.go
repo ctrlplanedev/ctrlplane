@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -83,28 +84,35 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 	}
 
 	// Step 1: Get candidate versions (sorted newest to oldest)
-	span.AddEvent("Getting candidate versions")
+	span.AddEvent("Step 1: Getting candidate versions")
 	candidateVersions := p.versionManager.GetCandidateVersions(ctx, releaseTarget)
 	span.SetAttributes(attribute.Int("candidate_versions.count", len(candidateVersions)))
 
 	if len(candidateVersions) == 0 {
 		span.AddEvent("No candidate versions available")
-		span.SetAttributes(attribute.Bool("has_desired_release", false))
+		span.SetAttributes(
+			attribute.Bool("has_desired_release", false),
+			attribute.String("reason", "no_versions"),
+		)
 		return nil, nil
 	}
 
 	// Step 2: Find first version that passes user-defined policies
-	span.AddEvent("Finding deployable version")
+	span.AddEvent("Step 2: Finding deployable version")
 	deployableVersion := p.findDeployableVersion(ctx, candidateVersions, releaseTarget)
 	if deployableVersion == nil {
 		span.AddEvent("No deployable version found (blocked by policies)")
-		span.SetAttributes(attribute.Bool("has_desired_release", false))
+		span.SetAttributes(
+			attribute.Bool("has_desired_release", false),
+			attribute.String("reason", "blocked_by_policies"),
+		)
 		return nil, nil
 	}
 
 	span.SetAttributes(
 		attribute.String("deployable_version.id", deployableVersion.Id),
 		attribute.String("deployable_version.tag", deployableVersion.Tag),
+		attribute.String("deployable_version.created_at", deployableVersion.CreatedAt.Format("2006-01-02T15:04:05Z")),
 	)
 
 	resourceRelatedEntities := cfg.resourceRelatedEntities
@@ -112,34 +120,58 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		span.AddEvent("Computing resource relationships")
 		resource, exists := p.store.Resources.Get(releaseTarget.ResourceId)
 		if !exists {
-			return nil, fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
+			err := fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "resource not found")
+			return nil, err
 		}
 		entity := relationships.NewResourceEntity(resource)
 		resourceRelatedEntities, _ = p.store.Relationships.GetRelatedEntities(ctx, entity)
 
 		// Count total related entities
 		totalRelatedEntities := 0
+		uniqueRefs := 0
 		for _, entities := range resourceRelatedEntities {
 			totalRelatedEntities += len(entities)
+			uniqueRefs++
 		}
-		span.SetAttributes(attribute.Int("related_entities.count", totalRelatedEntities))
+		span.SetAttributes(
+			attribute.Int("related_entities.count", totalRelatedEntities),
+			attribute.Int("related_entities.unique_refs", uniqueRefs),
+		)
 	} else {
 		span.AddEvent("Using pre-computed resource relationships")
+		totalRelatedEntities := 0
+		uniqueRefs := 0
+		for _, entities := range resourceRelatedEntities {
+			totalRelatedEntities += len(entities)
+			uniqueRefs++
+		}
+		span.SetAttributes(
+			attribute.Int("related_entities.count", totalRelatedEntities),
+			attribute.Int("related_entities.unique_refs", uniqueRefs),
+			attribute.Bool("relationships.precomputed", true),
+		)
 	}
 
 	// Step 3: Resolve variables for this deployment
-	span.AddEvent("Evaluating variables")
+	span.AddEvent("Step 3: Evaluating variables")
 	resolvedVariables, err := p.variableManager.Evaluate(ctx, releaseTarget, resourceRelatedEntities)
 	if err != nil {
 		span.RecordError(err)
+		span.SetStatus(codes.Error, "variable evaluation failed")
 		return nil, err
 	}
 	span.SetAttributes(attribute.Int("resolved_variables.count", len(resolvedVariables)))
 
 	// Step 4: Construct the desired release
-	span.AddEvent("Building release")
+	span.AddEvent("Step 4: Building release")
 	desiredRelease := BuildRelease(ctx, releaseTarget, deployableVersion, resolvedVariables)
-	span.SetAttributes(attribute.Bool("has_desired_release", true))
+	span.SetAttributes(
+		attribute.Bool("has_desired_release", true),
+		attribute.String("release.id", desiredRelease.ID()),
+	)
+	span.SetStatus(codes.Ok, "planning completed successfully")
 
 	return desiredRelease, nil
 }
@@ -161,26 +193,37 @@ func (p *Planner) findDeployableVersion(
 		))
 	defer span.End()
 
+	span.AddEvent("Getting policies for release target")
 	policies, err := p.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 	if err != nil {
 		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get policies")
 		return nil
 	}
 	span.SetAttributes(attribute.Int("policies.count", len(policies)))
 
 	environment, ok := p.store.Environments.Get(releaseTarget.EnvironmentId)
 	if !ok {
-		span.RecordError(fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId))
+		err := fmt.Errorf("environment %s not found", releaseTarget.EnvironmentId)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "environment not found")
 		return nil
 	}
+	span.SetAttributes(attribute.String("environment.name", environment.Name))
 
+	span.AddEvent("Building evaluators from policies")
 	evaluators := p.policyManager.PlannerGlobalEvaluators()
+	globalEvaluatorCount := len(evaluators)
 	for _, policy := range policies {
 		for _, rule := range policy.Rules {
 			evaluators = append(evaluators, p.policyManager.PlannerPolicyEvaluators(&rule)...)
 		}
 	}
-	span.SetAttributes(attribute.Int("evaluators.total", len(evaluators)))
+	span.SetAttributes(
+		attribute.Int("evaluators.total", len(evaluators)),
+		attribute.Int("evaluators.global", globalEvaluatorCount),
+		attribute.Int("evaluators.policy", len(evaluators)-globalEvaluatorCount),
+	)
 
 	scope := evaluator.EvaluatorScope{
 		Environment:   environment,
@@ -218,32 +261,41 @@ func (p *Planner) findDeployableVersion(
 
 	// Now check version-independent evaluators once upfront
 	span.AddEvent("Evaluating version-independent policies")
-	for _, eval := range versionIndependentEvals {
+	for i, eval := range versionIndependentEvals {
 		result := eval.Evaluate(ctx, scope)
 		if !result.Allowed {
 			// All versions blocked by version-independent policy
 			span.AddEvent("All versions blocked by version-independent policy",
-				trace.WithAttributes(attribute.String("message", result.Message)))
-			span.SetAttributes(attribute.Bool("found_deployable_version", false))
+				trace.WithAttributes(
+					attribute.String("message", result.Message),
+					attribute.Int("evaluator_index", i),
+				))
+			span.SetAttributes(
+				attribute.Bool("found_deployable_version", false),
+				attribute.Int("blocked_by_evaluator_index", i),
+			)
 			return nil
 		}
 	}
 
 	span.AddEvent("Evaluating version-dependent policies")
 	versionsEvaluated := 0
+	versionsBlocked := 0
 	for _, version := range candidateVersions {
 		versionsEvaluated++
 		eligible := true
 		scope.Version = version
 
-		for _, eval := range versionDependentEvals {
+		for evalIdx, eval := range versionDependentEvals {
 			result := eval.Evaluate(ctx, scope)
 			if !result.Allowed {
 				eligible = false
+				versionsBlocked++
 				span.AddEvent("Version blocked by policy",
 					trace.WithAttributes(
 						attribute.String("version.id", version.Id),
 						attribute.String("version.tag", version.Tag),
+						attribute.Int("evaluator_index", evalIdx),
 						attribute.String("message", result.Message),
 					))
 				break
@@ -257,19 +309,31 @@ func (p *Planner) findDeployableVersion(
 					attribute.String("version.id", version.Id),
 					attribute.String("version.tag", version.Tag),
 					attribute.Int("versions_evaluated", versionsEvaluated),
+					attribute.Int("versions_blocked", versionsBlocked),
 				))
 			span.SetAttributes(
 				attribute.Bool("found_deployable_version", true),
 				attribute.String("selected_version.id", version.Id),
 				attribute.String("selected_version.tag", version.Tag),
+				attribute.Int("versions_evaluated", versionsEvaluated),
+				attribute.Int("versions_blocked", versionsBlocked),
 			)
+			span.SetStatus(codes.Ok, "found deployable version")
 			return version
 		}
 	}
 
 	// No eligible versions found
 	span.AddEvent("No eligible versions found (all blocked by policies)",
-		trace.WithAttributes(attribute.Int("versions_evaluated", versionsEvaluated)))
-	span.SetAttributes(attribute.Bool("found_deployable_version", false))
+		trace.WithAttributes(
+			attribute.Int("versions_evaluated", versionsEvaluated),
+			attribute.Int("versions_blocked", versionsBlocked),
+		))
+	span.SetAttributes(
+		attribute.Bool("found_deployable_version", false),
+		attribute.Int("versions_evaluated", versionsEvaluated),
+		attribute.Int("versions_blocked", versionsBlocked),
+	)
+	span.SetStatus(codes.Ok, "no deployable version (all blocked)")
 	return nil
 }
