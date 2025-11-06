@@ -2,12 +2,13 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
@@ -70,10 +71,6 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		return err
 	}
 
-	fmt.Println("Deployments: ", len(s.Deployments.Items()))
-	fmt.Println("Environments: ", len(s.Environments.Items()))
-	fmt.Println("Resources: ", len(s.Resources.Items()))
-
 	// Group deployments by SystemId for O(1) lookup
 	deploymentsBySystem := make(map[string][]*oapi.Deployment)
 	for _, deployment := range s.Deployments.Items() {
@@ -82,7 +79,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 
 	// Iterate environments, then matching deployments, then resources
 	for _, environment := range s.Environments.Items() {
-		fmt.Println("Progressing Environment: ", environment.Name)
+		log.Info("Progressing Environment: ", "environment", environment.Name)
 		matchingDeployments := deploymentsBySystem[environment.SystemId]
 		if len(matchingDeployments) == 0 {
 			continue
@@ -110,9 +107,6 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 			}
 		}
 	}
-
-	rt, _ := s.ReleaseTargets.Items()
-	fmt.Println("ReleaseTargets: ", len(rt))
 
 	s.changeset.Clear()
 

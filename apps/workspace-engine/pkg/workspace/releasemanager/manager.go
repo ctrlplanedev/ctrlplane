@@ -438,6 +438,10 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 }
 
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
+	return m.GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
+}
+
+func (m *Manager) GetReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (*oapi.ReleaseTargetState, error) {
 	// Get current release (may be nil if no successful jobs exist)
 	currentRelease, _, err := m.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
 	if err != nil {
@@ -447,7 +451,13 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 	}
 
 	// Get desired release (may be nil if no versions available or blocked by policies)
-	desiredRelease, err := m.planner.PlanDeployment(ctx, releaseTarget)
+	// If relationships are provided, use them; otherwise PlanDeployment will compute on-demand
+	var desiredRelease *oapi.Release
+	if resourceRelationships != nil {
+		desiredRelease, err = m.planner.PlanDeployment(ctx, releaseTarget, deployment.WithResourceRelatedEntities(resourceRelationships))
+	} else {
+		desiredRelease, err = m.planner.PlanDeployment(ctx, releaseTarget)
+	}
 	if err != nil {
 		log.Error("error planning deployment for release target", "error", err.Error())
 		return nil, err
@@ -469,17 +479,21 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 }
 
 func (m *Manager) GetCachedReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
+	return m.GetCachedReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
+}
+
+func (m *Manager) GetCachedReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (*oapi.ReleaseTargetState, error) {
 	key := releaseTarget.Key()
 
 	if m.releaseTargetStateCache == nil {
-		return m.GetReleaseTargetState(ctx, releaseTarget)
+		return m.GetReleaseTargetStateWithRelationships(ctx, releaseTarget, resourceRelationships)
 	}
 
 	if state, ok := m.releaseTargetStateCache.Get(key); ok {
 		return state, nil
 	}
 
-	return m.GetReleaseTargetState(ctx, releaseTarget)
+	return m.GetReleaseTargetStateWithRelationships(ctx, releaseTarget, resourceRelationships)
 }
 
 func (m *Manager) Planner() *deployment.Planner {
