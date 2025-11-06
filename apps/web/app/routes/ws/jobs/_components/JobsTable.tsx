@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { cn } from "~/lib/utils";
+import { DeploymentFilter } from "./DeploymentFilter";
 import { EnvironmentFilter } from "./EnvironmentFilter";
 import { JobActions } from "./JobActions";
 import { JobStatusBadge } from "./JobStatusBadge";
@@ -124,6 +125,7 @@ export function JobsTable({ jobs }: JobsTableProps) {
       <div className="flex justify-end gap-2 px-2">
         <ResourceFilter />
         <EnvironmentFilter />
+        <DeploymentFilter />
       </div>
       <Table className="border-b">
         <JobsTableHeader />

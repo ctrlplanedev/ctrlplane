@@ -2216,6 +2216,8 @@ export interface operations {
         resourceId?: string;
         /** @description ID of the environment */
         environmentId?: string;
+        /** @description ID of the deployment */
+        deploymentId?: string;
       };
       header?: never;
       path: {

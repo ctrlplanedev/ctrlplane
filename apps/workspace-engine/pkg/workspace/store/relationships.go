@@ -187,7 +187,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 
 	entityID := entity.GetID()
 	entityType := entity.GetType()
-	
+
 	span.SetAttributes(
 		attribute.String("entity_id", entityID),
 		attribute.String("entity_type", string(entityType)),
@@ -199,21 +199,21 @@ func (r *RelationshipRules) GetRelatedEntities(
 	span.AddEvent("Collecting relationship rules")
 	allRules := r.repo.RelationshipRules.Items()
 	span.SetAttributes(attribute.Int("total_rules", len(allRules)))
-	
+
 	fromRules, err := r.collectFromRules(ctx, allRules, entity)
 	if err != nil {
 		span.RecordError(err)
-		log.Error("Failed to collect from rules", 
+		log.Error("Failed to collect from rules",
 			"entity_id", entityID,
 			"error", err.Error())
 		return nil, err
 	}
 	span.SetAttributes(attribute.Int("from_rules_count", len(fromRules)))
-	
+
 	toRules, err := r.collectToRules(ctx, allRules, entity)
 	if err != nil {
 		span.RecordError(err)
-		log.Error("Failed to collect to rules", 
+		log.Error("Failed to collect to rules",
 			"entity_id", entityID,
 			"error", err.Error())
 		return nil, err
@@ -230,12 +230,12 @@ func (r *RelationshipRules) GetRelatedEntities(
 	fromRelations, err := r.collectFromRelations(ctx, fromRules, entity)
 	if err != nil {
 		span.RecordError(err)
-		log.Error("Failed to collect from relations", 
+		log.Error("Failed to collect from relations",
 			"entity_id", entityID,
 			"error", err.Error())
 		return nil, err
 	}
-	
+
 	fromRelationsCount := 0
 	for _, relations := range fromRelations {
 		fromRelationsCount += len(relations)
@@ -246,12 +246,12 @@ func (r *RelationshipRules) GetRelatedEntities(
 	toRelations, err := r.collectToRelations(ctx, toRules, entity)
 	if err != nil {
 		span.RecordError(err)
-		log.Error("Failed to collect to relations", 
+		log.Error("Failed to collect to relations",
 			"entity_id", entityID,
 			"error", err.Error())
 		return nil, err
 	}
-	
+
 	toRelationsCount := 0
 	for _, relations := range toRelations {
 		toRelationsCount += len(relations)
@@ -274,7 +274,7 @@ func (r *RelationshipRules) GetRelatedEntities(
 		totalRelations += len(relations)
 		uniqueRefs++
 	}
-	
+
 	span.SetAttributes(
 		attribute.Int("total_relations", totalRelations),
 		attribute.Int("unique_refs", uniqueRefs),

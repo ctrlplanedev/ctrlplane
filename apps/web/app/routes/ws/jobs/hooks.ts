@@ -41,15 +41,36 @@ export function useEnvironmentId() {
   return { environmentId, setEnvironmentId };
 }
 
+export function useDeploymentId() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deploymentId = searchParams.get("deploymentId") ?? undefined;
+
+  const setDeploymentId = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value === "all") {
+      newParams.delete("deploymentId");
+      setSearchParams(newParams);
+      return;
+    }
+
+    newParams.set("deploymentId", value);
+    setSearchParams(newParams);
+  };
+
+  return { deploymentId, setDeploymentId };
+}
+
 export function useJobs() {
   const { workspace } = useWorkspace();
   const { resourceId } = useResourceId();
   const { environmentId } = useEnvironmentId();
+  const { deploymentId } = useDeploymentId();
 
   const { data, isLoading } = trpc.jobs.list.useQuery({
     workspaceId: workspace.id,
     resourceId,
     environmentId,
+    deploymentId,
   });
 
   return { jobs: data?.items ?? [], isLoading };

@@ -12,6 +12,7 @@ export const jobsRouter = router({
         workspaceId: z.uuid(),
         resourceId: z.string().optional(),
         environmentId: z.string().optional(),
+        deploymentId: z.string().optional(),
         limit: z.number().min(1).max(1000).default(100),
         offset: z.number().min(0).default(0),
       }),
@@ -25,6 +26,7 @@ export const jobsRouter = router({
             query: {
               resourceId: input.resourceId,
               environmentId: input.environmentId,
+              deploymentId: input.deploymentId,
               limit: input.limit,
               offset: input.offset,
             },

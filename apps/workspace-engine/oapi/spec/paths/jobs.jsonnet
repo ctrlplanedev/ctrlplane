@@ -12,6 +12,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.offsetParam(),
         openapi.queryStringParam('resourceId', 'ID of the resource'),
         openapi.queryStringParam('environmentId', 'ID of the environment'),
+        openapi.queryStringParam('deploymentId', 'ID of the deployment'),
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('JobWithRelease'))
                  + openapi.notFoundResponse()

@@ -2963,6 +2963,15 @@
                   "schema": {
                      "type": "string"
                   }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "query",
+                  "name": "deploymentId",
+                  "required": false,
+                  "schema": {
+                     "type": "string"
+                  }
                }
             ],
             "responses": {

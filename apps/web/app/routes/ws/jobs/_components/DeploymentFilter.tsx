@@ -15,25 +15,27 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { useEnvironmentId } from "../hooks";
+import { useDeploymentId } from "../hooks";
 
-function useEnvironmentsSearch() {
+function useDeploymentsSearch() {
   const { workspace } = useWorkspace();
 
-  const { data, isLoading } = trpc.environment.list.useQuery({
+  const { data, isLoading } = trpc.deployment.list.useQuery({
     workspaceId: workspace.id,
   });
 
-  return { environments: data?.items ?? [], isLoading };
+  return { deployments: data?.items ?? [], isLoading };
 }
 
-export function EnvironmentFilter() {
+export function DeploymentFilter() {
   const [open, setOpen] = useState(false);
 
-  const { environments } = useEnvironmentsSearch();
-  const { environmentId, setEnvironmentId } = useEnvironmentId();
+  const { deployments } = useDeploymentsSearch();
+  const { deploymentId, setDeploymentId } = useDeploymentId();
 
-  const selectedEnvironment = environments.find((e) => e.id === environmentId);
+  const selectedDeployment = deployments.find(
+    (d) => d.deployment.id === deploymentId,
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -44,24 +46,24 @@ export function EnvironmentFilter() {
         >
           <Filter className="size-4" />
           <span className="truncate">
-            {selectedEnvironment?.name ?? "All environments"}
+            {selectedDeployment?.deployment.name ?? "All deployments"}
           </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="p-0">
         <Command>
-          <CommandInput placeholder="Search environments..." />
+          <CommandInput placeholder="Search deployments..." />
           <CommandList>
-            <CommandItem value="all" onSelect={() => setEnvironmentId("all")}>
-              All environments
+            <CommandItem value="all" onSelect={() => setDeploymentId("all")}>
+              All deployments
             </CommandItem>
-            {environments.map((environment) => (
+            {deployments.map((deployment) => (
               <CommandItem
-                key={environment.id}
-                value={`${environment.name} (${environment.id})`}
-                onSelect={() => setEnvironmentId(environment.id)}
+                key={deployment.deployment.id}
+                value={`${deployment.deployment.name} (${deployment.deployment.id})`}
+                onSelect={() => setDeploymentId(deployment.deployment.id)}
               >
-                {environment.name}
+                {deployment.deployment.name}
               </CommandItem>
             ))}
           </CommandList>
