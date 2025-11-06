@@ -37,7 +37,7 @@ func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId st
 // - Environment progression soak time (wait N minutes after deployment)
 // - Environment progression maximum age (deployments become too old)
 func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
-	ctx, span := tracer.Start(ctx, "HandleWorkspaceTick")
+	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
 	defer span.End()
 
 	span.SetAttributes(
