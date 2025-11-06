@@ -289,6 +289,15 @@ func (r *RelationshipRules) collectFromRelations(
 	entity *oapi.RelatableEntity,
 ) (map[string][]*oapi.EntityRelation, error) {
 	result := make(map[string][]*oapi.EntityRelation)
+	ctx, span := tracer.Start(ctx, "RelationshipRules.collectFromRelations")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int("from_rules_count", len(fromRules)),
+		attribute.String("entity_id", entity.GetID()),
+		attribute.String("entity_type", string(entity.GetType())),
+	)
+
 	for _, rule := range fromRules {
 		var toEntities []*oapi.RelatableEntity
 		if rule.ToType == oapi.RelatableEntityTypeResource {
@@ -336,6 +345,14 @@ func (r *RelationshipRules) collectToRelations(
 	entity *oapi.RelatableEntity,
 ) (map[string][]*oapi.EntityRelation, error) {
 	result := make(map[string][]*oapi.EntityRelation)
+	ctx, span := tracer.Start(ctx, "RelationshipRules.collectToRelations")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int("to_rules_count", len(toRules)),
+		attribute.String("entity_id", entity.GetID()),
+		attribute.String("entity_type", string(entity.GetType())),
+	)
 	for _, rule := range toRules {
 		var fromEntities []*oapi.RelatableEntity
 		if rule.FromType == oapi.RelatableEntityTypeResource {
@@ -385,6 +402,15 @@ func (r *RelationshipRules) findMatchingResources(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool,
 ) ([]*oapi.RelatableEntity, error) {
+	ctx, span := tracer.Start(ctx, "RelationshipRules.findMatchingResources")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("rule_reference", rule.Reference),
+		attribute.String("entity_id", sourceEntity.GetID()),
+		attribute.String("entity_type", string(sourceEntity.GetType())),
+	)
+
 	resources := r.getAllResources()
 
 	results := make([]*oapi.RelatableEntity, 0)
@@ -432,6 +458,14 @@ func (r *RelationshipRules) findMatchingEnvironments(
 	sourceEntity *oapi.RelatableEntity,
 	evaluateFromTo bool,
 ) ([]*oapi.RelatableEntity, error) {
+	ctx, span := tracer.Start(ctx, "RelationshipRules.findMatchingEnvironments")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("rule_reference", rule.Reference),
+		attribute.String("entity_id", sourceEntity.GetID()),
+		attribute.String("entity_type", string(sourceEntity.GetType())),
+	)
 	environments := r.getAllEnvironments()
 
 	results := make([]*oapi.RelatableEntity, 0)
