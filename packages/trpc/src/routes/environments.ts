@@ -215,4 +215,36 @@ export const environmentRouter = router({
 
       return environment;
     }),
+
+  delete: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        environmentId: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, environmentId } = input;
+
+      const env = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+        { params: { path: { workspaceId, environmentId } } },
+      );
+
+      if (!env.data) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Environment not found",
+        });
+      }
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.EnvironmentDeleted,
+        timestamp: Date.now(),
+        data: env.data,
+      });
+
+      return { success: true };
+    }),
 });
