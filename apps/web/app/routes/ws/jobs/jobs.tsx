@@ -1,4 +1,3 @@
-import { trpc } from "~/api/trpc";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,8 +7,8 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { Skeleton } from "~/components/ui/skeleton";
-import { useWorkspace } from "~/components/WorkspaceProvider";
-import { JobsTable } from "./_components/jobs-table/JobsTable";
+import { JobsTable } from "./_components/JobsTable";
+import { useJobs } from "./hooks";
 
 export function meta() {
   return [
@@ -55,13 +54,7 @@ function JobsEmptyState() {
 }
 
 export default function Jobs() {
-  const { workspace } = useWorkspace();
-  const jobQuery = trpc.jobs.list.useQuery({
-    workspaceId: workspace.id,
-  });
-
-  const jobs = jobQuery.data?.items ?? [];
-  const isLoading = jobQuery.isLoading;
+  const { jobs, isLoading } = useJobs();
 
   return (
     <div className="flex h-full flex-col">
@@ -83,13 +76,7 @@ export default function Jobs() {
       </header>
 
       <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <JobsLoadingSkeleton />
-        ) : jobs.length === 0 ? (
-          <JobsEmptyState />
-        ) : (
-          <JobsTable jobs={jobs} />
-        )}
+        {isLoading ? <JobsLoadingSkeleton /> : <JobsTable jobs={jobs} />}
       </div>
     </div>
   );

@@ -1136,12 +1136,12 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 	manager := New(st)
 
 	b.Logf("N×M Amplified Scaling Test:")
-	b.Logf("  Resources: %d (%d services, %d databases, %d caches, %d queues)", 
+	b.Logf("  Resources: %d (%d services, %d databases, %d caches, %d queues)",
 		numResources, numServices, numDatabases, numCaches, numQueues)
 	b.Logf("  Release Targets: %d", len(releaseTargets))
 	b.Logf("  Reference Variables per Target: %d", numReferenceVariables)
-	b.Logf("  Total Variable Evaluations per Iteration: %d", len(releaseTargets) * numReferenceVariables)
-	b.Logf("  Expected GetRelatedEntities calls: %d", len(releaseTargets) * numReferenceVariables)
+	b.Logf("  Total Variable Evaluations per Iteration: %d", len(releaseTargets)*numReferenceVariables)
+	b.Logf("  Expected GetRelatedEntities calls: %d", len(releaseTargets)*numReferenceVariables)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -1416,4 +1416,3 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 		})
 	}
 }
-

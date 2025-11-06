@@ -13,6 +13,7 @@ import {
 } from "~/components/ui/table";
 import { cn } from "~/lib/utils";
 import { JobActions } from "./JobActions";
+import { JobFilters } from "./JobFilters";
 import { JobStatusBadge } from "./JobStatusBadge";
 
 type JobsTableProps = {
@@ -118,16 +119,19 @@ function JobsTableRow({
 
 export function JobsTable({ jobs }: JobsTableProps) {
   return (
-    <Table className="border-b">
-      <JobsTableHeader />
-      <TableBody>
-        {jobs.map((jobWithRelease) => (
-          <JobsTableRow
-            key={jobWithRelease.job.id}
-            jobWithRelease={jobWithRelease}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <div className="space-y-2 py-2">
+      <JobFilters />
+      <Table className="border-b">
+        <JobsTableHeader />
+        <TableBody>
+          {jobs.map((jobWithRelease) => (
+            <JobsTableRow
+              key={jobWithRelease.job.id}
+              jobWithRelease={jobWithRelease}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

@@ -10,6 +10,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.limitParam(),
         openapi.offsetParam(),
+        openapi.queryStringParam('resourceId', 'ID of the resource'),
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('JobWithRelease'))
                  + openapi.notFoundResponse()

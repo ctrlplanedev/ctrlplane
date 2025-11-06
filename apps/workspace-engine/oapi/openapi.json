@@ -2945,6 +2945,15 @@
                      "minimum": 0,
                      "type": "integer"
                   }
+               },
+               {
+                  "description": "ID of the resource",
+                  "in": "query",
+                  "name": "resourceId",
+                  "required": false,
+                  "schema": {
+                     "type": "string"
+                  }
                }
             ],
             "responses": {

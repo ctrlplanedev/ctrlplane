@@ -36,7 +36,7 @@ export default [
         ),
       ]),
 
-      route("jobs", "routes/ws/jobs.tsx"),
+      route("jobs", "routes/ws/jobs/jobs.tsx"),
 
       route("environments", "routes/ws/environments.tsx"),
       route("environments", "routes/ws/environments/_layout.tsx", [

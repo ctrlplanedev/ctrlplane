@@ -2212,6 +2212,8 @@ export interface operations {
         limit?: number;
         /** @description Number of items to skip */
         offset?: number;
+        /** @description ID of the resource */
+        resourceId?: string;
       };
       header?: never;
       path: {

@@ -792,4 +792,3 @@ func BenchmarkProcessChanges_OnlyDeletes(b *testing.B) {
 		}
 	}
 }
-

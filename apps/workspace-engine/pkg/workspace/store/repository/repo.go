@@ -56,7 +56,7 @@ func New(wsId string) *InMemoryStore {
 type InMemoryStore struct {
 	router *persistence.RepositoryRouter
 
-	Resources         cmap.ConcurrentMap[string, 	*oapi.Resource]
+	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
 	ResourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
 

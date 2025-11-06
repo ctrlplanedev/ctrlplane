@@ -10,6 +10,7 @@ export const jobsRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
+        resourceId: z.string().optional(),
         limit: z.number().min(1).max(1000).default(100),
         offset: z.number().min(0).default(0),
       }),
@@ -20,6 +21,11 @@ export const jobsRouter = router({
         {
           params: {
             path: { workspaceId: input.workspaceId },
+            query: {
+              resourceId: input.resourceId,
+              limit: input.limit,
+              offset: input.offset,
+            },
           },
         },
       );

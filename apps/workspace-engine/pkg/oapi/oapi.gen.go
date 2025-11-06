@@ -660,6 +660,9 @@ type GetJobsParams struct {
 
 	// Offset Number of items to skip
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// ResourceId ID of the resource
+	ResourceId *string `form:"resourceId,omitempty" json:"resourceId,omitempty"`
 }
 
 // GetRelationshipRulesParams defines parameters for GetRelationshipRules.
@@ -2268,6 +2271,14 @@ func (siw *ServerInterfaceWrapper) GetJobs(c *gin.Context) {
 	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "resourceId" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "resourceId", c.Request.URL.Query(), &params.ResourceId)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceId: %w", err), http.StatusBadRequest)
 		return
 	}
 

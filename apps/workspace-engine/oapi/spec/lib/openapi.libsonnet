@@ -7,7 +7,7 @@
     description: description,
     schema: { type: 'string' },
   },
-
+  
   integerParam(name, description):: {
     name: name,
     'in': 'path',
@@ -80,6 +80,14 @@
     schema: {
       type: 'string',
     },
+  },
+
+  queryStringParam(name, description):: {
+    name: name,
+    'in': 'query',
+    required: false,
+    description: description,
+    schema: { type: 'string' },
   },
   
   // Response helpers
