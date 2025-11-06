@@ -8,11 +8,37 @@ import (
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 
 	"github.com/charmbracelet/log"
 )
+
+func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) ([]*oapi.ReleaseTarget, error) {
+	environments := ws.Systems().Environments(deployment.SystemId)
+	releaseTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, environment := range environments {
+		resources, err := ws.Environments().Resources(ctx, environment.Id)
+		if err != nil {
+			return nil, err
+		}
+		for _, resource := range resources {
+			isMatch, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+			if err != nil {
+				return nil, err
+			}
+			if isMatch {
+				releaseTargets = append(releaseTargets, &oapi.ReleaseTarget{
+					EnvironmentId: environment.Id,
+					DeploymentId:  deployment.Id,
+					ResourceId:    resource.Id,
+				})
+			}
+		}
+	}
+	return releaseTargets, nil
+}
 
 func HandleDeploymentCreated(
 	ctx context.Context,
@@ -28,7 +54,56 @@ func HandleDeploymentCreated(
 		return err
 	}
 
+	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
+	if err != nil {
+		return err
+	}
+	for _, releaseTarget := range releaseTargets {
+		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
+		if err != nil {
+			return err
+		}
+
+		if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		}
+	}
+
 	return nil
+}
+
+func getRemovedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
+	removedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, oldReleaseTarget := range oldReleaseTargets {
+		found := false
+		for _, newReleaseTarget := range newReleaseTargets {
+			if oldReleaseTarget.Key() == newReleaseTarget.Key() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			removedReleaseTargets = append(removedReleaseTargets, oldReleaseTarget)
+		}
+	}
+	return removedReleaseTargets
+}
+
+func getAddedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
+	addedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, newReleaseTarget := range newReleaseTargets {
+		found := false
+		for _, oldReleaseTarget := range oldReleaseTargets {
+			if oldReleaseTarget.Key() == newReleaseTarget.Key() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			addedReleaseTargets = append(addedReleaseTargets, newReleaseTarget)
+		}
+	}
+	return addedReleaseTargets
 }
 
 func HandleDeploymentUpdated(
@@ -46,10 +121,31 @@ func HandleDeploymentUpdated(
 		return err
 	}
 
-	// Check if this deployment now has a valid job agent configured and
-	// if there are any InvalidJobAgent jobs that need to be retriggered
-	if shouldRetriggerJobs(ws, deployment) {
-		retriggerInvalidJobAgentJobs(ctx, ws, deployment)
+	oldReleaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deployment.Id)
+	if err != nil {
+		return err
+	}
+
+	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
+	if err != nil {
+		return err
+	}
+
+	removedReleaseTargets := getRemovedReleaseTargets(oldReleaseTargets, releaseTargets)
+	addedReleaseTargets := getAddedReleaseTargets(oldReleaseTargets, releaseTargets)
+
+	for _, removedReleaseTarget := range removedReleaseTargets {
+		ws.ReleaseTargets().Remove(removedReleaseTarget.Key())
+	}
+	for _, addedReleaseTarget := range addedReleaseTargets {
+		err := ws.ReleaseTargets().Upsert(ctx, addedReleaseTarget)
+		if err != nil {
+			return err
+		}
+
+		if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
+			ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget, false)
+		}
 	}
 
 	return nil
@@ -66,6 +162,15 @@ func HandleDeploymentDeleted(
 	}
 
 	ws.Deployments().Remove(ctx, deployment.Id)
+
+	oldReleaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deployment.Id)
+	if err != nil {
+		return err
+	}
+
+	for _, oldReleaseTarget := range oldReleaseTargets {
+		ws.ReleaseTargets().Remove(oldReleaseTarget.Key())
+	}
 
 	return nil
 }

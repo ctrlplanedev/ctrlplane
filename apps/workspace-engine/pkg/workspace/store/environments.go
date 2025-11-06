@@ -68,3 +68,17 @@ func (e *Environments) Resources(ctx context.Context, environmentId string) ([]*
 
 	return resourcesSlice, nil
 }
+
+func (e *Environments) ForResource(ctx context.Context, resource *oapi.Resource) ([]*oapi.Environment, error) {
+	environments := make([]*oapi.Environment, 0)
+	for _, environment := range e.Items() {
+		matched, err := selector.Match(ctx, environment.ResourceSelector, resource)
+		if err != nil {
+			return nil, err
+		}
+		if matched {
+			environments = append(environments, environment)
+		}
+	}
+	return environments, nil
+}

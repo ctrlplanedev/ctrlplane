@@ -137,3 +137,33 @@ func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.Re
 
 	return policiesSlice, nil
 }
+
+func (r *ReleaseTargets) GetForResource(ctx context.Context, resourceId string) ([]*oapi.ReleaseTarget, error) {
+	releaseTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, releaseTarget := range r.targets {
+		if releaseTarget.ResourceId == resourceId {
+			releaseTargets = append(releaseTargets, releaseTarget)
+		}
+	}
+	return releaseTargets, nil
+}
+
+func (r *ReleaseTargets) GetForDeployment(ctx context.Context, deploymentId string) ([]*oapi.ReleaseTarget, error) {
+	releaseTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, releaseTarget := range r.targets {
+		if releaseTarget.DeploymentId == deploymentId {
+			releaseTargets = append(releaseTargets, releaseTarget)
+		}
+	}
+	return releaseTargets, nil
+}
+
+func (r *ReleaseTargets) GetForEnvironment(ctx context.Context, environmentId string) ([]*oapi.ReleaseTarget, error) {
+	releaseTargets := make([]*oapi.ReleaseTarget, 0)
+	for _, releaseTarget := range r.targets {
+		if releaseTarget.EnvironmentId == environmentId {
+			releaseTargets = append(releaseTargets, releaseTarget)
+		}
+	}
+	return releaseTargets, nil
+}

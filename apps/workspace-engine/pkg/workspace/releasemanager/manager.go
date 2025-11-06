@@ -119,7 +119,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *changeset.ChangeS
 		wg.Add(1)
 		go func(target *oapi.ReleaseTarget) {
 			defer wg.Done()
-			if err := m.reconcileTarget(ctx, target, false); err != nil {
+			if err := m.ReconcileTarget(ctx, target, false); err != nil {
 				log.Warn("error reconciling release target", "error", err.Error())
 			}
 		}(rt)
@@ -192,7 +192,7 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		return err
 	}
 
-	return m.reconcileTarget(ctx, releaseTarget, true)
+	return m.ReconcileTarget(ctx, releaseTarget, true)
 }
 
 func (m *Manager) setDesiredReleaseSpanAttributes(span trace.Span, desiredRelease *oapi.Release) {
@@ -232,19 +232,19 @@ func (m *Manager) setDesiredReleaseSpanAttributes(span trace.Span, desiredReleas
 // Returns early if:
 //   - No desired release (no versions available or blocked by user policies)
 //   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
-func (m *Manager) reconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool) error {
+func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool) error {
 	ctx, span := tracer.Start(ctx, "ReconcileTarget")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
 
-	targetKey := releaseTarget.Key()
-	lockInterface, _ := m.releaseTargetLocks.LoadOrStore(targetKey, &sync.Mutex{})
-	lock := lockInterface.(*sync.Mutex)
+	// targetKey := releaseTarget.Key()
+	// lockInterface, _ := m.releaseTargetLocks.LoadOrStore(targetKey, &sync.Mutex{})
+	// lock := lockInterface.(*sync.Mutex)
 
-	// Serialize processing for this specific release target
-	lock.Lock()
-	defer lock.Unlock()
+	// // Serialize processing for this specific release target
+	// lock.Lock()
+	// defer lock.Unlock()
 
 	// Phase 1: PLANNING - What should be deployed? (READ-ONLY)
 	desiredRelease, err := m.planner.PlanDeployment(ctx, releaseTarget)

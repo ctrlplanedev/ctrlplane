@@ -54,7 +54,7 @@ func (e *Deployments) Variables(deploymentId string) map[string]*oapi.Deployment
 	vars := make(map[string]*oapi.DeploymentVariable)
 	for _, variable := range e.repo.DeploymentVariables {
 		if variable.DeploymentId == deploymentId {
-			vars[variable.Id] = variable
+			vars[variable.Key] = variable
 		}
 	}
 	return vars
@@ -86,4 +86,18 @@ func (e *Deployments) Resources(ctx context.Context, deploymentId string) ([]*oa
 	}
 
 	return resourcesSlice, nil
+}
+
+func (e *Deployments) ForResource(ctx context.Context, resource *oapi.Resource) ([]*oapi.Deployment, error) {
+	deployments := make([]*oapi.Deployment, 0)
+	for _, deployment := range e.Items() {
+		matched, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+		if err != nil {
+			return nil, err
+		}
+		if matched {
+			deployments = append(deployments, deployment)
+		}
+	}
+	return deployments, nil
 }

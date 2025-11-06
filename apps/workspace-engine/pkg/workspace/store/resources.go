@@ -183,3 +183,13 @@ func (r *Resources) ForEnvironment(ctx context.Context, environment *oapi.Enviro
 func (r *Resources) ForDeployment(ctx context.Context, deployment *oapi.Deployment) map[string]*oapi.Resource {
 	return r.ForSelector(ctx, deployment.ResourceSelector)
 }
+
+func (r *Resources) ForProvider(ctx context.Context, providerId string) map[string]*oapi.Resource {
+	resources := make(map[string]*oapi.Resource)
+	for _, resource := range r.Items() {
+		if resource.ProviderId != nil && *resource.ProviderId == providerId {
+			resources[resource.Id] = resource
+		}
+	}
+	return resources
+}

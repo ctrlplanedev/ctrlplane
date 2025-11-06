@@ -21,6 +21,14 @@ func HandleDeploymentVariableCreated(
 
 	ws.DeploymentVariables().Upsert(ctx, deploymentVariable.Id, deploymentVariable)
 
+	releaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deploymentVariable.DeploymentId)
+	if err != nil {
+		return err
+	}
+	for _, releaseTarget := range releaseTargets {
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+	}
+
 	return nil
 }
 
@@ -35,6 +43,14 @@ func HandleDeploymentVariableUpdated(
 	}
 
 	ws.DeploymentVariables().Upsert(ctx, deploymentVariable.Id, deploymentVariable)
+
+	releaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deploymentVariable.DeploymentId)
+	if err != nil {
+		return err
+	}
+	for _, releaseTarget := range releaseTargets {
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+	}
 
 	return nil
 }
@@ -51,5 +67,12 @@ func HandleDeploymentVariableDeleted(
 
 	ws.DeploymentVariables().Remove(ctx, deploymentVariable.Id)
 
+	releaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deploymentVariable.DeploymentId)
+	if err != nil {
+		return err
+	}
+	for _, releaseTarget := range releaseTargets {
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+	}
 	return nil
 }
