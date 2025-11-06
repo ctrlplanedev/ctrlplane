@@ -1,7 +1,6 @@
 package gradualrollout
 
 import (
-	"fmt"
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -105,6 +104,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed(t *testing.T) {
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
+
 	// Set time far enough in the future that all rollouts are complete
 	timeGetter := func() time.Time {
 		return baseTime.Add(10 * time.Minute)
@@ -147,6 +156,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
+
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
 
 	// Set current time
 	timeGetter := func() time.Time {
@@ -213,6 +232,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout(t *testing.T) 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
+
 	// Set time to 90 seconds after start
 	// This should allow positions 0 (0s) and 1 (60s) but not 2 (120s), 3 (180s), 4 (240s)
 	timeGetter := func() time.Time {
@@ -264,6 +293,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady(t *testin
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
+
 	// Set time to exactly 120 seconds (when position 2 becomes ready)
 	timeGetter := func() time.Time {
 		return baseTime.Add(120 * time.Second)
@@ -309,6 +348,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails(t *testing.
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
+
 	// Set time to 30 seconds after start
 	// Position 0 (0s) should be deployed, positions 1 (60s) and 2 (120s) should be pending
 	timeGetter := func() time.Time {
@@ -350,12 +399,19 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
-	// Create releases for all targets (all deployed)
-	releaseTargets := []*oapi.ReleaseTarget{
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[0].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[1].Id, environment.Id, deployment.Id)),
-		st.ReleaseTargets.Get(fmt.Sprintf("%s-%s-%s", resources[2].Id, environment.Id, deployment.Id)),
+	// Create release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
 	}
+
+	// Create releases for all targets (all deployed)
 
 	for _, rt := range releaseTargets {
 		release := &oapi.Release{
@@ -403,6 +459,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
+
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
 
 	timeGetter := func() time.Time {
 		return baseTime.Add(90 * time.Second)
@@ -482,6 +548,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized(t *testing.T
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
+
 	// With 3 targets and timeScaleInterval=60:
 	// Position 0: 0s
 	// Position 1: (1/3)*60 = 20s
@@ -527,6 +603,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing
 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
+
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
 
 	// Approval happens 1 hour after version creation
 	approvalTime := baseTime.Add(1 * time.Hour)
@@ -603,6 +689,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget(t *testing.T) {
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
 
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
+
 	timeGetter := func() time.Time {
 		return baseTime.Add(1 * time.Minute)
 	}
@@ -643,6 +739,16 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_ZeroTimeScaleInterval(t *test
 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	version := generateDeploymentVersion(ctx, deployment.Id, baseTime, st)
+
+	// Create release targets for each resource
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
 
 	timeGetter := func() time.Time {
 		return baseTime.Add(1 * time.Second)
