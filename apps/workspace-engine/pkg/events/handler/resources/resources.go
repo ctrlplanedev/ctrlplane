@@ -87,23 +87,6 @@ func getRemovedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleas
 	return removedReleaseTargets
 }
 
-func getAddedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseTargets []*oapi.ReleaseTarget) []*oapi.ReleaseTarget {
-	addedReleaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, newReleaseTarget := range newReleaseTargets {
-		found := false
-		for _, oldReleaseTarget := range oldReleaseTargets {
-			if oldReleaseTarget.Key() == newReleaseTarget.Key() {
-				found = true
-				break
-			}
-		}
-		if !found {
-			addedReleaseTargets = append(addedReleaseTargets, newReleaseTarget)
-		}
-	}
-	return addedReleaseTargets
-}
-
 func HandleResourceUpdated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -132,19 +115,18 @@ func HandleResourceUpdated(
 	}
 
 	removedReleaseTargets := getRemovedReleaseTargets(oldReleaseTargets, releaseTargets)
-	addedReleaseTargets := getAddedReleaseTargets(oldReleaseTargets, releaseTargets)
 
 	for _, removedReleaseTarget := range removedReleaseTargets {
 		ws.ReleaseTargets().Remove(removedReleaseTarget.Key())
 	}
 
-	for _, addedReleaseTarget := range addedReleaseTargets {
-		err := ws.ReleaseTargets().Upsert(ctx, addedReleaseTarget)
+	for _, releaseTarget := range releaseTargets {
+		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 		if err != nil {
 			return err
 		}
 
-		ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
 	}
 
 	return nil
