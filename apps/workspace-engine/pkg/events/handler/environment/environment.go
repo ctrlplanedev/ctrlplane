@@ -6,6 +6,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/relationships/compute"
 
 	"encoding/json"
 )
@@ -35,6 +37,15 @@ func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, environmen
 	return releaseTargets, nil
 }
 
+func computeRelations(ctx context.Context, ws *workspace.Workspace, environment *oapi.Environment) []*relationships.EntityRelation {
+	rules := make([]*oapi.RelationshipRule, 0)
+	for _, rule := range ws.RelationshipRules().Items() {
+		rules = append(rules, rule)
+	}
+	entity := relationships.NewEnvironmentEntity(environment)
+	return compute.FindRelationsForEntity(ctx, rules, entity, ws.Relations().GetRelatableEntities(ctx))
+}
+
 func HandleEnvironmentCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -47,6 +58,11 @@ func HandleEnvironmentCreated(
 
 	if err := ws.Environments().Upsert(ctx, environment); err != nil {
 		return err
+	}
+
+	relations := computeRelations(ctx, ws, environment)
+	for _, relation := range relations {
+		ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, environment)
@@ -109,8 +125,21 @@ func HandleEnvironmentUpdated(
 		return err
 	}
 
+	oldRelations := ws.Relations().ForEntity(relationships.NewEnvironmentEntity(environment))
+	
 	if err := ws.Environments().Upsert(ctx, environment); err != nil {
 		return err
+	}
+
+	newRelations := computeRelations(ctx, ws, environment)
+	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
+
+	for _, removedRelation := range removedRelations {
+		ws.Relations().Remove(removedRelation.Key())
+	}
+
+	for _, relation := range newRelations {
+		ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, environment)
@@ -148,6 +177,12 @@ func HandleEnvironmentDeleted(
 	oldReleaseTargets, err := ws.ReleaseTargets().GetForEnvironment(ctx, environment.Id)
 	if err != nil {
 		return err
+	}
+
+	entity := relationships.NewEnvironmentEntity(environment)
+	oldRelations := ws.Relations().ForEntity(entity)
+	for _, oldRelation := range oldRelations {
+		ws.Relations().Remove(oldRelation.Key())
 	}
 
 	ws.Environments().Remove(ctx, environment.Id)

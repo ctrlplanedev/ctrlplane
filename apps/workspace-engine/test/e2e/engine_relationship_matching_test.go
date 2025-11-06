@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/test/integration"
@@ -2573,17 +2574,15 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 		// Add a new cluster in the same region
 		// The engine automatically invalidates all potential source entities (like VPC)
 		// that might have relationships to this new resource
-		_, err = engine.Workspace().Resources().Upsert(ctx, &oapi.Resource{
-			Id:   "cluster-east-2",
-			Name: "cluster-east-2",
-			Kind: "kubernetes-cluster",
+		engine.PushEvent(ctx, handler.ResourceCreate, &oapi.Resource{
+			Id:          "cluster-east-2",
+			Name:        "cluster-east-2",
+			Kind:        "kubernetes-cluster",
+			WorkspaceId: engine.Workspace().ID,
 			Metadata: map[string]string{
 				"region": "us-east-1",
 			},
 		})
-		if err != nil {
-			t.Fatalf("failed to add cluster-east-2: %v", err)
-		}
 
 		// Verify we now have 2 related clusters
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -2703,17 +2702,14 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 		}
 
 		// Update cluster to different region
-		_, err = engine.Workspace().Resources().Upsert(ctx, &oapi.Resource{
-			Id:   "cluster-1",
-			Name: "cluster-1",
-			Kind: "kubernetes-cluster",
-			Metadata: map[string]string{
-				"region": "us-west-2",
-			},
-		})
-		if err != nil {
-			t.Fatalf("failed to update cluster-1: %v", err)
+		cluster, ok := engine.Workspace().Resources().Get("cluster-1")
+		if !ok {
+			t.Fatalf("cluster-1 not found")
 		}
+		cluster.Metadata = map[string]string{
+			"region": "us-west-2",
+		}
+		engine.PushEvent(ctx, handler.ResourceUpdate, cluster)
 
 		// Verify relationship is now gone
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -2816,10 +2812,11 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 		}
 
 		// Delete the relationship rule
-		err = engine.Workspace().RelationshipRules().Remove(ctx, "rel-rule-1")
-		if err != nil {
-			t.Fatalf("failed to delete relationship rule: %v", err)
+		rule, ok := engine.Workspace().RelationshipRules().Get("rel-rule-1")
+		if !ok {
+			t.Fatalf("rel-rule-1 not found")
 		}
+		engine.PushEvent(ctx, handler.RelationshipRuleDelete, rule)
 
 		// Verify relationships are gone
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -2913,7 +2910,7 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 		matcher := &oapi.RelationshipRule_Matcher{}
 		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region"})
 
-		err = engine.Workspace().RelationshipRules().Upsert(ctx, &oapi.RelationshipRule{
+		engine.PushEvent(ctx, handler.RelationshipRuleCreate, &oapi.RelationshipRule{
 			Id:           "rel-rule-1",
 			Name:         "vpc-to-cluster",
 			Reference:    "contains",
@@ -2922,10 +2919,8 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 			FromSelector: fromSelector,
 			ToSelector:   toSelector,
 			Matcher:      *matcher,
+			WorkspaceId:  engine.Workspace().ID,
 		})
-		if err != nil {
-			t.Fatalf("failed to add relationship rule: %v", err)
-		}
 
 		// Verify relationships now exist
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -3254,7 +3249,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 		matcher := &oapi.RelationshipRule_Matcher{}
 		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region && to.metadata.tier == 'prod'"})
 
-		err = engine.Workspace().RelationshipRules().Upsert(ctx, &oapi.RelationshipRule{
+		engine.PushEvent(ctx, handler.RelationshipRuleUpdate, &oapi.RelationshipRule{
 			Id:           "rel-rule-1",
 			Name:         "vpc-to-cluster",
 			Reference:    "contains",
@@ -3264,9 +3259,6 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 			ToSelector:   toSelector,
 			Matcher:      *matcher,
 		})
-		if err != nil {
-			t.Fatalf("failed to update relationship rule: %v", err)
-		}
 
 		// Verify now only 1 cluster matches (tier == 'prod')
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)

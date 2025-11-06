@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
@@ -33,6 +34,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.ResourceVariables = NewResourceVariables(store)
 	store.ResourceProviders = NewResourceProviders(store)
 	store.GithubEntities = NewGithubEntities(store)
+	store.Relations = NewRelations(store)
 
 	return store
 }
@@ -59,6 +61,7 @@ type Store struct {
 	Relationships            *RelationshipRules
 	Variables                *Variables
 	GithubEntities           *GithubEntities
+	Relations                *Relations
 }
 
 func (s *Store) Repo() *repository.InMemoryStore {
@@ -69,6 +72,10 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	err := s.repo.Router().Apply(ctx, changes)
 	if err != nil {
 		return err
+	}
+
+	if setStatus != nil {
+		setStatus("Computing release targets")
 	}
 
 	// Group deployments by SystemId for O(1) lookup
@@ -105,6 +112,21 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 					ResourceId:    resource.Id,
 				})
 			}
+		}
+	}
+
+	allEntities := s.Relations.GetRelatableEntities(ctx)
+	for _, rule := range s.Relationships.Items() {
+		if setStatus != nil {
+			setStatus("Computing relationships for rule: " + rule.Id)
+		}
+
+		relations, err := compute.FindRuleRelationships(ctx, rule, allEntities)
+		if err != nil {
+			return err
+		}
+		for _, relation := range relations {
+			s.Relations.Upsert(ctx, relation)
 		}
 	}
 

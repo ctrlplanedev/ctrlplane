@@ -138,14 +138,14 @@ func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.Re
 	return policiesSlice, nil
 }
 
-func (r *ReleaseTargets) GetForResource(ctx context.Context, resourceId string) ([]*oapi.ReleaseTarget, error) {
+func (r *ReleaseTargets) GetForResource(ctx context.Context, resourceId string) []*oapi.ReleaseTarget {
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, releaseTarget := range r.targets {
 		if releaseTarget.ResourceId == resourceId {
 			releaseTargets = append(releaseTargets, releaseTarget)
 		}
 	}
-	return releaseTargets, nil
+	return releaseTargets
 }
 
 func (r *ReleaseTargets) GetForDeployment(ctx context.Context, deploymentId string) ([]*oapi.ReleaseTarget, error) {
@@ -179,4 +179,12 @@ func (r *ReleaseTargets) GetForSystem(ctx context.Context, systemId string) ([]*
 		releaseTargets = append(releaseTargets, envTargets...)
 	}
 	return releaseTargets, nil
+}
+
+func (r *ReleaseTargets) RemoveForResource(ctx context.Context, resourceId string) {
+	for _, releaseTarget := range r.targets {
+		if releaseTarget.ResourceId == resourceId {
+			r.Remove(releaseTarget.Key())
+		}
+	}
 }

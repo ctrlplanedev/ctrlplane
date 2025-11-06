@@ -10,6 +10,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 
 	"github.com/charmbracelet/log"
@@ -40,6 +42,15 @@ func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment
 	return releaseTargets, nil
 }
 
+func computeRelations(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) []*relationships.EntityRelation {
+	rules := make([]*oapi.RelationshipRule, 0)
+	for _, rule := range ws.RelationshipRules().Items() {
+		rules = append(rules, rule)
+	}
+	entity := relationships.NewDeploymentEntity(deployment)
+	return compute.FindRelationsForEntity(ctx, rules, entity, ws.Relations().GetRelatableEntities(ctx))
+}
+
 func HandleDeploymentCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -52,6 +63,11 @@ func HandleDeploymentCreated(
 
 	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
 		return err
+	}
+
+	relations := computeRelations(ctx, ws, deployment)
+	for _, relation := range relations {
+		ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
@@ -116,14 +132,27 @@ func HandleDeploymentUpdated(
 		return err
 	}
 
+	oldReleaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deployment.Id)
+	if err != nil {
+		return err
+	}
+
+	oldRelations := ws.Relations().ForEntity(relationships.NewDeploymentEntity(deployment))
+
 	// Upsert the new deployment
 	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
 		return err
 	}
 
-	oldReleaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deployment.Id)
-	if err != nil {
-		return err
+	newRelations := computeRelations(ctx, ws, deployment)
+	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
+
+	for _, removedRelation := range removedRelations {
+		ws.Relations().Remove(removedRelation.Key())
+	}
+
+	for _, relation := range newRelations {
+		ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
@@ -165,12 +194,18 @@ func HandleDeploymentDeleted(
 		return err
 	}
 
-	ws.Deployments().Remove(ctx, deployment.Id)
-
 	oldReleaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deployment.Id)
 	if err != nil {
 		return err
 	}
+
+	entity := relationships.NewDeploymentEntity(deployment)
+	oldRelations := ws.Relations().ForEntity(entity)
+	for _, oldRelation := range oldRelations {
+		ws.Relations().Remove(oldRelation.Key())
+	}
+
+	ws.Deployments().Remove(ctx, deployment.Id)
 
 	for _, oldReleaseTarget := range oldReleaseTargets {
 		ws.ReleaseTargets().Remove(oldReleaseTarget.Key())

@@ -21,10 +21,7 @@ func HandleResourceVariableCreated(
 
 	ws.ResourceVariables().Upsert(ctx, resourceVariable)
 
-	releaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
-	if err != nil {
-		return err
-	}
+	releaseTargets := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
 	for _, releaseTarget := range releaseTargets {
 		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
 	}
@@ -44,10 +41,7 @@ func HandleResourceVariableUpdated(
 
 	ws.ResourceVariables().Upsert(ctx, resourceVariable)
 
-	releaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
-	if err != nil {
-		return err
-	}
+	releaseTargets := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
 	for _, releaseTarget := range releaseTargets {
 		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
 	}
@@ -67,10 +61,7 @@ func HandleResourceVariableDeleted(
 
 	ws.ResourceVariables().Remove(ctx, resourceVariable.ResourceId, resourceVariable.Key)
 
-	releaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
-	if err != nil {
-		return err
-	}
+	releaseTargets := ws.ReleaseTargets().GetForResource(ctx, resourceVariable.ResourceId)
 	for _, releaseTarget := range releaseTargets {
 		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
 	}

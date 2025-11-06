@@ -73,7 +73,7 @@ func (m *Manager) Evaluate(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 	resolvedFromResource := 0
 	resolvedFromValue := 0
 	resolvedFromDefault := 0
-	
+
 	for key, deploymentVar := range deploymentVariables {
 		// Resolution priority:
 		// 1. Resource variable (if it exists with the same key)

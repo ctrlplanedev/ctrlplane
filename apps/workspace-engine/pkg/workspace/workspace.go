@@ -116,3 +116,7 @@ func (w *Workspace) Changeset() *statechange.ChangeSet[any] {
 func (w *Workspace) DeploymentVariableValues() *store.DeploymentVariableValues {
 	return w.store.DeploymentVariableValues
 }
+
+func (w *Workspace) Relations() *store.Relations {
+	return w.store.Relations
+}

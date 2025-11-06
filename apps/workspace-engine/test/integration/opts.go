@@ -84,6 +84,9 @@ func newEventsBuilder() *eventsBuilder {
 	}
 }
 
+// Global map to track events for resource provider batches
+var resourceProviderBatchEvents = make(map[string][]event)
+
 // ===== Workspace Options =====
 
 func WithSystem(options ...SystemOption) WorkspaceOption {
@@ -280,6 +283,15 @@ func WithResourceProvider(options ...ResourceProviderOption) WorkspaceOption {
 				handler.ResourceProviderSetResources,
 				payload,
 			)
+
+			// Push any post-events (like resource variable creates) that were accumulated
+			if events, ok := resourceProviderBatchEvents[batchId]; ok {
+				for _, ev := range events {
+					ws.PushEvent(context.Background(), ev.Type, ev.Data)
+				}
+				// Clean up the events map
+				delete(resourceProviderBatchEvents, batchId)
+			}
 
 			// Clean up the metadata marker
 			delete(rp.Metadata, "_test_batch_id")
@@ -653,6 +665,10 @@ func WithResourceProviderResource(options ...ResourceOption) ResourceProviderOpt
 			}
 			rp.Metadata["_test_batch_id"] = batchId
 		}
+
+		// Store the post-events (like resource variable creates) for this batch
+		// These will be pushed after the Set event in WithResourceProvider
+		resourceProviderBatchEvents[batchId] = append(resourceProviderBatchEvents[batchId], eb.postEvents...)
 
 		// Note: We don't push the event here because we need to accumulate all resources first.
 		// The event will be pushed after the provider is created in a post-processing step.

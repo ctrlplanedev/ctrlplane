@@ -1,6 +1,9 @@
 package relationships
 
-import "workspace-engine/pkg/oapi"
+import (
+	"fmt"
+	"workspace-engine/pkg/oapi"
+)
 
 // RelatedEntity represents an entity that is related to a resource via a relationship
 type RelatedEntity[E any] struct {
@@ -28,4 +31,14 @@ type RelationshipsResult struct {
 	RuleName         string
 	RelationshipType string
 	Relationships    []Relationship
+}
+
+type EntityRelation struct {
+	Rule *oapi.RelationshipRule
+	From *oapi.RelatableEntity
+	To   *oapi.RelatableEntity
+}
+
+func (e *EntityRelation) Key() string {
+	return fmt.Sprintf("%s:%s:%s:%s:%s", e.Rule.Id, e.From.GetType(), e.From.GetID(), e.To.GetType(), e.To.GetID())
 }

@@ -33,7 +33,7 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 		return false
 	}
 
-	if err == nil && len(pm.Properties) > 0 {
+	if len(pm.Properties) > 0 {
 		for _, pm := range pm.Properties {
 			matcher := NewPropertyMatcher(&pm)
 			if !matcher.Evaluate(ctx, from, to) {
@@ -238,6 +238,12 @@ func (m *CelMatcher) Evaluate(ctx context.Context, from map[string]any, to map[s
 		return false
 	}
 	return boolVal
+}
+
+// EntityToMap converts an entity (Resource, Deployment, or Environment) to a map for CEL evaluation
+// This is exported for use in incremental relationship computation
+func EntityToMap(entity any) (map[string]any, error) {
+	return entityToMap(entity)
 }
 
 // entityToMap converts an entity (Resource, Deployment, or Environment) to a map for CEL evaluation

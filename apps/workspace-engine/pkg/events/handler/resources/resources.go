@@ -5,11 +5,13 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/relationships/compute"
 
 	"encoding/json"
 )
 
-func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, resource *oapi.Resource) ([]*oapi.ReleaseTarget, error) {
+func computeReleaseTargets(ctx context.Context, ws *workspace.Workspace, resource *oapi.Resource) ([]*oapi.ReleaseTarget, error) {
 	environments, err := ws.Environments().ForResource(ctx, resource)
 	if err != nil {
 		return nil, err
@@ -37,6 +39,15 @@ func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, resource *
 	return releaseTargets, nil
 }
 
+func computeRelations(ctx context.Context, ws *workspace.Workspace, resource *oapi.Resource) []*relationships.EntityRelation {
+	rules := make([]*oapi.RelationshipRule, 0)
+	for _, rule := range ws.RelationshipRules().Items() {
+		rules = append(rules, rule)
+	}
+	entity := relationships.NewResourceEntity(resource)
+	return compute.FindRelationsForEntity(ctx, rules, entity, ws.Relations().GetRelatableEntities(ctx))
+}
+
 func HandleResourceCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -53,18 +64,18 @@ func HandleResourceCreated(
 		return err
 	}
 
-	releaseTargets, err := makeReleaseTargets(ctx, ws, resource)
+	relations := computeRelations(ctx, ws, resource)
+	for _, relation := range relations {
+		ws.Relations().Upsert(ctx, relation)
+	}
+
+	releaseTargets, err := computeReleaseTargets(ctx, ws, resource)
 	if err != nil {
 		return err
 	}
 
 	for _, releaseTarget := range releaseTargets {
-		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
-		if err != nil {
-			return err
-		}
-
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 	}
 
 	return nil
@@ -97,25 +108,25 @@ func HandleResourceUpdated(
 		return err
 	}
 
-	// Get old resource for comparison (to detect property changes)
-	// oldResource, exists := ws.Resources().Get(resource.Id)
-
 	if _, err := ws.Resources().Upsert(ctx, resource); err != nil {
 		return err
 	}
 
-	oldReleaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
-	if err != nil {
-		return err
+	oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
+	oldRelations := ws.Relations().ForEntity(relationships.NewResourceEntity(resource))
+	newRelations := computeRelations(ctx, ws, resource)
+	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
+
+	for _, removedRelation := range removedRelations {
+		ws.Relations().Remove(removedRelation.Key())
 	}
 
-	releaseTargets, err := makeReleaseTargets(ctx, ws, resource)
+	releaseTargets, err := computeReleaseTargets(ctx, ws, resource)
 	if err != nil {
 		return err
 	}
 
 	removedReleaseTargets := getRemovedReleaseTargets(oldReleaseTargets, releaseTargets)
-
 	for _, removedReleaseTarget := range removedReleaseTargets {
 		ws.ReleaseTargets().Remove(removedReleaseTarget.Key())
 	}
@@ -142,9 +153,11 @@ func HandleResourceDeleted(
 		return err
 	}
 
-	oldReleaseTargets, err := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
-	if err != nil {
-		return err
+	oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
+	entity := relationships.NewResourceEntity(resource)
+	oldRelations := ws.Relations().ForEntity(entity)
+	for _, oldRelation := range oldRelations {
+		ws.Relations().Remove(oldRelation.Key())
 	}
 
 	ws.Resources().Remove(ctx, resource.Id)
