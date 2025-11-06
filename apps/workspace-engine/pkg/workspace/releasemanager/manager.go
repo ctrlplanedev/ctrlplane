@@ -129,7 +129,6 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			}
 		} else {
 			// Handle upsert - reconcile the target
-			fmt.Printf("upserting release target: %+v\n", state.entity)
 			if err := m.ReconcileTarget(ctx, state.entity, false); err != nil {
 				log.Warn("error reconciling release target", "error", err.Error())
 			}

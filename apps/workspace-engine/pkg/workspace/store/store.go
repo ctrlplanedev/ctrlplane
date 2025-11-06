@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
@@ -69,6 +70,9 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		return err
 	}
 
+	fmt.Println("Deployments: ", len(s.Deployments.Items()))
+	fmt.Println("Environments: ", len(s.Environments.Items()))
+
 	// Group deployments by SystemId for O(1) lookup
 	deploymentsBySystem := make(map[string][]*oapi.Deployment)
 	for _, deployment := range s.Deployments.Items() {
@@ -104,6 +108,11 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 			}
 		}
 	}
+
+	rt, _ := s.ReleaseTargets.Items()
+	fmt.Println("ReleaseTargets: ", len(rt))
+
+	s.changeset.Clear()
 
 	return nil
 }
