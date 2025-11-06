@@ -11,17 +11,26 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/cel-go/cel"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("workspace-engine/pkg/workspace/relationships/matcher")
 
 // EntityMapCache stores pre-computed map representations of entities for CEL evaluation
 // Key is entity ID, value is the map representation
 type EntityMapCache map[string]map[string]any
 
 func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *oapi.RelatableEntity, to *oapi.RelatableEntity) bool {
+	ctx, span := tracer.Start(ctx, "Relationships.Matches")
+	defer span.End()
+
 	pm, err := matcher.AsPropertiesMatcher()
 
 	if err != nil {
 		log.Warn("failed to get properties matcher", "error", err)
+		span.SetStatus(codes.Error, "failed to get properties matcher")
+		return false
 	}
 
 	if err == nil && len(pm.Properties) > 0 {
@@ -60,6 +69,9 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 // MatchesWithCache evaluates a matcher with optional cached entity maps for performance
 // If cache is provided and contains the entities, it will use cached maps instead of converting
 func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *oapi.RelatableEntity, to *oapi.RelatableEntity, cache EntityMapCache) bool {
+	ctx, span := tracer.Start(ctx, "Relationships.MatchesWithCache")
+	defer span.End()
+
 	pm, err := matcher.AsPropertiesMatcher()
 
 	if err != nil {
@@ -203,6 +215,9 @@ type CelMatcher struct {
 }
 
 func (m *CelMatcher) Evaluate(ctx context.Context, from map[string]any, to map[string]any) bool {
+	_, span := tracer.Start(ctx, "Relationships.CelMatcher.Evaluate")
+	defer span.End()
+
 	// Convert entities to maps for CEL evaluation
 	celCtx := map[string]any{
 		"from": from,
