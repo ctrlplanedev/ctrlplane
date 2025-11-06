@@ -319,6 +319,10 @@ func (r *RelationshipRules) findMatchingResources(
 	results := make([]*oapi.RelatableEntity, 0)
 
 	for _, resource := range resources {
+		if sourceEntity.GetType() == oapi.RelatableEntityTypeResource && sourceEntity.GetID() == resource.Id {
+			continue
+		}
+
 		// Check entity selector if provided
 		if entitySelector != nil {
 			matched, err := selector.Match(ctx, entitySelector, resource)
@@ -362,6 +366,9 @@ func (r *RelationshipRules) findMatchingEnvironments(
 	results := make([]*oapi.RelatableEntity, 0)
 
 	for _, environment := range environments {
+		if sourceEntity.GetType() == oapi.RelatableEntityTypeEnvironment && sourceEntity.GetID() == environment.Id {
+			continue
+		}
 		// Check entity selector if provided
 		if entitySelector != nil {
 			matched, err := selector.Match(ctx, entitySelector, environment)
@@ -405,6 +412,9 @@ func (r *RelationshipRules) findMatchingDeployments(
 	results := make([]*oapi.RelatableEntity, 0)
 
 	for _, deployment := range deployments {
+		if sourceEntity.GetType() == oapi.RelatableEntityTypeDeployment && sourceEntity.GetID() == deployment.Id {
+			continue
+		}
 		// Check entity selector if provided
 		if entitySelector != nil {
 			matched, err := selector.Match(ctx, entitySelector, deployment)
