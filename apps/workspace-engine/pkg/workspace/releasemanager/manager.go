@@ -437,10 +437,6 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships)
 }
 
-func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
-	return m.GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
-}
-
 func (m *Manager) GetReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (*oapi.ReleaseTargetState, error) {
 	// Get current release (may be nil if no successful jobs exist)
 	currentRelease, _, err := m.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)

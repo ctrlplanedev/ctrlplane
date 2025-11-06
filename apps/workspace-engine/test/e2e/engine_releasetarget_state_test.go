@@ -62,7 +62,7 @@ func TestEngine_ReleaseTargetState_NoCurrentNoDesired(t *testing.T) {
 	}
 
 	// Get the release target state
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -136,7 +136,7 @@ func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
 	}
 
 	// Get the release target state
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 	}
 
 	// Get the release target state
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -344,7 +344,7 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 	}
 
 	// Get the release target state
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -441,7 +441,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	}
 
 	// State 1: Job is Pending - no current release
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -453,7 +453,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	job.Status = oapi.InProgress
 	engine.PushEvent(ctx, handler.JobUpdate, job)
 
-	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -467,7 +467,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	job.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, job)
 
-	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -515,7 +515,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	job2Fresh.CompletedAt = &now2
 	engine.PushEvent(ctx, handler.JobUpdate, job2Fresh)
 
-	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -623,7 +623,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 	}
 
 	// Check state of release target with completed job
-	state1, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, completedReleaseTarget)
+	state1, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, completedReleaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state for completed: %v", err)
 	}
@@ -635,7 +635,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 	}
 
 	// Check state of release target without completed job
-	state2, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, pendingReleaseTarget)
+	state2, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, pendingReleaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state for pending: %v", err)
 	}
@@ -781,7 +781,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 	}
 
 	// Get the release target state
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
