@@ -7,13 +7,24 @@ import (
 	"workspace-engine/pkg/workspace"
 
 	"encoding/json"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var tracer = otel.Tracer("events/handler/deploymentversion")
 
 func HandleDeploymentVersionCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	ctx, span := tracer.Start(ctx, "HandleDeploymentVersionCreated")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("event.type", string(event.EventType)),
+	)
+
 	deploymentVersion := &oapi.DeploymentVersion{}
 	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
 		return err
@@ -40,6 +51,12 @@ func HandleDeploymentVersionUpdated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	ctx, span := tracer.Start(ctx, "HandleDeploymentVersionUpdated")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("event.type", string(event.EventType)),
+	)
+
 	deploymentVersion := &oapi.DeploymentVersion{}
 	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
 		return err
@@ -65,6 +82,12 @@ func HandleDeploymentVersionDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	ctx, span := tracer.Start(ctx, "HandleDeploymentVersionDeleted")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("event.type", string(event.EventType)),
+	)
+
 	deploymentVersion := &oapi.DeploymentVersion{}
 	if err := json.Unmarshal(event.Data, deploymentVersion); err != nil {
 		return err
@@ -76,11 +99,15 @@ func HandleDeploymentVersionDeleted(
 	if err != nil {
 		return err
 	}
+
+	reconileReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, releaseTarget := range releaseTargets {
 		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+			reconileReleaseTargets = append(reconileReleaseTargets, releaseTarget)
 		}
 	}
+
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
 
 	return nil
 }

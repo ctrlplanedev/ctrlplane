@@ -290,6 +290,32 @@ func (m *Manager) reconcileTargetWithRelationships(
 	return nil
 }
 
+func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.ReleaseTarget, forceRedeploy bool) error {
+	ctx, span := tracer.Start(ctx, "ReconcileTargets",
+		trace.WithAttributes(
+			attribute.Int("reconcile.count", len(releaseTargets)),
+			attribute.Bool("force_redeploy", forceRedeploy),
+		))
+	defer span.End()
+
+	// Process targets in parallel for better performance
+	concurrency.ProcessInChunks(
+		releaseTargets,
+		100, // chunk size
+		10,  // concurrency
+		func(rt *oapi.ReleaseTarget) (any, error) {
+			if err := m.ReconcileTarget(ctx, rt, forceRedeploy); err != nil {
+				log.Error("failed to reconcile release target",
+					"release_target", rt.Key(),
+					"error", err.Error())
+			}
+			return nil, nil
+		},
+	)
+
+	return nil
+}
+
 // reconcileTarget ensures a release target is in its desired state (WRITES TO STORE).
 // Uses a three-phase deployment pattern: planning, eligibility checking, and execution.
 //

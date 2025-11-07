@@ -74,6 +74,8 @@ func HandleDeploymentCreated(
 	if err != nil {
 		return err
 	}
+
+	reconileReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, releaseTarget := range releaseTargets {
 		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 		if err != nil {
@@ -81,9 +83,11 @@ func HandleDeploymentCreated(
 		}
 
 		if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+			reconileReleaseTargets = append(reconileReleaseTargets, releaseTarget)
 		}
 	}
+
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
 
 	return nil
 }

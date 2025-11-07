@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"workspace-engine/pkg/cmap"
-	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/oapi"
@@ -121,18 +120,7 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 	// Clear processed schedules
 	scheduler.Clear(dueKeys)
 
-	concurrency.ProcessInChunks(
-		targetsToReconcile,
-		100,
-		10,
-		func(rt *oapi.ReleaseTarget) (any, error) {
-			err := ws.ReleaseManager().ReconcileTarget(ctx, rt, false)
-			if err != nil {
-				log.Error("failed to reconcile release target", "error", err)
-			}
-			return nil, nil
-		},
-	)
+	ws.ReleaseManager().ReconcileTargets(ctx, targetsToReconcile, false)
 
 	return nil
 }

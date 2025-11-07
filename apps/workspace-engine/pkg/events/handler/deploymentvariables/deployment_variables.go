@@ -25,9 +25,8 @@ func HandleDeploymentVariableCreated(
 	if err != nil {
 		return err
 	}
-	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
-	}
+
+	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets, false)
 
 	return nil
 }

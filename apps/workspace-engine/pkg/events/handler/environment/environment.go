@@ -153,13 +153,17 @@ func HandleEnvironmentUpdated(
 	for _, removedReleaseTarget := range removedReleaseTargets {
 		ws.ReleaseTargets().Remove(removedReleaseTarget.Key())
 	}
+
+	reconileReleaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, addedReleaseTarget := range addedReleaseTargets {
 		err := ws.ReleaseTargets().Upsert(ctx, addedReleaseTarget)
 		if err != nil {
 			return err
 		}
-		ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget, false)
+		reconileReleaseTargets = append(reconileReleaseTargets, addedReleaseTarget)
 	}
+
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
 
 	return nil
 }

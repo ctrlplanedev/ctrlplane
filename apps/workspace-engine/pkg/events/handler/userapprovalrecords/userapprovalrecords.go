@@ -68,9 +68,7 @@ func HandleUserApprovalRecordCreated(
 	if err != nil {
 		return err
 	}
-	for _, target := range relevantTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, target, false)
-	}
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false)
 
 	return nil
 }
@@ -97,9 +95,7 @@ func HandleUserApprovalRecordUpdated(
 	if err != nil {
 		return err
 	}
-	for _, target := range relevantTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, target, false)
-	}
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false)
 
 	return nil
 }
@@ -126,9 +122,8 @@ func HandleUserApprovalRecordDeleted(
 	if err != nil {
 		return err
 	}
-	for _, target := range relevantTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, target, false)
-	}
+
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false)
 
 	return nil
 }
