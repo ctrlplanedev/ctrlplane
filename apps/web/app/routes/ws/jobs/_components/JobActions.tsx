@@ -1,6 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
-import { IconCopy, IconSwitch } from "@tabler/icons-react";
+import { Copy, TriangleAlert } from "lucide-react";
 import { capitalCase } from "change-case";
 import { EllipsisIcon } from "lucide-react";
 import { useCopyToClipboard } from "react-use";
@@ -68,7 +68,7 @@ function CopyJobIdAction({
       }}
       className="flex items-center gap-2"
     >
-      <IconCopy className="h-4 w-4" />
+      <Copy className="h-4 w-4" />
       Copy job ID
     </DropdownMenuItem>
   );
@@ -98,7 +98,7 @@ function UpdateJobStatusAction({
     <Dialog>
       <DialogTrigger asChild>
         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-          <IconSwitch className="h-4 w-4" />
+          <TriangleAlert className="h-4 w-4" />
           Override status
         </DropdownMenuItem>
       </DialogTrigger>

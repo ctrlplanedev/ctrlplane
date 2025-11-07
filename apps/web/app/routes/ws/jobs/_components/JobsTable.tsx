@@ -1,5 +1,5 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-import { IconExternalLink } from "@tabler/icons-react";
+import { ExternalLink } from "lucide-react";
 import prettyMs from "pretty-ms";
 
 import { buttonVariants } from "~/components/ui/button";
@@ -66,7 +66,7 @@ function LinksCell({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
             )}
           >
             {label}
-            <IconExternalLink className="size-3 shrink-0" />
+            <ExternalLink className="size-3 shrink-0" />
           </a>
         ))}
       </div>

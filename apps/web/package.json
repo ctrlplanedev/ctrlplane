@@ -10,7 +10,6 @@
     "generate": "openapi-typescript ../../apps/api/openapi/openapi.json -o app/api/openapi.ts"
   },
   "dependencies": {
-    "@ctrlplane/api": "workspace:*",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/trpc": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
@@ -30,6 +29,7 @@
     "@radix-ui/react-hover-card": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-menubar": "^1.1.15",
+    "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-separator": "^1.1.7",
@@ -64,6 +64,7 @@
     "react-intersection-observer": "^9.16.0",
     "react-resizable-panels": "^2.1.9",
     "react-router": "^7.9.2",
+    "react-use": "^17.6.0",
     "reactflow": "^11.11.4",
     "recharts": "2.15.4",
     "sonner": "^1.7.4",

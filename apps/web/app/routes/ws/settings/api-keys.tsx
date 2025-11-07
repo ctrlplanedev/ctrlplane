@@ -1,6 +1,6 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
 import { useState } from "react";
-import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { Check, Copy } from "lucide-react";
 import { useCopyToClipboard } from "react-use";
 
 import { trpc } from "~/api/trpc";
@@ -71,9 +71,9 @@ function CreateApiKey() {
               className="absolute right-2 h-4 w-4 backdrop-blur-sm transition-all focus-visible:ring-0"
             >
               {isCopied ? (
-                <IconCheck className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-green-500" />
               ) : (
-                <IconCopy className="h-4 w-4" />
+                <Copy className="h-4 w-4" />
               )}
             </Button>
           </div>
