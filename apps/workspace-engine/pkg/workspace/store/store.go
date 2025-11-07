@@ -8,8 +8,6 @@ import (
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"github.com/charmbracelet/log"
 )
 
 func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
@@ -86,11 +84,19 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 
 	// Iterate environments, then matching deployments, then resources
 	for _, environment := range s.Environments.Items() {
-		log.Info("Progressing Environment: ", "environment", environment.Name)
 		matchingDeployments := deploymentsBySystem[environment.SystemId]
 		if len(matchingDeployments) == 0 {
 			continue
 		}
+
+		system, ok := s.Systems.Get(environment.SystemId)
+		if !ok {
+			continue
+		}
+
+		setStatus(
+			"Computing release targets for environment \"" + environment.Name + "\" in system \"" + system.Name + "\".",
+		)
 
 		// Check environment selector once per resource
 		for _, resource := range s.Resources.Items() {
@@ -118,7 +124,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	allEntities := s.Relations.GetRelatableEntities(ctx)
 	for _, rule := range s.Relationships.Items() {
 		if setStatus != nil {
-			setStatus("Computing relationships for rule: " + rule.Id)
+			setStatus("Computing relationships for rule: " + rule.Name)
 		}
 
 		relations, err := compute.FindRuleRelationships(ctx, rule, allEntities)
