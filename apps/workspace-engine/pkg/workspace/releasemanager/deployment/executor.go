@@ -34,7 +34,7 @@ func NewExecutor(store *store.Store) *Executor {
 // ExecuteRelease performs all write operations to deploy a release (WRITES TO STORE).
 // Precondition: Planner has already determined this release NEEDS to be deployed.
 // No additional "should we deploy" checks here - trust the planning phase.
-func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release) error {
+func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release) (job *oapi.Job, err error) {
 	ctx, span := tracer.Start(ctx, "ExecuteRelease",
 		trace.WithAttributes(
 			attribute.String("release.id", releaseToDeploy.ID()),
@@ -51,7 +51,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	if err := e.store.Releases.Upsert(ctx, releaseToDeploy); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to persist release")
-		return err
+		return nil, err
 	}
 
 	// Step 2: Create and persist new job (WRITE)
@@ -60,7 +60,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create job")
-		return err
+		return nil, err
 	}
 
 	span.AddEvent("Persisting job to store")
@@ -93,7 +93,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	}
 
 	span.SetStatus(codes.Ok, "release executed successfully")
-	return nil
+	return newJob, nil
 }
 
 // BuildRelease constructs a release object from its components.

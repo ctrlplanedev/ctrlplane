@@ -2,7 +2,6 @@ package releasemanager
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -281,22 +280,9 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 	return m.ReconcileTarget(ctx, releaseTarget, true)
 }
 
-func (m *Manager) setDesiredReleaseSpanAttributes(span trace.Span, desiredRelease *oapi.Release) {
-	if desiredRelease == nil {
-		return
-	}
-
-	span.SetAttributes(attribute.String("desired_release.id", desiredRelease.ID()))
-	span.SetAttributes(attribute.String("desired_release.version.id", desiredRelease.Version.Id))
-	span.SetAttributes(attribute.String("desired_release.version.tag", desiredRelease.Version.Tag))
-	variablesJSON, err := json.Marshal(desiredRelease.Variables)
-	if err == nil {
-		span.SetAttributes(attribute.String("desired_release.variables", string(variablesJSON)))
-	}
-}
-
 // reconcileTargetWithRelationships is like ReconcileTarget but accepts pre-computed resource relationships.
 // This is an optimization to avoid recomputing relationships for multiple release targets that share the same resource.
+// After reconciliation completes, it caches the computed state for use by other APIs.
 func (m *Manager) reconcileTargetWithRelationships(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
@@ -324,7 +310,10 @@ func (m *Manager) reconcileTargetWithRelationships(
 		return err
 	}
 
-	m.setDesiredReleaseSpanAttributes(span, desiredRelease)
+	// Cache the computed state for other APIs to use
+	// Do this early so even if reconciliation doesn't create a job, the state is available
+	span.AddEvent("Caching release target state")
+	m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
 
 	// No desired release (no versions or blocked by user policies)
 	if desiredRelease == nil {
@@ -354,6 +343,8 @@ func (m *Manager) reconcileTargetWithRelationships(
 			span.AddEvent("Job should not be created",
 				trace.WithAttributes(attribute.String("reason", reason)))
 			span.SetAttributes(attribute.String("reconciliation_result", "job_not_eligible"))
+			// Update cache after eligibility check completes
+			m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
 			return nil
 		}
 	} else {
@@ -362,13 +353,17 @@ func (m *Manager) reconcileTargetWithRelationships(
 
 	// Phase 3: EXECUTION - Create the job (WRITES)
 	span.AddEvent("Phase 3: Executing release")
-	err = m.executor.ExecuteRelease(ctx, desiredRelease)
+	_, err = m.executor.ExecuteRelease(ctx, desiredRelease)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "execution failed")
 		span.SetAttributes(attribute.String("reconciliation_result", "execution_failed"))
 		return err
 	}
+
+	// Update cache after successful job creation with the latest state
+	span.AddEvent("Updating cache after job creation")
+	m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
 
 	span.SetAttributes(attribute.String("reconciliation_result", "job_created"))
 	return nil
@@ -437,7 +432,9 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships)
 }
 
-func (m *Manager) GetReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (*oapi.ReleaseTargetState, error) {
+// cacheReleaseTargetState stores the computed release target state in the cache for other APIs to use.
+// This is called during reconciliation to populate the cache with fresh data.
+func (m *Manager) cacheReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, desiredRelease *oapi.Release) *oapi.ReleaseTargetState {
 	// Get current release (may be nil if no successful jobs exist)
 	currentRelease, _, err := m.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
 	if err != nil {
@@ -446,7 +443,22 @@ func (m *Manager) GetReleaseTargetStateWithRelationships(ctx context.Context, re
 		currentRelease = nil
 	}
 
-	// Get desired release (may be nil if no versions available or blocked by policies)
+	// Get latest job (may be nil if no jobs exist)
+	latestJob, _ := m.store.ReleaseTargets.GetLatestJob(ctx, releaseTarget)
+
+	rts := &oapi.ReleaseTargetState{
+		DesiredRelease: desiredRelease,
+		CurrentRelease: currentRelease,
+		LatestJob:      latestJob,
+	}
+
+	m.releaseTargetStateCache.SetWithTTL(releaseTarget.Key(), rts, 1, 10*time.Minute)
+
+	return rts
+}
+
+func (m *Manager) GetReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (rts *oapi.ReleaseTargetState, err error) {
+
 	// If relationships are provided, use them; otherwise PlanDeployment will compute on-demand
 	var desiredRelease *oapi.Release
 	if resourceRelationships != nil {
@@ -459,17 +471,7 @@ func (m *Manager) GetReleaseTargetStateWithRelationships(ctx context.Context, re
 		return nil, err
 	}
 
-	latestJob, _ := m.store.ReleaseTargets.GetLatestJob(ctx, releaseTarget)
-
-	rts := &oapi.ReleaseTargetState{
-		DesiredRelease: desiredRelease,
-		CurrentRelease: currentRelease,
-		LatestJob:      latestJob,
-	}
-
-	if m.releaseTargetStateCache != nil {
-		m.releaseTargetStateCache.SetWithTTL(releaseTarget.Key(), rts, 1, 2*time.Minute)
-	}
+	rts = m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
 
 	return rts, nil
 }
@@ -480,10 +482,6 @@ func (m *Manager) GetCachedReleaseTargetState(ctx context.Context, releaseTarget
 
 func (m *Manager) GetCachedReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (*oapi.ReleaseTargetState, error) {
 	key := releaseTarget.Key()
-
-	if m.releaseTargetStateCache == nil {
-		return m.GetReleaseTargetStateWithRelationships(ctx, releaseTarget, resourceRelationships)
-	}
 
 	if state, ok := m.releaseTargetStateCache.Get(key); ok {
 		return state, nil

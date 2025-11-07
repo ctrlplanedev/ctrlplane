@@ -269,15 +269,49 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	}
 
 	// Batch compute relationships
-	resourceRelationshipsMap := make(map[string]map[string][]*oapi.EntityRelation)
+	resourceIds := make([]string, 0, len(uniqueResourceIds))
 	for resourceId := range uniqueResourceIds {
-		resource, exists := ws.Resources().Get(resourceId)
-		if !exists {
-			continue
+		resourceIds = append(resourceIds, resourceId)
+	}
+
+	type relationshipResult struct {
+		resourceId      string
+		relatedEntities map[string][]*oapi.EntityRelation
+		err             error
+	}
+
+	relationshipResults, err := concurrency.ProcessInChunks(
+		resourceIds,
+		50,
+		10, // Max 10 concurrent goroutines
+		func(resourceId string) (relationshipResult, error) {
+			resource, exists := ws.Resources().Get(resourceId)
+			if !exists {
+				return relationshipResult{resourceId: resourceId, err: fmt.Errorf("resource not found")}, nil
+			}
+			entity := relationships.NewResourceEntity(resource)
+			relatedEntities, err := ws.Store().Relationships.GetRelatedEntities(c.Request.Context(), entity)
+			return relationshipResult{
+				resourceId:      resourceId,
+				relatedEntities: relatedEntities,
+				err:             err,
+			}, nil
+		},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Collect results into map
+	resourceRelationshipsMap := make(map[string]map[string][]*oapi.EntityRelation)
+	for _, r := range relationshipResults {
+		if r.err == nil && r.relatedEntities != nil {
+			resourceRelationshipsMap[r.resourceId] = r.relatedEntities
 		}
-		entity := relationships.NewResourceEntity(resource)
-		relatedEntities, _ := ws.Store().Relationships.GetRelatedEntities(c.Request.Context(), entity)
-		resourceRelationshipsMap[resourceId] = relatedEntities
 	}
 
 	// Process each release target, logging errors but continuing with valid ones
