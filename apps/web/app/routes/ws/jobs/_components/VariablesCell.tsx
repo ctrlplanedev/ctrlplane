@@ -39,14 +39,11 @@ function VariablesDialog({ jobWithRelease }: VariablesCellProps) {
         {!isEmpty && (
           <div className="flex flex-col gap-2">
             {Object.keys(variables).map((key) => (
-              <div key={key}>
+              <div key={key} className="flex min-w-0 gap-2 truncate">
                 <span className="font-medium">{key}</span>
                 {typeof variables[key] === "object" ? (
                   <pre>{JSON.stringify(variables[key], null, 2)}</pre>
                 ) : (
-                  <span>{variables[key]}</span>
-                )}
-                {typeof variables[key] !== "object" && (
                   <span>{variables[key]}</span>
                 )}
               </div>
