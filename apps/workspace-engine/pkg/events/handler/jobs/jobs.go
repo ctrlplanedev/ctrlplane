@@ -51,11 +51,6 @@ func HandleJobUpdated(
 
 	job, exists := getJob(ws, jobUpdateEvent)
 	if !exists {
-		externalID := "unset"
-		if jobUpdateEvent.Job.ExternalId != nil {
-			externalID = *jobUpdateEvent.Job.ExternalId
-		}
-		log.Warn("job not found", "job", jobUpdateEvent.Job.Id, "external_id", externalID)
 		return nil
 	}
 
