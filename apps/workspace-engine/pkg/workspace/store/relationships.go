@@ -45,6 +45,9 @@ func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
 }
 
 func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi.RelatableEntity) (map[string][]*oapi.EntityRelation, error) {
+	_, span := tracer.Start(ctx, "GetRelatedEntities")
+	defer span.End()
+
 	// Get all relations for the entity
 	entityRelations := r.store.Relations.ForEntity(entity)
 

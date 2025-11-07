@@ -1,6 +1,7 @@
 package creators
 
 import (
+	"encoding/json"
 	"workspace-engine/pkg/oapi"
 )
 
@@ -30,10 +31,26 @@ func NewLiteralValue(value any) *oapi.LiteralValue {
 		_ = literalValue.FromBooleanValue(v)
 	case map[string]any:
 		_ = literalValue.FromObjectValue(oapi.ObjectValue{Object: v})
+	case []any:
+		// Arrays are not natively supported by LiteralValue union type,
+		// but we can marshal them directly into the underlying json.RawMessage
+		_ = literalValue.UnmarshalJSON(mustMarshalJSON(v))
+	case nil:
+		// Handle explicit nil values
+		_ = literalValue.FromNullValue(true)
 	default:
 		panic("unsupported type for LiteralValue")
 	}
 	return literalValue
+}
+
+// mustMarshalJSON marshals a value to JSON or panics
+func mustMarshalJSON(v any) []byte {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic("failed to marshal value to JSON: " + err.Error())
+	}
+	return b
 }
 
 // NewValueFromLiteral creates a new Value with a literal data type
