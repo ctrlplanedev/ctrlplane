@@ -4372,6 +4372,65 @@
             "summary": "Get relationships for a resource"
          }
       },
+      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables,": {
+         "get": {
+            "description": "Returns a list of variables for a resource",
+            "operationId": "getVariablesForResource",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Identifier of the resource",
+                  "in": "path",
+                  "name": "resourceIdentifier",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ResourceVariable"
+                        }
+                     }
+                  },
+                  "description": "The requested variables"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get variables for a resource"
+         }
+      },
       "/v1/workspaces/{workspaceId}/status": {
          "get": {
             "description": "Returns the status of the engine.",

@@ -70,6 +70,21 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables,': {
+    get: {
+      summary: 'Get variables for a resource',
+      operationId: 'getVariablesForResource',
+      description: 'Returns a list of variables for a resource',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.resourceIdentifierParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('ResourceVariable'), 'The requested variables')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/resources/query': {
     post: {
       summary: 'Query resources with CEL expression',

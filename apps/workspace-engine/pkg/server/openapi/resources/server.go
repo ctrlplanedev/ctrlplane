@@ -171,3 +171,31 @@ func (r *Resources) GetRelationshipsForResource(c *gin.Context, workspaceId stri
 
 	c.JSON(http.StatusOK, relatedEntities)
 }
+
+func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, resourceIdentifier string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	resource, ok := ws.Resources().Get(resourceIdentifier)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Resource not found",
+		})
+		return
+	}
+
+	allVariables := ws.ResourceVariables().Items()
+	variables := make([]oapi.ResourceVariable, 0, len(allVariables))
+	for _, variable := range allVariables {
+		if variable.ResourceId == resource.Id {
+			variables = append(variables, *variable)
+		}
+	}
+
+	c.JSON(http.StatusOK, variables)
+}
