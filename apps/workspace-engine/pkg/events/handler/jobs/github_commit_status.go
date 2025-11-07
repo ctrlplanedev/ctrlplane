@@ -8,7 +8,13 @@ import (
 	"workspace-engine/pkg/workspace"
 
 	"github.com/google/go-github/v66/github"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var ghTracer = otel.Tracer("GithubCommitStatus")
 
 func getGithubClient(ws *workspace.Workspace, owner string) (*github.Client, error) {
 	var ghEntity *oapi.GithubEntity
@@ -62,48 +68,61 @@ func getTargetURL(owner, repo, sha string) string {
 }
 
 func MaybeAddCommitStatusFromJob(ws *workspace.Workspace, job *oapi.Job) error {
-	ctx := context.Background()
+	ctx, span := ghTracer.Start(context.Background(), "MaybeAddCommitStatusFromJob")
+	defer span.End()
+
 	release, exists := ws.Releases().Get(job.ReleaseId)
 	if !exists {
 		return nil
 	}
 
+	span.SetAttributes(attribute.String("release.id", release.ID()))
+
 	owner, ok := release.Version.Metadata["github/owner"]
 	if !ok {
 		return nil
 	}
+	span.SetAttributes(attribute.String("owner", owner))
 
 	repo, ok := release.Version.Metadata["github/repo"]
 	if !ok {
 		return nil
 	}
+	span.SetAttributes(attribute.String("repo", repo))
 
 	sha, ok := release.Version.Metadata["git/sha"]
 	if !ok {
 		return nil
 	}
+	span.SetAttributes(attribute.String("sha", sha))
 
 	resource, ok := ws.Resources().Get(release.ReleaseTarget.ResourceId)
 	if !ok {
 		return nil
 	}
+	span.SetAttributes(attribute.String("resource.id", resource.Id))
 
 	deployment, ok := ws.Deployments().Get(release.ReleaseTarget.DeploymentId)
 	if !ok {
 		return nil
 	}
+	span.SetAttributes(attribute.String("deployment.id", deployment.Id))
 
 	environment, ok := ws.Environments().Get(release.ReleaseTarget.EnvironmentId)
 	if !ok {
 		return nil
 	}
+	span.SetAttributes(attribute.String("environment.id", environment.Id))
 
 	client, err := getGithubClient(ws, owner)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get github client")
 		return err
 	}
 
 	if client == nil {
+		span.AddEvent("Github client not found", trace.WithAttributes(attribute.String("owner", owner), attribute.String("repo", repo), attribute.String("sha", sha)))
 		return nil
 	}
 
@@ -112,5 +131,16 @@ func MaybeAddCommitStatusFromJob(ws *workspace.Workspace, job *oapi.Job) error {
 		TargetURL:   github.String(getTargetURL(owner, repo, sha)),
 		Description: github.String(fmt.Sprintf("%s | %s | %s", deployment.Name, environment.Name, resource.Name)),
 	})
-	return err
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create github status")
+		return err
+	}
+
+	span.SetAttributes(attribute.String("status", getGithubStatus(job.Status)))
+	span.SetAttributes(attribute.String("target_url", getTargetURL(owner, repo, sha)))
+	span.SetAttributes(attribute.String("description", fmt.Sprintf("%s | %s | %s", deployment.Name, environment.Name, resource.Name)))
+	span.AddEvent("Github status created", trace.WithAttributes(attribute.String("status", getGithubStatus(job.Status)), attribute.String("target_url", getTargetURL(owner, repo, sha)), attribute.String("description", fmt.Sprintf("%s | %s | %s", deployment.Name, environment.Name, resource.Name))))
+
+	return nil
 }
