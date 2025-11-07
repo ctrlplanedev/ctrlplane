@@ -136,7 +136,7 @@ func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
 	}
 
 	// Get the release target state
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget, nil)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
 	if err != nil {
 		t.Fatalf("failed to get release target state: %v", err)
 	}
@@ -215,9 +215,9 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 	now := time.Now()
 	job.Status = oapi.Successful
 	job.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, job)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job.Id, Job: *job})
 
-	// Get the release target
+	// Get the release target (get it first so we can invalidate cache)
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
 	if err != nil {
 		t.Fatalf("failed to get release targets: %v", err)
@@ -320,7 +320,7 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 	now := time.Now()
 	job1.Status = oapi.Successful
 	job1.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, job1)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job1.Id, Job: *job1})
 
 	// Create second version (this becomes the desired release)
 	version2 := c.NewDeploymentVersion()
@@ -451,7 +451,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 
 	// State 2: Job is InProgress - still no current release
 	job.Status = oapi.InProgress
-	engine.PushEvent(ctx, handler.JobUpdate, job)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job.Id, Job: *job})
 
 	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
 	if err != nil {
@@ -465,7 +465,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	now := time.Now()
 	job.Status = oapi.Successful
 	job.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, job)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job.Id, Job: *job})
 
 	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
 	if err != nil {
@@ -513,7 +513,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	now2 := time.Now()
 	job2Fresh.Status = oapi.Failure
 	job2Fresh.CompletedAt = &now2
-	engine.PushEvent(ctx, handler.JobUpdate, job2Fresh)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job2Fresh.Id, Job: *job2Fresh})
 
 	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
 	if err != nil {
@@ -598,7 +598,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 	now := time.Now()
 	completedJob.Status = oapi.Successful
 	completedJob.CompletedAt = &now
-	engine.PushEvent(ctx, handler.JobUpdate, completedJob)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &completedJob.Id, Job: *completedJob})
 
 	// Get the release for the completed job
 	completedRelease, ok := engine.Workspace().Releases().Get(completedJob.ReleaseId)
@@ -704,7 +704,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 	time1 := time.Now().Add(-2 * time.Hour)
 	job1Fresh.Status = oapi.Successful
 	job1Fresh.CompletedAt = &time1
-	engine.PushEvent(ctx, handler.JobUpdate, job1Fresh)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job1Fresh.Id, Job: *job1Fresh})
 
 	// Create second version and complete it (more recent)
 	version2 := c.NewDeploymentVersion()
@@ -735,7 +735,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 	time2 := time.Now().Add(-1 * time.Hour)
 	job2Fresh.Status = oapi.Successful
 	job2Fresh.CompletedAt = &time2
-	engine.PushEvent(ctx, handler.JobUpdate, job2Fresh)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job2Fresh.Id, Job: *job2Fresh})
 
 	// Create third version and complete it (most recent)
 	version3 := c.NewDeploymentVersion()
@@ -766,7 +766,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 	time3 := time.Now()
 	job3Fresh.Status = oapi.Successful
 	job3Fresh.CompletedAt = &time3
-	engine.PushEvent(ctx, handler.JobUpdate, job3Fresh)
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job3Fresh.Id, Job: *job3Fresh})
 
 	// Get the release target
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()

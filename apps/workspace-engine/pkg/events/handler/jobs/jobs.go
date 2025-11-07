@@ -58,6 +58,7 @@ func HandleJobUpdated(
 	// No fields specified - replace entire job
 	if jobUpdateEvent.FieldsToUpdate == nil || len(*jobUpdateEvent.FieldsToUpdate) == 0 {
 		ws.Jobs().Upsert(ctx, &jobUpdateEvent.Job)
+		invalidateCacheForJob(ws, &jobUpdateEvent.Job)
 		return nil
 	}
 
@@ -71,6 +72,7 @@ func HandleJobUpdated(
 	}
 
 	ws.Jobs().Upsert(ctx, mergedJob)
+	invalidateCacheForJob(ws, mergedJob)
 
 	go func() {
 		if err := MaybeAddCommitStatusFromJob(ws, mergedJob); err != nil {
@@ -79,6 +81,19 @@ func HandleJobUpdated(
 	}()
 
 	return nil
+}
+
+// invalidateCacheForJob invalidates the release target state cache for the job's release target.
+// This ensures that subsequent calls to GetReleaseTargetState return fresh data.
+func invalidateCacheForJob(ws *workspace.Workspace, job *oapi.Job) {
+	// Get the release for this job
+	release, exists := ws.Releases().Get(job.ReleaseId)
+	if !exists {
+		return
+	}
+
+	// Invalidate the cache for this release target
+	ws.ReleaseManager().InvalidateReleaseTargetState(&release.ReleaseTarget)
 }
 
 func getJob(ws *workspace.Workspace, job *oapi.JobUpdateEvent) (*oapi.Job, bool) {

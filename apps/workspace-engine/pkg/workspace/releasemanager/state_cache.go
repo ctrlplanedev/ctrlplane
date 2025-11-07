@@ -43,6 +43,7 @@ type GetOption func(*GetOptions)
 
 type GetOptions struct {
 	resourceRelationships map[string][]*oapi.EntityRelation
+	bypassCache           bool
 }
 
 func WithResourceRelationships(relationships map[string][]*oapi.EntityRelation) GetOption {
@@ -51,8 +52,16 @@ func WithResourceRelationships(relationships map[string][]*oapi.EntityRelation) 
 	}
 }
 
+// WithBypassCache forces a fresh computation, bypassing the cache.
+func WithBypassCache() GetOption {
+	return func(opts *GetOptions) {
+		opts.bypassCache = true
+	}
+}
+
 // Get retrieves a release target state from cache, computing it if not present.
 // If resourceRelationships are provided, they will be passed to the planner to avoid recomputation.
+// If bypassCache is true, always computes fresh state.
 func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...GetOption) (*oapi.ReleaseTargetState, error) {
 	options := &GetOptions{}
 	for _, opt := range opts {
@@ -61,8 +70,11 @@ func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget
 
 	key := releaseTarget.Key()
 
-	if state, ok := sc.cache.Get(key); ok {
-		return state, nil
+	// Check cache unless bypass is requested
+	if !options.bypassCache {
+		if state, ok := sc.cache.Get(key); ok {
+			return state, nil
+		}
 	}
 
 	return sc.compute(ctx, releaseTarget, WithCachedRelationships(options.resourceRelationships))
@@ -71,6 +83,11 @@ func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget
 // Set stores a release target state in the cache with a TTL.
 func (sc *StateCache) Set(releaseTarget *oapi.ReleaseTarget, state *oapi.ReleaseTargetState) {
 	sc.cache.SetWithTTL(releaseTarget.Key(), state, 1, 10*time.Minute)
+}
+
+// Invalidate removes a release target state from the cache.
+func (sc *StateCache) Invalidate(releaseTarget *oapi.ReleaseTarget) {
+	sc.cache.Del(releaseTarget.Key())
 }
 
 // ComputeOption is a functional option for the Compute method.

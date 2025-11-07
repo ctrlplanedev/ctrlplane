@@ -359,6 +359,12 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 	return m.cache.Get(ctx, releaseTarget, opts...)
 }
 
+// InvalidateReleaseTargetState removes the cached state for a release target.
+// This is useful when the underlying data has changed and a fresh computation is needed.
+func (m *Manager) InvalidateReleaseTargetState(releaseTarget *oapi.ReleaseTarget) {
+	m.cache.Invalidate(releaseTarget)
+}
+
 // Planner returns the planner instance for backward compatibility.
 func (m *Manager) Planner() *deployment.Planner {
 	return m.deployment.Planner()
