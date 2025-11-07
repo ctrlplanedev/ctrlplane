@@ -203,7 +203,7 @@ func HandleResourceProviderSetResources(
 		entity := relationships.NewResourceEntity(resource)
 		ws.Relations().RemoveForEntity(ctx, entity)
 		newRelations := computeRelations(ctx, ws, resource)
-		
+
 		for _, relation := range newRelations {
 			ws.Relations().Upsert(ctx, relation)
 		}
@@ -219,7 +219,7 @@ func HandleResourceProviderSetResources(
 		for _, removedReleaseTarget := range removedReleaseTargets {
 			ws.ReleaseTargets().Remove(removedReleaseTarget.Key())
 		}
-	
+
 		for _, releaseTarget := range releaseTargets {
 			ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 		}

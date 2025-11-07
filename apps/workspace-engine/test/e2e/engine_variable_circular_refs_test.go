@@ -200,7 +200,7 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 // TestEngine_VariableResolution_CircularReference_ThreeWay tests A→B→C→A circular reference
 func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 	t.Skip("Skipping: multiple relationship rules with the same reference name cause ambiguity")
-	
+
 	jobAgentID := uuid.New().String()
 	resourceAID := uuid.New().String()
 	resourceBID := uuid.New().String()
@@ -953,4 +953,3 @@ func TestEngine_VariableResolution_ReferenceToDeepProperty(t *testing.T) {
 		t.Logf("db_password not found (deep property path may not be supported)")
 	}
 }
-

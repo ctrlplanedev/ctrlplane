@@ -126,7 +126,7 @@ func HandleEnvironmentUpdated(
 	}
 
 	oldRelations := ws.Relations().ForEntity(relationships.NewEnvironmentEntity(environment))
-	
+
 	if err := ws.Environments().Upsert(ctx, environment); err != nil {
 		return err
 	}

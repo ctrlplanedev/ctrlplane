@@ -1290,4 +1290,3 @@ func TestEngine_VariableResolution_NegativeNumbers(t *testing.T) {
 
 	t.Logf("SUCCESS: Negative integer -42 correctly stored and retrieved")
 }
-
