@@ -194,7 +194,7 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 		}
 	}
 
-	releaseTargets, err := e.getReleaseTargets(ctx, environment, version)
+	releaseTargets, err := e.getReleaseTargets(environment, version)
 	if err != nil {
 		return results.
 			NewDeniedResult(fmt.Sprintf("Failed to get release targets: %v", err)).
@@ -239,7 +239,8 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 		return results.NewPendingResult(results.ActionTypeWait, reason).
 			WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 			WithDetail("target_rollout_position", rolloutPosition).
-			WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339))
+			WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339)).
+			WithNextEvaluationTime(deploymentTime)
 	}
 
 	return results.NewAllowedResult("Rollout has progressed to this release target").
@@ -249,7 +250,6 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 }
 
 func (e *GradualRolloutEvaluator) getReleaseTargets(
-	ctx context.Context,
 	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 ) ([]*oapi.ReleaseTarget, error) {

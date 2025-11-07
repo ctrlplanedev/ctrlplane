@@ -530,3 +530,167 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
 	assert.Equal(t, expectedSatisfiedAt, *result.SatisfiedAt, "satisfiedAt should be mostRecentSuccess + soakDuration")
 }
+
+// TestSoakTimeEvaluator_NextEvaluationTime_WhenPending tests that NextEvaluationTime is properly set
+// when soak time is still pending (not yet met).
+func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
+	st := setupTestStoreForSoakTime()
+	ctx := context.Background()
+
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    time.Now(),
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+
+	soakMinutes := int32(30)
+	// Job completed 10 minutes ago - soak time of 30 minutes NOT met yet
+	mostRecentSuccess := time.Now().Add(-10 * time.Minute)
+	completedAt := mostRecentSuccess
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	env, _ := st.Environments.Get("env-staging")
+	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	require.NotNil(t, eval, "evaluator should not be nil")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: env,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Soak time not met - should be pending
+	assert.False(t, result.Allowed, "expected not allowed when soak time not met")
+	assert.True(t, result.ActionRequired, "expected action required")
+
+	// NextEvaluationTime should be set to when soak time will be satisfied
+	require.NotNil(t, result.NextEvaluationTime, "NextEvaluationTime should be set when soak time is pending")
+	expectedNextEvalTime := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute)
+	assert.WithinDuration(t, expectedNextEvalTime, *result.NextEvaluationTime, 1*time.Second,
+		"NextEvaluationTime should be when soak time will be satisfied")
+}
+
+// TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied tests that NextEvaluationTime is nil
+// when soak time is already satisfied.
+func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
+	st := setupTestStoreForSoakTime()
+	ctx := context.Background()
+
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    time.Now(),
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	rt1 := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	release1 := &oapi.Release{
+		ReleaseTarget: *rt1,
+		Version:       *version,
+		Variables:     map[string]oapi.LiteralValue{},
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	st.Releases.Upsert(ctx, release1)
+
+	soakMinutes := int32(30)
+	// Job completed 40 minutes ago - soak time of 30 minutes IS met
+	mostRecentSuccess := time.Now().Add(-40 * time.Minute)
+	completedAt := mostRecentSuccess
+	job1 := &oapi.Job{
+		Id:             "job-1",
+		ReleaseId:      release1.ID(),
+		JobAgentId:     "agent-1",
+		Status:         oapi.Successful,
+		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
+		UpdatedAt:      completedAt,
+		CompletedAt:    &completedAt,
+		JobAgentConfig: map[string]interface{}{},
+	}
+	st.Jobs.Upsert(ctx, job1)
+
+	env, _ := st.Environments.Get("env-staging")
+	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	require.NotNil(t, eval, "evaluator should not be nil")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: env,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Soak time met - should be allowed
+	assert.True(t, result.Allowed, "expected allowed when soak time is met")
+	assert.False(t, result.ActionRequired, "expected no action required")
+
+	// NextEvaluationTime should be nil because policy is satisfied
+	assert.Nil(t, result.NextEvaluationTime, "NextEvaluationTime should be nil when soak time is already satisfied")
+}
+
+// TestSoakTimeEvaluator_NextEvaluationTime_NoJobs tests that NextEvaluationTime is nil
+// when there are no successful jobs (policy is denied, not pending).
+func TestSoakTimeEvaluator_NextEvaluationTime_NoJobs(t *testing.T) {
+	st := setupTestStoreForSoakTime()
+	ctx := context.Background()
+
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    time.Now(),
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	env, _ := st.Environments.Get("env-staging")
+	soakMinutes := int32(30)
+	eval := NewSoakTimeEvaluator(st, soakMinutes, nil)
+	require.NotNil(t, eval, "evaluator should not be nil")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: env,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// No jobs - should be denied (not pending)
+	assert.False(t, result.Allowed, "expected denied when no jobs exist")
+	assert.False(t, result.ActionRequired, "expected denied, not pending")
+
+	// NextEvaluationTime should be nil because we can't evaluate without a successful job
+	assert.Nil(t, result.NextEvaluationTime, "NextEvaluationTime should be nil when no successful jobs exist")
+}

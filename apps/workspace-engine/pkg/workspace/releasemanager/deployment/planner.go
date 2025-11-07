@@ -32,6 +32,7 @@ type Planner struct {
 	policyManager   *policy.Manager
 	versionManager  *versions.Manager
 	variableManager *variables.Manager
+	scheduler       *ReconciliationScheduler
 }
 
 // NewPlanner creates a new deployment planner.
@@ -41,11 +42,13 @@ func NewPlanner(
 	versionManager *versions.Manager,
 	variableManager *variables.Manager,
 ) *Planner {
+	scheduler := NewReconciliationScheduler()
 	return &Planner{
 		store:           store,
 		policyManager:   policyManager,
 		versionManager:  versionManager,
 		variableManager: variableManager,
+		scheduler:       scheduler,
 	}
 }
 
@@ -264,6 +267,10 @@ func (p *Planner) findDeployableVersion(
 	for i, eval := range versionIndependentEvals {
 		result := eval.Evaluate(ctx, scope)
 		if !result.Allowed {
+			if result.NextEvaluationTime != nil {
+				p.scheduler.Schedule(releaseTarget, *result.NextEvaluationTime)
+			}
+
 			// All versions blocked by version-independent policy
 			span.AddEvent("All versions blocked by version-independent policy",
 				trace.WithAttributes(
@@ -291,6 +298,7 @@ func (p *Planner) findDeployableVersion(
 			if !result.Allowed {
 				eligible = false
 				versionsBlocked++
+
 				span.AddEvent("Version blocked by policy",
 					trace.WithAttributes(
 						attribute.String("version.id", version.Id),
@@ -298,6 +306,11 @@ func (p *Planner) findDeployableVersion(
 						attribute.Int("evaluator_index", evalIdx),
 						attribute.String("message", result.Message),
 					))
+
+				if result.NextEvaluationTime != nil {
+					p.scheduler.Schedule(releaseTarget, *result.NextEvaluationTime)
+				}
+
 				break
 			}
 		}
@@ -336,4 +349,8 @@ func (p *Planner) findDeployableVersion(
 	)
 	span.SetStatus(codes.Ok, "no deployable version (all blocked)")
 	return nil
+}
+
+func (p *Planner) Scheduler() *ReconciliationScheduler {
+	return p.scheduler
 }

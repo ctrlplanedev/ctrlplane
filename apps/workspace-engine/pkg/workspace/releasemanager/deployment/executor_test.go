@@ -511,4 +511,3 @@ func TestBuildRelease_ReleaseIDDetermination(t *testing.T) {
 	release3 := BuildRelease(ctx, releaseTarget, version, variables2)
 	assert.NotEqual(t, release1.ID(), release3.ID())
 }
-

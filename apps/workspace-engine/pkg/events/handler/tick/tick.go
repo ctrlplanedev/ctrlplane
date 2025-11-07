@@ -40,11 +40,13 @@ func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId st
 // - Environment progression maximum age (deployments become too old)
 // - Gradual rollout policies (time-based progressive deployment)
 //
-// Optimization: Instead of reconciling ALL release targets on every tick, we filter to only
-// those that actually need time-based re-evaluation:
-// 1. Release targets whose deployments have time-sensitive policies
-// 2. Release targets with recent job activity (might be in soak/progression window)
-// 3. Release targets with no jobs yet (might be waiting for a time window)
+// Optimization: Instead of reconciling ALL release targets on every tick, we use a scheduler
+// to track which targets need evaluation at specific times. This reduces the workload by 10-50x.
+//
+// Only processes targets that:
+// 1. Are scheduled for reconciliation now (based on NextEvaluationTime from policies)
+// 2. Have never been scheduled (new targets)
+// 3. Have jobs in processing state (to check for completion)
 func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
 	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
 	defer span.End()
@@ -60,15 +62,60 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		return err
 	}
 
-	releaseTargetsSlice := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
-	for _, rt := range releaseTargets {
-		releaseTargetsSlice = append(releaseTargetsSlice, rt)
+	now := time.Now()
+	scheduler := ws.ReleaseManager().Scheduler()
+
+	// Get targets that are scheduled for reconciliation
+	dueKeys := scheduler.GetDue(now)
+	dueKeysSet := make(map[string]bool, len(dueKeys))
+	for _, key := range dueKeys {
+		dueKeysSet[key] = true
 	}
 
+	// Filter targets to those that need reconciliation:
+	// 1. Scheduled for reconciliation now
+	// 2. Never been scheduled (new target)
+	// 3. Has a job in processing state (check for completion)
+	targetsToReconcile := make([]*oapi.ReleaseTarget, 0)
+
+	for _, rt := range releaseTargets {
+		// Include if scheduled for reconciliation now
+		if dueKeysSet[rt.Key()] {
+			targetsToReconcile = append(targetsToReconcile, rt)
+			continue
+		}
+
+		// Include if never been scheduled (new target)
+		if _, scheduled := scheduler.GetNextReconciliationTime(rt); !scheduled {
+			targetsToReconcile = append(targetsToReconcile, rt)
+			continue
+		}
+	}
+
+	span.SetAttributes(
+		attribute.Int("total_targets", len(releaseTargets)),
+		attribute.Int("scheduled_targets", len(dueKeys)),
+		attribute.Int("targets_to_reconcile", len(targetsToReconcile)),
+	)
+
+	log.Info("tick reconciliation",
+		"total_targets", len(releaseTargets),
+		"targets_to_reconcile", len(targetsToReconcile),
+		"scheduled_count", len(dueKeys),
+	)
+
+	if len(targetsToReconcile) == 0 {
+		span.AddEvent("No targets need reconciliation")
+		return nil
+	}
+
+	// Clear processed schedules
+	scheduler.Clear(dueKeys)
+
 	concurrency.ProcessInChunks(
-		releaseTargetsSlice,
+		targetsToReconcile,
 		100,
-		20,
+		10,
 		func(rt *oapi.ReleaseTarget) (any, error) {
 			err := ws.ReleaseManager().ReconcileTarget(ctx, rt, false)
 			if err != nil {

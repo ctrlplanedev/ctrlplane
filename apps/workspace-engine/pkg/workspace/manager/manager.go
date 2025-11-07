@@ -18,9 +18,9 @@ var globalManager = &manager{
 }
 
 type manager struct {
-	persistentStore            persistence.Store
-	workspaces                 cmap.ConcurrentMap[string, *workspace.Workspace]
-	workspaceCreateOptions     []workspace.WorkspaceOption
+	persistentStore        persistence.Store
+	workspaces             cmap.ConcurrentMap[string, *workspace.Workspace]
+	workspaceCreateOptions []workspace.WorkspaceOption
 }
 
 type ManagerOption func(*manager)

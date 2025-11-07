@@ -375,3 +375,8 @@ func (m *Manager) InvalidateReleaseTargetState(releaseTarget *oapi.ReleaseTarget
 func (m *Manager) Planner() *deployment.Planner {
 	return m.deployment.Planner()
 }
+
+// Scheduler returns the reconciliation scheduler instance.
+func (m *Manager) Scheduler() *deployment.ReconciliationScheduler {
+	return m.deployment.Planner().Scheduler()
+}

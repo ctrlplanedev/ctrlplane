@@ -52,6 +52,11 @@ func (r *RuleEvaluation) WithSatisfiedAt(satisfiedAt time.Time) *RuleEvaluation 
 	return r
 }
 
+func (r *RuleEvaluation) WithNextEvaluationTime(nextEvalTime time.Time) *RuleEvaluation {
+	r.NextEvaluationTime = &nextEvalTime
+	return r
+}
+
 func (r *RuleEvaluation) AsArray() []*RuleEvaluation {
 	return []*RuleEvaluation{r}
 }

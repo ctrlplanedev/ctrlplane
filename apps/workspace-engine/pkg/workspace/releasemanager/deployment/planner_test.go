@@ -364,7 +364,7 @@ func TestPlanDeployment_ResourceNotFound(t *testing.T) {
 	// If there are no versions, it returns early with nil
 	// With precomputed relationships, it skips resource lookup
 	// So we test with explicit relationship computation required
-	
+
 	// Act
 	release, err := planner.PlanDeployment(ctx, releaseTarget)
 
@@ -481,7 +481,7 @@ func TestPlanDeployment_WithPrecomputedRelationships(t *testing.T) {
 
 func TestPlanDeployment_DifferentVersionStatuses(t *testing.T) {
 	statuses := []struct {
-		status      oapi.DeploymentVersionStatus
+		status       oapi.DeploymentVersionStatus
 		shouldSelect bool
 	}{
 		{oapi.DeploymentVersionStatusReady, true},
@@ -753,4 +753,3 @@ func TestPlanDeployment_ConsistentReleaseIDs(t *testing.T) {
 	// Same inputs should produce same release ID
 	assert.Equal(t, release1.ID(), release2.ID())
 }
-

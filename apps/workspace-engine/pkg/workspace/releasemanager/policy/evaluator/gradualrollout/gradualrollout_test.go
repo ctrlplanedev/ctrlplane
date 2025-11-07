@@ -1973,3 +1973,273 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 	assert.Equal(t, 1, allowedCount, "Only position 0 should be allowed immediately after staging completes")
 	assert.Equal(t, 4, pendingCount, "Positions 1-4 should be pending (waiting for their rollout time)")
 }
+
+// TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending tests that NextEvaluationTime
+// is properly set when a target is waiting for its rollout time.
+func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	// Current time is 30 seconds after base time
+	currentTime := baseTime.Add(30 * time.Second)
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60) // 60 seconds between deployments
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 1: should deploy at baseTime + 60 seconds, but current time is baseTime + 30 seconds
+	scope := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[1],
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Should be pending
+	assert.False(t, result.Allowed, "position 1 should not be allowed yet")
+	assert.True(t, result.ActionRequired, "should require action (waiting)")
+	require.NotNil(t, result.ActionType)
+	assert.Equal(t, oapi.Wait, *result.ActionType)
+
+	// NextEvaluationTime should be set to the target rollout time
+	require.NotNil(t, result.NextEvaluationTime, "NextEvaluationTime should be set when target is pending")
+	expectedRolloutTime := baseTime.Add(60 * time.Second)
+	assert.WithinDuration(t, expectedRolloutTime, *result.NextEvaluationTime, 1*time.Second,
+		"NextEvaluationTime should be the target rollout time")
+}
+
+// TestGradualRolloutEvaluator_NextEvaluationTime_WhenAllowed tests that NextEvaluationTime
+// is nil when a target is already allowed to deploy.
+func TestGradualRolloutEvaluator_NextEvaluationTime_WhenAllowed(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	// Current time is way past all rollout times
+	currentTime := baseTime.Add(10 * time.Minute)
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// All positions should be allowed by now
+	for i, rt := range releaseTargets {
+		scope := evaluator.EvaluatorScope{
+			Environment:   environment,
+			Version:       version,
+			ReleaseTarget: rt,
+		}
+		result := eval.Evaluate(ctx, scope)
+
+		assert.True(t, result.Allowed, "position %d should be allowed", i)
+		assert.Nil(t, result.NextEvaluationTime, "NextEvaluationTime should be nil when target is allowed")
+	}
+}
+
+// TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies tests that NextEvaluationTime
+// is nil when rollout hasn't started yet (waiting for approval or environment progression).
+func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 2, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	currentTime := baseTime.Add(2 * time.Hour)
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.Linear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create approval policy requiring 2 approvals, but only provide 1
+	approvalPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				AnyApproval: &oapi.AnyApprovalRule{
+					MinApprovals: 2,
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, approvalPolicy)
+
+	// Only 1 approval (need 2)
+	st.UserApprovalRecords.Upsert(ctx, &oapi.UserApprovalRecord{
+		VersionId:     version.Id,
+		EnvironmentId: environment.Id,
+		UserId:        "user-1",
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     baseTime.Format(time.RFC3339),
+	})
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Check position 0 - should be pending (rollout hasn't started)
+	scope := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	assert.False(t, result.Allowed, "should not be allowed when rollout hasn't started")
+	assert.True(t, result.ActionRequired, "should require action")
+	assert.Equal(t, "Rollout has not started yet", result.Message)
+
+	// NextEvaluationTime should be nil because we're waiting for approval (external dependency)
+	assert.Nil(t, result.NextEvaluationTime,
+		"NextEvaluationTime should be nil when waiting for external dependencies like approval")
+}
+
+// TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized tests that NextEvaluationTime
+// is correctly set for linear-normalized rollout strategy.
+func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 4, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	// Current time is 10 seconds after base time
+	currentTime := baseTime.Add(10 * time.Second)
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.LinearNormalized, 120) // Total 120 seconds for all
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 2: offset = (2/4) * 120 = 60 seconds
+	// Should deploy at baseTime + 60 seconds, current time is baseTime + 10 seconds
+	scope := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[2],
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	assert.False(t, result.Allowed, "position 2 should not be allowed yet")
+	assert.True(t, result.ActionRequired, "should require action")
+
+	require.NotNil(t, result.NextEvaluationTime, "NextEvaluationTime should be set")
+	expectedRolloutTime := baseTime.Add(60 * time.Second)
+	assert.WithinDuration(t, expectedRolloutTime, *result.NextEvaluationTime, 1*time.Second,
+		"NextEvaluationTime should match linear-normalized schedule")
+}

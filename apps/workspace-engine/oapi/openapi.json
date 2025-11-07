@@ -1212,6 +1212,11 @@
                   "description": "Human-readable explanation of the rule result",
                   "type": "string"
                },
+               "nextEvaluationTime": {
+                  "description": "The time when this rule should be re-evaluated (e.g., when soak time will be complete, when gradual rollout schedule is due)",
+                  "format": "date-time",
+                  "type": "string"
+               },
                "ruleId": {
                   "description": "The ID of the rule that was evaluated",
                   "type": "string"

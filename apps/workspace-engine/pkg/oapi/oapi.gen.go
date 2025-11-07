@@ -521,6 +521,9 @@ type RuleEvaluation struct {
 	// Message Human-readable explanation of the rule result
 	Message string `json:"message"`
 
+	// NextEvaluationTime The time when this rule should be re-evaluated (e.g., when soak time will be complete, when gradual rollout schedule is due)
+	NextEvaluationTime *time.Time `json:"nextEvaluationTime,omitempty"`
+
 	// RuleId The ID of the rule that was evaluated
 	RuleId string `json:"ruleId"`
 

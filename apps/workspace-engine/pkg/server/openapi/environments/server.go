@@ -111,7 +111,6 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 		return
 	}
 
-
 	sort.Slice(resources, func(i, j int) bool {
 		if resources[i] == nil && resources[j] == nil {
 			return false

@@ -592,4 +592,3 @@ func TestShouldCreateJob_EvaluatorOrdering(t *testing.T) {
 	assert.NotEqual(t, "eligible", reason)
 	assert.NotEmpty(t, reason)
 }
-

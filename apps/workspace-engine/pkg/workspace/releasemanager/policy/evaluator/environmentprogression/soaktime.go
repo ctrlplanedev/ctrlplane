@@ -67,11 +67,15 @@ func (e *SoakTimeEvaluator) Evaluate(
 	soakTimeRemaining := tracker.GetSoakTimeRemaining(soakDuration)
 
 	if soakTimeRemaining > 0 {
+		// Calculate when soak time will be complete
+		nextEvalTime := mostRecentSuccess.Add(soakDuration)
+
 		message := fmt.Sprintf("Soak time required: %d minutes. Time remaining: %s", e.soakMinutes, soakTimeRemaining.Round(time.Minute))
 		return results.NewPendingResult(results.ActionTypeWait, message).
 			WithDetail("soak_time_remaining_minutes", int(soakTimeRemaining.Minutes())).
 			WithDetail("soak_minutes", e.soakMinutes).
-			WithDetail("most_recent_success", mostRecentSuccess.Format(time.RFC3339))
+			WithDetail("most_recent_success", mostRecentSuccess.Format(time.RFC3339)).
+			WithNextEvaluationTime(nextEvalTime)
 	}
 
 	// Soak time is satisfied - calculate when it was satisfied

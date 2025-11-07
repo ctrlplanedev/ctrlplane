@@ -189,6 +189,11 @@ local openapi = import '../lib/openapi.libsonnet';
         format: 'date-time',
         description: 'The time when the rule requirement was satisfied (e.g., when approvals were met, soak time completed)',
       },
+      nextEvaluationTime: {
+        type: 'string',
+        format: 'date-time',
+        description: 'The time when this rule should be re-evaluated (e.g., when soak time will be complete, when gradual rollout schedule is due)',
+      },
     },
   },
 
