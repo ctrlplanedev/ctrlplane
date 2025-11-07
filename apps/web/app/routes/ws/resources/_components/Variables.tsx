@@ -38,7 +38,7 @@ function useVariables() {
     resourceIdentifier: identifier,
   });
 
-  return { variables: variables?.items ?? [], isLoading };
+  return { variables: variables ?? [], isLoading };
 }
 
 function Value({ value }: { value: WorkspaceEngine["schemas"]["Value"] }) {
