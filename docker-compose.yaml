@@ -30,35 +30,6 @@ services:
       postgres:
         condition: service_healthy
 
-  webservice:
-    # platform: linux/amd64
-    # image: ctrlplane/webservice:75685e0
-    build:
-      context: .
-      dockerfile: ./apps/webservice/Dockerfile
-
-    container_name: ctrlplane-webservice
-    environment:
-      BASE_URL: "http://127.0.0.1" # <set your instance url>
-      AUTH_SECRET: ${AUTH_SECRET}
-      # AUTH_OIDC_ISSUER: ${AUTH_OIDC_ISSUER}
-      # AUTH_OIDC_CLIENT_ID: ${AUTH_OIDC_CLIENT_ID}
-      # AUTH_OIDC_CLIENT_SECRET: ${AUTH_OIDC_CLIENT_SECRET}
-
-      AUTH_GOOGLE_CLIENT_ID: ${AUTH_GOOGLE_CLIENT_ID}
-      AUTH_GOOGLE_CLIENT_SECRET: ${AUTH_GOOGLE_CLIENT_SECRET}
-      AUTH_CREDENTIALS_ENABLED: "true"
-
-      NEXTAUTH_URL: ${BASE_URL}
-      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
-      POSTGRES_URL: postgresql://ctrlplane:ctrlplane@postgres:5432/ctrlplane
-      VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
-    depends_on:
-      - postgres
-      - migrations
-    ports:
-      - "3000:3000"
-
   jobs:
     build:
       context: .
