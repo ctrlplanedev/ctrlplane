@@ -87,10 +87,10 @@ const generateOapiEvent = (
   const Workflow = `${Run}/workflow`;
   const links = { Run, Workflow };
   const linksStr = JSON.stringify(links);
-  const metadata = { [String(ReservedMetadataKey.Links)]: linksStr } as Record<
-    string,
-    string
-  >;
+  const metadata = {
+    [String(ReservedMetadataKey.Links)]: linksStr,
+    run_url: Run,
+  } as Record<string, string>;
 
   return {
     id: jobId,
