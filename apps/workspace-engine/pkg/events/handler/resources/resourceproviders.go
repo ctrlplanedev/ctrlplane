@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
+	"workspace-engine/pkg/workspace/store/diffcheck"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -157,6 +158,7 @@ func HandleResourceProviderSetResources(
 	// Upsert new/updated resources
 	for _, resource := range processedResources {
 		existingResource, exists := identifierMap[resource.Identifier]
+		hasChanged := true
 
 		if exists {
 			// If it belongs to a different provider, skip it
@@ -178,6 +180,8 @@ func HandleResourceProviderSetResources(
 			// Always set UpdatedAt when resource is touched by SET operation
 			now := time.Now()
 			resource.UpdatedAt = &now
+
+			hasChanged = len(diffcheck.HasResourceChanges(existingResource, resource)) > 0
 		} else {
 			resource.CreatedAt = time.Now()
 			resource.UpdatedAt = &resource.CreatedAt
@@ -189,6 +193,10 @@ func HandleResourceProviderSetResources(
 		_, err := ws.Resources().Upsert(ctx, resource)
 		if err != nil {
 			return err
+		}
+
+		if !hasChanged {
+			continue
 		}
 
 		// Compute and update relationships for this resource
