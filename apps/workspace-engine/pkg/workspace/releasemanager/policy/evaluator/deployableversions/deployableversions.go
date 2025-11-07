@@ -2,6 +2,7 @@ package deployableversions
 
 import (
 	"context"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -44,6 +45,7 @@ func (e *DeployableVersionStatusEvaluator) Evaluate(
 
 	if version.Status == oapi.DeploymentVersionStatusPaused {
 		return results.NewPendingResult(results.ActionTypeWait, "Version is paused").
+			WithNextEvaluationTime(time.Now().Add(time.Minute)).
 			WithDetail("version_id", version.Id).
 			WithDetail("version_status", version.Status)
 	}

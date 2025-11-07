@@ -88,8 +88,12 @@ func (e *EnvironmentProgressionEvaluator) Evaluate(
 
 	if !result.Allowed {
 		span.SetAttributes(attribute.Bool("result.allowed", false))
+		// Schedule re-evaluation in 1 minutes for blocked environment progression
+		// This catches when dependent environments complete their deployments
+		nextEvalTime := time.Now().Add(time.Minute)
 		r := results.
 			NewPendingResult(results.ActionTypeWait, result.Message).
+			WithNextEvaluationTime(nextEvalTime).
 			WithDetail("dependency_environment_count", len(dependencyEnvs)).
 			WithDetail("version_id", version.Id).
 			WithDetail("deployment_id", version.DeploymentId)

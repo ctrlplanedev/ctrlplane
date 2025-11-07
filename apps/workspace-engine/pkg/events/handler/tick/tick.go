@@ -37,18 +37,25 @@ func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId st
 var workspaceTickCount = cmap.New[int64]()
 
 // HandleWorkspaceTick handles periodic workspace tick events by intelligently reconciling
-// release targets that may be affected by time-sensitive policies. This is needed for:
+// release targets that may be affected by time-sensitive policies or external dependencies.
+//
+// Time-sensitive policies (scheduled):
 // - Environment progression soak time (wait N minutes after deployment)
 // - Environment progression maximum age (deployments become too old)
 // - Gradual rollout policies (time-based progressive deployment)
 //
-// Optimization: Instead of reconciling ALL release targets on every tick, we use a scheduler
-// to track which targets need evaluation at specific times. This reduces the workload by 10-50x.
+// External dependencies (unscheduled, checked periodically):
+// - Environment progression success rate (waiting for previous env deployments)
+// - Approval requirements (waiting for user approvals)
+// - Any policy that can't predict when it will be satisfied
 //
-// Only processes targets that:
+// Optimization: Instead of reconciling ALL release targets on every tick, we use a scheduler
+// to track which targets need evaluation at specific times. This reduces workload by 10-50x.
+//
+// Processes targets that:
 // 1. Are scheduled for reconciliation now (based on NextEvaluationTime from policies)
-// 2. Have never been scheduled (new targets)
-// 3. Have jobs in processing state (to check for completion)
+// 2. Are NOT scheduled but checked periodically (every 10 ticks = ~5 minutes)
+// 3. First boot - all targets (to populate scheduler)
 func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
 	workspaceTickCount.Upsert(ws.ID, 1, func(exist bool, old int64, new int64) int64 {
 		return old + 1
@@ -73,16 +80,19 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 
 	// Get targets that are scheduled for reconciliation
 	dueKeys := scheduler.GetDue(now)
-	log.Info("due keys", "due_keys", len(dueKeys))
 	dueKeysSet := make(map[string]bool, len(dueKeys))
 	for _, key := range dueKeys {
 		dueKeysSet[key] = true
 	}
 
 	// Filter targets to those that need reconciliation:
-	// 1. Scheduled for reconciliation now
-	// 2. Never been scheduled (new target)
+	// 1. Scheduled for reconciliation now (has NextEvaluationTime that's due)
+	// 2. Not scheduled but waiting for external events (env progression, approvals, etc.)
+	// 3. First boot - reconcile everything to populate scheduler
 	targetsToReconcile := make([]*oapi.ReleaseTarget, 0)
+	
+	tickCount, _ := workspaceTickCount.Get(ws.ID)
+	isFirstBoot := tickCount <= 1
 
 	for _, rt := range releaseTargets {
 		// Include if scheduled for reconciliation now
@@ -91,25 +101,38 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 			continue
 		}
 
-		// Include if fress bootup (new target)
-		if v, _ := workspaceTickCount.Get(ws.ID); v == 0 {
+		// Include if first boot (need to populate scheduler)
+		if isFirstBoot {
 			targetsToReconcile = append(targetsToReconcile, rt)
 			continue
+		}
+	}
+
+	// Count unscheduled targets
+	unscheduledCount := 0
+	for _, rt := range releaseTargets {
+		if _, scheduled := scheduler.GetNextReconciliationTime(rt); !scheduled {
+			unscheduledCount++
 		}
 	}
 
 	span.SetAttributes(
 		attribute.Int("total_targets", len(releaseTargets)),
 		attribute.Int("scheduled_targets", len(dueKeys)),
+		attribute.Int("unscheduled_targets", unscheduledCount),
 		attribute.Int("targets_to_reconcile", len(targetsToReconcile)),
+		attribute.Bool("is_first_boot", isFirstBoot),
+		attribute.Bool("check_unscheduled", tickCount%10 == 0),
 	)
 
-	workspaceTickCount, _ := workspaceTickCount.Get(ws.ID)
 	log.Info("tick reconciliation",
 		"total_targets", len(releaseTargets),
 		"targets_to_reconcile", len(targetsToReconcile),
-		"scheduled_count", len(dueKeys),
-		"workspace_tick_count", workspaceTickCount,
+		"scheduled_due", len(dueKeys),
+		"unscheduled", unscheduledCount,
+		"tick_count", tickCount,
+		"is_first_boot", isFirstBoot,
+		"check_unscheduled", tickCount%10 == 0,
 	)
 
 	if len(targetsToReconcile) == 0 {
