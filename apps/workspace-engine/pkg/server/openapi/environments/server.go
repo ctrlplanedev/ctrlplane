@@ -3,6 +3,7 @@ package environments
 import (
 	"fmt"
 	"net/http"
+	"runtime"
 	"sort"
 
 	"github.com/charmbracelet/log"
@@ -230,11 +231,11 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 		item *oapi.ReleaseTargetWithState
 		err  error
 	}
-
+	maxConcurrency := runtime.NumCPU()
 	results, err := concurrency.ProcessInChunks(
 		paginatedTargets,
 		50,
-		10, // Max 10 concurrent goroutines
+		maxConcurrency,
 		func(releaseTarget *oapi.ReleaseTarget) (result, error) {
 			if releaseTarget == nil {
 				return result{nil, fmt.Errorf("release target is nil")}, nil

@@ -3,7 +3,6 @@ package selector
 import (
 	"context"
 
-	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 )
 
@@ -60,79 +59,6 @@ func Filter[T any](ctx context.Context, sel *oapi.Selector, resources []T, _opts
 	}
 
 	matchedResources := make([]T, 0)
-
-	for _, resource := range resources {
-		matched, err := selector.Matches(resource)
-		if err != nil {
-			return nil, err
-		}
-		if matched {
-			matchedResources = append(matchedResources, resource)
-		}
-	}
-
-	return matchedResources, nil
-}
-
-func FilterConcurrent[T any](ctx context.Context, sel *oapi.Selector, resources []T, opts ...FilterOption) ([]T, error) {
-	// If no selector is provided, return empty slice
-	if sel == nil {
-		return []T{}, nil
-	}
-
-	// Apply options
-	options := &FilterOptions{
-		chunkSize:      100,
-		maxConcurrency: 0,
-		useChunking:    false,
-	}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	selector, err := Matchable(ctx, sel)
-	if err != nil {
-		return nil, err
-	}
-
-	// Use chunked processing if enabled
-	if options.useChunking {
-		type filterResult struct {
-			item    T
-			matched bool
-		}
-
-		results, err := concurrency.ProcessInChunks(
-			resources,
-			options.chunkSize,
-			options.maxConcurrency,
-			func(item T) (filterResult, error) {
-				matched, err := selector.Matches(item)
-				if err != nil {
-					return filterResult{}, err
-				}
-				return filterResult{item: item, matched: matched}, nil
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		// Filter out non-matching items
-		matchedResources := make([]T, 0, len(results)/2)
-		for _, result := range results {
-			if result.matched {
-				matchedResources = append(matchedResources, result.item)
-			}
-		}
-		return matchedResources, nil
-	}
-
-	// Sequential processing (default)
-	// Pre-allocate with reasonable capacity (assume ~50% match rate to minimize reallocations)
-	// This avoids multiple slice reallocations during append
-	estimatedCapacity := max(len(resources)/2, 128)
-	matchedResources := make([]T, 0, estimatedCapacity)
 
 	for _, resource := range resources {
 		matched, err := selector.Matches(resource)

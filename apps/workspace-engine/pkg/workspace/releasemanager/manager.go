@@ -3,6 +3,7 @@ package releasemanager
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"workspace-engine/pkg/concurrency"
@@ -152,7 +153,8 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			attribute.Int("chunk_size", 100),
 			attribute.Int("concurrency", 10),
 		))
-	concurrency.ProcessInChunks(states, 100, 10, processFn)
+	maxConcurrency := runtime.NumCPU()
+	concurrency.ProcessInChunks(states, 100, maxConcurrency, processFn)
 
 	span.AddEvent("Completed processing changes")
 	return nil
@@ -297,12 +299,12 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 			attribute.Bool("force_redeploy", forceRedeploy),
 		))
 	defer span.End()
-
+	maxConcurrency := runtime.NumCPU()
 	// Process targets in parallel for better performance
 	concurrency.ProcessInChunks(
 		releaseTargets,
 		100, // chunk size
-		10,  // concurrency
+		maxConcurrency,
 		func(rt *oapi.ReleaseTarget) (any, error) {
 			if err := m.ReconcileTarget(ctx, rt, forceRedeploy); err != nil {
 				log.Error("failed to reconcile release target",
