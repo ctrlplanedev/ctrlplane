@@ -94,9 +94,11 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 			continue
 		}
 
-		setStatus(
-			"Computing release targets for environment \"" + environment.Name + "\" in system \"" + system.Name + "\".",
-		)
+		if setStatus != nil {
+			setStatus(
+				"Computing release targets for environment \"" + environment.Name + "\" in system \"" + system.Name + "\".",
+			)
+		}
 
 		// Check environment selector once per resource
 		for _, resource := range s.Resources.Items() {
