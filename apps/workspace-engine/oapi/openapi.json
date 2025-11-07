@@ -4401,37 +4401,14 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "properties": {
-                              "items": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/ResourceVariable"
-                                 },
-                                 "type": "array"
-                              },
-                              "limit": {
-                                 "description": "Maximum number of items returned",
-                                 "type": "integer"
-                              },
-                              "offset": {
-                                 "description": "Number of items skipped",
-                                 "type": "integer"
-                              },
-                              "total": {
-                                 "description": "Total number of items available",
-                                 "type": "integer"
-                              }
+                           "items": {
+                              "$ref": "#/components/schemas/ResourceVariable"
                            },
-                           "required": [
-                              "items",
-                              "total",
-                              "limit",
-                              "offset"
-                           ],
-                           "type": "object"
+                           "type": "array"
                         }
                      }
                   },
-                  "description": "Paginated list of items"
+                  "description": "The requested variables"
                },
                "400": {
                   "content": {

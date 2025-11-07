@@ -79,7 +79,13 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.workspaceIdParam(),
         openapi.resourceIdentifierParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('ResourceVariable'))
+      responses: openapi.okResponse(
+                   {
+                     type: 'array',
+                     items: openapi.schemaRef('ResourceVariable'),
+                   },
+                   'The requested variables',
+                 )
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
