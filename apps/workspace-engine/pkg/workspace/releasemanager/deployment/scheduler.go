@@ -66,6 +66,15 @@ func (rs *ReconciliationScheduler) Clear(keys []string) {
 	}
 }
 
+// GetNextReconciliationTime returns when a specific target needs reconciliation.
+func (rs *ReconciliationScheduler) GetNextReconciliationTime(releaseTarget *oapi.ReleaseTarget) (time.Time, bool) {
+	rs.mu.RLock()
+	defer rs.mu.RUnlock()
+
+	t, ok := rs.schedule[releaseTarget.Key()]
+	return t, ok
+}
+
 // Size returns the number of scheduled reconciliations.
 func (rs *ReconciliationScheduler) Size() int {
 	rs.mu.RLock()
