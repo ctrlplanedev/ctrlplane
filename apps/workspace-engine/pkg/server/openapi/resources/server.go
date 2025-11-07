@@ -181,8 +181,16 @@ func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, 
 		return
 	}
 
-	resource, ok := ws.Resources().Get(resourceIdentifier)
-	if !ok {
+	allResources := ws.Resources().Items()
+	var resource *oapi.Resource
+	for _, r := range allResources {
+		if r.Identifier == resourceIdentifier {
+			resource = r
+			break
+		}
+	}
+
+	if resource == nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Resource not found",
 		})
