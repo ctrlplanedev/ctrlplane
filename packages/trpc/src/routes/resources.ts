@@ -131,4 +131,27 @@ export const resourcesRouter = router({
       );
       return result.data;
     }),
+
+  variables: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        resourceIdentifier: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { workspaceId, resourceIdentifier } = input;
+      const result = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
+        {
+          params: {
+            path: { workspaceId, resourceIdentifier },
+          },
+        },
+      );
+
+      if (result.error != null) throw new Error(result.error.error);
+
+      return result.data;
+    }),
 });
