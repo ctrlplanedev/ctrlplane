@@ -27,7 +27,9 @@ func HandleDeploymentVersionCreated(
 	}
 
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		}
 	}
 
 	return nil
@@ -50,7 +52,9 @@ func HandleDeploymentVersionUpdated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		}
 	}
 
 	return nil
@@ -73,7 +77,9 @@ func HandleDeploymentVersionDeleted(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		}
 	}
 
 	return nil
