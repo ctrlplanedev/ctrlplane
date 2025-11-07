@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -123,66 +123,27 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		attribute.String("event.type", string(event.EventType)),
 	)
 
-	// Get all release targets
-	allReleaseTargets, err := ws.ReleaseTargets().Items()
+	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get release targets")
 		return err
 	}
 
-	totalCount := len(allReleaseTargets)
-	span.SetAttributes(attribute.Int("release_targets.total", totalCount))
-
-	// Early exit if no release targets
-	if totalCount == 0 {
-		span.SetStatus(codes.Ok, "no release targets to process")
-		return nil
+	releaseTargetsSlice := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
+	for _, rt := range releaseTargets {
+		releaseTargetsSlice = append(releaseTargetsSlice, rt)
 	}
 
-	// Build a map of deployments with time-sensitive policies
-	// This is the primary filter - we only care about release targets for these deployments
-	timeSensitiveDeployments := buildTimeSensitiveDeploymentsMap(ctx, ws, allReleaseTargets)
-	span.SetAttributes(attribute.Int("deployments.time_sensitive", len(timeSensitiveDeployments)))
-
-	// If no time-sensitive policies exist, we can skip all reconciliations
-	if len(timeSensitiveDeployments) == 0 {
-		log.Info("No time-sensitive policies found, skipping tick reconciliation")
-		span.SetStatus(codes.Ok, "no time-sensitive policies")
-		return nil
-	}
-
-	// Filter release targets that need reconciliation
-	targetsToReconcile := make([]*oapi.ReleaseTarget, 0)
-
-	for _, rt := range allReleaseTargets {
-		// Filter 1: Only process if deployment has time-sensitive policies
-		if !timeSensitiveDeployments[rt.DeploymentId] {
-			continue
-		}
-
-		targetsToReconcile = append(targetsToReconcile, rt)
-	}
-
-	filteredCount := len(targetsToReconcile)
-	skippedCount := totalCount - filteredCount
-
-	log.Info("Tick reconciliation", 
-		"total", totalCount,
-		"to_reconcile", filteredCount,
-		"skipped", skippedCount,
-		"time_sensitive_deployments", len(timeSensitiveDeployments))
-
-	span.SetAttributes(
-		attribute.Int("release_targets.to_reconcile", filteredCount),
-		attribute.Int("release_targets.skipped", skippedCount),
+	concurrency.ProcessInChunks(
+		releaseTargetsSlice,
+		100,
+		20,
+		func(rt *oapi.ReleaseTarget) (any, error) {
+			ws.ReleaseManager().ReconcileTarget(ctx, rt, false)
+			return nil, nil
+		},
 	)
 
-	// Reconcile the filtered targets
-	for _, rt := range targetsToReconcile {
-		ws.ReleaseManager().ReconcileTarget(ctx, rt, false)
-	}
-
-	span.SetStatus(codes.Ok, "tick processed")
 	return nil
 }
