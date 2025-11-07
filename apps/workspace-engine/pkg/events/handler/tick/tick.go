@@ -39,22 +39,18 @@ var workspaceTickCount = cmap.New[int64]()
 // HandleWorkspaceTick handles periodic workspace tick events by intelligently reconciling
 // release targets that may be affected by time-sensitive policies or external dependencies.
 //
-// Time-sensitive policies (scheduled):
+// Scheduled policies (re-evaluated at specific times):
 // - Environment progression soak time (wait N minutes after deployment)
+// - Environment progression success rate (checked every minute when blocked)
 // - Environment progression maximum age (deployments become too old)
 // - Gradual rollout policies (time-based progressive deployment)
-//
-// External dependencies (unscheduled, checked periodically):
-// - Environment progression success rate (waiting for previous env deployments)
-// - Approval requirements (waiting for user approvals)
-// - Any policy that can't predict when it will be satisfied
 //
 // Optimization: Instead of reconciling ALL release targets on every tick, we use a scheduler
 // to track which targets need evaluation at specific times. This reduces workload by 10-50x.
 //
 // Processes targets that:
-// 1. Are scheduled for reconciliation now (based on NextEvaluationTime from policies)
-// 2. Are NOT scheduled but checked periodically (every 10 ticks = ~5 minutes)
+// 1. Scheduled for reconciliation now (based on NextEvaluationTime from policies)
+// 2. NOT scheduled but checked periodically (every 10 ticks = ~5 minutes as fallback)
 // 3. First boot - all targets (to populate scheduler)
 func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
 	workspaceTickCount.Upsert(ws.ID, 1, func(exist bool, old int64, new int64) int64 {
