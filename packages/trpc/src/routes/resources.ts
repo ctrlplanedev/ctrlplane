@@ -154,4 +154,36 @@ export const resourcesRouter = router({
 
       return result.data;
     }),
+
+  setVariable: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        resourceId: z.string(),
+        key: z.string(),
+        value: z.union([
+          z.string(),
+          z.number(),
+          z.boolean(),
+          z.record(z.string(), z.unknown()),
+        ]),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, resourceId, key, value } = input;
+
+      const formattedValue =
+        typeof value === "object" ? { object: value } : value;
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.ResourceVariableCreated,
+        timestamp: Date.now(),
+        data: {
+          resourceId,
+          key,
+          value: formattedValue,
+        },
+      });
+    }),
 });

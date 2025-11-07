@@ -166,6 +166,7 @@ export type GoEventPayload = {
   [Event.ResourceCreated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceUpdated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceDeleted]: WorkspaceEngine["schemas"]["Resource"];
+  [Event.ResourceVariableCreated]: WorkspaceEngine["schemas"]["ResourceVariable"];
   [Event.DeploymentCreated]: WorkspaceEngine["schemas"]["Deployment"];
   [Event.DeploymentUpdated]: WorkspaceEngine["schemas"]["Deployment"];
   [Event.DeploymentDeleted]: WorkspaceEngine["schemas"]["Deployment"];
