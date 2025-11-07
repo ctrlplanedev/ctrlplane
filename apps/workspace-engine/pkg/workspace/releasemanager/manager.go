@@ -356,6 +356,12 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 // GetReleaseTargetStateWithRelationships computes and returns the release target state,
 // optionally using pre-computed resource relationships.
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...GetOption) (*oapi.ReleaseTargetState, error) {
+	ctx, span := tracer.Start(ctx, "GetReleaseTargetState",
+		trace.WithAttributes(
+			attribute.String("release_target.key", releaseTarget.Key()),
+		))
+	defer span.End()
+
 	return m.cache.Get(ctx, releaseTarget, opts...)
 }
 

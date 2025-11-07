@@ -9,8 +9,6 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/releasemanager"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
@@ -264,56 +262,6 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 
 	// Pre-compute relationships for unique resources to avoid redundant GetRelatedEntities calls
 	paginatedTargets := releaseTargetsList[start:end]
-	uniqueResourceIds := make(map[string]bool)
-	for _, rt := range paginatedTargets {
-		uniqueResourceIds[rt.ResourceId] = true
-	}
-
-	// Batch compute relationships
-	resourceIds := make([]string, 0, len(uniqueResourceIds))
-	for resourceId := range uniqueResourceIds {
-		resourceIds = append(resourceIds, resourceId)
-	}
-
-	type relationshipResult struct {
-		resourceId      string
-		relatedEntities map[string][]*oapi.EntityRelation
-		err             error
-	}
-
-	relationshipResults, err := concurrency.ProcessInChunks(
-		resourceIds,
-		50,
-		10, // Max 10 concurrent goroutines
-		func(resourceId string) (relationshipResult, error) {
-			resource, exists := ws.Resources().Get(resourceId)
-			if !exists {
-				return relationshipResult{resourceId: resourceId, err: fmt.Errorf("resource not found")}, nil
-			}
-			entity := relationships.NewResourceEntity(resource)
-			relatedEntities, err := ws.Store().Relationships.GetRelatedEntities(c.Request.Context(), entity)
-			return relationshipResult{
-				resourceId:      resourceId,
-				relatedEntities: relatedEntities,
-				err:             err,
-			}, nil
-		},
-	)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	// Collect results into map
-	resourceRelationshipsMap := make(map[string]map[string][]*oapi.EntityRelation)
-	for _, r := range relationshipResults {
-		if r.err == nil && r.relatedEntities != nil {
-			resourceRelationshipsMap[r.resourceId] = r.relatedEntities
-		}
-	}
 
 	// Process each release target, logging errors but continuing with valid ones
 	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
@@ -326,19 +274,16 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 
 	results, err := concurrency.ProcessInChunks(
 		paginatedTargets,
-		50,
-		10, // Max 10 concurrent goroutines
+		25,
+		20, // Max 10 concurrent goroutines
 		func(releaseTarget *oapi.ReleaseTarget) (result, error) {
 			if releaseTarget == nil {
 				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}
 
-			// Use pre-computed relationships
-			resourceRelationships := resourceRelationshipsMap[releaseTarget.ResourceId]
 			state, err := ws.ReleaseManager().GetReleaseTargetState(
 				c.Request.Context(),
 				releaseTarget,
-				releasemanager.WithResourceRelationships(resourceRelationships),
 			)
 			if err != nil {
 				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
