@@ -4372,7 +4372,7 @@
             "summary": "Get relationships for a resource"
          }
       },
-      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables,": {
+      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables": {
          "get": {
             "description": "Returns a list of variables for a resource",
             "operationId": "getVariablesForResource",

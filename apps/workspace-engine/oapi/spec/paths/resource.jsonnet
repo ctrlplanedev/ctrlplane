@@ -70,7 +70,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables,': {
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables': {
     get: {
       summary: 'Get variables for a resource',
       operationId: 'getVariablesForResource',

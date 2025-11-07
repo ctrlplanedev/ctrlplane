@@ -1488,7 +1488,7 @@ type ServerInterface interface {
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships)
 	GetRelationshipsForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
 	// Get variables for a resource
-	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables,)
+	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables)
 	GetVariablesForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
 	// Get engine status
 	// (GET /v1/workspaces/{workspaceId}/status)
@@ -3207,7 +3207,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/relationships", wrapper.GetRelationshipsForResource)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/variables,", wrapper.GetVariablesForResource)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/variables", wrapper.GetVariablesForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
