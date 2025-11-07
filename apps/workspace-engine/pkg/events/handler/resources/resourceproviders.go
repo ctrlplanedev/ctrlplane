@@ -96,11 +96,6 @@ func HandleResourceProviderSetResources(
 
 	resources := batch.Resources
 
-	log.Info("Retrieved cached batch",
-		"batchId", *payload.BatchId,
-		"providerId", payload.ProviderId,
-		"resourceCount", len(resources))
-
 	// Ensure all resources have the correct workspace ID
 	for _, resource := range resources {
 		resource.WorkspaceId = ws.ID

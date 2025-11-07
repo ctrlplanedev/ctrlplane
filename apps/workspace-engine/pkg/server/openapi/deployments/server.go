@@ -265,7 +265,6 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 
 	// Process each release target, logging errors but continuing with valid ones
 	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
-	skippedCount := 0
 
 	type result struct {
 		item *oapi.ReleaseTargetWithState
@@ -326,19 +325,11 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	for _, r := range results {
 		if r.err != nil {
 			log.Warn("Skipping invalid release target", "error", r.err.Error())
-			skippedCount++
 			continue
 		}
 		if r.item != nil {
 			releaseTargetsWithState = append(releaseTargetsWithState, r.item)
 		}
-	}
-
-	if skippedCount > 0 {
-		log.Warn("Skipped invalid release targets in GetReleaseTargetsForDeployment",
-			"deploymentId", deploymentId,
-			"skippedCount", skippedCount,
-			"validCount", len(releaseTargetsWithState))
 	}
 
 	c.JSON(http.StatusOK, gin.H{

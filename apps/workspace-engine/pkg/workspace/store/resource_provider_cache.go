@@ -127,12 +127,6 @@ func (c *ResourceProviderCache) Retrieve(ctx context.Context, batchId string) (*
 	// Delete immediately (claim check pattern - one-time use)
 	c.cache.Del(batchId)
 
-	log.Info("Retrieved and removed cached batch",
-		"batchId", batchId,
-		"providerId", batch.ProviderId,
-		"resourceCount", len(batch.Resources),
-		"age", time.Since(batch.CreatedAt))
-
 	return batch, nil
 }
 

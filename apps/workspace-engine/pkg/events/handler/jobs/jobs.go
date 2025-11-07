@@ -3,7 +3,6 @@ package jobs
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
@@ -52,7 +51,8 @@ func HandleJobUpdated(
 
 	job, exists := getJob(ws, jobUpdateEvent)
 	if !exists {
-		return fmt.Errorf("job not found")
+		log.Warn("job not found", "job", jobUpdateEvent.Job.Id, jobUpdateEvent.Job.ExternalId)
+		return nil
 	}
 
 	// No fields specified - replace entire job
