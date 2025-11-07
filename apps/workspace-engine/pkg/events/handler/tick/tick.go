@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
@@ -34,6 +35,8 @@ func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId st
 	return producer.Publish([]byte(wsId), eventBytes)
 }
 
+var workspaceTickCount = cmap.New[int64]()
+
 // HandleWorkspaceTick handles periodic workspace tick events by intelligently reconciling
 // release targets that may be affected by time-sensitive policies. This is needed for:
 // - Environment progression soak time (wait N minutes after deployment)
@@ -48,6 +51,10 @@ func SendWorkspaceTick(ctx context.Context, producer messaging.Producer, wsId st
 // 2. Have never been scheduled (new targets)
 // 3. Have jobs in processing state (to check for completion)
 func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
+	workspaceTickCount.Upsert(ws.ID, 1, func(exist bool, old int64, new int64) int64 {
+		return old + 1
+	})
+
 	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
 	defer span.End()
 	span.SetAttributes(
@@ -67,6 +74,7 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 
 	// Get targets that are scheduled for reconciliation
 	dueKeys := scheduler.GetDue(now)
+	log.Info("due keys", "due_keys", len(dueKeys))
 	dueKeysSet := make(map[string]bool, len(dueKeys))
 	for _, key := range dueKeys {
 		dueKeysSet[key] = true
@@ -75,7 +83,6 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 	// Filter targets to those that need reconciliation:
 	// 1. Scheduled for reconciliation now
 	// 2. Never been scheduled (new target)
-	// 3. Has a job in processing state (check for completion)
 	targetsToReconcile := make([]*oapi.ReleaseTarget, 0)
 
 	for _, rt := range releaseTargets {
@@ -85,8 +92,8 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 			continue
 		}
 
-		// Include if never been scheduled (new target)
-		if _, scheduled := scheduler.GetNextReconciliationTime(rt); !scheduled {
+		// Include if fress bootup (new target)
+		if v, _ := workspaceTickCount.Get(ws.ID); v == 0 {
 			targetsToReconcile = append(targetsToReconcile, rt)
 			continue
 		}
@@ -98,10 +105,12 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		attribute.Int("targets_to_reconcile", len(targetsToReconcile)),
 	)
 
+	workspaceTickCount, _ := workspaceTickCount.Get(ws.ID)
 	log.Info("tick reconciliation",
 		"total_targets", len(releaseTargets),
 		"targets_to_reconcile", len(targetsToReconcile),
 		"scheduled_count", len(dueKeys),
+		"workspace_tick_count", workspaceTickCount,
 	)
 
 	if len(targetsToReconcile) == 0 {
