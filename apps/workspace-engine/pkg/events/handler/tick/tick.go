@@ -11,81 +11,11 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 )
-
-// buildTimeSensitiveDeploymentsMap creates a map of deploymentId -> bool indicating
-// which deployments have policies with time-sensitive rules (soak time, gradual rollout).
-// This allows us to skip reconciling release targets for deployments that don't need periodic re-evaluation.
-// Note: DenyWindow rules are not yet implemented in the Go backend, but when added, they should be checked here.
-func buildTimeSensitiveDeploymentsMap(ctx context.Context, ws *workspace.Workspace, allReleaseTargets map[string]*oapi.ReleaseTarget) map[string]bool {
-	timeSensitiveDeployments := make(map[string]bool)
-	
-	for _, policy := range ws.Policies().Items() {
-		// Check if this policy has any time-sensitive rules
-		hasTimeSensitiveRule := false
-		for _, rule := range policy.Rules {
-			if rule.EnvironmentProgression != nil || 
-			   rule.GradualRollout != nil {
-				hasTimeSensitiveRule = true
-				break
-			}
-		}
-		
-		if !hasTimeSensitiveRule {
-			continue
-		}
-		
-		// Mark all deployments this policy affects
-		// We check each release target to see if this policy applies to it
-		for _, rt := range allReleaseTargets {
-			if timeSensitiveDeployments[rt.DeploymentId] {
-				continue // Already marked
-			}
-			
-			policies, err := ws.ReleaseTargets().GetPolicies(ctx, rt)
-			if err != nil {
-				continue
-			}
-			
-			for _, p := range policies {
-				if p.Id == policy.Id {
-					timeSensitiveDeployments[rt.DeploymentId] = true
-					break
-				}
-			}
-		}
-	}
-	
-	return timeSensitiveDeployments
-}
-
-// hasRecentActivityOrPending checks if a release target has recent job activity
-// or pending work that might be affected by time progression.
-func hasRecentActivityOrPending(ws *workspace.Workspace, rt *oapi.ReleaseTarget, soakWindowCutoff time.Time) bool {
-	jobs := ws.Jobs().GetJobsForReleaseTarget(rt)
-	
-	// No jobs yet - might be waiting for a time window to open
-	if len(jobs) == 0 {
-		return true
-	}
-	
-	for _, job := range jobs {
-		// Job in progress - continue checking
-		if job.IsInProcessingState() {
-			return true
-		}
-		
-		// Recent completion - might be in soak period or progression waiting period
-		if job.CompletedAt != nil && job.CompletedAt.After(soakWindowCutoff) {
-			return true
-		}
-	}
-	
-	return false
-}
 
 var tracer = otel.Tracer("events/handler/tick")
 
@@ -140,7 +70,10 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		100,
 		20,
 		func(rt *oapi.ReleaseTarget) (any, error) {
-			ws.ReleaseManager().ReconcileTarget(ctx, rt, false)
+			err := ws.ReleaseManager().ReconcileTarget(ctx, rt, false)
+			if err != nil {
+				log.Error("failed to reconcile release target", "error", err)
+			}
 			return nil, nil
 		},
 	)
