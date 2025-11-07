@@ -91,9 +91,7 @@ const updateDeploymentVersion: AsyncTypedHandler<
     );
   const { data: deploymentVersion } = deploymentVersionResponse;
 
-  const definedFields = Object.fromEntries(
-    Object.entries(req.body).filter(([_, v]) => v !== undefined),
-  );
+  const definedFields = req.body;
   const updatedDeploymentVersion = { ...deploymentVersion, ...definedFields };
 
   await sendGoEvent({
