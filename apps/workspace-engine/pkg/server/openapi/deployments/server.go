@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/releasemanager"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
@@ -334,7 +335,11 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 
 			// Use pre-computed relationships
 			resourceRelationships := resourceRelationshipsMap[releaseTarget.ResourceId]
-			state, err := ws.ReleaseManager().GetCachedReleaseTargetStateWithRelationships(c.Request.Context(), releaseTarget, resourceRelationships)
+			state, err := ws.ReleaseManager().GetReleaseTargetState(
+				c.Request.Context(),
+				releaseTarget,
+				releasemanager.WithResourceRelationships(resourceRelationships),
+			)
 			if err != nil {
 				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
 			}

@@ -3,7 +3,6 @@ package releasemanager
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"workspace-engine/pkg/concurrency"
@@ -11,13 +10,9 @@ import (
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
-	"workspace-engine/pkg/workspace/releasemanager/policy"
-	"workspace-engine/pkg/workspace/releasemanager/variables"
-	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
-	"github.com/dgraph-io/ristretto/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -25,47 +20,24 @@ import (
 )
 
 // Manager handles the business logic for release target changes and deployment decisions.
-// It orchestrates deployment planning, job eligibility checking, execution, and job management.
+// It coordinates between the state cache and deployment orchestrator to manage release targets.
 type Manager struct {
-	store *store.Store
-
-	// Deployment components
-	planner               *deployment.Planner
-	jobEligibilityChecker *deployment.JobEligibilityChecker
-	executor              *deployment.Executor
-
-	// Concurrency control
-	releaseTargetLocks sync.Map
-
-	releaseTargetStateCache *ristretto.Cache[string, *oapi.ReleaseTargetState]
+	store      *store.Store
+	cache      *StateCache
+	deployment *DeploymentOrchestrator
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
 
 // New creates a new release manager for a workspace.
 func New(store *store.Store) *Manager {
-	policyManager := policy.New(store)
-	versionManager := versions.New(store)
-	variableManager := variables.New(store)
-
-	stateCacheConfig := &ristretto.Config[string, *oapi.ReleaseTargetState]{
-		NumCounters: 1e7,     // 10M keys
-		MaxCost:     1 << 30, // 1GB
-		BufferItems: 64,
-	}
-	stateCache, err := ristretto.NewCache(stateCacheConfig)
-	if err != nil {
-		log.Warn("error creating release target state cache", "error", err.Error())
-	}
+	deploymentOrch := NewDeploymentOrchestrator(store)
+	stateCache := NewStateCache(store, deploymentOrch.Planner())
 
 	return &Manager{
-		store:                 store,
-		planner:               deployment.NewPlanner(store, policyManager, versionManager, variableManager),
-		jobEligibilityChecker: deployment.NewJobEligibilityChecker(store),
-		executor:              deployment.NewExecutor(store),
-		releaseTargetLocks:    sync.Map{},
-
-		releaseTargetStateCache: stateCache,
+		store:      store,
+		cache:      stateCache,
+		deployment: deploymentOrch,
 	}
 }
 
@@ -296,76 +268,25 @@ func (m *Manager) reconcileTargetWithRelationships(
 		))
 	defer span.End()
 
-	// Phase 1: PLANNING - What should be deployed? (READ-ONLY)
-	// Pass pre-computed relationships to avoid redundant computation
-	span.AddEvent("Phase 1: Planning deployment")
-	desiredRelease, err := m.planner.PlanDeployment(
-		ctx,
-		releaseTarget,
-		deployment.WithResourceRelatedEntities(resourceRelationships),
-	)
+	// Delegate to deployment orchestrator for the three-phase deployment process
+	desiredRelease, job, err := m.deployment.Reconcile(ctx, releaseTarget, forceRedeploy, resourceRelationships)
 	if err != nil {
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "planning failed")
+		span.SetStatus(codes.Error, "reconciliation failed")
+		// Still cache the state even on error if we have a desired release
+		if desiredRelease != nil {
+			m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
+		}
 		return err
 	}
 
 	// Cache the computed state for other APIs to use
-	// Do this early so even if reconciliation doesn't create a job, the state is available
-	span.AddEvent("Caching release target state")
-	m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
-
-	// No desired release (no versions or blocked by user policies)
-	if desiredRelease == nil {
-		span.AddEvent("No desired release (no versions or blocked by policies)")
-		span.SetAttributes(attribute.String("reconciliation_result", "no_desired_release"))
-		return nil
+	// Do this after reconciliation completes so the state reflects the latest job
+	if desiredRelease != nil {
+		span.AddEvent("Caching release target state")
+		m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
 	}
 
-	// Phase 2: ELIGIBILITY - Should we create a job for this release? (READ-ONLY)
-	// Skip eligibility check if this is a forced redeploy
-	if !forceRedeploy {
-		span.AddEvent("Phase 2: Checking job eligibility")
-		shouldCreate, reason, err := m.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "eligibility check failed")
-			return err
-		}
-
-		span.SetAttributes(
-			attribute.Bool("job_eligibility.should_create", shouldCreate),
-			attribute.String("job_eligibility.reason", reason),
-		)
-
-		// Job should not be created (retry limit, already attempted, etc.)
-		if !shouldCreate {
-			span.AddEvent("Job should not be created",
-				trace.WithAttributes(attribute.String("reason", reason)))
-			span.SetAttributes(attribute.String("reconciliation_result", "job_not_eligible"))
-			// Update cache after eligibility check completes
-			m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
-			return nil
-		}
-	} else {
-		span.AddEvent("Phase 2: Skipping eligibility check (forced redeploy)")
-	}
-
-	// Phase 3: EXECUTION - Create the job (WRITES)
-	span.AddEvent("Phase 3: Executing release")
-	_, err = m.executor.ExecuteRelease(ctx, desiredRelease)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "execution failed")
-		span.SetAttributes(attribute.String("reconciliation_result", "execution_failed"))
-		return err
-	}
-
-	// Update cache after successful job creation with the latest state
-	span.AddEvent("Updating cache after job creation")
-	m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
-
-	span.SetAttributes(attribute.String("reconciliation_result", "job_created"))
 	return nil
 }
 
@@ -432,64 +353,13 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships)
 }
 
-// cacheReleaseTargetState stores the computed release target state in the cache for other APIs to use.
-// This is called during reconciliation to populate the cache with fresh data.
-func (m *Manager) cacheReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, desiredRelease *oapi.Release) *oapi.ReleaseTargetState {
-	// Get current release (may be nil if no successful jobs exist)
-	currentRelease, _, err := m.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
-	if err != nil {
-		// No successful job found is not an error condition - it just means no current release
-		log.Debug("no current release for release target", "error", err.Error())
-		currentRelease = nil
-	}
-
-	// Get latest job (may be nil if no jobs exist)
-	latestJob, _ := m.store.ReleaseTargets.GetLatestJob(ctx, releaseTarget)
-
-	rts := &oapi.ReleaseTargetState{
-		DesiredRelease: desiredRelease,
-		CurrentRelease: currentRelease,
-		LatestJob:      latestJob,
-	}
-
-	m.releaseTargetStateCache.SetWithTTL(releaseTarget.Key(), rts, 1, 10*time.Minute)
-
-	return rts
+// GetReleaseTargetStateWithRelationships computes and returns the release target state,
+// optionally using pre-computed resource relationships.
+func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...GetOption) (*oapi.ReleaseTargetState, error) {
+	return m.cache.Get(ctx, releaseTarget, opts...)
 }
 
-func (m *Manager) GetReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (rts *oapi.ReleaseTargetState, err error) {
-
-	// If relationships are provided, use them; otherwise PlanDeployment will compute on-demand
-	var desiredRelease *oapi.Release
-	if resourceRelationships != nil {
-		desiredRelease, err = m.planner.PlanDeployment(ctx, releaseTarget, deployment.WithResourceRelatedEntities(resourceRelationships))
-	} else {
-		desiredRelease, err = m.planner.PlanDeployment(ctx, releaseTarget)
-	}
-	if err != nil {
-		log.Error("error planning deployment for release target", "error", err.Error())
-		return nil, err
-	}
-
-	rts = m.cacheReleaseTargetState(ctx, releaseTarget, desiredRelease)
-
-	return rts, nil
-}
-
-func (m *Manager) GetCachedReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.ReleaseTargetState, error) {
-	return m.GetCachedReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
-}
-
-func (m *Manager) GetCachedReleaseTargetStateWithRelationships(ctx context.Context, releaseTarget *oapi.ReleaseTarget, resourceRelationships map[string][]*oapi.EntityRelation) (*oapi.ReleaseTargetState, error) {
-	key := releaseTarget.Key()
-
-	if state, ok := m.releaseTargetStateCache.Get(key); ok {
-		return state, nil
-	}
-
-	return m.GetReleaseTargetStateWithRelationships(ctx, releaseTarget, resourceRelationships)
-}
-
+// Planner returns the planner instance for backward compatibility.
 func (m *Manager) Planner() *deployment.Planner {
-	return m.planner
+	return m.deployment.Planner()
 }

@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/releasemanager"
 )
 
 type Environments struct{}
@@ -110,29 +111,25 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 		return
 	}
 
-	resourceList := make([]*oapi.Resource, 0, len(resources))
-	for _, resource := range resources {
-		resourceList = append(resourceList, resource)
-	}
 
-	sort.Slice(resourceList, func(i, j int) bool {
-		if resourceList[i] == nil && resourceList[j] == nil {
+	sort.Slice(resources, func(i, j int) bool {
+		if resources[i] == nil && resources[j] == nil {
 			return false
 		}
-		if resourceList[i] == nil {
+		if resources[i] == nil {
 			return false
 		}
-		if resourceList[j] == nil {
+		if resources[j] == nil {
 			return true
 		}
-		if resourceList[i].Name < resourceList[j].Name {
+		if resources[i].Name < resources[j].Name {
 			return true
 		}
-		if resourceList[i].Name > resourceList[j].Name {
+		if resources[i].Name > resources[j].Name {
 			return false
 		}
 		// Names are equal; compare Id
-		return resourceList[i].Id < resourceList[j].Id
+		return resources[i].Id < resources[j].Id
 	})
 
 	// Get pagination parameters with defaults
@@ -145,12 +142,12 @@ func (s *Environments) GetEnvironmentResources(c *gin.Context, workspaceId strin
 		offset = *params.Offset
 	}
 
-	total := len(resourceList)
+	total := len(resources)
 
 	// Apply pagination
 	start := min(offset, total)
 	end := min(start+limit, total)
-	paginatedResources := resourceList[start:end]
+	paginatedResources := resources[start:end]
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
@@ -246,7 +243,11 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 
 			// Use pre-computed relationships
 			resourceRelationships := resourceRelationshipsMap[releaseTarget.ResourceId]
-			state, err := ws.ReleaseManager().GetCachedReleaseTargetStateWithRelationships(c.Request.Context(), releaseTarget, resourceRelationships)
+			state, err := ws.ReleaseManager().GetReleaseTargetState(
+				c.Request.Context(),
+				releaseTarget,
+				releasemanager.WithResourceRelationships(resourceRelationships),
+			)
 			if err != nil {
 				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
 			}

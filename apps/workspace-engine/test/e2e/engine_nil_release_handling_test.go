@@ -260,7 +260,7 @@ func TestEngine_ReleaseTargetStateWithNilRelease(t *testing.T) {
 	}
 
 	// CRITICAL: GetReleaseTargetState should handle missing/nil releases
-	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetStateWithRelationships(ctx, releaseTarget, nil)
+	state, err := engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
 
 	// It should return an error or empty state, but NOT panic
 	if err != nil {

@@ -21,7 +21,6 @@ type manager struct {
 	persistentStore            persistence.Store
 	workspaces                 cmap.ConcurrentMap[string, *workspace.Workspace]
 	workspaceCreateOptions     []workspace.WorkspaceOption
-	skipInitialStatePopulation bool
 }
 
 type ManagerOption func(*manager)
@@ -35,14 +34,6 @@ func WithPersistentStore(store persistence.Store) ManagerOption {
 func WithWorkspaceCreateOptions(options ...workspace.WorkspaceOption) ManagerOption {
 	return func(c *manager) {
 		c.workspaceCreateOptions = options
-	}
-}
-
-// WithSkipInitialStatePopulation skips the database population step when loading workspaces.
-// Useful for testing scenarios where you want to control workspace state explicitly.
-func WithSkipInitialStatePopulation() ManagerOption {
-	return func(c *manager) {
-		c.skipInitialStatePopulation = true
 	}
 }
 
