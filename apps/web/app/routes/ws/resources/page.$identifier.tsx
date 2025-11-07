@@ -24,6 +24,7 @@ import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { ResourceIcon } from "../../../components/ui/resource-icon";
 import { useResource } from "./_components/ResourceProvider";
+import { ResourceVariables } from "./_components/Variables";
 
 export function meta() {
   return [
@@ -340,6 +341,8 @@ export default function ResourceDetail() {
               isOpen={false}
             />
           )}
+
+          <ResourceVariables />
         </div>
       </div>
     </>
