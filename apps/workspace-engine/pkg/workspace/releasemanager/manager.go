@@ -3,7 +3,6 @@ package releasemanager
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
 	"workspace-engine/pkg/concurrency"
@@ -153,8 +152,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			attribute.Int("chunk_size", 100),
 			attribute.Int("concurrency", 10),
 		))
-	maxConcurrency := runtime.NumCPU()
-	concurrency.ProcessInChunks(ctx, states, processFn, concurrency.WithChunkSize(100), concurrency.WithMaxConcurrency(maxConcurrency))
+	concurrency.ProcessInChunks(ctx, states, processFn)
 
 	span.AddEvent("Completed processing changes")
 	return nil
