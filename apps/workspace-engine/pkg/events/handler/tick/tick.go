@@ -53,12 +53,13 @@ var workspaceTickCount = cmap.New[int64]()
 // 2. NOT scheduled but checked periodically (every 10 ticks = ~5 minutes as fallback)
 // 3. First boot - all targets (to populate scheduler)
 func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
+	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
+	defer span.End()
+
 	workspaceTickCount.Upsert(ws.ID, 1, func(exist bool, old int64, new int64) int64 {
 		return old + 1
 	})
 
-	_, span := tracer.Start(ctx, "HandleWorkspaceTick")
-	defer span.End()
 	span.SetAttributes(
 		attribute.String("workspace.id", ws.ID),
 		attribute.String("event.type", string(event.EventType)),
@@ -86,7 +87,7 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 	// 2. Not scheduled but waiting for external events (env progression, approvals, etc.)
 	// 3. First boot - reconcile everything to populate scheduler
 	targetsToReconcile := make([]*oapi.ReleaseTarget, 0)
-	
+
 	tickCount, _ := workspaceTickCount.Get(ws.ID)
 	isFirstBoot := tickCount <= 1
 

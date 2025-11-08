@@ -1,9 +1,9 @@
 package environments
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sort"
 
 	"github.com/charmbracelet/log"
@@ -231,12 +231,11 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 		item *oapi.ReleaseTargetWithState
 		err  error
 	}
-	maxConcurrency := runtime.NumCPU()
+
 	results, err := concurrency.ProcessInChunks(
+		c.Request.Context(),
 		paginatedTargets,
-		50,
-		maxConcurrency,
-		func(releaseTarget *oapi.ReleaseTarget) (result, error) {
+		func(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (result, error) {
 			if releaseTarget == nil {
 				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}

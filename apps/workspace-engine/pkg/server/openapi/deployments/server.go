@@ -1,9 +1,9 @@
 package deployments
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sort"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
@@ -271,12 +271,10 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		item *oapi.ReleaseTargetWithState
 		err  error
 	}
-	maxConcurrency := runtime.NumCPU()
 	results, err := concurrency.ProcessInChunks(
+		c.Request.Context(),
 		paginatedTargets,
-		25,
-		maxConcurrency,
-		func(releaseTarget *oapi.ReleaseTarget) (result, error) {
+		func(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (result, error) {
 			if releaseTarget == nil {
 				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}

@@ -110,7 +110,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	span.AddEvent("Pre-computing resource relationships")
 	resourceRelationships := m.computeResourceRelationships(ctx, targetStates)
 
-	processFn := func(state targetState) (targetState, error) {
+	processFn := func(ctx context.Context, state targetState) (targetState, error) {
 		if state.isDelete {
 			// Handle deletion - cancel pending jobs
 			jobsCancelled := 0
@@ -154,7 +154,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			attribute.Int("concurrency", 10),
 		))
 	maxConcurrency := runtime.NumCPU()
-	concurrency.ProcessInChunks(states, 100, maxConcurrency, processFn)
+	concurrency.ProcessInChunks(ctx, states, processFn, concurrency.WithChunkSize(100), concurrency.WithMaxConcurrency(maxConcurrency))
 
 	span.AddEvent("Completed processing changes")
 	return nil
@@ -299,13 +299,12 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 			attribute.Bool("force_redeploy", forceRedeploy),
 		))
 	defer span.End()
-	maxConcurrency := runtime.NumCPU()
+
 	// Process targets in parallel for better performance
 	concurrency.ProcessInChunks(
+		ctx,
 		releaseTargets,
-		100, // chunk size
-		maxConcurrency,
-		func(rt *oapi.ReleaseTarget) (any, error) {
+		func(_ context.Context, rt *oapi.ReleaseTarget) (any, error) {
 			if err := m.ReconcileTarget(ctx, rt, forceRedeploy); err != nil {
 				log.Error("failed to reconcile release target",
 					"release_target", rt.Key(),

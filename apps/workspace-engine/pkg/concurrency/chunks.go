@@ -1,5 +1,15 @@
 package concurrency
 
+import (
+	"context"
+	"runtime"
+	"sync"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
+)
+
 func Chunk[T any](slice []T, chunkSize int) [][]T {
 	if chunkSize <= 0 {
 		return [][]T{slice}
@@ -18,78 +28,114 @@ func Chunk[T any](slice []T, chunkSize int) [][]T {
 	return chunks
 }
 
+var tracer = otel.Tracer("workspace-engine/pkg/concurrency")
+
+type options struct {
+	chunkSize      int
+	maxConcurrency int
+}
+
+type Option func(*options)
+
+func WithChunkSize(chunkSize int) Option {
+	return func(o *options) {
+		o.chunkSize = chunkSize
+	}
+}
+
+func WithMaxConcurrency(maxConcurrency int) Option {
+	return func(o *options) {
+		o.maxConcurrency = maxConcurrency
+	}
+}
+
 // ProcessInChunks processes a slice in parallel chunks and returns the results in order.
 // The processFn is called for each item in a chunk and should return the transformed result and any error.
 // maxConcurrency controls the maximum number of goroutines running concurrently.
 // If maxConcurrency <= 0, it defaults to the number of chunks (unbounded).
 func ProcessInChunks[T any, R any](
+	ctx context.Context,
 	slice []T,
-	chunkSize int,
-	maxConcurrency int,
-	processFn func(item T) (R, error),
+	processFn func(ctx context.Context, item T) (R, error),
+	opts ...Option,
 ) ([]R, error) {
 	if len(slice) == 0 {
 		return []R{}, nil
 	}
 
-	chunks := Chunk(slice, chunkSize)
-
-	type chunkResult struct {
-		index int
-		items []R
-		err   error
+	o := &options{
+		chunkSize:      100,
+		maxConcurrency: runtime.NumCPU(),
+	}
+	for _, opt := range opts {
+		opt(o)
 	}
 
-	resultsChan := make(chan chunkResult, len(chunks))
+	chunks := Chunk(slice, o.chunkSize)
 
-	// Create semaphore to limit concurrent goroutines
-	if maxConcurrency <= 0 {
-		maxConcurrency = len(chunks)
+	// Create errgroup with context for automatic cancellation on error
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Set concurrency limit
+	if o.maxConcurrency <= 0 {
+		o.maxConcurrency = len(chunks)
 	}
-	semaphore := make(chan struct{}, maxConcurrency)
+	g.SetLimit(o.maxConcurrency)
 
-	// Process each chunk in a goroutine with concurrency control
+	// Store results by chunk index to preserve order
+	chunkResults := make([][]R, len(chunks))
+	var mu sync.Mutex
+
+	// Process each chunk in a goroutine
 	for chunkIdx, chunk := range chunks {
-		semaphore <- struct{}{} // Acquire semaphore
+		g.Go(func() error {
+			ctx, span := tracer.Start(ctx, "ProcessChunk")
+			span.SetAttributes(
+				attribute.Int("chunk.index", chunkIdx),
+				attribute.Int("chunk.size", len(chunk)),
+			)
+			defer span.End()
 
-		go func(idx int, items []T) {
-			defer func() { <-semaphore }() // Release semaphore
+			results := make([]R, 0, len(chunk))
 
-			results := make([]R, 0, len(items))
+			for _, item := range chunk {
+				// Check context cancellation before processing
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+				}
 
-			for _, item := range items {
-				result, err := processFn(item)
+				result, err := processFn(ctx, item)
 				if err != nil {
-					resultsChan <- chunkResult{index: idx, err: err}
-					return
+					return err
 				}
 				results = append(results, result)
 			}
 
-			resultsChan <- chunkResult{index: idx, items: results}
-		}(chunkIdx, chunk)
+			// Store results for this chunk
+			mu.Lock()
+			chunkResults[chunkIdx] = results
+			mu.Unlock()
+
+			return nil
+		})
 	}
 
-	// Collect results
-	chunkResults := make([]chunkResult, len(chunks))
-	for range chunks {
-		result := <-resultsChan
-		if result.err != nil {
-			return nil, result.err
-		}
-		chunkResults[result.index] = result
+	// Wait for all goroutines to complete
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
-	close(resultsChan)
 
 	// Combine results in order
 	totalSize := 0
 	for _, cr := range chunkResults {
-		totalSize += len(cr.items)
+		totalSize += len(cr)
 	}
 
 	allResults := make([]R, 0, totalSize)
 	for _, cr := range chunkResults {
-		allResults = append(allResults, cr.items...)
+		allResults = append(allResults, cr...)
 	}
 
 	return allResults, nil

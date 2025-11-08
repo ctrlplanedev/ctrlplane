@@ -1,6 +1,7 @@
 package concurrency
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -11,12 +12,13 @@ import (
 
 func TestProcessInChunks_EmptySlice(t *testing.T) {
 	result, err := ProcessInChunks(
+		context.Background(),
 		[]int{},
-		2,
-		4,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item * 2, nil
 		},
+		WithChunkSize(2),
+		WithMaxConcurrency(4),
 	)
 
 	if err != nil {
@@ -30,12 +32,13 @@ func TestProcessInChunks_EmptySlice(t *testing.T) {
 
 func TestProcessInChunks_SingleItem(t *testing.T) {
 	result, err := ProcessInChunks(
+		context.Background(),
 		[]int{5},
-		2,
-		4,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item * 2, nil
 		},
+		WithChunkSize(2),
+		WithMaxConcurrency(4),
 	)
 
 	if err != nil {
@@ -55,12 +58,13 @@ func TestProcessInChunks_SingleItem(t *testing.T) {
 func TestProcessInChunks_MultipleItemsSmallChunks(t *testing.T) {
 	input := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		3,
-		2, // Only 2 concurrent goroutines
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item * 2, nil
 		},
+		WithChunkSize(3),
+		WithMaxConcurrency(2), // Only 2 concurrent goroutines
 	)
 
 	if err != nil {
@@ -82,12 +86,13 @@ func TestProcessInChunks_MultipleItemsSmallChunks(t *testing.T) {
 func TestProcessInChunks_ChunkSizeLargerThanSlice(t *testing.T) {
 	input := []int{1, 2, 3}
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		10,
-		4,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item * 3, nil
 		},
+		WithChunkSize(10),
+		WithMaxConcurrency(4),
 	)
 
 	if err != nil {
@@ -111,15 +116,16 @@ func TestProcessInChunks_ErrorInProcessing(t *testing.T) {
 	expectedErr := errors.New("processing error")
 
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		2,
-		4,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			if item == 3 {
 				return 0, expectedErr
 			}
 			return item * 2, nil
 		},
+		WithChunkSize(2),
+		WithMaxConcurrency(4),
 	)
 
 	if err == nil {
@@ -139,12 +145,13 @@ func TestProcessInChunks_PreservesOrder(t *testing.T) {
 	}
 
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		10,
-		5, // 5 concurrent goroutines
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item, nil
 		},
+		WithChunkSize(10),
+		WithMaxConcurrency(5), // 5 concurrent goroutines
 	)
 
 	if err != nil {
@@ -166,12 +173,13 @@ func TestProcessInChunks_ChunkSizeZero(t *testing.T) {
 	// When chunk size is 0, Chunk returns a single slice with all items
 	input := []int{1, 2, 3, 4, 5}
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		0,
-		4,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item * 2, nil
 		},
+		WithChunkSize(0),
+		WithMaxConcurrency(4),
 	)
 
 	if err != nil {
@@ -194,10 +202,9 @@ func TestProcessInChunks_DifferentTypes(t *testing.T) {
 	// Test with string to int conversion
 	input := []string{"1", "2", "3", "4"}
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		2,
-		4,
-		func(item string) (int, error) {
+		func(ctx context.Context, item string) (int, error) {
 			var num int
 			_, err := fmt.Sscanf(item, "%d", &num)
 			if err != nil {
@@ -205,6 +212,8 @@ func TestProcessInChunks_DifferentTypes(t *testing.T) {
 			}
 			return num * 10, nil
 		},
+		WithChunkSize(2),
+		WithMaxConcurrency(4),
 	)
 
 	if err != nil {
@@ -232,12 +241,13 @@ func TestProcessInChunks_LargeDataset(t *testing.T) {
 	}
 
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		50,
-		10, // 10 concurrent goroutines
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item * 2, nil
 		},
+		WithChunkSize(50),
+		WithMaxConcurrency(10), // 10 concurrent goroutines
 	)
 
 	if err != nil {
@@ -260,12 +270,13 @@ func TestProcessInChunks_ChunkSizeOne(t *testing.T) {
 	// Each item processed in its own goroutine
 	input := []int{1, 2, 3, 4, 5}
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		1,
-		3, // 3 concurrent goroutines
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item + 10, nil
 		},
+		WithChunkSize(1),
+		WithMaxConcurrency(3), // 3 concurrent goroutines
 	)
 
 	if err != nil {
@@ -288,12 +299,13 @@ func TestProcessInChunks_MaxConcurrencyZero(t *testing.T) {
 	// maxConcurrency of 0 should default to unbounded (number of chunks)
 	input := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		2,
-		0, // Should default to unbounded
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item * 2, nil
 		},
+		WithChunkSize(2),
+		WithMaxConcurrency(0), // Should default to unbounded
 	)
 
 	if err != nil {
@@ -316,12 +328,13 @@ func TestProcessInChunks_MaxConcurrencyNegative(t *testing.T) {
 	// maxConcurrency < 0 should default to unbounded (number of chunks)
 	input := []int{1, 2, 3, 4, 5}
 	result, err := ProcessInChunks(
+		context.Background(),
 		input,
-		2,
-		-5, // Should default to unbounded
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			return item + 5, nil
 		},
+		WithChunkSize(2),
+		WithMaxConcurrency(-5), // Should default to unbounded
 	)
 
 	if err != nil {
@@ -353,10 +366,9 @@ func TestProcessInChunks_ConcurrencyActuallyLimited(t *testing.T) {
 	}
 
 	_, err := ProcessInChunks(
+		context.Background(),
 		input,
-		1, // 1 item per chunk = 20 chunks
-		maxAllowed,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			// Increment concurrent counter
 			current := atomic.AddInt32(&currentConcurrent, 1)
 
@@ -375,6 +387,8 @@ func TestProcessInChunks_ConcurrencyActuallyLimited(t *testing.T) {
 
 			return item * 2, nil
 		},
+		WithChunkSize(1), // 1 item per chunk = 20 chunks
+		WithMaxConcurrency(maxAllowed),
 	)
 
 	if err != nil {
@@ -405,13 +419,14 @@ func TestProcessInChunks_ConcurrencyWithSleep(t *testing.T) {
 
 	start := time.Now()
 	_, err := ProcessInChunks(
+		context.Background(),
 		input,
-		1, // 1 item per chunk
-		maxConcurrency,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			time.Sleep(sleepDuration)
 			return item, nil
 		},
+		WithChunkSize(1), // 1 item per chunk
+		WithMaxConcurrency(maxConcurrency),
 	)
 	elapsed := time.Since(start)
 
@@ -449,10 +464,9 @@ func TestProcessInChunks_StrictConcurrencyLimit(t *testing.T) {
 	violations := 0
 
 	_, err := ProcessInChunks(
+		context.Background(),
 		input,
-		1,
-		maxAllowed,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			mu.Lock()
 			concurrent++
 			if concurrent > maxAllowed {
@@ -473,6 +487,8 @@ func TestProcessInChunks_StrictConcurrencyLimit(t *testing.T) {
 
 			return item, nil
 		},
+		WithChunkSize(1),
+		WithMaxConcurrency(maxAllowed),
 	)
 
 	if err != nil {
@@ -495,10 +511,9 @@ func TestProcessInChunks_ErrorStopsProcessing(t *testing.T) {
 	}
 
 	_, err := ProcessInChunks(
+		context.Background(),
 		input,
-		10,
-		5,
-		func(item int) (int, error) {
+		func(ctx context.Context, item int) (int, error) {
 			atomic.AddInt32(&processedCount, 1)
 			time.Sleep(5 * time.Millisecond)
 
@@ -507,6 +522,8 @@ func TestProcessInChunks_ErrorStopsProcessing(t *testing.T) {
 			}
 			return item, nil
 		},
+		WithChunkSize(10),
+		WithMaxConcurrency(5),
 	)
 
 	if err == nil {

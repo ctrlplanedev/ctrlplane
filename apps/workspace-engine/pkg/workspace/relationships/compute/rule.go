@@ -2,7 +2,6 @@ package compute
 
 import (
 	"context"
-	"runtime"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -38,15 +37,10 @@ func FindRuleRelationships(ctx context.Context, rule *oapi.RelationshipRule, ent
 
 	log.Warn("Using parallel processing for large datasets", "totalPairs", totalPairs)
 
-	// For large datasets, use parallel processing with ProcessInChunks
-	chunkSize := 100 // Process 100 fromEntities per chunk
-	maxConcurrency := runtime.NumCPU()
-
 	results, err := concurrency.ProcessInChunks(
+		ctx,
 		fromEntities,
-		chunkSize,
-		maxConcurrency,
-		func(fromEntity *oapi.RelatableEntity) ([]*relationships.EntityRelation, error) {
+		func(ctx context.Context, fromEntity *oapi.RelatableEntity) ([]*relationships.EntityRelation, error) {
 			return matchFromEntityToAll(ctx, rule, fromEntity, toEntities, entityMapCache), nil
 		},
 	)
