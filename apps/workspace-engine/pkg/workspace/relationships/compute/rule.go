@@ -43,6 +43,7 @@ func FindRuleRelationships(ctx context.Context, rule *oapi.RelationshipRule, ent
 		func(ctx context.Context, fromEntity *oapi.RelatableEntity) ([]*relationships.EntityRelation, error) {
 			return matchFromEntityToAll(ctx, rule, fromEntity, toEntities, entityMapCache), nil
 		},
+		concurrency.WithChunkSize(50),
 	)
 
 	if err != nil {
