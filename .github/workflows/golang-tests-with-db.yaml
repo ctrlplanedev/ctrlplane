@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'apps/workspace-engine/**'
-      - '.github/workflows/golang-tests-with-db.yaml'
+      - "apps/workspace-engine/**"
+      - ".github/workflows/golang-tests-with-db.yaml"
 
 jobs:
   workspace-engine-tests:
@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    
+
     # Add PostgreSQL service for integration tests
     services:
       postgres:
@@ -68,7 +68,7 @@ jobs:
       - name: Set up Node.js for migrations
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -97,42 +97,4 @@ jobs:
       - name: Run DB package tests
         env:
           POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/db/...
-
-      - name: Generate coverage report
-        run: go tool cover -html=coverage.out -o coverage.html
-
-      - name: Calculate coverage percentage
-        id: coverage
-        run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
-          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
-          echo "Total coverage: $COVERAGE"
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: |
-            apps/workspace-engine/coverage.out
-            apps/workspace-engine/coverage.html
-
-      - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const coverage = '${{ steps.coverage.outputs.percentage }}';
-            const comment = `## 📊 DB Package Test Coverage
-
-            **pkg/db** coverage: \`${coverage}\`
-
-            [View detailed coverage report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-
+        run: go test -v -race ./pkg/db/...
