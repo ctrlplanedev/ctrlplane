@@ -1197,6 +1197,7 @@ export interface components {
       variables: {
         [key: string]: components["schemas"]["LiteralValue"];
       };
+      verificationAnalysis?: components["schemas"]["VerificationAnalysis"];
       version: components["schemas"]["DeploymentVersion"];
     };
     ReleaseTarget: {
@@ -1276,6 +1277,11 @@ export interface components {
       };
       /** @description Human-readable explanation of the rule result */
       message: string;
+      /**
+       * Format: date-time
+       * @description The time when this rule should be re-evaluated (e.g., when soak time will be complete, when gradual rollout schedule is due)
+       */
+      nextEvaluationTime?: string;
       /** @description The ID of the rule that was evaluated */
       ruleId: string;
       /**
@@ -1309,6 +1315,46 @@ export interface components {
       | components["schemas"]["LiteralValue"]
       | components["schemas"]["ReferenceValue"]
       | components["schemas"]["SensitiveValue"];
+    VerificationAnalysis: {
+      /**
+       * Format: date-time
+       * @description When verification completed
+       */
+      completedAt?: string;
+      /** @description Number of failed measurements */
+      failedCount: number;
+      /** @description Individual verification measurements */
+      measurements: components["schemas"]["VerificationResult"][];
+      /** @description Summary message of verification result */
+      message?: string;
+      /** @description Number of passed measurements */
+      passedCount: number;
+      /**
+       * Format: date-time
+       * @description When verification started
+       */
+      startedAt: string;
+      /**
+       * @description Current status of verification
+       * @enum {string}
+       */
+      status: "running" | "passed" | "failed" | "cancelled";
+    };
+    VerificationResult: {
+      /** @description Raw measurement data */
+      data?: {
+        [key: string]: unknown;
+      };
+      /**
+       * Format: date-time
+       * @description When measurement was taken
+       */
+      measuredAt: string;
+      /** @description Measurement result message */
+      message?: string;
+      /** @description Whether this measurement passed */
+      passed: boolean;
+    };
   };
   responses: never;
   parameters: {
