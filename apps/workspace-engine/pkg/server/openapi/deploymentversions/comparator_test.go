@@ -38,7 +38,7 @@ func TestCompareReleaseTargets_NilJobs(t *testing.T) {
 	t.Run("a has no jobs, b has jobs", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Pending, time.Now()),
+			createJob(oapi.JobStatusPending, time.Now()),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -49,7 +49,7 @@ func TestCompareReleaseTargets_NilJobs(t *testing.T) {
 
 	t.Run("a has jobs, b has no jobs", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Pending, time.Now()),
+			createJob(oapi.JobStatusPending, time.Now()),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{}, "resource-b")
 
@@ -65,10 +65,10 @@ func TestCompareReleaseTargets_FailureStatus(t *testing.T) {
 
 	t.Run("a is failure, b is not", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Failure, now),
+			createJob(oapi.JobStatusFailure, now),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, now),
+			createJob(oapi.JobStatusSuccessful, now),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -79,10 +79,10 @@ func TestCompareReleaseTargets_FailureStatus(t *testing.T) {
 
 	t.Run("a is not failure, b is failure", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, now),
+			createJob(oapi.JobStatusSuccessful, now),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Failure, now),
+			createJob(oapi.JobStatusFailure, now),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -96,10 +96,10 @@ func TestCompareReleaseTargets_FailureStatus(t *testing.T) {
 		newerTime := time.Now()
 
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Failure, newerTime),
+			createJob(oapi.JobStatusFailure, newerTime),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Failure, olderTime),
+			createJob(oapi.JobStatusFailure, olderTime),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -115,10 +115,10 @@ func TestCompareReleaseTargets_StatusComparison(t *testing.T) {
 
 	t.Run("different statuses lexicographic comparison", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.InProgress, now),
+			createJob(oapi.JobStatusInProgress, now),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Pending, now),
+			createJob(oapi.JobStatusPending, now),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -133,10 +133,10 @@ func TestCompareReleaseTargets_StatusComparison(t *testing.T) {
 		newerTime := time.Now()
 
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Pending, newerTime),
+			createJob(oapi.JobStatusPending, newerTime),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Pending, olderTime),
+			createJob(oapi.JobStatusPending, olderTime),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -153,10 +153,10 @@ func TestCompareReleaseTargets_CreatedAtComparison(t *testing.T) {
 		newerTime := time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)
 
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, newerTime),
+			createJob(oapi.JobStatusSuccessful, newerTime),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, olderTime),
+			createJob(oapi.JobStatusSuccessful, olderTime),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -171,10 +171,10 @@ func TestCompareReleaseTargets_CreatedAtComparison(t *testing.T) {
 		newerTime := time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)
 
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, olderTime),
+			createJob(oapi.JobStatusSuccessful, olderTime),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, newerTime),
+			createJob(oapi.JobStatusSuccessful, newerTime),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -190,10 +190,10 @@ func TestCompareReleaseTargets_ResourceNameTiebreaker(t *testing.T) {
 
 	t.Run("same status and createdAt, different resource names", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, now),
+			createJob(oapi.JobStatusSuccessful, now),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, now),
+			createJob(oapi.JobStatusSuccessful, now),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -205,10 +205,10 @@ func TestCompareReleaseTargets_ResourceNameTiebreaker(t *testing.T) {
 
 	t.Run("same status and createdAt, reverse resource names", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, now),
+			createJob(oapi.JobStatusSuccessful, now),
 		}, "resource-z")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, now),
+			createJob(oapi.JobStatusSuccessful, now),
 		}, "resource-a")
 
 		result := compareReleaseTargets(a, b)
@@ -237,12 +237,12 @@ func TestCompareReleaseTargets_ComplexScenarios(t *testing.T) {
 
 	t.Run("multiple jobs, only first is considered", func(t *testing.T) {
 		a := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Failure, now),
-			createJob(oapi.Successful, twoDaysAgo),
+			createJob(oapi.JobStatusFailure, now),
+			createJob(oapi.JobStatusSuccessful, twoDaysAgo),
 		}, "resource-a")
 		b := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Successful, now),
-			createJob(oapi.Failure, twoDaysAgo),
+			createJob(oapi.JobStatusSuccessful, now),
+			createJob(oapi.JobStatusFailure, twoDaysAgo),
 		}, "resource-b")
 
 		result := compareReleaseTargets(a, b)
@@ -256,17 +256,17 @@ func TestCompareReleaseTargets_ComplexScenarios(t *testing.T) {
 	t.Run("realistic sorting scenario", func(t *testing.T) {
 		targets := []*fullReleaseTarget{
 			createFullReleaseTarget([]*oapi.Job{
-				createJob(oapi.Successful, oneHourAgo),
+				createJob(oapi.JobStatusSuccessful, oneHourAgo),
 			}, "server-1"),
 			createFullReleaseTarget([]*oapi.Job{
-				createJob(oapi.Failure, now),
+				createJob(oapi.JobStatusFailure, now),
 			}, "server-2"),
 			createFullReleaseTarget([]*oapi.Job{
-				createJob(oapi.InProgress, now),
+				createJob(oapi.JobStatusInProgress, now),
 			}, "server-3"),
 			createFullReleaseTarget([]*oapi.Job{}, "server-4"),
 			createFullReleaseTarget([]*oapi.Job{
-				createJob(oapi.Successful, now),
+				createJob(oapi.JobStatusSuccessful, now),
 			}, "server-5"),
 		}
 
@@ -300,25 +300,25 @@ func TestCompareReleaseTargets_ComplexScenarios(t *testing.T) {
 func TestCompareReleaseTargets_AllJobStatuses(t *testing.T) {
 	now := time.Now()
 	statuses := []oapi.JobStatus{
-		oapi.ActionRequired,
-		oapi.Cancelled,
-		oapi.ExternalRunNotFound,
-		oapi.Failure,
-		oapi.InProgress,
-		oapi.InvalidIntegration,
-		oapi.InvalidJobAgent,
-		oapi.Pending,
-		oapi.Skipped,
-		oapi.Successful,
+		oapi.JobStatusActionRequired,
+		oapi.JobStatusCancelled,
+		oapi.JobStatusExternalRunNotFound,
+		oapi.JobStatusFailure,
+		oapi.JobStatusInProgress,
+		oapi.JobStatusInvalidIntegration,
+		oapi.JobStatusInvalidJobAgent,
+		oapi.JobStatusPending,
+		oapi.JobStatusSkipped,
+		oapi.JobStatusSuccessful,
 	}
 
 	t.Run("failure always prioritized", func(t *testing.T) {
 		failureTarget := createFullReleaseTarget([]*oapi.Job{
-			createJob(oapi.Failure, now),
+			createJob(oapi.JobStatusFailure, now),
 		}, "failure")
 
 		for _, status := range statuses {
-			if status == oapi.Failure {
+			if status == oapi.JobStatusFailure {
 				continue
 			}
 

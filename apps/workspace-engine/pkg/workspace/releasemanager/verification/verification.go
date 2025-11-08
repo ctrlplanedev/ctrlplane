@@ -7,5 +7,5 @@ import (
 // Verification represents the verification configuration and state
 type Verification struct {
 	// Config  *oapi.VerificationRule
-	Metric  *metrics.Metric
+	Metric *metrics.Metric
 }

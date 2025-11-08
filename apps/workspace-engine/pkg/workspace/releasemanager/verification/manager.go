@@ -35,17 +35,8 @@ type VerificationRun struct {
 	CancelFunc   context.CancelFunc
 	StartedAt    time.Time
 	LastCheckAt  time.Time
-	Status       VerificationStatus
+	Status       oapi.VerificationAnalysisStatus
 }
-
-type VerificationStatus string
-
-const (
-	VerificationStatusRunning   VerificationStatus = "running"
-	VerificationStatusPassed    VerificationStatus = "passed"
-	VerificationStatusFailed    VerificationStatus = "failed"
-	VerificationStatusCancelled VerificationStatus = "cancelled"
-)
 
 func NewManager(store *store.Store) *Manager {
 	return &Manager{
@@ -86,7 +77,7 @@ func (m *Manager) StartVerification(
 		CancelFunc:   cancel,
 		StartedAt:    time.Now(),
 		LastCheckAt:  time.Now(),
-		Status:       VerificationStatusRunning,
+		Status:       oapi.VerificationAnalysisStatusRunning,
 	}
 
 	m.activeVerifications.Store(releaseID, run)
@@ -110,9 +101,11 @@ func (m *Manager) StopVerification(releaseID string) {
 	if runInterface, exists := m.activeVerifications.Load(releaseID); exists {
 		run := runInterface.(*VerificationRun)
 		run.CancelFunc()
-		run.Status = VerificationStatusCancelled
+		run.Status = oapi.VerificationAnalysisStatusCancelled
+		m.updateReleaseAnalysis(context.Background(), run)
+
 		m.activeVerifications.Delete(releaseID)
-		
+
 		log.Info("Stopped verification for release", "release_id", releaseID)
 	}
 }
@@ -146,12 +139,12 @@ func (m *Manager) runVerification(ctx context.Context, run *VerificationRun) {
 	metric := run.Verification.Metric
 
 	// Build provider context for metrics
-	providerCtx := m.buildProviderContext(run.Release)
+	providerCtx := BuildProviderContext(m.store, run.Release)
 
 	for {
 		select {
 		case <-ctx.Done():
-			run.Status = VerificationStatusCancelled
+			run.Status = oapi.VerificationAnalysisStatusCancelled
 			span.AddEvent("Verification cancelled")
 			return
 
@@ -162,7 +155,7 @@ func (m *Manager) runVerification(ctx context.Context, run *VerificationRun) {
 				log.Error("Verification measurement failed",
 					"release_id", releaseID,
 					"error", err)
-				
+
 				// Add failed measurement
 				run.Analysis.Measurements = append(run.Analysis.Measurements, &metrics.Result{
 					Message: fmt.Sprintf("Measurement error: %s", err.Error()),
@@ -190,45 +183,56 @@ func (m *Manager) runVerification(ctx context.Context, run *VerificationRun) {
 				))
 
 			switch phase {
-			case metrics.Passed:
-				run.Status = VerificationStatusPassed
+			case oapi.VerificationAnalysisStatusPassed:
+				run.Status = oapi.VerificationAnalysisStatusPassed
 				span.SetStatus(codes.Ok, "verification passed")
-				
+
 				log.Info("Verification passed for release",
 					"release_id", releaseID,
 					"version", run.Release.Version.Tag,
 					"passed_count", run.Analysis.PassedCount(),
 					"total_count", len(run.Analysis.Measurements))
-				
+
+				// Update release with final analysis
+				m.updateReleaseAnalysis(context.Background(), run)
+
 				return
 
-			case metrics.Failed:
-				run.Status = VerificationStatusFailed
+			case oapi.VerificationAnalysisStatusFailed:
+				run.Status = oapi.VerificationAnalysisStatusFailed
 				span.SetStatus(codes.Error, "verification failed")
-				
+
 				log.Warn("Verification failed for release",
 					"release_id", releaseID,
 					"version", run.Release.Version.Id,
 					"failed_count", run.Analysis.FailedCount(),
 					"total_count", len(run.Analysis.Measurements))
-				
+
+				// Update release with final analysis
+				m.updateReleaseAnalysis(context.Background(), run)
+
 				// Mark version as rejected
 				m.markVersionAsRejected(context.Background(), run.Release.Version.Id, "Verification failed")
-				
+
 				return
 
-			case metrics.Running:
+			case oapi.VerificationAnalysisStatusRunning:
+				// Update release with current progress
+				m.updateReleaseAnalysis(context.Background(), run)
+
 				// Continue monitoring
 				if !run.Analysis.ShouldContinue(metric) {
 					// Should have stopped by now
-					run.Status = VerificationStatusFailed
+					run.Status = oapi.VerificationAnalysisStatusFailed
+					m.updateReleaseAnalysis(context.Background(), run)
 					return
 				}
-				
+
 				// Wait for the interval before next measurement
 				select {
 				case <-ctx.Done():
-					run.Status = VerificationStatusCancelled
+					run.Status = oapi.VerificationAnalysisStatusCancelled
+					m.updateReleaseAnalysis(context.Background(), run)
 					return
 				case <-time.After(metric.Interval):
 					// Continue to next measurement
@@ -236,6 +240,53 @@ func (m *Manager) runVerification(ctx context.Context, run *VerificationRun) {
 			}
 		}
 	}
+}
+
+// updateReleaseAnalysis updates the verification analysis on the release
+func (m *Manager) updateReleaseAnalysis(ctx context.Context, run *VerificationRun) {
+	ctx, span := tracer.Start(ctx, "updateReleaseAnalysis",
+		trace.WithAttributes(
+			attribute.String("release.id", run.Release.ID()),
+			attribute.String("status", string(run.Status)),
+		))
+	defer span.End()
+
+	// Build the analysis object
+	analysis := &oapi.VerificationAnalysis{
+		Status:      run.Status,
+		StartedAt:   run.StartedAt,
+		PassedCount: run.Analysis.PassedCount(),
+		FailedCount: run.Analysis.FailedCount(),
+	}
+
+	// Add completed time if done
+	if run.Status == oapi.VerificationAnalysisStatusPassed || run.Status == oapi.VerificationAnalysisStatusFailed || run.Status == oapi.VerificationAnalysisStatusCancelled {
+		completedAt := time.Now()
+		analysis.CompletedAt = &completedAt
+	}
+
+	// Convert measurements
+	measurements := make([]oapi.VerificationResult, len(run.Analysis.Measurements))
+	for i, m := range run.Analysis.Measurements {
+		measurements[i] = *m.ToOAPI()
+	}
+	analysis.Measurements = measurements
+
+	// Add summary message
+	message := fmt.Sprintf("Verification %s: %d/%d measurements passed",
+		run.Status, run.Analysis.PassedCount(), len(run.Analysis.Measurements))
+	analysis.Message = &message
+
+	// Update the release
+	run.Release.VerificationAnalysis = analysis
+	m.store.Releases.Upsert(ctx, run.Release)
+
+	span.SetAttributes(
+		attribute.Int("passed_count", run.Analysis.PassedCount()),
+		attribute.Int("failed_count", run.Analysis.FailedCount()),
+		attribute.Int("total_count", len(run.Analysis.Measurements)),
+	)
+	span.SetStatus(codes.Ok, "release analysis updated")
 }
 
 // markVersionAsRejected marks a deployment version as rejected
@@ -263,23 +314,23 @@ func (m *Manager) markVersionAsRejected(ctx context.Context, versionID string, r
 	m.store.DeploymentVersions.Upsert(ctx, versionID, version)
 
 	span.SetStatus(codes.Ok, "version marked as rejected")
-	
+
 	log.Warn("Marked version as rejected",
 		"version_id", versionID,
 		"version_tag", version.Tag,
 		"reason", reason)
 }
 
-// buildProviderContext creates the context needed for metric providers
-func (m *Manager) buildProviderContext(release *oapi.Release) *metrics.ProviderContext {
+// BuildProviderContext creates the context needed for metric providers
+func BuildProviderContext(store *store.Store, release *oapi.Release) *metrics.ProviderContext {
 	// Get the resource
-	resource, _ := m.store.Resources.Get(release.ReleaseTarget.ResourceId)
+	resource, _ := store.Resources.Get(release.ReleaseTarget.ResourceId)
 
 	// Get the environment
-	environment, _ := m.store.Environments.Get(release.ReleaseTarget.EnvironmentId)
+	environment, _ := store.Environments.Get(release.ReleaseTarget.EnvironmentId)
 
 	// Get the deployment
-	deployment, _ := m.store.Deployments.Get(release.Version.DeploymentId)
+	deployment, _ := store.Deployments.Get(release.Version.DeploymentId)
 
 	// Get variables from release
 	variables := make(map[string]any)
@@ -297,4 +348,3 @@ func (m *Manager) buildProviderContext(release *oapi.Release) *metrics.ProviderC
 		Variables:   variables,
 	}
 }
-

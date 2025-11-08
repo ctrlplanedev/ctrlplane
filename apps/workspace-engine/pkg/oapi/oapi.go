@@ -90,11 +90,11 @@ func (x *UserApprovalRecord) Key() string {
 }
 
 func (j *Job) IsInProcessingState() bool {
-	return j.Status == InProgress || j.Status == ActionRequired || j.Status == Pending
+	return j.Status == JobStatusInProgress || j.Status == JobStatusActionRequired || j.Status == JobStatusPending
 }
 
 func (j *Job) IsInTerminalState() bool {
-	return j.Status == Cancelled || j.Status == Skipped || j.Status == Successful || j.Status == Failure || j.Status == InvalidJobAgent || j.Status == InvalidIntegration || j.Status == ExternalRunNotFound
+	return j.Status == JobStatusCancelled || j.Status == JobStatusSkipped || j.Status == JobStatusSuccessful || j.Status == JobStatusFailure || j.Status == JobStatusInvalidJobAgent || j.Status == JobStatusInvalidIntegration || j.Status == JobStatusExternalRunNotFound
 }
 
 func (v *Value) GetType() (string, error) {

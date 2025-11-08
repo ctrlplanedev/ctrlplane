@@ -109,7 +109,7 @@ func TestEngine_DeploymentVersionCreatesJobsForAllReleaseTargets(t *testing.T) {
 		if job.JobAgentId != jobAgentId {
 			t.Errorf("job %s has incorrect job_agent_id: expected %s, got %s", job.Id, jobAgentId, job.JobAgentId)
 		}
-		if job.Status != oapi.Pending {
+		if job.Status != oapi.JobStatusPending {
 			t.Errorf("job %s has incorrect status: expected PENDING, got %v", job.Id, job.Status)
 		}
 	}
@@ -405,7 +405,7 @@ func TestEngine_DeploymentVersionWithNoJobAgent(t *testing.T) {
 		break
 	}
 
-	if job.Status != oapi.InvalidJobAgent {
+	if job.Status != oapi.JobStatusInvalidJobAgent {
 		t.Errorf("expected job status InvalidJobAgent, got %v", job.Status)
 	}
 

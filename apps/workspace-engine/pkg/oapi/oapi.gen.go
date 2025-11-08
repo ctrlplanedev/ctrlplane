@@ -38,16 +38,16 @@ const (
 
 // Defines values for JobStatus.
 const (
-	ActionRequired      JobStatus = "actionRequired"
-	Cancelled           JobStatus = "cancelled"
-	ExternalRunNotFound JobStatus = "externalRunNotFound"
-	Failure             JobStatus = "failure"
-	InProgress          JobStatus = "inProgress"
-	InvalidIntegration  JobStatus = "invalidIntegration"
-	InvalidJobAgent     JobStatus = "invalidJobAgent"
-	Pending             JobStatus = "pending"
-	Skipped             JobStatus = "skipped"
-	Successful          JobStatus = "successful"
+	JobStatusActionRequired      JobStatus = "actionRequired"
+	JobStatusCancelled           JobStatus = "cancelled"
+	JobStatusExternalRunNotFound JobStatus = "externalRunNotFound"
+	JobStatusFailure             JobStatus = "failure"
+	JobStatusInProgress          JobStatus = "inProgress"
+	JobStatusInvalidIntegration  JobStatus = "invalidIntegration"
+	JobStatusInvalidJobAgent     JobStatus = "invalidJobAgent"
+	JobStatusPending             JobStatus = "pending"
+	JobStatusSkipped             JobStatus = "skipped"
+	JobStatusSuccessful          JobStatus = "successful"
 )
 
 // Defines values for JobUpdateEventFieldsToUpdate.
@@ -97,6 +97,14 @@ const (
 const (
 	Approval RuleEvaluationActionType = "approval"
 	Wait     RuleEvaluationActionType = "wait"
+)
+
+// Defines values for VerificationAnalysisStatus.
+const (
+	VerificationAnalysisStatusCancelled VerificationAnalysisStatus = "cancelled"
+	VerificationAnalysisStatusFailed    VerificationAnalysisStatus = "failed"
+	VerificationAnalysisStatusPassed    VerificationAnalysisStatus = "passed"
+	VerificationAnalysisStatusRunning   VerificationAnalysisStatus = "running"
 )
 
 // AnyApprovalRule defines model for AnyApprovalRule.
@@ -434,11 +442,12 @@ type RelationshipRule_Matcher struct {
 
 // Release defines model for Release.
 type Release struct {
-	CreatedAt          string                  `json:"createdAt"`
-	EncryptedVariables []string                `json:"encryptedVariables"`
-	ReleaseTarget      ReleaseTarget           `json:"releaseTarget"`
-	Variables          map[string]LiteralValue `json:"variables"`
-	Version            DeploymentVersion       `json:"version"`
+	CreatedAt            string                  `json:"createdAt"`
+	EncryptedVariables   []string                `json:"encryptedVariables"`
+	ReleaseTarget        ReleaseTarget           `json:"releaseTarget"`
+	Variables            map[string]LiteralValue `json:"variables"`
+	VerificationAnalysis *VerificationAnalysis   `json:"verificationAnalysis,omitempty"`
+	Version              DeploymentVersion       `json:"version"`
 }
 
 // ReleaseTarget defines model for ReleaseTarget.
@@ -568,6 +577,48 @@ type UserApprovalRecord struct {
 // Value defines model for Value.
 type Value struct {
 	union json.RawMessage
+}
+
+// VerificationAnalysis defines model for VerificationAnalysis.
+type VerificationAnalysis struct {
+	// CompletedAt When verification completed
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+
+	// FailedCount Number of failed measurements
+	FailedCount int `json:"failedCount"`
+
+	// Measurements Individual verification measurements
+	Measurements []VerificationResult `json:"measurements"`
+
+	// Message Summary message of verification result
+	Message *string `json:"message,omitempty"`
+
+	// PassedCount Number of passed measurements
+	PassedCount int `json:"passedCount"`
+
+	// StartedAt When verification started
+	StartedAt time.Time `json:"startedAt"`
+
+	// Status Current status of verification
+	Status VerificationAnalysisStatus `json:"status"`
+}
+
+// VerificationAnalysisStatus Current status of verification
+type VerificationAnalysisStatus string
+
+// VerificationResult defines model for VerificationResult.
+type VerificationResult struct {
+	// Data Raw measurement data
+	Data *map[string]interface{} `json:"data,omitempty"`
+
+	// MeasuredAt When measurement was taken
+	MeasuredAt time.Time `json:"measuredAt"`
+
+	// Message Measurement result message
+	Message *string `json:"message,omitempty"`
+
+	// Passed Whether this measurement passed
+	Passed bool `json:"passed"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.

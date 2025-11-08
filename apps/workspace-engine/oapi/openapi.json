@@ -973,6 +973,9 @@
                   },
                   "type": "object"
                },
+               "verificationAnalysis": {
+                  "$ref": "#/components/schemas/VerificationAnalysis"
+               },
                "version": {
                   "$ref": "#/components/schemas/DeploymentVersion"
                }
@@ -1324,6 +1327,84 @@
                   "$ref": "#/components/schemas/SensitiveValue"
                }
             ]
+         },
+         "VerificationAnalysis": {
+            "properties": {
+               "completedAt": {
+                  "description": "When verification completed",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "failedCount": {
+                  "description": "Number of failed measurements",
+                  "type": "integer"
+               },
+               "measurements": {
+                  "description": "Individual verification measurements",
+                  "items": {
+                     "$ref": "#/components/schemas/VerificationResult"
+                  },
+                  "type": "array"
+               },
+               "message": {
+                  "description": "Summary message of verification result",
+                  "type": "string"
+               },
+               "passedCount": {
+                  "description": "Number of passed measurements",
+                  "type": "integer"
+               },
+               "startedAt": {
+                  "description": "When verification started",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "status": {
+                  "description": "Current status of verification",
+                  "enum": [
+                     "running",
+                     "passed",
+                     "failed",
+                     "cancelled"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "status",
+               "startedAt",
+               "passedCount",
+               "failedCount",
+               "measurements"
+            ],
+            "type": "object"
+         },
+         "VerificationResult": {
+            "properties": {
+               "data": {
+                  "additionalProperties": true,
+                  "description": "Raw measurement data",
+                  "type": "object"
+               },
+               "measuredAt": {
+                  "description": "When measurement was taken",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "message": {
+                  "description": "Measurement result message",
+                  "type": "string"
+               },
+               "passed": {
+                  "description": "Whether this measurement passed",
+                  "type": "boolean"
+               }
+            },
+            "required": [
+               "passed",
+               "measuredAt"
+            ],
+            "type": "object"
          }
       }
    },

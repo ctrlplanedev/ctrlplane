@@ -73,7 +73,7 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 
 	// Mark job as successful
 	now := time.Now()
-	initialJob.Status = oapi.Successful
+	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
@@ -126,7 +126,7 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 	// Find the new pending job (should be different from initial job and have pending status)
 	var newJob *oapi.Job
 	for _, job := range allJobsAfterChange {
-		if job.Id != initialJob.Id && job.Id != "" && job.Status == oapi.Pending {
+		if job.Id != initialJob.Id && job.Id != "" && job.Status == oapi.JobStatusPending {
 			newJob = job
 			break
 		}
@@ -215,7 +215,7 @@ func TestEngine_VariableChange_DeploymentDefaultIntValueChange(t *testing.T) {
 		break
 	}
 	now := time.Now()
-	initialJob.Status = oapi.Successful
+	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
@@ -320,7 +320,7 @@ func TestEngine_VariableChange_DeploymentDefaultBoolValueChange(t *testing.T) {
 		break
 	}
 	now := time.Now()
-	initialJob.Status = oapi.Successful
+	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
@@ -428,7 +428,7 @@ func TestEngine_VariableChange_DeploymentDefaultObjectValueChange(t *testing.T) 
 		break
 	}
 	now := time.Now()
-	initialJob.Status = oapi.Successful
+	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
@@ -539,7 +539,7 @@ func TestEngine_VariableChange_DeploymentValueChange(t *testing.T) {
 		break
 	}
 	now := time.Now()
-	initialJob.Status = oapi.Successful
+	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
@@ -642,7 +642,7 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 		break
 	}
 	now := time.Now()
-	initialJob.Status = oapi.Successful
+	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
@@ -740,7 +740,7 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 		break
 	}
 	now := time.Now()
-	initialJob.Status = oapi.Successful
+	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
@@ -774,7 +774,7 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 		break
 	}
 	if job2 != nil {
-		job2.Status = oapi.Successful
+		job2.Status = oapi.JobStatusSuccessful
 		job2.CompletedAt = &now
 		engine.PushEvent(ctx, handler.JobUpdate, job2)
 	}
@@ -797,7 +797,7 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 		break
 	}
 	if job3 != nil {
-		job3.Status = oapi.Successful
+		job3.Status = oapi.JobStatusSuccessful
 		job3.CompletedAt = &now
 		engine.PushEvent(ctx, handler.JobUpdate, job3)
 	}

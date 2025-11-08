@@ -97,7 +97,7 @@ func TestExecuteRelease_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 	assert.Equal(t, release.ID(), job.ReleaseId)
-	assert.Equal(t, oapi.Pending, job.Status)
+	assert.Equal(t, oapi.JobStatusPending, job.Status)
 	assert.Equal(t, jobAgentID, job.JobAgentId)
 
 	// Verify release was persisted
@@ -145,13 +145,13 @@ func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
 	// Assertions
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, oapi.InvalidJobAgent, job.Status)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
 	assert.Equal(t, "", job.JobAgentId)
 
 	// Verify job was persisted with InvalidJobAgent status
 	storedJob, exists := testStore.Jobs.Get(job.Id)
 	require.True(t, exists)
-	assert.Equal(t, oapi.InvalidJobAgent, storedJob.Status)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, storedJob.Status)
 }
 
 func TestExecuteRelease_DeploymentNotFound(t *testing.T) {
@@ -200,7 +200,7 @@ func TestExecuteRelease_SkipsDispatchForInvalidJobAgent(t *testing.T) {
 	// Assertions
 	require.NoError(t, err)
 	require.NotNil(t, job)
-	assert.Equal(t, oapi.InvalidJobAgent, job.Status)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
 
 	// Give a moment for any async operations to complete
 	time.Sleep(10 * time.Millisecond)
@@ -208,7 +208,7 @@ func TestExecuteRelease_SkipsDispatchForInvalidJobAgent(t *testing.T) {
 	// Verify job status is still InvalidJobAgent (dispatch was skipped)
 	storedJob, exists := testStore.Jobs.Get(job.Id)
 	require.True(t, exists)
-	assert.Equal(t, oapi.InvalidJobAgent, storedJob.Status)
+	assert.Equal(t, oapi.JobStatusInvalidJobAgent, storedJob.Status)
 }
 
 func TestExecuteRelease_MultipleReleases(t *testing.T) {

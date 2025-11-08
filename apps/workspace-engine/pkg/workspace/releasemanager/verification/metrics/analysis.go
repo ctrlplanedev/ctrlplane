@@ -1,10 +1,23 @@
 package metrics
 
+import (
+	"workspace-engine/pkg/oapi"
+)
+
 // Result represents a single measurement with evaluation
 type Result struct {
 	Message     string
 	Passed      bool
 	Measurement *Measurement
+}
+
+func (r *Result) ToOAPI() *oapi.VerificationResult {
+	return &oapi.VerificationResult{
+		Message:    &r.Message,
+		Passed:     r.Passed,
+		Data:       &r.Measurement.Data,
+		MeasuredAt: r.Measurement.MeasuredAt,
+	}
 }
 
 // Status tracks all measurements
@@ -40,41 +53,31 @@ func (s *Analysis) FailedCount() int {
 	return count
 }
 
-// Phase represents the current state
-type Phase string
-
-const (
-	Pending Phase = "pending"
-	Running Phase = "running"
-	Passed  Phase = "passed"
-	Failed  Phase = "failed"
-)
-
 // Phase computes the current phase based on measurements
-func (s *Analysis) Phase(metric *Metric) Phase {
+func (s *Analysis) Phase(metric *Metric) oapi.VerificationAnalysisStatus {
 	if len(s.Measurements) == 0 {
-		return Pending
+		return oapi.VerificationAnalysisStatusRunning
 	}
 
 	failedCount := s.FailedCount()
 
 	// Check failure limit
 	if metric.FailureLimit > 0 && failedCount >= metric.FailureLimit {
-		return Failed
+		return oapi.VerificationAnalysisStatusFailed
 	}
 
 	// Check if all measurements completed
 	if len(s.Measurements) >= metric.Count {
 		if failedCount > 0 && metric.FailureLimit > 0 && failedCount < metric.FailureLimit {
-			return Passed // Below failure threshold
+			return oapi.VerificationAnalysisStatusRunning // Below failure threshold
 		}
 		if failedCount == 0 {
-			return Passed // All passed
+			return oapi.VerificationAnalysisStatusPassed // All passed
 		}
-		return Failed
+		return oapi.VerificationAnalysisStatusFailed
 	}
 
-	return Running
+	return oapi.VerificationAnalysisStatusRunning
 }
 
 // ShouldContinue checks if more measurements are needed

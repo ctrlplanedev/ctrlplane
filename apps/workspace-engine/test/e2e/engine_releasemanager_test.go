@@ -126,7 +126,7 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 	}
 
 	// Step 3: Verify the job is in pending status
-	if job.Status != oapi.Pending {
+	if job.Status != oapi.JobStatusPending {
 		t.Errorf("expected job status PENDING, got %v", job.Status)
 	}
 
@@ -352,7 +352,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	}
 
 	// Verify the job is pending
-	if appJob.Status != oapi.Pending {
+	if appJob.Status != oapi.JobStatusPending {
 		t.Errorf("expected job status PENDING, got %v", appJob.Status)
 	}
 
@@ -514,7 +514,7 @@ func TestEngine_ReleaseManager_MultipleResources(t *testing.T) {
 		jobsByResource[release.ReleaseTarget.ResourceId] = job
 
 		// Verify job is pending
-		if job.Status != oapi.Pending {
+		if job.Status != oapi.JobStatusPending {
 			t.Errorf("job %s has status %v, want PENDING", job.Id, job.Status)
 		}
 
