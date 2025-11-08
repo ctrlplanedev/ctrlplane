@@ -65,21 +65,19 @@ func ProcessInChunks[T any, R any](
 
 	o := &options{
 		chunkSize:      100,
-		maxConcurrency: runtime.NumCPU(),
+		maxConcurrency: runtime.GOMAXPROCS(0),
 	}
 	for _, opt := range opts {
 		opt(o)
 	}
 
 	chunks := Chunk(slice, o.chunkSize)
-
-	// Create errgroup with context for automatic cancellation on error
-	g, ctx := errgroup.WithContext(ctx)
-
-	// Set concurrency limit
 	if o.maxConcurrency <= 0 {
 		o.maxConcurrency = len(chunks)
 	}
+
+	// Create errgroup with context for automatic cancellation on error
+	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(o.maxConcurrency)
 
 	// Store results by chunk index to preserve order
