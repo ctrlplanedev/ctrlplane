@@ -302,8 +302,8 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 	concurrency.ProcessInChunks(
 		ctx,
 		releaseTargets,
-		func(_ context.Context, rt *oapi.ReleaseTarget) (any, error) {
-			if err := m.ReconcileTarget(ctx, rt, forceRedeploy); err != nil {
+		func(pctx context.Context, rt *oapi.ReleaseTarget) (any, error) {
+			if err := m.ReconcileTarget(pctx, rt, forceRedeploy); err != nil {
 				log.Error("failed to reconcile release target",
 					"release_target", rt.Key(),
 					"error", err.Error())

@@ -87,7 +87,7 @@ func ProcessInChunks[T any, R any](
 	// Process each chunk in a goroutine
 	for chunkIdx, chunk := range chunks {
 		g.Go(func() error {
-			ctx, span := tracer.Start(ctx, "ProcessChunk")
+			chunkCtx, span := tracer.Start(ctx, "ProcessChunk")
 			span.SetAttributes(
 				attribute.Int("chunk.index", chunkIdx),
 				attribute.Int("chunk.size", len(chunk)),
@@ -99,12 +99,12 @@ func ProcessInChunks[T any, R any](
 			for _, item := range chunk {
 				// Check context cancellation before processing
 				select {
-				case <-ctx.Done():
-					return ctx.Err()
+				case <-chunkCtx.Done():
+					return chunkCtx.Err()
 				default:
 				}
 
-				result, err := processFn(ctx, item)
+				result, err := processFn(chunkCtx, item)
 				if err != nil {
 					return err
 				}
