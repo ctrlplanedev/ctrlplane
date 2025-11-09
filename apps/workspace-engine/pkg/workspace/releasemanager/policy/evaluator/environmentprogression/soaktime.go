@@ -29,7 +29,7 @@ func NewSoakTimeEvaluator(
 	}
 	if successStatuses == nil {
 		successStatuses = map[oapi.JobStatus]bool{
-			oapi.JobStatusSuccessful: true,
+			oapi.Successful: true,
 		}
 	}
 	return evaluator.WithMemoization(&SoakTimeEvaluator{

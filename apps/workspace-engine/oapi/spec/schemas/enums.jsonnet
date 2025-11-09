@@ -18,4 +18,9 @@
     type: 'string',
     enum: ['deployment', 'environment', 'resource'],
   },
+
+  ReleaseVerificationStatus: {
+    type: 'string',
+    enum: ['running', 'passed', 'failed', 'cancelled'],
+  },
 }

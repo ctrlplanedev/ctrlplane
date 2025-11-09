@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 )
 
 func TestNew(t *testing.T) {
@@ -88,10 +88,10 @@ func TestMeasure(t *testing.T) {
 		name           string
 		config         *Config
 		setupServer    func() *httptest.Server
-		providerCtx    *metrics.ProviderContext
+		providerCtx    *provider.ProviderContext
 		wantStatusCode int
 		wantError      bool
-		checkResult    func(t *testing.T, measurement *metrics.Measurement)
+		checkResult    func(t *testing.T, measuredAt time.Time, data map[string]any)
 	}{
 		{
 			name: "successful GET request",
@@ -108,12 +108,12 @@ func TestMeasure(t *testing.T) {
 					w.Write([]byte("test response"))
 				}))
 			},
-			providerCtx:    &metrics.ProviderContext{},
+			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
 			wantError:      false,
-			checkResult: func(t *testing.T, measurement *metrics.Measurement) {
-				if body, ok := measurement.Data["body"].(string); !ok || body != "test response" {
-					t.Errorf("expected body 'test response', got %v", measurement.Data["body"])
+			checkResult: func(t *testing.T, measuredAt time.Time, data map[string]any) {
+				if body, ok := data["body"].(string); !ok || body != "test response" {
+					t.Errorf("expected body 'test response', got %v", data["body"])
 				}
 			},
 		},
@@ -133,12 +133,12 @@ func TestMeasure(t *testing.T) {
 					w.Write([]byte(`{"success":true}`))
 				}))
 			},
-			providerCtx:    &metrics.ProviderContext{},
+			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 201,
 			wantError:      false,
-			checkResult: func(t *testing.T, measurement *metrics.Measurement) {
-				if statusCode, ok := measurement.Data["statusCode"].(int); !ok || statusCode != 201 {
-					t.Errorf("expected status code 201, got %v", measurement.Data["statusCode"])
+			checkResult: func(t *testing.T, measuredAt time.Time, data map[string]any) {
+				if statusCode, ok := data["statusCode"].(int); !ok || statusCode != 201 {
+					t.Errorf("expected status code 201, got %v", data["statusCode"])
 				}
 			},
 		},
@@ -163,7 +163,7 @@ func TestMeasure(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				}))
 			},
-			providerCtx:    &metrics.ProviderContext{},
+			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
 			wantError:      false,
 		},
@@ -183,13 +183,13 @@ func TestMeasure(t *testing.T) {
 					})
 				}))
 			},
-			providerCtx:    &metrics.ProviderContext{},
+			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 200,
 			wantError:      false,
-			checkResult: func(t *testing.T, measurement *metrics.Measurement) {
-				jsonData, ok := measurement.Data["json"].(map[string]any)
+			checkResult: func(t *testing.T, measuredAt time.Time, data map[string]any) {
+				jsonData, ok := data["json"].(map[string]any)
 				if !ok {
-					t.Fatalf("expected json field to be map[string]any, got %T", measurement.Data["json"])
+					t.Fatalf("expected json field to be map[string]any, got %T", data["json"])
 				}
 				if metric, ok := jsonData["metric"].(string); !ok || metric != "value" {
 					t.Errorf("expected metric 'value', got %v", jsonData["metric"])
@@ -211,7 +211,7 @@ func TestMeasure(t *testing.T) {
 					w.Write([]byte("not found"))
 				}))
 			},
-			providerCtx:    &metrics.ProviderContext{},
+			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 404,
 			wantError:      false,
 		},
@@ -227,7 +227,7 @@ func TestMeasure(t *testing.T) {
 					w.Write([]byte("internal error"))
 				}))
 			},
-			providerCtx:    &metrics.ProviderContext{},
+			providerCtx:    &provider.ProviderContext{},
 			wantStatusCode: 500,
 			wantError:      false,
 		},
@@ -243,7 +243,7 @@ func TestMeasure(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				}))
 			},
-			providerCtx: &metrics.ProviderContext{},
+			providerCtx: &provider.ProviderContext{},
 			wantError:   true,
 		},
 	}
@@ -260,7 +260,7 @@ func TestMeasure(t *testing.T) {
 				config: tt.config,
 			}
 
-			measurement, err := provider.Measure(context.Background(), tt.providerCtx)
+			measuredAt, data, err := provider.Measure(context.Background(), tt.providerCtx)
 
 			if tt.wantError {
 				if err == nil {
@@ -274,46 +274,46 @@ func TestMeasure(t *testing.T) {
 			}
 
 			// Check status code
-			if statusCode, ok := measurement.Data["statusCode"].(int); !ok || statusCode != tt.wantStatusCode {
-				t.Errorf("expected status code %d, got %v", tt.wantStatusCode, measurement.Data["statusCode"])
+			if statusCode, ok := data["statusCode"].(int); !ok || statusCode != tt.wantStatusCode {
+				t.Errorf("expected status code %d, got %v", tt.wantStatusCode, data["statusCode"])
 			}
 
 			// Check ok field
 			expectedOk := tt.wantStatusCode >= 200 && tt.wantStatusCode < 300
-			if ok, found := measurement.Data["ok"].(bool); !found || ok != expectedOk {
-				t.Errorf("expected ok %v, got %v", expectedOk, measurement.Data["ok"])
+			if ok, found := data["ok"].(bool); !found || ok != expectedOk {
+				t.Errorf("expected ok %v, got %v", expectedOk, data["ok"])
 			}
 
 			// Check that duration exists and is reasonable
-			if duration, ok := measurement.Data["duration"].(int64); !ok || duration < 0 {
-				t.Errorf("expected valid duration, got %v", measurement.Data["duration"])
+			if duration, ok := data["duration"].(int64); !ok || duration < 0 {
+				t.Errorf("expected valid duration, got %v", data["duration"])
 			}
 
 			// Check that headers exist
-			if _, ok := measurement.Data["headers"].(http.Header); !ok {
-				t.Errorf("expected headers to be http.Header, got %T", measurement.Data["headers"])
+			if _, ok := data["headers"].(http.Header); !ok {
+				t.Errorf("expected headers to be http.Header, got %T", data["headers"])
 			}
 
 			// Check that body exists
-			if _, ok := measurement.Data["body"].(string); !ok {
-				t.Errorf("expected body to be string, got %T", measurement.Data["body"])
+			if _, ok := data["body"].(string); !ok {
+				t.Errorf("expected body to be string, got %T", data["body"])
 			}
 
 			// Check that MeasuredAt is set
-			if measurement.MeasuredAt.IsZero() {
+			if measuredAt.IsZero() {
 				t.Error("expected MeasuredAt to be set")
 			}
 
 			// Run custom checks if provided
 			if tt.checkResult != nil {
-				tt.checkResult(t, measurement)
+				tt.checkResult(t, measuredAt, data)
 			}
 		})
 	}
 }
 
 func TestMeasure_InvalidURL(t *testing.T) {
-	provider := &Provider{
+	p := &Provider{
 		config: &Config{
 			URL:     "://invalid-url",
 			Method:  "GET",
@@ -321,7 +321,7 @@ func TestMeasure_InvalidURL(t *testing.T) {
 		},
 	}
 
-	_, err := provider.Measure(context.Background(), &metrics.ProviderContext{})
+	_, _, err := p.Measure(context.Background(), &provider.ProviderContext{})
 	if err == nil {
 		t.Error("expected error for invalid URL but got none")
 	}
@@ -334,7 +334,7 @@ func TestMeasure_ContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := &Provider{
+	p := &Provider{
 		config: &Config{
 			URL:     server.URL,
 			Method:  "GET",
@@ -345,7 +345,7 @@ func TestMeasure_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	_, err := provider.Measure(ctx, &metrics.ProviderContext{})
+	_, _, err := p.Measure(ctx, &provider.ProviderContext{})
 	if err == nil {
 		t.Error("expected context cancellation error but got none")
 	}
@@ -355,7 +355,7 @@ func TestResolve(t *testing.T) {
 	tests := []struct {
 		name        string
 		config      *Config
-		providerCtx *metrics.ProviderContext
+		providerCtx *provider.ProviderContext
 		wantURL     string
 		wantBody    string
 		wantHeaders map[string]string
@@ -366,7 +366,7 @@ func TestResolve(t *testing.T) {
 				URL:    "http://example.com/api/{{ .deployment.id }}",
 				Method: "GET",
 			},
-			providerCtx: &metrics.ProviderContext{
+			providerCtx: &provider.ProviderContext{
 				Deployment: &oapi.Deployment{
 					Id:       "prod-deploy-123",
 					Name:     "prod-deployment",
@@ -383,7 +383,7 @@ func TestResolve(t *testing.T) {
 				Method: "POST",
 				Body:   `{"env":"{{ .environment.name }}"}`,
 			},
-			providerCtx: &metrics.ProviderContext{
+			providerCtx: &provider.ProviderContext{
 				Environment: &oapi.Environment{
 					Id:        "env-456",
 					Name:      "staging",
@@ -404,7 +404,7 @@ func TestResolve(t *testing.T) {
 					"X-Deployment":  "{{ .deployment.name }}",
 				},
 			},
-			providerCtx: &metrics.ProviderContext{
+			providerCtx: &provider.ProviderContext{
 				Environment: &oapi.Environment{
 					Id:        "env-456",
 					Name:      "prod",
@@ -431,7 +431,7 @@ func TestResolve(t *testing.T) {
 				Method: "GET",
 				Body:   "plain body",
 			},
-			providerCtx: &metrics.ProviderContext{},
+			providerCtx: &provider.ProviderContext{},
 			wantURL:     "http://example.com",
 			wantBody:    "plain body",
 		},
@@ -441,7 +441,7 @@ func TestResolve(t *testing.T) {
 				URL:    "http://example.com/{{ .variables.service }}",
 				Method: "GET",
 			},
-			providerCtx: &metrics.ProviderContext{
+			providerCtx: &provider.ProviderContext{
 				Variables: map[string]any{
 					"service": "api",
 				},
@@ -489,7 +489,7 @@ func TestResolve_EmptyHeaders(t *testing.T) {
 		Headers: nil,
 	}
 
-	providerCtx := &metrics.ProviderContext{}
+	providerCtx := &provider.ProviderContext{}
 
 	resolved := Resolve(config, providerCtx)
 

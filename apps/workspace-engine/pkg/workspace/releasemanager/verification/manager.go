@@ -3,13 +3,12 @@ package verification
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -19,37 +18,61 @@ import (
 var tracer = otel.Tracer("workspace/releasemanager/verification")
 
 // Manager handles post-deployment verification of releases
-// It monitors deployed releases and can mark versions as rejected if verification fails
+// It uses a scheduler to run verifications from the store
 type Manager struct {
-	store *store.Store
-
-	// Active verifications being monitored
-	activeVerifications sync.Map // map[releaseID]*VerificationRun
-}
-
-// VerificationRun represents an active verification process for a release
-type VerificationRun struct {
-	Release      *oapi.Release
-	Verification *Verification
-	Analysis     *metrics.Analysis
-	CancelFunc   context.CancelFunc
-	StartedAt    time.Time
-	LastCheckAt  time.Time
-	Status       oapi.VerificationAnalysisStatus
+	store     *store.Store
+	scheduler *Scheduler
 }
 
 func NewManager(store *store.Store) *Manager {
 	return &Manager{
-		store: store,
+		store:     store,
+		scheduler: NewScheduler(store),
 	}
 }
 
-// StartVerification begins monitoring a release after it has been deployed successfully
-// This should be called after a job completes with status=successful
+// OnLoad restarts goroutines for any unfinished verifications
+// This should be called when the application starts to resume any in-progress verifications
+func (m *Manager) Restore(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "VerificationManager.Restore")
+	defer span.End()
+
+	// Get all verifications from the store
+	allVerifications := m.store.ReleaseVerifications.Items()
+
+	restarted := 0
+	for _, verification := range allVerifications {
+		// Check if verification is not finished
+		status := verification.Status()
+		if status != oapi.ReleaseVerificationStatusPassed &&
+			status != oapi.ReleaseVerificationStatusFailed &&
+			status != oapi.ReleaseVerificationStatusCancelled {
+			// Restart the verification goroutines
+			m.scheduler.StartVerification(ctx, verification.Id)
+			restarted++
+			log.Info("Restarted verification on load",
+				"verification_id", verification.Id,
+				"release_id", verification.ReleaseId,
+				"status", status,
+				"metric_count", len(verification.Metrics))
+		}
+	}
+
+	span.SetAttributes(attribute.Int("restarted_count", restarted))
+	span.SetStatus(codes.Ok, "verifications loaded")
+
+	if restarted > 0 {
+		log.Info("Restarted verifications on load", "count", restarted)
+	}
+
+	return nil
+}
+
+// StartVerification creates a new verification and starts goroutines to run measurements
 func (m *Manager) StartVerification(
 	ctx context.Context,
 	release *oapi.Release,
-	verification *Verification,
+	metrics []oapi.VerificationMetricSpec,
 ) error {
 	ctx, span := tracer.Start(ctx, "StartVerification",
 		trace.WithAttributes(
@@ -61,290 +84,74 @@ func (m *Manager) StartVerification(
 
 	releaseID := release.ID()
 
-	// Check if verification is already running for this release
-	if _, exists := m.activeVerifications.Load(releaseID); exists {
-		span.AddEvent("Verification already running for release")
+	// Check if verification already exists
+	if _, exists := m.store.ReleaseVerifications.GetByReleaseId(releaseID); exists {
+		span.AddEvent("Verification already exists for release")
 		return nil
 	}
 
-	// Create a cancellable context for this verification
-	verificationCtx, cancel := context.WithCancel(context.Background())
-
-	run := &VerificationRun{
-		Release:      release,
-		Verification: verification,
-		Analysis:     metrics.NewAnalysis(),
-		CancelFunc:   cancel,
-		StartedAt:    time.Now(),
-		LastCheckAt:  time.Now(),
-		Status:       oapi.VerificationAnalysisStatusRunning,
+	// Require metric configuration
+	if len(metrics) == 0 {
+		return fmt.Errorf("at least one metric configuration is required for verification")
 	}
 
-	m.activeVerifications.Store(releaseID, run)
-
-	// Start verification in background
-	go m.runVerification(verificationCtx, run)
-
-	span.SetAttributes(attribute.String("verification.status", "started"))
-	span.SetStatus(codes.Ok, "verification started")
-
-	log.Info("Started verification for release",
-		"release_id", releaseID,
-		"version", release.Version.Tag,
-		"environment", release.ReleaseTarget.EnvironmentId)
-
-	return nil
-}
-
-// StopVerification cancels an active verification for a release
-func (m *Manager) StopVerification(releaseID string) {
-	if runInterface, exists := m.activeVerifications.Load(releaseID); exists {
-		run := runInterface.(*VerificationRun)
-		run.CancelFunc()
-		run.Status = oapi.VerificationAnalysisStatusCancelled
-		m.updateReleaseAnalysis(context.Background(), run)
-
-		m.activeVerifications.Delete(releaseID)
-
-		log.Info("Stopped verification for release", "release_id", releaseID)
-	}
-}
-
-// GetVerificationStatus returns the current status of verification for a release
-func (m *Manager) GetVerificationStatus(releaseID string) *VerificationRun {
-	if runInterface, exists := m.activeVerifications.Load(releaseID); exists {
-		return runInterface.(*VerificationRun)
-	}
-	return nil
-}
-
-// runVerification executes the verification process for a release
-// This runs continuously until the verification passes, fails, or is cancelled
-func (m *Manager) runVerification(ctx context.Context, run *VerificationRun) {
-	ctx, span := tracer.Start(ctx, "runVerification",
-		trace.WithAttributes(
-			attribute.String("release.id", run.Release.ID()),
-			attribute.String("version.id", run.Release.Version.Id),
-		))
-	defer span.End()
-
-	releaseID := run.Release.ID()
-
-	defer func() {
-		m.activeVerifications.Delete(releaseID)
-		span.AddEvent("Verification completed")
-	}()
-
-	// Get the metric from verification config
-	metric := run.Verification.Metric
-
-	// Build provider context for metrics
-	providerCtx := BuildProviderContext(m.store, run.Release)
-
-	for {
-		select {
-		case <-ctx.Done():
-			run.Status = oapi.VerificationAnalysisStatusCancelled
-			span.AddEvent("Verification cancelled")
-			return
-
-		default:
-			// Take a measurement
-			result, err := metric.Measure(ctx, providerCtx)
-			if err != nil {
-				log.Error("Verification measurement failed",
-					"release_id", releaseID,
-					"error", err)
-
-				// Add failed measurement
-				run.Analysis.Measurements = append(run.Analysis.Measurements, &metrics.Result{
-					Message: fmt.Sprintf("Measurement error: %s", err.Error()),
-					Passed:  false,
-					Measurement: &metrics.Measurement{
-						MeasuredAt: time.Now(),
-						Data:       map[string]any{"error": err.Error()},
-					},
-				})
-			} else {
-				run.Analysis.Measurements = append(run.Analysis.Measurements, result)
-			}
-
-			run.LastCheckAt = time.Now()
-
-			// Determine verification status
-			phase := run.Analysis.Phase(metric)
-
-			span.AddEvent("Measurement taken",
-				trace.WithAttributes(
-					attribute.String("phase", string(phase)),
-					attribute.Int("passed_count", run.Analysis.PassedCount()),
-					attribute.Int("failed_count", run.Analysis.FailedCount()),
-					attribute.Int("total_count", len(run.Analysis.Measurements)),
-				))
-
-			switch phase {
-			case oapi.VerificationAnalysisStatusPassed:
-				run.Status = oapi.VerificationAnalysisStatusPassed
-				span.SetStatus(codes.Ok, "verification passed")
-
-				log.Info("Verification passed for release",
-					"release_id", releaseID,
-					"version", run.Release.Version.Tag,
-					"passed_count", run.Analysis.PassedCount(),
-					"total_count", len(run.Analysis.Measurements))
-
-				// Update release with final analysis
-				m.updateReleaseAnalysis(context.Background(), run)
-
-				return
-
-			case oapi.VerificationAnalysisStatusFailed:
-				run.Status = oapi.VerificationAnalysisStatusFailed
-				span.SetStatus(codes.Error, "verification failed")
-
-				log.Warn("Verification failed for release",
-					"release_id", releaseID,
-					"version", run.Release.Version.Id,
-					"failed_count", run.Analysis.FailedCount(),
-					"total_count", len(run.Analysis.Measurements))
-
-				// Update release with final analysis
-				m.updateReleaseAnalysis(context.Background(), run)
-
-				// Mark version as rejected
-				m.markVersionAsRejected(context.Background(), run.Release.Version.Id, "Verification failed")
-
-				return
-
-			case oapi.VerificationAnalysisStatusRunning:
-				// Update release with current progress
-				m.updateReleaseAnalysis(context.Background(), run)
-
-				// Continue monitoring
-				if !run.Analysis.ShouldContinue(metric) {
-					// Should have stopped by now
-					run.Status = oapi.VerificationAnalysisStatusFailed
-					m.updateReleaseAnalysis(context.Background(), run)
-					return
-				}
-
-				// Wait for the interval before next measurement
-				select {
-				case <-ctx.Done():
-					run.Status = oapi.VerificationAnalysisStatusCancelled
-					m.updateReleaseAnalysis(context.Background(), run)
-					return
-				case <-time.After(metric.Interval):
-					// Continue to next measurement
-				}
-			}
+	// Convert VerificationMetricSpecs to VerificationMetricStatus with empty measurements
+	metricStatuses := make([]oapi.VerificationMetricStatus, len(metrics))
+	for i, metric := range metrics {
+		metricStatuses[i] = oapi.VerificationMetricStatus{
+			Name:             metric.Name,
+			Interval:         metric.Interval,
+			Count:            metric.Count,
+			SuccessCondition: metric.SuccessCondition,
+			FailureLimit:     metric.FailureLimit,
+			Provider:         metric.Provider,
+			Measurements:     []oapi.VerificationMeasurement{},
 		}
 	}
+
+	verificationRecord := &oapi.ReleaseVerification{
+		Id:        uuid.New().String(),
+		ReleaseId: releaseID,
+		Metrics:   metricStatuses,
+		CreatedAt: time.Now(),
+	}
+
+	// Store the verification
+	m.store.ReleaseVerifications.Upsert(ctx, verificationRecord)
+
+	// Start goroutine for this verification
+	m.scheduler.StartVerification(ctx, verificationRecord.Id)
+
+	span.SetAttributes(attribute.String("verification.status", "created"))
+	span.SetStatus(codes.Ok, "verification created")
+
+	log.Info("Created verification for release",
+		"release_id", releaseID,
+		"verification_id", verificationRecord.Id,
+		"version", release.Version.Tag,
+		"environment", release.ReleaseTarget.EnvironmentId,
+		"metric_count", len(metrics))
+
+	return nil
 }
 
-// updateReleaseAnalysis updates the verification analysis on the release
-func (m *Manager) updateReleaseAnalysis(ctx context.Context, run *VerificationRun) {
-	ctx, span := tracer.Start(ctx, "updateReleaseAnalysis",
+// StopVerification cancels a verification and stops its goroutines
+func (m *Manager) StopVerification(ctx context.Context, releaseID string) {
+	ctx, span := tracer.Start(ctx, "StopVerification",
 		trace.WithAttributes(
-			attribute.String("release.id", run.Release.ID()),
-			attribute.String("status", string(run.Status)),
+			attribute.String("release.id", releaseID),
 		))
 	defer span.End()
 
-	// Build the analysis object
-	analysis := &oapi.VerificationAnalysis{
-		Status:      run.Status,
-		StartedAt:   run.StartedAt,
-		PassedCount: run.Analysis.PassedCount(),
-		FailedCount: run.Analysis.FailedCount(),
-	}
+	if verification, exists := m.store.ReleaseVerifications.GetByReleaseId(releaseID); exists {
+		// Stop the goroutines
+		m.scheduler.StopVerification(verification.Id)
 
-	// Add completed time if done
-	if run.Status == oapi.VerificationAnalysisStatusPassed || run.Status == oapi.VerificationAnalysisStatusFailed || run.Status == oapi.VerificationAnalysisStatusCancelled {
-		completedAt := time.Now()
-		analysis.CompletedAt = &completedAt
-	}
-
-	// Convert measurements
-	measurements := make([]oapi.VerificationResult, len(run.Analysis.Measurements))
-	for i, m := range run.Analysis.Measurements {
-		measurements[i] = *m.ToOAPI()
-	}
-	analysis.Measurements = measurements
-
-	// Add summary message
-	message := fmt.Sprintf("Verification %s: %d/%d measurements passed",
-		run.Status, run.Analysis.PassedCount(), len(run.Analysis.Measurements))
-	analysis.Message = &message
-
-	// Update the release
-	run.Release.VerificationAnalysis = analysis
-	m.store.Releases.Upsert(ctx, run.Release)
-
-	span.SetAttributes(
-		attribute.Int("passed_count", run.Analysis.PassedCount()),
-		attribute.Int("failed_count", run.Analysis.FailedCount()),
-		attribute.Int("total_count", len(run.Analysis.Measurements)),
-	)
-	span.SetStatus(codes.Ok, "release analysis updated")
-}
-
-// markVersionAsRejected marks a deployment version as rejected
-// This will trigger the system to stop deploying this version and potentially rollback
-func (m *Manager) markVersionAsRejected(ctx context.Context, versionID string, reason string) {
-	ctx, span := tracer.Start(ctx, "markVersionAsRejected",
-		trace.WithAttributes(
-			attribute.String("version.id", versionID),
-			attribute.String("reason", reason),
-		))
-	defer span.End()
-
-	version, ok := m.store.DeploymentVersions.Get(versionID)
-	if !ok {
-		span.RecordError(fmt.Errorf("version not found: %s", versionID))
-		span.SetStatus(codes.Error, "version not found")
-		return
-	}
-
-	// Update version status to rejected
-	version.Status = oapi.DeploymentVersionStatusRejected
-	message := reason
-	version.Message = &message
-
-	m.store.DeploymentVersions.Upsert(ctx, versionID, version)
-
-	span.SetStatus(codes.Ok, "version marked as rejected")
-
-	log.Warn("Marked version as rejected",
-		"version_id", versionID,
-		"version_tag", version.Tag,
-		"reason", reason)
-}
-
-// BuildProviderContext creates the context needed for metric providers
-func BuildProviderContext(store *store.Store, release *oapi.Release) *metrics.ProviderContext {
-	// Get the resource
-	resource, _ := store.Resources.Get(release.ReleaseTarget.ResourceId)
-
-	// Get the environment
-	environment, _ := store.Environments.Get(release.ReleaseTarget.EnvironmentId)
-
-	// Get the deployment
-	deployment, _ := store.Deployments.Get(release.Version.DeploymentId)
-
-	// Get variables from release
-	variables := make(map[string]any)
-	for k, v := range release.Variables {
-		variables[k] = v
-	}
-
-	return &metrics.ProviderContext{
-		Release:     release,
-		Resource:    resource,
-		Environment: environment,
-		Version:     &release.Version,
-		Target:      &release.ReleaseTarget,
-		Deployment:  deployment,
-		Variables:   variables,
+		span.SetStatus(codes.Ok, "verification stopped")
+		log.Info("Stopped verification for release",
+			"release_id", releaseID,
+			"verification_id", verification.Id)
+	} else {
+		span.SetStatus(codes.Error, "verification not found")
 	}
 }

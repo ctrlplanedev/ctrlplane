@@ -440,6 +440,57 @@
             ],
             "type": "object"
          },
+         "HTTPMetricProvider": {
+            "properties": {
+               "body": {
+                  "description": "Request body (supports Go templates)",
+                  "type": "string"
+               },
+               "headers": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "HTTP headers (values support Go templates)",
+                  "type": "object"
+               },
+               "method": {
+                  "default": "GET",
+                  "description": "HTTP method",
+                  "enum": [
+                     "GET",
+                     "POST",
+                     "PUT",
+                     "PATCH",
+                     "DELETE",
+                     "HEAD",
+                     "OPTIONS"
+                  ],
+                  "type": "string"
+               },
+               "timeout": {
+                  "default": "30s",
+                  "description": "Request timeout (duration string, e.g., \"30s\")",
+                  "type": "string"
+               },
+               "type": {
+                  "description": "Provider type",
+                  "enum": [
+                     "http"
+                  ],
+                  "type": "string"
+               },
+               "url": {
+                  "description": "HTTP endpoint URL (supports Go templates)",
+                  "example": "http://{{ .resource.name }}.{{ .environment.name }}/health",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "url"
+            ],
+            "type": "object"
+         },
          "IntegerValue": {
             "type": "integer"
          },
@@ -649,6 +700,16 @@
                },
                {
                   "$ref": "#/components/schemas/NullValue"
+               }
+            ]
+         },
+         "MetricProvider": {
+            "discriminator": {
+               "propertyName": "type"
+            },
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/HTTPMetricProvider"
                }
             ]
          },
@@ -973,8 +1034,8 @@
                   },
                   "type": "object"
                },
-               "verificationAnalysis": {
-                  "$ref": "#/components/schemas/VerificationAnalysis"
+               "verification": {
+                  "$ref": "#/components/schemas/ReleaseVerification"
                },
                "version": {
                   "$ref": "#/components/schemas/DeploymentVersion"
@@ -1046,6 +1107,42 @@
                "environment",
                "resource",
                "deployment"
+            ],
+            "type": "object"
+         },
+         "ReleaseVerification": {
+            "properties": {
+               "createdAt": {
+                  "description": "When verification was created",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobId": {
+                  "type": "string"
+               },
+               "message": {
+                  "description": "Summary message of verification result",
+                  "type": "string"
+               },
+               "metrics": {
+                  "description": "Metrics associated with this verification",
+                  "items": {
+                     "$ref": "#/components/schemas/VerificationMetricStatus"
+                  },
+                  "type": "array"
+               },
+               "releaseId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "releaseId",
+               "metrics",
+               "createdAt"
             ],
             "type": "object"
          },
@@ -1328,58 +1425,7 @@
                }
             ]
          },
-         "VerificationAnalysis": {
-            "properties": {
-               "completedAt": {
-                  "description": "When verification completed",
-                  "format": "date-time",
-                  "type": "string"
-               },
-               "failedCount": {
-                  "description": "Number of failed measurements",
-                  "type": "integer"
-               },
-               "measurements": {
-                  "description": "Individual verification measurements",
-                  "items": {
-                     "$ref": "#/components/schemas/VerificationResult"
-                  },
-                  "type": "array"
-               },
-               "message": {
-                  "description": "Summary message of verification result",
-                  "type": "string"
-               },
-               "passedCount": {
-                  "description": "Number of passed measurements",
-                  "type": "integer"
-               },
-               "startedAt": {
-                  "description": "When verification started",
-                  "format": "date-time",
-                  "type": "string"
-               },
-               "status": {
-                  "description": "Current status of verification",
-                  "enum": [
-                     "running",
-                     "passed",
-                     "failed",
-                     "cancelled"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "status",
-               "startedAt",
-               "passedCount",
-               "failedCount",
-               "measurements"
-            ],
-            "type": "object"
-         },
-         "VerificationResult": {
+         "VerificationMeasurement": {
             "properties": {
                "data": {
                   "additionalProperties": true,
@@ -1405,6 +1451,67 @@
                "measuredAt"
             ],
             "type": "object"
+         },
+         "VerificationMetricSpec": {
+            "properties": {
+               "count": {
+                  "description": "Number of measurements to take",
+                  "minimum": 1,
+                  "type": "integer"
+               },
+               "failureLimit": {
+                  "default": 0,
+                  "description": "Stop after this many failures (0 = no limit)",
+                  "type": "integer"
+               },
+               "interval": {
+                  "description": "Interval between measurements (duration string, e.g., \"30s\", \"5m\")",
+                  "example": "30s",
+                  "type": "string"
+               },
+               "name": {
+                  "description": "Name of the verification metric",
+                  "type": "string"
+               },
+               "provider": {
+                  "$ref": "#/components/schemas/MetricProvider"
+               },
+               "successCondition": {
+                  "description": "CEL expression to evaluate measurement success (e.g., \"result.statusCode == 200\")",
+                  "example": "result.statusCode == 200",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "interval",
+               "count",
+               "successCondition",
+               "provider"
+            ],
+            "type": "object"
+         },
+         "VerificationMetricStatus": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/VerificationMetricSpec"
+               },
+               {
+                  "properties": {
+                     "measurements": {
+                        "description": "Individual verification measurements taken for this metric",
+                        "items": {
+                           "$ref": "#/components/schemas/VerificationMeasurement"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "measurements"
+                  ],
+                  "type": "object"
+               }
+            ]
          }
       }
    },

@@ -10,8 +10,19 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+)
+
+// ReleaseVerificationStatus represents the state of a release verification
+type ReleaseVerificationStatus string
+
+const (
+	ReleaseVerificationStatusRunning   ReleaseVerificationStatus = "running"
+	ReleaseVerificationStatusPassed    ReleaseVerificationStatus = "passed"
+	ReleaseVerificationStatusFailed    ReleaseVerificationStatus = "failed"
+	ReleaseVerificationStatusCancelled ReleaseVerificationStatus = "cancelled"
 )
 
 func ReleaseTargetFromKey(key string) *ReleaseTarget {
@@ -90,11 +101,11 @@ func (x *UserApprovalRecord) Key() string {
 }
 
 func (j *Job) IsInProcessingState() bool {
-	return j.Status == JobStatusInProgress || j.Status == JobStatusActionRequired || j.Status == JobStatusPending
+	return j.Status == InProgress || j.Status == ActionRequired || j.Status == Pending
 }
 
 func (j *Job) IsInTerminalState() bool {
-	return j.Status == JobStatusCancelled || j.Status == JobStatusSkipped || j.Status == JobStatusSuccessful || j.Status == JobStatusFailure || j.Status == JobStatusInvalidJobAgent || j.Status == JobStatusInvalidIntegration || j.Status == JobStatusExternalRunNotFound
+	return j.Status == Cancelled || j.Status == Skipped || j.Status == Successful || j.Status == Failure || j.Status == InvalidJobAgent || j.Status == InvalidIntegration || j.Status == ExternalRunNotFound
 }
 
 func (v *Value) GetType() (string, error) {
@@ -118,4 +129,113 @@ func (v *Value) GetType() (string, error) {
 	}
 
 	return "", fmt.Errorf("unable to determine value type")
+}
+
+// GetInterval parses and returns the interval duration from the metric spec
+func (vms *VerificationMetricSpec) GetInterval() (time.Duration, error) {
+	return time.ParseDuration(vms.Interval)
+}
+
+// GetFailureLimit returns the failure limit, defaulting to 0 if not set
+func (vms *VerificationMetricSpec) GetFailureLimit() int {
+	if vms.FailureLimit == nil {
+		return 0
+	}
+	return *vms.FailureLimit
+}
+
+// GetInterval parses and returns the interval duration from the metric status
+func (vms *VerificationMetricStatus) GetInterval() (time.Duration, error) {
+	return time.ParseDuration(vms.Interval)
+}
+
+// GetFailureLimit returns the failure limit, defaulting to 0 if not set
+func (vms *VerificationMetricStatus) GetFailureLimit() int {
+	if vms.FailureLimit == nil {
+		return 0
+	}
+	return *vms.FailureLimit
+}
+
+// Status computes the overall verification status from its metrics
+func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
+	if len(rv.Metrics) == 0 {
+		return ReleaseVerificationStatusRunning
+	}
+
+	allCompleted := true
+	anyFailed := false
+
+	for _, metric := range rv.Metrics {
+		// Check if this metric has hit its failure limit
+		failureLimit := metric.GetFailureLimit()
+		failedCount := 0
+		for _, m := range metric.Measurements {
+			if !m.Passed {
+				failedCount++
+			}
+		}
+
+		if failureLimit > 0 && failedCount >= failureLimit {
+			return ReleaseVerificationStatusFailed
+		}
+
+		// Check if metric is complete
+		if len(metric.Measurements) < metric.Count {
+			allCompleted = false
+		} else {
+			// Metric is complete, check if it failed
+			if failedCount > 0 {
+				anyFailed = true
+			}
+		}
+	}
+
+	// If any metric is incomplete, still running
+	if !allCompleted {
+		return ReleaseVerificationStatusRunning
+	}
+
+	// All metrics complete
+	if anyFailed {
+		return ReleaseVerificationStatusFailed
+	}
+
+	return ReleaseVerificationStatusPassed
+}
+
+// StartedAt returns the earliest measurement time across all metrics
+func (rv *ReleaseVerification) StartedAt() *time.Time {
+	var earliest *time.Time
+
+	for _, metric := range rv.Metrics {
+		if len(metric.Measurements) > 0 {
+			firstMeasurement := metric.Measurements[0].MeasuredAt
+			if earliest == nil || firstMeasurement.Before(*earliest) {
+				earliest = &firstMeasurement
+			}
+		}
+	}
+
+	return earliest
+}
+
+// CompletedAt returns the latest measurement time if all metrics are complete, nil otherwise
+func (rv *ReleaseVerification) CompletedAt() *time.Time {
+	if rv.Status() == ReleaseVerificationStatusRunning {
+		return nil
+	}
+
+	var latest *time.Time
+
+	for _, metric := range rv.Metrics {
+		if len(metric.Measurements) > 0 {
+			lastMeasurement := metric.Measurements[len(metric.Measurements)-1].MeasuredAt
+			if latest == nil || lastMeasurement.After(*latest) {
+				latest = &lastMeasurement
+			}
+		}
+	}
+
+	return latest
 }

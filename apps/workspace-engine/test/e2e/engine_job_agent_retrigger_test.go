@@ -56,7 +56,7 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 		break
 	}
 
-	assert.Equal(t, oapi.JobStatusInvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
+	assert.Equal(t, oapi.InvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
 	assert.Empty(t, originalJob.JobAgentId, "expected empty job agent ID")
 
 	// Store original job details for later verification
@@ -89,7 +89,7 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 	// Find the new Pending job
 	var newPendingJob *oapi.Job
 	for _, j := range allJobsAfterUpdate {
-		if j.Status == oapi.JobStatusPending {
+		if j.Status == oapi.Pending {
 			newPendingJob = j
 			break
 		}
@@ -111,7 +111,7 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 	for _, j := range allJobsAfterUpdate {
 		if j.Id == originalJobID {
 			originalJobStillExists = true
-			assert.Equal(t, oapi.JobStatusInvalidJobAgent, j.Status, "expected original job to still have InvalidJobAgent status")
+			assert.Equal(t, oapi.InvalidJobAgent, j.Status, "expected original job to still have InvalidJobAgent status")
 			break
 		}
 	}
@@ -165,7 +165,7 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 		break
 	}
 
-	assert.Equal(t, oapi.JobStatusInvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
+	assert.Equal(t, oapi.InvalidJobAgent, originalJob.Status, "expected job status InvalidJobAgent")
 
 	originalJobID := originalJob.Id
 	originalReleaseID := originalJob.ReleaseId
@@ -199,7 +199,7 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 
 	var newPendingJob *oapi.Job
 	for _, j := range allJobsAfterUpdate {
-		if j.Status == oapi.JobStatusPending {
+		if j.Status == oapi.Pending {
 			newPendingJob = j
 			break
 		}
@@ -232,7 +232,7 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	for _, j := range allJobsAfterUpdate {
 		if j.Id == originalJobID {
 			originalJobStillExists = true
-			assert.Equal(t, oapi.JobStatusInvalidJobAgent, j.Status, "expected original job to still have InvalidJobAgent status")
+			assert.Equal(t, oapi.InvalidJobAgent, j.Status, "expected original job to still have InvalidJobAgent status")
 			break
 		}
 	}
@@ -285,7 +285,7 @@ func TestEngine_JobAgentConfigurationWithMultipleResources(t *testing.T) {
 
 	invalidJobAgentCount := 0
 	for _, j := range allJobs {
-		if j.Status == oapi.JobStatusInvalidJobAgent {
+		if j.Status == oapi.InvalidJobAgent {
 			invalidJobAgentCount++
 		}
 	}
@@ -315,11 +315,11 @@ func TestEngine_JobAgentConfigurationWithMultipleResources(t *testing.T) {
 	invalidJobAgentCountAfter := 0
 	for _, j := range allJobsAfterUpdate {
 		switch j.Status {
-		case oapi.JobStatusPending:
+		case oapi.Pending:
 			pendingJobsCount++
 			// Verify each pending job uses the configured job agent
 			assert.Equal(t, jobAgentID, j.JobAgentId, "expected pending job to use configured job agent")
-		case oapi.JobStatusInvalidJobAgent:
+		case oapi.InvalidJobAgent:
 			invalidJobAgentCountAfter++
 		}
 	}

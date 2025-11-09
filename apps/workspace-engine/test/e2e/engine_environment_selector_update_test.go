@@ -91,7 +91,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 	jobIDs := make([]string, 0)
 	for _, job := range allJobs {
 		jobIDs = append(jobIDs, job.Id)
-		if job.Status != oapi.JobStatusInvalidJobAgent {
+		if job.Status != oapi.InvalidJobAgent {
 			t.Fatalf("expected job %s to have InvalidJobAgent status, got %v", job.Id, job.Status)
 		}
 	}
@@ -158,17 +158,17 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 		case r2.Id:
 			// This job was for r2, which was removed from the environment
 			// It should still have InvalidJobAgent status, NOT Cancelled
-			if job.Status == oapi.JobStatusCancelled {
+			if job.Status == oapi.Cancelled {
 				t.Errorf("BUG DETECTED: Job %s for removed resource r2 was changed from InvalidJobAgent to Cancelled. "+
 					"Jobs in exited states should not be cancelled when environment selectors change.", job.Id)
 			}
-			if job.Status != oapi.JobStatusInvalidJobAgent {
+			if job.Status != oapi.InvalidJobAgent {
 				t.Errorf("Job %s for removed resource r2 should still have InvalidJobAgent status, got %v",
 					job.Id, job.Status)
 			}
 		case r1.Id:
 			// This job is for r1, which is still in the environment
-			if job.Status != oapi.JobStatusInvalidJobAgent {
+			if job.Status != oapi.InvalidJobAgent {
 				t.Errorf("Job %s for resource r1 should still have InvalidJobAgent status, got %v",
 					job.Id, job.Status)
 			}
@@ -243,7 +243,7 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 	jobIDs := make([]string, 0)
 	for _, job := range pendingJobs {
 		jobIDs = append(jobIDs, job.Id)
-		if job.Status != oapi.JobStatusPending {
+		if job.Status != oapi.Pending {
 			t.Fatalf("expected job %s to have Pending status, got %v", job.Id, job.Status)
 		}
 	}
@@ -279,12 +279,12 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 		case r2.Id:
 			// This job was for r2, which was removed from the environment
 			// Pending jobs SHOULD be cancelled
-			if job.Status != oapi.JobStatusCancelled {
+			if job.Status != oapi.Cancelled {
 				t.Errorf("Job %s for removed resource r2 should be Cancelled, got %v", job.Id, job.Status)
 			}
 		case r1.Id:
 			// This job is for r1, which is still in the environment
-			if job.Status != oapi.JobStatusPending {
+			if job.Status != oapi.Pending {
 				t.Errorf("Job %s for resource r1 should still be Pending, got %v", job.Id, job.Status)
 			}
 		}
@@ -294,10 +294,10 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 	pendingCount := 0
 	cancelledCount := 0
 	for _, job := range allJobsAfter {
-		if job.Status == oapi.JobStatusPending {
+		if job.Status == oapi.Pending {
 			pendingCount++
 		}
-		if job.Status == oapi.JobStatusCancelled {
+		if job.Status == oapi.Cancelled {
 			cancelledCount++
 		}
 	}
@@ -366,14 +366,14 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 	}
 
 	for _, job := range allJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		engine.Workspace().Jobs().Upsert(ctx, job)
 	}
 
 	// Verify jobs are Successful
 	allJobsAfterSuccess := engine.Workspace().Jobs().Items()
 	for _, job := range allJobsAfterSuccess {
-		if job.Status != oapi.JobStatusSuccessful {
+		if job.Status != oapi.Successful {
 			t.Fatalf("expected job %s to have Successful status, got %v", job.Id, job.Status)
 		}
 	}
@@ -406,11 +406,11 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 		if release.ReleaseTarget.ResourceId == r2.Id {
 			// This job was for r2, which was removed from the environment
 			// Successful jobs should NOT be cancelled
-			if job.Status == oapi.JobStatusCancelled {
+			if job.Status == oapi.Cancelled {
 				t.Errorf("BUG DETECTED: Job %s for removed resource r2 was changed from Successful to Cancelled. "+
 					"Jobs in exited states should not be cancelled when environment selectors change.", job.Id)
 			}
-			if job.Status != oapi.JobStatusSuccessful {
+			if job.Status != oapi.Successful {
 				t.Errorf("Job %s for removed resource r2 should still have Successful status, got %v",
 					job.Id, job.Status)
 			}
@@ -488,7 +488,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 	}
 
 	for _, job := range allJobs {
-		if job.Status != oapi.JobStatusInvalidJobAgent {
+		if job.Status != oapi.InvalidJobAgent {
 			t.Fatalf("expected job %s to have InvalidJobAgent status, got %v", job.Id, job.Status)
 		}
 	}
@@ -537,17 +537,17 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 		case r2.Id:
 			// This job was for r2 (app-2), which was removed from the deployment
 			// It should still have InvalidJobAgent status, NOT Cancelled
-			if job.Status == oapi.JobStatusCancelled {
+			if job.Status == oapi.Cancelled {
 				t.Errorf("BUG DETECTED: Job %s for removed resource r2 was changed from InvalidJobAgent to Cancelled. "+
 					"Jobs in exited states should not be cancelled when deployment selectors change.", job.Id)
 			}
-			if job.Status != oapi.JobStatusInvalidJobAgent {
+			if job.Status != oapi.InvalidJobAgent {
 				t.Errorf("Job %s for removed resource r2 should still have InvalidJobAgent status, got %v",
 					job.Id, job.Status)
 			}
 		case r1.Id:
 			// This job is for r1, which is still in the deployment
-			if job.Status != oapi.JobStatusInvalidJobAgent {
+			if job.Status != oapi.InvalidJobAgent {
 				t.Errorf("Job %s for resource r1 should still have InvalidJobAgent status, got %v",
 					job.Id, job.Status)
 			}
@@ -611,7 +611,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
 	}
 
 	for _, job := range allJobs {
-		job.Status = oapi.JobStatusFailure
+		job.Status = oapi.Failure
 		engine.Workspace().Jobs().Upsert(ctx, job)
 	}
 
@@ -644,11 +644,11 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
 		if release.ReleaseTarget.ResourceId == r2.Id {
 			// This job was for r2, which was removed from the deployment
 			// Failed jobs should NOT be cancelled
-			if job.Status == oapi.JobStatusCancelled {
+			if job.Status == oapi.Cancelled {
 				t.Errorf("BUG DETECTED: Job %s for removed resource r2 was changed from Failure to Cancelled. "+
 					"Jobs in exited states should not be cancelled when deployment selectors change.", job.Id)
 			}
-			if job.Status != oapi.JobStatusFailure {
+			if job.Status != oapi.Failure {
 				t.Errorf("Job %s for removed resource r2 should still have Failure status, got %v",
 					job.Id, job.Status)
 			}
@@ -717,10 +717,10 @@ func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
 
 	// Set different exited states for each job
 	exitedStates := []oapi.JobStatus{
-		oapi.JobStatusSuccessful,
-		oapi.JobStatusFailure,
-		oapi.JobStatusSkipped,
-		oapi.JobStatusCancelled, // Even already-cancelled jobs shouldn't be "re-cancelled"
+		oapi.Successful,
+		oapi.Failure,
+		oapi.Skipped,
+		oapi.Cancelled, // Even already-cancelled jobs shouldn't be "re-cancelled"
 	}
 
 	jobIndex := 0
@@ -755,10 +755,10 @@ func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
 
 	// Verify we still have the same number of each status
 	expectedCounts := map[oapi.JobStatus]int{
-		oapi.JobStatusSuccessful: 1,
-		oapi.JobStatusFailure:    1,
-		oapi.JobStatusSkipped:    1,
-		oapi.JobStatusCancelled:  1,
+		oapi.Successful: 1,
+		oapi.Failure:    1,
+		oapi.Skipped:    1,
+		oapi.Cancelled:  1,
 	}
 
 	hasError := false
@@ -832,7 +832,7 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 	}
 
 	for _, job := range allJobs {
-		job.Status = oapi.JobStatusInProgress
+		job.Status = oapi.InProgress
 		engine.Workspace().Jobs().Upsert(ctx, job)
 	}
 
@@ -865,12 +865,12 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 		if release.ReleaseTarget.ResourceId == r2.Id {
 			// This job was for r2, which was removed
 			// InProgress jobs SHOULD be cancelled
-			if job.Status != oapi.JobStatusCancelled {
+			if job.Status != oapi.Cancelled {
 				t.Errorf("Job %s for removed resource r2 should be Cancelled, got %v", job.Id, job.Status)
 			}
 		} else if release.ReleaseTarget.ResourceId == r1.Id {
 			// This job is for r1, which is still in the environment
-			if job.Status != oapi.JobStatusInProgress {
+			if job.Status != oapi.InProgress {
 				t.Errorf("Job %s for resource r1 should still be InProgress, got %v", job.Id, job.Status)
 			}
 		}
@@ -880,10 +880,10 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 	inProgressCount := 0
 	cancelledCount := 0
 	for _, job := range allJobsAfter {
-		if job.Status == oapi.JobStatusInProgress {
+		if job.Status == oapi.InProgress {
 			inProgressCount++
 		}
-		if job.Status == oapi.JobStatusCancelled {
+		if job.Status == oapi.Cancelled {
 			cancelledCount++
 		}
 	}

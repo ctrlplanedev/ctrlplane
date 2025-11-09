@@ -259,7 +259,7 @@ func TestDBJobs_BasicWrite(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     &externalID,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{"key": "value"},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -331,7 +331,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -363,7 +363,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 
 	startedAt := time.Now()
 	externalID := "github-run-456"
-	job.Status = oapi.JobStatusInProgress
+	job.Status = oapi.InProgress
 	job.StartedAt = &startedAt
 	job.ExternalId = &externalID
 	job.JobAgentConfig = map[string]interface{}{"updated": "config"}
@@ -416,7 +416,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{"env": "test"},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -447,7 +447,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	defer tx.Rollback(t.Context())
 
 	startedAt := time.Now()
-	job.Status = oapi.JobStatusInProgress
+	job.Status = oapi.InProgress
 	job.StartedAt = &startedAt
 	job.UpdatedAt = time.Now()
 
@@ -469,7 +469,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	defer tx.Rollback(t.Context())
 
 	completedAt := time.Now()
-	job.Status = oapi.JobStatusSuccessful
+	job.Status = oapi.Successful
 	job.CompletedAt = &completedAt
 	job.UpdatedAt = time.Now()
 
@@ -520,7 +520,7 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -603,7 +603,7 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusSuccessful,
+		Status:         oapi.Successful,
 		JobAgentConfig: map[string]interface{}{"attempt": 1.0},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -618,7 +618,7 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     &externalID2,
-		Status:         oapi.JobStatusInProgress,
+		Status:         oapi.InProgress,
 		JobAgentConfig: map[string]interface{}{"attempt": 2.0},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -682,7 +682,7 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 		ReleaseId:  releaseID,
 		JobAgentId: jobAgentID,
 		ExternalId: nil,
-		Status:     oapi.JobStatusPending,
+		Status:     oapi.Pending,
 		JobAgentConfig: map[string]interface{}{
 			"string":  "value",
 			"number":  42.0,
@@ -736,16 +736,16 @@ func TestDBJobs_AllJobStatuses(t *testing.T) {
 	testStore.Repo().Releases.Set(releaseID, &release)
 
 	statuses := []oapi.JobStatus{
-		oapi.JobStatusPending,
-		oapi.JobStatusInProgress,
-		oapi.JobStatusSuccessful,
-		oapi.JobStatusFailure,
-		oapi.JobStatusCancelled,
-		oapi.JobStatusSkipped,
-		oapi.JobStatusActionRequired,
-		oapi.JobStatusInvalidJobAgent,
-		oapi.JobStatusInvalidIntegration,
-		oapi.JobStatusExternalRunNotFound,
+		oapi.Pending,
+		oapi.InProgress,
+		oapi.Successful,
+		oapi.Failure,
+		oapi.Cancelled,
+		oapi.Skipped,
+		oapi.ActionRequired,
+		oapi.InvalidJobAgent,
+		oapi.InvalidIntegration,
+		oapi.ExternalRunNotFound,
 	}
 
 	jobs := make([]*oapi.Job, 0, len(statuses))
@@ -846,7 +846,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 		ReleaseId:      releaseID1,
 		JobAgentId:     jobAgentID1,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{"workspace": "1"},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -882,7 +882,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 		ReleaseId:      releaseID2,
 		JobAgentId:     jobAgentID2,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusSuccessful,
+		Status:         oapi.Successful,
 		JobAgentConfig: map[string]interface{}{"workspace": "2"},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -975,7 +975,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{"attempt": 1.0},
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -992,7 +992,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     &externalID2,
-		Status:         oapi.JobStatusInProgress,
+		Status:         oapi.InProgress,
 		JobAgentConfig: map[string]interface{}{"attempt": 2.0},
 		CreatedAt:      now,
 		UpdatedAt:      now.Add(1 * time.Minute),
@@ -1010,7 +1010,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     &externalID3,
-		Status:         oapi.JobStatusSuccessful,
+		Status:         oapi.Successful,
 		JobAgentConfig: map[string]interface{}{"attempt": 3.0, "retry": false},
 		CreatedAt:      now,
 		UpdatedAt:      now.Add(5 * time.Minute),
@@ -1070,7 +1070,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 
 	// Update job1 to in-progress
 	updateStartedAt := time.Now()
-	job1.Status = oapi.JobStatusInProgress
+	job1.Status = oapi.InProgress
 	job1.StartedAt = &updateStartedAt
 	job1.UpdatedAt = time.Now()
 
@@ -1100,8 +1100,8 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 		t.Fatalf("updated job not found")
 	}
 
-	if foundUpdatedJob.Status != oapi.JobStatusInProgress {
-		t.Errorf("expected status %s, got %s", oapi.JobStatusInProgress, foundUpdatedJob.Status)
+	if foundUpdatedJob.Status != oapi.InProgress {
+		t.Errorf("expected status %s, got %s", oapi.InProgress, foundUpdatedJob.Status)
 	}
 
 	if foundUpdatedJob.StartedAt == nil {
@@ -1142,7 +1142,7 @@ func TestDBJobs_BasicMetadata(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
 		Metadata:       metadata,
 		CreatedAt:      now,
@@ -1214,7 +1214,7 @@ func TestDBJobs_EmptyMetadata(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
 		Metadata:       nil, // No metadata
 		CreatedAt:      now,
@@ -1280,7 +1280,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
 		Metadata:       initialMetadata,
 		CreatedAt:      now,
@@ -1319,7 +1319,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 	}
 
 	job.Metadata = updatedMetadata
-	job.Status = oapi.JobStatusInProgress
+	job.Status = oapi.InProgress
 	job.UpdatedAt = time.Now()
 
 	err = writeJob(t.Context(), job, testStore, tx)
@@ -1386,7 +1386,7 @@ func TestDBJobs_MetadataRemoval(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
 		Metadata:       metadata,
 		CreatedAt:      now,
@@ -1483,7 +1483,7 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		JobAgentConfig: map[string]interface{}{},
 		Metadata:       metadata1,
 		CreatedAt:      now,
@@ -1504,7 +1504,7 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusInProgress,
+		Status:         oapi.InProgress,
 		JobAgentConfig: map[string]interface{}{},
 		Metadata:       metadata2,
 		CreatedAt:      now,
@@ -1520,7 +1520,7 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 		ReleaseId:      releaseID,
 		JobAgentId:     jobAgentID,
 		ExternalId:     nil,
-		Status:         oapi.JobStatusSuccessful,
+		Status:         oapi.Successful,
 		JobAgentConfig: map[string]interface{}{},
 		Metadata:       nil,
 		CreatedAt:      now,

@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
@@ -22,9 +23,10 @@ import (
 // Manager handles the business logic for release target changes and deployment decisions.
 // It coordinates between the state cache and deployment orchestrator to manage release targets.
 type Manager struct {
-	store      *store.Store
-	cache      *StateCache
-	deployment *DeploymentOrchestrator
+	store        *store.Store
+	cache        *StateCache
+	deployment   *DeploymentOrchestrator
+	verification *verification.Manager
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
@@ -33,11 +35,13 @@ var tracer = otel.Tracer("workspace/releasemanager")
 func New(store *store.Store) *Manager {
 	deploymentOrch := NewDeploymentOrchestrator(store)
 	stateCache := NewStateCache(store, deploymentOrch.Planner())
+	verificationManager := verification.NewManager(store)
 
 	return &Manager{
-		store:      store,
-		cache:      stateCache,
-		deployment: deploymentOrch,
+		store:        store,
+		cache:        stateCache,
+		deployment:   deploymentOrch,
+		verification: verificationManager,
 	}
 }
 
@@ -115,7 +119,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			jobsCancelled := 0
 			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(state.entity) {
 				if job != nil && job.IsInProcessingState() {
-					job.Status = oapi.JobStatusCancelled
+					job.Status = oapi.Cancelled
 					job.UpdatedAt = time.Now()
 					m.store.Jobs.Upsert(ctx, job)
 					fmt.Printf("cancelled job: %+v\n", job)
@@ -405,4 +409,17 @@ func (m *Manager) Planner() *deployment.Planner {
 // Scheduler returns the reconciliation scheduler instance.
 func (m *Manager) Scheduler() *deployment.ReconciliationScheduler {
 	return m.deployment.Planner().Scheduler()
+}
+
+func (m *Manager) Restore(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "ReleaseManager.Restore")
+	defer span.End()
+
+	if err := m.verification.Restore(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to restore verifications")
+		log.Error("failed to restore verifications", "error", err.Error())
+	}
+
+	return nil
 }

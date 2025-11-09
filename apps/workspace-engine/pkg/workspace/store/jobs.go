@@ -34,7 +34,7 @@ func (j *Jobs) Get(id string) (*oapi.Job, bool) {
 func (j *Jobs) GetPending() map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
 	for _, job := range j.repo.Jobs.Items() {
-		if job.Status != oapi.JobStatusPending {
+		if job.Status != oapi.Pending {
 			continue
 		}
 		jobs[job.Id] = job

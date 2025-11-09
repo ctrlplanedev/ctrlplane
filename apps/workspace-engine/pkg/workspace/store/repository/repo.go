@@ -31,6 +31,7 @@ func New(wsId string) *InMemoryStore {
 
 	return &InMemoryStore{
 		router:                   router,
+		ReleaseVerifications:     createTypedStore[*oapi.ReleaseVerification](router, "release_verification"),
 		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
 		ResourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
 		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
@@ -65,10 +66,11 @@ type InMemoryStore struct {
 	DeploymentVersions       cmap.ConcurrentMap[string, *oapi.DeploymentVersion]
 	DeploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
 
-	Environments cmap.ConcurrentMap[string, *oapi.Environment]
-	Policies     cmap.ConcurrentMap[string, *oapi.Policy]
-	Systems      cmap.ConcurrentMap[string, *oapi.System]
-	Releases     cmap.ConcurrentMap[string, *oapi.Release]
+	Environments         cmap.ConcurrentMap[string, *oapi.Environment]
+	Policies             cmap.ConcurrentMap[string, *oapi.Policy]
+	Systems              cmap.ConcurrentMap[string, *oapi.System]
+	Releases             cmap.ConcurrentMap[string, *oapi.Release]
+	ReleaseVerifications cmap.ConcurrentMap[string, *oapi.ReleaseVerification]
 
 	Jobs      cmap.ConcurrentMap[string, *oapi.Job]
 	JobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]

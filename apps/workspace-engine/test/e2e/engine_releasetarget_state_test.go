@@ -213,7 +213,7 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 
 	// Mark the job as successful
 	now := time.Now()
-	job.Status = oapi.JobStatusSuccessful
+	job.Status = oapi.Successful
 	job.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job.Id, Job: *job})
 
@@ -318,7 +318,7 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 	}
 
 	now := time.Now()
-	job1.Status = oapi.JobStatusSuccessful
+	job1.Status = oapi.Successful
 	job1.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job1.Id, Job: *job1})
 
@@ -450,7 +450,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 	}
 
 	// State 2: Job is InProgress - still no current release
-	job.Status = oapi.JobStatusInProgress
+	job.Status = oapi.InProgress
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job.Id, Job: *job})
 
 	state, err = engine.Workspace().ReleaseManager().GetReleaseTargetState(ctx, releaseTarget)
@@ -463,7 +463,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 
 	// State 3: Job is Successful - current release should now exist
 	now := time.Now()
-	job.Status = oapi.JobStatusSuccessful
+	job.Status = oapi.Successful
 	job.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job.Id, Job: *job})
 
@@ -511,7 +511,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 		t.Fatalf("job2 %s not found", job2.Id)
 	}
 	now2 := time.Now()
-	job2Fresh.Status = oapi.JobStatusFailure
+	job2Fresh.Status = oapi.Failure
 	job2Fresh.CompletedAt = &now2
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job2Fresh.Id, Job: *job2Fresh})
 
@@ -596,7 +596,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 	}
 
 	now := time.Now()
-	completedJob.Status = oapi.JobStatusSuccessful
+	completedJob.Status = oapi.Successful
 	completedJob.CompletedAt = &now
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &completedJob.Id, Job: *completedJob})
 
@@ -702,7 +702,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 		t.Fatalf("job1 %s not found", job1.Id)
 	}
 	time1 := time.Now().Add(-2 * time.Hour)
-	job1Fresh.Status = oapi.JobStatusSuccessful
+	job1Fresh.Status = oapi.Successful
 	job1Fresh.CompletedAt = &time1
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job1Fresh.Id, Job: *job1Fresh})
 
@@ -733,7 +733,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 		t.Fatalf("job2 %s not found", job2.Id)
 	}
 	time2 := time.Now().Add(-1 * time.Hour)
-	job2Fresh.Status = oapi.JobStatusSuccessful
+	job2Fresh.Status = oapi.Successful
 	job2Fresh.CompletedAt = &time2
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job2Fresh.Id, Job: *job2Fresh})
 
@@ -764,7 +764,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 		t.Fatalf("job3 %s not found", job3.Id)
 	}
 	time3 := time.Now()
-	job3Fresh.Status = oapi.JobStatusSuccessful
+	job3Fresh.Status = oapi.Successful
 	job3Fresh.CompletedAt = &time3
 	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{Id: &job3Fresh.Id, Job: *job3Fresh})
 

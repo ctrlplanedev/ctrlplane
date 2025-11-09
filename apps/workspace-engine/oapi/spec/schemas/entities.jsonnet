@@ -147,71 +147,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       releaseTarget: openapi.schemaRef('ReleaseTarget'),
       createdAt: { type: 'string' },
-      verificationAnalysis: openapi.schemaRef('VerificationAnalysis'),
-    },
-  },
-
-  VerificationAnalysis: {
-    type: 'object',
-    required: ['status', 'startedAt', 'passedCount', 'failedCount', 'measurements'],
-    properties: {
-      status: {
-        type: 'string',
-        enum: ['running', 'passed', 'failed', 'cancelled'],
-        description: 'Current status of verification',
-      },
-      startedAt: {
-        type: 'string',
-        format: 'date-time',
-        description: 'When verification started',
-      },
-      completedAt: {
-        type: 'string',
-        format: 'date-time',
-        description: 'When verification completed',
-      },
-      measurements: {
-        type: 'array',
-        items: openapi.schemaRef('VerificationResult'),
-        description: 'Individual verification measurements',
-      },
-      passedCount: {
-        type: 'integer',
-        description: 'Number of passed measurements',
-      },
-      failedCount: {
-        type: 'integer',
-        description: 'Number of failed measurements',
-      },
-      message: {
-        type: 'string',
-        description: 'Summary message of verification result',
-      },
-    },
-  },
-
-  VerificationResult: {
-    type: 'object',
-    required: ['passed', 'measuredAt'],
-    properties: {
-      passed: {
-        type: 'boolean',
-        description: 'Whether this measurement passed',
-      },
-      measuredAt: {
-        type: 'string',
-        format: 'date-time',
-        description: 'When measurement was taken',
-      },
-      message: {
-        type: 'string',
-        description: 'Measurement result message',
-      },
-      data: {
-        type: 'object',
-        additionalProperties: true,
-        description: 'Raw measurement data',
-      },
+      verification: openapi.schemaRef('ReleaseVerification'),
     },
   },
 

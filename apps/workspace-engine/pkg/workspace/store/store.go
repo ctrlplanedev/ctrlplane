@@ -33,6 +33,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.ResourceProviders = NewResourceProviders(store)
 	store.GithubEntities = NewGithubEntities(store)
 	store.Relations = NewRelations(store)
+	store.ReleaseVerifications = NewReleaseVerifications(store)
 
 	return store
 }
@@ -60,6 +61,7 @@ type Store struct {
 	Variables                *Variables
 	GithubEntities           *GithubEntities
 	Relations                *Relations
+	ReleaseVerifications     *ReleaseVerifications
 }
 
 func (s *Store) Repo() *repository.InMemoryStore {

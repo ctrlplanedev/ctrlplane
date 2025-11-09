@@ -35,6 +35,7 @@
       (import 'schemas/policy.jsonnet') +
       (import 'schemas/relationship.jsonnet') +
       (import 'schemas/jobs.jsonnet') +
-      (import 'schemas/deployments.jsonnet'),
+      (import 'schemas/deployments.jsonnet') +
+      (import 'schemas/verification.jsonnet'),
   },
 }

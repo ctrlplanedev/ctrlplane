@@ -58,7 +58,7 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 	var mostRecentJob *oapi.Job
 
 	for _, job := range jobs {
-		if job.Status != oapi.JobStatusSuccessful {
+		if job.Status != oapi.Successful {
 			continue
 		}
 

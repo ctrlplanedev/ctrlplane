@@ -5,6 +5,7 @@ package oapi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -36,18 +37,34 @@ const (
 	LinearNormalized GradualRolloutRuleRolloutType = "linear-normalized"
 )
 
+// Defines values for HTTPMetricProviderMethod.
+const (
+	DELETE  HTTPMetricProviderMethod = "DELETE"
+	GET     HTTPMetricProviderMethod = "GET"
+	HEAD    HTTPMetricProviderMethod = "HEAD"
+	OPTIONS HTTPMetricProviderMethod = "OPTIONS"
+	PATCH   HTTPMetricProviderMethod = "PATCH"
+	POST    HTTPMetricProviderMethod = "POST"
+	PUT     HTTPMetricProviderMethod = "PUT"
+)
+
+// Defines values for HTTPMetricProviderType.
+const (
+	Http HTTPMetricProviderType = "http"
+)
+
 // Defines values for JobStatus.
 const (
-	JobStatusActionRequired      JobStatus = "actionRequired"
-	JobStatusCancelled           JobStatus = "cancelled"
-	JobStatusExternalRunNotFound JobStatus = "externalRunNotFound"
-	JobStatusFailure             JobStatus = "failure"
-	JobStatusInProgress          JobStatus = "inProgress"
-	JobStatusInvalidIntegration  JobStatus = "invalidIntegration"
-	JobStatusInvalidJobAgent     JobStatus = "invalidJobAgent"
-	JobStatusPending             JobStatus = "pending"
-	JobStatusSkipped             JobStatus = "skipped"
-	JobStatusSuccessful          JobStatus = "successful"
+	ActionRequired      JobStatus = "actionRequired"
+	Cancelled           JobStatus = "cancelled"
+	ExternalRunNotFound JobStatus = "externalRunNotFound"
+	Failure             JobStatus = "failure"
+	InProgress          JobStatus = "inProgress"
+	InvalidIntegration  JobStatus = "invalidIntegration"
+	InvalidJobAgent     JobStatus = "invalidJobAgent"
+	Pending             JobStatus = "pending"
+	Skipped             JobStatus = "skipped"
+	Successful          JobStatus = "successful"
 )
 
 // Defines values for JobUpdateEventFieldsToUpdate.
@@ -97,14 +114,6 @@ const (
 const (
 	Approval RuleEvaluationActionType = "approval"
 	Wait     RuleEvaluationActionType = "wait"
-)
-
-// Defines values for VerificationAnalysisStatus.
-const (
-	VerificationAnalysisStatusCancelled VerificationAnalysisStatus = "cancelled"
-	VerificationAnalysisStatusFailed    VerificationAnalysisStatus = "failed"
-	VerificationAnalysisStatusPassed    VerificationAnalysisStatus = "passed"
-	VerificationAnalysisStatusRunning   VerificationAnalysisStatus = "running"
 )
 
 // AnyApprovalRule defines model for AnyApprovalRule.
@@ -267,6 +276,33 @@ type GradualRolloutRule struct {
 // GradualRolloutRuleRolloutType Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
 type GradualRolloutRuleRolloutType string
 
+// HTTPMetricProvider defines model for HTTPMetricProvider.
+type HTTPMetricProvider struct {
+	// Body Request body (supports Go templates)
+	Body *string `json:"body,omitempty"`
+
+	// Headers HTTP headers (values support Go templates)
+	Headers *map[string]string `json:"headers,omitempty"`
+
+	// Method HTTP method
+	Method *HTTPMetricProviderMethod `json:"method,omitempty"`
+
+	// Timeout Request timeout (duration string, e.g., "30s")
+	Timeout *string `json:"timeout,omitempty"`
+
+	// Type Provider type
+	Type HTTPMetricProviderType `json:"type"`
+
+	// Url HTTP endpoint URL (supports Go templates)
+	Url string `json:"url"`
+}
+
+// HTTPMetricProviderMethod HTTP method
+type HTTPMetricProviderMethod string
+
+// HTTPMetricProviderType Provider type
+type HTTPMetricProviderType string
+
 // IntegerValue defines model for IntegerValue.
 type IntegerValue = int
 
@@ -332,6 +368,11 @@ type JsonSelector struct {
 
 // LiteralValue defines model for LiteralValue.
 type LiteralValue struct {
+	union json.RawMessage
+}
+
+// MetricProvider defines model for MetricProvider.
+type MetricProvider struct {
 	union json.RawMessage
 }
 
@@ -442,12 +483,12 @@ type RelationshipRule_Matcher struct {
 
 // Release defines model for Release.
 type Release struct {
-	CreatedAt            string                  `json:"createdAt"`
-	EncryptedVariables   []string                `json:"encryptedVariables"`
-	ReleaseTarget        ReleaseTarget           `json:"releaseTarget"`
-	Variables            map[string]LiteralValue `json:"variables"`
-	VerificationAnalysis *VerificationAnalysis   `json:"verificationAnalysis,omitempty"`
-	Version              DeploymentVersion       `json:"version"`
+	CreatedAt          string                  `json:"createdAt"`
+	EncryptedVariables []string                `json:"encryptedVariables"`
+	ReleaseTarget      ReleaseTarget           `json:"releaseTarget"`
+	Variables          map[string]LiteralValue `json:"variables"`
+	Verification       *ReleaseVerification    `json:"verification,omitempty"`
+	Version            DeploymentVersion       `json:"version"`
 }
 
 // ReleaseTarget defines model for ReleaseTarget.
@@ -471,6 +512,21 @@ type ReleaseTargetWithState struct {
 	ReleaseTarget ReleaseTarget      `json:"releaseTarget"`
 	Resource      Resource           `json:"resource"`
 	State         ReleaseTargetState `json:"state"`
+}
+
+// ReleaseVerification defines model for ReleaseVerification.
+type ReleaseVerification struct {
+	// CreatedAt When verification was created
+	CreatedAt time.Time `json:"createdAt"`
+	Id        string    `json:"id"`
+	JobId     *string   `json:"jobId,omitempty"`
+
+	// Message Summary message of verification result
+	Message *string `json:"message,omitempty"`
+
+	// Metrics Metrics associated with this verification
+	Metrics   []VerificationMetricStatus `json:"metrics"`
+	ReleaseId string                     `json:"releaseId"`
 }
 
 // ResolvedPolicy defines model for ResolvedPolicy.
@@ -579,35 +635,8 @@ type Value struct {
 	union json.RawMessage
 }
 
-// VerificationAnalysis defines model for VerificationAnalysis.
-type VerificationAnalysis struct {
-	// CompletedAt When verification completed
-	CompletedAt *time.Time `json:"completedAt,omitempty"`
-
-	// FailedCount Number of failed measurements
-	FailedCount int `json:"failedCount"`
-
-	// Measurements Individual verification measurements
-	Measurements []VerificationResult `json:"measurements"`
-
-	// Message Summary message of verification result
-	Message *string `json:"message,omitempty"`
-
-	// PassedCount Number of passed measurements
-	PassedCount int `json:"passedCount"`
-
-	// StartedAt When verification started
-	StartedAt time.Time `json:"startedAt"`
-
-	// Status Current status of verification
-	Status VerificationAnalysisStatus `json:"status"`
-}
-
-// VerificationAnalysisStatus Current status of verification
-type VerificationAnalysisStatus string
-
-// VerificationResult defines model for VerificationResult.
-type VerificationResult struct {
+// VerificationMeasurement defines model for VerificationMeasurement.
+type VerificationMeasurement struct {
 	// Data Raw measurement data
 	Data *map[string]interface{} `json:"data,omitempty"`
 
@@ -619,6 +648,47 @@ type VerificationResult struct {
 
 	// Passed Whether this measurement passed
 	Passed bool `json:"passed"`
+}
+
+// VerificationMetricSpec defines model for VerificationMetricSpec.
+type VerificationMetricSpec struct {
+	// Count Number of measurements to take
+	Count int `json:"count"`
+
+	// FailureLimit Stop after this many failures (0 = no limit)
+	FailureLimit *int `json:"failureLimit,omitempty"`
+
+	// Interval Interval between measurements (duration string, e.g., "30s", "5m")
+	Interval string `json:"interval"`
+
+	// Name Name of the verification metric
+	Name     string         `json:"name"`
+	Provider MetricProvider `json:"provider"`
+
+	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
+	SuccessCondition string `json:"successCondition"`
+}
+
+// VerificationMetricStatus defines model for VerificationMetricStatus.
+type VerificationMetricStatus struct {
+	// Count Number of measurements to take
+	Count int `json:"count"`
+
+	// FailureLimit Stop after this many failures (0 = no limit)
+	FailureLimit *int `json:"failureLimit,omitempty"`
+
+	// Interval Interval between measurements (duration string, e.g., "30s", "5m")
+	Interval string `json:"interval"`
+
+	// Measurements Individual verification measurements taken for this metric
+	Measurements []VerificationMeasurement `json:"measurements"`
+
+	// Name Name of the verification metric
+	Name     string         `json:"name"`
+	Provider MetricProvider `json:"provider"`
+
+	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
+	SuccessCondition string `json:"successCondition"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
@@ -1115,6 +1185,65 @@ func (t LiteralValue) MarshalJSON() ([]byte, error) {
 }
 
 func (t *LiteralValue) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsHTTPMetricProvider returns the union data inside the MetricProvider as a HTTPMetricProvider
+func (t MetricProvider) AsHTTPMetricProvider() (HTTPMetricProvider, error) {
+	var body HTTPMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromHTTPMetricProvider overwrites any union data inside the MetricProvider as the provided HTTPMetricProvider
+func (t *MetricProvider) FromHTTPMetricProvider(v HTTPMetricProvider) error {
+	v.Type = "HTTPMetricProvider"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeHTTPMetricProvider performs a merge with any union data inside the MetricProvider, using the provided HTTPMetricProvider
+func (t *MetricProvider) MergeHTTPMetricProvider(v HTTPMetricProvider) error {
+	v.Type = "HTTPMetricProvider"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t MetricProvider) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "HTTPMetricProvider":
+		return t.AsHTTPMetricProvider()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t MetricProvider) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *MetricProvider) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

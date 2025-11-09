@@ -101,7 +101,7 @@ func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
 	assert.Nil(t, prodJob, "production job should not be created yet (no successful staging deployment)")
 
 	// Update the staging job to successful (just completed)
-	stagingJob.Status = oapi.JobStatusSuccessful
+	stagingJob.Status = oapi.Successful
 	completedAt := time.Now()
 	stagingJob.CompletedAt = &completedAt
 	stagingJob.UpdatedAt = completedAt
@@ -198,7 +198,7 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 	}
 
 	// Simulate job completion 3 minutes ago (past the soak time)
-	stagingJob.Status = oapi.JobStatusSuccessful
+	stagingJob.Status = oapi.Successful
 	completedAt := time.Now().Add(-3 * time.Minute)
 	stagingJob.CompletedAt = &completedAt
 	stagingJob.UpdatedAt = completedAt
@@ -308,7 +308,7 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 	}
 	assert.NotNil(t, usEastJob, "us-east staging job not found")
 
-	usEastJob.Status = oapi.JobStatusSuccessful
+	usEastJob.Status = oapi.Successful
 	completedAt := time.Now().Add(-3 * time.Minute)
 	usEastJob.CompletedAt = &completedAt
 	usEastJob.UpdatedAt = completedAt
@@ -425,7 +425,7 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 	// Complete 2 out of 3 staging jobs successfully (66.7% success rate)
 	completedAt := time.Now().Add(-3 * time.Minute)
 	for i := 0; i < 2; i++ {
-		stagingJobs[i].Status = oapi.JobStatusSuccessful
+		stagingJobs[i].Status = oapi.Successful
 		stagingJobs[i].CompletedAt = &completedAt
 		stagingJobs[i].UpdatedAt = completedAt
 		engine.PushEvent(ctx, handler.JobUpdate, stagingJobs[i])
@@ -433,7 +433,7 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 
 	// Mark the third job as failed
 	failedAt := time.Now().Add(-3 * time.Minute)
-	stagingJobs[2].Status = oapi.JobStatusFailure
+	stagingJobs[2].Status = oapi.Failure
 	stagingJobs[2].CompletedAt = &failedAt
 	stagingJobs[2].UpdatedAt = failedAt
 	engine.PushEvent(ctx, handler.JobUpdate, stagingJobs[2])
@@ -528,7 +528,7 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 	}
 
 	// Complete job 3 hours ago (exceeds max age)
-	stagingJob.Status = oapi.JobStatusSuccessful
+	stagingJob.Status = oapi.Successful
 	completedAt := time.Now().Add(-3 * time.Hour)
 	stagingJob.CompletedAt = &completedAt
 	stagingJob.UpdatedAt = completedAt
@@ -628,7 +628,7 @@ func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
 
 	// Complete v1.0.0 staging job 10 minutes ago (past the soak time)
 	v1CompletedAt := time.Now().Add(-10 * time.Minute)
-	v1StagingJob.Status = oapi.JobStatusSuccessful
+	v1StagingJob.Status = oapi.Successful
 	v1StagingJob.CompletedAt = &v1CompletedAt
 	v1StagingJob.UpdatedAt = v1CompletedAt
 	engine.PushEvent(ctx, handler.JobUpdate, v1StagingJob)
@@ -657,7 +657,7 @@ func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
 
 	// Complete v2.0.0 staging job just now (soak time NOT met)
 	v2CompletedAt := time.Now()
-	v2StagingJob.Status = oapi.JobStatusSuccessful
+	v2StagingJob.Status = oapi.Successful
 	v2StagingJob.CompletedAt = &v2CompletedAt
 	v2StagingJob.UpdatedAt = v2CompletedAt
 	engine.PushEvent(ctx, handler.JobUpdate, v2StagingJob)

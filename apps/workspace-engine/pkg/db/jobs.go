@@ -74,27 +74,27 @@ func getJobs(ctx context.Context, workspaceID string) ([]*oapi.Job, error) {
 func convertJobStatusToEnum(statusStr string) oapi.JobStatus {
 	switch statusStr {
 	case "pending":
-		return oapi.JobStatusPending
+		return oapi.Pending
 	case "in_progress":
-		return oapi.JobStatusInProgress
+		return oapi.InProgress
 	case "successful":
-		return oapi.JobStatusSuccessful
+		return oapi.Successful
 	case "cancelled":
-		return oapi.JobStatusCancelled
+		return oapi.Cancelled
 	case "skipped":
-		return oapi.JobStatusSkipped
+		return oapi.Skipped
 	case "failure":
-		return oapi.JobStatusFailure
+		return oapi.Failure
 	case "action_required":
-		return oapi.JobStatusActionRequired
+		return oapi.ActionRequired
 	case "invalid_job_agent":
-		return oapi.JobStatusInvalidJobAgent
+		return oapi.InvalidJobAgent
 	case "invalid_integration":
-		return oapi.JobStatusInvalidIntegration
+		return oapi.InvalidIntegration
 	case "external_run_not_found":
-		return oapi.JobStatusExternalRunNotFound
+		return oapi.ExternalRunNotFound
 	}
-	return oapi.JobStatusPending // default to pending
+	return oapi.Pending // default to pending
 }
 
 func scanJobRow(rows pgx.Rows) (*oapi.Job, error) {
@@ -190,25 +190,25 @@ func writeReleaseJob(ctx context.Context, releaseId string, jobId string, tx pgx
 
 func convertOapiJobStatusToStr(status oapi.JobStatus) string {
 	switch status {
-	case oapi.JobStatusPending:
+	case oapi.Pending:
 		return "pending"
-	case oapi.JobStatusInProgress:
+	case oapi.InProgress:
 		return "in_progress"
-	case oapi.JobStatusSuccessful:
+	case oapi.Successful:
 		return "successful"
-	case oapi.JobStatusCancelled:
+	case oapi.Cancelled:
 		return "cancelled"
-	case oapi.JobStatusSkipped:
+	case oapi.Skipped:
 		return "skipped"
-	case oapi.JobStatusFailure:
+	case oapi.Failure:
 		return "failure"
-	case oapi.JobStatusActionRequired:
+	case oapi.ActionRequired:
 		return "action_required"
-	case oapi.JobStatusInvalidJobAgent:
+	case oapi.InvalidJobAgent:
 		return "invalid_job_agent"
-	case oapi.JobStatusInvalidIntegration:
+	case oapi.InvalidIntegration:
 		return "invalid_integration"
-	case oapi.JobStatusExternalRunNotFound:
+	case oapi.ExternalRunNotFound:
 		return "external_run_not_found"
 	default:
 		return "pending"

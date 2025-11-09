@@ -119,7 +119,7 @@ func TestEngine_PolicyVersionStatusReady(t *testing.T) {
 	if release.Version.Status != oapi.DeploymentVersionStatusReady {
 		t.Fatalf("expected version status ready, got %s", release.Version.Status)
 	}
-	if job.Status != oapi.JobStatusPending {
+	if job.Status != oapi.Pending {
 		t.Fatalf("expected job status Pending, got %s", job.Status)
 	}
 }

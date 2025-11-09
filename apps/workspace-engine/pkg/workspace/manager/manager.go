@@ -72,6 +72,12 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 			return nil, err
 		}
 
+		if err := ws.ReleaseManager().Restore(ctx); err != nil {
+			workspaceStatus.SetError(err)
+			log.Error("Failed to restore verifications", "error", err)
+			return nil, err
+		}
+
 		for id, resource := range ws.Resources().Items() {
 			if resource.Id != id {
 				ws.Resources().Remove(ctx, id)

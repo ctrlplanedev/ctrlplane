@@ -1,123 +1,67 @@
 package metrics
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"text/template"
-	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/http"
 
 	"github.com/charmbracelet/log"
 )
 
-type ProviderContext struct {
-	Release     *oapi.Release           `json:"release"`
-	Resource    *oapi.Resource          `json:"resource"`
-	Environment *oapi.Environment       `json:"environment"`
-	Version     *oapi.DeploymentVersion `json:"version"`
-	Target      *oapi.ReleaseTarget     `json:"target"`
-	Deployment  *oapi.Deployment        `json:"deployment"`
-	Variables   map[string]any          `json:"variables"`
-
-	mapCache map[string]any `json:"-"`
-}
-
-func (p *ProviderContext) Map() map[string]any {
-	if p.mapCache != nil {
-		return p.mapCache
-	}
-	data, _ := json.Marshal(p)
-	var result map[string]any
-	json.Unmarshal(data, &result)
-	p.mapCache = result
-	return p.mapCache
-}
-
-func (p *ProviderContext) Template(tmpl string) string {
-	if tmpl == "" {
-		return tmpl
-	}
-
-	data := p.Map()
-	t, err := template.New("").Parse(tmpl)
+// CreateProvider creates a provider from the metric's provider configuration
+func CreateProvider(providerCfg oapi.MetricProvider) (provider.Provider, error) {
+	discriminator, err := providerCfg.Discriminator()
 	if err != nil {
-		return tmpl
+		return nil, fmt.Errorf("failed to get provider discriminator: %w", err)
 	}
 
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, data); err != nil {
-		return tmpl
+	switch discriminator {
+	case "http":
+		httpProvider, err := providerCfg.AsHTTPMetricProvider()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse HTTP provider: %w", err)
+		}
+		return http.NewFromOAPI(httpProvider)
+	default:
+		return nil, fmt.Errorf("unsupported provider type: %s", discriminator)
 	}
-
-	return buf.String()
 }
 
-type Measurement struct {
-	MeasuredAt time.Time
-	Data       map[string]any
-}
-
-// Metric represents a verification metric configuration
-type Metric struct {
-	Name             string
-	Interval         time.Duration
-	Count            int    // Number of measurements to take
-	SuccessCondition string // CEL expression (e.g., "result.statusCode == 200")
-	FailureLimit     int    // Stop after this many failures (0 = no limit)
-	Provider         Provider
-	evaluator        *Evaluator // CEL evaluator (set after creation)
-}
-
-func (m *Metric) Evaluator() *Evaluator {
-	if m.evaluator != nil {
-		return m.evaluator
-	}
-	evaluator, err := NewEvaluator(m.SuccessCondition)
+// Measure takes a measurement using the metric status's configuration and evaluates the success condition
+func Measure(ctx context.Context, metric *oapi.VerificationMetricStatus, providerCtx *provider.ProviderContext) (oapi.VerificationMeasurement, error) {
+	// Create provider
+	p, err := CreateProvider(metric.Provider)
 	if err != nil {
-		log.Error("Failed to create evaluator", "error", err)
-		return nil
+		return oapi.VerificationMeasurement{}, fmt.Errorf("failed to create provider: %w", err)
 	}
-	m.evaluator = evaluator
-	return m.evaluator
-}
 
-// SetEvaluator sets the CEL evaluator for this metric
-func (m *Metric) SetEvaluator(eval *Evaluator) {
-	m.evaluator = eval
-}
-
-// Measure takes a measurement and evaluates the success condition
-func (m *Metric) Measure(ctx context.Context, providerCtx *ProviderContext) (*Result, error) {
-	measurement, err := m.Provider.Measure(ctx, providerCtx)
+	// Take measurement
+	measuredAt, data, err := p.Measure(ctx, providerCtx)
 	if err != nil {
-		return nil, err
+		return oapi.VerificationMeasurement{}, err
 	}
 
 	message := "Measurement completed"
 
 	// Evaluate success condition
 	passed := false
-	if m.evaluator != nil {
-		passed, err = m.Evaluator().Evaluate(measurement.Data)
+	evaluator, err := NewEvaluator(metric.SuccessCondition)
+	if err != nil {
+		log.Error("Failed to create evaluator", "error", err)
+		message = fmt.Sprintf("Failed to create evaluator: %s", err.Error())
+	} else {
+		passed, err = evaluator.Evaluate(data)
 		if err != nil {
 			message = fmt.Sprintf("Measurement failed: %s", err.Error())
 		}
 	}
 
-	return &Result{
-		Message:     message,
-		Passed:      passed,
-		Measurement: measurement,
+	return oapi.VerificationMeasurement{
+		Message:    &message,
+		Passed:     passed,
+		Data:       &data,
+		MeasuredAt: measuredAt,
 	}, nil
-}
-
-// Provider collects raw measurement data
-type Provider interface {
-	// Measure collects data for evaluation
-	Measure(context.Context, *ProviderContext) (*Measurement, error)
-
-	// Type returns provider type (e.g., "http")
-	Type() string
 }

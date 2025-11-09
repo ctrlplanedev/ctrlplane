@@ -97,7 +97,7 @@ func TestProcessChanges_DeleteOnly(t *testing.T) {
 	testStore.Releases.Upsert(ctx, release)
 
 	// Create a pending job for this release target
-	job := createTestJob(release.ID(), oapi.JobStatusPending)
+	job := createTestJob(release.ID(), oapi.Pending)
 	testStore.Jobs.Upsert(ctx, job)
 
 	// Verify job is pending
@@ -115,7 +115,7 @@ func TestProcessChanges_DeleteOnly(t *testing.T) {
 	// Verify job was cancelled
 	updatedJob, ok := testStore.Jobs.Get(job.Id)
 	require.True(t, ok)
-	assert.Equal(t, oapi.JobStatusCancelled, updatedJob.Status)
+	assert.Equal(t, oapi.Cancelled, updatedJob.Status)
 }
 
 // TestProcessChanges_UpsertThenDelete tests deduplication when a target is created then deleted
@@ -260,10 +260,10 @@ func TestProcessChanges_OnlyPendingJobsCancelled(t *testing.T) {
 	testStore.Releases.Upsert(ctx, release)
 
 	// Create jobs in different states
-	pendingJob := createTestJob(release.ID(), oapi.JobStatusPending)
-	inProgressJob := createTestJob(release.ID(), oapi.JobStatusInProgress)
-	successfulJob := createTestJob(release.ID(), oapi.JobStatusSuccessful)
-	failedJob := createTestJob(release.ID(), oapi.JobStatusFailure)
+	pendingJob := createTestJob(release.ID(), oapi.Pending)
+	inProgressJob := createTestJob(release.ID(), oapi.InProgress)
+	successfulJob := createTestJob(release.ID(), oapi.Successful)
+	failedJob := createTestJob(release.ID(), oapi.Failure)
 
 	testStore.Jobs.Upsert(ctx, pendingJob)
 	testStore.Jobs.Upsert(ctx, inProgressJob)
@@ -280,16 +280,16 @@ func TestProcessChanges_OnlyPendingJobsCancelled(t *testing.T) {
 
 	// Verify only processing-state jobs were cancelled
 	updatedPending, _ := testStore.Jobs.Get(pendingJob.Id)
-	assert.Equal(t, oapi.JobStatusCancelled, updatedPending.Status, "Pending job should be cancelled")
+	assert.Equal(t, oapi.Cancelled, updatedPending.Status, "Pending job should be cancelled")
 
 	updatedInProgress, _ := testStore.Jobs.Get(inProgressJob.Id)
-	assert.Equal(t, oapi.JobStatusCancelled, updatedInProgress.Status, "InProgress job should be cancelled")
+	assert.Equal(t, oapi.Cancelled, updatedInProgress.Status, "InProgress job should be cancelled")
 
 	updatedSuccessful, _ := testStore.Jobs.Get(successfulJob.Id)
-	assert.Equal(t, oapi.JobStatusSuccessful, updatedSuccessful.Status, "Successful job should NOT be cancelled")
+	assert.Equal(t, oapi.Successful, updatedSuccessful.Status, "Successful job should NOT be cancelled")
 
 	updatedFailed, _ := testStore.Jobs.Get(failedJob.Id)
-	assert.Equal(t, oapi.JobStatusFailure, updatedFailed.Status, "Failed job should NOT be cancelled")
+	assert.Equal(t, oapi.Failure, updatedFailed.Status, "Failed job should NOT be cancelled")
 }
 
 // TestProcessChanges_MixedOperations tests a realistic scenario with mixed operations
@@ -317,7 +317,7 @@ func TestProcessChanges_MixedOperations(t *testing.T) {
 		Variables: map[string]oapi.LiteralValue{},
 	}
 	testStore.Releases.Upsert(ctx, release2)
-	job2 := createTestJob(release2.ID(), oapi.JobStatusPending)
+	job2 := createTestJob(release2.ID(), oapi.Pending)
 	testStore.Jobs.Upsert(ctx, job2)
 
 	// Create changeset with mixed operations
@@ -340,7 +340,7 @@ func TestProcessChanges_MixedOperations(t *testing.T) {
 
 	// target2's job should be cancelled
 	updatedJob2, _ := testStore.Jobs.Get(job2.Id)
-	assert.Equal(t, oapi.JobStatusCancelled, updatedJob2.Status)
+	assert.Equal(t, oapi.Cancelled, updatedJob2.Status)
 
 	// target3 should NOT exist (delete won over upsert)
 	assert.NotContains(t, releaseTargets, target3.Key())

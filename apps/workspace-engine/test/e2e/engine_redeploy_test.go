@@ -80,7 +80,7 @@ func TestEngine_Redeploy_BasicFlow(t *testing.T) {
 	}
 
 	// Mark the initial job as completed
-	initialJob.Status = oapi.JobStatusSuccessful
+	initialJob.Status = oapi.Successful
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
 	// Verify no pending jobs after completion
@@ -187,7 +187,7 @@ func TestEngine_Redeploy_AfterFailedJob(t *testing.T) {
 	}
 
 	// Mark the job as failed
-	initialJob.Status = oapi.JobStatusFailure
+	initialJob.Status = oapi.Failure
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
 	// Verify no pending jobs after failure
@@ -217,7 +217,7 @@ func TestEngine_Redeploy_AfterFailedJob(t *testing.T) {
 	}
 
 	// Verify the job is in pending status
-	if redeployJob.Status != oapi.JobStatusPending {
+	if redeployJob.Status != oapi.Pending {
 		t.Errorf("expected redeploy job status PENDING, got %v", redeployJob.Status)
 	}
 }
@@ -285,7 +285,7 @@ func TestEngine_Redeploy_MultipleReleaseTargets(t *testing.T) {
 
 	// Mark all jobs as completed
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		engine.PushEvent(ctx, handler.JobUpdate, job)
 	}
 
@@ -442,7 +442,7 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 	// Get and complete the initial job
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		engine.PushEvent(ctx, handler.JobUpdate, job)
 	}
 
@@ -455,7 +455,7 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 	// Complete the v2 job
 	pendingJobs = engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		engine.PushEvent(ctx, handler.JobUpdate, job)
 	}
 
@@ -468,7 +468,7 @@ func TestEngine_Redeploy_WithNewVersion(t *testing.T) {
 	// Complete the v3 job
 	pendingJobs = engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		engine.PushEvent(ctx, handler.JobUpdate, job)
 	}
 
@@ -563,7 +563,7 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 	// Complete the initial job
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	for _, job := range pendingJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		engine.PushEvent(ctx, handler.JobUpdate, job)
 	}
 
@@ -752,13 +752,13 @@ func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
 	}
 
 	// Mark job as in-progress (not completed)
-	initialJob.Status = oapi.JobStatusInProgress
+	initialJob.Status = oapi.InProgress
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
 	// Verify job is now in progress
 	allJobs := engine.Workspace().Jobs().Items()
 	inProgressJob, exists := allJobs[initialJob.Id]
-	if !exists || inProgressJob.Status != oapi.JobStatusInProgress {
+	if !exists || inProgressJob.Status != oapi.InProgress {
 		t.Fatalf("expected job to be in progress")
 	}
 
@@ -777,12 +777,12 @@ func TestEngine_Redeploy_BlockedByInProgressJob(t *testing.T) {
 	if !exists {
 		t.Fatalf("expected original job to still exist")
 	}
-	if jobAfterRedeploy.Status != oapi.JobStatusInProgress {
+	if jobAfterRedeploy.Status != oapi.InProgress {
 		t.Errorf("expected job to remain in progress, got %v", jobAfterRedeploy.Status)
 	}
 
 	// Now complete the job
-	initialJob.Status = oapi.JobStatusSuccessful
+	initialJob.Status = oapi.Successful
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
 	// Trigger redeploy again - should work now
@@ -874,7 +874,7 @@ func TestEngine_Redeploy_BlockedByActionRequiredJob(t *testing.T) {
 	}
 
 	// Mark job as requiring action
-	initialJob.Status = oapi.JobStatusActionRequired
+	initialJob.Status = oapi.ActionRequired
 	engine.PushEvent(ctx, handler.JobUpdate, initialJob)
 
 	// Trigger redeploy - should be blocked
@@ -889,7 +889,7 @@ func TestEngine_Redeploy_BlockedByActionRequiredJob(t *testing.T) {
 	// Verify the job is still in action required state
 	allJobs := engine.Workspace().Jobs().Items()
 	job, exists := allJobs[initialJob.Id]
-	if !exists || job.Status != oapi.JobStatusActionRequired {
+	if !exists || job.Status != oapi.ActionRequired {
 		t.Errorf("expected job to remain in action required state")
 	}
 }
@@ -949,7 +949,7 @@ func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
 		break
 	}
 
-	if initialJob.Status != oapi.JobStatusInvalidJobAgent {
+	if initialJob.Status != oapi.InvalidJobAgent {
 		t.Fatalf("expected initial job status InvalidJobAgent, got %v", initialJob.Status)
 	}
 
@@ -965,7 +965,7 @@ func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
 	// Verify both jobs have InvalidJobAgent status
 	invalidJobAgentCount := 0
 	for _, j := range allJobsAfterRedeploy {
-		if j.Status == oapi.JobStatusInvalidJobAgent {
+		if j.Status == oapi.InvalidJobAgent {
 			invalidJobAgentCount++
 		}
 	}

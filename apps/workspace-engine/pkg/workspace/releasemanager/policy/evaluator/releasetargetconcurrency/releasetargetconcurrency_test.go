@@ -88,7 +88,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: existingRelease.ID(),
-		Status:    oapi.JobStatusPending,
+		Status:    oapi.Pending,
 		CreatedAt: time.Now(),
 	})
 
@@ -119,8 +119,8 @@ func TestReleaseTargetConcurrencyEvaluator_JobInPendingState(t *testing.T) {
 		t.Errorf("expected release_target_key=%s, got %v", releaseTarget.Key(), result.Details["release_target_key"])
 	}
 
-	if result.Details["job_job-1"] != oapi.JobStatusPending {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusPending, result.Details["job_job-1"])
+	if result.Details["job_job-1"] != oapi.Pending {
+		t.Errorf("expected job_job-1=%s, got %v", oapi.Pending, result.Details["job_job-1"])
 	}
 }
 
@@ -150,7 +150,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: existingRelease.ID(),
-		Status:    oapi.JobStatusInProgress,
+		Status:    oapi.InProgress,
 		CreatedAt: time.Now(),
 	})
 
@@ -173,8 +173,8 @@ func TestReleaseTargetConcurrencyEvaluator_JobInProgressState(t *testing.T) {
 		t.Errorf("expected denied when job is in progress, got allowed: %s", result.Message)
 	}
 
-	if result.Details["job_job-1"] != oapi.JobStatusInProgress {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusInProgress, result.Details["job_job-1"])
+	if result.Details["job_job-1"] != oapi.InProgress {
+		t.Errorf("expected job_job-1=%s, got %v", oapi.InProgress, result.Details["job_job-1"])
 	}
 }
 
@@ -204,7 +204,7 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: existingRelease.ID(),
-		Status:    oapi.JobStatusActionRequired,
+		Status:    oapi.ActionRequired,
 		CreatedAt: time.Now(),
 	})
 
@@ -227,8 +227,8 @@ func TestReleaseTargetConcurrencyEvaluator_JobInActionRequiredState(t *testing.T
 		t.Errorf("expected denied when job requires action, got allowed: %s", result.Message)
 	}
 
-	if result.Details["job_job-1"] != oapi.JobStatusActionRequired {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusActionRequired, result.Details["job_job-1"])
+	if result.Details["job_job-1"] != oapi.ActionRequired {
+		t.Errorf("expected job_job-1=%s, got %v", oapi.ActionRequired, result.Details["job_job-1"])
 	}
 }
 
@@ -270,14 +270,14 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release1.ID(),
-		Status:    oapi.JobStatusPending,
+		Status:    oapi.Pending,
 		CreatedAt: time.Now().Add(-1 * time.Hour),
 	})
 
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-2",
 		ReleaseId: release2.ID(),
-		Status:    oapi.JobStatusInProgress,
+		Status:    oapi.InProgress,
 		CreatedAt: time.Now(),
 	})
 
@@ -301,12 +301,12 @@ func TestReleaseTargetConcurrencyEvaluator_MultipleActiveJobs(t *testing.T) {
 	}
 
 	// Both jobs should be in details
-	if result.Details["job_job-1"] != oapi.JobStatusPending {
-		t.Errorf("expected job_job-1=%s, got %v", oapi.JobStatusPending, result.Details["job_job-1"])
+	if result.Details["job_job-1"] != oapi.Pending {
+		t.Errorf("expected job_job-1=%s, got %v", oapi.Pending, result.Details["job_job-1"])
 	}
 
-	if result.Details["job_job-2"] != oapi.JobStatusInProgress {
-		t.Errorf("expected job_job-2=%s, got %v", oapi.JobStatusInProgress, result.Details["job_job-2"])
+	if result.Details["job_job-2"] != oapi.InProgress {
+		t.Errorf("expected job_job-2=%s, got %v", oapi.InProgress, result.Details["job_job-2"])
 	}
 }
 
@@ -361,7 +361,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release1.ID(),
-		Status:      oapi.JobStatusSuccessful,
+		Status:      oapi.Successful,
 		CreatedAt:   time.Now().Add(-3 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -369,7 +369,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2",
 		ReleaseId:   release2.ID(),
-		Status:      oapi.JobStatusFailure,
+		Status:      oapi.Failure,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -377,7 +377,7 @@ func TestReleaseTargetConcurrencyEvaluator_TerminalStateJobsDoNotBlock(t *testin
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-3",
 		ReleaseId:   release3.ID(),
-		Status:      oapi.JobStatusCancelled,
+		Status:      oapi.Cancelled,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -454,7 +454,7 @@ func TestReleaseTargetConcurrencyEvaluator_DifferentReleaseTargetsDoNotInterfere
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release1.ID(),
-		Status:    oapi.JobStatusInProgress,
+		Status:    oapi.InProgress,
 		CreatedAt: time.Now(),
 	})
 
@@ -483,9 +483,9 @@ func TestReleaseTargetConcurrencyEvaluator_AllProcessingStatesBlock(t *testing.T
 	ctx := context.Background()
 
 	processingStates := []oapi.JobStatus{
-		oapi.JobStatusPending,
-		oapi.JobStatusInProgress,
-		oapi.JobStatusActionRequired,
+		oapi.Pending,
+		oapi.InProgress,
+		oapi.ActionRequired,
 	}
 
 	for _, status := range processingStates {
@@ -552,13 +552,13 @@ func TestReleaseTargetConcurrencyEvaluator_AllTerminalStatesAllow(t *testing.T) 
 	ctx := context.Background()
 
 	terminalStates := []oapi.JobStatus{
-		oapi.JobStatusSuccessful,
-		oapi.JobStatusFailure,
-		oapi.JobStatusCancelled,
-		oapi.JobStatusSkipped,
-		oapi.JobStatusInvalidJobAgent,
-		oapi.JobStatusInvalidIntegration,
-		oapi.JobStatusExternalRunNotFound,
+		oapi.Successful,
+		oapi.Failure,
+		oapi.Cancelled,
+		oapi.Skipped,
+		oapi.InvalidJobAgent,
+		oapi.InvalidIntegration,
+		oapi.ExternalRunNotFound,
 	}
 
 	for _, status := range terminalStates {

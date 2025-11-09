@@ -154,7 +154,7 @@ func TestEngine_JobsWithNilReleaseInMap(t *testing.T) {
 		ReleaseId:      fakeReleaseId,
 		JobAgentId:     jobAgent.Id,
 		JobAgentConfig: map[string]any{},
-		Status:         oapi.JobStatusPending,
+		Status:         oapi.Pending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 		Metadata:       map[string]string{},
@@ -241,7 +241,7 @@ func TestEngine_ReleaseTargetStateWithNilRelease(t *testing.T) {
 	}
 
 	// Mark job as successful to make it the "current release"
-	job.Status = oapi.JobStatusSuccessful
+	job.Status = oapi.Successful
 	completedAt := time.Now()
 	job.CompletedAt = &completedAt
 	engine.Workspace().Jobs().Upsert(ctx, job)
@@ -322,7 +322,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	for _, job := range engine.Workspace().Jobs().GetJobsInProcessingStateForReleaseTarget(releaseTarget) {
-		job.Status = oapi.JobStatusSkipped
+		job.Status = oapi.Skipped
 		completedAt := time.Now()
 		job.CompletedAt = &completedAt
 
@@ -355,7 +355,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	// Find a job and corrupt its release
 	var jobToCorrupt *oapi.Job
 	for _, j := range allJobs {
-		if j.Status == oapi.JobStatusSkipped {
+		if j.Status == oapi.Skipped {
 			jobToCorrupt = j
 			break
 		}

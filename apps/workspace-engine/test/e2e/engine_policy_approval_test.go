@@ -120,7 +120,7 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 	if release.Version.Tag != "v1.0.0" {
 		t.Fatalf("expected version v1.0.0, got %s", release.Version.Tag)
 	}
-	if job.Status != oapi.JobStatusPending {
+	if job.Status != oapi.Pending {
 		t.Fatalf("expected job status Pending, got %s", job.Status)
 	}
 }
@@ -213,7 +213,7 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 	}
 
 	for _, job := range allJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		completedAt := time.Now()
 		job.CompletedAt = &completedAt
 
@@ -401,8 +401,8 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval3)
 
 	for _, job := range engine.Workspace().Jobs().Items() {
-		if job.Status == oapi.JobStatusPending {
-			job.Status = oapi.JobStatusSuccessful
+		if job.Status == oapi.Pending {
+			job.Status = oapi.Successful
 			completedAt := time.Now()
 			job.CompletedAt = &completedAt
 
@@ -455,7 +455,7 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 
 	for _, job := range allJobs {
 		// Only count non-cancelled jobs
-		if job.Status == oapi.JobStatusCancelled {
+		if job.Status == oapi.Cancelled {
 			continue
 		}
 		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
@@ -844,7 +844,7 @@ func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
 	}
 
 	for _, job := range allJobs {
-		job.Status = oapi.JobStatusSuccessful
+		job.Status = oapi.Successful
 		completedAt := time.Now()
 		job.CompletedAt = &completedAt
 

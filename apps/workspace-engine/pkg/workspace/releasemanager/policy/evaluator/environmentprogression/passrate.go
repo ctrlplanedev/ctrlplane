@@ -21,7 +21,7 @@ func NewPassRateEvaluator(
 	successStatuses map[oapi.JobStatus]bool,
 ) evaluator.Evaluator {
 	if successStatuses == nil {
-		successStatuses = map[oapi.JobStatus]bool{oapi.JobStatusSuccessful: true}
+		successStatuses = map[oapi.JobStatus]bool{oapi.Successful: true}
 	}
 	return evaluator.WithMemoization(&PassRateEvaluator{
 		store:                    store,

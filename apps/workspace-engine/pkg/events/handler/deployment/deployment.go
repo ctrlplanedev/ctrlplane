@@ -235,7 +235,7 @@ func shouldRetriggerJobs(ws *workspace.Workspace, deployment *oapi.Deployment) b
 
 	// Check if there are any InvalidJobAgent jobs for this deployment
 	for _, job := range ws.Jobs().Items() {
-		if job.Status != oapi.JobStatusInvalidJobAgent {
+		if job.Status != oapi.InvalidJobAgent {
 			continue
 		}
 
@@ -263,7 +263,7 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 	// Find all InvalidJobAgent jobs for this deployment
 	for _, job := range ws.Jobs().Items() {
 		// Skip if job is not InvalidJobAgent status
-		if job.Status != oapi.JobStatusInvalidJobAgent {
+		if job.Status != oapi.InvalidJobAgent {
 			continue
 		}
 
@@ -299,13 +299,13 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 			"status", newJob.Status)
 
 		// Dispatch the job asynchronously if it's not InvalidJobAgent
-		if newJob.Status != oapi.JobStatusInvalidJobAgent {
+		if newJob.Status != oapi.InvalidJobAgent {
 			go func(jobToDispatch *oapi.Job) {
 				if err := jobDispatcher.DispatchJob(ctx, jobToDispatch); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
 					log.Error("error dispatching retriggered job to integration",
 						"jobId", jobToDispatch.Id,
 						"error", err.Error())
-					jobToDispatch.Status = oapi.JobStatusInvalidIntegration
+					jobToDispatch.Status = oapi.InvalidIntegration
 					jobToDispatch.UpdatedAt = time.Now()
 					ws.Jobs().Upsert(ctx, jobToDispatch)
 				}
