@@ -55,31 +55,49 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 		return nil, nil, fmt.Errorf("releaseTarget is nil")
 	}
 	jobs := r.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
-	var mostRecentJob *oapi.Job
 
+	// Collect all successful jobs with non-nil CompletedAt
+	successfulJobs := make([]*oapi.Job, 0)
 	for _, job := range jobs {
-		if job.Status != oapi.Successful {
-			continue
-		}
-
-		if job.CompletedAt == nil {
-			continue
-		}
-
-		if mostRecentJob == nil || mostRecentJob.CompletedAt == nil || job.CompletedAt.After(*mostRecentJob.CompletedAt) {
-			mostRecentJob = job
+		if job.Status == oapi.Successful && job.CompletedAt != nil {
+			successfulJobs = append(successfulJobs, job)
 		}
 	}
 
-	if mostRecentJob == nil {
+	if len(successfulJobs) == 0 {
 		return nil, nil, fmt.Errorf("no successful job found")
 	}
 
-	release, ok := r.store.Releases.Get(mostRecentJob.ReleaseId)
-	if !ok || release == nil {
-		return nil, nil, fmt.Errorf("release %s not found", mostRecentJob.ReleaseId)
+	// Sort jobs by CompletedAt in descending order (newest first)
+	sort.Slice(successfulJobs, func(i, j int) bool {
+		return successfulJobs[i].CompletedAt.After(*successfulJobs[j].CompletedAt)
+	})
+
+	// Iterate through jobs and find the first valid release
+	for _, job := range successfulJobs {
+		release, ok := r.store.Releases.Get(job.ReleaseId)
+		if !ok || release == nil {
+			continue
+		}
+
+		// Check verification status
+		verification := r.store.ReleaseVerifications.GetMostRecentVerificationForRelease(job.ReleaseId)
+		
+		// If no verification exists, release is valid
+		if verification == nil {
+			return release, job, nil
+		}
+
+		// If verification exists, check if it passed
+		status := verification.Status()
+		if status == oapi.ReleaseVerificationStatusPassed {
+			return release, job, nil
+		}
+
+		// Otherwise, skip this release and check the next one
 	}
-	return release, mostRecentJob, nil
+
+	return nil, nil, fmt.Errorf("no valid release found (all releases have failed/running/cancelled verifications)")
 }
 
 func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Job, error) {

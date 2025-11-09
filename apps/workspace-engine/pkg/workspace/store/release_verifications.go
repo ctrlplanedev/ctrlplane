@@ -39,3 +39,21 @@ func (r *ReleaseVerifications) GetByReleaseId(releaseId string) (*oapi.ReleaseVe
 	}
 	return nil, false
 }
+
+// GetMostRecentVerificationForRelease returns the most recent verification for a release
+// based on CreatedAt timestamp. Returns nil if no verifications exist for the release.
+func (r *ReleaseVerifications) GetMostRecentVerificationForRelease(releaseId string) *oapi.ReleaseVerification {
+	var mostRecent *oapi.ReleaseVerification
+	
+	for _, verification := range r.repo.ReleaseVerifications.Items() {
+		if verification.ReleaseId != releaseId {
+			continue
+		}
+		
+		if mostRecent == nil || verification.CreatedAt.After(mostRecent.CreatedAt) {
+			mostRecent = verification
+		}
+	}
+	
+	return mostRecent
+}

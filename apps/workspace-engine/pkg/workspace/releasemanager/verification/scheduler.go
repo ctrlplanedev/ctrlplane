@@ -204,8 +204,7 @@ func (s *Scheduler) runMeasurement(ctx context.Context, verificationID string, m
 		"verification_id", verificationID,
 		"metric_index", metricIndex,
 		"metric_name", metric.Name,
-		"release_id", verification.ReleaseId,
-		"measurement_count", len(metric.Measurements))
+		"release_id", verification.ReleaseId)
 
 	// Build provider context
 	providerCtx, err := s.buildProviderContext(verification.ReleaseId)
@@ -215,6 +214,20 @@ func (s *Scheduler) runMeasurement(ctx context.Context, verificationID string, m
 
 	// Take measurement using the Measure function
 	result, err := metrics.Measure(ctx, metric, providerCtx)
+
+	// Lock to protect concurrent modification of verification object
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Reload verification to get latest state
+	verification, ok = s.store.ReleaseVerifications.Get(verificationID)
+	if !ok {
+		return fmt.Errorf("verification not found after measurement")
+	}
+
+	if metricIndex >= len(verification.Metrics) {
+		return fmt.Errorf("metric index out of range after reload: %d", metricIndex)
+	}
 
 	// Update metric with result
 	if err != nil {
@@ -256,7 +269,7 @@ func (s *Scheduler) runMeasurement(ctx context.Context, verificationID string, m
 	log.Info("Metric measurement completed",
 		"verification_id", verificationID,
 		"metric_index", metricIndex,
-		"metric_name", metric.Name,
+		"metric_name", verification.Metrics[metricIndex].Name,
 		"release_id", verification.ReleaseId,
 		"verification_status", status,
 		"metric_measurement_count", len(verification.Metrics[metricIndex].Measurements))
