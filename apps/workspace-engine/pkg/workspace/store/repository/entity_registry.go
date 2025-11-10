@@ -34,6 +34,7 @@ func initGlobalRegistry() {
 		globalRegistry.Register("user_approval_record", func() persistence.Entity { return &oapi.UserApprovalRecord{} })
 		globalRegistry.Register("relationship_rule", func() persistence.Entity { return &oapi.RelationshipRule{} })
 		globalRegistry.Register("github_entity", func() persistence.Entity { return &oapi.GithubEntity{} })
+		globalRegistry.Register("release_verification", func() persistence.Entity { return &oapi.ReleaseVerification{} })
 	})
 }
 
