@@ -190,9 +190,10 @@ func TestTokenUniqueness(t *testing.T) {
 	traceID := "trace-123"
 	jobID := "job-456"
 
-	// Use different durations to ensure different expiration times
+	// Sleep at least 1 second to ensure different Unix timestamps
+	// (expiresAt.Unix() truncates to seconds)
 	token1 := GenerateTraceToken(traceID, jobID, 1*time.Hour)
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1100 * time.Millisecond) // Ensure we cross a second boundary
 	token2 := GenerateTraceToken(traceID, jobID, 1*time.Hour)
 
 	if token1 == token2 {

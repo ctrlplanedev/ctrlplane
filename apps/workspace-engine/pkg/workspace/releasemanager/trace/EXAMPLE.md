@@ -2,7 +2,7 @@
 
 This example shows a complete deployment trace flow matching the structure:
 
-```
+```txt
 Reconcile: api-service (v1.2.3 → production)
 │
 ├─ Planning [workspace-engine]
