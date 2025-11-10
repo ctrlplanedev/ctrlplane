@@ -1209,7 +1209,7 @@ func (t MetricProvider) AsHTTPMetricProvider() (HTTPMetricProvider, error) {
 
 // FromHTTPMetricProvider overwrites any union data inside the MetricProvider as the provided HTTPMetricProvider
 func (t *MetricProvider) FromHTTPMetricProvider(v HTTPMetricProvider) error {
-	v.Type = "HTTPMetricProvider"
+	v.Type = "http"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -1217,7 +1217,7 @@ func (t *MetricProvider) FromHTTPMetricProvider(v HTTPMetricProvider) error {
 
 // MergeHTTPMetricProvider performs a merge with any union data inside the MetricProvider, using the provided HTTPMetricProvider
 func (t *MetricProvider) MergeHTTPMetricProvider(v HTTPMetricProvider) error {
-	v.Type = "HTTPMetricProvider"
+	v.Type = "http"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1242,7 +1242,7 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
-	case "HTTPMetricProvider":
+	case "http":
 		return t.AsHTTPMetricProvider()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)

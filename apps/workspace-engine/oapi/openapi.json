@@ -705,6 +705,9 @@
          },
          "MetricProvider": {
             "discriminator": {
+               "mapping": {
+                  "http": "#/components/schemas/HTTPMetricProvider"
+               },
                "propertyName": "type"
             },
             "oneOf": [

@@ -105,6 +105,9 @@ local openapi = import '../lib/openapi.libsonnet';
     ],
     discriminator: {
       propertyName: 'type',
+      mapping: {
+        http: '#/components/schemas/HTTPMetricProvider',
+      },
     },
   },
 
