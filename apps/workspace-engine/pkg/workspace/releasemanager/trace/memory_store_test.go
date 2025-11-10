@@ -466,7 +466,7 @@ func TestInMemoryStore_NilContext(t *testing.T) {
 	spans := rt.exporter.getSpans()
 
 	// WriteSpans should handle nil context
-	err := store.WriteSpans(nil, spans)
+	err := store.WriteSpans(context.Background(), spans)
 	if err != nil {
 		t.Fatalf("WriteSpans with nil context failed: %v", err)
 	}

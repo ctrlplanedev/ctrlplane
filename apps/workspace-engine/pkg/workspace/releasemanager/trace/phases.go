@@ -72,6 +72,11 @@ type Evaluation struct {
 	span     trace.Span
 }
 
+func (e *Evaluation) SetAttributes(attributes ...attribute.KeyValue) *Evaluation {
+	e.span.SetAttributes(attributes...)
+	return e
+}
+
 // AddMetadata adds metadata to the evaluation
 func (e *Evaluation) AddMetadata(key string, value interface{}) *Evaluation {
 	attrs := metadataToAttributes(key, value)
@@ -84,6 +89,7 @@ func (e *Evaluation) SetResult(result EvaluationResult, message string) *Evaluat
 	status := evalResultToStatus(result)
 	e.span.SetAttributes(
 		attribute.String(attrStatus, string(status)),
+		attribute.String("ctrlplane.message", message),
 		attribute.String("ctrlplane.result", string(result)),
 	)
 

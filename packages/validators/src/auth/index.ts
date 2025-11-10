@@ -102,6 +102,9 @@ export enum Permission {
   DeploymentVersionUpdate = "deploymentVersion.update",
   DeploymentVersionList = "deploymentVersion.list",
 
+  DeploymentTraceGet = "deploymentTrace.get",
+  DeploymentTraceList = "deploymentTrace.list",
+
   RunbookTrigger = "runbook.trigger",
   RunbookDelete = "runbook.delete",
   RunbookCreate = "runbook.create",

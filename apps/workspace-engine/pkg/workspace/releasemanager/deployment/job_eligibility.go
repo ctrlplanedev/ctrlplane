@@ -2,7 +2,6 @@ package deployment
 
 import (
 	"context"
-	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
@@ -95,7 +94,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 				if !ruleResult.Allowed {
 					checkResult = trace.CheckResultFail
 				}
-				check := eligibility.StartCheck(fmt.Sprintf("Check: %T", eval))
+				check := eligibility.StartCheck(ruleResult.Message)
 				check.SetResult(checkResult, ruleResult.Message).End()
 			}
 

@@ -18,6 +18,10 @@ export default [
           "routes/ws/deployments/page.$deploymentId.versions.tsx",
         ),
         route(
+          ":deploymentId/traces",
+          "routes/ws/deployments/page.$deploymentId.traces.tsx",
+        ),
+        route(
           ":deploymentId/release-targets",
           "routes/ws/deployments/page.$deploymentId.release-targets.tsx",
         ),

@@ -216,21 +216,40 @@ func VerifySpanDepth(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	}
 }
 
-// VerifySequenceNumbers checks that sequence numbers are monotonically increasing
+// VerifySequenceNumbers checks that sequence numbers are unique and range from 0 to N-1
 func VerifySequenceNumbers(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 
 	var sequences []int
+	seenSequences := make(map[int]bool)
+	
 	for _, span := range spans {
 		seqAttr, hasSeq := GetSpanAttribute(span, "ctrlplane.sequence")
 		if hasSeq {
-			sequences = append(sequences, int(seqAttr.AsInt64()))
+			seq := int(seqAttr.AsInt64())
+			sequences = append(sequences, seq)
+			
+			// Check for duplicates
+			if seenSequences[seq] {
+				t.Errorf("duplicate sequence number found: %d in sequences %v", seq, sequences)
+			}
+			seenSequences[seq] = true
 		}
 	}
 
-	for i := 1; i < len(sequences); i++ {
-		if sequences[i] <= sequences[i-1] {
-			t.Errorf("sequence numbers not monotonically increasing: %v", sequences)
+	// Verify all sequences from 0 to N-1 are present
+	n := len(sequences)
+	for i := 0; i < n; i++ {
+		if !seenSequences[i] {
+			t.Errorf("sequence number %d missing (expected 0 to %d): %v", i, n-1, sequences)
+			break
+		}
+	}
+	
+	// Check no sequence is out of range
+	for seq := range seenSequences {
+		if seq < 0 || seq >= n {
+			t.Errorf("sequence number %d out of range (expected 0 to %d): %v", seq, n-1, sequences)
 			break
 		}
 	}

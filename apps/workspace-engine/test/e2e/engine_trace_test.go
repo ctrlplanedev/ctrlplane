@@ -85,12 +85,10 @@ func TestEngine_Trace_BasicDeploymentFlow(t *testing.T) {
 		firstRTKey = k
 		break
 	}
-	if firstRTKey != "" {
-		integration.AssertSpanAttributes(t, rootSpan, map[string]interface{}{
-			"ctrlplane.workspace_id":   engine.Workspace().ID,
-			"ctrlplane.release_target": releaseTargets[firstRTKey].Key(),
-		})
-	}
+	integration.AssertSpanAttributes(t, rootSpan, map[string]any{
+		"ctrlplane.workspace_id":       engine.Workspace().ID,
+		"ctrlplane.release_target_key": releaseTargets[firstRTKey].Key(),
+	})
 
 	// Verify Planning phase exists
 	planningSpan := integration.AssertPhaseExists(t, spans, trace.PhasePlanning)
