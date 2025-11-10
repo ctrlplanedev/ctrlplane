@@ -58,10 +58,10 @@ function LinksCell({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
             rel="noopener noreferrer"
             className={cn(
               buttonVariants({ variant: "secondary", size: "sm" }),
-              "flex h-6 max-w-24 items-center gap-1.5 truncate px-2 py-0",
+              "max-w-30 flex h-6 items-center gap-1.5 px-2 py-0",
             )}
           >
-            {label}
+            <span className="truncate">{label}</span>
             <ExternalLink className="size-3 shrink-0" />
           </a>
         ))}
