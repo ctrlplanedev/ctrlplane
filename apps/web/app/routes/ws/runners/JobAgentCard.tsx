@@ -1,6 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { SiArgo, SiGithub } from "@icons-pack/react-simple-icons";
-import { GithubIcon, PlayIcon } from "lucide-react";
+import { PlayIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 
