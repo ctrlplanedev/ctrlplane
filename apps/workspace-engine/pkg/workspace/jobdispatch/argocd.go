@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
+	"text/template"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store"
 
@@ -15,10 +15,9 @@ import (
 )
 
 type argoCDAgentConfig struct {
-	ServerUrl   string `json:"serverUrl"`
-	ApiKey      string `json:"apiKey"`
-	Application string `json:"application"`
-	Template    string `json:"template"`
+	ServerUrl string `json:"serverUrl"`
+	ApiKey    string `json:"apiKey"`
+	Template  string `json:"template"`
 }
 
 type ArgoCDDispatcher struct {
@@ -87,18 +86,22 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	}
 	defer closer.Close()
 
-	var spec v1alpha1.ApplicationSpec
-	if err := json.Unmarshal(buf.Bytes(), &spec); err != nil {
-		return fmt.Errorf("failed to parse template output as ArgoCD Application spec: %w", err)
+	var app v1alpha1.Application
+	if err := json.Unmarshal(buf.Bytes(), &app); err != nil {
+		return fmt.Errorf("failed to parse template output as ArgoCD Application: %w", err)
 	}
 
-	_, err = appClient.UpdateSpec(ctx, &applicationpkg.ApplicationUpdateSpecRequest{
-		Name: &cfg.Application,
-		Spec: &spec,
+	if app.ObjectMeta.Name == "" {
+		return fmt.Errorf("application name is required in metadata.name")
+	}
+
+	upsert := true
+	_, err = appClient.Create(ctx, &applicationpkg.ApplicationCreateRequest{
+		Application: &app,
+		Upsert:      &upsert,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update ArgoCD application spec: %w", err)
+		return fmt.Errorf("failed to create ArgoCD application: %w", err)
 	}
-
 	return nil
 }
