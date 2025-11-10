@@ -266,7 +266,7 @@ func (e *ExecutionPhase) TriggerJob(jobType string, config map[string]string) *J
 		attrs = append(attrs, attribute.String("ctrlplane.job_config."+k, v))
 	}
 
-	ctx, span := e.recorder.tracer.Start(e.ctx, "Job type: "+jobType,
+	ctx, span := e.recorder.tracer.Start(e.ctx, "Job: "+jobType,
 		trace.WithAttributes(attrs...),
 	)
 
