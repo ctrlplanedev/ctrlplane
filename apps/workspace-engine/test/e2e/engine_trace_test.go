@@ -513,4 +513,3 @@ func TestEngine_Trace_ConcurrentDeployments(t *testing.T) {
 
 	t.Logf("Captured %d unique traces with %d total spans", len(traceIDs), len(spans))
 }
-

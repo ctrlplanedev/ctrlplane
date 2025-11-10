@@ -221,14 +221,16 @@ export function getSpanContext(span: DeploymentTraceSpan): {
   resource?: string;
 } {
   const attrs = span.attributes ?? {};
-  
+
   return {
-    environment: typeof attrs["ctrlplane.environment"] === "string" 
-      ? attrs["ctrlplane.environment"] 
-      : undefined,
-    resource: typeof attrs["ctrlplane.resource"] === "string"
-      ? attrs["ctrlplane.resource"]
-      : undefined,
+    environment:
+      typeof attrs["ctrlplane.environment"] === "string"
+        ? attrs["ctrlplane.environment"]
+        : undefined,
+    resource:
+      typeof attrs["ctrlplane.resource"] === "string"
+        ? attrs["ctrlplane.resource"]
+        : undefined,
   };
 }
 
@@ -249,10 +251,11 @@ export function getSpanDisplayInfo(span: DeploymentTraceSpan): {
     attrs.name ?? attrs.label ?? attrs.resourceName ?? attrs.targetName;
   const type = attrs.type ?? attrs.kind ?? attrs.action;
   const identifier = attrs.id ?? attrs.identifier ?? attrs.key;
-  
+
   // Extract reason/message information
-  const reason = attrs.reason ?? attrs.message ?? attrs.error ?? attrs.description;
-  
+  const reason =
+    attrs.reason ?? attrs.message ?? attrs.error ?? attrs.description;
+
   // Extract environment and resource
   const context = getSpanContext(span);
 
@@ -271,12 +274,18 @@ export function getSpanDisplayInfo(span: DeploymentTraceSpan): {
   }
 
   // Add identifier if available and not already in primary text
-  if (identifier && typeof identifier === "string" && !primaryText.includes(identifier)) {
-    secondaryText = secondaryText ? `${secondaryText} (${identifier})` : identifier;
+  if (
+    identifier &&
+    typeof identifier === "string" &&
+    !primaryText.includes(identifier)
+  ) {
+    secondaryText = secondaryText
+      ? `${secondaryText} (${identifier})`
+      : identifier;
   }
 
-  return { 
-    primaryText, 
+  return {
+    primaryText,
     secondaryText,
     reason: reason && typeof reason === "string" ? reason : undefined,
     environment: context.environment,

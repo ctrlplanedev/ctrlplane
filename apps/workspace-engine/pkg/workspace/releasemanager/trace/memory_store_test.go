@@ -78,7 +78,7 @@ func TestInMemoryStore_GetSpans(t *testing.T) {
 	rt := NewReconcileTarget("workspace-1", "api-service-production")
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
-	
+
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
 		t.Fatalf("WriteSpans failed: %v", err)
@@ -107,7 +107,7 @@ func TestInMemoryStore_GetSpansCopy(t *testing.T) {
 	rt := NewReconcileTarget("workspace-1", "api-service-production")
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
-	
+
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
 		t.Fatalf("WriteSpans failed: %v", err)
@@ -138,7 +138,7 @@ func TestInMemoryStore_Clear(t *testing.T) {
 	planning.End()
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
-	
+
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
 		t.Fatalf("WriteSpans failed: %v", err)
@@ -187,7 +187,7 @@ func TestInMemoryStore_ConcurrentWrites(t *testing.T) {
 
 	// All spans should be stored
 	allSpans := store.GetSpans()
-	
+
 	// We expect at least numGoroutines * 2 spans (root + planning per goroutine)
 	expectedMin := numGoroutines * 2
 	if len(allSpans) < expectedMin {
@@ -205,7 +205,7 @@ func TestInMemoryStore_ConcurrentReads(t *testing.T) {
 	planning.End()
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
-	
+
 	if err := store.WriteSpans(ctx, spans); err != nil {
 		t.Fatalf("WriteSpans failed: %v", err)
 	}
@@ -218,7 +218,7 @@ func TestInMemoryStore_ConcurrentReads(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			retrieved := store.GetSpans()
 			if len(retrieved) == 0 {
 				t.Errorf("reader %d: expected non-empty spans", id)
@@ -258,7 +258,7 @@ func TestInMemoryStore_ConcurrentReadWrite(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			
+
 			// Just read, don't validate count since writes are happening
 			_ = store.GetSpans()
 		}(i)
@@ -281,7 +281,7 @@ func TestInMemoryStore_MultipleWrites(t *testing.T) {
 	rt1 := NewReconcileTarget("workspace-1", "test-1")
 	rt1.Complete(StatusCompleted)
 	spans1 := rt1.exporter.getSpans()
-	
+
 	err := store.WriteSpans(ctx, spans1)
 	if err != nil {
 		t.Fatalf("first WriteSpans failed: %v", err)
@@ -293,7 +293,7 @@ func TestInMemoryStore_MultipleWrites(t *testing.T) {
 	rt2 := NewReconcileTarget("workspace-1", "test-2")
 	rt2.Complete(StatusCompleted)
 	spans2 := rt2.exporter.getSpans()
-	
+
 	err = store.WriteSpans(ctx, spans2)
 	if err != nil {
 		t.Fatalf("second WriteSpans failed: %v", err)
@@ -320,19 +320,19 @@ func TestInMemoryStore_LargeBatch(t *testing.T) {
 	// Create a trace with many spans
 	rt := NewReconcileTarget("workspace-1", "test")
 	planning := rt.StartPlanning()
-	
+
 	// Create many evaluations
 	for i := 0; i < 100; i++ {
 		eval := planning.StartEvaluation("Policy")
 		eval.SetResult(ResultAllowed, "Approved")
 		eval.End()
 	}
-	
+
 	planning.End()
 	rt.Complete(StatusCompleted)
 
 	spans := rt.exporter.getSpans()
-	
+
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
 		t.Fatalf("WriteSpans failed: %v", err)
@@ -366,7 +366,7 @@ func TestInMemoryStore_PreservesSpanData(t *testing.T) {
 	rt.Complete(StatusCompleted)
 
 	spans := rt.exporter.getSpans()
-	
+
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
 		t.Fatalf("WriteSpans failed: %v", err)
@@ -374,7 +374,7 @@ func TestInMemoryStore_PreservesSpanData(t *testing.T) {
 
 	// Retrieve and verify span data
 	storedSpans := store.GetSpans()
-	
+
 	// Find the evaluation span
 	var evalSpan sdktrace.ReadOnlySpan
 	for _, span := range storedSpans {
@@ -423,7 +423,7 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 		rt := NewReconcileTarget("workspace-1", "test")
 		rt.Complete(StatusCompleted)
 		spans := rt.exporter.getSpans()
-		
+
 		if err := store.WriteSpans(ctx, spans); err != nil {
 			t.Fatalf("WriteSpans %d failed: %v", i, err)
 		}
@@ -446,7 +446,7 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 	rt := NewReconcileTarget("workspace-1", "test")
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
-	
+
 	if err := store.WriteSpans(ctx, spans); err != nil {
 		t.Fatalf("WriteSpans after clear failed: %v", err)
 	}
@@ -476,4 +476,3 @@ func TestInMemoryStore_NilContext(t *testing.T) {
 		t.Error("spans should be stored even with nil context")
 	}
 }
-

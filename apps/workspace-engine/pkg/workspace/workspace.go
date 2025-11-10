@@ -13,9 +13,9 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 	s := store.New(id, cs)
 
 	ws := &Workspace{
-		ID:        id,
-		store:     s,
-		changeset: cs,
+		ID:         id,
+		store:      s,
+		changeset:  cs,
 		traceStore: trace.NewInMemoryStore(),
 	}
 

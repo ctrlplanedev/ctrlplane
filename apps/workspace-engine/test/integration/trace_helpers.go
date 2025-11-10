@@ -148,7 +148,7 @@ func VerifyTraceTimeline(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 // ExtractTraceMetadata extracts metadata from span events
 func ExtractTraceMetadata(span sdktrace.ReadOnlySpan) map[string]interface{} {
 	metadata := make(map[string]interface{})
-	
+
 	for _, event := range span.Events() {
 		for _, attr := range event.Attributes {
 			key := string(attr.Key)
@@ -164,7 +164,7 @@ func ExtractTraceMetadata(span sdktrace.ReadOnlySpan) map[string]interface{} {
 			}
 		}
 	}
-	
+
 	return metadata
 }
 
@@ -222,13 +222,13 @@ func VerifySequenceNumbers(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 
 	var sequences []int
 	seenSequences := make(map[int]bool)
-	
+
 	for _, span := range spans {
 		seqAttr, hasSeq := GetSpanAttribute(span, "ctrlplane.sequence")
 		if hasSeq {
 			seq := int(seqAttr.AsInt64())
 			sequences = append(sequences, seq)
-			
+
 			// Check for duplicates
 			if seenSequences[seq] {
 				t.Errorf("duplicate sequence number found: %d in sequences %v", seq, sequences)
@@ -245,7 +245,7 @@ func VerifySequenceNumbers(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 			break
 		}
 	}
-	
+
 	// Check no sequence is out of range
 	for seq := range seenSequences {
 		if seq < 0 || seq >= n {
@@ -259,14 +259,14 @@ func VerifySequenceNumbers(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 func DumpTrace(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 	t.Helper()
 	t.Logf("=== Trace Dump (%d spans) ===", len(spans))
-	
+
 	for i, span := range spans {
 		depth, _ := GetSpanAttribute(span, "ctrlplane.depth")
 		seq, _ := GetSpanAttribute(span, "ctrlplane.sequence")
 		phase, _ := GetSpanAttribute(span, "ctrlplane.phase")
 		nodeType, _ := GetSpanAttribute(span, "ctrlplane.node_type")
 		status, _ := GetSpanAttribute(span, "ctrlplane.status")
-		
+
 		t.Logf("[%d] %s (phase=%s, type=%s, status=%s, depth=%d, seq=%d)",
 			i,
 			span.Name(),
@@ -294,7 +294,7 @@ func CountSpansByType(spans []sdktrace.ReadOnlySpan, nodeType trace.NodeType) in
 // AssertSpanExists verifies a span with specific name exists
 func AssertSpanExists(t *testing.T, spans []sdktrace.ReadOnlySpan, name string) sdktrace.ReadOnlySpan {
 	t.Helper()
-	
+
 	span, found := FindSpanByName(spans, name)
 	if !found {
 		t.Fatalf("span %q not found in trace", name)
@@ -305,7 +305,7 @@ func AssertSpanExists(t *testing.T, spans []sdktrace.ReadOnlySpan, name string) 
 // AssertSpanCount verifies the total number of spans
 func AssertSpanCount(t *testing.T, spans []sdktrace.ReadOnlySpan, expected int) {
 	t.Helper()
-	
+
 	if len(spans) != expected {
 		t.Errorf("expected %d spans, got %d", expected, len(spans))
 		DumpTrace(t, spans)
@@ -315,7 +315,7 @@ func AssertSpanCount(t *testing.T, spans []sdktrace.ReadOnlySpan, expected int) 
 // AssertPhaseExists verifies a phase span exists
 func AssertPhaseExists(t *testing.T, spans []sdktrace.ReadOnlySpan, phase trace.Phase) sdktrace.ReadOnlySpan {
 	t.Helper()
-	
+
 	phaseSpans := FindSpansByPhase(spans, phase)
 	if len(phaseSpans) == 0 {
 		t.Fatalf("phase %s not found in trace", phase)
@@ -324,11 +324,10 @@ func AssertPhaseExists(t *testing.T, spans []sdktrace.ReadOnlySpan, phase trace.
 	return phaseSpans[0]
 }
 
-
 // VerifyNoTrace ensures no trace was created (for blocked/skipped deployments)
 func VerifyNoTrace(t *testing.T, spans []sdktrace.ReadOnlySpan, phaseName string) {
 	t.Helper()
-	
+
 	for _, span := range spans {
 		if span.Name() == phaseName {
 			t.Errorf("unexpected span %s found in trace", phaseName)
@@ -341,7 +340,7 @@ func GetSpanByPhaseAndType(spans []sdktrace.ReadOnlySpan, phase trace.Phase, nod
 	for _, span := range spans {
 		phaseAttr, hasPhase := GetSpanAttribute(span, "ctrlplane.phase")
 		typeAttr, hasType := GetSpanAttribute(span, "ctrlplane.node_type")
-		
+
 		if hasPhase && hasType &&
 			phaseAttr.AsString() == string(phase) &&
 			typeAttr.AsString() == string(nodeType) {
@@ -350,4 +349,3 @@ func GetSpanByPhaseAndType(spans []sdktrace.ReadOnlySpan, phase trace.Phase, nod
 	}
 	return nil, fmt.Errorf("span with phase=%s and type=%s not found", phase, nodeType)
 }
-

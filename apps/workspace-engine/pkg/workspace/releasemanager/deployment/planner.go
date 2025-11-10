@@ -341,7 +341,7 @@ func (p *Planner) findDeployableVersion(
 		}
 
 		if eligible {
-			if  planning != nil {
+			if planning != nil {
 				for _, result := range results {
 					evaluation := planning.StartEvaluation(result.Message)
 					display := version.Name
