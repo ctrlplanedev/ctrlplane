@@ -5,7 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/template"
+	"time"
+	"workspace-engine/pkg/config"
+
+	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
@@ -14,6 +20,8 @@ import (
 	applicationpkg "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/charmbracelet/log"
+
+	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type argoCDAgentConfig struct {
@@ -106,8 +114,9 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("failed to create ArgoCD application: %w", err)
 	}
 
-	// Start a verification to check ArgoCD Application health in Argo terms (Healthy + Synced).
-	// Best-effort: log error but do not fail the dispatch.
+	if err := d.sendJobUpdateEvent(job, cfg, app); err != nil {
+		return fmt.Errorf("failed to send job update event: %w", err)
+	}
 	if err := d.startArgoApplicationVerification(ctx, jobWithRelease, cfg, app.ObjectMeta.Name); err != nil {
 		log.Error("Failed to start ArgoCD application verification",
 			"error", err,
@@ -115,6 +124,63 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 			"server_url", cfg.ServerUrl)
 	}
 	return nil
+}
+
+func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
+		"bootstrap.servers":        config.Global.KafkaBrokers,
+		"enable.idempotence":       true,
+		"compression.type":         "snappy",
+		"message.send.max.retries": 10,
+		"retry.backoff.ms":         100,
+	})
+}
+
+func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConfig, app v1alpha1.Application) error {
+	workspaceId := d.store.ID()
+
+	appUrl := fmt.Sprintf("%s/applications/%s/%s", cfg.ServerUrl, app.ObjectMeta.Namespace, app.ObjectMeta.Name)
+	if !strings.HasPrefix(appUrl, "https://") {
+		appUrl = "https://" + appUrl
+	}
+
+	links := make(map[string]string)
+	links["ArgoCD Application"] = appUrl
+	linksJSON, err := json.Marshal(links)
+	if err != nil {
+		return fmt.Errorf("failed to marshal links: %w", err)
+	}
+	job.Metadata[string("ctrlplane/links")] = string(linksJSON)
+
+	job.Status = oapi.JobStatusSuccessful
+	job.UpdatedAt = time.Now().UTC()
+	job.CompletedAt = &job.UpdatedAt
+
+	eventPayload := oapi.JobUpdateEvent{
+		Id:             &job.Id,
+		Job:            *job,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.Metadata, oapi.CompletedAt, oapi.UpdatedAt},
+	}
+
+	producer, err := d.getKafkaProducer()
+	if err != nil {
+		return fmt.Errorf("failed to create Kafka producer: %w", err)
+	}
+	defer producer.Close()
+
+	event := map[string]any{
+		"eventType":   "job.updated",
+		"workspaceId": workspaceId,
+		"data":        eventPayload,
+		"timestamp":   time.Now().Unix(),
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+
+	return producer.Publish([]byte(workspaceId), eventBytes)
 }
 
 // startArgoApplicationVerification creates a verification that checks the created ArgoCD Application's health and sync.
@@ -125,8 +191,13 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	cfg argoCDAgentConfig,
 	appName string,
 ) error {
+	baseURL := cfg.ServerUrl
+	if !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+
 	// Query the specific ArgoCD Application
-	appURL := fmt.Sprintf("%s/api/v1/applications/%s", cfg.ServerUrl, appName)
+	appURL := fmt.Sprintf("%s/api/v1/applications/%s", baseURL, appName)
 
 	method := oapi.GET
 	timeout := "5s"
