@@ -46,14 +46,14 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 			attribute.String("version.tag", releaseToDeploy.Version.Tag),
 		))
 	defer span.End()
-	
+
 	// Start execution phase trace if recorder is available
 	var execution *trace.ExecutionPhase
 	if recorder != nil {
 		execution = recorder.StartExecution()
 		defer execution.End()
 	}
-	
+
 	// Start action for job creation
 	var createJobAction *trace.Action
 	if execution != nil {
@@ -96,21 +96,21 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		attribute.String("job.id", newJob.Id),
 		attribute.String("job.status", string(newJob.Status)),
 	)
-	
+
 	// Generate trace token for external executors
 	if recorder != nil && createJobAction != nil {
 		traceToken := trace.GenerateDefaultTraceToken(recorder.RootTraceID(), newJob.Id)
 		createJobAction.AddMetadata("trace_token", traceToken)
 		createJobAction.AddMetadata("job_id", newJob.Id)
 		createJobAction.AddStep("Generate trace token", trace.StepResultPass, "Token generated for external executor")
-		
+
 		// Store token in job's external ID or config for now
 		// This will be used by the job agent to report back
 		if newJob.ExternalId == nil {
 			newJob.ExternalId = &traceToken
 		}
 	}
-	
+
 	if createJobAction != nil {
 		createJobAction.AddStep("Persist job", trace.StepResultPass, "Job persisted to store")
 	}
@@ -120,7 +120,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	if newJob.Status != oapi.JobStatusInvalidJobAgent {
 		span.AddEvent("Dispatching job to integration (async)",
 			oteltrace.WithAttributes(attribute.String("job.id", newJob.Id)))
-		
+
 		if createJobAction != nil {
 			createJobAction.AddStep("Dispatch job", trace.StepResultPass, "Job dispatched to integration")
 		}
@@ -142,7 +142,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 			createJobAction.AddStep("Skip dispatch", trace.StepResultPass, "Job has InvalidJobAgent status")
 		}
 	}
-	
+
 	// End the action
 	if createJobAction != nil {
 		createJobAction.End()

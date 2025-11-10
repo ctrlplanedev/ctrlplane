@@ -264,7 +264,7 @@ func (j *Job) AddMetadata(key string, value interface{}) *Job {
 func (j *Job) Token() string {
 	traceID := j.recorder.rootTraceID
 	jobID := j.jobType // Use job type as identifier
-	
+
 	// Generate token with 24h expiration
 	return GenerateDefaultTraceToken(traceID, jobID)
 }
@@ -333,4 +333,3 @@ func (a *Action) End() {
 	a.span.SetStatus(codes.Ok, string(StatusCompleted))
 	a.span.End()
 }
-

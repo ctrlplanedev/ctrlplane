@@ -17,7 +17,7 @@ type ReconcileTarget struct {
 	releaseTargetKey string
 	releaseID        *string
 	jobID            *string
-	
+
 	store PersistenceStore
 
 	// OTel components
@@ -240,7 +240,7 @@ func (r *ReconcileTarget) StartAction(name string) *Action {
 // Complete marks the entire reconciliation as complete
 func (r *ReconcileTarget) Complete(status Status) {
 	r.rootSpan.SetAttributes(attribute.String(attrStatus, string(status)))
-	
+
 	var code codes.Code
 	if status == StatusCompleted {
 		code = codes.Ok
@@ -249,7 +249,7 @@ func (r *ReconcileTarget) Complete(status Status) {
 	} else {
 		code = codes.Unset
 	}
-	
+
 	r.rootSpan.SetStatus(code, string(status))
 	r.rootSpan.End()
 	// SimpleSpanProcessor exports spans synchronously, no flush needed
@@ -258,7 +258,7 @@ func (r *ReconcileTarget) Complete(status Status) {
 // Persist writes all spans to the persistence store
 func (r *ReconcileTarget) Persist(store ...PersistenceStore) error {
 	var targetStore PersistenceStore
-	
+
 	if len(store) > 0 {
 		targetStore = store[0]
 	} else if r.store != nil {
@@ -370,4 +370,3 @@ func stepResultToStatus(result StepResult) Status {
 	}
 	return StatusFailed
 }
-

@@ -43,4 +43,3 @@ func (s *InMemoryStore) Clear() {
 	defer s.mu.Unlock()
 	s.spans = make([]sdktrace.ReadOnlySpan, 0)
 }
-

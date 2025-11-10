@@ -152,7 +152,7 @@ func TestValidateTraceToken_InvalidPayload(t *testing.T) {
 	// Create a token with invalid payload format
 	invalidPayload := "invalid:payload"
 	signature := "fakesignature"
-	
+
 	// Manually construct invalid token
 	token := invalidPayload + "." + signature
 
@@ -226,7 +226,7 @@ func TestTokenWithDifferentDurations(t *testing.T) {
 
 			expectedExpiry := time.Now().Add(tt.duration)
 			diff := validated.ExpiresAt.Sub(expectedExpiry)
-			
+
 			// Allow 1 second tolerance
 			if diff < -1*time.Second || diff > 1*time.Second {
 				t.Errorf("expected expiry around %v, got %v", expectedExpiry, validated.ExpiresAt)
@@ -270,7 +270,7 @@ func TestTokenRoundTrip(t *testing.T) {
 func TestTokenExpirationBoundary(t *testing.T) {
 	traceID := "trace-123"
 	jobID := "job-456"
-	
+
 	// Create token that expires in 1 second
 	token := GenerateTraceToken(traceID, jobID, 1*time.Second)
 
@@ -314,4 +314,3 @@ func TestTraceTokenStruct(t *testing.T) {
 		t.Error("Signature should not be empty")
 	}
 }
-

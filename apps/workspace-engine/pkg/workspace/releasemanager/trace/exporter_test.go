@@ -269,4 +269,3 @@ func TestInMemoryExporter_GetSpans_ThreadSafe(t *testing.T) {
 
 	// Should not panic
 }
-

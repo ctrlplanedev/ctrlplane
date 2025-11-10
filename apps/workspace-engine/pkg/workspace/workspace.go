@@ -10,7 +10,7 @@ import (
 func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
 	cs := statechange.NewChangeSet[any]()
 	s := store.New(id, cs)
-	
+
 	ws := &Workspace{
 		ID:        id,
 		store:     s,

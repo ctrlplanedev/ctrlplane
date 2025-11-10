@@ -150,4 +150,3 @@ func (v *VerificationAction) getTriggerFromRule(rule *VerificationRule) action.A
 		return action.TriggerJobSuccess
 	}
 }
-

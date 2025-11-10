@@ -109,7 +109,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId string, status oapi.ReleaseVerificationStatus, createdAt time.Time) *oapi.ReleaseVerification {
 	// Create metrics that result in the desired status
 	var metrics []oapi.VerificationMetricStatus
-	
+
 	switch status {
 	case oapi.ReleaseVerificationStatusPassed:
 		// All measurements passed, all complete
@@ -622,4 +622,3 @@ func TestGetCurrentRelease_NoValidRelease(t *testing.T) {
 	assert.Nil(t, currentJob)
 	assert.Contains(t, err.Error(), "no valid release found")
 }
-

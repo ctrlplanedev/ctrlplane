@@ -32,4 +32,3 @@ type PolicyAction interface {
 	// Should fail fast (return nil) if action doesn't apply to the trigger/policies
 	Execute(ctx context.Context, trigger ActionTrigger, context ActionContext) error
 }
-

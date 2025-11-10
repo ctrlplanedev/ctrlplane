@@ -82,7 +82,7 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 
 		// Check verification status
 		verification := r.store.ReleaseVerifications.GetMostRecentVerificationForRelease(job.ReleaseId)
-		
+
 		// If no verification exists, release is valid
 		if verification == nil {
 			return release, job, nil

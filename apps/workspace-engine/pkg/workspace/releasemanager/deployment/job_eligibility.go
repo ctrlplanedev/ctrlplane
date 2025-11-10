@@ -66,7 +66,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 			attribute.String("release.target.deployment.id", release.ReleaseTarget.DeploymentId),
 		))
 	defer span.End()
-	
+
 	// Start eligibility phase trace if recorder is available
 	var eligibility *trace.EligibilityPhase
 	if recorder != nil {
@@ -88,7 +88,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 		for i, eval := range c.releaseEvaluators {
 			ruleResult := eval.Evaluate(ctx, release)
 			policyResult.AddRuleResult(*ruleResult)
-			
+
 			// Record check in trace
 			if eligibility != nil {
 				checkResult := trace.CheckResultPass
@@ -112,7 +112,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	}
 
 	canCreate := decision.CanDeploy()
-	
+
 	// Record eligibility decision
 	if eligibility != nil {
 		if canCreate {

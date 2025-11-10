@@ -57,21 +57,21 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 
 		// Extract ctrlplane-specific attributes from span
 		var (
-			phase             *string
-			nodeType          *string
-			status            *string
-			workspaceID       string // Required field
-			releaseTargetKey  *string
-			releaseID         *string
-			jobID             *string
-			parentTraceID     *string
-			depth             *int
-			sequence          *int
+			phase            *string
+			nodeType         *string
+			status           *string
+			workspaceID      string // Required field
+			releaseTargetKey *string
+			releaseID        *string
+			jobID            *string
+			parentTraceID    *string
+			depth            *int
+			sequence         *int
 		)
 
 		// Collect all attributes for JSONB storage
 		allAttributes := make(map[string]interface{})
-		
+
 		for _, attr := range span.Attributes() {
 			key := string(attr.Key)
 			value := attributeValueToInterface(attr.Value)
@@ -221,4 +221,3 @@ func nullableTime(t time.Time) interface{} {
 	}
 	return t
 }
-

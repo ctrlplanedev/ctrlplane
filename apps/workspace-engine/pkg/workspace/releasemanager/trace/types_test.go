@@ -313,4 +313,3 @@ func TestDecisionConstants(t *testing.T) {
 		}
 	}
 }
-

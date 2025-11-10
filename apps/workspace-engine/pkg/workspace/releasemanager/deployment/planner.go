@@ -129,7 +129,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		}
 		return nil, nil
 	}
-	
+
 	// Record successful planning decision
 	if planning != nil {
 		planning.MakeDecision("Version approved for deployment", trace.DecisionApproved)
@@ -290,7 +290,7 @@ func (p *Planner) findDeployableVersion(
 	span.AddEvent("Evaluating version-independent policies")
 	for i, eval := range versionIndependentEvals {
 		result := eval.Evaluate(ctx, scope)
-		
+
 		// Record evaluation in trace
 		if planning != nil {
 			evalResult := trace.ResultAllowed
@@ -300,7 +300,7 @@ func (p *Planner) findDeployableVersion(
 			evaluation := planning.StartEvaluation(fmt.Sprintf("Policy: %T", eval))
 			evaluation.SetResult(evalResult, result.Message).End()
 		}
-		
+
 		if !result.Allowed {
 			if result.NextEvaluationTime != nil {
 				p.scheduler.Schedule(releaseTarget, *result.NextEvaluationTime)
@@ -330,7 +330,7 @@ func (p *Planner) findDeployableVersion(
 
 		for evalIdx, eval := range versionDependentEvals {
 			result := eval.Evaluate(ctx, scope)
-			
+
 			// Record evaluation in trace
 			if planning != nil {
 				evalResult := trace.ResultAllowed
@@ -342,7 +342,7 @@ func (p *Planner) findDeployableVersion(
 				evaluation.AddMetadata("version_tag", version.Tag)
 				evaluation.SetResult(evalResult, result.Message).End()
 			}
-			
+
 			if !result.Allowed {
 				eligible = false
 				versionsBlocked++

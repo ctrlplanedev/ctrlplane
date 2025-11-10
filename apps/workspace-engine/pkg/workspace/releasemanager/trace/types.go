@@ -81,16 +81,16 @@ type PersistenceStore interface {
 
 // Internal attribute keys
 const (
-	attrPhase          = "ctrlplane.phase"
-	attrNodeType       = "ctrlplane.node_type"
-	attrStatus         = "ctrlplane.status"
-	attrJobID          = "ctrlplane.job_id"
-	attrReleaseID      = "ctrlplane.release_id"
-	attrReleaseTarget  = "ctrlplane.release_target_key"
-	attrParentTraceID  = "ctrlplane.parent_trace_id"
-	attrDepth          = "ctrlplane.depth"
-	attrSequence       = "ctrlplane.sequence"
-	attrWorkspaceID    = "ctrlplane.workspace_id"
+	attrPhase         = "ctrlplane.phase"
+	attrNodeType      = "ctrlplane.node_type"
+	attrStatus        = "ctrlplane.status"
+	attrJobID         = "ctrlplane.job_id"
+	attrReleaseID     = "ctrlplane.release_id"
+	attrReleaseTarget = "ctrlplane.release_target_key"
+	attrParentTraceID = "ctrlplane.parent_trace_id"
+	attrDepth         = "ctrlplane.depth"
+	attrSequence      = "ctrlplane.sequence"
+	attrWorkspaceID   = "ctrlplane.workspace_id"
 )
 
 // buildAttributes creates OTel attributes for spans
@@ -152,4 +152,3 @@ func metadataToAttributes(key string, value interface{}) []attribute.KeyValue {
 		return []attribute.KeyValue{attribute.String(key, fmt.Sprintf("%v", v))}
 	}
 }
-

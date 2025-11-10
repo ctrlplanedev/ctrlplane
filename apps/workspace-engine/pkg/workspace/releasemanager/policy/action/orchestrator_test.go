@@ -17,12 +17,12 @@ import (
 
 // Mock action for testing
 type mockAction struct {
-	name           string
-	shouldExecute  bool // Internal flag to simulate fail-fast behavior
-	executeErr     error
-	executeCalled  bool
-	lastTrigger    action.ActionTrigger
-	lastContext    action.ActionContext
+	name          string
+	shouldExecute bool // Internal flag to simulate fail-fast behavior
+	executeErr    error
+	executeCalled bool
+	lastTrigger   action.ActionTrigger
+	lastContext   action.ActionContext
 }
 
 func (m *mockAction) Name() string {
@@ -34,7 +34,7 @@ func (m *mockAction) Execute(ctx context.Context, trigger action.ActionTrigger, 
 	if !m.shouldExecute {
 		return nil
 	}
-	
+
 	m.executeCalled = true
 	m.lastTrigger = trigger
 	m.lastContext = actx
@@ -129,9 +129,9 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		Rules:       []oapi.PolicyRule{},
 		Selectors: []oapi.PolicyTargetSelector{
 			{
-				DeploymentSelector: deploymentSelector,
+				DeploymentSelector:  deploymentSelector,
 				EnvironmentSelector: selector,
-				ResourceSelector:   selector,
+				ResourceSelector:    selector,
 			},
 		},
 	}
@@ -468,4 +468,3 @@ func TestOrchestrator_OnJobStatusChange_ActionError(t *testing.T) {
 	// Action should have been called
 	assert.True(t, mockAct.executeCalled)
 }
-

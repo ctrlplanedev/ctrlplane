@@ -158,7 +158,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 					"error", err.Error())
 			}
 		}()
-		
+
 		relationships := resourceRelationships[state.entity.ResourceId]
 		if err := m.reconcileTargetWithRelationships(ctx, state.entity, false, relationships, recorder); err != nil {
 			log.Warn("error reconciling release target",
@@ -383,7 +383,7 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	// Create trace recorder for deployment analysis
 	workspaceID := m.store.ID()
 	recorder := trace.NewReconcileTarget(workspaceID, releaseTarget.Key())
-	
+
 	// Ensure trace is persisted even if reconciliation fails
 	defer func() {
 		// Complete the trace recorder with appropriate status
@@ -393,7 +393,7 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 			// We'll default to completed, errors will be captured in the trace phases
 		}
 		recorder.Complete(status)
-		
+
 		// Persist traces - log error but don't fail reconciliation
 		if err := recorder.Persist(m.traceStore); err != nil {
 			log.Error("Failed to persist deployment trace",
