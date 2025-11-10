@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestHandleResourceProviderSetResources_WithCachedBatch(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-1")
+	ws := workspace.New(ctx, "test-workspace-1", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	// Create test resources
 	resources := []*oapi.Resource{
@@ -84,7 +85,7 @@ func TestHandleResourceProviderSetResources_BatchNotFound(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-2")
+	ws := workspace.New(ctx, "test-workspace-2", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	providerId := "test-provider-2"
 
@@ -114,7 +115,7 @@ func TestHandleResourceProviderSetResources_ProviderIdMismatch(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-3")
+	ws := workspace.New(ctx, "test-workspace-3", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	// Create test resources
 	resources := []*oapi.Resource{
@@ -164,7 +165,7 @@ func TestHandleResourceProviderSetResources_LargeBatch(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-4")
+	ws := workspace.New(ctx, "test-workspace-4", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	// Create large batch (500 resources)
 	resources := make([]*oapi.Resource, 500)
@@ -217,7 +218,7 @@ func TestHandleResourceProviderSetResources_WorkspaceIdOverride(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-5")
+	ws := workspace.New(ctx, "test-workspace-5", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	// Create test resources with wrong workspace ID
 	resources := []*oapi.Resource{
@@ -270,7 +271,7 @@ func TestHandleResourceProviderSetResources_ClaimCheckPattern(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-6")
+	ws := workspace.New(ctx, "test-workspace-6", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	// Create test resources
 	resources := []*oapi.Resource{
@@ -323,7 +324,7 @@ func TestHandleResourceProviderSetResources_InvalidJSON(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-7")
+	ws := workspace.New(ctx, "test-workspace-7", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	// Create event with invalid JSON
 	rawEvent := handler.RawEvent{
@@ -342,7 +343,7 @@ func TestHandleResourceProviderSetResources_ChangesetTracking(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-8")
+	ws := workspace.New(ctx, "test-workspace-8", workspace.WithTraceStore(trace.NewInMemoryStore()))
 
 	// Create test resources
 	resources := []*oapi.Resource{
