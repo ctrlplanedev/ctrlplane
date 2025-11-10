@@ -18,7 +18,7 @@ func TestHandleResourceProviderSetResources_WithCachedBatch(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	ws := workspace.New(ctx, "test-workspace-1", workspace.WithTraceStore(trace.NewInMemoryStore()))
+	ws := workspace.New(ctx, "test-workspace-1")
 
 	// Create test resources
 	resources := []*oapi.Resource{

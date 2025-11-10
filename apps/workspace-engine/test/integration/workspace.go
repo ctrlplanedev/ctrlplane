@@ -15,12 +15,14 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
+var globalTraceStore = trace.NewInMemoryStore()
+
 func init() {
 	manager.Configure(
 		manager.WithPersistentStore(memory.NewStore()),
 		manager.WithWorkspaceCreateOptions(
 			workspace.WithTraceStore(
-				trace.NewInMemoryStore(),
+				globalTraceStore,
 			),
 		),
 	)
@@ -30,6 +32,7 @@ type TestWorkspace struct {
 	t             *testing.T
 	workspace     *workspace.Workspace
 	eventListener *handler.EventListener
+	traceStore    *trace.InMemoryStore
 }
 
 func NewTestWorkspace(
@@ -51,6 +54,7 @@ func NewTestWorkspace(
 	tw.t = t
 	tw.workspace = ws
 	tw.eventListener = events.NewEventHandler()
+	tw.traceStore = globalTraceStore
 
 	for _, option := range options {
 		if err := option(tw); err != nil {
@@ -63,6 +67,10 @@ func NewTestWorkspace(
 
 func (tw *TestWorkspace) Workspace() *workspace.Workspace {
 	return tw.workspace
+}
+
+func (tw *TestWorkspace) TraceStore() *trace.InMemoryStore {
+	return tw.traceStore
 }
 
 // PushEvent sends an event through the event listener
