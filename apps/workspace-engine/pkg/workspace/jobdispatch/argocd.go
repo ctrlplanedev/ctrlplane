@@ -114,16 +114,14 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("failed to create ArgoCD application: %w", err)
 	}
 
-	if err := d.sendJobUpdateEvent(job, cfg, app); err != nil {
-		return fmt.Errorf("failed to send job update event: %w", err)
-	}
 	if err := d.startArgoApplicationVerification(ctx, jobWithRelease, cfg, app.ObjectMeta.Name); err != nil {
 		log.Error("Failed to start ArgoCD application verification",
 			"error", err,
 			"job_id", job.Id,
 			"server_url", cfg.ServerUrl)
 	}
-	return nil
+
+	return d.sendJobUpdateEvent(job, cfg, app)
 }
 
 func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
