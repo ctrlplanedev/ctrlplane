@@ -12,7 +12,7 @@ export const env = createEnv({
       .or(z.literal("test"))
       .default("development"),
     PORT: z.number().default(4000),
-    AUTH_URL: z.string().default("http://localhost:3000"),
+    AUTH_URL: z.string().default("http://localhost:5173"),
   },
   runtimeEnv: process.env,
 });

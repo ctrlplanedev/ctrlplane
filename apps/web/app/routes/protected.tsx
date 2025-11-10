@@ -25,6 +25,11 @@ export default function ProtectedLayout() {
   if (isLoading) return <LoadingScreen />;
   if (viewer == null) return <Navigate to="/login" replace />;
 
+  // Allow access to workspace creation page without workspace context
+  if (location.pathname === "/workspaces/create") {
+    return <Outlet />;
+  }
+
   const { activeWorkspaceId } = viewer;
   const workspace =
     workspaces.find((w) => w.slug === workspaceSlug) ??

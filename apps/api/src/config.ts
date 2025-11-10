@@ -22,7 +22,7 @@ export const env = createEnv({
       .string()
       .default("8080")
       .transform((val) => parseInt(val)),
-    AUTH_URL: z.string().default("http://localhost:3000"),
+    AUTH_URL: z.string().default("http://localhost:5173"),
 
     OPENAI_API_KEY: z.string().optional(),
     GITHUB_URL: z.string().optional(),
