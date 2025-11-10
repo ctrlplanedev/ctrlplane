@@ -55,16 +55,16 @@ const (
 
 // Defines values for JobStatus.
 const (
-	ActionRequired      JobStatus = "actionRequired"
-	Cancelled           JobStatus = "cancelled"
-	ExternalRunNotFound JobStatus = "externalRunNotFound"
-	Failure             JobStatus = "failure"
-	InProgress          JobStatus = "inProgress"
-	InvalidIntegration  JobStatus = "invalidIntegration"
-	InvalidJobAgent     JobStatus = "invalidJobAgent"
-	Pending             JobStatus = "pending"
-	Skipped             JobStatus = "skipped"
-	Successful          JobStatus = "successful"
+	JobStatusActionRequired      JobStatus = "actionRequired"
+	JobStatusCancelled           JobStatus = "cancelled"
+	JobStatusExternalRunNotFound JobStatus = "externalRunNotFound"
+	JobStatusFailure             JobStatus = "failure"
+	JobStatusInProgress          JobStatus = "inProgress"
+	JobStatusInvalidIntegration  JobStatus = "invalidIntegration"
+	JobStatusInvalidJobAgent     JobStatus = "invalidJobAgent"
+	JobStatusPending             JobStatus = "pending"
+	JobStatusSkipped             JobStatus = "skipped"
+	JobStatusSuccessful          JobStatus = "successful"
 )
 
 // Defines values for JobUpdateEventFieldsToUpdate.
@@ -108,6 +108,14 @@ const (
 const (
 	From RelationDirection = "from"
 	To   RelationDirection = "to"
+)
+
+// Defines values for ReleaseVerificationStatus.
+const (
+	ReleaseVerificationStatusCancelled ReleaseVerificationStatus = "cancelled"
+	ReleaseVerificationStatusFailed    ReleaseVerificationStatus = "failed"
+	ReleaseVerificationStatusPassed    ReleaseVerificationStatus = "passed"
+	ReleaseVerificationStatusRunning   ReleaseVerificationStatus = "running"
 )
 
 // Defines values for RuleEvaluationActionType.
@@ -528,6 +536,9 @@ type ReleaseVerification struct {
 	Metrics   []VerificationMetricStatus `json:"metrics"`
 	ReleaseId string                     `json:"releaseId"`
 }
+
+// ReleaseVerificationStatus defines model for ReleaseVerificationStatus.
+type ReleaseVerificationStatus string
 
 // ResolvedPolicy defines model for ResolvedPolicy.
 type ResolvedPolicy struct {

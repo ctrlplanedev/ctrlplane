@@ -1146,6 +1146,15 @@
             ],
             "type": "object"
          },
+         "ReleaseVerificationStatus": {
+            "enum": [
+               "running",
+               "passed",
+               "failed",
+               "cancelled"
+            ],
+            "type": "string"
+         },
          "ResolvedPolicy": {
             "properties": {
                "environmentIds": {

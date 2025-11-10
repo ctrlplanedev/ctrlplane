@@ -1216,6 +1216,8 @@ export interface components {
             metrics: components["schemas"]["VerificationMetricStatus"][];
             releaseId: string;
         };
+        /** @enum {string} */
+        ReleaseVerificationStatus: "running" | "passed" | "failed" | "cancelled";
         ResolvedPolicy: {
             environmentIds: string[];
             policy: components["schemas"]["Policy"];
