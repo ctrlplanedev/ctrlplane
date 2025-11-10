@@ -28,6 +28,13 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 		return nil
 	}
 
+	// Validate all spans before attempting database operations
+	for _, span := range spans {
+		if err := validateSpan(span); err != nil {
+			return err
+		}
+	}
+
 	// Get connection from pool
 	conn, err := s.pool.Acquire(ctx)
 	if err != nil {
@@ -108,14 +115,14 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 			case attrSequence:
 				v := int(attr.Value.AsInt64())
 				sequence = &v
-			}
 		}
+	}
 
-		// Serialize attributes to JSON
-		attributesJSON, err := json.Marshal(allAttributes)
-		if err != nil {
-			return fmt.Errorf("failed to marshal attributes: %w", err)
-		}
+	// Serialize attributes to JSON
+	attributesJSON, err := json.Marshal(allAttributes)
+	if err != nil {
+		return fmt.Errorf("failed to marshal attributes: %w", err)
+	}
 
 		// Extract and serialize events
 		events := make([]map[string]any, 0)
@@ -220,4 +227,29 @@ func nullableTime(t time.Time) interface{} {
 		return nil
 	}
 	return t
+}
+
+// validateSpan checks that a span has all required attributes for database insertion
+func validateSpan(span sdktrace.ReadOnlySpan) error {
+	traceID := span.SpanContext().TraceID().String()
+	spanID := span.SpanContext().SpanID().String()
+	
+	// Check for required workspace_id attribute
+	hasWorkspaceID := false
+	workspaceID := ""
+	
+	for _, attr := range span.Attributes() {
+		if string(attr.Key) == attrWorkspaceID {
+			hasWorkspaceID = true
+			workspaceID = attr.Value.AsString()
+			break
+		}
+	}
+	
+	if !hasWorkspaceID || workspaceID == "" {
+		return fmt.Errorf("span %q (trace_id=%s, span_id=%s) is missing required attribute %q", 
+			span.Name(), traceID, spanID, attrWorkspaceID)
+	}
+	
+	return nil
 }
