@@ -104,11 +104,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		createJobAction.AddMetadata("job_id", newJob.Id)
 		createJobAction.AddStep("Generate trace token", trace.StepResultPass, "Token generated for external executor")
 
-		// Store token in job's external ID or config for now
-		// This will be used by the job agent to report back
-		if newJob.ExternalId == nil {
-			newJob.Metadata["trace_token"] = traceToken
-		}
+		newJob.TraceToken = &traceToken
 	}
 
 	if createJobAction != nil {

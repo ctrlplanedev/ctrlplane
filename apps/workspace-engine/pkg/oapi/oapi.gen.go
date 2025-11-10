@@ -79,6 +79,7 @@ const (
 	ReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
 	StartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
 	Status         JobUpdateEventFieldsToUpdate = "status"
+	TraceToken     JobUpdateEventFieldsToUpdate = "traceToken"
 	UpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
 )
 
@@ -326,6 +327,7 @@ type Job struct {
 	ReleaseId      string                 `json:"releaseId"`
 	StartedAt      *time.Time             `json:"startedAt,omitempty"`
 	Status         JobStatus              `json:"status"`
+	TraceToken     *string                `json:"traceToken,omitempty"`
 	UpdatedAt      time.Time              `json:"updatedAt"`
 }
 

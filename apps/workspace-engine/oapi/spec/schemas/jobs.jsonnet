@@ -21,6 +21,7 @@ local Job = {
       additionalProperties: true,
     },
     externalId: { type: 'string' },
+    traceToken: { type: 'string' },
     status: openapi.schemaRef('JobStatus'),
     createdAt: { type: 'string', format: 'date-time' },
     updatedAt: { type: 'string', format: 'date-time' },

@@ -533,6 +533,9 @@
                "status": {
                   "$ref": "#/components/schemas/JobStatus"
                },
+               "traceToken": {
+                  "type": "string"
+               },
                "updatedAt": {
                   "format": "date-time",
                   "type": "string"
@@ -627,6 +630,7 @@
                         "releaseId",
                         "startedAt",
                         "status",
+                        "traceToken",
                         "updatedAt"
                      ],
                      "type": "string"
