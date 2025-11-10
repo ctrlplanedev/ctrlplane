@@ -169,7 +169,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 
 	// Define success statuses (default to just "successful")
 	successStatuses := map[oapi.JobStatus]bool{
-		oapi.Successful: true,
+		oapi.JobStatusSuccessful: true,
 	}
 	if e.rule.SuccessStatuses != nil {
 		successStatuses = make(map[oapi.JobStatus]bool)

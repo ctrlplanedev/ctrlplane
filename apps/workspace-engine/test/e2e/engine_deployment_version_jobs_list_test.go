@@ -196,13 +196,13 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 		for _, job := range jobs {
 			switch resource.Name {
 			case "z-server":
-				job.Status = oapi.Failure // Should come first despite "z" name
+				job.Status = oapi.JobStatusFailure // Should come first despite "z" name
 				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
 			case "a-server":
-				job.Status = oapi.InProgress
+				job.Status = oapi.JobStatusInProgress
 				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
 			case "m-server":
-				job.Status = oapi.Successful
+				job.Status = oapi.JobStatusSuccessful
 				job.CreatedAt = baseTime.Add(time.Duration(timestampIndex) * time.Millisecond)
 			}
 			timestampIndex++
@@ -258,10 +258,10 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 		}
 
 		if statusA != nil && statusB != nil {
-			if *statusA == oapi.Failure && *statusB != oapi.Failure {
+			if *statusA == oapi.JobStatusFailure && *statusB != oapi.JobStatusFailure {
 				return -1
 			}
-			if *statusA != oapi.Failure && *statusB == oapi.Failure {
+			if *statusA != oapi.JobStatusFailure && *statusB == oapi.JobStatusFailure {
 				return 1
 			}
 
@@ -301,7 +301,7 @@ func TestEngine_DeploymentVersionJobsList_SortingOrder(t *testing.T) {
 	// Verify sorting: failure should be first
 	if len(fullTargets) > 0 && len(fullTargets[0].Jobs) > 0 {
 		firstStatus := fullTargets[0].Jobs[0].Status
-		if firstStatus != oapi.Failure {
+		if firstStatus != oapi.JobStatusFailure {
 			t.Errorf("expected first target to have failure status, got %s (resource: %s)",
 				firstStatus, fullTargets[0].Resource.Name)
 		}
@@ -458,7 +458,7 @@ func TestEngine_DeploymentVersionJobsList_ComparatorBehavior(t *testing.T) {
 		{
 			name:           "no jobs vs has jobs",
 			aStatus:        nil,
-			bStatus:        &[]oapi.JobStatus{oapi.Pending}[0],
+			bStatus:        &[]oapi.JobStatus{oapi.JobStatusPending}[0],
 			bCreatedAt:     &now,
 			bResourceName:  "b",
 			aResourceName:  "a",
@@ -466,30 +466,30 @@ func TestEngine_DeploymentVersionJobsList_ComparatorBehavior(t *testing.T) {
 		},
 		{
 			name:           "failure vs success",
-			aStatus:        &[]oapi.JobStatus{oapi.Failure}[0],
+			aStatus:        &[]oapi.JobStatus{oapi.JobStatusFailure}[0],
 			aCreatedAt:     &now,
 			aResourceName:  "a",
-			bStatus:        &[]oapi.JobStatus{oapi.Successful}[0],
+			bStatus:        &[]oapi.JobStatus{oapi.JobStatusSuccessful}[0],
 			bCreatedAt:     &now,
 			bResourceName:  "b",
 			expectedResult: "a<b", // failure comes first
 		},
 		{
 			name:           "newer vs older with same status",
-			aStatus:        &[]oapi.JobStatus{oapi.Successful}[0],
+			aStatus:        &[]oapi.JobStatus{oapi.JobStatusSuccessful}[0],
 			aCreatedAt:     &now,
 			aResourceName:  "a",
-			bStatus:        &[]oapi.JobStatus{oapi.Successful}[0],
+			bStatus:        &[]oapi.JobStatus{oapi.JobStatusSuccessful}[0],
 			bCreatedAt:     &oneHourAgo,
 			bResourceName:  "b",
 			expectedResult: "a<b", // newer comes first
 		},
 		{
 			name:           "same status and time, different names",
-			aStatus:        &[]oapi.JobStatus{oapi.Successful}[0],
+			aStatus:        &[]oapi.JobStatus{oapi.JobStatusSuccessful}[0],
 			aCreatedAt:     &now,
 			aResourceName:  "alpha",
-			bStatus:        &[]oapi.JobStatus{oapi.Successful}[0],
+			bStatus:        &[]oapi.JobStatus{oapi.JobStatusSuccessful}[0],
 			bCreatedAt:     &now,
 			bResourceName:  "beta",
 			expectedResult: "a<b", // alphabetical
@@ -563,10 +563,10 @@ func compareForTest(a, b *fullReleaseTarget) int {
 	}
 
 	if statusA != nil && statusB != nil {
-		if *statusA == oapi.Failure && *statusB != oapi.Failure {
+		if *statusA == oapi.JobStatusFailure && *statusB != oapi.JobStatusFailure {
 			return -1
 		}
-		if *statusA != oapi.Failure && *statusB == oapi.Failure {
+		if *statusA != oapi.JobStatusFailure && *statusB == oapi.JobStatusFailure {
 			return 1
 		}
 

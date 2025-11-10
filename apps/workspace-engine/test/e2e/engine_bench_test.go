@@ -330,9 +330,9 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 			// 70% success, 30% failure
 			now := time.Now()
 			if jobsCreated%10 < 7 {
-				job.Status = oapi.Successful
+				job.Status = oapi.JobStatusSuccessful
 			} else {
-				job.Status = oapi.Failure
+				job.Status = oapi.JobStatusFailure
 			}
 			job.CompletedAt = &now
 			job.UpdatedAt = now
@@ -359,9 +359,9 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 	successCount := 0
 	failCount := 0
 	for _, job := range allJobs {
-		if job.Status == oapi.Successful {
+		if job.Status == oapi.JobStatusSuccessful {
 			successCount++
-		} else if job.Status == oapi.Failure {
+		} else if job.Status == oapi.JobStatusFailure {
 			failCount++
 		}
 	}

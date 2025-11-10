@@ -117,7 +117,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 
 	// Step 3: Dispatch job to integration (ASYNC)
 	// Skip dispatch if job already has InvalidJobAgent status
-	if newJob.Status != oapi.InvalidJobAgent {
+	if newJob.Status != oapi.JobStatusInvalidJobAgent {
 		span.AddEvent("Dispatching job to integration (async)",
 			oteltrace.WithAttributes(attribute.String("job.id", newJob.Id)))
 		
@@ -130,7 +130,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 				log.Error("error dispatching job to integration",
 					"job_id", newJob.Id,
 					"error", err.Error())
-				newJob.Status = oapi.InvalidIntegration
+				newJob.Status = oapi.JobStatusInvalidJobAgent
 				newJob.UpdatedAt = time.Now()
 				e.store.Jobs.Upsert(ctx, newJob)
 			}

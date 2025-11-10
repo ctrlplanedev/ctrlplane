@@ -130,7 +130,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			jobsCancelled := 0
 			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(state.entity) {
 				if job != nil && job.IsInProcessingState() {
-					job.Status = oapi.Cancelled
+					job.Status = oapi.JobStatusCancelled
 					job.UpdatedAt = time.Now()
 					m.store.Jobs.Upsert(ctx, job)
 					fmt.Printf("cancelled job: %+v\n", job)

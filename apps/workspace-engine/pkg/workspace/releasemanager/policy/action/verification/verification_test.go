@@ -120,7 +120,7 @@ func TestVerificationAction_Execute_NoMetrics(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 

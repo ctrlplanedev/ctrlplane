@@ -59,7 +59,7 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 	// Collect all successful jobs with non-nil CompletedAt
 	successfulJobs := make([]*oapi.Job, 0)
 	for _, job := range jobs {
-		if job.Status == oapi.Successful && job.CompletedAt != nil {
+		if job.Status == oapi.JobStatusSuccessful && job.CompletedAt != nil {
 			successfulJobs = append(successfulJobs, job)
 		}
 	}

@@ -12,12 +12,17 @@ import (
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 func init() {
 	manager.Configure(
 		manager.WithPersistentStore(memory.NewStore()),
-		manager.WithWorkspaceCreateOptions(),
+		manager.WithWorkspaceCreateOptions(
+			workspace.WithTraceStore(
+				trace.NewInMemoryStore(),
+			),
+		),
 	)
 }
 

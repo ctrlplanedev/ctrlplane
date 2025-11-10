@@ -696,7 +696,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
 			ReleaseId:   release.ID(),
-			Status:      oapi.Successful,
+			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   successTime,
 			CompletedAt: &completedAt,
 			UpdatedAt:   completedAt,
@@ -817,7 +817,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 	job := &oapi.Job{
 		Id:          "job-staging-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   baseTime,
 		CompletedAt: &jobCompletedAt,
 		UpdatedAt:   jobCompletedAt,
@@ -942,7 +942,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
 			ReleaseId:   release.ID(),
-			Status:      oapi.Successful,
+			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   successTime,
 			CompletedAt: &completedAt,
 			UpdatedAt:   completedAt,
@@ -1178,7 +1178,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
 			ReleaseId:   release.ID(),
-			Status:      oapi.Successful,
+			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   envProgTime,
 			CompletedAt: &completedAt,
 			UpdatedAt:   completedAt,
@@ -1306,7 +1306,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
 			ReleaseId:   release.ID(),
-			Status:      oapi.Successful,
+			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   envProgTime,
 			CompletedAt: &completedAt,
 			UpdatedAt:   completedAt,
@@ -1450,7 +1450,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
 			ReleaseId:   release.ID(),
-			Status:      oapi.Successful,
+			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   envProgTime,
 			CompletedAt: &completedAt,
 			UpdatedAt:   completedAt,
@@ -1927,7 +1927,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 		job := &oapi.Job{
 			Id:          fmt.Sprintf("job-staging-%d", i),
 			ReleaseId:   release.ID(),
-			Status:      oapi.Successful,
+			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   baseTime,
 			CompletedAt: &completedAt,
 			UpdatedAt:   completedAt,

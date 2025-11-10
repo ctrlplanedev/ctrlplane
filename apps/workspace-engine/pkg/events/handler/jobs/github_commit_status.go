@@ -34,23 +34,23 @@ func getGithubClient(ws *workspace.Workspace, owner string) (*github.Client, err
 // Can be one of: error, failure, pending, success
 func getGithubStatus(status oapi.JobStatus) string {
 	switch status {
-	case oapi.ActionRequired:
+	case oapi.JobStatusActionRequired:
 		return "pending"
-	case oapi.Cancelled:
+	case oapi.JobStatusCancelled:
 		return "failure"
-	case oapi.ExternalRunNotFound:
+	case oapi.JobStatusExternalRunNotFound:
 		return "error"
-	case oapi.Failure:
+	case oapi.JobStatusFailure:
 		return "failure"
-	case oapi.InProgress:
+	case oapi.JobStatusInProgress:
 		return "pending"
-	case oapi.InvalidJobAgent:
+	case oapi.JobStatusInvalidJobAgent:
 		return "failure"
-	case oapi.InvalidIntegration:
+	case oapi.JobStatusInvalidIntegration:
 		return "failure"
-	case oapi.Skipped:
+	case oapi.JobStatusSkipped:
 		return "pending"
-	case oapi.Successful:
+	case oapi.JobStatusSuccessful:
 		return "success"
 	default:
 		return "error"
