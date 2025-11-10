@@ -378,7 +378,11 @@ func (p *Planner) findDeployableVersion(
 				attribute.String("ctrlplane.version_name", firstVersion.Name),
 				attribute.String("ctrlplane.version_tag", firstVersion.Tag),
 			)
-			evaluation.SetResult(trace.ResultBlocked, result.Message).End()
+			r := trace.ResultBlocked
+			if result.Allowed {
+				r = trace.ResultAllowed
+			}
+			evaluation.SetResult(r, result.Message).End()
 		}
 	}
 
