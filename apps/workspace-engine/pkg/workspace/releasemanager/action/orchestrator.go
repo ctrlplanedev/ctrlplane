@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-var tracer = otel.Tracer("workspace/releasemanager/policy/action")
+var tracer = otel.Tracer("workspace/releasemanager/action")
 
 // Orchestrator manages and executes policy actions
 type Orchestrator struct {

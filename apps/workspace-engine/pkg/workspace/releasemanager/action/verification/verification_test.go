@@ -7,8 +7,8 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/releasemanager/policy/action"
-	verificationaction "workspace-engine/pkg/workspace/releasemanager/policy/action/verification"
+	"workspace-engine/pkg/workspace/releasemanager/action"
+	verificationaction "workspace-engine/pkg/workspace/releasemanager/action/verification"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 

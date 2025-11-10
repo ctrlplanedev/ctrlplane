@@ -3,7 +3,7 @@ package verification
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/policy/action"
+	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 
 	"github.com/charmbracelet/log"
@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-var tracer = otel.Tracer("workspace/releasemanager/policy/action/verification")
+var tracer = otel.Tracer("workspace/releasemanager/action/verification")
 
 // VerificationAction creates verifications based on policy rules
 type VerificationAction struct {

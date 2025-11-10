@@ -7,7 +7,7 @@ import (
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/releasemanager/policy/action"
+	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
