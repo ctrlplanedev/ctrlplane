@@ -4,6 +4,7 @@ import { createContext, useContext } from "react";
 import "ldrs/react/Grid.css";
 
 import { Grid } from "ldrs/react";
+import { useTheme } from "next-themes";
 
 import { trpc } from "~/api/trpc";
 import { useWorkspace } from "./WorkspaceProvider";
@@ -24,6 +25,16 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     { workspaceId: workspace.id },
     { refetchInterval: 1000 },
   );
+
+  const { theme, systemTheme } = useTheme();
+  const color =
+    theme == "system"
+      ? systemTheme === "dark"
+        ? "white"
+        : "black"
+      : theme === "dark"
+        ? "white"
+        : "black";
   const status = engine ?? { healthy: false, message: "Engine reloading" };
   return (
     <EngineContext.Provider value={{ status }}>
@@ -32,7 +43,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
       ) : (
         <div className="fixed inset-0 flex items-center justify-center bg-background">
           <div className="flex flex-col items-center gap-4 space-y-8 rounded-lg bg-card p-12">
-            <Grid size={100} speed={3} />
+            <Grid size={100} speed={3} color={color} />
             <div className="flex flex-col items-center gap-1 text-center">
               <p className="font-medium text-foreground">
                 Waiting for workspace engine...

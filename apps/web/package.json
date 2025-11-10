@@ -55,6 +55,7 @@
     "lodash": "catalog:",
     "lucide-react": "^0.441.0",
     "next-themes": "^0.3.0",
+    "nuqs": "^2.7.3",
     "openapi-fetch": "^0.13.8",
     "pretty-ms": "^9.2.0",
     "react": "catalog:react19",

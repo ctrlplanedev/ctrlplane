@@ -74,7 +74,7 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 	}
 
 	for _, job := range pendingJobs {
-		job.Status = oapi.Successful
+		job.Status = oapi.JobStatusSuccessful
 		completedAt := time.Now()
 		job.CompletedAt = &completedAt
 

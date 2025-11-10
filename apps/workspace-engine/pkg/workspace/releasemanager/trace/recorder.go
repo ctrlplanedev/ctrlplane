@@ -17,7 +17,7 @@ type ReconcileTarget struct {
 	releaseTargetKey string
 	releaseID        *string
 	jobID            *string
-	
+
 	store PersistenceStore
 
 	// OTel components
@@ -240,7 +240,7 @@ func (r *ReconcileTarget) StartAction(name string) *Action {
 // Complete marks the entire reconciliation as complete
 func (r *ReconcileTarget) Complete(status Status) {
 	r.rootSpan.SetAttributes(attribute.String(attrStatus, string(status)))
-	
+
 	var code codes.Code
 	if status == StatusCompleted {
 		code = codes.Ok
@@ -249,7 +249,7 @@ func (r *ReconcileTarget) Complete(status Status) {
 	} else {
 		code = codes.Unset
 	}
-	
+
 	r.rootSpan.SetStatus(code, string(status))
 	r.rootSpan.End()
 	// SimpleSpanProcessor exports spans synchronously, no flush needed
@@ -258,7 +258,7 @@ func (r *ReconcileTarget) Complete(status Status) {
 // Persist writes all spans to the persistence store
 func (r *ReconcileTarget) Persist(store ...PersistenceStore) error {
 	var targetStore PersistenceStore
-	
+
 	if len(store) > 0 {
 		targetStore = store[0]
 	} else if r.store != nil {
@@ -274,6 +274,19 @@ func (r *ReconcileTarget) Persist(store ...PersistenceStore) error {
 }
 
 // Helper methods
+
+// RootTraceID returns the root trace ID for this reconciliation
+func (r *ReconcileTarget) RootTraceID() string {
+	return r.rootTraceID
+}
+
+// SetJobID sets the job ID for this reconciliation
+// This should be called after a job is created to associate all subsequent spans with the job
+func (r *ReconcileTarget) SetJobID(jobID string) {
+	r.jobID = &jobID
+	// Update the root span with the job ID
+	r.rootSpan.SetAttributes(attribute.String("ctrlplane.job_id", jobID))
+}
 
 func (r *ReconcileTarget) getDepth(ctx context.Context) int {
 	span := trace.SpanFromContext(ctx)
@@ -365,4 +378,3 @@ func stepResultToStatus(result StepResult) Status {
 	}
 	return StatusFailed
 }
-

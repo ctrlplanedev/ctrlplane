@@ -96,7 +96,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 	job := &oapi.Job{
 		Id:          uuid.New().String(),
 		ReleaseId:   release.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   completedAt.Add(-1 * time.Minute),
 		CompletedAt: &completedAt,
 		JobAgentId:  uuid.New().String(),
@@ -109,7 +109,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId string, status oapi.ReleaseVerificationStatus, createdAt time.Time) *oapi.ReleaseVerification {
 	// Create metrics that result in the desired status
 	var metrics []oapi.VerificationMetricStatus
-	
+
 	switch status {
 	case oapi.ReleaseVerificationStatusPassed:
 		// All measurements passed, all complete
@@ -204,7 +204,7 @@ func TestGetCurrentRelease_NoVerification(t *testing.T) {
 	require.NotNil(t, currentRelease)
 	require.NotNil(t, currentJob)
 	assert.Equal(t, release.ID(), currentRelease.ID())
-	assert.Equal(t, oapi.Successful, currentJob.Status)
+	assert.Equal(t, oapi.JobStatusSuccessful, currentJob.Status)
 }
 
 func TestGetCurrentRelease_PassedVerification(t *testing.T) {
@@ -294,7 +294,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	olderJob := &oapi.Job{
 		Id:          uuid.New().String(),
 		ReleaseId:   olderRelease.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   olderJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &olderJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
@@ -325,7 +325,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	newerJob := &oapi.Job{
 		Id:          uuid.New().String(),
 		ReleaseId:   newerRelease.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   newerJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &newerJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
@@ -409,7 +409,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	olderJob := &oapi.Job{
 		Id:          uuid.New().String(),
 		ReleaseId:   olderRelease.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   olderJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &olderJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
@@ -440,7 +440,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	newerJob := &oapi.Job{
 		Id:          uuid.New().String(),
 		ReleaseId:   newerRelease.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   newerJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &newerJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
@@ -551,7 +551,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	olderJob := &oapi.Job{
 		Id:          uuid.New().String(),
 		ReleaseId:   olderRelease.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   olderJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &olderJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
@@ -579,7 +579,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	newerJob := &oapi.Job{
 		Id:          uuid.New().String(),
 		ReleaseId:   newerRelease.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   newerJobCompletedAt.Add(-1 * time.Minute),
 		CompletedAt: &newerJobCompletedAt,
 		JobAgentId:  uuid.New().String(),
@@ -622,4 +622,3 @@ func TestGetCurrentRelease_NoValidRelease(t *testing.T) {
 	assert.Nil(t, currentJob)
 	assert.Contains(t, err.Error(), "no valid release found")
 }
-

@@ -90,7 +90,7 @@ func (e *SkipDeployedEvaluator) Evaluate(
 	// Most recent job is for a different release - allow this one
 	return results.
 		NewAllowedResult(
-			fmt.Sprintf("Different release deployed (previous: %s, new: %s)", mostRecentJob.ReleaseId, release.ID()),
+			fmt.Sprintf("New release version detected - previous deployment was for a different release (version: %s)", release.Version.Tag),
 		).
 		WithDetail("release_id", release.ID()).
 		WithDetail("previous_release_id", mostRecentJob.ReleaseId).

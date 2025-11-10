@@ -22,6 +22,7 @@ export * from "./event.js";
 export * from "./policy.js";
 export * from "./release.js";
 export * from "./rules/index.js";
+export * from "./deployment-trace.js";
 
 export * from "./environment-relations.js";
 export * from "./policy-relations.js";

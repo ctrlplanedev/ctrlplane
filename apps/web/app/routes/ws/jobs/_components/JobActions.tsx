@@ -1,8 +1,7 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
-import { Copy, TriangleAlert } from "lucide-react";
 import { capitalCase } from "change-case";
-import { EllipsisIcon } from "lucide-react";
+import { Copy, EllipsisIcon, Network, TriangleAlert } from "lucide-react";
 import { useCopyToClipboard } from "react-use";
 import { toast } from "sonner";
 
@@ -32,6 +31,8 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { buildTraceTree } from "../../deployments/_components/trace-utils";
+import { TraceTree } from "../../deployments/_components/TraceTree";
 
 const JOB_STATUSES = [
   "cancelled",
@@ -141,6 +142,100 @@ function UpdateJobStatusAction({
   );
 }
 
+function ViewTraceAction({
+  jobId,
+  onClose,
+}: {
+  jobId: string;
+  onClose: () => void;
+}) {
+  const { workspace } = useWorkspace();
+  const [selectedSpanId, setSelectedSpanId] = useState<string>();
+
+  // First, fetch spans with the job_id to get the trace_id
+  const jobSpansQuery = trpc.deploymentTraces.byJobId.useQuery({
+    workspaceId: workspace.id,
+    jobId,
+    limit: 1,
+    offset: 0,
+  });
+
+  // Get the trace ID from the first span
+  const traceId = jobSpansQuery.data?.[0]?.traceId;
+
+  // Then fetch all spans for that trace (including planning/eligibility phases)
+  const fullTraceQuery = trpc.deploymentTraces.byTraceId.useQuery(
+    {
+      workspaceId: workspace.id,
+      traceId: traceId!,
+    },
+    {
+      enabled: !!traceId,
+    },
+  );
+
+  const isLoading = jobSpansQuery.isLoading || fullTraceQuery.isLoading;
+  const isError = jobSpansQuery.isError || fullTraceQuery.isError;
+  const error = jobSpansQuery.error ?? fullTraceQuery.error;
+
+  const spans = fullTraceQuery.data ?? [];
+  const treeNodes = buildTraceTree(spans);
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+          <Network className="h-4 w-4" />
+          View trace
+        </DropdownMenuItem>
+      </DialogTrigger>
+      <DialogContent className="max-w-5xl! max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Job Trace</DialogTitle>
+          <DialogDescription>
+            View the complete execution trace for this job from reconciliation
+            start
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="mt-4">
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+              Loading traces...
+            </div>
+          ) : isError ? (
+            <div className="flex h-32 items-center justify-center text-sm text-red-500">
+              Error loading traces: {error?.message}
+            </div>
+          ) : !traceId ? (
+            <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+              No traces found for this job
+            </div>
+          ) : spans.length === 0 ? (
+            <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+              No trace spans found
+            </div>
+          ) : (
+            <TraceTree
+              nodes={treeNodes}
+              onSpanSelect={(span) => setSelectedSpanId(span.spanId)}
+              selectedSpanId={selectedSpanId}
+            />
+          )}
+        </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" onClick={() => onClose()}>
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function JobActions({
   job,
 }: {
@@ -156,6 +251,7 @@ export function JobActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <CopyJobIdAction jobId={job.job.id} onClose={() => setOpen(false)} />
+        <ViewTraceAction jobId={job.job.id} onClose={() => setOpen(false)} />
         <UpdateJobStatusAction
           jobId={job.job.id}
           currentStatus={job.job.status}

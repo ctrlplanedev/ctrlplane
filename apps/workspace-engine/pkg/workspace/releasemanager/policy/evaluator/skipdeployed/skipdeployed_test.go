@@ -89,7 +89,7 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   previousRelease.ID(),
-		Status:      oapi.Failure,
+		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -108,7 +108,7 @@ func TestSkipDeployedEvaluator_PreviousDeploymentFailed(t *testing.T) {
 		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
 	}
 
-	if result.Details["job_status"] != string(oapi.Failure) {
+	if result.Details["job_status"] != string(oapi.JobStatusFailure) {
 		t.Errorf("expected job_status=failure, got %v", result.Details["job_status"])
 	}
 }
@@ -140,7 +140,7 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   deployedRelease.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -163,7 +163,7 @@ func TestSkipDeployedEvaluator_AlreadyDeployed(t *testing.T) {
 		t.Errorf("expected version=v1.0.0, got %v", result.Details["version"])
 	}
 
-	if result.Details["job_status"] != string(oapi.Successful) {
+	if result.Details["job_status"] != string(oapi.JobStatusSuccessful) {
 		t.Errorf("expected job_status=SUCCESSFUL, got %v", result.Details["job_status"])
 	}
 }
@@ -195,7 +195,7 @@ func TestSkipDeployedEvaluator_NewVersionAfterSuccessful(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-v1",
 		ReleaseId:   v1Release.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -253,7 +253,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release.ID(),
-		Status:    oapi.InProgress,
+		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
 
@@ -267,7 +267,7 @@ func TestSkipDeployedEvaluator_JobInProgressNotSuccessful(t *testing.T) {
 		t.Errorf("expected denied when same release job in progress, got allowed: %s", result.Message)
 	}
 
-	if result.Details["job_status"] != string(oapi.InProgress) {
+	if result.Details["job_status"] != string(oapi.JobStatusInProgress) {
 		t.Errorf("expected job_status to be IN_PROGRESS, got %v", result.Details["job_status"])
 	}
 
@@ -303,7 +303,7 @@ func TestSkipDeployedEvaluator_CancelledJobPreventsRedeploy(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Cancelled,
+		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -322,7 +322,7 @@ func TestSkipDeployedEvaluator_CancelledJobPreventsRedeploy(t *testing.T) {
 		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
 	}
 
-	if result.Details["job_status"] != string(oapi.Cancelled) {
+	if result.Details["job_status"] != string(oapi.JobStatusCancelled) {
 		t.Errorf("expected job_status=cancelled, got %v", result.Details["job_status"])
 	}
 }
@@ -361,7 +361,7 @@ func TestSkipDeployedEvaluator_VariableChangeCreatesNewRelease(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release1.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -455,7 +455,7 @@ func TestSkipDeployedEvaluator_UsesCreatedAtNotCompletedAt(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release1.ID(),
-		Status:      oapi.InProgress,
+		Status:      oapi.JobStatusInProgress,
 		CreatedAt:   time.Now().Add(-30 * time.Minute), // More recent
 		CompletedAt: nil,                               // Explicitly nil
 	})
@@ -465,7 +465,7 @@ func TestSkipDeployedEvaluator_UsesCreatedAtNotCompletedAt(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2",
 		ReleaseId:   release2.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-90 * time.Minute), // Less recent creation
 		CompletedAt: &completedAt,                      // More recent completion
 	})
@@ -515,7 +515,7 @@ func TestSkipDeployedEvaluator_OnlyJobsWithNilCompletedAt(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Pending,
+		Status:      oapi.JobStatusPending,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: nil,
 	})
@@ -523,7 +523,7 @@ func TestSkipDeployedEvaluator_OnlyJobsWithNilCompletedAt(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-2",
 		ReleaseId:   release.ID(),
-		Status:      oapi.InProgress,
+		Status:      oapi.JobStatusInProgress,
 		CreatedAt:   time.Now().Add(-1 * time.Hour), // More recent
 		CompletedAt: nil,
 	})
@@ -543,7 +543,7 @@ func TestSkipDeployedEvaluator_OnlyJobsWithNilCompletedAt(t *testing.T) {
 		t.Errorf("expected existing_job_id=job-2 (most recently created), got %v", result.Details["existing_job_id"])
 	}
 
-	if result.Details["job_status"] != string(oapi.InProgress) {
+	if result.Details["job_status"] != string(oapi.JobStatusInProgress) {
 		t.Errorf("expected job_status=in_progress, got %v", result.Details["job_status"])
 	}
 }
@@ -576,7 +576,7 @@ func TestSkipDeployedEvaluator_PendingJobPreventsRedeploy(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Pending,
+		Status:      oapi.JobStatusPending,
 		CreatedAt:   time.Now().Add(-5 * time.Minute),
 		CompletedAt: nil,
 	})
@@ -595,7 +595,7 @@ func TestSkipDeployedEvaluator_PendingJobPreventsRedeploy(t *testing.T) {
 		t.Errorf("expected existing_job_id=job-1, got %v", result.Details["existing_job_id"])
 	}
 
-	if result.Details["job_status"] != string(oapi.Pending) {
+	if result.Details["job_status"] != string(oapi.JobStatusPending) {
 		t.Errorf("expected job_status=pending, got %v", result.Details["job_status"])
 	}
 }
@@ -639,7 +639,7 @@ func TestSkipDeployedEvaluator_ConsidersAllJobStatuses(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-failed",
 		ReleaseId:   oldRelease.ID(),
-		Status:      oapi.Failure,
+		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-3 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -647,7 +647,7 @@ func TestSkipDeployedEvaluator_ConsidersAllJobStatuses(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-cancelled",
 		ReleaseId:   oldRelease.ID(),
-		Status:      oapi.Cancelled,
+		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-2 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -655,7 +655,7 @@ func TestSkipDeployedEvaluator_ConsidersAllJobStatuses(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-skipped",
 		ReleaseId:   oldRelease.ID(),
-		Status:      oapi.Skipped,
+		Status:      oapi.JobStatusSkipped,
 		CreatedAt:   time.Now().Add(-1 * time.Hour), // Most recent
 		CompletedAt: &completedAt,
 	})
@@ -681,16 +681,16 @@ func TestSkipDeployedEvaluator_AllJobStatusesPreventRedeployOfSameRelease(t *tes
 	ctx := context.Background()
 
 	statuses := []oapi.JobStatus{
-		oapi.Pending,
-		oapi.InProgress,
-		oapi.Successful,
-		oapi.Failure,
-		oapi.Cancelled,
-		oapi.Skipped,
-		oapi.ActionRequired,
-		oapi.ExternalRunNotFound,
-		oapi.InvalidIntegration,
-		oapi.InvalidJobAgent,
+		oapi.JobStatusPending,
+		oapi.JobStatusInProgress,
+		oapi.JobStatusSuccessful,
+		oapi.JobStatusFailure,
+		oapi.JobStatusCancelled,
+		oapi.JobStatusSkipped,
+		oapi.JobStatusActionRequired,
+		oapi.JobStatusExternalRunNotFound,
+		oapi.JobStatusInvalidIntegration,
+		oapi.JobStatusInvalidJobAgent,
 	}
 
 	for _, status := range statuses {
@@ -801,7 +801,7 @@ func TestSkipDeployedEvaluator_IdenticalVariablesPreventRedeployment(t *testing.
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release1.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -867,7 +867,7 @@ func TestSkipDeployedEvaluator_IdenticalVariablesPreventRedeployment(t *testing.
 		t.Errorf("expected version=v1.0.0, got %v", result.Details["version"])
 	}
 
-	if result.Details["job_status"] != string(oapi.Successful) {
+	if result.Details["job_status"] != string(oapi.JobStatusSuccessful) {
 		t.Errorf("expected job_status=SUCCESSFUL, got %v", result.Details["job_status"])
 	}
 }

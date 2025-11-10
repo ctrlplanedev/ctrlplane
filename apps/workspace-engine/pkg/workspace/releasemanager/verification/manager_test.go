@@ -676,4 +676,3 @@ func BenchmarkManager_Restore(b *testing.B) {
 		}
 	}
 }
-

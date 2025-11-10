@@ -17,12 +17,12 @@ import (
 
 // Mock action for testing
 type mockAction struct {
-	name           string
-	shouldExecute  bool // Internal flag to simulate fail-fast behavior
-	executeErr     error
-	executeCalled  bool
-	lastTrigger    action.ActionTrigger
-	lastContext    action.ActionContext
+	name          string
+	shouldExecute bool // Internal flag to simulate fail-fast behavior
+	executeErr    error
+	executeCalled bool
+	lastTrigger   action.ActionTrigger
+	lastContext   action.ActionContext
 }
 
 func (m *mockAction) Name() string {
@@ -34,7 +34,7 @@ func (m *mockAction) Execute(ctx context.Context, trigger action.ActionTrigger, 
 	if !m.shouldExecute {
 		return nil
 	}
-	
+
 	m.executeCalled = true
 	m.lastTrigger = trigger
 	m.lastContext = actx
@@ -129,9 +129,9 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		Rules:       []oapi.PolicyRule{},
 		Selectors: []oapi.PolicyTargetSelector{
 			{
-				DeploymentSelector: deploymentSelector,
+				DeploymentSelector:  deploymentSelector,
 				EnvironmentSelector: selector,
-				ResourceSelector:   selector,
+				ResourceSelector:    selector,
 			},
 		},
 	}
@@ -168,12 +168,12 @@ func TestOrchestrator_OnJobStatusChange_TriggerJobSuccess(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 
 	// Simulate status change from Pending to Successful
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.Pending)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusPending)
 	require.NoError(t, err)
 
 	// Verify action was executed
@@ -199,11 +199,11 @@ func TestOrchestrator_OnJobStatusChange_TriggerJobStarted(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.InProgress,
+		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	}
 
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.Pending)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusPending)
 	require.NoError(t, err)
 
 	assert.True(t, mockAct.executeCalled)
@@ -226,11 +226,11 @@ func TestOrchestrator_OnJobStatusChange_TriggerJobFailure(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Failure,
+		Status:    oapi.JobStatusFailure,
 		CreatedAt: time.Now(),
 	}
 
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.InProgress)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusInProgress)
 	require.NoError(t, err)
 
 	assert.True(t, mockAct.executeCalled)
@@ -253,12 +253,12 @@ func TestOrchestrator_OnJobStatusChange_NoTrigger(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.InProgress,
+		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	}
 
 	// InProgress -> InProgress (no status change that triggers)
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.InProgress)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusInProgress)
 	require.NoError(t, err)
 
 	// Action should not be executed
@@ -281,11 +281,11 @@ func TestOrchestrator_OnJobStatusChange_ShouldNotExecute(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.Pending)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusPending)
 	require.NoError(t, err)
 
 	// Action should not be executed because it failed fast (returned nil without executing)
@@ -310,11 +310,11 @@ func TestOrchestrator_OnJobStatusChange_MultipleActions(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.Pending)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusPending)
 	require.NoError(t, err)
 
 	// First two actions should be executed
@@ -338,11 +338,11 @@ func TestOrchestrator_OnJobStatusChange_ReleaseNotFound(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: "non-existent-release",
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.Pending)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusPending)
 	require.NoError(t, err) // Should not fail
 
 	// Action should not be executed because release not found
@@ -429,11 +429,11 @@ func TestOrchestrator_OnJobStatusChange_NoPolicies(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.Pending)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusPending)
 	require.NoError(t, err)
 
 	// Action should not be executed because no policies apply
@@ -457,15 +457,14 @@ func TestOrchestrator_OnJobStatusChange_ActionError(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 
 	// Should not return error even if action fails
-	err := orchestrator.OnJobStatusChange(ctx, job, oapi.Pending)
+	err := orchestrator.OnJobStatusChange(ctx, job, oapi.JobStatusPending)
 	require.NoError(t, err)
 
 	// Action should have been called
 	assert.True(t, mockAct.executeCalled)
 }
-

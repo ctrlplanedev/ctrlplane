@@ -99,6 +99,15 @@ func ValidateTraceToken(token string) (*TraceToken, error) {
 	}, nil
 }
 
+// ParseTraceToken is a convenience function that validates a token and returns just the traceID and jobID
+func ParseTraceToken(token string) (traceID, jobID string, err error) {
+	tt, err := ValidateTraceToken(token)
+	if err != nil {
+		return "", "", err
+	}
+	return tt.TraceID, tt.JobID, nil
+}
+
 // SetTokenSecret allows setting a custom secret for token generation
 // This should be called during application initialization with a secure secret
 func SetTokenSecret(secret []byte) {

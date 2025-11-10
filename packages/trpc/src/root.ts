@@ -1,3 +1,4 @@
+import { deploymentTracesRouter } from "./routes/deployment-traces.js";
 import { deploymentVersionsRouter } from "./routes/deployment-versions.js";
 import { deploymentsRouter } from "./routes/deployments.js";
 import { environmentRouter } from "./routes/environments.js";
@@ -21,6 +22,7 @@ export const appRouter = router({
   workspace: workspaceRouter,
   deployment: deploymentsRouter,
   deploymentVersions: deploymentVersionsRouter,
+  deploymentTraces: deploymentTracesRouter,
   system: systemsRouter,
   environment: environmentRouter,
   validate: validateRouter,

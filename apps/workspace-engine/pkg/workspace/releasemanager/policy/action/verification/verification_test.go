@@ -120,7 +120,7 @@ func TestVerificationAction_Execute_NoMetrics(t *testing.T) {
 	job := &oapi.Job{
 		Id:        uuid.New().String(),
 		ReleaseId: release.ID(),
-		Status:    oapi.Successful,
+		Status:    oapi.JobStatusSuccessful,
 		CreatedAt: time.Now(),
 	}
 
@@ -145,7 +145,7 @@ func TestVerificationAction_Execute_NoMetrics(t *testing.T) {
 func TestVerificationAction_ExtractMetrics_Deduplication(t *testing.T) {
 	// This test demonstrates that duplicate metric names should be deduplicated
 	// Implementation is in extractVerificationMetrics method
-	
+
 	// When multiple policies define the same metric name,
 	// only one instance should be included in the result
 	t.Skip("Requires VerificationRule in PolicyRule - will work once OpenAPI schema is updated")
@@ -160,4 +160,3 @@ func TestVerificationAction_Execute_MultiplePolicies(t *testing.T) {
 	// This test would verify that metrics from multiple policies are collected
 	t.Skip("Requires VerificationRule in PolicyRule - will work once OpenAPI schema is updated")
 }
-

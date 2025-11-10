@@ -3,11 +3,18 @@ package workspace
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager"
 
 	"github.com/aws/smithy-go/ptr"
 )
 
 type WorkspaceOption func(*Workspace)
+
+func WithTraceStore(store releasemanager.PersistenceStore) WorkspaceOption {
+	return func(ws *Workspace) {
+		ws.traceStore = store
+	}
+}
 
 func AddDefaultSystem() WorkspaceOption {
 	return func(ws *Workspace) {

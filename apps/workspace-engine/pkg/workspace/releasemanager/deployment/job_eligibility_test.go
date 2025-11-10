@@ -71,7 +71,7 @@ func TestShouldCreateJob_NoExistingJobs(t *testing.T) {
 	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -95,13 +95,13 @@ func TestShouldCreateJob_AlreadyDeployed(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-v1",
 		ReleaseId:   releaseV1.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -136,7 +136,7 @@ func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, releaseV2)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, releaseV2, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -159,12 +159,12 @@ func TestShouldCreateJob_JobInProgress(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release.ID(),
-		Status:    oapi.InProgress,
+		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -187,12 +187,12 @@ func TestShouldCreateJob_PendingJob(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release.ID(),
-		Status:    oapi.Pending,
+		Status:    oapi.JobStatusPending,
 		CreatedAt: time.Now(),
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -216,13 +216,13 @@ func TestShouldCreateJob_FailedJobPreventsRedeploy(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Failure,
+		Status:      oapi.JobStatusFailure,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -246,13 +246,13 @@ func TestShouldCreateJob_CancelledJobPreventsRedeploy(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Cancelled,
+		Status:      oapi.JobStatusCancelled,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -293,7 +293,7 @@ func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release1.ID(),
-		Status:      oapi.Successful,
+		Status:      oapi.JobStatusSuccessful,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
@@ -323,7 +323,7 @@ func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -345,7 +345,7 @@ func TestShouldCreateJob_ConcurrentJobsForSameTarget(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release1.ID(),
-		Status:    oapi.InProgress,
+		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
 
@@ -356,7 +356,7 @@ func TestShouldCreateJob_ConcurrentJobsForSameTarget(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2, nil)
 
 	// Assert - concurrency evaluator should block this
 	require.NoError(t, err)
@@ -395,7 +395,7 @@ func TestShouldCreateJob_AllowsConcurrentJobsForDifferentTargets(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release1.ID(),
-		Status:    oapi.InProgress,
+		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
 
@@ -406,7 +406,7 @@ func TestShouldCreateJob_AllowsConcurrentJobsForDifferentTargets(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2, nil)
 
 	// Assert - should allow concurrent jobs for different targets
 	require.NoError(t, err)
@@ -445,7 +445,7 @@ func TestShouldCreateJob_MultipleCompletedJobs(t *testing.T) {
 		st.Jobs.Upsert(ctx, &oapi.Job{
 			Id:          uuid.New().String(),
 			ReleaseId:   release.ID(),
-			Status:      oapi.Successful,
+			Status:      oapi.JobStatusSuccessful,
 			CreatedAt:   time.Now().Add(-time.Duration(4-i) * time.Hour),
 			CompletedAt: &completedAt,
 		})
@@ -466,7 +466,7 @@ func TestShouldCreateJob_MultipleCompletedJobs(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, newRelease)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, newRelease, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -490,13 +490,13 @@ func TestShouldCreateJob_SkippedJobPreventsRedeploy(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:          "job-1",
 		ReleaseId:   release.ID(),
-		Status:      oapi.Skipped,
+		Status:      oapi.JobStatusSkipped,
 		CreatedAt:   time.Now().Add(-1 * time.Hour),
 		CompletedAt: &completedAt,
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -519,12 +519,12 @@ func TestShouldCreateJob_InvalidJobAgentStatusPreventsRedeploy(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release.ID(),
-		Status:    oapi.InvalidJobAgent,
+		Status:    oapi.JobStatusInvalidJobAgent,
 		CreatedAt: time.Now().Add(-1 * time.Hour),
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -553,7 +553,7 @@ func TestShouldCreateJob_EmptyReleaseID(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert - should work normally
 	require.NoError(t, err)
@@ -579,12 +579,12 @@ func TestShouldCreateJob_EvaluatorOrdering(t *testing.T) {
 	st.Jobs.Upsert(ctx, &oapi.Job{
 		Id:        "job-1",
 		ReleaseId: release.ID(),
-		Status:    oapi.InProgress,
+		Status:    oapi.JobStatusInProgress,
 		CreatedAt: time.Now(),
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release)
+	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert - should be blocked and return a reason
 	require.NoError(t, err)

@@ -117,25 +117,24 @@ func determineTrigger(
 	previousStatus oapi.JobStatus,
 ) ActionTrigger {
 	// Job just created
-	if previousStatus == "" && currentStatus == oapi.Pending {
+	if previousStatus == "" && currentStatus == oapi.JobStatusPending {
 		return TriggerJobCreated
 	}
 
 	// Job started
-	if previousStatus != oapi.InProgress && currentStatus == oapi.InProgress {
+	if previousStatus != oapi.JobStatusInProgress && currentStatus == oapi.JobStatusInProgress {
 		return TriggerJobStarted
 	}
 
 	// Job succeeded
-	if currentStatus == oapi.Successful {
+	if currentStatus == oapi.JobStatusSuccessful {
 		return TriggerJobSuccess
 	}
 
 	// Job failed
-	if currentStatus == oapi.Failure {
+	if currentStatus == oapi.JobStatusFailure {
 		return TriggerJobFailure
 	}
 
 	return ""
 }
-

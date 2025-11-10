@@ -12,11 +12,8 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { cn } from "~/lib/utils";
-import { DeploymentFilter } from "./DeploymentFilter";
-import { EnvironmentFilter } from "./EnvironmentFilter";
 import { JobActions } from "./JobActions";
 import { JobStatusBadge } from "./JobStatusBadge";
-import { ResourceFilter } from "./ResourceFilter";
 import { VariablesCell } from "./VariablesCell";
 
 type JobsTableProps = {
@@ -36,7 +33,6 @@ function JobsTableHeader() {
         <TableHead className="font-medium">Status</TableHead>
         <TableHead className="font-medium">Links</TableHead>
         <TableHead className="font-medium">Created</TableHead>
-        <TableHead className="font-medium">Updated</TableHead>
         <TableHead />
       </TableRow>
     </TableHeader>
@@ -95,8 +91,10 @@ function JobsTableRow({
         {release.version.name || release.version.tag}
       </TableCell>
       <VariablesCell jobWithRelease={jobWithRelease} />
-      <TableCell className="font-mono  font-medium">
-        {job.externalId ?? <span className="text-muted-foreground">—</span>}
+      <TableCell className="overflow-hidden font-mono font-medium">
+        <div className="w-[200px] truncate text-ellipsis">
+          {job.externalId ?? <span className="text-muted-foreground">—</span>}
+        </div>
       </TableCell>
       <TableCell>
         <JobStatusBadge status={job.status} />
@@ -104,12 +102,6 @@ function JobsTableRow({
       <LinksCell job={job} />
       <TableCell className="text-muted-foreground">
         {prettyMs(Date.now() - new Date(job.createdAt).getTime(), {
-          compact: true,
-        })}{" "}
-        ago
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {prettyMs(Date.now() - new Date(job.updatedAt).getTime(), {
           compact: true,
         })}{" "}
         ago
@@ -124,12 +116,7 @@ function JobsTableRow({
 
 export function JobsTable({ jobs }: JobsTableProps) {
   return (
-    <div className="space-y-2 py-2">
-      <div className="flex justify-end gap-2 px-2">
-        <ResourceFilter />
-        <EnvironmentFilter />
-        <DeploymentFilter />
-      </div>
+    <div className="space-y-2">
       <Table className="border-b">
         <JobsTableHeader />
         <TableBody>

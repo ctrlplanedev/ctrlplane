@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
@@ -16,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/deployment")
@@ -56,11 +57,18 @@ type planDeploymentOptions func(*planDeploymentConfig)
 
 type planDeploymentConfig struct {
 	resourceRelatedEntities map[string][]*oapi.EntityRelation
+	recorder                *trace.ReconcileTarget
 }
 
 func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) planDeploymentOptions {
 	return func(cfg *planDeploymentConfig) {
 		cfg.resourceRelatedEntities = entities
+	}
+}
+
+func WithTraceRecorder(recorder *trace.ReconcileTarget) planDeploymentOptions {
+	return func(cfg *planDeploymentConfig) {
+		cfg.recorder = recorder
 	}
 }
 
@@ -73,7 +81,7 @@ func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) pla
 // This function only READS state and determines the desired release. No writes occur here.
 func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.ReleaseTarget, options ...planDeploymentOptions) (*oapi.Release, error) {
 	ctx, span := tracer.Start(ctx, "PlanDeployment",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),
 			attribute.String("environment.id", releaseTarget.EnvironmentId),
 			attribute.String("resource.id", releaseTarget.ResourceId),
@@ -86,12 +94,23 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		opt(cfg)
 	}
 
+	// Start planning phase trace if recorder is available
+	var planning *trace.PlanningPhase
+	if cfg.recorder != nil {
+		planning = cfg.recorder.StartPlanning()
+		defer planning.End()
+	}
+
 	// Step 1: Get candidate versions (sorted newest to oldest)
 	span.AddEvent("Step 1: Getting candidate versions")
 	candidateVersions := p.versionManager.GetCandidateVersions(ctx, releaseTarget)
 	span.SetAttributes(attribute.Int("candidate_versions.count", len(candidateVersions)))
 
 	if len(candidateVersions) == 0 {
+		if planning != nil {
+			planning.MakeDecision("No versions available for deployment", trace.DecisionRejected)
+		}
+
 		span.AddEvent("No candidate versions available")
 		span.SetAttributes(
 			attribute.Bool("has_desired_release", false),
@@ -102,13 +121,16 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 
 	// Step 2: Find first version that passes user-defined policies
 	span.AddEvent("Step 2: Finding deployable version")
-	deployableVersion := p.findDeployableVersion(ctx, candidateVersions, releaseTarget)
+	deployableVersion := p.findDeployableVersion(ctx, candidateVersions, releaseTarget, planning)
 	if deployableVersion == nil {
 		span.AddEvent("No deployable version found (blocked by policies)")
 		span.SetAttributes(
 			attribute.Bool("has_desired_release", false),
 			attribute.String("reason", "blocked_by_policies"),
 		)
+		if planning != nil {
+			planning.MakeDecision("No deployable version found", trace.DecisionRejected)
+		}
 		return nil, nil
 	}
 
@@ -189,21 +211,20 @@ func (p *Planner) findDeployableVersion(
 	ctx context.Context,
 	candidateVersions []*oapi.DeploymentVersion,
 	releaseTarget *oapi.ReleaseTarget,
+	planning *trace.PlanningPhase,
 ) *oapi.DeploymentVersion {
 	ctx, span := tracer.Start(ctx, "findDeployableVersion",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.Int("candidate_versions.count", len(candidateVersions)),
 		))
 	defer span.End()
 
-	span.AddEvent("Getting policies for release target")
 	policies, err := p.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get policies")
 		return nil
 	}
-	span.SetAttributes(attribute.Int("policies.count", len(policies)))
 
 	environment, ok := p.store.Environments.Get(releaseTarget.EnvironmentId)
 	if !ok {
@@ -212,21 +233,13 @@ func (p *Planner) findDeployableVersion(
 		span.SetStatus(codes.Error, "environment not found")
 		return nil
 	}
-	span.SetAttributes(attribute.String("environment.name", environment.Name))
 
-	span.AddEvent("Building evaluators from policies")
 	evaluators := p.policyManager.PlannerGlobalEvaluators()
-	globalEvaluatorCount := len(evaluators)
 	for _, policy := range policies {
 		for _, rule := range policy.Rules {
 			evaluators = append(evaluators, p.policyManager.PlannerPolicyEvaluators(&rule)...)
 		}
 	}
-	span.SetAttributes(
-		attribute.Int("evaluators.total", len(evaluators)),
-		attribute.Int("evaluators.global", globalEvaluatorCount),
-		attribute.Int("evaluators.policy", len(evaluators)-globalEvaluatorCount),
-	)
 
 	scope := evaluator.EvaluatorScope{
 		Environment:   environment,
@@ -264,43 +277,55 @@ func (p *Planner) findDeployableVersion(
 
 	// Now check version-independent evaluators once upfront
 	span.AddEvent("Evaluating version-independent policies")
-	for i, eval := range versionIndependentEvals {
+	for _, eval := range versionIndependentEvals {
 		result := eval.Evaluate(ctx, scope)
+
+		// Record evaluation in trace
+		if planning != nil {
+			evalResult := trace.ResultAllowed
+			if !result.Allowed {
+				evalResult = trace.ResultBlocked
+			}
+			evaluation := planning.StartEvaluation(result.Message)
+			evaluation.SetResult(evalResult, result.Message).End()
+		}
+
 		if !result.Allowed {
 			if result.NextEvaluationTime != nil {
 				p.scheduler.Schedule(releaseTarget, *result.NextEvaluationTime)
 			}
-
-			// All versions blocked by version-independent policy
-			span.AddEvent("All versions blocked by version-independent policy",
-				trace.WithAttributes(
-					attribute.String("message", result.Message),
-					attribute.Int("evaluator_index", i),
-				))
-			span.SetAttributes(
-				attribute.Bool("found_deployable_version", false),
-				attribute.Int("blocked_by_evaluator_index", i),
-			)
 			return nil
 		}
 	}
 
-	span.AddEvent("Evaluating version-dependent policies")
 	versionsEvaluated := 0
 	versionsBlocked := 0
-	for _, version := range candidateVersions {
+
+	var firstResults []*oapi.RuleEvaluation
+	var firstVersion *oapi.DeploymentVersion
+	for idx, version := range candidateVersions {
+		if idx == 0 {
+			firstVersion = version
+		}
 		versionsEvaluated++
 		eligible := true
 		scope.Version = version
 
+		var results []*oapi.RuleEvaluation
+
 		for evalIdx, eval := range versionDependentEvals {
 			result := eval.Evaluate(ctx, scope)
+			results = append(results, result)
+			if idx == 0 {
+				firstResults = append(firstResults, result)
+			}
+
 			if !result.Allowed {
 				eligible = false
 				versionsBlocked++
 
 				span.AddEvent("Version blocked by policy",
-					trace.WithAttributes(
+					oteltrace.WithAttributes(
 						attribute.String("version.id", version.Id),
 						attribute.String("version.tag", version.Tag),
 						attribute.Int("evaluator_index", evalIdx),
@@ -316,37 +341,51 @@ func (p *Planner) findDeployableVersion(
 		}
 
 		if eligible {
-			// Found a deployable version!
-			span.AddEvent("Found deployable version",
-				trace.WithAttributes(
-					attribute.String("version.id", version.Id),
-					attribute.String("version.tag", version.Tag),
-					attribute.Int("versions_evaluated", versionsEvaluated),
-					attribute.Int("versions_blocked", versionsBlocked),
-				))
-			span.SetAttributes(
-				attribute.Bool("found_deployable_version", true),
-				attribute.String("selected_version.id", version.Id),
-				attribute.String("selected_version.tag", version.Tag),
-				attribute.Int("versions_evaluated", versionsEvaluated),
-				attribute.Int("versions_blocked", versionsBlocked),
-			)
+			if planning != nil {
+				for _, result := range results {
+					evaluation := planning.StartEvaluation(result.Message)
+					display := version.Name
+					if display == "" {
+						display = version.Tag
+					}
+					evaluation.SetAttributes(
+						attribute.String("ctrlplane.group_by", version.Id),
+						attribute.String("ctrlplane.group_by_name", display),
+						attribute.String("ctrlplane.version_id", version.Id),
+						attribute.String("ctrlplane.version_name", version.Name),
+						attribute.String("ctrlplane.version_tag", version.Tag),
+					)
+					evaluation.SetResult(trace.ResultAllowed, result.Message).End()
+				}
+			}
+
 			span.SetStatus(codes.Ok, "found deployable version")
 			return version
 		}
 	}
 
-	// No eligible versions found
-	span.AddEvent("No eligible versions found (all blocked by policies)",
-		trace.WithAttributes(
-			attribute.Int("versions_evaluated", versionsEvaluated),
-			attribute.Int("versions_blocked", versionsBlocked),
-		))
-	span.SetAttributes(
-		attribute.Bool("found_deployable_version", false),
-		attribute.Int("versions_evaluated", versionsEvaluated),
-		attribute.Int("versions_blocked", versionsBlocked),
-	)
+	if planning != nil {
+		for _, result := range firstResults {
+			evaluation := planning.StartEvaluation(result.Message)
+			display := firstVersion.Name
+			if display == "" {
+				display = firstVersion.Tag
+			}
+			evaluation.SetAttributes(
+				attribute.String("ctrlplane.group_by", firstVersion.Id),
+				attribute.String("ctrlplane.group_by_name", display),
+				attribute.String("ctrlplane.version_id", firstVersion.Id),
+				attribute.String("ctrlplane.version_name", firstVersion.Name),
+				attribute.String("ctrlplane.version_tag", firstVersion.Tag),
+			)
+			r := trace.ResultBlocked
+			if result.Allowed {
+				r = trace.ResultAllowed
+			}
+			evaluation.SetResult(r, result.Message).End()
+		}
+	}
+
 	span.SetStatus(codes.Ok, "no deployable version (all blocked)")
 	return nil
 }

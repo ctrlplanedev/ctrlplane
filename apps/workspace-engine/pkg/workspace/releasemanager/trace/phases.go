@@ -72,6 +72,11 @@ type Evaluation struct {
 	span     trace.Span
 }
 
+func (e *Evaluation) SetAttributes(attributes ...attribute.KeyValue) *Evaluation {
+	e.span.SetAttributes(attributes...)
+	return e
+}
+
 // AddMetadata adds metadata to the evaluation
 func (e *Evaluation) AddMetadata(key string, value interface{}) *Evaluation {
 	attrs := metadataToAttributes(key, value)
@@ -84,6 +89,7 @@ func (e *Evaluation) SetResult(result EvaluationResult, message string) *Evaluat
 	status := evalResultToStatus(result)
 	e.span.SetAttributes(
 		attribute.String(attrStatus, string(status)),
+		attribute.String("ctrlplane.message", message),
 		attribute.String("ctrlplane.result", string(result)),
 	)
 
@@ -193,6 +199,44 @@ type ExecutionPhase struct {
 	span     trace.Span
 }
 
+// StartAction starts an action under the execution phase
+func (e *ExecutionPhase) StartAction(name string) *Action {
+	// Get depth BEFORE locking to avoid deadlock
+	depth := e.recorder.getDepth(e.ctx) + 1
+
+	e.recorder.mu.Lock()
+	e.recorder.nodeSequence++
+	seq := e.recorder.nodeSequence
+	e.recorder.mu.Unlock()
+
+	attrs := buildAttributes(
+		PhaseExecution,
+		NodeTypeAction,
+		StatusRunning,
+		depth,
+		seq,
+		e.recorder.workspaceID,
+		&e.recorder.releaseTargetKey,
+		e.recorder.releaseID,
+		e.recorder.jobID,
+		nil,
+	)
+
+	ctx, span := e.recorder.tracer.Start(e.ctx, name,
+		trace.WithAttributes(attrs...),
+	)
+
+	e.recorder.mu.Lock()
+	e.recorder.depthMap[span.SpanContext().SpanID().String()] = depth
+	e.recorder.mu.Unlock()
+
+	return &Action{
+		recorder: e.recorder,
+		ctx:      ctx,
+		span:     span,
+	}
+}
+
 // TriggerJob triggers a deployment job
 func (e *ExecutionPhase) TriggerJob(jobType string, config map[string]string) *Job {
 	// Get depth BEFORE locking to avoid deadlock
@@ -264,7 +308,7 @@ func (j *Job) AddMetadata(key string, value interface{}) *Job {
 func (j *Job) Token() string {
 	traceID := j.recorder.rootTraceID
 	jobID := j.jobType // Use job type as identifier
-	
+
 	// Generate token with 24h expiration
 	return GenerateDefaultTraceToken(traceID, jobID)
 }
@@ -333,4 +377,3 @@ func (a *Action) End() {
 	a.span.SetStatus(codes.Ok, string(StatusCompleted))
 	a.span.End()
 }
-

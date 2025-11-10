@@ -750,7 +750,7 @@ func TestStore_Restore_JobsAndJobAgents(t *testing.T) {
 	job1 := &oapi.Job{
 		Id:         job1Id,
 		ExternalId: ptr("external-job-1"),
-		Status:     oapi.Pending,
+		Status:     oapi.JobStatusPending,
 		JobAgentId: agent1Id,
 	}
 
@@ -758,7 +758,7 @@ func TestStore_Restore_JobsAndJobAgents(t *testing.T) {
 	job2 := &oapi.Job{
 		Id:         job2Id,
 		ExternalId: ptr("external-job-2"),
-		Status:     oapi.InProgress,
+		Status:     oapi.JobStatusInProgress,
 		JobAgentId: agent2Id,
 	}
 
@@ -793,14 +793,14 @@ func TestStore_Restore_JobsAndJobAgents(t *testing.T) {
 	// Verify jobs were restored
 	restoredJob1, ok := testStore.Jobs.Get(job1Id)
 	require.True(t, ok, "Job 1 should be restored")
-	assert.Equal(t, oapi.Pending, restoredJob1.Status)
+	assert.Equal(t, oapi.JobStatusPending, restoredJob1.Status)
 	assert.Equal(t, agent1Id, restoredJob1.JobAgentId)
 	assert.NotNil(t, restoredJob1.ExternalId)
 	assert.Equal(t, "external-job-1", *restoredJob1.ExternalId)
 
 	restoredJob2, ok := testStore.Jobs.Get(job2Id)
 	require.True(t, ok, "Job 2 should be restored")
-	assert.Equal(t, oapi.InProgress, restoredJob2.Status)
+	assert.Equal(t, oapi.JobStatusInProgress, restoredJob2.Status)
 	assert.Equal(t, agent2Id, restoredJob2.JobAgentId)
 }
 

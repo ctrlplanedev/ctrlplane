@@ -51,4 +51,3 @@ func (e *inMemoryExporter) getSpans() []sdktrace.ReadOnlySpan {
 	copy(result, e.spans)
 	return result
 }
-

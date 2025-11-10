@@ -4,23 +4,28 @@ import (
 	"context"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 )
 
 func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
 	cs := statechange.NewChangeSet[any]()
 	s := store.New(id, cs)
-	rm := releasemanager.New(s)
+
 	ws := &Workspace{
-		ID:             id,
-		store:          s,
-		releasemanager: rm,
-		changeset:      cs,
+		ID:         id,
+		store:      s,
+		changeset:  cs,
+		traceStore: trace.NewInMemoryStore(),
 	}
 
+	// Apply options first to allow setting traceStore
 	for _, option := range options {
 		option(ws)
 	}
+
+	// Create release manager with trace store (will panic if nil)
+	ws.releasemanager = releasemanager.New(s, ws.traceStore)
 
 	return ws
 }
@@ -31,6 +36,7 @@ type Workspace struct {
 	changeset      *statechange.ChangeSet[any]
 	store          *store.Store
 	releasemanager *releasemanager.Manager
+	traceStore     releasemanager.PersistenceStore
 }
 
 func (w *Workspace) Store() *store.Store {

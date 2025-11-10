@@ -293,7 +293,7 @@ func TestReconcileTarget_DepthTracking(t *testing.T) {
 
 	// Can only test depth tracking for phases, not nested objects due to deadlock
 	planning := rt.StartPlanning()
-	
+
 	// Root should be at depth 0
 	if rt.depthMap[rt.rootSpan.SpanContext().SpanID().String()] != 0 {
 		t.Error("root span should be at depth 0")
@@ -477,4 +477,3 @@ func TestReconcileTarget_Concurrency(t *testing.T) {
 		t.Errorf("expected at least 3 spans, got %d", len(store.spans))
 	}
 }
-

@@ -25,10 +25,10 @@ func compareReleaseTargets(a *fullReleaseTarget, b *fullReleaseTarget) int {
 	}
 
 	if statusA != nil && statusB != nil {
-		if *statusA == oapi.Failure && *statusB != oapi.Failure {
+		if *statusA == oapi.JobStatusFailure && *statusB != oapi.JobStatusFailure {
 			return -1
 		}
-		if *statusA != oapi.Failure && *statusB == oapi.Failure {
+		if *statusA != oapi.JobStatusFailure && *statusB == oapi.JobStatusFailure {
 			return 1
 		}
 

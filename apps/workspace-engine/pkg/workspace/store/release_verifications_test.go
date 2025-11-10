@@ -112,4 +112,3 @@ func TestGetMostRecentVerificationForRelease_MultipleReleases(t *testing.T) {
 	assert.Equal(t, verification1.Id, result.Id)
 	assert.Equal(t, release1Id, result.ReleaseId)
 }
-

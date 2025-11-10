@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/db"
 	dbpersistence "workspace-engine/pkg/db/persistence"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/kafka"
@@ -19,6 +20,7 @@ import (
 	"workspace-engine/pkg/ticker"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -207,9 +209,15 @@ func main() {
 
 	defer store.Close()
 
+	// Initialize database pool for trace store
+	pgxPool := db.GetPool(ctx)
+	traceStore := trace.NewDBStore(pgxPool)
+	log.Info("Deployment trace store initialized")
+
 	manager.Configure(
 		manager.WithPersistentStore(store),
 		manager.WithWorkspaceCreateOptions(
+			workspace.WithTraceStore(traceStore),
 			workspace.AddDefaultSystem(),
 		),
 	)
