@@ -8,6 +8,7 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { JobAgentCard } from "./JobAgentCard";
 
 export function meta() {
   return [
@@ -43,13 +44,9 @@ export default function Projects() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
         {jobAgentProviders.map((jobAgent) => (
-          <div key={jobAgent.id}>
-            <h3>{jobAgent.name}</h3>
-            <p>{jobAgent.type}</p>
-            <p>{JSON.stringify(jobAgent.config)}</p>
-          </div>
+          <JobAgentCard key={jobAgent.id} jobAgent={jobAgent} />
         ))}
       </div>
     </>

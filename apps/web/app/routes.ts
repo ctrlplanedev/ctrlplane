@@ -75,7 +75,7 @@ export default [
       ),
 
       route("systems", "routes/ws/systems.tsx"),
-      route("runners", "routes/ws/runners.tsx"),
+      route("runners", "routes/ws/runners/runners.tsx"),
       route("providers", "routes/ws/providers.tsx"),
       route("policies", "routes/ws/policies.tsx"),
       route("policies", "routes/ws/policies/_layout.tsx", [
