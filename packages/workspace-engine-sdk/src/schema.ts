@@ -1022,6 +1022,35 @@ export interface components {
        */
       timeScaleInterval: number;
     };
+    HTTPMetricProvider: {
+      /** @description Request body (supports Go templates) */
+      body?: string;
+      /** @description HTTP headers (values support Go templates) */
+      headers?: {
+        [key: string]: string;
+      };
+      /**
+       * @description HTTP method
+       * @default GET
+       * @enum {string}
+       */
+      method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+      /**
+       * @description Request timeout (duration string, e.g., "30s")
+       * @default 30s
+       */
+      timeout: string;
+      /**
+       * @description Provider type (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: "HTTPMetricProvider";
+      /**
+       * @description HTTP endpoint URL (supports Go templates)
+       * @example http://{{ .resource.name }}.{{ .environment.name }}/health
+       */
+      url: string;
+    };
     IntegerValue: number;
     Job: {
       /** Format: date-time */
@@ -1103,6 +1132,7 @@ export interface components {
       | components["schemas"]["StringValue"]
       | components["schemas"]["ObjectValue"]
       | components["schemas"]["NullValue"];
+    MetricProvider: components["schemas"]["HTTPMetricProvider"];
     /** @enum {boolean} */
     NullValue: true;
     NumberValue: number;
@@ -1197,7 +1227,7 @@ export interface components {
       variables: {
         [key: string]: components["schemas"]["LiteralValue"];
       };
-      verificationAnalysis?: components["schemas"]["VerificationAnalysis"];
+      verification?: components["schemas"]["ReleaseVerification"];
       version: components["schemas"]["DeploymentVersion"];
     };
     ReleaseTarget: {
@@ -1216,6 +1246,20 @@ export interface components {
       releaseTarget: components["schemas"]["ReleaseTarget"];
       resource: components["schemas"]["Resource"];
       state: components["schemas"]["ReleaseTargetState"];
+    };
+    ReleaseVerification: {
+      /**
+       * Format: date-time
+       * @description When verification was created
+       */
+      createdAt: string;
+      id: string;
+      jobId?: string;
+      /** @description Summary message of verification result */
+      message?: string;
+      /** @description Metrics associated with this verification */
+      metrics: components["schemas"]["VerificationMetricStatus"][];
+      releaseId: string;
     };
     ResolvedPolicy: {
       environmentIds: string[];
@@ -1315,32 +1359,7 @@ export interface components {
       | components["schemas"]["LiteralValue"]
       | components["schemas"]["ReferenceValue"]
       | components["schemas"]["SensitiveValue"];
-    VerificationAnalysis: {
-      /**
-       * Format: date-time
-       * @description When verification completed
-       */
-      completedAt?: string;
-      /** @description Number of failed measurements */
-      failedCount: number;
-      /** @description Individual verification measurements */
-      measurements: components["schemas"]["VerificationResult"][];
-      /** @description Summary message of verification result */
-      message?: string;
-      /** @description Number of passed measurements */
-      passedCount: number;
-      /**
-       * Format: date-time
-       * @description When verification started
-       */
-      startedAt: string;
-      /**
-       * @description Current status of verification
-       * @enum {string}
-       */
-      status: "running" | "passed" | "failed" | "cancelled";
-    };
-    VerificationResult: {
+    VerificationMeasurement: {
       /** @description Raw measurement data */
       data?: {
         [key: string]: unknown;
@@ -1354,6 +1373,32 @@ export interface components {
       message?: string;
       /** @description Whether this measurement passed */
       passed: boolean;
+    };
+    VerificationMetricSpec: {
+      /** @description Number of measurements to take */
+      count: number;
+      /**
+       * @description Stop after this many failures (0 = no limit)
+       * @default 0
+       */
+      failureLimit: number;
+      /**
+       * @description Interval between measurements (duration string, e.g., "30s", "5m")
+       * @example 30s
+       */
+      interval: string;
+      /** @description Name of the verification metric */
+      name: string;
+      provider: components["schemas"]["MetricProvider"];
+      /**
+       * @description CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
+       * @example result.statusCode == 200
+       */
+      successCondition: string;
+    };
+    VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
+      /** @description Individual verification measurements taken for this metric */
+      measurements: components["schemas"]["VerificationMeasurement"][];
     };
   };
   responses: never;

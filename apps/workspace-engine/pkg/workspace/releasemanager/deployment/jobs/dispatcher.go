@@ -35,5 +35,9 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 		return jobdispatch.NewGithubDispatcher(d.store).DispatchJob(ctx, job)
 	}
 
+	if jobAgent.Type == string(jobdispatch.JobAgentTypeArgoCD) {
+		return jobdispatch.NewArgoCDDispatcher(d.store).DispatchJob(ctx, job)
+	}
+
 	return ErrUnsupportedJobAgent
 }
