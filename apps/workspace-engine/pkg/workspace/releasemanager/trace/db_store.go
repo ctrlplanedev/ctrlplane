@@ -115,14 +115,14 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 			case attrSequence:
 				v := int(attr.Value.AsInt64())
 				sequence = &v
+			}
 		}
-	}
 
-	// Serialize attributes to JSON
-	attributesJSON, err := json.Marshal(allAttributes)
-	if err != nil {
-		return fmt.Errorf("failed to marshal attributes: %w", err)
-	}
+		// Serialize attributes to JSON
+		attributesJSON, err := json.Marshal(allAttributes)
+		if err != nil {
+			return fmt.Errorf("failed to marshal attributes: %w", err)
+		}
 
 		// Extract and serialize events
 		events := make([]map[string]any, 0)
@@ -233,11 +233,11 @@ func nullableTime(t time.Time) interface{} {
 func validateSpan(span sdktrace.ReadOnlySpan) error {
 	traceID := span.SpanContext().TraceID().String()
 	spanID := span.SpanContext().SpanID().String()
-	
+
 	// Check for required workspace_id attribute
 	hasWorkspaceID := false
 	workspaceID := ""
-	
+
 	for _, attr := range span.Attributes() {
 		if string(attr.Key) == attrWorkspaceID {
 			hasWorkspaceID = true
@@ -245,11 +245,11 @@ func validateSpan(span sdktrace.ReadOnlySpan) error {
 			break
 		}
 	}
-	
+
 	if !hasWorkspaceID || workspaceID == "" {
-		return fmt.Errorf("span %q (trace_id=%s, span_id=%s) is missing required attribute %q", 
+		return fmt.Errorf("span %q (trace_id=%s, span_id=%s) is missing required attribute %q",
 			span.Name(), traceID, spanID, attrWorkspaceID)
 	}
-	
+
 	return nil
 }
