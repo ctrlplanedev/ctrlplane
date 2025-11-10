@@ -4,7 +4,7 @@ import { z } from "zod";
 import { desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
-import { Permission } from "@ctrlplane/validators/auth";
+import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -54,6 +54,87 @@ export const workspaceRouter = router({
         data: {},
       });
       return true;
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z
+          .string()
+          .min(3, {
+            message: "Workspace name must be at least 3 characters long.",
+          })
+          .max(30, {
+            message: "Workspace name must be at most 30 characters long.",
+          }),
+        slug: z
+          .string()
+          .min(3, {
+            message: "Workspace slug must be at least 3 characters long.",
+          })
+          .max(50, {
+            message: "Workspace slug must be at most 50 characters long.",
+          })
+          .regex(/^[a-z0-9-]+$/, {
+            message:
+              "Workspace slug can only contain lowercase letters, numbers, and hyphens",
+          }),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if slug is already taken
+      const slugExists = await ctx.db
+        .select()
+        .from(schema.workspace)
+        .where(eq(schema.workspace.slug, input.slug))
+        .then(takeFirstOrNull);
+
+      if (slugExists) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This workspace slug is already taken",
+        });
+      }
+
+      // Create workspace and assign creator as admin in a transaction
+      const newWorkspace = await ctx.db.transaction(async (tx) => {
+        // Create the workspace
+        const workspace = await tx
+          .insert(schema.workspace)
+          .values({
+            name: input.name,
+            slug: input.slug,
+          })
+          .returning()
+          .then(takeFirst);
+
+        // Assign creator as admin
+        await tx.insert(schema.entityRole).values({
+          roleId: predefinedRoles.admin.id,
+          scopeType: "workspace",
+          scopeId: workspace.id,
+          entityType: "user",
+          entityId: ctx.session.user.id,
+        });
+
+        // Update user's active workspace
+        await tx
+          .update(schema.user)
+          .set({ activeWorkspaceId: workspace.id })
+          .where(eq(schema.user.id, ctx.session.user.id));
+
+        return workspace;
+      });
+
+      // Trigger workspace engine to save initial snapshot
+      // await sendGoEvent({
+      //   workspaceId: newWorkspace.id,
+      //   eventType: Event.WorkspaceSave,
+      //   timestamp: Date.now(),
+      //   data: {},
+      // });
+
+      return newWorkspace;
     }),
 
   get: protectedProcedure

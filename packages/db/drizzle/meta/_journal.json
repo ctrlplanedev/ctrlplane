@@ -946,6 +946,13 @@
       "when": 1761435242473,
       "tag": "0134_lowly_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 135,
+      "version": "7",
+      "when": 1762743959822,
+      "tag": "0135_lumpy_overlord",
+      "breakpoints": true
     }
   ]
 }

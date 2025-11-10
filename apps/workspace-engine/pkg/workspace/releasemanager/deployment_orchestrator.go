@@ -6,13 +6,14 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 // DeploymentOrchestrator coordinates the three-phase deployment process:
@@ -71,9 +72,10 @@ func (o *DeploymentOrchestrator) Reconcile(
 	releaseTarget *oapi.ReleaseTarget,
 	forceRedeploy bool,
 	resourceRelationships map[string][]*oapi.EntityRelation,
+	recorder *trace.ReconcileTarget,
 ) (*oapi.Release, *oapi.Job, error) {
 	ctx, span := tracer.Start(ctx, "DeploymentOrchestrator.Reconcile",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
 			attribute.Bool("force_redeploy", forceRedeploy),
 		))
@@ -86,6 +88,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 		ctx,
 		releaseTarget,
 		deployment.WithResourceRelatedEntities(resourceRelationships),
+		deployment.WithTraceRecorder(recorder),
 	)
 	if err != nil {
 		span.RecordError(err)
@@ -104,7 +107,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 	// Skip eligibility check if this is a forced redeploy
 	if !forceRedeploy {
 		span.AddEvent("Phase 2: Checking job eligibility")
-		shouldCreate, reason, err := o.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease)
+		shouldCreate, reason, err := o.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease, recorder)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "eligibility check failed")
@@ -119,7 +122,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 		// Job should not be created (retry limit, already attempted, etc.)
 		if !shouldCreate {
 			span.AddEvent("Job should not be created",
-				trace.WithAttributes(attribute.String("reason", reason)))
+				oteltrace.WithAttributes(attribute.String("reason", reason)))
 			span.SetAttributes(attribute.String("reconciliation_result", "job_not_eligible"))
 			return desiredRelease, nil, nil
 		}
@@ -129,7 +132,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 
 	// Phase 3: EXECUTION - Create the job (WRITES)
 	span.AddEvent("Phase 3: Executing release")
-	job, err := o.executor.ExecuteRelease(ctx, desiredRelease)
+	job, err := o.executor.ExecuteRelease(ctx, desiredRelease, recorder)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "execution failed")

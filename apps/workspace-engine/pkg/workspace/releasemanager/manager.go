@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
@@ -17,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 // Manager handles the business logic for release target changes and deployment decisions.
@@ -27,12 +28,21 @@ type Manager struct {
 	cache        *StateCache
 	deployment   *DeploymentOrchestrator
 	verification *verification.Manager
+	traceStore   PersistenceStore
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
 
+// PersistenceStore interface for storing deployment traces
+type PersistenceStore = trace.PersistenceStore
+
 // New creates a new release manager for a workspace.
-func New(store *store.Store) *Manager {
+// traceStore must not be nil - panics if not provided.
+func New(store *store.Store, traceStore PersistenceStore) *Manager {
+	if traceStore == nil {
+		panic("traceStore cannot be nil - deployment tracing is mandatory")
+	}
+
 	deploymentOrch := NewDeploymentOrchestrator(store)
 	stateCache := NewStateCache(store, deploymentOrch.Planner())
 	verificationManager := verification.NewManager(store)
@@ -42,6 +52,7 @@ func New(store *store.Store) *Manager {
 		cache:        stateCache,
 		deployment:   deploymentOrch,
 		verification: verificationManager,
+		traceStore:   traceStore,
 	}
 }
 
@@ -59,7 +70,7 @@ type targetState struct {
 // Returns a map of cancelled jobs (for removed targets).
 func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.ChangeSet[any]) error {
 	ctx, span := tracer.Start(ctx, "ProcessChanges",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.Int("changes.total", len(changes.Changes())),
 		))
 	defer span.End()
@@ -135,11 +146,25 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		}
 
 		// Handle upsert - reconcile the target with pre-computed relationships
+		// Create a recorder for this target
+		workspaceID := m.store.ID()
+		recorder := trace.NewReconcileTarget(workspaceID, state.entity.Key())
+		defer func() {
+			recorder.Complete(trace.StatusCompleted)
+			if err := recorder.Persist(m.traceStore); err != nil {
+				log.Error("Failed to persist deployment trace",
+					"workspace_id", workspaceID,
+					"release_target", state.entity.Key(),
+					"error", err.Error())
+			}
+		}()
+		
 		relationships := resourceRelationships[state.entity.ResourceId]
-		if err := m.reconcileTargetWithRelationships(ctx, state.entity, false, relationships); err != nil {
+		if err := m.reconcileTargetWithRelationships(ctx, state.entity, false, relationships, recorder); err != nil {
 			log.Warn("error reconciling release target",
 				"release_target", state.entity.Key(),
 				"error", err.Error())
+			recorder.Complete(trace.StatusFailed)
 		}
 
 		return state, nil
@@ -151,7 +176,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 	}
 
 	span.AddEvent("Processing release target states",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.Int("states.count", len(states)),
 			attribute.Int("chunk_size", 100),
 			attribute.Int("concurrency", 10),
@@ -264,16 +289,17 @@ func (m *Manager) reconcileTargetWithRelationships(
 	releaseTarget *oapi.ReleaseTarget,
 	forceRedeploy bool,
 	resourceRelationships map[string][]*oapi.EntityRelation,
+	recorder *trace.ReconcileTarget,
 ) error {
 	ctx, span := tracer.Start(ctx, "reconcileTargetWithRelationships",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
 			attribute.Bool("force_redeploy", forceRedeploy),
 		))
 	defer span.End()
 
 	// Delegate to deployment orchestrator for the three-phase deployment process
-	desiredRelease, job, err := m.deployment.Reconcile(ctx, releaseTarget, forceRedeploy, resourceRelationships)
+	desiredRelease, job, err := m.deployment.Reconcile(ctx, releaseTarget, forceRedeploy, resourceRelationships, recorder)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "reconciliation failed")
@@ -296,7 +322,7 @@ func (m *Manager) reconcileTargetWithRelationships(
 
 func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.ReleaseTarget, forceRedeploy bool) error {
 	ctx, span := tracer.Start(ctx, "ReconcileTargets",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.Int("reconcile.count", len(releaseTargets)),
 			attribute.Bool("force_redeploy", forceRedeploy),
 		))
@@ -345,7 +371,7 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 //   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
 func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool) error {
 	ctx, span := tracer.Start(ctx, "ReconcileTarget",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
 			attribute.String("release_target.deployment_id", releaseTarget.DeploymentId),
 			attribute.String("release_target.environment_id", releaseTarget.EnvironmentId),
@@ -354,6 +380,29 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 		))
 	defer span.End()
 
+	// Create trace recorder for deployment analysis
+	workspaceID := m.store.ID()
+	recorder := trace.NewReconcileTarget(workspaceID, releaseTarget.Key())
+	
+	// Ensure trace is persisted even if reconciliation fails
+	defer func() {
+		// Complete the trace recorder with appropriate status
+		status := trace.StatusCompleted
+		if span.SpanContext().IsValid() {
+			// Check if span has error status
+			// We'll default to completed, errors will be captured in the trace phases
+		}
+		recorder.Complete(status)
+		
+		// Persist traces - log error but don't fail reconciliation
+		if err := recorder.Persist(m.traceStore); err != nil {
+			log.Error("Failed to persist deployment trace",
+				"workspace_id", workspaceID,
+				"release_target", releaseTarget.Key(),
+				"error", err.Error())
+		}
+	}()
+
 	// Compute relationships on-demand for this single resource
 	span.AddEvent("Getting resource and relationships")
 	resource, exists := m.store.Resources.Get(releaseTarget.ResourceId)
@@ -361,6 +410,7 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 		err := fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "resource not found")
+		recorder.Complete(trace.StatusFailed)
 		return err
 	}
 
@@ -369,6 +419,7 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get relationships")
+		recorder.Complete(trace.StatusFailed)
 		return err
 	}
 
@@ -380,14 +431,14 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	span.SetAttributes(attribute.Int("related_entities.count", totalRelatedEntities))
 
 	// Delegate to the implementation that accepts pre-computed relationships
-	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships)
+	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships, recorder)
 }
 
 // GetReleaseTargetStateWithRelationships computes and returns the release target state,
 // optionally using pre-computed resource relationships.
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...GetOption) (*oapi.ReleaseTargetState, error) {
 	ctx, span := tracer.Start(ctx, "GetReleaseTargetState",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
 		))
 	defer span.End()

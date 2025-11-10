@@ -275,6 +275,11 @@ func (r *ReconcileTarget) Persist(store ...PersistenceStore) error {
 
 // Helper methods
 
+// RootTraceID returns the root trace ID for this reconciliation
+func (r *ReconcileTarget) RootTraceID() string {
+	return r.rootTraceID
+}
+
 func (r *ReconcileTarget) getDepth(ctx context.Context) int {
 	span := trace.SpanFromContext(ctx)
 	if !span.SpanContext().IsValid() {

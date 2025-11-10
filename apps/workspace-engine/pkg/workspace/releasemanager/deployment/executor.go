@@ -7,12 +7,13 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 // Executor handles deployment execution (Phase 2: ACTION - Write operations).
@@ -34,9 +35,9 @@ func NewExecutor(store *store.Store) *Executor {
 // ExecuteRelease performs all write operations to deploy a release (WRITES TO STORE).
 // Precondition: Planner has already determined this release NEEDS to be deployed.
 // No additional "should we deploy" checks here - trust the planning phase.
-func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release) (job *oapi.Job, err error) {
+func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Release, recorder *trace.ReconcileTarget) (job *oapi.Job, err error) {
 	ctx, span := tracer.Start(ctx, "ExecuteRelease",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("release.id", releaseToDeploy.ID()),
 			attribute.String("deployment.id", releaseToDeploy.ReleaseTarget.DeploymentId),
 			attribute.String("environment.id", releaseToDeploy.ReleaseTarget.EnvironmentId),
@@ -45,21 +46,46 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 			attribute.String("version.tag", releaseToDeploy.Version.Tag),
 		))
 	defer span.End()
+	
+	// Start execution phase trace if recorder is available
+	var execution *trace.ExecutionPhase
+	if recorder != nil {
+		execution = recorder.StartExecution()
+		defer execution.End()
+	}
+	
+	// Start action for job creation
+	var createJobAction *trace.Action
+	if execution != nil {
+		createJobAction = recorder.StartAction("Create and dispatch job")
+	}
 
 	// Step 1: Persist the release (WRITE)
 	span.AddEvent("Persisting release to store")
+	if createJobAction != nil {
+		createJobAction.AddStep("Persist release", trace.StepResultPass, "Release persisted to store")
+	}
 	if err := e.store.Releases.Upsert(ctx, releaseToDeploy); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to persist release")
+		if createJobAction != nil {
+			createJobAction.AddStep("Persist release", trace.StepResultFail, fmt.Sprintf("Failed: %s", err.Error()))
+		}
 		return nil, err
 	}
 
 	// Step 2: Create and persist new job (WRITE)
 	span.AddEvent("Creating job for release")
+	if createJobAction != nil {
+		createJobAction.AddStep("Create job", trace.StepResultPass, "Job created")
+	}
 	newJob, err := e.jobFactory.CreateJobForRelease(ctx, releaseToDeploy)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create job")
+		if createJobAction != nil {
+			createJobAction.AddStep("Create job", trace.StepResultFail, fmt.Sprintf("Failed: %s", err.Error()))
+		}
 		return nil, err
 	}
 
@@ -70,12 +96,34 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		attribute.String("job.id", newJob.Id),
 		attribute.String("job.status", string(newJob.Status)),
 	)
+	
+	// Generate trace token for external executors
+	if recorder != nil && createJobAction != nil {
+		traceToken := trace.GenerateDefaultTraceToken(recorder.RootTraceID(), newJob.Id)
+		createJobAction.AddMetadata("trace_token", traceToken)
+		createJobAction.AddMetadata("job_id", newJob.Id)
+		createJobAction.AddStep("Generate trace token", trace.StepResultPass, "Token generated for external executor")
+		
+		// Store token in job's external ID or config for now
+		// This will be used by the job agent to report back
+		if newJob.ExternalId == nil {
+			newJob.ExternalId = &traceToken
+		}
+	}
+	
+	if createJobAction != nil {
+		createJobAction.AddStep("Persist job", trace.StepResultPass, "Job persisted to store")
+	}
 
 	// Step 3: Dispatch job to integration (ASYNC)
 	// Skip dispatch if job already has InvalidJobAgent status
 	if newJob.Status != oapi.InvalidJobAgent {
 		span.AddEvent("Dispatching job to integration (async)",
-			trace.WithAttributes(attribute.String("job.id", newJob.Id)))
+			oteltrace.WithAttributes(attribute.String("job.id", newJob.Id)))
+		
+		if createJobAction != nil {
+			createJobAction.AddStep("Dispatch job", trace.StepResultPass, "Job dispatched to integration")
+		}
 
 		go func() {
 			if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
@@ -89,7 +137,15 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		}()
 	} else {
 		span.AddEvent("Skipping job dispatch (InvalidJobAgent status)",
-			trace.WithAttributes(attribute.String("job.id", newJob.Id)))
+			oteltrace.WithAttributes(attribute.String("job.id", newJob.Id)))
+		if createJobAction != nil {
+			createJobAction.AddStep("Skip dispatch", trace.StepResultPass, "Job has InvalidJobAgent status")
+		}
+	}
+	
+	// End the action
+	if createJobAction != nil {
+		createJobAction.End()
 	}
 
 	span.SetStatus(codes.Ok, "release executed successfully")
@@ -104,7 +160,7 @@ func BuildRelease(
 	variables map[string]*oapi.LiteralValue,
 ) *oapi.Release {
 	_, span := tracer.Start(ctx, "BuildRelease",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),
 			attribute.String("environment.id", releaseTarget.EnvironmentId),
 			attribute.String("resource.id", releaseTarget.ResourceId),

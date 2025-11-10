@@ -3,6 +3,7 @@ import { route } from "@react-router/dev/routes";
 
 export default [
   route("", "routes/protected.tsx", [
+    route("workspaces/create", "routes/workspaces/create.tsx"),
     route(":workspaceSlug", "routes/ws/_layout.tsx", [
       route("deployments", "routes/ws/deployments.tsx"),
 

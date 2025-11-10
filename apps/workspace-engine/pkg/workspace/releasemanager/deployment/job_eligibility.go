@@ -2,16 +2,18 @@ package deployment
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/skipdeployed"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var jobEligibilityTracer = otel.Tracer("workspace/releasemanager/deployment/jobeligibility")
@@ -51,9 +53,10 @@ func NewJobEligibilityChecker(store *store.Store) *JobEligibilityChecker {
 func (c *JobEligibilityChecker) ShouldCreateJob(
 	ctx context.Context,
 	release *oapi.Release,
+	recorder *trace.ReconcileTarget,
 ) (bool, string, error) {
 	ctx, span := jobEligibilityTracer.Start(ctx, "ShouldCreateJob",
-		trace.WithAttributes(
+		oteltrace.WithAttributes(
 			attribute.String("release.id", release.ID()),
 			attribute.String("release.version.id", release.Version.Id),
 			attribute.String("release.version.tag", release.Version.Tag),
@@ -63,6 +66,13 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 			attribute.String("release.target.deployment.id", release.ReleaseTarget.DeploymentId),
 		))
 	defer span.End()
+	
+	// Start eligibility phase trace if recorder is available
+	var eligibility *trace.EligibilityPhase
+	if recorder != nil {
+		eligibility = recorder.StartEligibility()
+		defer eligibility.End()
+	}
 
 	decision := &oapi.DeployDecision{
 		PolicyResults: make([]oapi.PolicyEvaluation, 0),
@@ -78,11 +88,21 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 		for i, eval := range c.releaseEvaluators {
 			ruleResult := eval.Evaluate(ctx, release)
 			policyResult.AddRuleResult(*ruleResult)
+			
+			// Record check in trace
+			if eligibility != nil {
+				checkResult := trace.CheckResultPass
+				if !ruleResult.Allowed {
+					checkResult = trace.CheckResultFail
+				}
+				check := eligibility.StartCheck(fmt.Sprintf("Check: %T", eval))
+				check.SetResult(checkResult, ruleResult.Message).End()
+			}
 
 			// Log individual evaluator results
 			if !ruleResult.Allowed {
 				span.AddEvent("Eligibility rule blocked job creation",
-					trace.WithAttributes(
+					oteltrace.WithAttributes(
 						attribute.Int("evaluator_index", i),
 						attribute.String("message", ruleResult.Message),
 					))
@@ -92,6 +112,15 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 	}
 
 	canCreate := decision.CanDeploy()
+	
+	// Record eligibility decision
+	if eligibility != nil {
+		if canCreate {
+			eligibility.MakeDecision("Job eligible for creation", trace.DecisionApproved)
+		} else {
+			eligibility.MakeDecision("Job not eligible for creation", trace.DecisionRejected)
+		}
+	}
 
 	// Build a reason string based on the decision
 	reason := "eligible"
@@ -119,7 +148,7 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 		span.AddEvent("Job creation allowed")
 	} else {
 		span.AddEvent("Job creation blocked",
-			trace.WithAttributes(attribute.String("reason", reason)))
+			oteltrace.WithAttributes(attribute.String("reason", reason)))
 	}
 
 	return canCreate, reason, nil

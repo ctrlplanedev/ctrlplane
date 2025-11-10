@@ -12,7 +12,7 @@ import (
 
 func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	repo := repository.New(wsId)
-	store := &Store{repo: repo, changeset: changeset}
+	store := &Store{id: wsId, repo: repo, changeset: changeset}
 
 	store.Deployments = NewDeployments(store)
 	store.Environments = NewEnvironments(store)
@@ -39,6 +39,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 }
 
 type Store struct {
+	id        string
 	repo      *repository.InMemoryStore
 	changeset *statechange.ChangeSet[any]
 
@@ -62,6 +63,10 @@ type Store struct {
 	GithubEntities           *GithubEntities
 	Relations                *Relations
 	ReleaseVerifications     *ReleaseVerifications
+}
+
+func (s *Store) ID() string {
+	return s.id
 }
 
 func (s *Store) Repo() *repository.InMemoryStore {
