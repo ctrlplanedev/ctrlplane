@@ -134,11 +134,6 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		return nil, nil
 	}
 
-	// Record successful planning decision
-	if planning != nil {
-		planning.MakeDecision("Version approved for deployment", trace.DecisionApproved)
-	}
-
 	span.SetAttributes(
 		attribute.String("deployable_version.id", deployableVersion.Id),
 		attribute.String("deployable_version.tag", deployableVersion.Tag),

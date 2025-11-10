@@ -60,11 +60,6 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		createJobAction = recorder.StartAction("Create and dispatch job")
 	}
 
-	// Step 1: Persist the release (WRITE)
-	span.AddEvent("Persisting release to store")
-	if createJobAction != nil {
-		createJobAction.AddStep("Persist release", trace.StepResultPass, "Release persisted to store")
-	}
 	if err := e.store.Releases.Upsert(ctx, releaseToDeploy); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to persist release")
@@ -96,6 +91,11 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		attribute.String("job.id", newJob.Id),
 		attribute.String("job.status", string(newJob.Status)),
 	)
+
+	// Set job ID on trace recorder so all subsequent spans are associated with this job
+	if recorder != nil {
+		recorder.SetJobID(newJob.Id)
+	}
 
 	// Generate trace token for external executors
 	if recorder != nil && createJobAction != nil {
@@ -139,7 +139,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		span.AddEvent("Skipping job dispatch (InvalidJobAgent status)",
 			oteltrace.WithAttributes(attribute.String("job.id", newJob.Id)))
 		if createJobAction != nil {
-			createJobAction.AddStep("Skip dispatch", trace.StepResultPass, "Job has InvalidJobAgent status")
+			createJobAction.AddStep("Skipping dispatch, unable to process job configuration.", trace.StepResultFail, "Job has InvalidJobAgent status")
 		}
 	}
 

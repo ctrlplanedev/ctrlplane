@@ -152,14 +152,33 @@ function ViewTraceAction({
   const { workspace } = useWorkspace();
   const [selectedSpanId, setSelectedSpanId] = useState<string>();
 
-  const tracesQuery = trpc.deploymentTraces.byJobId.useQuery({
+  // First, fetch spans with the job_id to get the trace_id
+  const jobSpansQuery = trpc.deploymentTraces.byJobId.useQuery({
     workspaceId: workspace.id,
     jobId,
-    limit: 1000,
+    limit: 1,
     offset: 0,
   });
 
-  const spans = tracesQuery.data ?? [];
+  // Get the trace ID from the first span
+  const traceId = jobSpansQuery.data?.[0]?.traceId;
+
+  // Then fetch all spans for that trace (including planning/eligibility phases)
+  const fullTraceQuery = trpc.deploymentTraces.byTraceId.useQuery(
+    {
+      workspaceId: workspace.id,
+      traceId: traceId!,
+    },
+    {
+      enabled: !!traceId,
+    },
+  );
+
+  const isLoading = jobSpansQuery.isLoading || fullTraceQuery.isLoading;
+  const isError = jobSpansQuery.isError || fullTraceQuery.isError;
+  const error = jobSpansQuery.error ?? fullTraceQuery.error;
+
+  const spans = fullTraceQuery.data ?? [];
   const treeNodes = buildTraceTree(spans);
 
   return (
@@ -170,26 +189,31 @@ function ViewTraceAction({
           View trace
         </DropdownMenuItem>
       </DialogTrigger>
-      <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+      <DialogContent className="max-w-5xl! max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Job Trace</DialogTitle>
           <DialogDescription>
-            View the execution trace for this job
+            View the complete execution trace for this job from reconciliation
+            start
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4">
-          {tracesQuery.isLoading ? (
+          {isLoading ? (
             <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
               Loading traces...
             </div>
-          ) : tracesQuery.isError ? (
+          ) : isError ? (
             <div className="flex h-32 items-center justify-center text-sm text-red-500">
-              Error loading traces: {tracesQuery.error.message}
+              Error loading traces: {error?.message}
+            </div>
+          ) : !traceId ? (
+            <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+              No traces found for this job
             </div>
           ) : spans.length === 0 ? (
             <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-              No traces found for this job
+              No trace spans found
             </div>
           ) : (
             <TraceTree

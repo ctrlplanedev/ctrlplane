@@ -280,6 +280,14 @@ func (r *ReconcileTarget) RootTraceID() string {
 	return r.rootTraceID
 }
 
+// SetJobID sets the job ID for this reconciliation
+// This should be called after a job is created to associate all subsequent spans with the job
+func (r *ReconcileTarget) SetJobID(jobID string) {
+	r.jobID = &jobID
+	// Update the root span with the job ID
+	r.rootSpan.SetAttributes(attribute.String("ctrlplane.job_id", jobID))
+}
+
 func (r *ReconcileTarget) getDepth(ctx context.Context) int {
 	span := trace.SpanFromContext(ctx)
 	if !span.SpanContext().IsValid() {
