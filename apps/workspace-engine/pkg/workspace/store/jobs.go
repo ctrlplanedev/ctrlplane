@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -81,4 +82,36 @@ func (j *Jobs) GetJobsInProcessingStateForReleaseTarget(releaseTarget *oapi.Rele
 		jobs[job.Id] = job
 	}
 	return jobs
+}
+
+func (j *Jobs) GetWithRelease(id string) (*oapi.JobWithRelease, error) {
+	job, ok := j.Get(id)
+	if !ok {
+		return nil, fmt.Errorf("job not found")
+	}
+	release, ok := j.repo.Releases.Get(job.ReleaseId)
+	if !ok {
+		return nil, fmt.Errorf("release not found")
+	}
+
+	environment, ok := j.store.Environments.Get(release.ReleaseTarget.EnvironmentId)
+	if !ok {
+		return nil, fmt.Errorf("environment not found")
+	}
+	deployment, ok := j.store.Deployments.Get(release.ReleaseTarget.DeploymentId)
+	if !ok {
+		return nil, fmt.Errorf("deployment not found")
+	}
+	resource, ok := j.store.Resources.Get(release.ReleaseTarget.ResourceId)
+	if !ok {
+		return nil, fmt.Errorf("resource not found")
+	}
+
+	return &oapi.JobWithRelease{
+		Job:         *job,
+		Release:     *release,
+		Environment: environment,
+		Deployment:  deployment,
+		Resource:    resource,
+	}, nil
 }
