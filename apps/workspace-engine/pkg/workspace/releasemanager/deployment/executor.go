@@ -107,7 +107,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		// Store token in job's external ID or config for now
 		// This will be used by the job agent to report back
 		if newJob.ExternalId == nil {
-			newJob.ExternalId = &traceToken
+			newJob.Metadata["trace_token"] = traceToken
 		}
 	}
 
