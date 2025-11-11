@@ -29,9 +29,7 @@ export function meta() {
   ];
 }
 
-export default function Resources() {
-  const { workspace } = useWorkspace();
-
+function useSearch() {
   const [searchParams, setSearchParams] = useSearchParams();
   const cel = searchParams.get("cel");
   const [search, setSearch] = useState(cel ?? "true");
@@ -39,20 +37,36 @@ export default function Resources() {
   useDebounce(
     () => {
       setSearchDebounced(search);
-      setSearchParams({ cel: searchDebounced });
+      setSearchParams({ cel: search });
     },
     1_000,
     [search],
   );
+  return { search, setSearch, searchDebounced };
+}
 
+function useCleanedCel(searchDebounced: string) {
+  const { data, isLoading } = trpc.validate.resourceSelector.useQuery({
+    cel: searchDebounced,
+  });
+  if (data?.valid) return { cleanedCel: searchDebounced, isLoading };
+  const cleanedCel = `resource.name.contains('${searchDebounced}') || resource.identifier.contains('${searchDebounced}')`;
+  return { cleanedCel, isLoading };
+}
+
+export default function Resources() {
+  const { workspace } = useWorkspace();
+
+  const { search, setSearch, searchDebounced } = useSearch();
+  const { cleanedCel, isLoading } = useCleanedCel(searchDebounced);
   const { data: resources } = trpc.resource.list.useQuery(
     {
       workspaceId: workspace.id,
-      selector: { cel: searchDebounced },
+      selector: { cel: cleanedCel },
       limit: 200,
       offset: 0,
     },
-    { refetchInterval: 30_000 },
+    { refetchInterval: 30_000, enabled: !isLoading },
   );
 
   return (
