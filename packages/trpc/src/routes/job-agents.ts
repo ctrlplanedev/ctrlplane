@@ -1,5 +1,7 @@
+import { v4 as uuidv4 } from "uuid";
 import z from "zod";
 
+import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -32,5 +34,25 @@ export const jobAgentsRouter = router({
         },
       );
       return jobAgent.data;
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        name: z.string(),
+        type: z.string(),
+        config: z.record(z.string(), z.unknown()),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const data = { ...input, id: uuidv4() };
+      await sendGoEvent({
+        workspaceId: input.workspaceId,
+        eventType: Event.JobAgentCreated,
+        timestamp: Date.now(),
+        data,
+      });
+      return data;
     }),
 });
