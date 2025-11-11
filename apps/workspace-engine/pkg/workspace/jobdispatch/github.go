@@ -15,7 +15,12 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v66/github"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var ghTracer = otel.Tracer("GithubDispatcher")
 
 type githubJobConfig struct {
 	InstallationId int     `json:"installationId"`
@@ -230,15 +235,31 @@ func (d *GithubDispatcher) sendToGithub(ctx context.Context, job *oapi.Job, cfg 
 }
 
 func (d *GithubDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
+	ctx, span := ghTracer.Start(ctx, "GithubDispatcher.DispatchJob")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("job.id", job.Id))
+
 	cfg, err := d.parseConfig(job)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to parse job config")
 		return err
 	}
 
 	ghEntity, exists := d.store.GithubEntities.Get(cfg.Owner, cfg.InstallationId)
 	if !exists {
+		span.RecordError(fmt.Errorf("github entity not found for job %s", job.Id))
+		span.SetStatus(codes.Error, "github entity not found")
 		return fmt.Errorf("github entity not found for job %s", job.Id)
 	}
 
-	return d.sendToGithub(ctx, job, cfg, ghEntity)
+	err = d.sendToGithub(ctx, job, cfg, ghEntity)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to send to github")
+		return err
+	}
+
+	return nil
 }
