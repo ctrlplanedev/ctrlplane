@@ -12,9 +12,7 @@ local openapi = import '../lib/openapi.libsonnet';
   },
   UpdateJobAgentRequest: {
     type: 'object',
-    required: ['id'],
     properties: {
-      id: { type: 'string' },
       name: { type: 'string' },
       type: { type: 'string' },
       config: { type: 'object', additionalProperties: true },

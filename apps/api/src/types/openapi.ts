@@ -1088,7 +1088,6 @@ export interface components {
             config?: {
                 [key: string]: unknown;
             };
-            id: string;
             name?: string;
             type?: string;
         };

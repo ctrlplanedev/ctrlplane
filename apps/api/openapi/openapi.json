@@ -1354,9 +1354,6 @@
                   "additionalProperties": true,
                   "type": "object"
                },
-               "id": {
-                  "type": "string"
-               },
                "name": {
                   "type": "string"
                },
@@ -1364,9 +1361,6 @@
                   "type": "string"
                }
             },
-            "required": [
-               "id"
-            ],
             "type": "object"
          },
          "UpdateWorkspaceRequest": {
