@@ -47,7 +47,8 @@ local securitySchemes = {
          (import 'paths/relationship-rules.jsonnet') +
          (import 'paths/jobs.jsonnet') +
          (import 'paths/release-targets.jsonnet') +
-         (import 'paths/release.jsonnet'),
+         (import 'paths/release.jsonnet') +
+         (import 'paths/job-agents.jsonnet'),
   components: {
     parameters: {},
     securitySchemes: securitySchemes,
@@ -66,6 +67,7 @@ local securitySchemes = {
       (import 'schemas/userapprovalrecord.jsonnet') +
       (import 'schemas/resource-provider.jsonnet') +
       (import 'schemas/relationship-rules.jsonnet') +
-      (import 'schemas/release.jsonnet'),
+      (import 'schemas/release.jsonnet') +
+      (import 'schemas/job-agents.jsonnet'),
   },
 }

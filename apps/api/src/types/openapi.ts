@@ -304,6 +304,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/job-agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a new job agent */
+        post: operations["createJobAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a job agent */
+        get: operations["getJobAgent"];
+        /** Update a job agent */
+        put: operations["updateJobAgent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/jobs": {
         parameters: {
             query?: never;
@@ -676,6 +711,13 @@ export interface components {
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
         };
+        CreateJobAgentRequest: {
+            config: {
+                [key: string]: unknown;
+            };
+            name: string;
+            type: string;
+        };
         CreatePolicyRequest: {
             description?: string;
             enabled?: boolean;
@@ -850,6 +892,14 @@ export interface components {
             status: components["schemas"]["JobStatus"];
             /** Format: date-time */
             updatedAt: string;
+        };
+        JobAgent: {
+            config: {
+                [key: string]: unknown;
+            };
+            id: string;
+            name: string;
+            type: string;
         };
         /** @enum {string} */
         JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
@@ -1033,6 +1083,14 @@ export interface components {
             name?: string;
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag?: string;
+        };
+        UpdateJobAgentRequest: {
+            config?: {
+                [key: string]: unknown;
+            };
+            id: string;
+            name?: string;
+            type?: string;
         };
         UpdateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -2298,6 +2356,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Environment"];
+                };
+            };
+        };
+    };
+    createJobAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJobAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAgent"];
+                };
+            };
+        };
+    };
+    getJobAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the job agent */
+                jobAgentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAgent"];
+                };
+            };
+        };
+    };
+    updateJobAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the job agent */
+                jobAgentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateJobAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAgent"];
                 };
             };
         };

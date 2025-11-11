@@ -12,6 +12,7 @@ import {
   listWorkspaces,
   updateWorkspace,
 } from "./handlers.js";
+import { jobAgentsRouter } from "./job-agents.js";
 import { jobsRouter } from "./jobs.js";
 import { policiesRouter } from "./policies.js";
 import { relationshipRulesRouter } from "./relationship-rules.js";
@@ -42,4 +43,5 @@ export const createWorkspacesRouter = (): Router =>
     .use("/:workspaceId/jobs", jobsRouter)
     .use("/:workspaceId/relationship-rules", relationshipRulesRouter)
     .use("/:workspaceId/release-targets", releaseTargetsRouter)
-    .use("/:workspaceId/releases", releaseRouter);
+    .use("/:workspaceId/releases", releaseRouter)
+    .use("/:workspaceId/job-agents", jobAgentsRouter);

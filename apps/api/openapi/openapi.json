@@ -136,6 +136,26 @@
             ],
             "type": "object"
          },
+         "CreateJobAgentRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "config"
+            ],
+            "type": "object"
+         },
          "CreatePolicyRequest": {
             "properties": {
                "description": {
@@ -653,6 +673,30 @@
                "createdAt",
                "updatedAt",
                "metadata"
+            ],
+            "type": "object"
+         },
+         "JobAgent": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "type",
+               "config"
             ],
             "type": "object"
          },
@@ -1296,6 +1340,27 @@
                   "$ref": "#/components/schemas/DeploymentVersionStatus"
                },
                "tag": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id"
+            ],
+            "type": "object"
+         },
+         "UpdateJobAgentRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
                   "type": "string"
                }
             },
@@ -3463,6 +3528,118 @@
                }
             },
             "summary": "Upsert environment"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/job-agents": {
+         "post": {
+            "operationId": "createJobAgent",
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/CreateJobAgentRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/JobAgent"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               }
+            },
+            "summary": "Create a new job agent"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}": {
+         "get": {
+            "operationId": "getJobAgent",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job agent",
+                  "in": "path",
+                  "name": "jobAgentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/JobAgent"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               }
+            },
+            "summary": "Get a job agent"
+         },
+         "put": {
+            "operationId": "updateJobAgent",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job agent",
+                  "in": "path",
+                  "name": "jobAgentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/UpdateJobAgentRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/JobAgent"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               }
+            },
+            "summary": "Update a job agent"
          }
       },
       "/v1/workspaces/{workspaceId}/jobs": {
