@@ -65,7 +65,6 @@ const getDeployment: AsyncTypedHandler<
   if (response.data == null) throw new ApiError("Deployment not found", 404);
 
   res.json(response.data);
-  return;
 };
 
 const deleteDeployment: AsyncTypedHandler<
@@ -141,12 +140,10 @@ const upsertDeployment: AsyncTypedHandler<
     workspaceId,
     eventType: Event.DeploymentUpdated,
     timestamp: Date.now(),
-    data: deployment,
+    data: { ...deployment, ...body },
   });
 
   res.status(202).json(deployment);
-
-  return;
 };
 
 const listDeploymentVersions: AsyncTypedHandler<
