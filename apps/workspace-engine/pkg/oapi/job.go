@@ -1,6 +1,19 @@
 package oapi
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// String converts a LiteralValue to its string representation,
+// handling strings, numbers, booleans, and other JSON types.
+func (lv LiteralValue) String() string {
+	var value interface{}
+	if err := json.Unmarshal(lv.union, &value); err != nil {
+		return ""
+	}
+	return toString(value)
+}
 
 type TemplatableRelease struct {
 	Release
@@ -10,11 +23,7 @@ type TemplatableRelease struct {
 func (r *Release) ToTemplatable() (*TemplatableRelease, error) {
 	variables := make(map[string]string)
 	for key, literalValue := range r.Variables {
-		value, err := literalValue.AsStringValue()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get as string value: %w", err)
-		}
-		variables[key] = value
+		variables[key] = literalValue.String()
 	}
 
 	return &TemplatableRelease{
