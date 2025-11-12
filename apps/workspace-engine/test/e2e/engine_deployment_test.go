@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_DeploymentCreation(t *testing.T) {
@@ -444,6 +446,159 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 	if !dockerJobFound {
 		t.Fatal("no job found for docker deployment")
 	}
+}
+
+func TestEngine_AddingAgentToDeploymentRetriggersInvalidJobs(t *testing.T) {
+	jobAgentID := "job-agent-1"
+	deploymentID := "deployment-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentCelResourceSelector("true"),
+				// No job agent configured
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	allJobs := engine.Workspace().Jobs().Items()
+	invalidJobAgentJobs := 0
+
+	for _, job := range allJobs {
+		if job.Status == oapi.JobStatusInvalidJobAgent {
+			invalidJobAgentJobs++
+		}
+	}
+
+	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job")
+
+	// Add job agent to deployment
+	d, _ := engine.Workspace().Deployments().Get(deploymentID)
+	if d == nil {
+		t.Fatalf("deployment not found")
+	}
+	d.JobAgentId = &jobAgentID
+	engine.PushEvent(ctx, handler.DeploymentUpdate, d)
+
+	allJobs = engine.Workspace().Jobs().Items()
+
+	invalidJobAgentJobs = 0
+	for _, job := range allJobs {
+		if job.Status == oapi.JobStatusInvalidJobAgent {
+			invalidJobAgentJobs++
+		}
+	}
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job (the old one should be preserved)")
+	assert.Equal(t, len(pendingJobs), 1, "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
+}
+
+func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.T) {
+	jobAgentID := "job-agent-1"
+	deploymentID := "deployment-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentCelResourceSelector("true"),
+				// No job agent configured
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	allJobs := engine.Workspace().Jobs().Items()
+	invalidJobAgentJobs := 0
+
+	for _, job := range allJobs {
+		if job.Status == oapi.JobStatusInvalidJobAgent {
+			invalidJobAgentJobs++
+		}
+	}
+
+	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job")
+
+	// Add job agent to deployment
+	d, _ := engine.Workspace().Deployments().Get(deploymentID)
+	if d == nil {
+		t.Fatalf("deployment not found")
+	}
+	d.JobAgentId = &jobAgentID
+	engine.PushEvent(ctx, handler.DeploymentUpdate, d)
+
+	allJobs = engine.Workspace().Jobs().Items()
+
+	invalidJobAgentJobs = 0
+	for _, job := range allJobs {
+		if job.Status == oapi.JobStatusInvalidJobAgent {
+			invalidJobAgentJobs++
+		}
+	}
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job (the old one should be preserved)")
+	assert.Equal(t, len(pendingJobs), 1, "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
+
+	// Update random field on the deployment
+	d.Name = "deployment-2"
+	engine.PushEvent(ctx, handler.DeploymentUpdate, d)
+
+	allJobs = engine.Workspace().Jobs().Items()
+
+	invalidJobAgentJobs = 0
+	for _, job := range allJobs {
+		if job.Status == oapi.JobStatusInvalidJobAgent {
+			invalidJobAgentJobs++
+		}
+	}
+
+	pendingJobs = engine.Workspace().Jobs().GetPending()
+
+	// no new jobs should be created
+	assert.Equal(t, 1, invalidJobAgentJobs, "expected 1 invalid job agent job (the old one should be preserved)")
+	assert.Equal(t, 1, len(pendingJobs), "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
 }
 
 func TestEngine_DeploymentRemoval(t *testing.T) {

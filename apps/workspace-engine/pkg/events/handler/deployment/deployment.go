@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"time"
 
 	"workspace-engine/pkg/events/handler"
@@ -182,8 +183,9 @@ func HandleDeploymentUpdated(
 		}
 	}
 
-	if shouldRetriggerJobs(ws, deployment) {
-		retriggerInvalidJobAgentJobs(ctx, ws, deployment)
+	jobsToRetrigger := getJobsToRetrigger(ws, deployment)
+	if len(jobsToRetrigger) > 0 {
+		retriggerInvalidJobAgentJobs(ctx, ws, jobsToRetrigger)
 	}
 
 	return nil
@@ -219,63 +221,61 @@ func HandleDeploymentDeleted(
 	return nil
 }
 
-// shouldRetriggerJobs checks if we should retrigger InvalidJobAgent jobs for this deployment.
-// This happens when:
-// 1. The deployment has a valid job agent configured
-// 2. There are InvalidJobAgent jobs for releases in this deployment
-func shouldRetriggerJobs(ws *workspace.Workspace, deployment *oapi.Deployment) bool {
-	// Check if deployment has a valid job agent configured
-	if deployment.JobAgentId == nil || *deployment.JobAgentId == "" {
-		return false
-	}
+type jobWithReleaseTarget struct {
+	Job           *oapi.Job
+	ReleaseTarget *oapi.ReleaseTarget
+}
 
-	// Check if the job agent exists
-	if _, exists := ws.JobAgents().Get(*deployment.JobAgentId); !exists {
-		return false
-	}
-
-	// Check if there are any InvalidJobAgent jobs for this deployment
-	for _, job := range ws.Jobs().Items() {
-		if job.Status != oapi.JobStatusInvalidJobAgent {
-			continue
-		}
-
+func getAllJobsWithReleaseTarget(ws *workspace.Workspace, deployment *oapi.Deployment) []*jobWithReleaseTarget {
+	allJobs := ws.Jobs().Items()
+	jobsSlice := make([]*jobWithReleaseTarget, 0)
+	for _, job := range allJobs {
 		release, ok := ws.Releases().Get(job.ReleaseId)
 		if !ok || release == nil {
 			continue
 		}
 
-		if release.ReleaseTarget.DeploymentId == deployment.Id {
-			return true
+		if release.ReleaseTarget.DeploymentId != deployment.Id {
+			continue
 		}
+
+		jobsSlice = append(jobsSlice, &jobWithReleaseTarget{Job: job, ReleaseTarget: &release.ReleaseTarget})
+	}
+	sort.Slice(jobsSlice, func(i, j int) bool {
+		return jobsSlice[i].Job.CreatedAt.Before(jobsSlice[j].Job.CreatedAt)
+	})
+	return jobsSlice
+}
+
+func getJobsToRetrigger(ws *workspace.Workspace, deployment *oapi.Deployment) []*oapi.Job {
+	latestJobs := make(map[string]*oapi.Job)
+	jobsSlice := getAllJobsWithReleaseTarget(ws, deployment)
+
+	for _, jobWithReleaseTarget := range jobsSlice {
+		latestJobs[jobWithReleaseTarget.ReleaseTarget.Key()] = jobWithReleaseTarget.Job
 	}
 
-	return false
+	jobsToRetrigger := make([]*oapi.Job, 0)
+	for _, job := range latestJobs {
+		if job.Status == oapi.JobStatusInvalidJobAgent {
+			jobsToRetrigger = append(jobsToRetrigger, job)
+		}
+	}
+	return jobsToRetrigger
 }
 
 // retriggerInvalidJobAgentJobs creates new Pending jobs for all releases that currently have InvalidJobAgent jobs
 // Note: This is an explicit retrigger operation for configuration fixes, so we bypass normal
 // eligibility checks (like skipdeployed). The old InvalidJobAgent job remains for history.
-func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) {
+func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, jobsToRetrigger []*oapi.Job) {
 	// Create job factory and dispatcher
 	jobFactory := jobs.NewFactory(ws.Store())
 	jobDispatcher := jobs.NewDispatcher(ws.Store())
 
-	// Find all InvalidJobAgent jobs for this deployment
-	for _, job := range ws.Jobs().Items() {
-		// Skip if job is not InvalidJobAgent status
-		if job.Status != oapi.JobStatusInvalidJobAgent {
-			continue
-		}
-
+	for _, job := range jobsToRetrigger {
 		// Get the release for this job
 		release, ok := ws.Releases().Get(job.ReleaseId)
 		if !ok || release == nil {
-			continue
-		}
-
-		// Check if this release belongs to the updated deployment
-		if release.ReleaseTarget.DeploymentId != deployment.Id {
 			continue
 		}
 
@@ -284,7 +284,7 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 		if err != nil {
 			log.Error("failed to create job for release during retrigger",
 				"releaseId", release.ID(),
-				"deploymentId", deployment.Id,
+				"deploymentId", release.ReleaseTarget.DeploymentId,
 				"error", err.Error())
 			continue
 		}
@@ -296,7 +296,7 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 			"newJobId", newJob.Id,
 			"originalJobId", job.Id,
 			"releaseId", release.ID(),
-			"deploymentId", deployment.Id,
+			"deploymentId", release.ReleaseTarget.DeploymentId,
 			"status", newJob.Status)
 
 		// Dispatch the job asynchronously if it's not InvalidJobAgent
