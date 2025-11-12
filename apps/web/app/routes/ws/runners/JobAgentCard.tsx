@@ -3,6 +3,7 @@ import { SiArgo, SiGithub } from "@icons-pack/react-simple-icons";
 import { PlayIcon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { JobAgentActions } from "./JobAgentActions";
 
 type JobAgent = WorkspaceEngine["schemas"]["JobAgent"];
 
@@ -51,6 +52,8 @@ export function JobAgentCard({ jobAgent }: { jobAgent: JobAgent }) {
         <CardTitle className="flex items-center gap-2">
           <TypeIcon type={jobAgent.type} />
           {jobAgent.name}
+          <div className="flex-grow" />
+          <JobAgentActions jobAgent={jobAgent} />
         </CardTitle>
       </CardHeader>
       <CardContent>

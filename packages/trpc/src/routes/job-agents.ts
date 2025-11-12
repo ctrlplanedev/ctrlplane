@@ -55,4 +55,22 @@ export const jobAgentsRouter = router({
       });
       return data;
     }),
+
+  delete: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid(), jobAgentId: z.string() }))
+    .mutation(async ({ input: { workspaceId, jobAgentId } }) => {
+      const jobAgentResponse = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
+        { params: { path: { workspaceId, jobAgentId } } },
+      );
+      if (jobAgentResponse.error != null)
+        throw new Error(jobAgentResponse.error.error);
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.JobAgentDeleted,
+        timestamp: Date.now(),
+        data: jobAgentResponse.data,
+      });
+      return jobAgentResponse.data;
+    }),
 });
