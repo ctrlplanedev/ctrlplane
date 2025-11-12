@@ -20,9 +20,14 @@ import (
 	applicationpkg "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 
 	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
+
+var argoCDTracer = otel.Tracer("ArgoCDDispatcher")
 
 type argoCDAgentConfig struct {
 	ServerUrl string `json:"serverUrl"`
@@ -62,28 +67,48 @@ func (d *ArgoCDDispatcher) parseConfig(job *oapi.Job) (argoCDAgentConfig, error)
 }
 
 func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
+	ctx, span := argoCDTracer.Start(ctx, "DispatchJob")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("job.id", job.Id),
+		attribute.String("release.id", job.ReleaseId),
+	)
+
 	jobWithRelease, err := d.store.Jobs.GetWithRelease(job.Id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get job with release")
 		return err
 	}
 
 	templatableJobWithRelease, err := jobWithRelease.ToTemplatable()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get templatable job")
 		return fmt.Errorf("failed to get templatable job with release: %w", err)
 	}
 
 	cfg, err := d.parseConfig(job)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to parse config")
 		return err
 	}
 
+	span.SetAttributes(attribute.String("argocd.server_url", cfg.ServerUrl))
+
 	t, err := template.New("argoCDAgentConfig").Parse(cfg.Template)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to parse template")
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, templatableJobWithRelease); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to execute template")
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
@@ -92,23 +117,37 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		AuthToken:  cfg.ApiKey,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create ArgoCD client")
 		return fmt.Errorf("failed to create ArgoCD client: %w", err)
 	}
 
 	closer, appClient, err := client.NewApplicationClient()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create application client")
 		return fmt.Errorf("failed to create ArgoCD application client: %w", err)
 	}
 	defer closer.Close()
 
 	var app v1alpha1.Application
 	if err := json.Unmarshal(buf.Bytes(), &app); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to parse template output")
 		return fmt.Errorf("failed to parse template output as ArgoCD Application: %w", err)
 	}
 
 	if app.ObjectMeta.Name == "" {
-		return fmt.Errorf("application name is required in metadata.name")
+		err := fmt.Errorf("application name is required in metadata.name")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing application name")
+		return err
 	}
+
+	span.SetAttributes(
+		attribute.String("argocd.app_name", app.ObjectMeta.Name),
+		attribute.String("argocd.app_namespace", app.ObjectMeta.Namespace),
+	)
 
 	upsert := true
 	_, err = appClient.Create(ctx, &applicationpkg.ApplicationCreateRequest{
@@ -116,17 +155,27 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		Upsert:      &upsert,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create ArgoCD application")
 		return fmt.Errorf("failed to create ArgoCD application: %w", err)
 	}
 
 	if err := d.startArgoApplicationVerification(ctx, jobWithRelease, cfg, app.ObjectMeta.Name); err != nil {
+		span.RecordError(err)
 		log.Error("Failed to start ArgoCD application verification",
 			"error", err,
 			"job_id", job.Id,
 			"server_url", cfg.ServerUrl)
 	}
 
-	return d.sendJobUpdateEvent(job, cfg, app)
+	if err := d.sendJobUpdateEvent(job, cfg, app); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to send job update event")
+		return err
+	}
+
+	span.SetStatus(codes.Ok, "job dispatched successfully")
+	return nil
 }
 
 func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
@@ -140,6 +189,14 @@ func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
 }
 
 func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConfig, app v1alpha1.Application) error {
+	_, span := argoCDTracer.Start(context.Background(), "sendJobUpdateEvent")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("job.id", job.Id),
+		attribute.String("argocd.app_name", app.ObjectMeta.Name),
+	)
+
 	workspaceId := d.store.ID()
 
 	appUrl := fmt.Sprintf("%s/applications/%s/%s", cfg.ServerUrl, app.ObjectMeta.Namespace, app.ObjectMeta.Name)
@@ -151,6 +208,8 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConf
 	links["ArgoCD Application"] = appUrl
 	linksJSON, err := json.Marshal(links)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal links")
 		return fmt.Errorf("failed to marshal links: %w", err)
 	}
 	job.Metadata[string("ctrlplane/links")] = string(linksJSON)
@@ -167,6 +226,8 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConf
 
 	producer, err := d.getKafkaProducer()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create Kafka producer")
 		return fmt.Errorf("failed to create Kafka producer: %w", err)
 	}
 	defer producer.Close()
@@ -180,10 +241,19 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConf
 
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal event")
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	return producer.Publish([]byte(workspaceId), eventBytes)
+	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to publish event")
+		return err
+	}
+
+	span.SetStatus(codes.Ok, "event published")
+	return nil
 }
 
 // startArgoApplicationVerification creates a verification that checks the created ArgoCD Application's health and sync.
@@ -194,6 +264,14 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	cfg argoCDAgentConfig,
 	appName string,
 ) error {
+	ctx, span := argoCDTracer.Start(ctx, "startArgoApplicationVerification")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("argocd.app_name", appName),
+		attribute.String("release.id", jobWithRelease.Release.ID()),
+	)
+
 	baseURL := cfg.ServerUrl
 	if !strings.HasPrefix(baseURL, "https://") {
 		baseURL = "https://" + baseURL
@@ -232,5 +310,12 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 
 	// Create a verification manager on-demand and start verification for this release.
 	manager := verification.NewManager(d.store)
-	return manager.StartVerification(ctx, &jobWithRelease.Release, metrics)
+	if err := manager.StartVerification(ctx, &jobWithRelease.Release, metrics); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to start verification")
+		return err
+	}
+
+	span.SetStatus(codes.Ok, "verification started")
+	return nil
 }
