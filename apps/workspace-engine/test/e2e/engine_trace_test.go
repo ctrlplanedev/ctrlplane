@@ -78,7 +78,7 @@ func TestEngine_Trace_BasicDeploymentFlow(t *testing.T) {
 	})
 
 	// Verify root span exists and has correct workspace_id
-	rootSpan := integration.AssertSpanExists(t, spans, "Reconciliation")
+	rootSpan := integration.AssertRootReconciliationSpan(t, spans)
 	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	var firstRTKey string
 	for k := range releaseTargets {
@@ -497,15 +497,8 @@ func TestEngine_Trace_ConcurrentDeployments(t *testing.T) {
 			}
 		}
 
-		// Each trace should have a root span
-		hasRoot := false
-		for _, span := range traceSpans {
-			if span.Name() == "Reconciliation" {
-				hasRoot = true
-				break
-			}
-		}
-
+		// Each trace should have a root span (starts with "Reconciliation")
+		_, hasRoot := integration.FindRootReconciliationSpan(traceSpans)
 		if !hasRoot {
 			t.Errorf("trace %s missing root span", traceID)
 		}

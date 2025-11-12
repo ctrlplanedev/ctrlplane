@@ -60,6 +60,17 @@ func TestBuildAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var opts []AttributeOption
+			if tt.releaseID != nil {
+				opts = append(opts, WithReleaseID(*tt.releaseID))
+			}
+			if tt.jobID != nil {
+				opts = append(opts, WithJobID(*tt.jobID))
+			}
+			if tt.parentTraceID != nil {
+				opts = append(opts, WithParentTraceID(*tt.parentTraceID))
+			}
+
 			attrs := buildAttributes(
 				tt.phase,
 				tt.nodeType,
@@ -68,9 +79,7 @@ func TestBuildAttributes(t *testing.T) {
 				tt.sequence,
 				tt.workspaceID,
 				tt.releaseTargetKey,
-				tt.releaseID,
-				tt.jobID,
-				tt.parentTraceID,
+				opts...,
 			)
 
 			if len(attrs) != tt.expectedAttrCount {

@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 func getReleaseTargets(ctx context.Context, ws *workspace.Workspace, deploymentVariableValue *oapi.DeploymentVariableValue) ([]*oapi.ReleaseTarget, error) {
@@ -40,7 +41,7 @@ func HandleDeploymentVariableValueCreated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVariablesUpdated)
 	}
 	return nil
 }
@@ -62,7 +63,7 @@ func HandleDeploymentVariableValueUpdated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVariablesUpdated)
 	}
 
 	return nil
@@ -84,7 +85,7 @@ func HandleDeploymentVariableValueDeleted(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVariablesUpdated)
 	}
 	return nil
 }

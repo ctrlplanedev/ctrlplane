@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
@@ -29,6 +30,20 @@ func FindSpanByName(spans []sdktrace.ReadOnlySpan, name string) (sdktrace.ReadOn
 	return nil, false
 }
 
+// FindRootReconciliationSpan finds the root Reconciliation span (which may have a trigger suffix)
+func FindRootReconciliationSpan(spans []sdktrace.ReadOnlySpan) (sdktrace.ReadOnlySpan, bool) {
+	for _, span := range spans {
+		if strings.HasPrefix(span.Name(), "Reconciliation") {
+			// Verify it's actually a root span by checking phase attribute
+			phase, hasPhase := GetSpanAttribute(span, "ctrlplane.phase")
+			if hasPhase && phase.AsString() == string(trace.PhaseReconciliation) {
+				return span, true
+			}
+		}
+	}
+	return nil, false
+}
+
 // FindSpansByPhase finds all spans for a specific phase
 func FindSpansByPhase(spans []sdktrace.ReadOnlySpan, phase trace.Phase) []sdktrace.ReadOnlySpan {
 	var result []sdktrace.ReadOnlySpan
@@ -51,15 +66,9 @@ func VerifyTraceStructure(t *testing.T, spans []sdktrace.ReadOnlySpan, expectedP
 		t.Fatal("no spans found in trace")
 	}
 
-	// Verify root span exists
-	var rootSpan sdktrace.ReadOnlySpan
-	for _, span := range spans {
-		if span.Name() == "Reconciliation" {
-			rootSpan = span
-			break
-		}
-	}
-	if rootSpan == nil {
+	// Verify root span exists (name starts with "Reconciliation")
+	rootSpan, found := FindRootReconciliationSpan(spans)
+	if !found {
 		t.Fatal("root 'Reconciliation' span not found")
 	}
 
@@ -192,8 +201,12 @@ func VerifySpanDepth(t *testing.T, spans []sdktrace.ReadOnlySpan) {
 		depth := int(depthAttr.AsInt64())
 
 		// Root should be depth 0
-		if span.Name() == "Reconciliation" && depth != 0 {
-			t.Errorf("root span should have depth 0, got %d", depth)
+		if strings.HasPrefix(span.Name(), "Reconciliation") {
+			// Check if it's the root span by phase
+			phase, hasPhase := GetSpanAttribute(span, "ctrlplane.phase")
+			if hasPhase && phase.AsString() == string(trace.PhaseReconciliation) && depth != 0 {
+				t.Errorf("root span should have depth 0, got %d", depth)
+			}
 		}
 
 		// Verify parent depth relationship
@@ -298,6 +311,17 @@ func AssertSpanExists(t *testing.T, spans []sdktrace.ReadOnlySpan, name string) 
 	span, found := FindSpanByName(spans, name)
 	if !found {
 		t.Fatalf("span %q not found in trace", name)
+	}
+	return span
+}
+
+// AssertRootReconciliationSpan verifies the root Reconciliation span exists
+func AssertRootReconciliationSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) sdktrace.ReadOnlySpan {
+	t.Helper()
+
+	span, found := FindRootReconciliationSpan(spans)
+	if !found {
+		t.Fatal("root 'Reconciliation' span not found")
 	}
 	return span
 }

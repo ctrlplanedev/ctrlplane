@@ -7,7 +7,7 @@ import (
 // ====== Planning Phase Tests ======
 
 func TestPlanningPhase_StartEvaluation(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	eval := planning.StartEvaluation("Approval Policy")
@@ -33,7 +33,7 @@ func TestPlanningPhase_StartEvaluation(t *testing.T) {
 }
 
 func TestPlanningPhase_MultipleEvaluations(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	// Create multiple evaluations
@@ -75,7 +75,7 @@ func TestPlanningPhase_MultipleEvaluations(t *testing.T) {
 }
 
 func TestEvaluation_AddMetadata(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 	eval := planning.StartEvaluation("Test Policy")
 
@@ -108,7 +108,7 @@ func TestEvaluation_AddMetadata(t *testing.T) {
 }
 
 func TestEvaluation_SetResultAllowed(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 	eval := planning.StartEvaluation("Test Policy")
 
@@ -136,7 +136,7 @@ func TestEvaluation_SetResultAllowed(t *testing.T) {
 }
 
 func TestEvaluation_SetResultBlocked(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 	eval := planning.StartEvaluation("Test Policy")
 
@@ -164,7 +164,7 @@ func TestEvaluation_SetResultBlocked(t *testing.T) {
 }
 
 func TestPlanningPhase_MakeDecisionApproved(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	planning.MakeDecision("Deploy approved", DecisionApproved)
@@ -196,7 +196,7 @@ func TestPlanningPhase_MakeDecisionApproved(t *testing.T) {
 }
 
 func TestPlanningPhase_MakeDecisionRejected(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	planning.MakeDecision("Deploy rejected", DecisionRejected)
@@ -230,7 +230,7 @@ func TestPlanningPhase_MakeDecisionRejected(t *testing.T) {
 // ====== Eligibility Phase Tests ======
 
 func TestEligibilityPhase_StartCheck(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	eligibility := rt.StartEligibility()
 
 	check := eligibility.StartCheck("Already Deployed")
@@ -252,7 +252,7 @@ func TestEligibilityPhase_StartCheck(t *testing.T) {
 }
 
 func TestEligibilityPhase_MultipleChecks(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	eligibility := rt.StartEligibility()
 
 	// Create multiple checks
@@ -290,7 +290,7 @@ func TestEligibilityPhase_MultipleChecks(t *testing.T) {
 }
 
 func TestCheck_AddMetadata(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	eligibility := rt.StartEligibility()
 	check := eligibility.StartCheck("Test Check")
 
@@ -322,7 +322,7 @@ func TestCheck_AddMetadata(t *testing.T) {
 }
 
 func TestCheck_SetResultPass(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	eligibility := rt.StartEligibility()
 	check := eligibility.StartCheck("Test Check")
 
@@ -349,7 +349,7 @@ func TestCheck_SetResultPass(t *testing.T) {
 }
 
 func TestCheck_SetResultFail(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	eligibility := rt.StartEligibility()
 	check := eligibility.StartCheck("Test Check")
 
@@ -376,7 +376,7 @@ func TestCheck_SetResultFail(t *testing.T) {
 }
 
 func TestEligibilityPhase_MakeDecision(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	eligibility := rt.StartEligibility()
 
 	check := eligibility.StartCheck("Test Check")
@@ -410,7 +410,7 @@ func TestEligibilityPhase_MakeDecision(t *testing.T) {
 // ====== Execution Phase Tests ======
 
 func TestExecutionPhase_TriggerJob(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	execution := rt.StartExecution()
 
 	job := execution.TriggerJob("github-action", map[string]string{
@@ -439,7 +439,7 @@ func TestExecutionPhase_TriggerJob(t *testing.T) {
 }
 
 func TestExecutionPhase_MultipleJobs(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	execution := rt.StartExecution()
 
 	job1 := execution.TriggerJob("github-action", map[string]string{"repo": "test1"})
@@ -471,7 +471,7 @@ func TestExecutionPhase_MultipleJobs(t *testing.T) {
 }
 
 func TestJob_AddMetadata(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	execution := rt.StartExecution()
 	job := execution.TriggerJob("github-action", map[string]string{})
 
@@ -502,7 +502,7 @@ func TestJob_AddMetadata(t *testing.T) {
 }
 
 func TestJob_Token(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	execution := rt.StartExecution()
 	job := execution.TriggerJob("github-action", map[string]string{})
 
@@ -533,7 +533,7 @@ func TestJob_Token(t *testing.T) {
 // ====== Action Tests ======
 
 func TestAction_AddMetadata(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	action := rt.StartAction("Verification")
 
 	action.AddMetadata("check_type", "health")
@@ -562,7 +562,7 @@ func TestAction_AddMetadata(t *testing.T) {
 }
 
 func TestAction_AddStepPass(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	action := rt.StartAction("Verification")
 
 	action.AddStep("Check pods", StepResultPass, "3/3 ready")
@@ -596,7 +596,7 @@ func TestAction_AddStepPass(t *testing.T) {
 }
 
 func TestAction_AddStepFail(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	action := rt.StartAction("Verification")
 
 	action.AddStep("Check pods", StepResultFail, "1/3 ready")
@@ -622,7 +622,7 @@ func TestAction_AddStepFail(t *testing.T) {
 }
 
 func TestAction_MultipleSteps(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	action := rt.StartAction("Rollback")
 
 	action.AddStep("Stop traffic", StepResultPass, "Traffic stopped")
@@ -663,7 +663,7 @@ func TestAction_MultipleSteps(t *testing.T) {
 // ====== Phase Integration Tests ======
 
 func TestAllPhases_CompleteFlow(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	// Planning Phase
 	planning := rt.StartPlanning()
@@ -727,7 +727,7 @@ func TestAllPhases_CompleteFlow(t *testing.T) {
 }
 
 func TestPhase_EndIdempotent(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	// End should be idempotent
@@ -740,7 +740,7 @@ func TestPhase_EndIdempotent(t *testing.T) {
 }
 
 func TestPhase_NestedDepth(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	planning := rt.StartPlanning()
 	eval := planning.StartEvaluation("Test")

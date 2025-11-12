@@ -2,14 +2,15 @@ package environment
 
 import (
 	"context"
+	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
-
-	"encoding/json"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, environment *oapi.Environment) ([]*oapi.ReleaseTarget, error) {
@@ -70,7 +71,7 @@ func HandleEnvironmentCreated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerEnvironmentCreated)
 	}
 
 	return nil
@@ -163,7 +164,7 @@ func HandleEnvironmentUpdated(
 		reconileReleaseTargets = append(reconileReleaseTargets, addedReleaseTarget)
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerEnvironmentUpdated)
 
 	return nil
 }

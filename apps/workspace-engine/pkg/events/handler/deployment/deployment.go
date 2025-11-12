@@ -13,6 +13,7 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"github.com/charmbracelet/log"
 )
@@ -87,7 +88,7 @@ func HandleDeploymentCreated(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerDeploymentCreated)
 
 	return nil
 }
@@ -177,7 +178,7 @@ func HandleDeploymentUpdated(
 		}
 
 		if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
-			ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget, false)
+			ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget, false, trace.TriggerDeploymentUpdated)
 		}
 	}
 

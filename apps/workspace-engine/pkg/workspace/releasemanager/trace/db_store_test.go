@@ -10,7 +10,7 @@ import (
 // TestDBStore_WriteSpans_MissingWorkspaceID verifies that spans without workspace_id are rejected
 func TestDBStore_WriteSpans_MissingWorkspaceID(t *testing.T) {
 	// Create a span without workspace_id attribute
-	rt := NewReconcileTarget("", "test-target") // Empty workspace ID
+	rt := NewReconcileTarget("", "test-target", TriggerScheduled) // Empty workspace ID
 	planning := rt.StartPlanning()
 	planning.End()
 	rt.Complete(StatusCompleted)
@@ -47,7 +47,7 @@ func TestDBStore_WriteSpans_MissingWorkspaceID(t *testing.T) {
 // TestDBStore_WriteSpans_ValidWorkspaceID verifies validation passes with valid workspace_id
 func TestDBStore_WriteSpans_ValidWorkspaceID(t *testing.T) {
 	// Create a span with valid workspace_id
-	rt := NewReconcileTarget("workspace-123", "test-target")
+	rt := NewReconcileTarget("workspace-123", "test-target", TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
 	rt.Complete(StatusCompleted)
@@ -92,12 +92,12 @@ func TestDBStore_WriteSpans_EmptySpanList(t *testing.T) {
 // TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID verifies batch fails if any span is invalid
 func TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID(t *testing.T) {
 	// Create spans with and without workspace_id
-	validRT := NewReconcileTarget("workspace-valid", "test-target")
+	validRT := NewReconcileTarget("workspace-valid", "test-target", TriggerScheduled)
 	validPlanning := validRT.StartPlanning()
 	validPlanning.End()
 	validRT.Complete(StatusCompleted)
 
-	invalidRT := NewReconcileTarget("", "test-target") // Empty workspace ID
+	invalidRT := NewReconcileTarget("", "test-target", TriggerScheduled) // Empty workspace ID
 	invalidPlanning := invalidRT.StartPlanning()
 	invalidPlanning.End()
 	invalidRT.Complete(StatusCompleted)

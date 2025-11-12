@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -68,7 +70,7 @@ func HandleUserApprovalRecordCreated(
 	if err != nil {
 		return err
 	}
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalCreated)
 
 	return nil
 }
@@ -95,7 +97,7 @@ func HandleUserApprovalRecordUpdated(
 	if err != nil {
 		return err
 	}
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalUpdated)
 
 	return nil
 }
@@ -123,7 +125,7 @@ func HandleUserApprovalRecordDeleted(
 		return err
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalUpdated)
 
 	return nil
 }

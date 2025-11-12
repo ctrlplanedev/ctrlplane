@@ -2,13 +2,14 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
-
-	"encoding/json"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 func computeReleaseTargets(ctx context.Context, ws *workspace.Workspace, resource *oapi.Resource) ([]*oapi.ReleaseTarget, error) {
@@ -137,7 +138,7 @@ func HandleResourceUpdated(
 			return err
 		}
 
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerResourceCreated)
 	}
 
 	return nil

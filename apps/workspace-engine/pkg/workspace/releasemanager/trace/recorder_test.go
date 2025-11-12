@@ -22,7 +22,7 @@ func TestNewReconcileTarget(t *testing.T) {
 	workspaceID := "workspace-1"
 	releaseTargetKey := "api-service-production"
 
-	rt := NewReconcileTarget(workspaceID, releaseTargetKey)
+	rt := NewReconcileTarget(workspaceID, releaseTargetKey, TriggerScheduled)
 
 	if rt == nil {
 		t.Fatal("expected non-nil ReconcileTarget")
@@ -58,7 +58,7 @@ func TestNewReconcileTargetWithStore(t *testing.T) {
 	releaseTargetKey := "api-service-production"
 	store := &mockStore{}
 
-	rt := NewReconcileTargetWithStore(workspaceID, releaseTargetKey, store)
+	rt := NewReconcileTargetWithStore(workspaceID, releaseTargetKey, TriggerScheduled, store)
 
 	if rt == nil {
 		t.Fatal("expected non-nil ReconcileTarget")
@@ -70,7 +70,7 @@ func TestNewReconcileTargetWithStore(t *testing.T) {
 }
 
 func TestReconcileTarget_StartPlanning(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	planning := rt.StartPlanning()
 
@@ -92,7 +92,7 @@ func TestReconcileTarget_StartPlanning(t *testing.T) {
 }
 
 func TestReconcileTarget_StartEligibility(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	eligibility := rt.StartEligibility()
 
@@ -110,7 +110,7 @@ func TestReconcileTarget_StartEligibility(t *testing.T) {
 }
 
 func TestReconcileTarget_StartExecution(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	execution := rt.StartExecution()
 
@@ -128,7 +128,7 @@ func TestReconcileTarget_StartExecution(t *testing.T) {
 }
 
 func TestReconcileTarget_StartAction(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	action := rt.StartAction("Verification")
 
@@ -146,7 +146,7 @@ func TestReconcileTarget_StartAction(t *testing.T) {
 }
 
 func TestReconcileTarget_Complete(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	// Complete should not panic
 	rt.Complete(StatusCompleted)
@@ -159,7 +159,7 @@ func TestReconcileTarget_Complete(t *testing.T) {
 
 func TestReconcileTarget_Persist_WithConfiguredStore(t *testing.T) {
 	store := &mockStore{}
-	rt := NewReconcileTargetWithStore("workspace-1", "api-service-production", store)
+	rt := NewReconcileTargetWithStore("workspace-1", "api-service-production", TriggerScheduled, store)
 
 	// Create some spans
 	planning := rt.StartPlanning()
@@ -180,7 +180,7 @@ func TestReconcileTarget_Persist_WithConfiguredStore(t *testing.T) {
 }
 
 func TestReconcileTarget_Persist_WithProvidedStore(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	store := &mockStore{}
 
 	// Create some spans
@@ -202,7 +202,7 @@ func TestReconcileTarget_Persist_WithProvidedStore(t *testing.T) {
 }
 
 func TestReconcileTarget_Persist_NoStore(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	rt.Complete(StatusCompleted)
 
@@ -223,7 +223,7 @@ func TestReconcileTarget_CompleteWithDifferentStatuses(t *testing.T) {
 
 	for _, status := range statuses {
 		t.Run(string(status), func(t *testing.T) {
-			rt := NewReconcileTarget("workspace-1", "api-service-production")
+			rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 			rt.Complete(status)
 
@@ -233,7 +233,7 @@ func TestReconcileTarget_CompleteWithDifferentStatuses(t *testing.T) {
 }
 
 func TestReconcileTarget_MultiplePhases(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	store := &mockStore{}
 
 	// Execute all phases
@@ -275,7 +275,7 @@ func TestReconcileTarget_MultiplePhases(t *testing.T) {
 }
 
 func TestReconcileTarget_SequenceTracking(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	// Create multiple phases
 	rt.StartPlanning().End()
@@ -289,7 +289,7 @@ func TestReconcileTarget_SequenceTracking(t *testing.T) {
 }
 
 func TestReconcileTarget_DepthTracking(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	// Can only test depth tracking for phases, not nested objects due to deadlock
 	planning := rt.StartPlanning()
@@ -309,7 +309,7 @@ func TestReconcileTarget_DepthTracking(t *testing.T) {
 }
 
 func TestReconcileTarget_RecordDecision(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	// Record decision
@@ -417,7 +417,7 @@ func TestStepResultToStatus(t *testing.T) {
 }
 
 func TestReconcileTarget_GetDepth(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	// Root context should return 0
 	depth := rt.getDepth(rt.rootCtx)
@@ -436,7 +436,7 @@ func TestReconcileTarget_GetDepth(t *testing.T) {
 }
 
 func TestReconcileTarget_Concurrency(t *testing.T) {
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 
 	// Create phases concurrently
 	done := make(chan bool)

@@ -2,11 +2,12 @@ package deploymentvariables
 
 import (
 	"context"
+	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-
-	"encoding/json"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 func HandleDeploymentVariableCreated(
@@ -26,7 +27,7 @@ func HandleDeploymentVariableCreated(
 		return err
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets, false, trace.TriggerVariablesUpdated)
 
 	return nil
 }
@@ -48,7 +49,7 @@ func HandleDeploymentVariableUpdated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVariablesUpdated)
 	}
 
 	return nil
@@ -71,7 +72,7 @@ func HandleDeploymentVariableDeleted(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVariablesUpdated)
 	}
 	return nil
 }

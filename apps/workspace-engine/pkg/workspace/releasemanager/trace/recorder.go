@@ -17,6 +17,7 @@ type ReconcileTarget struct {
 	releaseTargetKey string
 	releaseID        *string
 	jobID            *string
+	trigger          TriggerReason
 
 	store PersistenceStore
 
@@ -37,16 +38,16 @@ type ReconcileTarget struct {
 }
 
 // NewReconcileTarget creates a new trace recorder for reconciliation
-func NewReconcileTarget(workspaceID, releaseTargetKey string) *ReconcileTarget {
-	return newReconcileTarget(workspaceID, releaseTargetKey, nil)
+func NewReconcileTarget(workspaceID, releaseTargetKey string, trigger TriggerReason) *ReconcileTarget {
+	return newReconcileTarget(workspaceID, releaseTargetKey, trigger, nil)
 }
 
 // NewReconcileTargetWithStore creates a new trace recorder with pre-configured store
-func NewReconcileTargetWithStore(workspaceID, releaseTargetKey string, store PersistenceStore) *ReconcileTarget {
-	return newReconcileTarget(workspaceID, releaseTargetKey, store)
+func NewReconcileTargetWithStore(workspaceID, releaseTargetKey string, trigger TriggerReason, store PersistenceStore) *ReconcileTarget {
+	return newReconcileTarget(workspaceID, releaseTargetKey, trigger, store)
 }
 
-func newReconcileTarget(workspaceID, releaseTargetKey string, store PersistenceStore) *ReconcileTarget {
+func newReconcileTarget(workspaceID, releaseTargetKey string, trigger TriggerReason, store PersistenceStore) *ReconcileTarget {
 	exporter := newInMemoryExporter()
 
 	tp := sdktrace.NewTracerProvider(
@@ -64,18 +65,20 @@ func newReconcileTarget(workspaceID, releaseTargetKey string, store PersistenceS
 		0,
 		workspaceID,
 		&releaseTargetKey,
-		nil,
-		nil,
-		nil,
+		WithTrigger(trigger),
 	)
 
-	rootCtx, rootSpan := tracer.Start(context.Background(), "Reconciliation",
+	// Create a more descriptive span name including the trigger reason
+	spanName := fmt.Sprintf("Reconciliation (%s)", trigger)
+
+	rootCtx, rootSpan := tracer.Start(context.Background(), spanName,
 		trace.WithAttributes(attrs...),
 	)
 
 	rt := &ReconcileTarget{
 		workspaceID:      workspaceID,
 		releaseTargetKey: releaseTargetKey,
+		trigger:          trigger,
 		store:            store,
 		tracerProvider:   tp,
 		tracer:           tracer,
@@ -91,6 +94,18 @@ func newReconcileTarget(workspaceID, releaseTargetKey string, store PersistenceS
 	rt.depthMap[rootSpan.SpanContext().SpanID().String()] = 0
 
 	return rt
+}
+
+// buildOptions creates common attribute options from recorder state
+func (r *ReconcileTarget) buildOptions() []AttributeOption {
+	var opts []AttributeOption
+	if r.releaseID != nil {
+		opts = append(opts, WithReleaseID(*r.releaseID))
+	}
+	if r.jobID != nil {
+		opts = append(opts, WithJobID(*r.jobID))
+	}
+	return opts
 }
 
 // StartPlanning starts the planning phase
@@ -109,9 +124,7 @@ func (r *ReconcileTarget) StartPlanning() *PlanningPhase {
 		seq,
 		r.workspaceID,
 		&r.releaseTargetKey,
-		r.releaseID,
-		r.jobID,
-		nil,
+		r.buildOptions()...,
 	)
 
 	ctx, span := r.tracer.Start(r.rootCtx, "Planning",
@@ -145,9 +158,7 @@ func (r *ReconcileTarget) StartEligibility() *EligibilityPhase {
 		seq,
 		r.workspaceID,
 		&r.releaseTargetKey,
-		r.releaseID,
-		r.jobID,
-		nil,
+		r.buildOptions()...,
 	)
 
 	ctx, span := r.tracer.Start(r.rootCtx, "Eligibility",
@@ -181,9 +192,7 @@ func (r *ReconcileTarget) StartExecution() *ExecutionPhase {
 		seq,
 		r.workspaceID,
 		&r.releaseTargetKey,
-		r.releaseID,
-		r.jobID,
-		nil,
+		r.buildOptions()...,
 	)
 
 	ctx, span := r.tracer.Start(r.rootCtx, "Execution",
@@ -217,9 +226,7 @@ func (r *ReconcileTarget) StartAction(name string) *Action {
 		seq,
 		r.workspaceID,
 		&r.releaseTargetKey,
-		r.releaseID,
-		r.jobID,
-		nil,
+		r.buildOptions()...,
 	)
 
 	ctx, span := r.tracer.Start(r.rootCtx, name,
@@ -327,9 +334,7 @@ func (r *ReconcileTarget) recordDecision(ctx context.Context, name string, decis
 		seq,
 		r.workspaceID,
 		&r.releaseTargetKey,
-		r.releaseID,
-		r.jobID,
-		nil,
+		r.buildOptions()...,
 	)
 
 	_, span := r.tracer.Start(ctx, name,

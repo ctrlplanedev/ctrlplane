@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
@@ -140,7 +141,13 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 	// Clear processed schedules
 	scheduler.Clear(dueKeys)
 
-	ws.ReleaseManager().ReconcileTargets(ctx, targetsToReconcile, false)
+	// Determine trigger reason based on whether this is first boot
+	trigger := trace.TriggerScheduled
+	if isFirstBoot {
+		trigger = trace.TriggerFirstBoot
+	}
+
+	ws.ReleaseManager().ReconcileTargets(ctx, targetsToReconcile, false, trigger)
 
 	return nil
 }

@@ -2,11 +2,12 @@ package deploymentversion
 
 import (
 	"context"
+	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-
-	"encoding/json"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -39,7 +40,7 @@ func HandleDeploymentVersionCreated(
 
 	for _, releaseTarget := range releaseTargets {
 		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVersionCreated)
 		}
 	}
 
@@ -70,7 +71,7 @@ func HandleDeploymentVersionUpdated(
 	}
 	for _, releaseTarget := range releaseTargets {
 		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false)
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVersionCreated)
 		}
 	}
 
@@ -107,7 +108,7 @@ func HandleDeploymentVersionDeleted(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerVersionCreated)
 
 	return nil
 }

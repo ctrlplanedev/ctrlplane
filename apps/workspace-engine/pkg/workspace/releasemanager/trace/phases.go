@@ -33,9 +33,7 @@ func (p *PlanningPhase) StartEvaluation(name string) *Evaluation {
 		seq,
 		p.recorder.workspaceID,
 		&p.recorder.releaseTargetKey,
-		p.recorder.releaseID,
-		p.recorder.jobID,
-		nil,
+		p.recorder.buildOptions()...,
 	)
 
 	ctx, span := p.recorder.tracer.Start(p.ctx, name,
@@ -128,9 +126,7 @@ func (e *EligibilityPhase) StartCheck(name string) *Check {
 		seq,
 		e.recorder.workspaceID,
 		&e.recorder.releaseTargetKey,
-		e.recorder.releaseID,
-		e.recorder.jobID,
-		nil,
+		e.recorder.buildOptions()...,
 	)
 
 	ctx, span := e.recorder.tracer.Start(e.ctx, name,
@@ -217,9 +213,7 @@ func (e *ExecutionPhase) StartAction(name string) *Action {
 		seq,
 		e.recorder.workspaceID,
 		&e.recorder.releaseTargetKey,
-		e.recorder.releaseID,
-		e.recorder.jobID,
-		nil,
+		e.recorder.buildOptions()...,
 	)
 
 	ctx, span := e.recorder.tracer.Start(e.ctx, name,
@@ -255,9 +249,7 @@ func (e *ExecutionPhase) TriggerJob(jobType string, config map[string]string) *J
 		seq,
 		e.recorder.workspaceID,
 		&e.recorder.releaseTargetKey,
-		e.recorder.releaseID,
-		e.recorder.jobID,
-		nil,
+		e.recorder.buildOptions()...,
 	)
 
 	// Add job type and config as attributes
@@ -354,9 +346,7 @@ func (a *Action) AddStep(name string, result StepResult, message string, attribu
 		seq,
 		a.recorder.workspaceID,
 		&a.recorder.releaseTargetKey,
-		a.recorder.releaseID,
-		a.recorder.jobID,
-		nil,
+		a.recorder.buildOptions()...,
 	)
 	attrs = append(attrs, attributes...)
 	attrs = append(attrs, attribute.String("ctrlplane.result", string(result)))

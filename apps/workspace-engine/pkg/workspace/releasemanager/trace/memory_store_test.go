@@ -29,7 +29,7 @@ func TestInMemoryStore_WriteSpans(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a test trace
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
 	rt.Complete(StatusCompleted)
@@ -75,7 +75,7 @@ func TestInMemoryStore_GetSpans(t *testing.T) {
 	ctx := context.Background()
 
 	// Write some spans
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
 
@@ -104,7 +104,7 @@ func TestInMemoryStore_GetSpansCopy(t *testing.T) {
 	ctx := context.Background()
 
 	// Write some spans
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
 
@@ -133,7 +133,7 @@ func TestInMemoryStore_Clear(t *testing.T) {
 	ctx := context.Background()
 
 	// Write some spans
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
 	rt.Complete(StatusCompleted)
@@ -171,7 +171,7 @@ func TestInMemoryStore_ConcurrentWrites(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 
-			rt := NewReconcileTarget("workspace-1", "test")
+			rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
 			planning := rt.StartPlanning()
 			planning.End()
 			rt.Complete(StatusCompleted)
@@ -200,7 +200,7 @@ func TestInMemoryStore_ConcurrentReads(t *testing.T) {
 	ctx := context.Background()
 
 	// Write initial spans
-	rt := NewReconcileTarget("workspace-1", "test")
+	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
 	rt.Complete(StatusCompleted)
@@ -243,7 +243,7 @@ func TestInMemoryStore_ConcurrentReadWrite(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 
-			rt := NewReconcileTarget("workspace-1", "test")
+			rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
 			rt.Complete(StatusCompleted)
 			spans := rt.exporter.getSpans()
 
@@ -278,7 +278,7 @@ func TestInMemoryStore_MultipleWrites(t *testing.T) {
 	ctx := context.Background()
 
 	// Write first batch
-	rt1 := NewReconcileTarget("workspace-1", "test-1")
+	rt1 := NewReconcileTarget("workspace-1", "test-1", TriggerScheduled)
 	rt1.Complete(StatusCompleted)
 	spans1 := rt1.exporter.getSpans()
 
@@ -290,7 +290,7 @@ func TestInMemoryStore_MultipleWrites(t *testing.T) {
 	count1 := len(store.GetSpans())
 
 	// Write second batch
-	rt2 := NewReconcileTarget("workspace-1", "test-2")
+	rt2 := NewReconcileTarget("workspace-1", "test-2", TriggerScheduled)
 	rt2.Complete(StatusCompleted)
 	spans2 := rt2.exporter.getSpans()
 
@@ -318,7 +318,7 @@ func TestInMemoryStore_LargeBatch(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a trace with many spans
-	rt := NewReconcileTarget("workspace-1", "test")
+	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	// Create many evaluations
@@ -355,7 +355,7 @@ func TestInMemoryStore_PreservesSpanData(t *testing.T) {
 	ctx := context.Background()
 
 	// Create trace with metadata
-	rt := NewReconcileTarget("workspace-1", "api-service-production")
+	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
 	planning := rt.StartPlanning()
 	eval := planning.StartEvaluation("Test Policy")
 	eval.AddMetadata("key1", "value1")
@@ -420,7 +420,7 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 
 	// Write multiple batches
 	for i := 0; i < 5; i++ {
-		rt := NewReconcileTarget("workspace-1", "test")
+		rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
 		rt.Complete(StatusCompleted)
 		spans := rt.exporter.getSpans()
 
@@ -443,7 +443,7 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 	}
 
 	// Write again after clear
-	rt := NewReconcileTarget("workspace-1", "test")
+	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
 
@@ -461,7 +461,7 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 func TestInMemoryStore_NilContext(t *testing.T) {
 	store := NewInMemoryStore()
 
-	rt := NewReconcileTarget("workspace-1", "test")
+	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
 	rt.Complete(StatusCompleted)
 	spans := rt.exporter.getSpans()
 

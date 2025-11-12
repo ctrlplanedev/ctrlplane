@@ -74,6 +74,25 @@ const (
 	StatusSkipped   Status = "skipped"
 )
 
+// TriggerReason represents why a reconciliation was triggered
+type TriggerReason string
+
+const (
+	TriggerScheduled          TriggerReason = "scheduled"           // Periodic scheduled reconciliation
+	TriggerDeploymentCreated  TriggerReason = "deployment.created"  // New deployment created
+	TriggerDeploymentUpdated  TriggerReason = "deployment.updated"  // Deployment configuration changed
+	TriggerEnvironmentCreated TriggerReason = "environment.created" // New environment created
+	TriggerEnvironmentUpdated TriggerReason = "environment.updated" // Environment configuration changed
+	TriggerResourceCreated    TriggerReason = "resource.created"    // New resource added
+	TriggerResourceUpdated    TriggerReason = "resource.updated"    // Resource configuration changed
+	TriggerVersionCreated     TriggerReason = "version.created"     // New deployment version created
+	TriggerApprovalCreated    TriggerReason = "approval.created"    // User approval granted
+	TriggerApprovalUpdated    TriggerReason = "approval.updated"    // User approval status changed
+	TriggerVariablesUpdated   TriggerReason = "variables.updated"   // Deployment or resource variables changed
+	TriggerManual             TriggerReason = "manual"              // Manually triggered (e.g., force redeploy)
+	TriggerFirstBoot          TriggerReason = "first_boot"          // Initial workspace startup
+)
+
 // PersistenceStore interface for storing trace spans
 type PersistenceStore interface {
 	WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan) error
@@ -91,7 +110,47 @@ const (
 	attrDepth         = "ctrlplane.depth"
 	attrSequence      = "ctrlplane.sequence"
 	attrWorkspaceID   = "ctrlplane.workspace_id"
+	attrTrigger       = "ctrlplane.trigger"
 )
+
+// AttributeOptions holds optional parameters for building attributes
+type AttributeOptions struct {
+	releaseID     *string
+	jobID         *string
+	parentTraceID *string
+	trigger       *TriggerReason
+}
+
+// AttributeOption is a function that configures AttributeOptions
+type AttributeOption func(*AttributeOptions)
+
+// WithReleaseID sets the release ID attribute
+func WithReleaseID(releaseID string) AttributeOption {
+	return func(o *AttributeOptions) {
+		o.releaseID = &releaseID
+	}
+}
+
+// WithJobID sets the job ID attribute
+func WithJobID(jobID string) AttributeOption {
+	return func(o *AttributeOptions) {
+		o.jobID = &jobID
+	}
+}
+
+// WithParentTraceID sets the parent trace ID attribute
+func WithParentTraceID(parentTraceID string) AttributeOption {
+	return func(o *AttributeOptions) {
+		o.parentTraceID = &parentTraceID
+	}
+}
+
+// WithTrigger sets the trigger reason attribute
+func WithTrigger(trigger TriggerReason) AttributeOption {
+	return func(o *AttributeOptions) {
+		o.trigger = &trigger
+	}
+}
 
 // buildAttributes creates OTel attributes for spans
 func buildAttributes(
@@ -102,10 +161,13 @@ func buildAttributes(
 	sequence int,
 	workspaceID string,
 	releaseTargetKey *string,
-	releaseID *string,
-	jobID *string,
-	parentTraceID *string,
+	opts ...AttributeOption,
 ) []attribute.KeyValue {
+	options := &AttributeOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	attrs := []attribute.KeyValue{
 		attribute.String(attrPhase, string(phase)),
 		attribute.String(attrNodeType, string(nodeType)),
@@ -118,14 +180,17 @@ func buildAttributes(
 	if releaseTargetKey != nil {
 		attrs = append(attrs, attribute.String(attrReleaseTarget, *releaseTargetKey))
 	}
-	if releaseID != nil {
-		attrs = append(attrs, attribute.String(attrReleaseID, *releaseID))
+	if options.releaseID != nil {
+		attrs = append(attrs, attribute.String(attrReleaseID, *options.releaseID))
 	}
-	if jobID != nil {
-		attrs = append(attrs, attribute.String(attrJobID, *jobID))
+	if options.jobID != nil {
+		attrs = append(attrs, attribute.String(attrJobID, *options.jobID))
 	}
-	if parentTraceID != nil {
-		attrs = append(attrs, attribute.String(attrParentTraceID, *parentTraceID))
+	if options.parentTraceID != nil {
+		attrs = append(attrs, attribute.String(attrParentTraceID, *options.parentTraceID))
+	}
+	if options.trigger != nil {
+		attrs = append(attrs, attribute.String(attrTrigger, string(*options.trigger)))
 	}
 
 	return attrs

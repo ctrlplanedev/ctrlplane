@@ -2,11 +2,12 @@ package resourcevariables
 
 import (
 	"context"
+	"encoding/json"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-
-	"encoding/json"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 func HandleResourceVariableCreated(
@@ -29,7 +30,7 @@ func HandleResourceVariableCreated(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerVariablesUpdated)
 
 	return nil
 }
@@ -54,7 +55,7 @@ func HandleResourceVariableUpdated(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerVariablesUpdated)
 
 	return nil
 }
@@ -79,7 +80,7 @@ func HandleResourceVariableDeleted(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerVariablesUpdated)
 
 	return nil
 }
