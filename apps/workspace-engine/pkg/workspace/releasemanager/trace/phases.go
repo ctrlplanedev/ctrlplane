@@ -335,7 +335,7 @@ func (a *Action) AddMetadata(key string, value interface{}) *Action {
 }
 
 // AddStep adds a step to the action (completes immediately)
-func (a *Action) AddStep(name string, result StepResult, message string) *Action {
+func (a *Action) AddStep(name string, result StepResult, message string, attributes ...attribute.KeyValue) *Action {
 	// Get depth BEFORE locking to avoid deadlock
 	depth := a.recorder.getDepth(a.ctx) + 1
 
@@ -358,6 +358,7 @@ func (a *Action) AddStep(name string, result StepResult, message string) *Action
 		a.recorder.jobID,
 		nil,
 	)
+	attrs = append(attrs, attributes...)
 	attrs = append(attrs, attribute.String("ctrlplane.result", string(result)))
 
 	_, span := a.recorder.tracer.Start(a.ctx, name,

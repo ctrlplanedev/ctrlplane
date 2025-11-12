@@ -71,10 +71,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 
 	// Step 2: Create and persist new job (WRITE)
 	span.AddEvent("Creating job for release")
-	if createJobAction != nil {
-		createJobAction.AddStep("Create job", trace.StepResultPass, "Job created")
-	}
-	newJob, err := e.jobFactory.CreateJobForRelease(ctx, releaseToDeploy)
+	newJob, err := e.jobFactory.CreateJobForRelease(ctx, releaseToDeploy, createJobAction)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create job")
