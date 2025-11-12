@@ -150,7 +150,11 @@ export const resourcesRouter = router({
         },
       );
 
-      if (result.error != null) throw new Error(result.error.error);
+      if (result.error) {
+        throw new Error(
+          `Failed to fetch resource variables: ${JSON.stringify(result.error)}`,
+        );
+      }
 
       return result.data;
     }),

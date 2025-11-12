@@ -12,9 +12,14 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type Resources struct{}
+
+var resourceTracer = otel.Tracer("server/openapi/resources")
 
 func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string) {
 	// URL decode the identifier (in case it contains special characters like slashes)
@@ -173,8 +178,18 @@ func (r *Resources) GetRelationshipsForResource(c *gin.Context, workspaceId stri
 }
 
 func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, resourceIdentifier string) {
+	_, span := resourceTracer.Start(c.Request.Context(), "GetVariablesForResource")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("workspace.id", workspaceId),
+		attribute.String("resource.identifier", resourceIdentifier),
+	)
+
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to get workspace")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get workspace: " + err.Error(),
 		})
@@ -191,11 +206,17 @@ func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, 
 	}
 
 	if resource == nil {
+		span.RecordError(fmt.Errorf("resource not found"))
+		span.SetStatus(codes.Error, "Resource not found")
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Resource not found",
 		})
 		return
 	}
+
+	span.SetAttributes(
+		attribute.String("resource.id", resource.Id),
+	)
 
 	allVariables := ws.ResourceVariables().Items()
 	variables := make([]oapi.ResourceVariable, 0, len(allVariables))
@@ -204,6 +225,10 @@ func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, 
 			variables = append(variables, *variable)
 		}
 	}
+
+	span.SetAttributes(
+		attribute.Int("variables.count", len(variables)),
+	)
 
 	c.JSON(http.StatusOK, variables)
 }
