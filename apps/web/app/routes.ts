@@ -14,8 +14,8 @@ export default [
           "routes/ws/deployments/page.$deploymentId.resources.tsx",
         ),
         route(
-          ":deploymentId/versions",
-          "routes/ws/deployments/page.$deploymentId.versions.tsx",
+          ":deploymentId/variables",
+          "routes/ws/deployments/page.$deploymentId.variables.tsx",
         ),
         route(
           ":deploymentId/traces",

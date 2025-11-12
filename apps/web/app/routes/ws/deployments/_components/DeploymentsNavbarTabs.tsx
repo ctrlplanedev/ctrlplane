@@ -9,8 +9,8 @@ type DeploymentTab =
   | "resources"
   | "settings"
   | "release-targets"
-  | "versions"
-  | "traces";
+  | "traces"
+  | "variables";
 
 const useDeploymentTab = (baseUrl: string): DeploymentTab => {
   const { pathname } = useLocation();
@@ -18,9 +18,10 @@ const useDeploymentTab = (baseUrl: string): DeploymentTab => {
   if (pathname.startsWith(`${baseUrl}/resources`)) return "resources";
   if (pathname.startsWith(`${baseUrl}/settings`)) return "settings";
   if (pathname.startsWith(`${baseUrl}/traces`)) return "traces";
+  if (pathname.startsWith(`${baseUrl}/variables`)) return "variables";
   if (pathname.startsWith(`${baseUrl}/release-targets`))
     return "release-targets";
-  return "versions";
+  return "environments";
 };
 
 export const DeploymentsNavbarTabs = () => {
@@ -38,8 +39,8 @@ export const DeploymentsNavbarTabs = () => {
         <TabsTrigger value="resources" asChild>
           <Link to={`${baseUrl}/resources`}>Resources</Link>
         </TabsTrigger>
-        <TabsTrigger value="versions" asChild>
-          <Link to={`${baseUrl}/versions`}>Versions</Link>
+        <TabsTrigger value="variables" asChild>
+          <Link to={`${baseUrl}/variables`}>Variables</Link>
         </TabsTrigger>
         <TabsTrigger value="traces" asChild>
           <Link to={`${baseUrl}/traces`}>Traces</Link>
