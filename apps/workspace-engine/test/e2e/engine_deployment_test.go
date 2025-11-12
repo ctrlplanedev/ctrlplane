@@ -490,7 +490,7 @@ func TestEngine_AddingAgentToDeploymentRetriggersInvalidJobs(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job")
+	assert.Equal(t, 1, invalidJobAgentJobs, "expected 1 invalid job agent job")
 
 	// Add job agent to deployment
 	d, _ := engine.Workspace().Deployments().Get(deploymentID)
@@ -511,8 +511,8 @@ func TestEngine_AddingAgentToDeploymentRetriggersInvalidJobs(t *testing.T) {
 
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 
-	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job (the old one should be preserved)")
-	assert.Equal(t, len(pendingJobs), 1, "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
+	assert.Equal(t, 1, invalidJobAgentJobs, "expected 1 invalid job agent job (the old one should be preserved)")
+	assert.Equal(t, 1, len(pendingJobs), "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
 }
 
 func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.T) {
@@ -557,7 +557,7 @@ func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.
 		}
 	}
 
-	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job")
+	assert.Equal(t, 1, invalidJobAgentJobs, "expected 1 invalid job agent job")
 
 	// Add job agent to deployment
 	d, _ := engine.Workspace().Deployments().Get(deploymentID)
@@ -578,8 +578,8 @@ func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.
 
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 
-	assert.Equal(t, invalidJobAgentJobs, 1, "expected 1 invalid job agent job (the old one should be preserved)")
-	assert.Equal(t, len(pendingJobs), 1, "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
+	assert.Equal(t, 1, invalidJobAgentJobs, "expected 1 invalid job agent job (the old one should be preserved)")
+	assert.Equal(t, 1, len(pendingJobs), "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
 
 	// Update random field on the deployment
 	d.Name = "deployment-2"

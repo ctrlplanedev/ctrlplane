@@ -493,13 +493,13 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 		}
 	}
 
+	t.Log("Created 2 jobs with InvalidJobAgent status")
+
 	// manually mark the jobs as Failure to prevent retriggering invalid job agent jobs
 	for _, job := range allJobs {
 		job.Status = oapi.JobStatusFailure
 		engine.Workspace().Jobs().Upsert(ctx, job)
 	}
-
-	t.Log("Created 2 jobs with InvalidJobAgent status")
 
 	// Update the deployment selector to match only app-1 (exclude app-2)
 	updatedDeployment := c.NewDeployment(systemId)
