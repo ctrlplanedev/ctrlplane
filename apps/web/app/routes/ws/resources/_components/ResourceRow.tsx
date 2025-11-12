@@ -7,10 +7,10 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { trpc } from "~/api/trpc";
 import { badgeVariants } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { ResourceIcon } from "~/components/ui/resource-icon";
 import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
-import { ResourceIcon } from "../../../../components/ui/resource-icon";
 
 type ResourceRowProps = {
   resource: {

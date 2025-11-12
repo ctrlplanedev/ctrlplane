@@ -23,6 +23,7 @@ import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { ResourceIcon } from "../../../components/ui/resource-icon";
+import { ReleaseTargets } from "./_components/ReleaseTargets";
 import { useResource } from "./_components/ResourceProvider";
 import { ResourceVariables } from "./_components/Variables";
 
@@ -343,6 +344,7 @@ export default function ResourceDetail() {
           )}
 
           <ResourceVariables />
+          <ReleaseTargets />
         </div>
       </div>
     </>

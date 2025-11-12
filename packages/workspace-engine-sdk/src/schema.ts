@@ -792,6 +792,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get release targets for a resource
+     * @description Returns a list of release targets for a resource.
+     */
+    get: operations["getReleaseTargetsForResource"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables": {
     parameters: {
       query?: never;
@@ -1044,7 +1064,7 @@ export interface components {
        * @description Provider type (enum property replaced by openapi-typescript)
        * @enum {string}
        */
-      type: "HTTPMetricProvider";
+      type: "http";
       /**
        * @description HTTP endpoint URL (supports Go templates)
        * @example http://{{ .resource.name }}.{{ .environment.name }}/health
@@ -1070,6 +1090,7 @@ export interface components {
       /** Format: date-time */
       startedAt?: string;
       status: components["schemas"]["JobStatus"];
+      traceToken?: string;
       /** Format: date-time */
       updatedAt: string;
     };
@@ -1108,6 +1129,7 @@ export interface components {
         | "releaseId"
         | "startedAt"
         | "status"
+        | "traceToken"
         | "updatedAt"
       )[];
       id?: string;
@@ -3202,6 +3224,62 @@ export interface operations {
         content: {
           "application/json": {
             [key: string]: components["schemas"]["EntityRelation"][];
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getReleaseTargetsForResource: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of items to return */
+        limit?: number;
+        /** @description Number of items to skip */
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Identifier of the resource */
+        resourceIdentifier: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated list of items */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["ReleaseTarget"][];
+            /** @description Maximum number of items returned */
+            limit: number;
+            /** @description Number of items skipped */
+            offset: number;
+            /** @description Total number of items available */
+            total: number;
           };
         };
       };

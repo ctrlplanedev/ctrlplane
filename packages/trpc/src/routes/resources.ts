@@ -132,6 +132,34 @@ export const resourcesRouter = router({
       return result.data;
     }),
 
+  releaseTargets: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        identifier: z.string(),
+        limit: z.number().min(1).max(1000).default(50),
+        offset: z.number().min(0).default(0),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { workspaceId, identifier, limit, offset } = input;
+      const resourceIdentifier = encodeURIComponent(identifier);
+      const result = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets",
+        {
+          params: { path: { workspaceId, resourceIdentifier } },
+          query: { limit, offset },
+        },
+      );
+
+      if (result.error != null)
+        throw new Error(
+          `Failed to fetch release targets: ${JSON.stringify(result.error)}`,
+        );
+
+      return result.data;
+    }),
+
   variables: protectedProcedure
     .input(
       z.object({

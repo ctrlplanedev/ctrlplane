@@ -232,3 +232,70 @@ func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, 
 
 	c.JSON(http.StatusOK, variables)
 }
+
+func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params oapi.GetReleaseTargetsForResourceParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	allResources := ws.Resources().Items()
+	var resource *oapi.Resource
+	for _, r := range allResources {
+		if r.Identifier == resourceIdentifier {
+			resource = r
+			break
+		}
+	}
+
+	if resource == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Resource not found",
+		})
+		return
+	}
+
+	releaseTargets := ws.ReleaseTargets().GetForResource(c.Request.Context(), resource.Id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get release targets: " + err.Error(),
+		})
+		return
+	}
+
+	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
+	for _, releaseTarget := range releaseTargets {
+		if releaseTarget.ResourceId == resource.Id {
+			releaseTargetsList = append(releaseTargetsList, releaseTarget)
+		}
+	}
+
+	sort.Slice(releaseTargetsList, func(i, j int) bool {
+		return releaseTargetsList[i].Key() < releaseTargetsList[j].Key()
+	})
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(releaseTargetsList)
+	start := min(offset, total)
+	end := min(start+limit, total)
+
+	paginatedTargets := releaseTargetsList[start:end]
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  paginatedTargets,
+	})
+}

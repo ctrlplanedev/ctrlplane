@@ -91,6 +91,23 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets': {
+    get: {
+      summary: 'Get release targets for a resource',
+      operationId: 'getReleaseTargetsForResource',
+      description: 'Returns a list of release targets for a resource.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.resourceIdentifierParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTarget'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/resources/query': {
     post: {
       summary: 'Query resources with CEL expression',
