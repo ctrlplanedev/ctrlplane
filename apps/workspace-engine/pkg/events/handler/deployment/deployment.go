@@ -279,7 +279,7 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 		}
 
 		// Create a new job for this release (bypassing eligibility checks for explicit retrigger)
-		newJob, err := jobFactory.CreateJobForRelease(ctx, release)
+		newJob, err := jobFactory.CreateJobForRelease(ctx, release, nil)
 		if err != nil {
 			log.Error("failed to create job for release during retrigger",
 				"releaseId", release.ID(),

@@ -51,7 +51,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	if action != nil {
-		action.AddStep("Lookup deployment", trace.StepResultPass, 
+		action.AddStep("Lookup deployment", trace.StepResultPass,
 			fmt.Sprintf("Found deployment: %s (%s)", deployment.Name, deployment.Slug)).
 			AddMetadata("deployment_id", deployment.Id).
 			AddMetadata("deployment_name", deployment.Name)
@@ -61,7 +61,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	jobAgentId := deployment.JobAgentId
 	if jobAgentId == nil || *jobAgentId == "" {
 		if action != nil {
-			action.AddStep("Validate job agent", trace.StepResultFail, 
+			action.AddStep("Validate job agent", trace.StepResultFail,
 				fmt.Sprintf("No job agent configured for deployment '%s'. Jobs cannot be created without a job agent.", deployment.Name)).
 				AddMetadata("deployment_id", deployment.Id).
 				AddMetadata("deployment_name", deployment.Name).
@@ -84,7 +84,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	jobAgent, exists := f.store.JobAgents.Get(*jobAgentId)
 	if !exists {
 		if action != nil {
-			action.AddStep("Validate job agent", trace.StepResultFail, 
+			action.AddStep("Validate job agent", trace.StepResultFail,
 				fmt.Sprintf("Job agent '%s' configured on deployment '%s' does not exist or was deleted", *jobAgentId, deployment.Name)).
 				AddMetadata("job_agent_id", *jobAgentId).
 				AddMetadata("deployment_id", deployment.Id).
@@ -105,7 +105,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	if action != nil {
-		action.AddStep("Validate job agent", trace.StepResultPass, 
+		action.AddStep("Validate job agent", trace.StepResultPass,
 			fmt.Sprintf("Job agent '%s' (type: %s) found and validated", jobAgent.Name, jobAgent.Type)).
 			AddMetadata("job_agent_id", jobAgent.Id).
 			AddMetadata("job_agent_name", jobAgent.Name).
@@ -116,19 +116,19 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	mergedConfig := make(map[string]any)
 	hasAgentConfig := len(jobAgent.Config) > 0
 	hasDeploymentConfig := len(deployment.JobAgentConfig) > 0
-	
+
 	deepMerge(mergedConfig, jobAgent.Config)
 	deepMerge(mergedConfig, deployment.JobAgentConfig)
 
 	if action != nil {
 		configMsg := "Applied default job agent configuration"
 		if hasAgentConfig && hasDeploymentConfig {
-			configMsg = fmt.Sprintf("Merged job agent config (%d keys) with deployment overrides (%d keys)", 
+			configMsg = fmt.Sprintf("Merged job agent config (%d keys) with deployment overrides (%d keys)",
 				len(jobAgent.Config), len(deployment.JobAgentConfig))
 		} else if hasDeploymentConfig {
 			configMsg = fmt.Sprintf("Applied deployment-specific job config (%d keys)", len(deployment.JobAgentConfig))
 		}
-		
+
 		action.AddStep("Configure job", trace.StepResultPass, configMsg).
 			AddMetadata("job_agent_config_keys", len(jobAgent.Config)).
 			AddMetadata("deployment_config_keys", len(deployment.JobAgentConfig)).
@@ -137,9 +137,9 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	jobId := uuid.New().String()
-	
+
 	if action != nil {
-		action.AddStep("Create job", trace.StepResultPass, 
+		action.AddStep("Create job", trace.StepResultPass,
 			fmt.Sprintf("Job created successfully with ID %s for release %s", jobId, release.ID())).
 			AddMetadata("job_id", jobId).
 			AddMetadata("job_status", string(oapi.JobStatusPending)).
