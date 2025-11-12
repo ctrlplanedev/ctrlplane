@@ -333,7 +333,8 @@ export interface paths {
         /** Update a job agent */
         put: operations["updateJobAgent"];
         post?: never;
-        delete?: never;
+        /** Delete a job agent */
+        delete: operations["deleteJobAgent"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2433,6 +2434,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobAgent"];
+                };
+            };
+        };
+    };
+    deleteJobAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the job agent */
+                jobAgentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job agent deleted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAgent"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

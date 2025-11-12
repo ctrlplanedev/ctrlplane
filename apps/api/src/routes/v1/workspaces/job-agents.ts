@@ -67,7 +67,32 @@ const updateJobAgent: AsyncTypedHandler<
   res.status(200).json(updatedAgent);
 };
 
+const deleteJobAgent: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, jobAgentId } = req.params;
+  const jobAgentResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}",
+    { params: { path: { workspaceId, jobAgentId } } },
+  );
+
+  if (jobAgentResponse.error != null)
+    throw new ApiError(jobAgentResponse.error.error ?? "Unknown error", 500);
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.JobAgentDeleted,
+    timestamp: Date.now(),
+    data: jobAgentResponse.data,
+  });
+
+  res.status(202).json(jobAgentResponse.data);
+  return;
+};
+
 export const jobAgentsRouter = Router({ mergeParams: true })
   .post("/", asyncHandler(createJobAgent))
   .get("/:jobAgentId", asyncHandler(getJobAgent))
-  .put("/:jobAgentId", asyncHandler(updateJobAgent));
+  .put("/:jobAgentId", asyncHandler(updateJobAgent))
+  .delete("/:jobAgentId", asyncHandler(deleteJobAgent));

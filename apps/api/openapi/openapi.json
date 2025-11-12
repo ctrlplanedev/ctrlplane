@@ -3553,6 +3553,62 @@
          }
       },
       "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}": {
+         "delete": {
+            "operationId": "deleteJobAgent",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job agent",
+                  "in": "path",
+                  "name": "jobAgentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/JobAgent"
+                        }
+                     }
+                  },
+                  "description": "Job agent deleted"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Delete a job agent"
+         },
          "get": {
             "operationId": "getJobAgent",
             "parameters": [

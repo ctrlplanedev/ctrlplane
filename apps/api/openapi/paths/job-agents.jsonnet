@@ -43,5 +43,16 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       responses: openapi.okResponse(openapi.schemaRef('JobAgent')),
     },
+    delete: {
+      summary: 'Delete a job agent',
+      operationId: 'deleteJobAgent',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.jobAgentIdParam(),
+      ],
+      responses: openapi.acceptedResponse(openapi.schemaRef('JobAgent'), 'Job agent deleted')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
   },
 }
