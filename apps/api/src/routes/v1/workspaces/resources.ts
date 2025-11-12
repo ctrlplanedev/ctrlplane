@@ -1,8 +1,10 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
+import { ApiError, asyncHandler } from "@/types/api.js";
+import { Router } from "express";
 
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
-export const listResources: AsyncTypedHandler<
+const listResources: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources",
   "get"
 > = async (req, res) => {
@@ -33,7 +35,7 @@ export const listResources: AsyncTypedHandler<
   res.status(200).json(result.data);
 };
 
-export const getResourceByIdentifier: AsyncTypedHandler<
+const getResourceByIdentifier: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
   "get"
 > = async (req, res) => {
@@ -51,3 +53,32 @@ export const getResourceByIdentifier: AsyncTypedHandler<
 
   res.status(200).json(result.data);
 };
+
+const getVariablesForResource: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, identifier } = req.params;
+  const { limit, offset } = req.query;
+
+  const result = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
+    {
+      params: { path: { workspaceId, resourceIdentifier: identifier } },
+      query: { limit, offset },
+    },
+  );
+
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Failed to get variables for resource",
+      500,
+    );
+
+  res.status(200).json(result.data);
+};
+
+export const resourceRouter = Router({ mergeParams: true })
+  .get("/", asyncHandler(listResources))
+  .get("/:identifier", asyncHandler(getResourceByIdentifier))
+  .get("/:identifier/variables", asyncHandler(getVariablesForResource));

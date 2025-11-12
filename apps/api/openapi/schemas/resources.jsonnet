@@ -1,3 +1,5 @@
+local openapi = import '../lib/openapi.libsonnet';
+
 {
   Resource: {
     type: 'object',
@@ -30,6 +32,15 @@
         type: 'object',
         additionalProperties: { type: 'string' },
       },
+    },
+  },
+    ResourceVariable: {
+    type: 'object',
+    required: ['resourceId', 'key', 'value'],
+    properties: {
+      resourceId: { type: 'string' },
+      key: { type: 'string' },
+      value: openapi.schemaRef('Value'),
     },
   },
 }

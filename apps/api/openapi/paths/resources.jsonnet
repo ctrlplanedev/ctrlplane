@@ -30,4 +30,21 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.okResponse(openapi.schemaRef('Resource')),
     },
   },
+  '/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables': {
+    get: {
+      tags: ['Resources'],
+      summary: 'Get variables for a resource',
+      operationId: 'getVariablesForResource',
+      description: 'Returns a list of variables for a resource',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.identifierParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('ResourceVariable'), 'The requested variables') + 
+        openapi.notFoundResponse() + 
+        openapi.badRequestResponse(),
+    },
+  }
 }

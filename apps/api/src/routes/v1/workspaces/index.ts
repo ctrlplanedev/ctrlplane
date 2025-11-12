@@ -19,7 +19,7 @@ import { relationshipRulesRouter } from "./relationship-rules.js";
 import { releaseTargetsRouter } from "./release-targets.js";
 import { releaseRouter } from "./releases.js";
 import { resourceProvidersRouter } from "./resource-providers.js";
-import { listResources } from "./resources.js";
+import { resourceRouter } from "./resources.js";
 import { systemRouter } from "./systems.js";
 
 /**
@@ -33,7 +33,7 @@ export const createWorkspacesRouter = (): Router =>
     .get("/:workspaceId", asyncHandler(getWorkspace))
     .patch("/:workspaceId", asyncHandler(updateWorkspace))
     .delete("/:workspaceId", asyncHandler(deleteWorkspace))
-    .get("/:workspaceId/resources", asyncHandler(listResources))
+    .use("/:workspaceId/resources", resourceRouter)
     .use("/:workspaceId/systems", systemRouter)
     .use("/:workspaceId/resource-providers", resourceProvidersRouter)
     .use("/:workspaceId/deployments", deploymentsRouter)
