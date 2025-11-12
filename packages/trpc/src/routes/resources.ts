@@ -141,11 +141,13 @@ export const resourcesRouter = router({
     )
     .query(async ({ input }) => {
       const { workspaceId, resourceIdentifier } = input;
+      // URL encode the identifier to handle special characters like slashes
+      const encodedIdentifier = encodeURIComponent(resourceIdentifier);
       const result = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
         {
           params: {
-            path: { workspaceId, resourceIdentifier },
+            path: { workspaceId, resourceIdentifier: encodedIdentifier },
           },
         },
       );

@@ -41,9 +41,10 @@ const getResourceByIdentifier: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, identifier } = req.params;
 
+  const resourceIdentifier = encodeURIComponent(identifier);
   const result = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-    { params: { path: { workspaceId, resourceIdentifier: identifier } } },
+    { params: { path: { workspaceId, resourceIdentifier } } },
   );
 
   if (result.data == null) {
@@ -61,10 +62,11 @@ const getVariablesForResource: AsyncTypedHandler<
   const { workspaceId, identifier } = req.params;
   const { limit, offset } = req.query;
 
+  const resourceIdentifier = encodeURIComponent(identifier);
   const result = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
     {
-      params: { path: { workspaceId, resourceIdentifier: identifier } },
+      params: { path: { workspaceId, resourceIdentifier } },
       query: { limit, offset },
     },
   );
