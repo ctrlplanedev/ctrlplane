@@ -4,6 +4,9 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
@@ -57,6 +60,12 @@ func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi
 	entityID := entity.GetID()
 	entityType := entity.GetType()
 
+	span.SetAttributes(
+		attribute.String("entity.id", entityID),
+		attribute.String("entity.type", string(entityType)),
+		attribute.Int("entity_relations.count", len(entityRelations)),
+	)
+
 	for _, rel := range entityRelations {
 		// Use rule Reference as the key (not ID) for variable resolution
 		ruleReference := rel.Rule.Reference
@@ -83,6 +92,13 @@ func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi
 			EntityType: relatedEntity.GetType(),
 			Rule:       *rel.Rule,
 		}
+
+		span.AddEvent("Adding entity relation", trace.WithAttributes(
+			attribute.String("rule.reference", ruleReference),
+			attribute.String("direction", string(direction)),
+			attribute.String("related_entity.id", relatedEntity.GetID()),
+			attribute.String("related_entity.type", string(relatedEntity.GetType())),
+		))
 
 		relationsByRule[ruleReference] = append(relationsByRule[ruleReference], entityRelation)
 	}
