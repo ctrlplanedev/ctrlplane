@@ -1,16 +1,20 @@
 package resources
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/releasemanager"
 
+	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -268,6 +272,10 @@ func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId str
 
 	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
 	for _, releaseTarget := range releaseTargets {
+		if releaseTarget == nil {
+			log.Error("release target is nil", "releaseTarget", fmt.Sprintf("%+v", releaseTarget))
+			continue
+		}
 		if releaseTarget.ResourceId == resource.Id {
 			releaseTargetsList = append(releaseTargetsList, releaseTarget)
 		}
@@ -290,12 +298,109 @@ func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId str
 	start := min(offset, total)
 	end := min(start+limit, total)
 
+	// Pre-compute relationships for unique resources to avoid redundant GetRelatedEntities calls
 	paginatedTargets := releaseTargetsList[start:end]
+	uniqueResourceIds := make(map[string]bool)
+	for _, rt := range paginatedTargets {
+		uniqueResourceIds[rt.ResourceId] = true
+	}
+
+	// Batch compute relationships
+	resourceRelationshipsMap := make(map[string]map[string][]*oapi.EntityRelation)
+	for resourceId := range uniqueResourceIds {
+		res, exists := ws.Resources().Get(resourceId)
+		if !exists {
+			continue
+		}
+		entity := relationships.NewResourceEntity(res)
+		relatedEntities, _ := ws.Store().Relationships.GetRelatedEntities(c.Request.Context(), entity)
+		resourceRelationshipsMap[resourceId] = relatedEntities
+	}
+
+	// Process each release target, logging errors but continuing with valid ones
+	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
+	skippedCount := 0
+
+	type result struct {
+		item *oapi.ReleaseTargetWithState
+		err  error
+	}
+
+	results, err := concurrency.ProcessInChunks(
+		c.Request.Context(),
+		paginatedTargets,
+		func(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (result, error) {
+			if releaseTarget == nil {
+				return result{nil, fmt.Errorf("release target is nil")}, nil
+			}
+
+			// Use pre-computed relationships
+			resourceRelationships := resourceRelationshipsMap[releaseTarget.ResourceId]
+			state, err := ws.ReleaseManager().GetReleaseTargetState(
+				c.Request.Context(),
+				releaseTarget,
+				releasemanager.WithResourceRelationships(resourceRelationships),
+			)
+			if err != nil {
+				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
+			}
+
+			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
+			if !ok {
+				return result{nil, fmt.Errorf("environment not found: environmentId=%s for release target key=%s", releaseTarget.EnvironmentId, releaseTarget.Key())}, nil
+			}
+
+			res, ok := ws.Resources().Get(releaseTarget.ResourceId)
+			if !ok {
+				return result{nil, fmt.Errorf("resource not found: resourceId=%s for release target key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
+			}
+
+			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
+			if !ok {
+				return result{nil, fmt.Errorf("deployment not found: deploymentId=%s for release target key=%s", releaseTarget.DeploymentId, releaseTarget.Key())}, nil
+			}
+
+			item := &oapi.ReleaseTargetWithState{
+				ReleaseTarget: *releaseTarget,
+				State:         *state,
+				Environment:   *environment,
+				Resource:      *res,
+				Deployment:    *deployment,
+			}
+			return result{item, nil}, nil
+		},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Filter out results with errors, log them
+	for _, res := range results {
+		if res.err != nil {
+			log.Warn("Skipping invalid release target", "error", res.err.Error())
+			skippedCount++
+			continue
+		}
+		if res.item != nil {
+			releaseTargetsWithState = append(releaseTargetsWithState, res.item)
+		}
+	}
+
+	if skippedCount > 0 {
+		log.Warn("Skipped invalid release targets in GetReleaseTargetsForResource",
+			"resourceId", resource.Id,
+			"skippedCount", skippedCount,
+			"validCount", len(releaseTargetsWithState))
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  paginatedTargets,
+		"items":  releaseTargetsWithState,
 	})
 }

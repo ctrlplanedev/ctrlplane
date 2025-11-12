@@ -4636,7 +4636,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/ReleaseTarget"
+                                    "$ref": "#/components/schemas/ReleaseTargetWithState"
                                  },
                                  "type": "array"
                               },

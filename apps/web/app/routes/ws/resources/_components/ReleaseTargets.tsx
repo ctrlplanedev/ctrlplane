@@ -6,6 +6,14 @@ import { toast } from "sonner";
 import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useResource } from "./ResourceProvider";
 
@@ -24,10 +32,10 @@ function useReleaseTargets() {
   return data?.items ?? [];
 }
 
-type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTarget"];
+type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
 function key(releaseTarget: ReleaseTarget) {
-  const { resourceId, environmentId, deploymentId } = releaseTarget;
-  return `${resourceId}-${environmentId}-${deploymentId}`;
+  const { resource, environment, deployment } = releaseTarget;
+  return `${resource.id}-${environment.id}-${deployment.id}`;
 }
 function CopyTargetKey({ releaseTarget }: { releaseTarget: ReleaseTarget }) {
   const [, copy] = useCopyToClipboard();
@@ -37,9 +45,50 @@ function CopyTargetKey({ releaseTarget }: { releaseTarget: ReleaseTarget }) {
   };
 
   return (
-    <Button variant="ghost" size="icon" onClick={onClick}>
-      <Copy className="h-4 w-4" />
-    </Button>
+    <div className="flex w-full justify-end">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onClick}
+        className="flex h-8 items-center gap-2"
+      >
+        <span className="text-xs text-muted-foreground ">Copy key</span>
+        <Copy className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+function ReleaseTargetTable({
+  releaseTargets,
+}: {
+  releaseTargets: ReleaseTarget[];
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Deployment</TableHead>
+          <TableHead>Environment</TableHead>
+          <TableHead>Version</TableHead>
+          <TableHead />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {releaseTargets.map((releaseTarget) => (
+          <TableRow key={key(releaseTarget)}>
+            <TableCell>{releaseTarget.deployment.name}</TableCell>
+            <TableCell>{releaseTarget.environment.name}</TableCell>
+            <TableCell>
+              {releaseTarget.state.currentRelease?.version.tag ?? "-"}
+            </TableCell>
+            <TableCell>
+              <CopyTargetKey releaseTarget={releaseTarget} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -56,17 +105,7 @@ export function ReleaseTargets() {
           <p className="text-sm text-muted-foreground">No release targets</p>
         )}
         {releaseTargets.length > 0 && (
-          <div className="space-y-2 font-mono text-xs">
-            {releaseTargets.map((releaseTarget) => (
-              <div
-                key={key(releaseTarget)}
-                className="flex items-center justify-between"
-              >
-                <span>{key(releaseTarget)}</span>
-                <CopyTargetKey releaseTarget={releaseTarget} />
-              </div>
-            ))}
-          </div>
+          <ReleaseTargetTable releaseTargets={releaseTargets} />
         )}
       </CardContent>
     </Card>

@@ -3273,7 +3273,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            items: components["schemas"]["ReleaseTarget"][];
+            items: components["schemas"]["ReleaseTargetWithState"][];
             /** @description Maximum number of items returned */
             limit: number;
             /** @description Number of items skipped */

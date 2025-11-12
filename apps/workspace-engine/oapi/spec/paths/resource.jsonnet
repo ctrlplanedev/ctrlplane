@@ -102,7 +102,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTarget'))
+      responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTargetWithState'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
