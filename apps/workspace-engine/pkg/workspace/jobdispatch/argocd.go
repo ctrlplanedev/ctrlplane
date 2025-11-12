@@ -67,6 +67,11 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return err
 	}
 
+	templatableJobWithRelease, err := jobWithRelease.ToTemplatable()
+	if err != nil {
+		return fmt.Errorf("failed to get templatable job with release: %w", err)
+	}
+
 	cfg, err := d.parseConfig(job)
 	if err != nil {
 		return err
@@ -78,7 +83,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	}
 
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, jobWithRelease); err != nil {
+	if err := t.Execute(&buf, templatableJobWithRelease); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
