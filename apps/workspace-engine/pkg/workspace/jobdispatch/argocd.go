@@ -66,6 +66,12 @@ func (d *ArgoCDDispatcher) parseConfig(job *oapi.Job) (argoCDAgentConfig, error)
 	return parsed, nil
 }
 
+func getK8sCompatibleName(name string) string {
+	cleaned := strings.ReplaceAll(name, "/", "-")
+	cleaned = strings.ReplaceAll(cleaned, ":", "-")
+	return cleaned
+}
+
 func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 	ctx, span := argoCDTracer.Start(ctx, "DispatchJob")
 	defer span.End()
@@ -143,6 +149,9 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		span.SetStatus(codes.Error, "missing application name")
 		return err
 	}
+
+	// Clean the application name to make it valid for Kubernetes
+	app.ObjectMeta.Name = getK8sCompatibleName(app.ObjectMeta.Name)
 
 	span.SetAttributes(
 		attribute.String("argocd.app_name", app.ObjectMeta.Name),
