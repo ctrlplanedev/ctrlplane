@@ -65,7 +65,7 @@ func (s *Deployments) GetDeployment(c *gin.Context, workspaceId string, deployme
 	variables := make([]oapi.DeploymentVariableWithValues, 0)
 	for _, variable := range ws.DeploymentVariables().Items() {
 		if variable != nil && variable.DeploymentId == deploymentId {
-			values := valuesByVariableId[variable.Key]
+			values := valuesByVariableId[variable.Id]
 			if values == nil {
 				values = make([]oapi.DeploymentVariableValue, 0)
 			}
