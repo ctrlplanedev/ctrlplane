@@ -533,4 +533,3 @@ func getFirstJob(jobs map[string]*oapi.Job) *oapi.Job {
 	}
 	return nil
 }
-

@@ -568,4 +568,3 @@ func TestEngine_PolicyAdded_RetroactiveBlocking(t *testing.T) {
 
 	t.Logf("New policy added - blocks new deployments but doesn't affect existing jobs")
 }
-
