@@ -59,10 +59,11 @@ const getDeployment: AsyncTypedHandler<
     { params: { path: { workspaceId, deploymentId } } },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
-
-  if (response.data == null) throw new ApiError("Deployment not found", 404);
+  if (response.error != null)
+    throw new ApiError(
+      `Error getting deployment: ${JSON.stringify(response.error, null, 2)}`,
+      500,
+    );
 
   res.json(response.data);
 };
