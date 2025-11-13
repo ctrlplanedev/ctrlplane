@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -70,6 +71,17 @@ func HandleUserApprovalRecordCreated(
 	if err != nil {
 		return err
 	}
+
+	// Invalidate cache for affected targets so planning phase re-evaluates with new approval
+	for _, rt := range relevantTargets {
+		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+	}
+
+	log.Info("Approval created - reconciling affected targets",
+		"version_id", userApprovalRecord.VersionId,
+		"environment_id", userApprovalRecord.EnvironmentId,
+		"affected_targets_count", len(relevantTargets))
+
 	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalCreated)
 
 	return nil
@@ -97,6 +109,12 @@ func HandleUserApprovalRecordUpdated(
 	if err != nil {
 		return err
 	}
+
+	// Invalidate cache for affected targets so planning phase re-evaluates with new approval
+	for _, rt := range relevantTargets {
+		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+	}
+
 	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalUpdated)
 
 	return nil
@@ -123,6 +141,11 @@ func HandleUserApprovalRecordDeleted(
 	relevantTargets, err := getRelevantTargets(ctx, ws, userApprovalRecord)
 	if err != nil {
 		return err
+	}
+
+	// Invalidate cache for affected targets so planning phase re-evaluates without the approval
+	for _, rt := range relevantTargets {
+		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
 	}
 
 	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalUpdated)

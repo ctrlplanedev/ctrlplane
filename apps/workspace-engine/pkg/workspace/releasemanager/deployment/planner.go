@@ -237,6 +237,10 @@ func (p *Planner) findDeployableVersion(
 
 	evaluators := p.policyManager.PlannerGlobalEvaluators()
 	for _, policy := range policies {
+		// Skip disabled policies
+		if !policy.Enabled {
+			continue
+		}
 		for _, rule := range policy.Rules {
 			evaluators = append(evaluators, p.policyManager.PlannerPolicyEvaluators(&rule)...)
 		}

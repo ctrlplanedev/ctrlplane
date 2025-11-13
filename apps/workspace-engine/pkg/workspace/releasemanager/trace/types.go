@@ -88,6 +88,7 @@ const (
 	TriggerVersionCreated     TriggerReason = "version.created"     // New deployment version created
 	TriggerApprovalCreated    TriggerReason = "approval.created"    // User approval granted
 	TriggerApprovalUpdated    TriggerReason = "approval.updated"    // User approval status changed
+	TriggerPolicyUpdated      TriggerReason = "policy.updated"      // Policy configuration changed
 	TriggerVariablesUpdated   TriggerReason = "variables.updated"   // Deployment or resource variables changed
 	TriggerManual             TriggerReason = "manual"              // Manually triggered (e.g., force redeploy)
 	TriggerFirstBoot          TriggerReason = "first_boot"          // Initial workspace startup

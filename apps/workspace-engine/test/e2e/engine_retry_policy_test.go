@@ -438,11 +438,3 @@ func TestEngine_RetryPolicy_InvalidJobAgentCounts(t *testing.T) {
 		t.Fatalf("expected 0 jobs after invalidJobAgent, got %d", len(pendingJobs))
 	}
 }
-
-// Helper function to get first job from a map
-func getFirstJob(jobs map[string]*oapi.Job) *oapi.Job {
-	for _, job := range jobs {
-		return job
-	}
-	return nil
-}
