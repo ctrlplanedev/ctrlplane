@@ -1,0 +1,559 @@
+# Release Targets
+
+A **Release Target** is the combination of a Deployment, Environment, and Resource. It represents a specific place where a deployment version can be released.
+
+## Understanding Release Targets
+
+The core formula:
+
+```
+Deployment × Environment × Resource = Release Target
+```
+
+### Example
+
+Given:
+- **Deployment**: API Service
+- **Environment**: Production (matches 2 resources)
+  - Resource 1: prod-cluster-us-east
+  - Resource 2: prod-cluster-us-west
+  
+**Release Targets Created**:
+1. API Service → Production → prod-cluster-us-east
+2. API Service → Production → prod-cluster-us-west
+
+Each release target can independently receive deployment versions.
+
+## How Release Targets are Created
+
+Release targets are created automatically based on selectors:
+
+### 1. Environment Selector Matches Resources
+
+Environment defines a resource selector:
+```json
+{
+  "name": "Production",
+  "resourceSelector": {
+    "type": "metadata",
+    "operator": "equals",
+    "key": "environment",
+    "value": "production"
+  }
+}
+```
+
+This matches all resources with `metadata.environment = "production"`.
+
+### 2. Deployment Selector Further Filters (Optional)
+
+Deployment can have an additional resource selector:
+```json
+{
+  "name": "API Service",
+  "resourceSelector": {
+    "type": "kind",
+    "operator": "equals",
+    "value": "kubernetes-cluster"
+  }
+}
+```
+
+This limits the deployment to only Kubernetes clusters.
+
+### 3. Intersection Creates Release Targets
+
+The final set of resources is the intersection of:
+- Resources matched by environment selector
+- Resources matched by deployment selector (if present)
+
+**Example Calculation**:
+
+```
+Environment "Production" matches:
+  - prod-k8s-cluster-1 (kind: kubernetes-cluster, env: production)
+  - prod-k8s-cluster-2 (kind: kubernetes-cluster, env: production)
+  - prod-vm-server-1 (kind: vm, env: production)
+
+Deployment "API Service" selector (kind: kubernetes-cluster):
+  - prod-k8s-cluster-1 ✓
+  - prod-k8s-cluster-2 ✓
+  - prod-vm-server-1 ✗ (not a kubernetes-cluster)
+
+Release Targets Created:
+  1. API Service → Production → prod-k8s-cluster-1
+  2. API Service → Production → prod-k8s-cluster-2
+```
+
+## Release Target Properties
+
+```json
+{
+  "id": "rt_abc123",
+  "deploymentId": "dep_api",
+  "environmentId": "env_prod",
+  "resourceId": "res_cluster1",
+  "key": "dep_api:env_prod:res_cluster1",
+  "createdAt": "2024-01-15T10:00:00Z"
+}
+```
+
+### key
+Unique identifier combining deployment, environment, and resource IDs.
+
+Format: `{deploymentId}:{environmentId}:{resourceId}`
+
+This key is used to track which version is currently deployed to each target.
+
+## Release Target Lifecycle
+
+### Creation
+
+Release targets are created when:
+- A new deployment is created (targets created for all matching environments and resources)
+- A new environment is created (targets created for all deployments and matching resources)
+- A new resource is created that matches existing environment selectors (targets created for all deployments)
+
+### Deletion
+
+Release targets are deleted when:
+- The deployment is deleted
+- The environment is deleted
+- The resource is deleted or no longer matches the selectors
+
+### Dynamic Updates
+
+As resources are added, updated, or removed:
+- Resource metadata changes → Release targets re-evaluated
+- Resource matches environment selector → New release targets created
+- Resource stops matching → Release targets removed
+
+## Viewing Release Targets
+
+### Via Web UI
+
+1. Navigate to your deployment
+2. Click "Release Targets" tab
+3. See all targets with current deployed versions
+
+### Via API
+
+```bash
+# List release targets for a deployment
+curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/release-targets \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+**Response**:
+```json
+{
+  "releaseTargets": [
+    {
+      "id": "rt_abc123",
+      "deployment": {
+        "id": "dep_api",
+        "name": "API Service"
+      },
+      "environment": {
+        "id": "env_prod",
+        "name": "Production"
+      },
+      "resource": {
+        "id": "res_cluster1",
+        "name": "Production US East Cluster",
+        "identifier": "k8s-prod-use1"
+      },
+      "currentRelease": {
+        "versionTag": "v1.2.3",
+        "status": "completed"
+      }
+    }
+  ]
+}
+```
+
+## Release Target Matrix
+
+Think of release targets as a 3D matrix:
+
+```
+                    Resources
+                 ┌─────┬─────┬─────┐
+                 │ R1  │ R2  │ R3  │
+    ┌────────────┼─────┼─────┼─────┤
+    │ Dev        │ RT  │ RT  │ RT  │ Environments
+    │ Staging    │ RT  │ RT  │ RT  │
+    │ Production │ RT  │ RT  │ RT  │
+    └────────────┴─────┴─────┴─────┘
+                    ↑
+               Deployment
+```
+
+Each cell "RT" is a release target.
+
+For multiple deployments, this becomes a 3D cube:
+
+```
+          Deployments (layers)
+               ↓
+        [API] [Frontend] [Worker]
+         ↓       ↓          ↓
+    Environment × Resource matrices
+```
+
+## Release Target States
+
+While release targets don't have an explicit "status" field, their state is determined by their current release:
+
+### No Release
+Target exists but no version has been deployed yet.
+
+### Active Release
+A version is currently being deployed (job in progress).
+
+### Completed Release
+A version is successfully deployed (job completed).
+
+### Failed Release
+Latest deployment attempt failed.
+
+### Pending Release
+A release exists but is waiting for approval/policies.
+
+## Deployment Targeting Strategies
+
+### Strategy 1: Broad Matching
+
+Environment matches many resources, deployment doesn't filter:
+
+```yaml
+# Environment
+resourceSelector:
+  type: metadata
+  operator: equals
+  key: environment
+  value: production
+
+# Deployment (no selector)
+# → Deploys to ALL production resources
+```
+
+**Result**: Deployment goes to every production resource.
+
+**Use Case**: Services that should run everywhere (monitoring agents, logging).
+
+### Strategy 2: Deployment-Level Filtering
+
+Deployment limits which resources it can target:
+
+```yaml
+# Environment
+resourceSelector:
+  type: metadata
+  operator: equals
+  key: environment
+  value: production
+
+# Deployment
+resourceSelector:
+  type: kind
+  operator: equals
+  value: kubernetes-cluster
+```
+
+**Result**: Deployment only goes to production Kubernetes clusters.
+
+**Use Case**: Platform-specific deployments (containers vs. VMs).
+
+### Strategy 3: Fine-Grained Environments
+
+Create specific environments for precise targeting:
+
+```yaml
+# Environment: Production Kubernetes US East
+resourceSelector:
+  type: metadata
+  operator: and
+  conditions:
+    - key: environment
+      value: production
+    - key: region
+      value: us-east-1
+    - key: kind
+      value: kubernetes-cluster
+```
+
+**Result**: Very specific set of release targets.
+
+**Use Case**: Region-specific deployments, gradual rollouts.
+
+## Release Target Locking
+
+Release targets can be locked to prevent new deployments:
+
+```bash
+curl -X PATCH https://app.ctrlplane.dev/api/v1/release-targets/{releaseTargetId}/lock \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "locked": true,
+    "reason": "Maintenance window"
+  }'
+```
+
+**Use Cases**:
+- Maintenance windows
+- Incident response (freeze deployments)
+- Testing/debugging (keep specific version)
+
+Locked targets won't receive new deployments until unlocked.
+
+## Querying Release Targets
+
+### By Deployment
+
+```bash
+GET /api/v1/deployments/{deploymentId}/release-targets
+```
+
+Shows all targets for a specific deployment.
+
+### By Environment
+
+```bash
+GET /api/v1/environments/{environmentId}/release-targets
+```
+
+Shows all targets in a specific environment.
+
+### By Resource
+
+```bash
+GET /api/v1/resources/{resourceId}/release-targets
+```
+
+Shows all targets for a specific resource (all deployments).
+
+### With Filters
+
+```bash
+POST /api/v1/release-targets/query
+{
+  "deploymentId": "dep_api",
+  "environmentId": "env_prod",
+  "status": "completed"
+}
+```
+
+## Release Target Count Estimates
+
+Before creating a deployment, estimate how many release targets will be created:
+
+```bash
+POST /api/v1/deployments/estimate-targets
+{
+  "systemId": "sys_abc",
+  "resourceSelector": {
+    "type": "kind",
+    "value": "kubernetes-cluster"
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "environments": [
+    {
+      "name": "Development",
+      "matchingResources": 1,
+      "releaseTargets": 1
+    },
+    {
+      "name": "Production",
+      "matchingResources": 3,
+      "releaseTargets": 3
+    }
+  ],
+  "totalReleaseTargets": 4
+}
+```
+
+## Common Patterns
+
+### Pattern 1: Environment-Per-Region
+
+```yaml
+deployments:
+  - name: API Service
+
+environments:
+  - name: Production US East
+    resourceSelector:
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: region
+          value: us-east-1
+
+  - name: Production US West
+    resourceSelector:
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: region
+          value: us-west-2
+```
+
+**Release Targets**: API Service gets separate targets per region.
+
+**Benefit**: Independent regional deployments, gradual rollout by region.
+
+### Pattern 2: Tiered Resources
+
+```yaml
+deployments:
+  - name: Critical Service
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: tier
+      value: critical
+
+  - name: Standard Service
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: tier
+      value: standard
+
+environments:
+  - name: Production
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: production
+```
+
+**Release Targets**: Services only deploy to appropriate tier resources.
+
+**Benefit**: Resource isolation, cost optimization.
+
+### Pattern 3: Canary Deployments
+
+```yaml
+deployments:
+  - name: API Service
+
+environments:
+  - name: Production Canary
+    resourceSelector:
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: canary
+          value: "true"
+
+  - name: Production Stable
+    resourceSelector:
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: canary
+          operator: not_equals
+          value: "true"
+```
+
+**Release Targets**: Separate targets for canary vs. stable.
+
+**Benefit**: Test new versions on canary before rolling out to stable.
+
+## Best Practices
+
+### Resource Metadata Design
+
+Design resource metadata with targeting in mind:
+
+```json
+{
+  "environment": "production",
+  "region": "us-east-1",
+  "zone": "us-east-1a",
+  "tier": "critical",
+  "team": "platform",
+  "canary": "false"
+}
+```
+
+This allows flexible targeting across multiple dimensions.
+
+### Selector Simplicity
+
+**Prefer Simple Selectors**:
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "environment",
+  "value": "production"
+}
+```
+
+**Over Complex Ones**:
+```json
+{
+  "type": "cel",
+  "expression": "(metadata.environment == 'production' || metadata.environment == 'prod') && (metadata.tier != 'deprecated') && ..."
+}
+```
+
+Complex selectors are harder to understand and maintain.
+
+### Validate Target Count
+
+Before deploying:
+1. Check estimated release target count
+2. Verify targets match expectations
+3. Test in lower environment first
+
+### Monitor Release Targets
+
+- Track release target creation/deletion events
+- Alert on unexpected target count changes
+- Review targets when resources are added/updated
+
+## Troubleshooting
+
+### Too many release targets created
+- Review environment resource selectors
+- Check if deployment needs a resource selector to filter
+- Verify resource metadata is correct
+
+### Expected targets not created
+- Check environment selector matches resources
+- Verify deployment selector (if present) isn't too restrictive
+- Ensure deployment and environment are in same system
+- Check resources exist and aren't deleted
+
+### Targets created for wrong resources
+- Review selector logic (AND vs. OR)
+- Check resource metadata matches expectations
+- Test selectors with query API before applying
+
+### Release target disappeared
+- Check if resource was deleted
+- Verify resource still matches environment selector
+- Check if resource metadata changed
+
+## Next Steps
+
+- [Releases and Jobs](./releases-and-jobs.md) - How versions deploy to targets
+- [Selectors](./selectors.md) - Master the selector syntax
+- [Environments](./environments.md) - Create and configure environments
+- [Policies](../advanced/policies.md) - Control which targets receive deployments
+

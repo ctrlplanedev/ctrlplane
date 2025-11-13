@@ -1,0 +1,101 @@
+---
+title: "Introduction"
+description: "Introduction"
+---
+
+## What is Ctrlplane?
+
+Ctrlplane is an open-source **deployment orchestration platform** that helps you
+manage multi-stage deployment pipelines across diverse infrastructure
+environments. Whether you're deploying to Kubernetes clusters, cloud functions,
+VMs, or custom infrastructure, Ctrlplane provides a unified control plane for
+orchestrating your deployments.
+
+Think of Ctrlplane as the orchestration layer that sits between your CI/CD
+system and your deployment targets, managing the complexity of progressive
+delivery, approval workflows, and environment promotion.
+
+## Key Features
+
+- **Multi-platform deployments** - Deploy to Kubernetes, cloud functions, VMs,
+  or any custom infrastructure
+- **Progressive delivery** - Canary deployments, blue-green deployments, and
+  phased rollouts
+- **Policy-driven workflows** - Define approval gates, environment progression
+  rules, and gradual rollouts
+- **CI/CD integration** - Works with GitHub Actions, GitLab CI, Jenkins, or any
+  CI system via REST API
+- **Flexible job agents** - Execute deployments using Kubernetes jobs, GitHub
+  Actions workflows, ArgoCD, or custom agents
+- **Resource targeting** - Use powerful selectors to dynamically target
+  deployment destinations
+- **Deployment tracing** - Full visibility into execution with detailed traces
+
+## How Ctrlplane Works
+
+At a high level, Ctrlplane orchestrates deployments through these steps:
+
+```txt
+1. Build Phase (Your CI)
+   └─> CI builds artifact
+   └─> CI creates deployment version in Ctrlplane
+
+2. Planning Phase (Ctrlplane)
+   └─> Evaluates policies (approvals, progression, etc.)
+   └─> Determines which resources need the new version
+
+3. Job Creation (Ctrlplane)
+   └─> Creates release + job for each target
+   └─> (Deployment × Environment × Resource)
+
+4. Execution Phase (Job Agents)
+   └─> Agents poll for work
+   └─> Execute deployments
+   └─> Report status back
+
+5. Observability (Optional)
+   └─> Traces capture detailed execution steps
+```
+
+## Comparison to Other Tools
+
+## When to Use Ctrlplane
+
+Ctrlplane is ideal when you need:
+
+- **Multi-environment deployments** - Managing dev, staging, and production
+  environments
+- **Approval workflows** - Requiring manual gates before production
+- **Progressive delivery** - Gradual rollouts and canary deployments
+- **Multi-platform deployments** - Deploying to Kubernetes AND cloud functions
+  AND VMs
+- **Deployment orchestration** - Coordinating complex deployment workflows
+- **Policy enforcement** - Ensuring deployment best practices are followed
+
+## Core Entities
+
+Ctrlplane models deployments through these key entities:
+
+- **System** - Logical grouping of related deployments (e.g., "E-commerce
+  Platform")
+- **Resource** - A deployment target (e.g., a Kubernetes cluster, a VM, a
+  function)
+- **Environment** - A logical environment (dev, staging, prod) that groups
+  resources
+- **Deployment** - A service or application to deploy (e.g., "API Service")
+- **Deployment Version** - A specific version/build of a deployment (e.g.,
+  "v1.2.3")
+- **Release Target** - The combination of (Deployment × Environment × Resource)
+- **Release** - An intended deployment of a version to a release target
+- **Job** - The actual deployment task executed by a job agent
+- **Policy** - Rules governing deployments (approvals, progression, etc.)
+
+## Next Steps
+
+Ready to get started? Continue with:
+
+- [Core Concepts](./core-concepts.md) - Deep dive into Ctrlplane's entities and
+  their relationships
+- [Quickstart](./quickstart.md) - Set up your first deployment in 10 minutes
+- [Installation](./installation.md) - Self-host Ctrlplane or use the cloud
+  offering

@@ -1,0 +1,435 @@
+# Systems
+
+A **System** is the top-level organizational unit in Ctrlplane. It represents a logical grouping of related deployments, environments, and resources.
+
+## What is a System?
+
+Think of a system as a workspace for a product, platform, or major component of your infrastructure. It contains everything related to deploying that product:
+
+- **Deployments** - The services/applications you deploy
+- **Environments** - Where you deploy (dev, staging, prod)
+- **Resources** - The infrastructure targets
+- **Policies** - Rules governing deployments
+- **Variables** - Configuration values
+
+## When to Create a System
+
+Create a system when you have:
+
+✅ **A product or platform** - E.g., "E-commerce Platform", "Data Pipeline"  
+✅ **Multiple related services** - Microservices that work together  
+✅ **Shared deployment policies** - Common approval/progression rules  
+✅ **Logical separation** - Different teams, security boundaries
+
+## System Structure
+
+```txt
+System: E-commerce Platform
+├── Deployments
+│   ├── API Service
+│   ├── Frontend App
+│   ├── Payment Service
+│   └── Notification Service
+├── Environments
+│   ├── Development
+│   ├── Staging
+│   └── Production
+├── Resources
+│   ├── dev-cluster-1
+│   ├── staging-cluster-1
+│   ├── prod-cluster-us-east
+│   └── prod-cluster-us-west
+└── Policies
+    ├── Production Approval Required
+    └── Environment Progression (Staging → Production)
+```
+
+## Creating a System
+
+### Via Web UI
+
+1. Navigate to your workspace
+2. Click "Create System"
+3. Fill in the form:
+   - **Name**: Display name (e.g., "E-commerce Platform")
+   - **Slug**: URL-friendly identifier (e.g., "ecommerce-platform")
+   - **Description**: What this system encompasses
+
+### Via API
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/systems \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "E-commerce Platform",
+    "slug": "ecommerce-platform",
+    "description": "Complete e-commerce system including API, frontend, and backend services"
+  }'
+```
+
+**Response**:
+
+```json
+{
+  "id": "sys_abc123",
+  "name": "E-commerce Platform",
+  "slug": "ecommerce-platform",
+  "description": "Complete e-commerce system including API, frontend, and backend services",
+  "workspaceId": "ws_xyz789",
+  "createdAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### Via YAML Import
+
+Ctrlplane supports importing system configuration from YAML:
+
+```yaml
+# system.yaml
+system:
+  name: E-commerce Platform
+  slug: ecommerce-platform
+  description: Complete e-commerce system
+
+deployments:
+  - name: API Service
+    slug: api-service
+    description: Backend API
+
+  - name: Frontend App
+    slug: frontend-app
+    description: Customer-facing web application
+
+environments:
+  - name: Development
+    description: Development environment
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: development
+
+  - name: Production
+    description: Production environment
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: production
+```
+
+Import via API:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/import \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/yaml" \
+  --data-binary @system.yaml
+```
+
+## System Properties
+
+### Name
+
+- Display name shown in the UI
+- Can contain spaces and special characters
+- Can be changed without affecting existing deployments
+
+### Slug
+
+- URL-friendly identifier
+- Must be unique within workspace
+- Used in API paths and CLI commands
+- Cannot be changed after creation
+- Format: lowercase letters, numbers, hyphens
+
+### Description
+
+- Optional text describing the system's purpose
+- Supports markdown formatting
+- Displayed in the UI
+
+### Workspace ID
+
+- The parent workspace this system belongs to
+- Automatically set when creating a system
+- Cannot be changed
+
+## Organizing with Multiple Systems
+
+### When to Use Multiple Systems
+
+Use separate systems when:
+
+1. **Team Boundaries**
+
+   ```txt
+   System: Platform Team Services
+   System: Product Team Services
+   ```
+
+2. **Security Boundaries**
+
+   ```txt
+   System: Public Services
+   System: Internal Services
+   System: PCI Compliant Services
+   ```
+
+3. **Deployment Independence**
+
+   ```txt
+   System: Core Platform
+   System: Analytics Platform
+   System: ML Platform
+   ```
+
+4. **Different Policies**
+
+   ```txt
+   System: Experimental Features (auto-deploy)
+   System: Production Services (requires approval)
+   ```
+
+### When to Use One System
+
+Keep things in one system when:
+
+1. **Tightly Coupled Services**
+   - Microservices that must deploy together
+   - Services with shared dependencies
+
+2. **Shared Deployment Pipeline**
+   - Same approval requirements
+   - Same environment progression
+
+3. **Single Team/Product**
+   - One team owns all services
+   - Deployed as a unit
+
+## System-Level Operations
+
+### Viewing System Status
+
+Get an overview of all deployments in a system:
+
+```bash
+curl https://app.ctrlplane.dev/api/v1/systems/{systemId}/status \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+**Response**:
+
+```json
+{
+  "systemId": "sys_abc123",
+  "name": "E-commerce Platform",
+  "deployments": 4,
+  "environments": 3,
+  "resources": 8,
+  "activeReleases": 12,
+  "pendingApprovals": 2,
+  "failedJobs": 1
+}
+```
+
+### Listing All Entities
+
+**List Deployments**:
+
+```bash
+GET /api/v1/systems/{systemId}/deployments
+```
+
+**List Environments**:
+
+```bash
+GET /api/v1/systems/{systemId}/environments
+```
+
+**List Policies**:
+
+```bash
+GET /api/v1/systems/{systemId}/policies
+```
+
+### Deleting a System
+
+⚠️ **Warning**: Deleting a system removes all associated deployments, releases, and jobs. This cannot be undone.
+
+```bash
+curl -X DELETE https://app.ctrlplane.dev/api/v1/systems/{systemId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+## Best Practices
+
+### Naming Conventions
+
+**Good Names**:
+
+- ✅ "E-commerce Platform"
+- ✅ "Analytics Pipeline"
+- ✅ "Customer Portal"
+
+**Good Slugs**:
+
+- ✅ `ecommerce-platform`
+- ✅ `analytics-pipeline`
+- ✅ `customer-portal`
+
+**Avoid**:
+
+- ❌ "System 1", "Test", "Prod" (too generic)
+- ❌ `My_System`, `PROD-SYSTEM` (inconsistent formatting)
+
+### Start Simple
+
+Begin with one system for your product:
+
+```
+System: My Application
+  ├── API Deployment
+  ├── Frontend Deployment
+  ├── Dev Environment
+  └── Prod Environment
+```
+
+Split into multiple systems as you grow:
+
+```
+System: Customer-Facing Services
+  ├── API Deployment
+  └── Frontend Deployment
+
+System: Internal Services
+  ├── Admin API Deployment
+  └── Analytics Deployment
+```
+
+### Documentation
+
+Use the description field to document:
+
+- Purpose of the system
+- Ownership/team responsible
+- Key dependencies
+- Links to external documentation
+
+Example:
+
+```
+E-commerce platform for online sales.
+
+Owner: Platform Team
+Slack: #platform-team
+Docs: https://wiki.company.com/ecommerce
+```
+
+### Consistent Structure
+
+Maintain consistent structure across systems:
+
+- Standard environment names (dev, staging, prod)
+- Similar deployment naming patterns
+- Common policy approaches
+
+## Common Patterns
+
+### Microservices System
+
+```yaml
+system:
+  name: Microservices Platform
+
+deployments:
+  - name: User Service
+  - name: Order Service
+  - name: Payment Service
+  - name: Notification Service
+
+environments:
+  - name: Development
+  - name: Staging
+  - name: Production
+```
+
+### Multi-Region System
+
+```yaml
+system:
+  name: Global Application
+
+deployments:
+  - name: API Service
+
+environments:
+  - name: Production US East
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: region
+          value: us-east-1
+
+  - name: Production EU West
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: region
+          value: eu-west-1
+```
+
+### Monorepo with Multiple Apps
+
+```yaml
+system:
+  name: Monorepo Applications
+
+deployments:
+  - name: Web App
+    slug: web-app
+
+  - name: Mobile API
+    slug: mobile-api
+
+  - name: Admin Dashboard
+    slug: admin-dashboard
+
+# Shared environments
+environments:
+  - name: Staging
+  - name: Production
+```
+
+## Troubleshooting
+
+### System not appearing in UI
+
+- Verify system was created successfully
+- Check you're in the correct workspace
+- Refresh the page
+
+### Cannot create deployment in system
+
+- Verify you have permissions for the system
+- Check system ID is correct
+- Ensure deployment slug is unique within system
+
+### System deletion fails
+
+- Active releases may prevent deletion
+- Cancel or complete all active releases first
+- Or force delete via API with `force=true` parameter
+
+## Next Steps
+
+- [Resources](./resources.md) - Define deployment targets
+- [Environments](./environments.md) - Create deployment stages
+- [Deployments](./deployments.md) - Set up your first deployment

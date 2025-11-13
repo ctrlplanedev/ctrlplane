@@ -1,0 +1,711 @@
+# Selectors
+
+**Selectors** are Ctrlplane's powerful filtering system for targeting resources, environments, and deployments. They allow dynamic, rules-based matching instead of static assignments.
+
+## Why Selectors?
+
+Traditional deployment tools require manually assigning resources to environments. Ctrlplane uses selectors for dynamic matching:
+
+### Without Selectors (Traditional)
+```
+Production Environment:
+  ├─ Manually add: cluster-1
+  ├─ Manually add: cluster-2
+  └─ Manually add: cluster-3
+
+New cluster added? Manually add it to production.
+```
+
+### With Selectors (Ctrlplane)
+```
+Production Environment:
+  └─ Selector: metadata.environment == "production"
+
+New cluster with metadata.environment = "production"?
+Automatically included in production!
+```
+
+## Selector Types
+
+Ctrlplane supports several types of selectors:
+
+1. **Metadata Selector** - Match on resource metadata
+2. **Kind Selector** - Match on resource kind
+3. **Identifier Selector** - Match on resource identifier
+4. **Name Selector** - Match on resource/environment name
+5. **CEL Selector** - Complex expressions using CEL (Common Expression Language)
+6. **Composite Selectors** - Combine selectors with AND/OR logic
+
+## Metadata Selector
+
+Match resources based on metadata key-value pairs.
+
+### Simple Equality
+
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "environment",
+  "value": "production"
+}
+```
+
+Matches resources where `metadata.environment === "production"`.
+
+### Supported Operators
+
+#### equals
+Exact match:
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "region",
+  "value": "us-east-1"
+}
+```
+
+#### not_equals
+Does not match:
+```json
+{
+  "type": "metadata",
+  "operator": "not_equals",
+  "key": "deprecated",
+  "value": "true"
+}
+```
+
+#### contains
+Value contains substring:
+```json
+{
+  "type": "metadata",
+  "operator": "contains",
+  "key": "identifier",
+  "value": "prod"
+}
+```
+
+Matches: `prod-cluster-1`, `k8s-prod`, `production-server`.
+
+#### matches (Regex)
+Regular expression match:
+```json
+{
+  "type": "metadata",
+  "operator": "matches",
+  "key": "identifier",
+  "value": "^prod-.*-[0-9]+$"
+}
+```
+
+Matches: `prod-cluster-1`, `prod-server-42`.
+
+#### exists
+Key exists with any value:
+```json
+{
+  "type": "metadata",
+  "operator": "exists",
+  "key": "team"
+}
+```
+
+Matches any resource with a `team` metadata key.
+
+#### not_exists
+Key does not exist:
+```json
+{
+  "type": "metadata",
+  "operator": "not_exists",
+  "key": "deprecated"
+}
+```
+
+#### in
+Value is in a list:
+```json
+{
+  "type": "metadata",
+  "operator": "in",
+  "key": "region",
+  "values": ["us-east-1", "us-east-2", "us-west-1"]
+}
+```
+
+#### not_in
+Value is not in a list:
+```json
+{
+  "type": "metadata",
+  "operator": "not_in",
+  "key": "status",
+  "values": ["deprecated", "decommissioned"]
+}
+```
+
+## Kind Selector
+
+Match resources by their `kind` field.
+
+```json
+{
+  "type": "kind",
+  "operator": "equals",
+  "value": "kubernetes-cluster"
+}
+```
+
+**Common Use Cases**:
+- Kubernetes-only deployments: `kind == "kubernetes-cluster"`
+- VM-only deployments: `kind == "vm"`
+- Exclude certain kinds: `kind != "deprecated-resource"`
+
+## Identifier Selector
+
+Match resources by their identifier.
+
+```json
+{
+  "type": "identifier",
+  "operator": "contains",
+  "value": "prod"
+}
+```
+
+**Use Cases**:
+- Match specific naming patterns
+- Filter by identifier prefix/suffix
+- Regex matching on identifiers
+
+## Name Selector
+
+Match by the resource or environment name field.
+
+```json
+{
+  "type": "name",
+  "operator": "equals",
+  "value": "Production"
+}
+```
+
+**Use Cases**:
+- Policy selectors targeting specific environments
+- Matching resources by name patterns
+
+## Composite Selectors (AND/OR)
+
+Combine multiple conditions with boolean logic.
+
+### AND Logic
+
+All conditions must match:
+
+```json
+{
+  "type": "metadata",
+  "operator": "and",
+  "conditions": [
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "production"
+    },
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "region",
+      "value": "us-east-1"
+    }
+  ]
+}
+```
+
+Matches: Resources with BOTH `environment=production` AND `region=us-east-1`.
+
+### OR Logic
+
+Any condition can match:
+
+```json
+{
+  "type": "metadata",
+  "operator": "or",
+  "conditions": [
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "region",
+      "value": "us-east-1"
+    },
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "region",
+      "value": "us-west-2"
+    }
+  ]
+}
+```
+
+Matches: Resources in EITHER `us-east-1` OR `us-west-2`.
+
+### Nested Logic
+
+Combine AND and OR:
+
+```json
+{
+  "type": "metadata",
+  "operator": "and",
+  "conditions": [
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "production"
+    },
+    {
+      "type": "metadata",
+      "operator": "or",
+      "conditions": [
+        {
+          "type": "metadata",
+          "operator": "equals",
+          "key": "region",
+          "value": "us-east-1"
+        },
+        {
+          "type": "metadata",
+          "operator": "equals",
+          "key": "region",
+          "value": "us-west-2"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Matches: `environment=production` AND (`region=us-east-1` OR `region=us-west-2`).
+
+## CEL Selector
+
+For complex logic, use CEL (Common Expression Language):
+
+```json
+{
+  "type": "cel",
+  "expression": "metadata.environment == 'production' && metadata.tier == 'critical'"
+}
+```
+
+### CEL Basics
+
+**Field Access**:
+- `metadata.environment` - Access metadata field
+- `kind` - Access kind field
+- `name` - Access name field
+- `identifier` - Access identifier field
+
+**Operators**:
+- `==`, `!=` - Equality
+- `&&`, `||` - Logical AND/OR
+- `!` - Logical NOT
+- `<`, `>`, `<=`, `>=` - Comparison
+- `in` - List membership
+- `matches` - Regex match
+
+**Examples**:
+
+```javascript
+// Production OR Staging
+metadata.environment in ['production', 'staging']
+
+// Critical tier in production
+metadata.environment == 'production' && metadata.tier == 'critical'
+
+// Not deprecated
+!has(metadata.deprecated) || metadata.deprecated != 'true'
+
+// Regex match on identifier
+identifier.matches('^prod-cluster-[0-9]+$')
+
+// Complex nested logic
+(metadata.environment == 'production' && metadata.region in ['us-east-1', 'us-west-2']) 
+  || (metadata.environment == 'staging' && metadata.region == 'us-east-1')
+```
+
+### When to Use CEL
+
+**Use CEL when**:
+- ✅ You need complex nested logic
+- ✅ You need mathematical operations
+- ✅ Standard selectors are too verbose
+- ✅ You're comfortable with expression languages
+
+**Avoid CEL when**:
+- ❌ Simple metadata matching is sufficient
+- ❌ You want UI-friendly selector editing
+- ❌ Team is unfamiliar with CEL syntax
+
+## Selector Use Cases
+
+### Environment Resource Selectors
+
+Define which resources belong to an environment:
+
+```json
+// Production environment
+{
+  "name": "Production",
+  "resourceSelector": {
+    "type": "metadata",
+    "operator": "equals",
+    "key": "environment",
+    "value": "production"
+  }
+}
+
+// Multi-region production
+{
+  "name": "Production US East",
+  "resourceSelector": {
+    "type": "metadata",
+    "operator": "and",
+    "conditions": [
+      {"key": "environment", "value": "production"},
+      {"key": "region", "value": "us-east-1"}
+    ]
+  }
+}
+```
+
+### Deployment Resource Selectors
+
+Limit which resources a deployment can target:
+
+```json
+// Kubernetes-only deployment
+{
+  "name": "Container Service",
+  "resourceSelector": {
+    "type": "kind",
+    "operator": "equals",
+    "value": "kubernetes-cluster"
+  }
+}
+
+// Region-specific deployment
+{
+  "name": "US-Only Service",
+  "resourceSelector": {
+    "type": "metadata",
+    "operator": "matches",
+    "key": "region",
+    "value": "^us-.*"
+  }
+}
+```
+
+### Policy Selectors
+
+Target policies to specific deployments/environments/resources:
+
+```json
+{
+  "name": "Production Approval Required",
+  "selectors": [{
+    "environmentSelector": {
+      "type": "name",
+      "operator": "equals",
+      "value": "Production"
+    },
+    "deploymentSelector": {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "critical",
+      "value": "true"
+    }
+  }]
+}
+```
+
+This policy applies to critical deployments going to production.
+
+## Testing Selectors
+
+### Via API
+
+Test a selector against your resources:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources/query \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "selector": {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "production"
+    }
+  }'
+```
+
+Returns all resources matching the selector.
+
+### Via Web UI
+
+Most selector configuration screens have a "Test Selector" or "Preview Resources" button that shows which resources match.
+
+## Common Selector Patterns
+
+### Pattern 1: Environment-Based
+
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "environment",
+  "value": "production"
+}
+```
+
+**Use Case**: Standard environment separation (dev/staging/prod).
+
+### Pattern 2: Region-Based
+
+```json
+{
+  "type": "metadata",
+  "operator": "and",
+  "conditions": [
+    {"key": "environment", "value": "production"},
+    {"key": "region", "value": "us-east-1"}
+  ]
+}
+```
+
+**Use Case**: Multi-region deployments, gradual regional rollout.
+
+### Pattern 3: Team-Based
+
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "team",
+  "value": "platform"
+}
+```
+
+**Use Case**: Team-specific resources and deployments.
+
+### Pattern 4: Tier-Based
+
+```json
+{
+  "type": "metadata",
+  "operator": "in",
+  "key": "tier",
+  "values": ["critical", "high-priority"]
+}
+```
+
+**Use Case**: SLA-based resource grouping.
+
+### Pattern 5: Canary
+
+```json
+{
+  "type": "metadata",
+  "operator": "and",
+  "conditions": [
+    {"key": "environment", "value": "production"},
+    {"key": "canary", "value": "true"}
+  ]
+}
+```
+
+**Use Case**: Canary deployment pattern.
+
+### Pattern 6: Percentage-Based (using identifier)
+
+```json
+{
+  "type": "cel",
+  "expression": "metadata.environment == 'production' && identifier.matches('.*[02468]$')"
+}
+```
+
+**Use Case**: Target resources with even-numbered identifiers (50% rollout).
+
+## Best Practices
+
+### Metadata Schema Design
+
+Design your resource metadata with selectors in mind:
+
+**Good Metadata Schema**:
+```json
+{
+  "environment": "production|staging|development",
+  "region": "us-east-1|us-west-2|eu-west-1",
+  "zone": "us-east-1a|us-east-1b|...",
+  "tier": "critical|high|standard|low",
+  "team": "platform|product|data",
+  "canary": "true|false"
+}
+```
+
+**Why Good**:
+- Consistent key names
+- Enumerated values (not free-form)
+- Multiple dimensions for targeting
+- Clear, hierarchical organization
+
+### Selector Simplicity
+
+**Prefer Simple Selectors**:
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "environment",
+  "value": "production"
+}
+```
+
+**Over Complex Ones**:
+```json
+{
+  "type": "cel",
+  "expression": "..."
+}
+```
+
+Simple selectors are:
+- Easier to understand
+- Easier to edit in UI
+- Less error-prone
+- More performant
+
+### Document Complex Selectors
+
+If you must use complex selectors, document them:
+
+```json
+{
+  "name": "Production Critical",
+  "description": "Targets production resources in US regions that are marked critical tier and not deprecated",
+  "resourceSelector": {
+    "type": "cel",
+    "expression": "metadata.environment == 'production' && metadata.region.startsWith('us-') && metadata.tier == 'critical' && !has(metadata.deprecated)"
+  }
+}
+```
+
+### Test Before Applying
+
+Always test selectors before using them:
+1. Use the query API to see matched resources
+2. Verify count matches expectations
+3. Check for unexpected matches
+4. Test in lower environment first
+
+### Avoid Over-Matching
+
+Be specific to avoid accidentally matching wrong resources:
+
+**Too Broad**:
+```json
+{
+  "type": "metadata",
+  "operator": "contains",
+  "key": "identifier",
+  "value": "prod"
+}
+```
+
+Might match: `prod-cluster`, `product-server`, `reproduction-env`.
+
+**Better**:
+```json
+{
+  "type": "metadata",
+  "operator": "matches",
+  "key": "identifier",
+  "value": "^prod-.*"
+}
+```
+
+Only matches identifiers starting with `prod-`.
+
+## Troubleshooting
+
+### Selector matches too many resources
+- Make selector more specific (add conditions)
+- Use AND instead of OR
+- Add negation conditions
+- Check resource metadata for unexpected values
+
+### Selector matches too few resources
+- Check metadata key names match exactly (case-sensitive)
+- Verify resources have the expected metadata
+- Use OR logic if resources vary
+- Test with simpler selector first
+
+### Selector matches nothing
+- Verify selector syntax is correct
+- Check resources exist with expected metadata
+- Test each condition independently
+- Review resource metadata in UI
+
+### CEL expression errors
+- Check syntax (use CEL validator)
+- Verify field names are correct
+- Test expression step-by-step
+- Consult [CEL documentation](https://github.com/google/cel-spec)
+
+## Advanced Topics
+
+### Selector Evaluation Order
+
+When multiple selectors apply (e.g., environment + deployment):
+1. Environment selector filters resources
+2. Deployment selector (if present) filters further
+3. Final set is intersection of both
+
+### Selector Performance
+
+Selectors are evaluated:
+- When resources are created/updated
+- When environments/deployments are created/updated
+- When querying resources
+
+**Performance Tips**:
+- Simple selectors are faster than complex ones
+- Metadata equality checks are very fast
+- Regex matching is slower
+- CEL expressions have some overhead
+
+### Selector Caching
+
+Ctrlplane caches selector evaluation results:
+- Cache invalidated on resource/metadata changes
+- Improves performance for repeated queries
+- No manual cache management needed
+
+## Next Steps
+
+- [Environments](./environments.md) - Use selectors in environments
+- [Deployments](./deployments.md) - Filter deployment targets
+- [Resources](./resources.md) - Design resource metadata
+- [Policies](../advanced/policies.md) - Target policies with selectors
+

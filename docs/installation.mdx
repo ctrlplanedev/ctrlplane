@@ -1,0 +1,545 @@
+---
+title: "Installation"
+description: "This guide covers the different ways to run Ctrlplane."
+---
+
+## Ctrlplane Cloud (Recommended)
+
+The easiest way to get started is with Ctrlplane Cloud:
+
+1. Go to [app.ctrlplane.dev](https://app.ctrlplane.dev)
+2. Sign up for a free account
+3. Create a workspace
+4. Start deploying!
+
+**Benefits**:
+
+- No infrastructure to manage
+- Automatic updates
+- Built-in high availability
+- Free tier available
+
+## Self-Hosted Options
+
+If you prefer to self-host Ctrlplane, you have several options:
+
+### Docker Compose (Development & Testing)
+
+Best for: Local development, testing, small teams
+
+**Prerequisites**:
+
+- Docker Engine 20.10+
+- Docker Compose v2.0+
+- 2GB RAM minimum
+
+**Quick Start**:
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/ctrlplanedev/ctrlplane.git
+cd ctrlplane
+```
+
+2. Copy environment files:
+
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+3. Start services:
+
+```bash
+docker compose up -d
+```
+
+4. Run database migrations:
+
+```bash
+docker compose exec api pnpm --filter @ctrlplane/db migrate
+```
+
+5. Access Ctrlplane:
+
+- Web UI: http://localhost:3000
+- API: http://localhost:4000
+
+**Services Started**:
+
+- Web UI (port 3000)
+- API Server (port 4000)
+- Workspace Engine (port 50051)
+- PostgreSQL (port 5432)
+- Redis (optional, for job queue)
+
+**Configuration**:
+
+Key environment variables in `.env`:
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@postgres:5432/ctrlplane
+
+# Authentication
+AUTH_SECRET=your-secret-key-change-this
+NEXTAUTH_URL=http://localhost:3000
+
+# API Keys
+API_KEY_SALT=your-api-key-salt
+
+# GitHub OAuth (optional)
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+```
+
+**Updating**:
+
+```bash
+git pull
+docker compose pull
+docker compose up -d
+```
+
+### Kubernetes (Production)
+
+Best for: Production deployments, high availability
+
+**Prerequisites**:
+
+- Kubernetes cluster 1.24+
+- kubectl configured
+- Helm 3.8+
+- PostgreSQL database (managed or in-cluster)
+
+**Installation with Helm**:
+
+1. Add the Ctrlplane Helm repository:
+
+```bash
+helm repo add ctrlplane https://charts.ctrlplane.dev
+helm repo update
+```
+
+2. Create a namespace:
+
+```bash
+kubectl create namespace ctrlplane
+```
+
+3. Create a values file `values.yaml`:
+
+```yaml
+# Basic configuration
+ingress:
+  enabled: true
+  hostname: ctrlplane.example.com
+  tls:
+    enabled: true
+    secretName: ctrlplane-tls
+
+# Database configuration (use managed DB in production)
+postgresql:
+  enabled: false # Set to true for embedded PostgreSQL
+  external:
+    host: your-postgres-host
+    port: 5432
+    database: ctrlplane
+    username: ctrlplane
+    existingSecret: ctrlplane-db-secret # Contains password
+
+# API Server
+api:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+# Workspace Engine
+workspaceEngine:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "1000m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+
+# Web UI
+web:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Authentication
+auth:
+  secret: your-auth-secret
+  providers:
+    github:
+      enabled: true
+      clientId: your-github-client-id
+      existingSecret: github-oauth-secret
+
+# Redis (for job queue)
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    existingSecret: redis-secret
+```
+
+4. Create secrets:
+
+```bash
+# Database password
+kubectl create secret generic ctrlplane-db-secret \
+  --from-literal=password=your-db-password \
+  -n ctrlplane
+
+# GitHub OAuth (if enabled)
+kubectl create secret generic github-oauth-secret \
+  --from-literal=client-secret=your-github-client-secret \
+  -n ctrlplane
+
+# Redis password
+kubectl create secret generic redis-secret \
+  --from-literal=password=your-redis-password \
+  -n ctrlplane
+```
+
+5. Install the chart:
+
+```bash
+helm install ctrlplane ctrlplane/ctrlplane \
+  --namespace ctrlplane \
+  --values values.yaml
+```
+
+6. Run database migrations:
+
+```bash
+kubectl run migrate --rm -it --restart=Never \
+  --image=ctrlplane/api:latest \
+  --namespace ctrlplane \
+  --env="DATABASE_URL=$DATABASE_URL" \
+  -- pnpm --filter @ctrlplane/db migrate
+```
+
+7. Verify installation:
+
+```bash
+kubectl get pods -n ctrlplane
+kubectl get svc -n ctrlplane
+```
+
+**Accessing Ctrlplane**:
+
+If you configured ingress:
+
+```bash
+# Should be accessible at your configured hostname
+https://ctrlplane.example.com
+```
+
+If using port-forward for testing:
+
+```bash
+kubectl port-forward -n ctrlplane svc/ctrlplane-web 3000:80
+# Access at http://localhost:3000
+```
+
+**Updating**:
+
+```bash
+helm repo update
+helm upgrade ctrlplane ctrlplane/ctrlplane \
+  --namespace ctrlplane \
+  --values values.yaml
+```
+
+### Manual Installation
+
+For custom deployments, you can run each component separately.
+
+**Components**:
+
+1. **PostgreSQL Database** (required)
+   - Version: 14+
+   - Extensions: uuid-ossp, pgcrypto
+
+2. **API Server**
+
+   ```bash
+   docker run -d \
+     --name ctrlplane-api \
+     -p 4000:4000 \
+     -e DATABASE_URL=postgresql://... \
+     -e AUTH_SECRET=your-secret \
+     ctrlplane/api:latest
+   ```
+
+3. **Workspace Engine**
+
+   ```bash
+   docker run -d \
+     --name ctrlplane-workspace-engine \
+     -p 50051:50051 \
+     -e DATABASE_URL=postgresql://... \
+     ctrlplane/workspace-engine:latest
+   ```
+
+4. **Web UI**
+
+   ```bash
+   docker run -d \
+     --name ctrlplane-web \
+     -p 3000:3000 \
+     -e API_URL=http://localhost:4000 \
+     ctrlplane/web:latest
+   ```
+
+5. **Run Migrations**
+   ```bash
+   docker run --rm \
+     -e DATABASE_URL=postgresql://... \
+     ctrlplane/api:latest \
+     pnpm --filter @ctrlplane/db migrate
+   ```
+
+## Configuration
+
+### Environment Variables
+
+#### API Server
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@host:5432/ctrlplane
+
+# Authentication
+AUTH_SECRET=random-secret-key
+API_KEY_SALT=random-salt-for-api-keys
+
+# GitHub OAuth (optional)
+GITHUB_CLIENT_ID=your-client-id
+GITHUB_CLIENT_SECRET=your-client-secret
+
+# Logging
+LOG_LEVEL=info
+
+# OpenTelemetry (optional)
+OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318
+```
+
+#### Workspace Engine
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@host:5432/ctrlplane
+
+# gRPC Server
+WORKSPACE_ENGINE_HOST=0.0.0.0
+WORKSPACE_ENGINE_PORT=50051
+
+# Logging
+LOG_LEVEL=info
+```
+
+#### Web UI
+
+```bash
+# API endpoint
+NEXT_PUBLIC_API_URL=https://api.ctrlplane.example.com
+
+# Authentication
+NEXTAUTH_URL=https://ctrlplane.example.com
+NEXTAUTH_SECRET=same-as-auth-secret
+```
+
+### Database Setup
+
+**Create Database**:
+
+```sql
+CREATE DATABASE ctrlplane;
+CREATE USER ctrlplane WITH PASSWORD 'your-password';
+GRANT ALL PRIVILEGES ON DATABASE ctrlplane TO ctrlplane;
+```
+
+**Enable Extensions**:
+
+```sql
+\c ctrlplane
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+```
+
+**Run Migrations**:
+
+```bash
+DATABASE_URL=postgresql://ctrlplane:password@localhost:5432/ctrlplane \
+  pnpm --filter @ctrlplane/db migrate
+```
+
+### Authentication Setup
+
+#### GitHub OAuth
+
+1. Create a GitHub OAuth App:
+   - Go to GitHub Settings → Developer settings → OAuth Apps
+   - New OAuth App
+   - Homepage URL: `https://ctrlplane.example.com`
+   - Callback URL: `https://ctrlplane.example.com/api/auth/callback/github`
+
+2. Configure environment variables:
+   ```bash
+   GITHUB_CLIENT_ID=your-client-id
+   GITHUB_CLIENT_SECRET=your-client-secret
+   ```
+
+#### API Keys
+
+API keys are used for programmatic access (CI/CD integration).
+
+Generate salt for API keys:
+
+```bash
+openssl rand -base64 32
+```
+
+Set in environment:
+
+```bash
+API_KEY_SALT=generated-salt
+```
+
+Users can generate API keys in the UI under Settings → API Keys.
+
+## Resource Requirements
+
+### Minimum (Development/Testing)
+
+- CPU: 2 cores
+- RAM: 4GB
+- Disk: 20GB
+- Database: Shared PostgreSQL
+
+### Recommended (Small Production)
+
+- CPU: 4-8 cores
+- RAM: 8-16GB
+- Disk: 50GB SSD
+- Database: Managed PostgreSQL (2 vCPU, 8GB RAM)
+
+### Scaling (Large Production)
+
+- API Server: 2-4 replicas (2 vCPU, 2GB RAM each)
+- Workspace Engine: 2-4 replicas (2 vCPU, 4GB RAM each)
+- Web UI: 2+ replicas (1 vCPU, 1GB RAM each)
+- Database: Managed PostgreSQL (4+ vCPU, 16+ GB RAM)
+- Redis: Managed Redis (optional, for job queue)
+
+## High Availability
+
+For production deployments:
+
+1. **Multiple Replicas**: Run 2+ replicas of each service
+2. **Managed Database**: Use managed PostgreSQL with automated backups
+3. **Load Balancing**: Use Kubernetes service or external load balancer
+4. **Health Checks**: Configure liveness and readiness probes
+5. **Monitoring**: Set up observability with metrics and logs
+6. **Backups**: Regular database backups
+
+## Upgrades
+
+### Before Upgrading
+
+1. **Backup Database**: Always backup before upgrading
+
+   ```bash
+   pg_dump -h localhost -U ctrlplane ctrlplane > backup.sql
+   ```
+
+2. **Check Release Notes**: Review breaking changes
+
+3. **Test in Staging**: Test upgrade in non-production environment
+
+### Upgrade Process
+
+**Docker Compose**:
+
+```bash
+docker compose down
+git pull
+docker compose pull
+docker compose up -d
+```
+
+**Kubernetes**:
+
+```bash
+helm repo update
+helm upgrade ctrlplane ctrlplane/ctrlplane \
+  --namespace ctrlplane \
+  --values values.yaml
+```
+
+### Rollback
+
+**Docker Compose**:
+
+```bash
+git checkout previous-tag
+docker compose up -d
+psql < backup.sql  # Restore database if needed
+```
+
+**Kubernetes**:
+
+```bash
+helm rollback ctrlplane -n ctrlplane
+```
+
+## Troubleshooting
+
+### Cannot connect to database
+
+- Verify DATABASE_URL is correct
+- Check database is running and accessible
+- Verify credentials and database exists
+
+### Migrations fail
+
+- Ensure database user has proper permissions
+- Check for schema conflicts
+- Review migration logs
+
+### Services won't start
+
+- Check logs: `docker compose logs` or `kubectl logs`
+- Verify all environment variables are set
+- Ensure ports are not already in use
+
+### Authentication not working
+
+- Verify AUTH_SECRET is set and consistent across services
+- Check OAuth configuration if using GitHub
+- Review callback URLs match your domain
+
+## Next Steps
+
+- [Quickstart Guide](./quickstart.md) - Set up your first deployment
+- [Core Concepts](./core-concepts.md) - Understand Ctrlplane fundamentals
+- [Operations](../operations/monitoring.md) - Set up monitoring and
+  observability

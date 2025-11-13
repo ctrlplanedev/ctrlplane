@@ -1,0 +1,395 @@
+---
+title: "Quickstart"
+description:
+  "This guide will walk you through setting up your first deployment pipeline
+  with Ctrlplane in about 10 minutes."
+---
+
+## What You'll Build
+
+By the end of this guide, you'll have:
+
+- A system with a deployment
+- Two environments (staging and production)
+- A resource (deployment target)
+- An automated deployment triggered by your CI
+
+## Prerequisites
+
+- Ctrlplane account (create one at
+  [app.ctrlplane.dev](https://app.ctrlplane.dev) or
+  [self-host](./installation.md))
+- API key (generate in Settings → API Keys)
+- A GitHub repository with a CI workflow (or any CI system)
+
+## Step 1: Create Your First System
+
+A system is a logical grouping for your deployments. Let's create one for a
+sample application.
+
+**Via Web UI**:
+
+1. Navigate to your workspace
+2. Click "Create System"
+3. Fill in:
+   - Name: `My Application`
+   - Slug: `my-app`
+   - Description: `Sample application for quickstart`
+
+**Via API**:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/systems \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Application",
+    "slug": "my-app",
+    "description": "Sample application for quickstart"
+  }'
+```
+
+## Step 2: Create Resources
+
+Resources represent where your code will be deployed. For this quickstart, we'll
+create a simple resource manually. (In production, you'd typically use resource
+providers to sync from your infrastructure.)
+
+**Via Web UI**:
+
+1. Go to your system
+2. Navigate to "Resources" tab
+3. Click "Create Resource"
+4. Fill in:
+   - Name: `Production Server`
+   - Kind: `server`
+   - Identifier: `prod-server-1`
+   - Metadata: Add `environment: production`
+
+**Via API**:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production Server",
+    "kind": "server",
+    "identifier": "prod-server-1",
+    "version": "1.0.0",
+    "metadata": {
+      "environment": "production",
+      "region": "us-east-1"
+    },
+    "config": {}
+  }'
+```
+
+Create another for staging:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Staging Server",
+    "kind": "server",
+    "identifier": "staging-server-1",
+    "version": "1.0.0",
+    "metadata": {
+      "environment": "staging",
+      "region": "us-east-1"
+    },
+    "config": {}
+  }'
+```
+
+## Step 3: Create Environments
+
+Environments define logical deployment stages. We'll create staging and
+production.
+
+**Via Web UI**:
+
+1. Go to "Environments" in your system
+2. Click "Create Environment"
+3. For Staging:
+   - Name: `Staging`
+   - Resource Selector: Add condition `metadata.environment equals staging`
+4. Repeat for Production:
+   - Name: `Production`
+   - Resource Selector: Add condition `metadata.environment equals production`
+
+**Via API**:
+
+```bash
+# Staging Environment
+curl -X POST https://app.ctrlplane.dev/api/v1/systems/{systemId}/environments \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Staging",
+    "description": "Staging environment",
+    "resourceSelector": {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "staging"
+    }
+  }'
+
+# Production Environment
+curl -X POST https://app.ctrlplane.dev/api/v1/systems/{systemId}/environments \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production",
+    "description": "Production environment",
+    "resourceSelector": {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "production"
+    }
+  }'
+```
+
+## Step 4: Create a Job Agent
+
+Job agents execute your deployments. For this quickstart, we'll use a GitHub
+Actions agent.
+
+**Via Web UI**:
+
+1. Go to "Job Agents" in your system
+2. Click "Create Job Agent"
+3. Fill in:
+   - Name: `GitHub Actions Agent`
+   - Type: `github`
+
+**Via API**:
+
+```bash
+curl -X PATCH https://app.ctrlplane.dev/api/v1/job-agents/name \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "GitHub Actions Agent",
+    "type": "github",
+    "workspaceId": "{workspaceId}"
+  }'
+```
+
+Note the `id` returned - you'll need it for the next step.
+
+## Step 5: Create a Deployment
+
+A deployment represents your application or service.
+
+**Via Web UI**:
+
+1. Go to "Deployments" in your system
+2. Click "Create Deployment"
+3. Fill in:
+   - Name: `API Service`
+   - Slug: `api-service`
+   - Description: `Main API service`
+   - Job Agent: Select "GitHub Actions Agent"
+   - Job Agent Config:
+     ```json
+     {
+       "workflow": "deploy.yml",
+       "owner": "your-github-org",
+       "repo": "your-repo"
+     }
+     ```
+
+**Via API**:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/systems/{systemId}/deployments \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API Service",
+    "slug": "api-service",
+    "description": "Main API service",
+    "jobAgentId": "{jobAgentId}",
+    "jobAgentConfig": {
+      "workflow": "deploy.yml",
+      "owner": "your-github-org",
+      "repo": "your-repo"
+    }
+  }'
+```
+
+## Step 6: Set Up GitHub Actions Workflow
+
+In your repository, create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "Ctrlplane Job ID"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get job inputs from Ctrlplane
+        uses: ctrlplanedev/get-job-inputs@v1
+        id: job
+        with:
+          job_id: ${{ inputs.job_id }}
+          base_url: https://app.ctrlplane.dev
+
+      - name: Deploy application
+        run: |
+          echo "Deploying version ${{ steps.job.outputs.version_tag }}"
+          echo "To environment: ${{ steps.job.outputs.environment_name }}"
+          echo "On resource: ${{ steps.job.outputs.resource_identifier }}"
+
+          # Your actual deployment commands here
+          # ./deploy.sh ${{ steps.job.outputs.version_tag }}
+```
+
+Don't forget to add `CTRLPLANE_API_KEY` to your GitHub repository secrets!
+
+## Step 7: Integrate with CI Build
+
+Now integrate Ctrlplane into your existing build workflow. After building your
+artifact, create a deployment version:
+
+Add to your `.github/workflows/build.yml`:
+
+```yaml
+- name: Create Ctrlplane deployment version
+  if: github.ref == 'refs/heads/main'
+  run: |
+    curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/versions \
+      -H "Authorization: Bearer ${{ secrets.CTRLPLANE_API_KEY }}" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"tag\": \"${{ github.sha }}\",
+        \"name\": \"Build #${{ github.run_number }}\",
+        \"status\": \"ready\",
+        \"metadata\": {
+          \"git_commit\": \"${{ github.sha }}\",
+          \"git_branch\": \"${{ github.ref_name }}\",
+          \"build_number\": \"${{ github.run_number }}\"
+        }
+      }"
+```
+
+## Step 8: Trigger Your First Deployment
+
+Now let's trigger a deployment!
+
+1. Push code to your `main` branch
+2. Your CI builds and creates a deployment version in Ctrlplane
+3. Go to the Ctrlplane UI and navigate to your deployment
+4. You should see the new version
+5. Ctrlplane automatically creates releases for both staging and production
+6. The jobs are dispatched to your GitHub Actions workflow
+7. Watch the deployment execute!
+
+You can view:
+
+- **Releases**: See which versions are deployed to which targets
+- **Jobs**: View job execution status
+- **Resources**: Check which version is currently on each resource
+
+## Step 9: Add an Approval Policy (Optional)
+
+Let's add an approval requirement for production deployments.
+
+**Via Web UI**:
+
+1. Go to "Policies" in your system
+2. Click "Create Policy"
+3. Fill in:
+   - Name: `Production Approval Required`
+   - Add selector: Environment name equals "Production"
+   - Add rule: Approval required (minimum 1 approval)
+
+**Via API**:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/systems/{systemId}/policies \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production Approval Required",
+    "enabled": true,
+    "selectors": [{
+      "environmentSelector": {
+        "type": "name",
+        "operator": "equals",
+        "value": "Production"
+      }
+    }],
+    "rules": [{
+      "anyApproval": {
+        "minApprovals": 1
+      }
+    }]
+  }'
+```
+
+Now production deployments will wait for approval before executing!
+
+## What You've Accomplished
+
+You now have a complete deployment pipeline:
+
+✅ System to organize your deployments  
+✅ Resources representing your infrastructure  
+✅ Environments for staging and production  
+✅ A deployment with automatic version creation from CI  
+✅ Job agent executing deployments via GitHub Actions  
+✅ Optional approval policy for production
+
+## Next Steps
+
+Now that you have the basics working, explore:
+
+- **[Integration Guides](../integrations/)** - Integrate with other CI/CD
+  systems
+- **[Policies](../advanced/policies.md)** - Set up environment progression,
+  gradual rollouts
+- **[Job Agents](../job-agents/)** - Deploy a Kubernetes job agent for cluster
+  deployments
+- **[Workflows](../workflows/)** - Learn common deployment patterns
+- **[Variables](../advanced/variables.md)** - Use variables for
+  environment-specific configuration
+
+## Troubleshooting
+
+### Jobs aren't being created
+
+- Check that your resource selectors match your resources
+- Verify the deployment has a job agent configured
+- Look for policy denials in the UI
+
+### GitHub Actions workflow not triggering
+
+- Ensure the job agent type is `github`
+- Verify the workflow name in `jobAgentConfig` matches your file
+- Check that the GitHub app is installed and has permissions
+
+### Jobs fail immediately
+
+- Check the job agent configuration
+- Verify API key has correct permissions
+- Review job logs in the UI for error messages
+
+Need help? Join our [Discord community](https://ctrlplane.dev/discord) or check
+[GitHub Discussions](https://github.com/ctrlplanedev/ctrlplane/discussions).

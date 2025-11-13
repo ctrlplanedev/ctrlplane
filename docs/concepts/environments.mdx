@@ -1,0 +1,674 @@
+# Environments
+
+An **Environment** represents a logical deployment stage in your pipeline, such as development, staging, or production. Environments use selectors to dynamically determine which resources belong to them.
+
+## What is an Environment?
+
+Environments organize your deployment pipeline into stages:
+
+- **Development** - Where developers test their changes
+- **QA** - Quality assurance and testing
+- **Staging** - Pre-production validation
+- **Production** - Live customer-facing environment
+
+Environments are **not** static groups of resources. Instead, they use **selectors** to dynamically match resources based on their metadata. This means:
+- New resources matching the selector automatically join the environment
+- Resources can belong to multiple environments
+- No manual resource assignment needed
+
+## Environment Properties
+
+```json
+{
+  "id": "env_abc123",
+  "systemId": "sys_xyz789",
+  "name": "Production",
+  "directory": "environments/prod",
+  "description": "Production environment for customer-facing services",
+  "resourceSelector": {
+    "type": "metadata",
+    "operator": "equals",
+    "key": "environment",
+    "value": "production"
+  },
+  "createdAt": "2024-01-15T10:00:00Z",
+  "metadata": {
+    "owner": "platform-team",
+    "alert-channel": "#prod-alerts"
+  }
+}
+```
+
+### name
+Display name for the environment.
+
+**Examples**:
+- "Production"
+- "Staging"
+- "Development"
+- "QA US East"
+
+### systemId
+The system this environment belongs to. Environments are scoped to systems.
+
+### resourceSelector
+The selector that determines which resources belong to this environment. This is the heart of how environments work.
+
+**Example Selectors**:
+
+**Simple metadata match**:
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "environment",
+  "value": "production"
+}
+```
+
+**Multiple conditions**:
+```json
+{
+  "type": "metadata",
+  "operator": "and",
+  "conditions": [
+    {"key": "environment", "value": "production"},
+    {"key": "region", "value": "us-east-1"}
+  ]
+}
+```
+
+**OR logic**:
+```json
+{
+  "type": "metadata",
+  "operator": "or",
+  "conditions": [
+    {"key": "region", "value": "us-east-1"},
+    {"key": "region", "value": "us-west-2"}
+  ]
+}
+```
+
+### directory
+Optional path for hierarchical organization of environments.
+
+**Examples**:
+- `""` - Root level
+- `"regions"` - First level grouping
+- `"regions/us-east"` - Nested grouping
+
+**Use Cases**:
+- Organizing by region: `regions/us-east`, `regions/eu-west`
+- Organizing by type: `permanent/production`, `temporary/feature-1`
+- Organizing by team: `teams/platform`, `teams/product`
+
+### description
+Optional description of the environment's purpose and usage.
+
+### metadata
+Key-value pairs with environment information (not used for resource matching).
+
+**Common Metadata**:
+```json
+{
+  "owner": "platform-team",
+  "alert-channel": "#prod-alerts",
+  "cost-center": "engineering",
+  "sla": "99.99%"
+}
+```
+
+## Creating Environments
+
+### Via Web UI
+
+1. Navigate to your system
+2. Click "Environments" tab
+3. Click "Create Environment"
+4. Fill in:
+   - Name: "Production"
+   - Description: "Production environment"
+   - Resource Selector: Add conditions
+5. Click "Create"
+
+### Via API
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/systems/{systemId}/environments \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production",
+    "description": "Production environment for customer-facing services",
+    "resourceSelector": {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "production"
+    },
+    "metadata": {
+      "owner": "platform-team"
+    }
+  }'
+```
+
+### Via YAML
+
+```yaml
+environments:
+  - name: Development
+    description: Development environment
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: development
+
+  - name: Staging
+    description: Staging environment
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: staging
+
+  - name: Production
+    description: Production environment
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: production
+```
+
+## How Resource Selectors Work
+
+Selectors match resources based on their metadata, kind, identifier, or other properties.
+
+### Selector Types
+
+#### Metadata Selector
+
+Match resources by metadata key-value pairs.
+
+**Single condition**:
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "environment",
+  "value": "production"
+}
+```
+
+**Operators**:
+- `equals` - Exact match
+- `contains` - Value contains substring
+- `matches` - Regex match
+- `exists` - Key exists (any value)
+
+**Multiple conditions (AND)**:
+```json
+{
+  "type": "metadata",
+  "operator": "and",
+  "conditions": [
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "production"
+    },
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "region",
+      "value": "us-east-1"
+    }
+  ]
+}
+```
+
+**Multiple conditions (OR)**:
+```json
+{
+  "type": "metadata",
+  "operator": "or",
+  "conditions": [
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "region",
+      "value": "us-east-1"
+    },
+    {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "region",
+      "value": "us-west-2"
+    }
+  ]
+}
+```
+
+#### Kind Selector
+
+Match resources by their `kind` field.
+
+```json
+{
+  "type": "kind",
+  "operator": "equals",
+  "value": "kubernetes-cluster"
+}
+```
+
+#### Identifier Selector
+
+Match resources by their identifier.
+
+```json
+{
+  "type": "identifier",
+  "operator": "contains",
+  "value": "prod"
+}
+```
+
+#### CEL Selector
+
+Use CEL (Common Expression Language) for complex matching.
+
+```json
+{
+  "type": "cel",
+  "expression": "metadata.environment == 'production' && metadata.tier == 'critical'"
+}
+```
+
+### Selector Evaluation
+
+When determining which resources belong to an environment:
+
+1. Ctrlplane evaluates the `resourceSelector` against all resources
+2. Resources that match are included in the environment
+3. As resources are added/updated, they're re-evaluated
+4. Resources are automatically added/removed as they match/unmatch
+
+**Example**:
+
+Environment selector:
+```json
+{
+  "type": "metadata",
+  "operator": "equals",
+  "key": "environment",
+  "value": "production"
+}
+```
+
+Resources:
+- ✅ `{name: "Cluster A", metadata: {environment: "production"}}` - **Matched**
+- ❌ `{name: "Cluster B", metadata: {environment: "staging"}}` - Not matched
+- ✅ `{name: "Cluster C", metadata: {environment: "production", region: "us-east"}}` - **Matched**
+
+Result: Environment contains Cluster A and Cluster C
+
+## Release Targets
+
+When you create a deployment and an environment, Ctrlplane automatically creates **release targets** for each matching resource.
+
+**Formula**: `Deployment × Environment × Resource = Release Target`
+
+**Example**:
+
+Given:
+- Deployment: "API Service"
+- Environment: "Production" (matches 3 resources)
+  - Resource A: k8s-prod-use1
+  - Resource B: k8s-prod-usw2
+  - Resource C: k8s-prod-euw1
+
+Result: 3 release targets created:
+1. API Service → Production → k8s-prod-use1
+2. API Service → Production → k8s-prod-usw2
+3. API Service → Production → k8s-prod-euw1
+
+When you create a new deployment version, jobs can be created for each release target (subject to policies).
+
+## Hierarchical Environments
+
+Use the `directory` field to organize environments hierarchically.
+
+### Example Structure
+
+```
+Root
+├── regions/
+│   ├── us-east-1/
+│   │   ├── Production
+│   │   └── Staging
+│   └── eu-west-1/
+│       ├── Production
+│       └── Staging
+└── temporary/
+    ├── feature-branch-1
+    └── feature-branch-2
+```
+
+### Creating Hierarchical Environments
+
+```yaml
+environments:
+  # Root level
+  - name: Global Production
+    directory: ""
+    
+  # First level
+  - name: US East Production
+    directory: "regions/us-east"
+    
+  # Nested
+  - name: US East 1a Production
+    directory: "regions/us-east/availability-zones"
+```
+
+### Benefits
+
+- **Visual organization** in UI
+- **Easier navigation** with many environments
+- **Logical grouping** by region, team, or purpose
+- **Permission scoping** (future feature)
+
+## Common Environment Patterns
+
+### Standard Pipeline
+
+```yaml
+environments:
+  - name: Development
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: development
+
+  - name: Staging
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: staging
+
+  - name: Production
+    resourceSelector:
+      type: metadata
+      operator: equals
+      key: environment
+      value: production
+```
+
+### Multi-Region Environments
+
+```yaml
+environments:
+  - name: Production US East
+    directory: "production/us-east"
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: region
+          value: us-east-1
+
+  - name: Production US West
+    directory: "production/us-west"
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: region
+          value: us-west-2
+```
+
+### Canary Environments
+
+```yaml
+environments:
+  - name: Production Canary
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: canary
+          value: "true"
+
+  - name: Production Stable
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: environment
+          value: production
+        - key: canary
+          operator: exists
+          value: "false"
+```
+
+### Team-Specific Environments
+
+```yaml
+environments:
+  - name: Platform Team Development
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: team
+          value: platform
+        - key: environment
+          value: development
+
+  - name: Product Team Development
+    resourceSelector:
+      type: metadata
+      operator: and
+      conditions:
+        - key: team
+          value: product
+        - key: environment
+          value: development
+```
+
+## Viewing Environment Resources
+
+### Via API
+
+```bash
+curl https://app.ctrlplane.dev/api/v1/environments/{environmentId}/resources \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+Returns all resources matching the environment's selector.
+
+### Via Web UI
+
+1. Navigate to the environment
+2. Click "Resources" tab
+3. See all matched resources
+
+The UI shows:
+- Resource name and kind
+- Metadata
+- Current deployed versions
+- Job status
+
+## Environment Variables
+
+Environments can have variables that differ per deployment.
+
+### Deployment Variables
+
+Define a variable at the deployment level, then set values per environment:
+
+```bash
+# Create deployment variable
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "REPLICA_COUNT",
+    "description": "Number of replicas to run"
+  }'
+
+# Set value for development
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "environmentId": "env_dev",
+    "value": "1"
+  }'
+
+# Set value for production
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "environmentId": "env_prod",
+    "value": "3"
+  }'
+```
+
+During job execution, the appropriate value is resolved based on the environment.
+
+## Policies and Environments
+
+Policies often target specific environments using selectors.
+
+### Approval Required for Production
+
+```json
+{
+  "name": "Production Approval Required",
+  "selectors": [{
+    "environmentSelector": {
+      "type": "name",
+      "operator": "equals",
+      "value": "Production"
+    }
+  }],
+  "rules": [{
+    "anyApproval": {
+      "minApprovals": 2
+    }
+  }]
+}
+```
+
+### Environment Progression
+
+Ensure deployments go to staging before production:
+
+```json
+{
+  "name": "Staging Before Production",
+  "selectors": [{
+    "environmentSelector": {
+      "type": "name",
+      "operator": "equals",
+      "value": "Production"
+    }
+  }],
+  "rules": [{
+    "environmentProgression": {
+      "fromEnvironmentId": "env_staging",
+      "toEnvironmentId": "env_production"
+    }
+  }]
+}
+```
+
+## Best Practices
+
+### Naming
+
+**Good Names**:
+- ✅ "Production"
+- ✅ "Staging"
+- ✅ "Development"
+- ✅ "QA US East"
+
+**Avoid**:
+- ❌ "Prod" (use full names)
+- ❌ "Environment 1" (not descriptive)
+- ❌ "John's Test" (not permanent)
+
+### Selector Design
+
+**Do**:
+- ✅ Use consistent metadata keys across resources
+- ✅ Make selectors explicit and clear
+- ✅ Test selectors match expected resources
+- ✅ Document complex selectors
+
+**Don't**:
+- ❌ Overly complex selectors that are hard to understand
+- ❌ Selectors that might accidentally match wrong resources
+- ❌ Selectors based on frequently changing metadata
+
+### Environment Count
+
+**Start Simple**:
+```
+- Development
+- Production
+```
+
+**Grow as Needed**:
+```
+- Development
+- Staging
+- Production
+- Production Canary
+```
+
+**Don't Over-Engineer**:
+- Avoid creating environments you won't use
+- Consolidate similar environments
+- Use resource metadata to differentiate within an environment
+
+## Troubleshooting
+
+### Environment shows no resources
+- Check the resource selector syntax
+- Verify resources exist with matching metadata
+- Test selector with "Query Resources" feature
+- Check resources aren't deleted
+
+### Wrong resources in environment
+- Review resource selector logic
+- Check for OR vs AND conditions
+- Verify resource metadata is correct
+- Test selector in isolation
+
+### Release targets not created
+- Verify environment has matching resources
+- Check deployment has resource selector (if any)
+- Ensure deployment and environment are in same system
+- Review logs for errors
+
+## Next Steps
+
+- [Deployments](./deployments.md) - Create deployments
+- [Selectors](./selectors.md) - Deep dive into selector syntax
+- [Release Targets](./release-targets.md) - Understand the deployment matrix
+- [Policies](../advanced/policies.md) - Control deployments with policies
+

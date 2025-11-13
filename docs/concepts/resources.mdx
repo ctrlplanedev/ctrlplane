@@ -1,0 +1,578 @@
+# Resources
+
+A **Resource** represents a deployment target - the actual infrastructure where your code runs. Resources can be Kubernetes clusters, VMs, cloud functions, or any other compute environment.
+
+## What is a Resource?
+
+Resources are the "where" in your deployment pipeline. They represent:
+
+- **Kubernetes clusters** (e.g., prod-us-east-1-cluster)
+- **Virtual machines** (e.g., web-server-01)
+- **Cloud functions** (e.g., lambda-handler-prod)
+- **Containers** (e.g., ECS service)
+- **Custom infrastructure** (anything you can deploy to)
+
+## Resource Properties
+
+### Core Fields
+
+```json
+{
+  "id": "res_abc123",
+  "name": "Production US East Cluster",
+  "kind": "kubernetes-cluster",
+  "identifier": "k8s-prod-use1",
+  "version": "1.28.0",
+  "workspaceId": "ws_xyz789",
+  "providerId": "provider_123",
+  "config": {
+    "endpoint": "https://k8s.prod.example.com",
+    "region": "us-east-1"
+  },
+  "metadata": {
+    "environment": "production",
+    "region": "us-east-1",
+    "team": "platform",
+    "cost-center": "engineering"
+  },
+  "createdAt": "2024-01-15T10:00:00Z",
+  "updatedAt": "2024-01-15T10:00:00Z"
+}
+```
+
+### name
+Human-readable display name for the resource.
+
+**Examples**: 
+- "Production US East Cluster"
+- "Web Server 01"
+- "Lambda Production Handler"
+
+### kind
+Classification of the resource type. Used for filtering and grouping.
+
+**Common Values**:
+- `kubernetes-cluster`
+- `vm`
+- `lambda-function`
+- `ecs-service`
+- `cloud-run-service`
+- `server` (generic)
+
+### identifier
+Unique identifier for this resource. This is how external systems reference the resource.
+
+**Examples**:
+- `k8s-prod-use1`
+- `i-0abc123def456789` (EC2 instance ID)
+- `arn:aws:lambda:us-east-1:123456789:function:my-function`
+
+**Requirements**:
+- Must be unique within the workspace
+- Should be stable (don't change frequently)
+- Often matches the infrastructure's native identifier
+
+### metadata
+Key-value pairs used for classification and selector matching. This is crucial for resource targeting.
+
+**Common Metadata Keys**:
+```json
+{
+  "environment": "production",
+  "region": "us-east-1",
+  "zone": "us-east-1a",
+  "team": "platform",
+  "cost-center": "engineering",
+  "tier": "high-availability",
+  "version": "1.28.0",
+  "managed-by": "terraform"
+}
+```
+
+**Best Practices**:
+- Use consistent key names across resources
+- Use lowercase with hyphens: `cost-center` not `CostCenter`
+- Include classification useful for targeting
+- Don't put sensitive data in metadata
+
+### config
+Resource-specific configuration. Unlike metadata (which is for selection), config contains operational details.
+
+**Examples**:
+
+**Kubernetes Cluster**:
+```json
+{
+  "endpoint": "https://k8s.prod.example.com",
+  "certificateAuthority": "...",
+  "namespace": "default"
+}
+```
+
+**VM**:
+```json
+{
+  "ipAddress": "10.0.1.50",
+  "sshUser": "deploy",
+  "port": 22
+}
+```
+
+**Lambda**:
+```json
+{
+  "functionName": "my-function",
+  "region": "us-east-1",
+  "runtime": "nodejs20.x"
+}
+```
+
+### version
+The current version or state of the resource itself (not the deployed application).
+
+**Examples**:
+- `1.28.0` (Kubernetes version)
+- `20.04` (Ubuntu version)
+- `nodejs20.x` (Lambda runtime)
+
+### providerId
+Reference to the Resource Provider that created/manages this resource. Optional for manually created resources.
+
+## Creating Resources
+
+### Manual Creation (API)
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Production US East Cluster",
+    "kind": "kubernetes-cluster",
+    "identifier": "k8s-prod-use1",
+    "version": "1.28.0",
+    "metadata": {
+      "environment": "production",
+      "region": "us-east-1",
+      "team": "platform"
+    },
+    "config": {
+      "endpoint": "https://k8s.prod.example.com"
+    }
+  }'
+```
+
+### Manual Creation (Web UI)
+
+1. Navigate to your system
+2. Go to "Resources" tab
+3. Click "Create Resource"
+4. Fill in the form:
+   - Name, Kind, Identifier
+   - Add metadata key-value pairs
+   - Add config (JSON)
+5. Click "Create"
+
+### Automated Creation (Resource Providers)
+
+**Recommended approach for production**: Use Resource Providers to automatically sync resources from your infrastructure.
+
+Resource Providers continuously sync resources from external sources:
+
+- **Kubernetes Provider**: Discovers clusters from kubeconfig
+- **AWS Provider**: Syncs EC2 instances, ECS services, Lambda functions
+- **GCP Provider**: Syncs GCE instances, Cloud Run services
+- **Azure Provider**: Syncs VMs, container instances
+- **Custom Provider**: Your own integration
+
+**Example using Node SDK**:
+
+```typescript
+import { createClient } from "@ctrlplane/node-sdk";
+
+const client = createClient({
+  baseUrl: "https://app.ctrlplane.dev",
+  apiKey: process.env.CTRLPLANE_API_KEY,
+});
+
+const provider = client.resourceProvider({
+  name: "AWS EC2 Provider",
+  workspaceId: "ws_xyz789",
+});
+
+// Sync resources from AWS
+const instances = await getEC2Instances(); // Your AWS SDK call
+
+await provider.set(
+  instances.map(instance => ({
+    name: instance.Tags.Name,
+    kind: "ec2-instance",
+    identifier: instance.InstanceId,
+    version: instance.ImageId,
+    metadata: {
+      environment: instance.Tags.Environment,
+      region: instance.Placement.AvailabilityZone,
+      instanceType: instance.InstanceType,
+    },
+    config: {
+      privateIp: instance.PrivateIpAddress,
+      publicIp: instance.PublicIpAddress,
+    },
+  }))
+);
+```
+
+The provider automatically:
+- Creates new resources
+- Updates existing resources
+- Removes resources no longer in the source
+
+## Resource Metadata for Targeting
+
+Metadata is how resources get matched to environments and deployments. Design your metadata schema carefully.
+
+### Example Metadata Schema
+
+```json
+{
+  "environment": "production|staging|development",
+  "region": "us-east-1|us-west-2|eu-west-1",
+  "zone": "us-east-1a|us-east-1b|...",
+  "team": "platform|product|data",
+  "cluster-tier": "high-availability|standard",
+  "cost-center": "engineering|sales|...",
+  "managed-by": "terraform|manual"
+}
+```
+
+### Selector Matching Example
+
+**Environment Configuration**:
+```json
+{
+  "name": "Production US East",
+  "resourceSelector": {
+    "type": "metadata",
+    "operator": "and",
+    "conditions": [
+      {"key": "environment", "value": "production"},
+      {"key": "region", "value": "us-east-1"}
+    ]
+  }
+}
+```
+
+**Matched Resources**:
+- ✅ Resource A: `{environment: "production", region: "us-east-1"}`
+- ✅ Resource B: `{environment: "production", region: "us-east-1", team: "platform"}`
+- ❌ Resource C: `{environment: "production", region: "us-west-2"}`
+- ❌ Resource D: `{environment: "staging", region: "us-east-1"}`
+
+## Resource Variables
+
+Resources can have variables attached to them, which are available during job execution.
+
+### Creating Resource Variables
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/resources/{resourceId}/variables \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "KUBERNETES_NAMESPACE",
+    "value": "production",
+    "sensitive": false
+  }'
+```
+
+### Using in Job Execution
+
+When a job executes on a resource, it receives all resource variables:
+
+```yaml
+# In GitHub Actions workflow
+- name: Deploy
+  run: |
+    kubectl apply -f manifest.yaml \
+      --namespace ${{ steps.job.outputs.resource_variables_KUBERNETES_NAMESPACE }}
+```
+
+### Common Resource Variables
+
+**Kubernetes Resources**:
+- `KUBERNETES_NAMESPACE` - Target namespace
+- `KUBERNETES_CONTEXT` - Kubectl context
+- `HELM_RELEASE_NAME` - Helm release name
+
+**VM Resources**:
+- `SSH_HOST` - Host to SSH into
+- `SSH_USER` - SSH username
+- `DEPLOY_PATH` - Where to deploy files
+
+**Lambda Resources**:
+- `FUNCTION_NAME` - Lambda function name
+- `AWS_REGION` - AWS region
+- `AWS_ACCOUNT_ID` - AWS account
+
+## Resource Lifecycle
+
+### States
+
+Resources don't have explicit states in Ctrlplane, but they can be:
+
+1. **Active** - `deletedAt` is null, available for deployments
+2. **Deleted** - `deletedAt` is set, excluded from deployments
+
+### Updating Resources
+
+```bash
+curl -X PATCH https://app.ctrlplane.dev/api/v1/resources/{resourceId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metadata": {
+      "environment": "production",
+      "region": "us-east-1",
+      "updated": "2024-01-15"
+    }
+  }'
+```
+
+### Deleting Resources
+
+Soft delete (recommended):
+```bash
+curl -X DELETE https://app.ctrlplane.dev/api/v1/resources/{resourceId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+This sets `deletedAt` timestamp. The resource is excluded from new deployments but historical data is preserved.
+
+## Querying Resources
+
+### List All Resources
+
+```bash
+curl https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+### Filter by Selector
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources/query \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "selector": {
+      "type": "metadata",
+      "operator": "equals",
+      "key": "environment",
+      "value": "production"
+    }
+  }'
+```
+
+### Get Resource Details
+
+```bash
+curl https://app.ctrlplane.dev/api/v1/resources/{resourceId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+## Resource Providers
+
+### Creating a Resource Provider
+
+```typescript
+import { createClient } from "@ctrlplane/node-sdk";
+
+const client = createClient({
+  baseUrl: "https://app.ctrlplane.dev",
+  apiKey: process.env.CTRLPLANE_API_KEY,
+});
+
+const provider = client.resourceProvider({
+  name: "My Infrastructure Provider",
+  workspaceId: "ws_xyz789",
+});
+
+await provider.get(); // Registers provider
+```
+
+### Syncing Resources
+
+```typescript
+// Fetch resources from your infrastructure
+const resources = await fetchInfrastructure();
+
+// Sync to Ctrlplane
+await provider.set(
+  resources.map(r => ({
+    name: r.name,
+    kind: r.type,
+    identifier: r.id,
+    metadata: r.tags,
+    config: r.config,
+  }))
+);
+```
+
+The provider:
+- Creates resources that don't exist
+- Updates resources that changed
+- **Removes** resources not in the provided list (careful!)
+
+### Provider Sync Strategy
+
+**Full Sync** (default):
+```typescript
+// All resources currently in infrastructure
+await provider.set(allResources);
+```
+
+This removes resources not in the list. Good for keeping Ctrlplane in sync with source of truth.
+
+**Incremental Updates**:
+If you want to preserve manually created resources, filter by provider:
+
+```typescript
+// Only sync resources managed by this provider
+const managedResources = await fetchManagedResources();
+await provider.set(managedResources);
+```
+
+## Best Practices
+
+### Metadata Design
+
+**Do**:
+- ✅ Use consistent key names across all resources
+- ✅ Include classification useful for targeting
+- ✅ Use hierarchical values when appropriate (`region/zone`)
+- ✅ Include ownership information (`team`, `cost-center`)
+
+**Don't**:
+- ❌ Put sensitive data in metadata (use config or variables)
+- ❌ Use inconsistent naming (`env` vs `environment`)
+- ❌ Include data that changes frequently
+- ❌ Duplicate information already in other fields
+
+### Resource Identifiers
+
+**Good Identifiers**:
+- ✅ `k8s-prod-us-east-1` - Descriptive and stable
+- ✅ `i-0abc123def456789` - Native AWS instance ID
+- ✅ `arn:aws:...` - Full ARN for AWS resources
+
+**Poor Identifiers**:
+- ❌ `cluster-1` - Not descriptive
+- ❌ `10.0.1.50` - IP addresses can change
+- ❌ `temp-cluster` - Suggests instability
+
+### Resource Variables
+
+- Use for environment-specific configuration
+- Mark sensitive variables as `sensitive: true`
+- Prefer resource variables over hardcoding in deployment config
+- Use consistent variable naming across similar resources
+
+### Provider Usage
+
+- Use providers for production (keeps resources in sync)
+- Run provider sync on a schedule (cron job, CI pipeline)
+- Test provider sync in staging first
+- Monitor provider sync failures
+
+## Common Patterns
+
+### Multi-Region Kubernetes
+
+```json
+[
+  {
+    "name": "Production US East",
+    "kind": "kubernetes-cluster",
+    "identifier": "k8s-prod-use1",
+    "metadata": {
+      "environment": "production",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "name": "Production EU West",
+    "kind": "kubernetes-cluster",
+    "identifier": "k8s-prod-euw1",
+    "metadata": {
+      "environment": "production",
+      "region": "eu-west-1"
+    }
+  }
+]
+```
+
+### Tiered Resources
+
+```json
+[
+  {
+    "name": "Critical Production Cluster",
+    "metadata": {
+      "environment": "production",
+      "tier": "critical"
+    }
+  },
+  {
+    "name": "Standard Production Cluster",
+    "metadata": {
+      "environment": "production",
+      "tier": "standard"
+    }
+  }
+]
+```
+
+### Team-Based Resources
+
+```json
+[
+  {
+    "name": "Platform Team Cluster",
+    "metadata": {
+      "team": "platform",
+      "environment": "shared"
+    }
+  },
+  {
+    "name": "Product Team Cluster",
+    "metadata": {
+      "team": "product",
+      "environment": "shared"
+    }
+  }
+]
+```
+
+## Troubleshooting
+
+### Resource not appearing in environment
+- Check the environment's resource selector
+- Verify resource metadata matches the selector
+- Confirm resource is not deleted (`deletedAt` is null)
+
+### Provider sync not working
+- Verify API key has correct permissions
+- Check provider name matches
+- Review provider sync logs for errors
+
+### Duplicate resources created
+- Ensure identifier is truly unique
+- Check if provider is creating duplicates
+- Review provider logic for identifier generation
+
+## Next Steps
+
+- [Environments](./environments.md) - Group resources into environments
+- [Selectors](./selectors.md) - Learn selector syntax for targeting resources
+- [Resource Providers](../advanced/resource-providers.md) - Set up automated resource sync
+

@@ -1,0 +1,552 @@
+# Releases and Jobs
+
+This guide explains how Ctrlplane turns deployment versions into actual deployments through **releases** and **jobs**.
+
+## Overview
+
+The flow from version to execution:
+
+```
+Deployment Version (what to deploy)
+    ↓
+Release (intent to deploy to a specific target)
+    ↓
+Job (actual deployment task)
+    ↓
+Job Agent (executes the deployment)
+```
+
+## Release
+
+A **Release** represents the intent to deploy a specific version to a specific release target (Deployment × Environment × Resource).
+
+### Release Properties
+
+```json
+{
+  "id": "rel_abc123",
+  "deploymentId": "dep_xyz",
+  "environmentId": "env_prod",
+  "resourceId": "res_cluster1",
+  "versionId": "ver_v123",
+  "jobId": "job_789",
+  "status": "active",
+  "createdAt": "2024-01-15T12:00:00Z",
+  "updatedAt": "2024-01-15T12:05:00Z"
+}
+```
+
+### Release Status
+
+- **`pending`** - Waiting for policies (approval, environment progression)
+- **`approved`** - Policies satisfied, job created
+- **`active`** - Job is currently executing
+- **`completed`** - Job finished successfully
+- **`failed`** - Job failed
+- **`cancelled`** - Release was cancelled
+
+### How Releases are Created
+
+Releases are created automatically by Ctrlplane when:
+
+1. A new deployment version is created with status `ready`
+2. Ctrlplane evaluates which release targets should receive this version
+3. For each target, a release is created
+4. Policies are evaluated to determine if the release can proceed
+
+**Example Flow**:
+
+```
+1. CI creates version: API Service v1.2.3 (status: ready)
+   ↓
+2. Ctrlplane finds release targets for "API Service":
+   - API Service → Production → cluster-1
+   - API Service → Production → cluster-2
+   - API Service → Staging → staging-cluster
+   ↓
+3. Ctrlplane creates 3 releases, one for each target
+   ↓
+4. Ctrlplane evaluates policies:
+   - Production requires approval → Releases pending
+   - Staging auto-deploys → Release approved
+   ↓
+5. Jobs created for approved releases
+```
+
+### Release Lifecycle
+
+```
+          [Version Created]
+                 ↓
+           [Release Created]
+                 ↓
+        [Policy Evaluation]
+         ↓               ↓
+    [Blocked]      [Pending] ←→ [User Action]
+                        ↓
+                  [Approved]
+                        ↓
+                 [Job Created]
+                        ↓
+                    [Active]
+         ↓                        ↓
+    [Completed]              [Failed]
+```
+
+### Viewing Releases
+
+**Via Web UI**:
+1. Navigate to deployment
+2. Click "Releases" tab
+3. See all releases with their status
+
+**Via API**:
+```bash
+# List releases for a deployment
+curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/releases \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+
+# Get release details
+curl https://app.ctrlplane.dev/api/v1/releases/{releaseId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+### Release Variables
+
+Releases have resolved variables from:
+- Deployment variables (with environment-specific values)
+- Resource variables
+- Version config
+
+These are passed to the job for execution.
+
+### Cancelling Releases
+
+Cancel a pending or active release:
+
+```bash
+curl -X PATCH https://app.ctrlplane.dev/api/v1/releases/{releaseId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "cancelled"}'
+```
+
+Active releases will have their jobs cancelled.
+
+## Job
+
+A **Job** is the actual deployment task that gets executed by a job agent. Jobs are created from approved releases.
+
+### Job Properties
+
+```json
+{
+  "id": "job_abc123",
+  "releaseId": "rel_xyz789",
+  "jobAgentId": "agent_123",
+  "status": "in_progress",
+  "externalId": "12345",
+  "message": "Deploying version v1.2.3",
+  "createdAt": "2024-01-15T12:00:00Z",
+  "startedAt": "2024-01-15T12:01:00Z",
+  "completedAt": null
+}
+```
+
+### Job Status
+
+- **`pending`** - Job created, waiting for agent to pick up
+- **`triggered`** - Job dispatched to external system (e.g., GitHub Actions)
+- **`in_progress`** - Job is currently executing
+- **`completed`** - Job finished successfully
+- **`failed`** - Job failed
+- **`cancelled`** - Job was cancelled
+- **`skipped`** - Job was skipped
+- **`invalid_job_agent`** - Job agent configuration invalid
+
+### Job Lifecycle
+
+```
+     [Release Approved]
+             ↓
+      [Job Created]
+             ↓
+       [Pending] ──────→ Agent polls /queue/next
+             ↓
+      [Agent Gets Job]
+             ↓
+   [Agent Acknowledges] ──→ Job status: in_progress
+             ↓
+  [Agent Executes Deployment]
+             ↓
+    [Agent Reports Status]
+             ↓
+    [Completed / Failed]
+```
+
+### Job Configuration
+
+Jobs receive configuration from multiple sources (in priority order):
+
+1. **Version's jobAgentConfig** (highest priority)
+2. **Deployment's jobAgentConfig**
+3. **Resolved variables**
+4. **Release context** (environment, resource info)
+
+**Example merged config**:
+```json
+{
+  // From deployment
+  "workflow": "deploy.yml",
+  "owner": "my-org",
+  "repo": "api-service",
+  
+  // From version (overrides)
+  "imageTag": "my-org/api-service:v1.2.3",
+  
+  // From variables
+  "replicaCount": "5",
+  
+  // From release context
+  "environmentName": "Production",
+  "resourceIdentifier": "k8s-prod-use1"
+}
+```
+
+### Job Agents
+
+Job agents are responsible for:
+1. Polling for new jobs (`GET /job-agents/{agentId}/queue/next`)
+2. Acknowledging jobs
+3. Executing the deployment
+4. Reporting status updates
+5. Marking job as completed or failed
+
+**Built-in Agent Types**:
+- **GitHub Actions** - Triggers GitHub workflow
+- **Kubernetes** - Creates Kubernetes Job
+- **ArgoCD** - Syncs ArgoCD Application
+
+### Job Execution Flow
+
+#### 1. Job Agent Polls
+
+```bash
+GET /api/v1/job-agents/{agentId}/queue/next
+```
+
+**Response**:
+```json
+{
+  "jobs": [{
+    "id": "job_abc123",
+    "release": {
+      "id": "rel_xyz",
+      "version": {
+        "tag": "v1.2.3",
+        "config": {...}
+      },
+      "environment": {
+        "name": "Production"
+      },
+      "resource": {
+        "identifier": "k8s-prod-use1",
+        "config": {...}
+      },
+      "variables": {
+        "REPLICA_COUNT": "5"
+      }
+    },
+    "jobAgentConfig": {
+      "imageTag": "my-org/api-service:v1.2.3"
+    }
+  }]
+}
+```
+
+#### 2. Agent Acknowledges Job
+
+```bash
+PATCH /api/v1/jobs/{jobId}
+{
+  "status": "in_progress",
+  "message": "Starting deployment"
+}
+```
+
+#### 3. Agent Executes Deployment
+
+The agent uses the job configuration to perform the deployment:
+
+**Kubernetes Agent Example**:
+```typescript
+const manifest = renderManifest(job.jobAgentConfig.manifest, {
+  version: job.release.version.tag,
+  replicas: job.release.variables.REPLICA_COUNT,
+  image: job.jobAgentConfig.imageTag
+});
+
+await kubectl.apply(manifest, job.release.resource.config.namespace);
+```
+
+**GitHub Actions Example**:
+```typescript
+await github.actions.createWorkflowDispatch({
+  owner: job.jobAgentConfig.owner,
+  repo: job.jobAgentConfig.repo,
+  workflow_id: job.jobAgentConfig.workflow,
+  ref: job.jobAgentConfig.ref || 'main',
+  inputs: {
+    job_id: job.id,
+    deployment_version: job.release.version.tag,
+    environment: job.release.environment.name,
+    resource_identifier: job.release.resource.identifier
+  }
+});
+```
+
+#### 4. Agent Updates Status
+
+As the deployment progresses:
+
+```bash
+# Update with progress message
+PATCH /api/v1/jobs/{jobId}
+{
+  "message": "Applying Kubernetes manifests"
+}
+
+# Mark as completed
+PATCH /api/v1/jobs/{jobId}
+{
+  "status": "completed",
+  "message": "Deployment successful"
+}
+
+# Or mark as failed
+PATCH /api/v1/jobs/{jobId}
+{
+  "status": "failed",
+  "message": "Deployment failed: connection timeout"
+}
+```
+
+### External Job IDs
+
+When job agents trigger external systems (like GitHub Actions), they can store the external job ID:
+
+```bash
+PATCH /api/v1/jobs/{jobId}
+{
+  "externalId": "github-workflow-run-12345"
+}
+```
+
+This allows linking to the external system's UI for detailed logs.
+
+### Job Retry
+
+If a job fails, you can create a new job for the same release:
+
+```bash
+POST /api/v1/releases/{releaseId}/redeploy
+```
+
+This creates a new job for the release.
+
+### Viewing Jobs
+
+**Via Web UI**:
+1. Navigate to deployment
+2. Click "Jobs" tab
+3. See execution history with status
+
+**Via API**:
+```bash
+# List jobs for a deployment
+curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/jobs \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+
+# Get job details
+curl https://app.ctrlplane.dev/api/v1/jobs/{jobId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+## Version → Release → Job Example
+
+Let's walk through a complete example:
+
+### 1. CI Creates Version
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/dep_api/versions \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -d '{
+    "tag": "v1.2.3",
+    "status": "ready",
+    "jobAgentConfig": {
+      "imageTag": "my-org/api:v1.2.3"
+    }
+  }'
+```
+
+### 2. Ctrlplane Creates Releases
+
+Ctrlplane finds release targets:
+- API Service → Production → cluster-1
+- API Service → Production → cluster-2
+
+Creates 2 releases, both status `pending` (waiting for approval policy).
+
+### 3. User Approves
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/releases/rel_123/approve \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+Both releases move to `approved` status.
+
+### 4. Ctrlplane Creates Jobs
+
+Two jobs created:
+- `job_1` for cluster-1
+- `job_2` for cluster-2
+
+Both status: `pending`
+
+### 5. Job Agent Polls
+
+```bash
+GET /api/v1/job-agents/agent_k8s/queue/next
+```
+
+Receives both jobs.
+
+### 6. Agent Processes Jobs
+
+For each job:
+
+```typescript
+// Acknowledge
+await job.acknowledge();
+
+// Execute
+await kubectl.apply(manifest);
+
+// Complete
+await job.update({ status: 'completed' });
+```
+
+### 7. Releases Updated
+
+Both releases now status: `completed`
+
+## Release Sequencing
+
+By default, when a new version is created for a deployment:
+- **Existing jobs** for older versions may be cancelled
+- **New jobs** are created for the new version
+
+This behavior is controlled by policies and can be configured.
+
+### Sequential Releases
+
+Ensure releases happen one at a time:
+
+```json
+{
+  "releaseSequencing": {
+    "mode": "sequential"
+  }
+}
+```
+
+### Parallel Releases
+
+Allow multiple versions to deploy concurrently:
+
+```json
+{
+  "releaseSequencing": {
+    "mode": "parallel"
+  }
+}
+```
+
+## Deployment Tracing
+
+For detailed observability, use the trace API to report execution steps:
+
+```bash
+# In your deployment script
+ctrlplane trace start "Deploy to Kubernetes"
+ctrlplane trace step "Pull image" "completed"
+ctrlplane trace step "Apply manifests" "completed"
+ctrlplane trace end "completed" "Deployment successful"
+```
+
+Traces are linked to jobs and provide fine-grained visibility into deployment execution.
+
+## Best Practices
+
+### Job Status Updates
+
+**Do**:
+- ✅ Acknowledge jobs immediately when picked up
+- ✅ Update status regularly during execution
+- ✅ Provide descriptive messages
+- ✅ Mark as completed or failed explicitly
+
+**Don't**:
+- ❌ Leave jobs in pending state indefinitely
+- ❌ Skip acknowledging jobs
+- ❌ Provide generic error messages
+
+### Error Handling
+
+When jobs fail:
+1. Set status to `failed`
+2. Include detailed error message
+3. Store external job ID for log access
+4. Consider automatic retry logic in agent
+
+### Release Management
+
+- Monitor pending releases (awaiting approval)
+- Set up notifications for failed jobs
+- Regularly review release history
+- Clean up old completed releases (retention policy)
+
+## Troubleshooting
+
+### Releases stuck in pending
+- Check if policies require approval
+- Review policy evaluation results
+- Verify environment progression requirements met
+- Check for blocking policy rules
+
+### Jobs not being picked up by agent
+- Verify agent is running and polling
+- Check agent ID matches deployment configuration
+- Review job agent logs for errors
+- Confirm agent has network access to API
+
+### Jobs fail immediately
+- Review job agent configuration
+- Check external system (GitHub, Kubernetes) availability
+- Verify credentials/permissions
+- Review job logs and error messages
+
+### Multiple jobs created for same release
+- Check release sequencing configuration
+- Review job creation logic
+- May be intentional for retry scenarios
+
+## Next Steps
+
+- [Job Agents](../job-agents/) - Set up and configure job agents
+- [Policies](../advanced/policies.md) - Control release approval and progression
+- [Deployment Tracing](../advanced/deployment-tracing.md) - Add detailed execution traces
+- [CI/CD Integration](../integrations/) - Integrate version creation into your CI
+

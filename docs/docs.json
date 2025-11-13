@@ -1,0 +1,97 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "docs",
+  "colors": {
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
+  },
+  "favicon": "/favicon.png",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["index", "installation", "quickstart"]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/introduction",
+              "concepts/systems",
+              "concepts/resources",
+              "concepts/environments",
+              "concepts/deployments",
+              "concepts/releases-and-jobs",
+              "concepts/release-targets",
+              "concepts/selectors"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": []
+      },
+      {
+        "tab": "Integrations",
+        "groups": []
+      },
+      {
+        "tab": "Operations",
+        "groups": []
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/ctrlplanedev",
+          "icon": "github"
+        },
+        {
+          "anchor": "Community",
+          "href": "https://ctrlplane.dev/discord",
+          "icon": "discord"
+        }
+      ]
+    }
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:hi@mintlify.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://app.ctrlplane.dev"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/ctrlplanedev"
+    }
+  }
+}

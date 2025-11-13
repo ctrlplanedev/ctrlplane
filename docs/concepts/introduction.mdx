@@ -1,0 +1,463 @@
+---
+title: "Core Concepts"
+description:
+  "This guide explains the fundamental building blocks of Ctrlplane and how they
+  work together to orchestrate your deployments."
+---
+
+## The Big Picture
+
+Ctrlplane orchestrates deployments by connecting three key dimensions:
+
+```txt
+Deployment (what to deploy) × Environment (where) × Resource (specific target)
+                    = Release Target
+```
+
+For example: deploying "API Service v1.2.3" to "Production" on "us-east-1
+cluster" creates a release target that gets a job.
+
+## Key Entities
+
+### System
+
+A **System** is a logical grouping of related deployments, environments, and
+resources. Think of it as a workspace for a product or platform.
+
+**Example**: "E-commerce Platform" system might contain:
+
+- Deployments: API Service, Frontend App, Payment Service
+- Environments: Development, Staging, Production
+- Resources: Multiple Kubernetes clusters, Lambda functions
+
+**Key Properties**:
+
+- `name` - Display name
+- `slug` - URL-friendly identifier
+- `description` - What this system encompasses
+
+**When to Use**: Create a system for each major product, platform, or logical
+boundary in your organization.
+
+### Resource
+
+A **Resource** is a deployment target - the actual infrastructure where your
+code runs.
+
+**Examples**:
+
+- A Kubernetes cluster (e.g., "us-east-1-prod-cluster")
+- A VM or EC2 instance
+- A cloud function runtime
+- A serverless application platform
+
+**Key Properties**:
+
+- `name` - Human-readable name
+- `kind` - Type of resource (e.g., "kubernetes-cluster", "vm", "lambda")
+- `identifier` - Unique identifier for this resource
+- `metadata` - Key-value pairs for classification (e.g., `region: us-east-1`,
+  `env: prod`)
+- `config` - Resource-specific configuration
+- `version` - Resource version or state
+
+**How Resources are Created**: Resources are typically created by **Resource
+Providers** that sync from external sources:
+
+- Kubernetes provider discovers clusters
+- Cloud provider syncs VMs from AWS/GCP/Azure
+- Custom providers sync your infrastructure
+
+**Resource Metadata**: The metadata attached to resources is crucial for
+targeting. You'll use selectors to match resources based on their metadata.
+
+```yaml
+# Example resource
+name: "prod-us-east-1"
+kind: "kubernetes-cluster"
+identifier: "k8s-prod-use1"
+metadata:
+  region: "us-east-1"
+  environment: "production"
+  cluster-tier: "high-availability"
+```
+
+### Environment
+
+An **Environment** represents a logical deployment stage in your pipeline (dev,
+staging, production, etc.).
+
+**Key Properties**:
+
+- `name` - Environment name (e.g., "Production")
+- `systemId` - The system this environment belongs to
+- `resourceSelector` - A selector that determines which resources belong to this
+  environment
+- `directory` - Optional path for organizing environments hierarchically
+
+**Resource Selector**: Environments use selectors to dynamically determine which
+resources they include. This means as you add new resources matching the
+selector, they automatically become part of the environment.
+
+**Example**:
+
+```json
+{
+  "name": "Production",
+  "resourceSelector": {
+    "type": "metadata",
+    "operator": "equals",
+    "key": "environment",
+    "value": "production"
+  }
+}
+```
+
+This selector would include all resources with
+`metadata.environment = "production"`.
+
+**Hierarchical Organization**: You can use the `directory` field to create
+nested environments:
+
+- `""` - Root level
+- `"regions"` - First level
+- `"regions/us-east"` - Nested
+
+### Deployment
+
+A **Deployment** represents a service or application that you want to deploy.
+
+**Examples**:
+
+- "API Service"
+- "Frontend Application"
+- "Payment Processor"
+- "Database Migration"
+
+**Key Properties**:
+
+- `name` - Deployment name
+- `slug` - URL-friendly identifier
+- `description` - What this deployment does
+- `systemId` - The system this deployment belongs to
+- `resourceSelector` - Optional selector to limit which resources can run this
+  deployment
+- `jobAgentId` - The job agent that will execute deployments
+- `jobAgentConfig` - Configuration passed to the job agent
+
+**Resource Selector**: Like environments, deployments can have selectors to
+limit where they can be deployed. For example, a deployment might only target
+Kubernetes resources:
+
+```json
+{
+  "type": "kind",
+  "operator": "equals",
+  "value": "kubernetes-cluster"
+}
+```
+
+### Deployment Version
+
+A **Deployment Version** represents a specific build or release of a deployment.
+
+**Key Properties**:
+
+- `deploymentId` - Which deployment this version belongs to
+- `tag` - Version identifier (e.g., "v1.2.3", "sha-abc123", "2024-01-15-prod")
+- `name` - Optional human-readable name
+- `config` - Version-specific configuration
+- `jobAgentConfig` - Job agent configuration for this version
+- `metadata` - Version metadata (e.g., git commit, build number)
+- `status` - Version status: `building`, `ready`, or `failed`
+- `dependencies` - Version dependencies on other deployments
+
+**Version Status**: The status field is important:
+
+- `building` - Version is still being built (won't be deployed)
+- `ready` - Version is ready for deployment (default for policies)
+- `failed` - Version failed to build (won't be deployed)
+
+**Created by CI**: Deployment versions are typically created by your CI system
+after successfully building an artifact:
+
+```bash
+# Example: CI creates a version after building
+curl -X POST https://api.ctrlplane.dev/v1/deployments/{deploymentId}/versions \
+  -H "Authorization: Bearer $API_KEY" \
+  -d '{
+    "tag": "v1.2.3",
+    "name": "Release 1.2.3",
+    "status": "ready",
+    "metadata": {
+      "git_commit": "abc123",
+      "build_number": "456"
+    }
+  }'
+```
+
+### Release Target
+
+A **Release Target** is the combination of a deployment, environment, and
+resource. It represents a specific place where a deployment can be released.
+
+**Formula**: `Deployment × Environment × Resource = Release Target`
+
+**Example**:
+
+- Deployment: "API Service"
+- Environment: "Production"
+- Resource: "us-east-1 cluster"
+- **Release Target**: "Deploy API Service to Production on us-east-1 cluster"
+
+Release targets are automatically created based on the selectors:
+
+1. Environment's resource selector determines which resources are in the
+   environment
+2. Deployment's resource selector (if any) further filters resources
+3. The intersection creates release targets
+
+**Example Calculation**:
+
+```
+Environment "Production" selector: metadata.env = "production"
+  → Matches: cluster-1, cluster-2, cluster-3
+
+Deployment "API Service" selector: metadata.type = "kubernetes"
+  → Matches: cluster-1, cluster-2, cluster-4
+
+Release Targets created:
+  - API Service → Production → cluster-1
+  - API Service → Production → cluster-2
+```
+
+### Release
+
+A **Release** is an instance of deploying a specific version to a release
+target.
+
+**Key Properties**:
+
+- `deploymentId` - Which deployment
+- `environmentId` - Which environment
+- `resourceId` - Which resource
+- `versionId` - Which version to deploy
+- `status` - Current status of the release
+- `jobId` - The job executing this release (if any)
+
+**Release Lifecycle**:
+
+1. **Created** - Ctrlplane determines a version should be deployed to a target
+2. **Pending** - Waiting for policies (approval, environment progression, etc.)
+3. **Approved** - Policies passed, job created
+4. **Active** - Job is executing
+5. **Completed** - Job finished successfully
+6. **Failed** - Job failed
+7. **Cancelled** - Release was cancelled
+
+### Job
+
+A **Job** is the actual deployment task that gets executed by a job agent.
+
+**Key Properties**:
+
+- `releaseId` - The release this job is deploying
+- `jobAgentId` - Which agent will execute this job
+- `status` - Job status (`pending`, `in_progress`, `completed`, `failed`, etc.)
+- `externalId` - External identifier (e.g., GitHub workflow run ID)
+- `message` - Status message or error details
+
+**Job Lifecycle**:
+
+1. Ctrlplane creates a job for an approved release
+2. Job agent polls `/job-agents/{agentId}/queue/next` and receives the job
+3. Agent acknowledges the job
+4. Agent executes the deployment
+5. Agent updates job status as it progresses
+6. Agent marks job as completed or failed
+
+**Job Agent Config**: The job receives configuration from:
+
+- Deployment's `jobAgentConfig`
+- Version's `jobAgentConfig` (overrides deployment config)
+- Release variables
+
+### Policy
+
+A **Policy** defines rules that govern when and how deployments can happen.
+
+**Key Components**:
+
+- **Selectors** - Which release targets this policy applies to
+- **Rules** - The specific policies to enforce
+
+**Policy Types**:
+
+1. **Approval Policy** - Requires manual approval before deployment
+
+   ```json
+   {
+     "anyApproval": {
+       "minApprovals": 2
+     }
+   }
+   ```
+
+2. **Environment Progression** - Enforces deployment order between environments
+
+   ```json
+   {
+     "environmentProgression": {
+       "fromEnvironmentId": "staging-env-id",
+       "toEnvironmentId": "prod-env-id"
+     }
+   }
+   ```
+
+3. **Gradual Rollout** - Deploys to resources in phases
+   ```json
+   {
+     "gradualRollout": {
+       "percentage": 25,
+       "intervalSeconds": 3600
+     }
+   }
+   ```
+
+**Policy Evaluation**: When a release target needs deployment, Ctrlplane:
+
+1. Finds all policies matching the target (via selectors)
+2. Evaluates each policy's rules
+3. If all rules pass → create job
+4. If any rule requires action (approval, wait) → release is pending
+5. If any rule denies → release is blocked
+
+### Variables
+
+Variables provide dynamic configuration for deployments.
+
+**Deployment Variables**: Defined at the deployment level, can have different
+values per environment.
+
+**Resource Variables**: Defined on resources, available during job execution.
+
+**Example**:
+
+```json
+{
+  "deploymentVariable": "replicas",
+  "values": [
+    { "environmentId": "dev", "value": "1" },
+    { "environmentId": "prod", "value": "3" }
+  ]
+}
+```
+
+During job execution, the agent receives resolved variables based on the
+environment.
+
+## How Entities Work Together
+
+### Complete Flow Example
+
+Let's walk through a complete deployment:
+
+1. **Setup** (One-time):
+
+   ```
+   - Create System: "E-commerce"
+   - Create Resources: k8s-prod-us, k8s-prod-eu (synced by provider)
+   - Create Environment: "Production" (selector: metadata.env = "prod")
+   - Create Deployment: "API Service" (agent: kubernetes-agent)
+   - Create Policy: Require 2 approvals for Production
+   ```
+
+2. **CI Build**:
+
+   ```
+   - CI builds API Service
+   - CI creates Deployment Version: tag="v1.2.3", status="ready"
+   ```
+
+3. **Ctrlplane Planning**:
+
+   ```
+   - Detects new version for "API Service"
+   - Finds release targets: API Service × Production × [k8s-prod-us, k8s-prod-eu]
+   - Evaluates policy: Needs 2 approvals
+   - Creates releases in "pending" state
+   ```
+
+4. **Approval**:
+
+   ```
+   - Alice approves via UI
+   - Bob approves via UI
+   - Policy satisfied
+   ```
+
+5. **Job Creation**:
+
+   ```
+   - Ctrlplane creates 2 jobs:
+     * Job 1: Deploy API Service v1.2.3 to k8s-prod-us
+     * Job 2: Deploy API Service v1.2.3 to k8s-prod-eu
+   ```
+
+6. **Job Execution**:
+
+   ```
+   - Kubernetes agent polls for jobs
+   - Receives Job 1 and Job 2
+   - Executes: kubectl apply -f manifest.yaml (for each)
+   - Reports status back to Ctrlplane
+   ```
+
+7. **Completion**:
+   ```
+   - Jobs complete successfully
+   - Releases marked as completed
+   - Version is now deployed to Production
+   ```
+
+## Entity Relationships Diagram
+
+```
+System
+  ├── Environments
+  │     └── (uses resourceSelector to match Resources)
+  ├── Deployments
+  │     ├── Deployment Versions
+  │     └── (uses resourceSelector to match Resources)
+  └── Resources (matched by selectors)
+
+Release Target = Deployment × Environment × Resource
+
+Release = Release Target + Deployment Version
+  └── Job (executed by Job Agent)
+
+Policy
+  └── (matches Release Targets via selectors)
+  └── Rules (approval, progression, rollout)
+```
+
+## Key Takeaways
+
+1. **Systems** organize everything into logical boundaries
+2. **Resources** are where code runs (created by providers, matched by
+   selectors)
+3. **Environments** group resources using selectors
+4. **Deployments** define what to deploy
+5. **Versions** are specific builds created by your CI
+6. **Release Targets** = Deployment × Environment × Resource (automatically
+   created)
+7. **Releases** represent deploying a version to a target
+8. **Jobs** are the actual deployment tasks executed by agents
+9. **Policies** control when and how deployments happen
+10. **Variables** provide dynamic configuration
+
+## Next Steps
+
+- [Quickstart](./quickstart.md) - Build your first deployment pipeline
+- [Selectors](../concepts/selectors.md) - Learn how to use selectors effectively
+- [Policies](../advanced/policies.md) - Deep dive into policy configuration

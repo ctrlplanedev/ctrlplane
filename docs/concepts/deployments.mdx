@@ -1,0 +1,612 @@
+# Deployments
+
+A **Deployment** represents a service or application that you want to deploy across your infrastructure. Deployments have versions (created by your CI), which get released to environments and resources.
+
+## What is a Deployment?
+
+A deployment is a logical unit of software that you want to orchestrate:
+
+- **API Service** - Your backend API
+- **Frontend Application** - Web or mobile frontend
+- **Background Worker** - Async job processor
+- **Database Migration** - Schema changes
+- **Configuration Update** - Infrastructure configuration
+
+Each deployment can have multiple **versions** (builds, releases) that get deployed to different environments and resources.
+
+## Deployment Properties
+
+```json
+{
+  "id": "dep_abc123",
+  "systemId": "sys_xyz789",
+  "name": "API Service",
+  "slug": "api-service",
+  "description": "Main backend API service",
+  "jobAgentId": "agent_123",
+  "jobAgentConfig": {
+    "workflow": "deploy.yml",
+    "owner": "my-org",
+    "repo": "api-service"
+  },
+  "resourceSelector": {
+    "type": "kind",
+    "operator": "equals",
+    "value": "kubernetes-cluster"
+  },
+  "createdAt": "2024-01-15T10:00:00Z",
+  "metadata": {
+    "team": "backend",
+    "language": "nodejs"
+  }
+}
+```
+
+### name
+Human-readable display name for the deployment.
+
+**Examples**:
+- "API Service"
+- "Frontend Application"
+- "Payment Processor"
+- "User Service"
+
+### slug
+URL-friendly identifier, unique within the system.
+
+**Examples**:
+- `api-service`
+- `frontend-app`
+- `payment-processor`
+
+### systemId
+The system this deployment belongs to. Deployments are scoped to systems.
+
+### jobAgentId
+The ID of the job agent that will execute deployment jobs.
+
+**Required**: Every deployment must have a job agent configured.
+
+### jobAgentConfig
+Configuration passed to the job agent when executing deployments. The structure depends on the agent type.
+
+**GitHub Actions Agent**:
+```json
+{
+  "workflow": "deploy.yml",
+  "owner": "my-github-org",
+  "repo": "my-repo",
+  "ref": "main"
+}
+```
+
+**Kubernetes Agent**:
+```json
+{
+  "manifest": "apiVersion: batch/v1\nkind: Job\n..."
+}
+```
+
+**ArgoCD Agent**:
+```json
+{
+  "application": "my-app",
+  "server": "https://argocd.example.com"
+}
+```
+
+### resourceSelector (Optional)
+Limits which resources this deployment can target. If specified, only resources matching this selector can receive this deployment.
+
+**Use Cases**:
+- Kubernetes-only deployments: Match `kind: kubernetes-cluster`
+- Region-specific: Match `metadata.region: us-east-1`
+- Team-specific: Match `metadata.team: platform`
+
+**Example - Kubernetes only**:
+```json
+{
+  "type": "kind",
+  "operator": "equals",
+  "value": "kubernetes-cluster"
+}
+```
+
+If not specified, the deployment can target any resource.
+
+### description
+Optional description of what this deployment does.
+
+### metadata
+Optional key-value pairs for classification.
+
+**Common Metadata**:
+```json
+{
+  "team": "backend",
+  "language": "nodejs",
+  "repository": "github.com/org/api-service"
+}
+```
+
+## Creating a Deployment
+
+### Via Web UI
+
+1. Navigate to your system
+2. Click "Deployments" tab
+3. Click "Create Deployment"
+4. Fill in:
+   - Name: "API Service"
+   - Slug: "api-service"
+   - Description: "Main backend API"
+   - Job Agent: Select from dropdown
+   - Job Agent Config: JSON configuration
+   - Resource Selector: (optional)
+5. Click "Create"
+
+### Via API
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/systems/{systemId}/deployments \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "API Service",
+    "slug": "api-service",
+    "description": "Main backend API service",
+    "jobAgentId": "{jobAgentId}",
+    "jobAgentConfig": {
+      "workflow": "deploy.yml",
+      "owner": "my-org",
+      "repo": "api-service"
+    },
+    "resourceSelector": {
+      "type": "kind",
+      "operator": "equals",
+      "value": "kubernetes-cluster"
+    }
+  }'
+```
+
+### Via YAML
+
+```yaml
+deployments:
+  - name: API Service
+    slug: api-service
+    description: Main backend API service
+    jobAgent: github-actions-agent
+    jobAgentConfig:
+      workflow: deploy.yml
+      owner: my-org
+      repo: api-service
+
+  - name: Frontend App
+    slug: frontend-app
+    description: Customer-facing web application
+    jobAgent: kubernetes-agent
+    jobAgentConfig:
+      manifest: |
+        apiVersion: batch/v1
+        kind: Job
+        ...
+```
+
+## Deployment Versions
+
+Versions represent specific builds or releases of your deployment. They are typically created by your CI system after building.
+
+### Version Properties
+
+```json
+{
+  "id": "ver_abc123",
+  "deploymentId": "dep_abc123",
+  "tag": "v1.2.3",
+  "name": "Release 1.2.3",
+  "status": "ready",
+  "config": {
+    "imageTag": "v1.2.3",
+    "buildNumber": "456"
+  },
+  "jobAgentConfig": {
+    "imageTag": "my-org/api-service:v1.2.3"
+  },
+  "metadata": {
+    "git_commit": "abc123def",
+    "git_branch": "main",
+    "build_number": "456"
+  },
+  "dependencies": [],
+  "createdAt": "2024-01-15T12:00:00Z"
+}
+```
+
+### Creating Versions (from CI)
+
+After your CI builds an artifact, create a version in Ctrlplane:
+
+```bash
+# GitHub Actions example
+- name: Create Ctrlplane version
+  run: |
+    curl -X POST https://app.ctrlplane.dev/api/v1/deployments/${{ env.DEPLOYMENT_ID }}/versions \
+      -H "Authorization: Bearer ${{ secrets.CTRLPLANE_API_KEY }}" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "tag": "${{ github.sha }}",
+        "name": "Build #${{ github.run_number }}",
+        "status": "ready",
+        "metadata": {
+          "git_commit": "${{ github.sha }}",
+          "git_branch": "${{ github.ref_name }}",
+          "build_number": "${{ github.run_number }}"
+        },
+        "jobAgentConfig": {
+          "imageTag": "my-org/api-service:${{ github.sha }}"
+        }
+      }'
+```
+
+### Version Status
+
+Versions have a status field:
+
+- **`building`** - Version is being built (won't be deployed yet)
+- **`ready`** - Version is ready for deployment (default for policies)
+- **`failed`** - Build failed (won't be deployed)
+
+**Workflow**:
+1. CI starts building → Create version with status `building`
+2. Build succeeds → Update status to `ready`
+3. Ctrlplane creates releases/jobs for `ready` versions
+
+Or simpler:
+1. Build completes → Create version with status `ready` immediately
+
+### Version Config vs Job Agent Config
+
+**config**: General version configuration, visible in UI
+```json
+{
+  "config": {
+    "buildNumber": "456",
+    "gitCommit": "abc123"
+  }
+}
+```
+
+**jobAgentConfig**: Specific configuration for job execution (overrides deployment's jobAgentConfig)
+```json
+{
+  "jobAgentConfig": {
+    "imageTag": "my-org/api-service:v1.2.3",
+    "helmValues": {
+      "replicas": 3
+    }
+  }
+}
+```
+
+### Version Dependencies
+
+Versions can declare dependencies on other deployment versions.
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/versions \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tag": "v1.2.3",
+    "status": "ready",
+    "dependencies": [
+      {
+        "deploymentId": "dep_database",
+        "versionId": "ver_db_v2"
+      }
+    ]
+  }'
+```
+
+Ctrlplane can enforce that dependencies are deployed first before deploying this version.
+
+## Deployment Variables
+
+Variables allow environment-specific or version-specific configuration.
+
+### Creating Deployment Variables
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "REPLICA_COUNT",
+    "description": "Number of replicas to run"
+  }'
+```
+
+### Setting Environment-Specific Values
+
+```bash
+# Value for development
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "environmentId": "env_dev",
+    "value": "1"
+  }'
+
+# Value for production
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "environmentId": "env_prod",
+    "value": "5"
+  }'
+```
+
+### Using Variables in Jobs
+
+Variables are resolved during job creation and passed to the job agent:
+
+```yaml
+# In GitHub Actions workflow
+- name: Get job inputs
+  uses: ctrlplanedev/get-job-inputs@v1
+  id: job
+  with:
+    job_id: ${{ inputs.job_id }}
+
+- name: Deploy with variables
+  run: |
+    echo "Replicas: ${{ steps.job.outputs.variable_REPLICA_COUNT }}"
+    helm upgrade my-app ./chart \
+      --set replicaCount=${{ steps.job.outputs.variable_REPLICA_COUNT }}
+```
+
+## Release Targets
+
+When you create a deployment, Ctrlplane automatically creates **release targets** by crossing the deployment with environments and resources.
+
+**Formula**: `Deployment × Environment × Resource = Release Targets`
+
+**Example**:
+
+Given:
+- Deployment: "API Service"
+- Environments: Development, Staging, Production
+- Resources in Production: 3 clusters
+
+Release Targets Created:
+1. API Service → Development → dev-cluster
+2. API Service → Staging → staging-cluster  
+3. API Service → Production → prod-cluster-1
+4. API Service → Production → prod-cluster-2
+5. API Service → Production → prod-cluster-3
+
+Each release target can receive deployment versions independently.
+
+### Filtering Release Targets
+
+Use deployment's `resourceSelector` to limit which targets are created:
+
+```json
+{
+  "resourceSelector": {
+    "type": "kind",
+    "operator": "equals",
+    "value": "kubernetes-cluster"
+  }
+}
+```
+
+Now only Kubernetes resources will have release targets for this deployment.
+
+## Deployment Lifecycle
+
+### 1. Create Deployment
+Define the deployment in Ctrlplane with job agent configuration.
+
+### 2. CI Builds and Creates Version
+Your CI pipeline builds the artifact and creates a deployment version.
+
+### 3. Ctrlplane Evaluates Policies
+Ctrlplane checks policies (approvals, environment progression, etc.).
+
+### 4. Jobs Created
+For each release target that should receive the version, a job is created.
+
+### 5. Job Agent Executes
+The configured job agent picks up the job and executes the deployment.
+
+### 6. Status Updated
+The job reports status back to Ctrlplane.
+
+## Viewing Deployment Status
+
+### Via Web UI
+
+1. Navigate to the deployment
+2. See tabs:
+   - **Versions**: All versions created
+   - **Releases**: Active releases across targets
+   - **Jobs**: Execution history
+   - **Variables**: Configured variables
+
+### Via API
+
+**Get deployment details**:
+```bash
+curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId} \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+**List versions**:
+```bash
+curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/versions \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+**List releases**:
+```bash
+curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/releases \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+## Common Patterns
+
+### Microservices
+
+```yaml
+deployments:
+  - name: User Service
+    slug: user-service
+    jobAgent: kubernetes-agent
+
+  - name: Order Service
+    slug: order-service
+    jobAgent: kubernetes-agent
+
+  - name: Payment Service
+    slug: payment-service
+    jobAgent: kubernetes-agent
+```
+
+### Frontend + Backend
+
+```yaml
+deployments:
+  - name: API Service
+    slug: api-service
+    jobAgent: kubernetes-agent
+    resourceSelector:
+      type: kind
+      value: kubernetes-cluster
+
+  - name: Frontend App
+    slug: frontend-app
+    jobAgent: github-actions-agent
+```
+
+### Database + Application
+
+```yaml
+deployments:
+  - name: Database Migration
+    slug: database-migration
+    jobAgent: kubernetes-agent
+
+  - name: API Service
+    slug: api-service
+    jobAgent: kubernetes-agent
+    # API version can depend on migration version
+```
+
+### Multi-Platform
+
+```yaml
+deployments:
+  - name: Web Service
+    slug: web-service
+    jobAgent: kubernetes-agent
+    resourceSelector:
+      type: kind
+      value: kubernetes-cluster
+
+  - name: Lambda Function
+    slug: lambda-function
+    jobAgent: github-actions-agent
+    resourceSelector:
+      type: kind
+      value: lambda-function
+```
+
+## Best Practices
+
+### Naming
+
+**Good Names**:
+- ✅ "API Service"
+- ✅ "Frontend Application"
+- ✅ "Payment Processor"
+
+**Good Slugs**:
+- ✅ `api-service`
+- ✅ `frontend-app`
+- ✅ `payment-processor`
+
+**Avoid**:
+- ❌ "Service" (too generic)
+- ❌ "api_service" (use hyphens)
+- ❌ "API-SERVICE" (use lowercase)
+
+### Job Agent Configuration
+
+**Do**:
+- ✅ Use version's `jobAgentConfig` for version-specific values (like image tags)
+- ✅ Use deployment's `jobAgentConfig` for stable configuration
+- ✅ Keep sensitive data in secrets (not in config)
+
+**Example**:
+```json
+// Deployment jobAgentConfig (stable)
+{
+  "workflow": "deploy.yml",
+  "owner": "my-org",
+  "repo": "api-service"
+}
+
+// Version jobAgentConfig (version-specific)
+{
+  "imageTag": "my-org/api-service:v1.2.3"
+}
+```
+
+### Version Tags
+
+**Good Tags**:
+- ✅ `v1.2.3` (semantic version)
+- ✅ `2024-01-15-prod` (date-based)
+- ✅ `abc123def` (git commit)
+
+**Avoid**:
+- ❌ `latest` (not specific)
+- ❌ `prod` (not a version)
+- ❌ `test` (too vague)
+
+### Resource Selectors
+
+Use resource selectors to:
+- Limit Kubernetes deployments to Kubernetes resources
+- Separate platform-specific deployments
+- Control which resources can receive a deployment
+
+## Troubleshooting
+
+### No release targets created
+- Check resource selector matches some resources
+- Verify environments have matching resources
+- Ensure deployment and environments are in same system
+
+### Jobs not being created for new versions
+- Check version status is `ready`
+- Review policies for denials/pending approvals
+- Verify job agent is configured
+- Check release target exists
+
+### Job agent config not working
+- Verify jobAgentConfig structure matches agent type
+- Check version's jobAgentConfig overrides correctly
+- Review job agent logs for configuration errors
+
+## Next Steps
+
+- [Deployment Versions](./releases-and-jobs.md#versions) - Understand version lifecycle
+- [Release Targets](./release-targets.md) - How the deployment matrix works
+- [Variables](../advanced/variables.md) - Using variables for configuration
+- [CI/CD Integration](../integrations/) - Integrate with your CI system
+
