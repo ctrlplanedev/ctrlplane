@@ -67,8 +67,13 @@ func (d *ArgoCDDispatcher) parseConfig(job *oapi.Job) (argoCDAgentConfig, error)
 }
 
 func getK8sCompatibleName(name string) string {
+	// Replace invalid characters with hyphens
 	cleaned := strings.ReplaceAll(name, "/", "-")
 	cleaned = strings.ReplaceAll(cleaned, ":", "-")
+
+	// Ensure it starts and ends with alphanumeric
+	cleaned = strings.Trim(cleaned, "-_.")
+
 	return cleaned
 }
 
@@ -152,6 +157,13 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 
 	// Clean the application name to make it valid for Kubernetes
 	app.ObjectMeta.Name = getK8sCompatibleName(app.ObjectMeta.Name)
+
+	// Clean all label values to make them valid for Kubernetes
+	if app.ObjectMeta.Labels != nil {
+		for key, value := range app.ObjectMeta.Labels {
+			app.ObjectMeta.Labels[key] = getK8sCompatibleName(value)
+		}
+	}
 
 	span.SetAttributes(
 		attribute.String("argocd.app_name", app.ObjectMeta.Name),
