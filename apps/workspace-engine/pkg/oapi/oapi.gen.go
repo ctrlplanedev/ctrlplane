@@ -33,8 +33,8 @@ const (
 
 // Defines values for GradualRolloutRuleRolloutType.
 const (
-	Linear           GradualRolloutRuleRolloutType = "linear"
-	LinearNormalized GradualRolloutRuleRolloutType = "linear-normalized"
+	GradualRolloutRuleRolloutTypeLinear           GradualRolloutRuleRolloutType = "linear"
+	GradualRolloutRuleRolloutTypeLinearNormalized GradualRolloutRuleRolloutType = "linear-normalized"
 )
 
 // Defines values for HTTPMetricProviderMethod.
@@ -117,6 +117,12 @@ const (
 	ReleaseVerificationStatusFailed    ReleaseVerificationStatus = "failed"
 	ReleaseVerificationStatusPassed    ReleaseVerificationStatus = "passed"
 	ReleaseVerificationStatusRunning   ReleaseVerificationStatus = "running"
+)
+
+// Defines values for RetryRuleBackoffStrategy.
+const (
+	RetryRuleBackoffStrategyExponential RetryRuleBackoffStrategy = "exponential"
+	RetryRuleBackoffStrategyLinear      RetryRuleBackoffStrategy = "linear"
 )
 
 // Defines values for RuleEvaluationActionType.
@@ -428,6 +434,7 @@ type PolicyRule struct {
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
+	Retry                  *RetryRule                  `json:"retry,omitempty"`
 }
 
 // PolicyTargetSelector defines model for PolicyTargetSelector.
@@ -581,6 +588,27 @@ type ResourceVariable struct {
 	ResourceId string `json:"resourceId"`
 	Value      Value  `json:"value"`
 }
+
+// RetryRule defines model for RetryRule.
+type RetryRule struct {
+	// BackoffSeconds Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.
+	BackoffSeconds *int32 `json:"backoffSeconds,omitempty"`
+
+	// BackoffStrategy Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
+	BackoffStrategy *RetryRuleBackoffStrategy `json:"backoffStrategy,omitempty"`
+
+	// MaxBackoffSeconds Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.
+	MaxBackoffSeconds *int32 `json:"maxBackoffSeconds,omitempty"`
+
+	// MaxRetries Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
+	MaxRetries int32 `json:"maxRetries"`
+
+	// RetryOnStatuses Job statuses that count toward the retry limit. If null or empty and maxRetries > 0, defaults to ["failure", "invalidIntegration"] (smart default: only retry on errors, not on success). If maxRetries = 0, counts all statuses (strict: no retries at all). Example: ["failure", "cancelled"] will only count failed/cancelled jobs.
+	RetryOnStatuses *[]JobStatus `json:"retryOnStatuses,omitempty"`
+}
+
+// RetryRuleBackoffStrategy Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
+type RetryRuleBackoffStrategy string
 
 // RuleEvaluation defines model for RuleEvaluation.
 type RuleEvaluation struct {

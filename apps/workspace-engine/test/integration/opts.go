@@ -848,6 +848,32 @@ func WithRuleGradualRollout(timeScaleInterval int32) PolicyRuleOption {
 	}
 }
 
+// ===== RetryRule Options =====
+
+func WithRuleRetry(maxRetries int32, retryOnStatuses []oapi.JobStatus) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		rule := &oapi.RetryRule{
+			MaxRetries: maxRetries,
+		}
+		if len(retryOnStatuses) > 0 {
+			rule.RetryOnStatuses = &retryOnStatuses
+		}
+		r.Retry = rule
+		return nil
+	}
+}
+
+func WithRuleRetryWithBackoff(maxRetries int32, backoffSeconds int32, strategy oapi.RetryRuleBackoffStrategy) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.Retry = &oapi.RetryRule{
+			MaxRetries:      maxRetries,
+			BackoffSeconds:  &backoffSeconds,
+			BackoffStrategy: &strategy,
+		}
+		return nil
+	}
+}
+
 // ===== EnvironmentProgressionRule Options =====
 
 type EnvironmentProgressionRuleOption func(*TestWorkspace, *oapi.EnvironmentProgressionRule) error

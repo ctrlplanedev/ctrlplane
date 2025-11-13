@@ -140,7 +140,7 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 		return threeMinutesLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -216,7 +216,7 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 		return thirtySecondsLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -294,7 +294,7 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 		return twoMinutesLater
 	}
 
-	rule := createGradualRolloutRule(oapi.LinearNormalized, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinearNormalized, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -370,7 +370,7 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 		return oneHourLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 0)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 0)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -414,7 +414,7 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -504,7 +504,7 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -633,7 +633,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -760,7 +760,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -876,7 +876,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1002,7 +1002,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1093,7 +1093,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1238,7 +1238,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1382,7 +1382,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1519,7 +1519,7 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 		return twoHoursLater
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1629,7 +1629,7 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1735,7 +1735,7 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60) // 60 seconds between each position
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60) // 60 seconds between each position
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1866,7 +1866,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -1997,7 +1997,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60) // 60 seconds between deployments
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60) // 60 seconds between deployments
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -2061,7 +2061,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenAllowed(t *testing.T) {
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -2117,7 +2117,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.Linear, 60)
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,
@@ -2206,7 +2206,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.
 		return currentTime
 	}
 
-	rule := createGradualRolloutRule(oapi.LinearNormalized, 120) // Total 120 seconds for all
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinearNormalized, 120) // Total 120 seconds for all
 	eval := GradualRolloutEvaluator{
 		store:      st,
 		rule:       rule,

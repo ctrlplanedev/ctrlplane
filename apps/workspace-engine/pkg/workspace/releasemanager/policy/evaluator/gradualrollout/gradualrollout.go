@@ -165,10 +165,10 @@ func (e *GradualRolloutEvaluator) getDeploymentOffset(
 	numReleaseTargets int32,
 ) time.Duration {
 	switch rolloutType {
-	case oapi.Linear:
+	case oapi.GradualRolloutRuleRolloutTypeLinear:
 		return time.Duration(rolloutPosition) * time.Duration(timeScaleInterval) * time.Second
 
-	case oapi.LinearNormalized:
+	case oapi.GradualRolloutRuleRolloutTypeLinearNormalized:
 		return time.Duration(float64(rolloutPosition)/float64(numReleaseTargets)*float64(timeScaleInterval)) * time.Second
 
 	default:

@@ -107,7 +107,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 	// Skip eligibility check if this is a forced redeploy
 	if !forceRedeploy {
 		span.AddEvent("Phase 2: Checking job eligibility")
-		shouldCreate, reason, err := o.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease, recorder)
+		eligibilityResult, err := o.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease, recorder)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "eligibility check failed")
@@ -115,15 +115,32 @@ func (o *DeploymentOrchestrator) Reconcile(
 		}
 
 		span.SetAttributes(
-			attribute.Bool("job_eligibility.should_create", shouldCreate),
-			attribute.String("job_eligibility.reason", reason),
+			attribute.String("job_eligibility.decision", string(eligibilityResult.Decision)),
+			attribute.String("job_eligibility.reason", eligibilityResult.Reason),
 		)
 
-		// Job should not be created (retry limit, already attempted, etc.)
-		if !shouldCreate {
+		// Handle pending results - schedule re-evaluation
+		if eligibilityResult.IsPending() {
+			span.AddEvent("Job creation pending, scheduling re-evaluation",
+				oteltrace.WithAttributes(attribute.String("reason", eligibilityResult.Reason)))
+
+			if eligibilityResult.ShouldScheduleRetry() {
+				scheduler := o.planner.Scheduler()
+				scheduler.Schedule(releaseTarget, *eligibilityResult.NextEvaluationTime)
+				span.SetAttributes(
+					attribute.String("next_evaluation_time", eligibilityResult.NextEvaluationTime.Format("2006-01-02T15:04:05Z07:00")),
+				)
+			}
+
+			span.SetAttributes(attribute.String("reconciliation_result", "job_pending"))
+			return desiredRelease, nil, nil
+		}
+
+		// Handle denied results - job should not be created
+		if eligibilityResult.IsDenied() {
 			span.AddEvent("Job should not be created",
-				oteltrace.WithAttributes(attribute.String("reason", reason)))
-			span.SetAttributes(attribute.String("reconciliation_result", "job_not_eligible"))
+				oteltrace.WithAttributes(attribute.String("reason", eligibilityResult.Reason)))
+			span.SetAttributes(attribute.String("reconciliation_result", "job_denied"))
 			return desiredRelease, nil, nil
 		}
 	} else {

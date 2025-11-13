@@ -71,12 +71,12 @@ func TestShouldCreateJob_NoExistingJobs(t *testing.T) {
 	release := createReleaseForEligibility("deployment-1", "env-1", "resource-1", "version-1", "v1.0.0")
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.True(t, shouldCreate)
-	assert.Equal(t, "eligible", reason)
+	assert.True(t, result.IsAllowed())
+	assert.Equal(t, "eligible", result.Reason)
 }
 
 func TestShouldCreateJob_AlreadyDeployed(t *testing.T) {
@@ -101,12 +101,13 @@ func TestShouldCreateJob_AlreadyDeployed(t *testing.T) {
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.Contains(t, reason, "already")
+	assert.False(t, result.IsAllowed())
+	// With retry policy (default no retries), message is "Retry limit exceeded"
+	assert.Contains(t, result.Reason, "Retry limit exceeded")
 }
 
 func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
@@ -136,12 +137,12 @@ func TestShouldCreateJob_NewVersionAfterSuccessfulDeployment(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, releaseV2, nil)
+	result, err := checker.ShouldCreateJob(ctx, releaseV2, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.True(t, shouldCreate)
-	assert.Equal(t, "eligible", reason)
+	assert.True(t, result.IsAllowed())
+	assert.Equal(t, "eligible", result.Reason)
 }
 
 func TestShouldCreateJob_JobInProgress(t *testing.T) {
@@ -164,12 +165,13 @@ func TestShouldCreateJob_JobInProgress(t *testing.T) {
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.Contains(t, reason, "already")
+	assert.False(t, result.IsAllowed())
+	// Concurrency check message
+	assert.Contains(t, result.Reason, "Release target has an active job")
 }
 
 func TestShouldCreateJob_PendingJob(t *testing.T) {
@@ -192,12 +194,13 @@ func TestShouldCreateJob_PendingJob(t *testing.T) {
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.Contains(t, reason, "already")
+	assert.False(t, result.IsAllowed())
+	// Concurrency check message for pending jobs
+	assert.Contains(t, result.Reason, "Release target has an active job")
 }
 
 func TestShouldCreateJob_FailedJobPreventsRedeploy(t *testing.T) {
@@ -222,12 +225,13 @@ func TestShouldCreateJob_FailedJobPreventsRedeploy(t *testing.T) {
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.Contains(t, reason, "already")
+	assert.False(t, result.IsAllowed())
+	// With retry policy (default no retries), message is "Retry limit exceeded"
+	assert.Contains(t, result.Reason, "Retry limit exceeded")
 }
 
 func TestShouldCreateJob_CancelledJobPreventsRedeploy(t *testing.T) {
@@ -252,12 +256,13 @@ func TestShouldCreateJob_CancelledJobPreventsRedeploy(t *testing.T) {
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
-	// Assert
+	// Assert - With NO policy configured, strict mode applies (ALL statuses count)
+	// Cancelled jobs block redeployment in strict mode
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.Contains(t, reason, "already")
+	assert.False(t, result.IsAllowed())
+	assert.Contains(t, result.Reason, "Retry limit exceeded")
 }
 
 func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
@@ -323,12 +328,12 @@ func TestShouldCreateJob_DifferentVariablesAllowsNewJob(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2, nil)
+	result, err := checker.ShouldCreateJob(ctx, release2, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.True(t, shouldCreate)
-	assert.Equal(t, "eligible", reason)
+	assert.True(t, result.IsAllowed())
+	assert.Equal(t, "eligible", result.Reason)
 }
 
 func TestShouldCreateJob_ConcurrentJobsForSameTarget(t *testing.T) {
@@ -356,13 +361,13 @@ func TestShouldCreateJob_ConcurrentJobsForSameTarget(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2, nil)
+	result, err := checker.ShouldCreateJob(ctx, release2, nil)
 
 	// Assert - concurrency evaluator should block this
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
+	assert.False(t, result.IsAllowed())
 	// The actual message from the concurrency evaluator
-	assert.NotEqual(t, "eligible", reason)
+	assert.NotEqual(t, "eligible", result.Reason)
 }
 
 func TestShouldCreateJob_AllowsConcurrentJobsForDifferentTargets(t *testing.T) {
@@ -406,12 +411,12 @@ func TestShouldCreateJob_AllowsConcurrentJobsForDifferentTargets(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release2, nil)
+	result, err := checker.ShouldCreateJob(ctx, release2, nil)
 
 	// Assert - should allow concurrent jobs for different targets
 	require.NoError(t, err)
-	assert.True(t, shouldCreate)
-	assert.Equal(t, "eligible", reason)
+	assert.True(t, result.IsAllowed())
+	assert.Equal(t, "eligible", result.Reason)
 }
 
 func TestShouldCreateJob_MultipleCompletedJobs(t *testing.T) {
@@ -466,12 +471,12 @@ func TestShouldCreateJob_MultipleCompletedJobs(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, newRelease, nil)
+	result, err := checker.ShouldCreateJob(ctx, newRelease, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.True(t, shouldCreate)
-	assert.Equal(t, "eligible", reason)
+	assert.True(t, result.IsAllowed())
+	assert.Equal(t, "eligible", result.Reason)
 }
 
 func TestShouldCreateJob_SkippedJobPreventsRedeploy(t *testing.T) {
@@ -496,12 +501,13 @@ func TestShouldCreateJob_SkippedJobPreventsRedeploy(t *testing.T) {
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
-	// Assert
+	// Assert - With NO policy configured, strict mode applies (ALL statuses count)
+	// Skipped jobs block redeployment in strict mode
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.Contains(t, reason, "already")
+	assert.False(t, result.IsAllowed())
+	assert.Contains(t, result.Reason, "Retry limit exceeded")
 }
 
 func TestShouldCreateJob_InvalidJobAgentStatusPreventsRedeploy(t *testing.T) {
@@ -524,12 +530,13 @@ func TestShouldCreateJob_InvalidJobAgentStatusPreventsRedeploy(t *testing.T) {
 	})
 
 	// Act - try to redeploy same release
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.Contains(t, reason, "already")
+	assert.False(t, result.IsAllowed())
+	// With retry policy (default no retries), message is "Retry limit exceeded"
+	assert.Contains(t, result.Reason, "Retry limit exceeded")
 }
 
 func TestShouldCreateJob_EmptyReleaseID(t *testing.T) {
@@ -553,12 +560,12 @@ func TestShouldCreateJob_EmptyReleaseID(t *testing.T) {
 	}
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert - should work normally
 	require.NoError(t, err)
-	assert.True(t, shouldCreate)
-	assert.Equal(t, "eligible", reason)
+	assert.True(t, result.IsAllowed())
+	assert.Equal(t, "eligible", result.Reason)
 }
 
 func TestShouldCreateJob_EvaluatorOrdering(t *testing.T) {
@@ -584,11 +591,11 @@ func TestShouldCreateJob_EvaluatorOrdering(t *testing.T) {
 	})
 
 	// Act
-	shouldCreate, reason, err := checker.ShouldCreateJob(ctx, release, nil)
+	result, err := checker.ShouldCreateJob(ctx, release, nil)
 
 	// Assert - should be blocked and return a reason
 	require.NoError(t, err)
-	assert.False(t, shouldCreate)
-	assert.NotEqual(t, "eligible", reason)
-	assert.NotEmpty(t, reason)
+	assert.False(t, result.IsAllowed())
+	assert.NotEqual(t, "eligible", result.Reason)
+	assert.NotEmpty(t, result.Reason)
 }

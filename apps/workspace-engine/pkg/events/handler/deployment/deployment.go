@@ -266,7 +266,7 @@ func getJobsToRetrigger(ws *workspace.Workspace, deployment *oapi.Deployment) []
 
 // retriggerInvalidJobAgentJobs creates new Pending jobs for all releases that currently have InvalidJobAgent jobs
 // Note: This is an explicit retrigger operation for configuration fixes, so we bypass normal
-// eligibility checks (like skipdeployed). The old InvalidJobAgent job remains for history.
+// eligibility checks (like retry limits). The old InvalidJobAgent job remains for history.
 func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, jobsToRetrigger []*oapi.Job) {
 	// Create job factory and dispatcher
 	jobFactory := jobs.NewFactory(ws.Store())

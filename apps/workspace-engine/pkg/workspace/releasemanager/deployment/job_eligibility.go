@@ -2,10 +2,12 @@ package deployment
 
 import (
 	"context"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/releasetargetconcurrency"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/skipdeployed"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/retry"
+	"workspace-engine/pkg/workspace/releasemanager/policy/resolver"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
@@ -19,41 +21,43 @@ var jobEligibilityTracer = otel.Tracer("workspace/releasemanager/deployment/jobe
 
 // JobEligibilityChecker determines whether a job should be created for a release.
 // This handles release-level job creation rules like:
-//   - Duplicate prevention (has this release already been attempted?)
-//   - Retry logic (how many times can a failed release be retried?)
+//   - Retry logic (how many times can a failed release be retried? - policy-based)
+//   - Concurrency limits (how many jobs can run simultaneously for a target?)
+//
+// Retry logic is now handled by user-defined retry policies. When no retry policy
+// is configured, defaults to no retries (only one attempt allowed per release).
 //
 // Note: Version status checks are NOT here - they belong in the Planner during version selection.
 // This is only about job creation decisions for a specific release.
 type JobEligibilityChecker struct {
 	store *store.Store
 
-	// Release-level evaluators that determine job creation eligibility
-	releaseEvaluators []evaluator.JobEvaluator
+	// Static release-level evaluators (always applied)
+	staticEvaluators []evaluator.JobEvaluator
 }
 
-// NewJobEligibilityChecker creates a new job eligibility checker with default system rules.
+// NewJobEligibilityChecker creates a new job eligibility checker with static system rules.
 func NewJobEligibilityChecker(store *store.Store) *JobEligibilityChecker {
 	return &JobEligibilityChecker{
 		store: store,
-		releaseEvaluators: []evaluator.JobEvaluator{
-			skipdeployed.NewSkipDeployedEvaluator(store),
+		staticEvaluators: []evaluator.JobEvaluator{
+			// Concurrency check remains as static evaluator
 			releasetargetconcurrency.NewReleaseTargetConcurrencyEvaluator(store),
-			// Future: Add retry limit evaluator here
-			// retrylimit.NewRetryLimitEvaluator(store, maxRetries: 4),
+			// Retry logic moved to dynamic policy-based evaluators
 		},
 	}
 }
 
 // ShouldCreateJob determines if a job should be created for the given release.
-// Returns:
-//   - true: Job should be created
-//   - false: Job should not be created (already attempted, retry limit exceeded, etc.)
-//   - error: Evaluation failed
+// Returns an EligibilityResult that indicates whether the job should be created immediately,
+// denied, or pending (waiting for conditions like backoff to elapse).
+//
+// For pending results, the NextEvaluationTime field indicates when to re-evaluate.
 func (c *JobEligibilityChecker) ShouldCreateJob(
 	ctx context.Context,
 	release *oapi.Release,
 	recorder *trace.ReconcileTarget,
-) (bool, string, error) {
+) (*EligibilityResult, error) {
 	ctx, span := jobEligibilityTracer.Start(ctx, "ShouldCreateJob",
 		oteltrace.WithAttributes(
 			attribute.String("release.id", release.ID()),
@@ -77,14 +81,18 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 		PolicyResults: make([]oapi.PolicyEvaluation, 0),
 	}
 
-	// Evaluate release-scoped rules (e.g., skip deployed, retry limits)
-	span.SetAttributes(attribute.Int("eligibility_evaluators.count", len(c.releaseEvaluators)))
+	// Get applicable policies for this release and build dynamic retry evaluators
+	retryEvaluators := c.buildRetryEvaluators(ctx, release, span)
 
-	if len(c.releaseEvaluators) > 0 {
+	// Combine static evaluators with dynamic retry evaluators
+	allEvaluators := append(c.staticEvaluators, retryEvaluators...)
+	span.SetAttributes(attribute.Int("eligibility_evaluators.count", len(allEvaluators)))
+
+	if len(allEvaluators) > 0 {
 		span.AddEvent("Evaluating eligibility rules")
 		policyResult := results.NewPolicyEvaluation()
 
-		for i, eval := range c.releaseEvaluators {
+		for i, eval := range allEvaluators {
 			ruleResult := eval.Evaluate(ctx, release)
 			policyResult.AddRuleResult(*ruleResult)
 
@@ -112,43 +120,134 @@ func (c *JobEligibilityChecker) ShouldCreateJob(
 
 	canCreate := decision.CanDeploy()
 
-	// Record eligibility decision
-	if eligibility != nil {
-		if canCreate {
-			eligibility.MakeDecision("Job eligible for creation", trace.DecisionApproved)
-		} else {
-			eligibility.MakeDecision("Job not eligible for creation", trace.DecisionRejected)
-		}
+	// Build eligibility result with reason and next evaluation time
+	result := &EligibilityResult{
+		Reason:  "eligible",
+		Details: make(map[string]interface{}),
 	}
 
-	// Build a reason string based on the decision
-	reason := "eligible"
-	if !canCreate && len(decision.PolicyResults) > 0 {
-		// Get the first blocked rule's message
+	// Check for pending results (e.g., backoff waiting)
+	var earliestNextTime *time.Time
+	hasPending := false
+	hasBlocked := false
+
+	if len(decision.PolicyResults) > 0 {
 		for _, policyResult := range decision.PolicyResults {
 			for _, ruleResult := range policyResult.RuleResults {
-				if !ruleResult.Allowed {
-					reason = ruleResult.Message
+				// Track if any rule requires action (pending state)
+				if ruleResult.ActionRequired {
+					hasPending = true
+					result.Reason = ruleResult.Message
+
+					// Track the earliest NextEvaluationTime from all pending rules
+					if ruleResult.NextEvaluationTime != nil {
+						if earliestNextTime == nil || ruleResult.NextEvaluationTime.Before(*earliestNextTime) {
+							earliestNextTime = ruleResult.NextEvaluationTime
+						}
+					}
+				}
+
+				// Track if any rule blocks deployment
+				if !ruleResult.Allowed && !ruleResult.ActionRequired {
+					hasBlocked = true
+					result.Reason = ruleResult.Message
 					break
 				}
 			}
-			if reason != "eligible" {
-				break
-			}
+		}
+	}
+
+	// Determine final decision
+	if hasPending {
+		result.Decision = EligibilityPending
+		result.NextEvaluationTime = earliestNextTime
+	} else if hasBlocked || !canCreate {
+		result.Decision = EligibilityDenied
+	} else {
+		result.Decision = EligibilityAllowed
+	}
+
+	// Record eligibility decision
+	if eligibility != nil {
+		if result.IsAllowed() {
+			eligibility.MakeDecision("Job eligible for creation", trace.DecisionApproved)
+		} else {
+			// Both pending and denied are recorded as rejected for tracing purposes
+			// The reason field distinguishes between the two
+			eligibility.MakeDecision(result.Reason, trace.DecisionRejected)
 		}
 	}
 
 	span.SetAttributes(
 		attribute.Bool("can_create", canCreate),
-		attribute.String("decision_reason", reason),
+		attribute.String("decision", string(result.Decision)),
+		attribute.String("decision_reason", result.Reason),
 	)
 
-	if canCreate {
-		span.AddEvent("Job creation allowed")
-	} else {
-		span.AddEvent("Job creation blocked",
-			oteltrace.WithAttributes(attribute.String("reason", reason)))
+	if result.NextEvaluationTime != nil {
+		span.SetAttributes(attribute.String("next_evaluation_time", result.NextEvaluationTime.Format(time.RFC3339)))
 	}
 
-	return canCreate, reason, nil
+	switch {
+	case result.IsAllowed():
+		span.AddEvent("Job creation allowed")
+	case result.IsPending():
+		span.AddEvent("Job creation pending",
+			oteltrace.WithAttributes(attribute.String("reason", result.Reason)))
+	default:
+		span.AddEvent("Job creation blocked",
+			oteltrace.WithAttributes(attribute.String("reason", result.Reason)))
+	}
+
+	return result, nil
+}
+
+// buildRetryEvaluators creates retry evaluators based on applicable policies for the release.
+// If no retry policies are found, creates a default retry evaluator (maxRetries=0) which
+// allows only one attempt per release (no retries).
+func (c *JobEligibilityChecker) buildRetryEvaluators(
+	ctx context.Context,
+	release *oapi.Release,
+	span oteltrace.Span,
+) []evaluator.JobEvaluator {
+	retryEvaluators := make([]evaluator.JobEvaluator, 0)
+
+	// Use policy resolver to get retry rules for this release target
+	retryRules, err := resolver.GetRules(
+		ctx,
+		c.store,
+		&release.ReleaseTarget,
+		resolver.RetryRuleExtractor,
+		span,
+	)
+	if err != nil {
+		span.AddEvent("Failed to get retry rules",
+			oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		// On error, use default retry evaluator
+		retryEvaluators = append(retryEvaluators, retry.NewEvaluator(c.store, nil))
+		return retryEvaluators
+	}
+
+	// Create evaluators from extracted retry rules
+	for _, ruleWithPolicy := range retryRules {
+		eval := retry.NewEvaluator(c.store, ruleWithPolicy.Rule)
+		if eval != nil {
+			retryEvaluators = append(retryEvaluators, eval)
+			span.AddEvent("Added retry evaluator from policy",
+				oteltrace.WithAttributes(
+					attribute.String("policy.id", ruleWithPolicy.PolicyId),
+					attribute.String("policy.name", ruleWithPolicy.PolicyName),
+					attribute.String("rule.id", ruleWithPolicy.RuleId),
+					attribute.Int("max_retries", int(ruleWithPolicy.Rule.MaxRetries)),
+				))
+		}
+	}
+
+	// If no retry rules found, use default (maxRetries=0, no retries allowed)
+	if len(retryRules) == 0 {
+		span.AddEvent("No retry policy found, using default (maxRetries=0)")
+		retryEvaluators = append(retryEvaluators, retry.NewEvaluator(c.store, nil))
+	}
+
+	return retryEvaluators
 }

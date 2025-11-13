@@ -1190,6 +1190,7 @@ export interface components {
       gradualRollout?: components["schemas"]["GradualRolloutRule"];
       id: string;
       policyId: string;
+      retry?: components["schemas"]["RetryRule"];
     };
     PolicyTargetSelector: {
       deploymentSelector?: components["schemas"]["Selector"];
@@ -1328,6 +1329,31 @@ export interface components {
       key: string;
       resourceId: string;
       value: components["schemas"]["Value"];
+    };
+    RetryRule: {
+      /**
+       * Format: int32
+       * @description Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.
+       */
+      backoffSeconds?: number;
+      /**
+       * @description Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
+       * @default linear
+       * @enum {string}
+       */
+      backoffStrategy: "linear" | "exponential";
+      /**
+       * Format: int32
+       * @description Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.
+       */
+      maxBackoffSeconds?: number;
+      /**
+       * Format: int32
+       * @description Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
+       */
+      maxRetries: number;
+      /** @description Job statuses that count toward the retry limit. If null or empty and maxRetries > 0, defaults to ["failure", "invalidIntegration"] (smart default: only retry on errors, not on success). If maxRetries = 0, counts all statuses (strict: no retries at all). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
+      retryOnStatuses?: components["schemas"]["JobStatus"][];
     };
     RuleEvaluation: {
       /** @description Whether the rule requires an action (e.g., approval, wait) */

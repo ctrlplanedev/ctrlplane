@@ -837,6 +837,9 @@
                },
                "policyId": {
                   "type": "string"
+               },
+               "retry": {
+                  "$ref": "#/components/schemas/RetryRule"
                }
             },
             "required": [
@@ -1298,6 +1301,48 @@
                "resourceId",
                "key",
                "value"
+            ],
+            "type": "object"
+         },
+         "RetryRule": {
+            "properties": {
+               "backoffSeconds": {
+                  "description": "Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.",
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+               },
+               "backoffStrategy": {
+                  "default": "linear",
+                  "description": "Backoff strategy: \"linear\" uses constant backoffSeconds delay, \"exponential\" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).",
+                  "enum": [
+                     "linear",
+                     "exponential"
+                  ],
+                  "type": "string"
+               },
+               "maxBackoffSeconds": {
+                  "description": "Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.",
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+               },
+               "maxRetries": {
+                  "description": "Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).",
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+               },
+               "retryOnStatuses": {
+                  "description": "Job statuses that count toward the retry limit. If null or empty and maxRetries > 0, defaults to [\"failure\", \"invalidIntegration\"] (smart default: only retry on errors, not on success). If maxRetries = 0, counts all statuses (strict: no retries at all). Example: [\"failure\", \"cancelled\"] will only count failed/cancelled jobs.",
+                  "items": {
+                     "$ref": "#/components/schemas/JobStatus"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "maxRetries"
             ],
             "type": "object"
          },

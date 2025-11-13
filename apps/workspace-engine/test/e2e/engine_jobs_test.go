@@ -728,7 +728,11 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	}
 }
 
-func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
+func TestEngine_ResourceDeleteAndReAddTriggersNewJobIfRetryIsConfigured(t *testing.T) {
+	// This test verifies that when a resource is deleted and re-added, the system
+	// can create a new job IF a retry policy with smart defaults is configured.
+	// Without a policy (strict mode), cancelled jobs would block redeployment.
+	// This demonstrates the value of explicit retry policies for infrastructure churn scenarios.
 	jobAgentId := "job-agent-1"
 	deploymentId := "deployment-1"
 	resourceId := "resource-1"
@@ -755,6 +759,18 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 		integration.WithResource(
 			integration.ResourceID(resourceId),
 		),
+		// Add retry policy with smart defaults so cancelled jobs don't block
+		integration.WithPolicy(
+			integration.PolicyName("retry-policy"),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelDeploymentSelector("true"),
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
+			integration.WithPolicyRule(
+				integration.WithRuleRetry(0, nil), // maxRetries=0 with smart defaults
+			),
+		),
 	)
 	workspaceID := engine.Workspace().ID
 	ctx := context.Background()
@@ -765,13 +781,6 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 1 {
 		t.Fatalf("expected 1 pending job initially, got %d", len(pendingJobs))
-	}
-
-	// Get the original job
-	var originalJob *oapi.Job
-	for _, job := range pendingJobs {
-		originalJob = job
-		break
 	}
 
 	// Delete the resource
@@ -810,32 +819,101 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJob(t *testing.T) {
 		t.Fatalf("expected 1 release target after resource re-add, got %d", len(releaseTargets))
 	}
 
-	// A new job should be created for the re-added resource
-	// The system should detect this as a new deployment opportunity
+	// A new job should be created because the re-added resource creates a NEW
+	// release target with its own fresh retry count
 	pendingJobsAfter := engine.Workspace().Jobs().GetPending()
 
-	// Expected: 2 jobs (original job + new job for re-added resource)
+	// Expected: 1 job (new release target = fresh start)
 	expectedJobsAfterReAdd := 1
 	if len(pendingJobsAfter) != expectedJobsAfterReAdd {
-		// Document actual behavior
 		t.Logf("Expected %d jobs after resource re-add, got %d", expectedJobsAfterReAdd, len(pendingJobsAfter))
 		t.Logf("Jobs: %v", pendingJobsAfter)
-
 		t.Fatalf("unexpected number of jobs after resource re-add: expected %d, got %d", expectedJobsAfterReAdd, len(pendingJobsAfter))
 	}
+}
 
-	// Verify we have a new job (different ID from original)
-	newJobExists := false
-	for _, job := range pendingJobsAfter {
-		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
-		if ok && job.Id != originalJob.Id && release.ReleaseTarget.ResourceId == r1.Id {
-			newJobExists = true
-			break
-		}
+func TestEngine_ResourceDeleteAndReAddBlockedByStrictMode(t *testing.T) {
+	// This test verifies that when a resource is deleted and re-added WITHOUT
+	// a retry policy, the strict mode behavior blocks redeployment.
+	// The cancelled job counts as an attempt, preventing new job creation.
+	// To allow redeployment after resource deletion, users must configure an
+	// explicit retry policy with smart defaults.
+	jobAgentId := "job-agent-1"
+	deploymentId := "deployment-1"
+	resourceId := "resource-1"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentId),
+		),
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentId),
+				integration.DeploymentJobAgent(jobAgentId),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID("env-prod"),
+				integration.EnvironmentName("env-prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceId),
+		),
+		// NO retry policy configured - strict mode applies
+	)
+	workspaceID := engine.Workspace().ID
+	ctx := context.Background()
+
+	r1, _ := engine.Workspace().Resources().Get(resourceId)
+
+	// Verify 1 job was created
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job initially, got %d", len(pendingJobs))
 	}
 
-	if !newJobExists {
-		t.Fatalf("expected new job for re-added resource, but only found original job")
+	// Delete the resource (this cancels the job)
+	engine.PushEvent(ctx, handler.ResourceDelete, r1)
+
+	// Verify release target is removed
+	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
+	if len(releaseTargets) != 0 {
+		t.Fatalf("expected 0 release targets after resource deletion, got %d", len(releaseTargets))
+	}
+
+	// Re-add the same resource (simulating infrastructure recreation)
+	r1Readded := c.NewResource(workspaceID)
+	r1Readded.Id = r1.Id // Same ID as before
+	r1Readded.Name = r1.Name
+	engine.PushEvent(ctx, handler.ResourceCreate, r1Readded)
+
+	// Verify release target is recreated
+	releaseTargets, err = engine.Workspace().ReleaseTargets().Items()
+	if err != nil {
+		t.Fatalf("failed to get release targets")
+	}
+	if len(releaseTargets) != 1 {
+		t.Fatalf("expected 1 release target after resource re-add, got %d", len(releaseTargets))
+	}
+
+	// In strict mode (no policy), the cancelled job counts as an attempt
+	// This blocks redeployment
+	pendingJobsAfter := engine.Workspace().Jobs().GetPending()
+
+	// Expected: 0 jobs (cancelled job blocks in strict mode)
+	expectedJobsAfterReAdd := 0
+	if len(pendingJobsAfter) != expectedJobsAfterReAdd {
+		t.Logf("Expected %d jobs after resource re-add (strict mode blocks), got %d", expectedJobsAfterReAdd, len(pendingJobsAfter))
+		t.Logf("Jobs: %v", pendingJobsAfter)
+		t.Fatalf("unexpected number of jobs after resource re-add: expected %d, got %d", expectedJobsAfterReAdd, len(pendingJobsAfter))
 	}
 }
 
