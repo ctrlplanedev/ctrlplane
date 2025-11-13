@@ -73,12 +73,6 @@ const upsertDeploymentVariable: AsyncTypedHandler<
   const { workspaceId, deploymentId, variableId } = req.params;
   const { body } = req;
 
-  // Verify deployment exists
-  const deploymentResponse = await verifyDeploymentExists(
-    workspaceId,
-    deploymentId,
-  );
-
   // Transform request body to workspace-engine schema
   const deploymentVariable: WorkspaceEngine["schemas"]["DeploymentVariable"] = {
     id: variableId,
@@ -88,15 +82,9 @@ const upsertDeploymentVariable: AsyncTypedHandler<
     defaultValue: body.defaultValue ?? undefined,
   };
 
-  // Check if variable already exists to determine create vs update
-  const variables = deploymentResponse.variables;
-  const exists = variables.some((v) => v.variable.id === variableId);
-
   await sendGoEvent({
     workspaceId,
-    eventType: exists
-      ? Event.DeploymentVariableUpdated
-      : Event.DeploymentVariableCreated,
+    eventType: Event.DeploymentVariableUpdated,
     timestamp: Date.now(),
     data: deploymentVariable,
   });
@@ -192,21 +180,8 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values/{valueId}",
   "put"
 > = async (req, res) => {
-  const { workspaceId, deploymentId, variableId, valueId } = req.params;
+  const { workspaceId, variableId, valueId } = req.params;
   const { body } = req;
-
-  // Verify deployment and variable exist
-  const deploymentResponse = await verifyDeploymentExists(
-    workspaceId,
-    deploymentId,
-  );
-
-  const variables = deploymentResponse.variables;
-  const variable = variables.find((v) => v.variable.id === variableId);
-
-  if (!variable) {
-    throw new ApiError("Deployment variable not found", 404);
-  }
 
   // Validate resource selector if provided
   if (body.resourceSelector != null) {
@@ -226,25 +201,12 @@ const upsertDeploymentVariableValue: AsyncTypedHandler<
       value: body.value,
     };
 
-  // Check if value already exists
-  const exists = variable.values.some((v) => v.id === valueId);
-
-  // Send Go event (workspace-engine consumes these events)
-  if (exists) {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.DeploymentVariableValueUpdated,
-      timestamp: Date.now(),
-      data: deploymentVariableValue,
-    });
-  } else {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.DeploymentVariableValueCreated,
-      timestamp: Date.now(),
-      data: deploymentVariableValue,
-    });
-  }
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.DeploymentVariableValueUpdated,
+    timestamp: Date.now(),
+    data: deploymentVariableValue,
+  });
 
   res.status(204).end();
 };
