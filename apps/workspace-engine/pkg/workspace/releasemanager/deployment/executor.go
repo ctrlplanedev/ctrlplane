@@ -119,13 +119,14 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		}
 
 		go func() {
-			if err := e.jobDispatcher.DispatchJob(ctx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
+			dispatchCtx := context.WithoutCancel(ctx)
+			if err := e.jobDispatcher.DispatchJob(dispatchCtx, newJob); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
 				log.Error("error dispatching job to integration",
 					"job_id", newJob.Id,
 					"error", err.Error())
 				newJob.Status = oapi.JobStatusInvalidJobAgent
 				newJob.UpdatedAt = time.Now()
-				e.store.Jobs.Upsert(ctx, newJob)
+				e.store.Jobs.Upsert(dispatchCtx, newJob)
 			}
 		}()
 	} else {
