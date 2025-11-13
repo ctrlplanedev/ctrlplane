@@ -1,6 +1,7 @@
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { requireAuth } from "@/middleware/auth.js";
+import { errorHandler } from "@/middleware/error-handler.js";
 import { createV1Router } from "@/routes/index.js";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { toNodeHandler } from "better-auth/node";
@@ -78,6 +79,7 @@ const app = express()
   .use("/api/v1", requireAuth)
   .use("/api/v1", createV1Router())
   .use("/api/github", createGithubRouter())
-  .use("/api/trpc", trpcMiddleware);
+  .use("/api/trpc", trpcMiddleware)
+  .use(errorHandler);
 
 export { app };

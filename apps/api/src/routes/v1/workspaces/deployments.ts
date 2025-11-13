@@ -60,10 +60,7 @@ const getDeployment: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(
-      `Error getting deployment: ${JSON.stringify(response.error, null, 2)}`,
-      500,
-    );
+    throw new ApiError(response.error.error ?? "Unknown error", 500);
 
   res.json(response.data);
 };

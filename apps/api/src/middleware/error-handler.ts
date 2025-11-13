@@ -6,8 +6,15 @@ import { logger } from "@ctrlplane/logger";
 /**
  * Global error handler middleware
  * Must be registered last in the middleware chain
+ *
+ * Note: Must have 4 parameters for Express to recognize it as an error handler
  */
-export const errorHandler = (error: Error, req: Request, res: Response) => {
+export const errorHandler = (
+  error: Error,
+  req: Request,
+  res: Response,
+  _next: any,
+) => {
   // Log the error
   logger.error("API Error", {
     error: error.message,
