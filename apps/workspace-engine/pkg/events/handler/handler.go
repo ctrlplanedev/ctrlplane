@@ -70,6 +70,9 @@ const (
 	PolicyUpdate EventType = "policy.updated"
 	PolicyDelete EventType = "policy.deleted"
 
+	PolicyBypassCreate EventType = "policy-bypass.created"
+	PolicyBypassDelete EventType = "policy-bypass.deleted"
+
 	RelationshipRuleCreate EventType = "relationship-rule.created"
 	RelationshipRuleUpdate EventType = "relationship-rule.updated"
 	RelationshipRuleDelete EventType = "relationship-rule.deleted"

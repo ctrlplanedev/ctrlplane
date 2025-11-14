@@ -50,7 +50,20 @@ type Evaluator interface {
 	// ScopeFields returns which fields from EvaluatorScope this evaluator uses for caching.
 	// This determines the cache key when wrapped with memoization.
 	ScopeFields() ScopeFields
+	// RuleType returns the type identifier for this evaluator (e.g., "approval", "gradualRollout").
+	// This is used for policy bypass matching.
+	RuleType() string
 }
+
+// Rule type constants for policy bypass matching
+const (
+	RuleTypeApproval               = "approval"
+	RuleTypeEnvironmentProgression = "environmentProgression"
+	RuleTypeGradualRollout         = "gradualRollout"
+	RuleTypeRetry                  = "retry"
+	RuleTypePausedVersions         = "pausedVersions"
+	RuleTypeDeployableVersions     = "deployableVersions"
+)
 
 // WithMemoization wraps an evaluator with caching based on its declared scope fields.
 // This is the recommended way to enable caching - the evaluator declares what it needs.

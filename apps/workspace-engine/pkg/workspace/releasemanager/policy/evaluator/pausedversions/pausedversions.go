@@ -26,6 +26,11 @@ func (e *PausedVersionsEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeVersion | evaluator.ScopeReleaseTarget
 }
 
+// RuleType returns the rule type identifier for bypass matching.
+func (e *PausedVersionsEvaluator) RuleType() string {
+	return evaluator.RuleTypePausedVersions
+}
+
 // Evaluate checks if a paused version is allowed to deploy to a target.
 // The memoization wrapper ensures Version and ReleaseTarget are present.
 func (e *PausedVersionsEvaluator) Evaluate(

@@ -29,6 +29,11 @@ func (e *DeployableVersionStatusEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeVersion
 }
 
+// RuleType returns the rule type identifier for bypass matching.
+func (e *DeployableVersionStatusEvaluator) RuleType() string {
+	return evaluator.RuleTypeDeployableVersions
+}
+
 // Evaluate checks if a version is in a deployable status.
 // The memoization wrapper ensures Version is present.
 func (e *DeployableVersionStatusEvaluator) Evaluate(

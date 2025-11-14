@@ -28,6 +28,10 @@ func (m *MockEvaluator) ScopeFields() ScopeFields {
 	return m.scopeFields
 }
 
+func (m *MockEvaluator) RuleType() string {
+	return "mock"
+}
+
 func (m *MockEvaluator) GetCallCount() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()

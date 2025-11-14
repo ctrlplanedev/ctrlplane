@@ -43,6 +43,11 @@ func (m *MemoizedEvaluator) ScopeFields() ScopeFields {
 	return m.scopeFields
 }
 
+// RuleType forwards the rule type from the wrapped evaluator.
+func (m *MemoizedEvaluator) RuleType() string {
+	return m.evaluator.RuleType()
+}
+
 // Evaluate returns the cached result if the relevant scope fields match,
 // otherwise evaluates and caches the result.
 // If the scope doesn't have the required fields, returns a denial without calling the evaluator.

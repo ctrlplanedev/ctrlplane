@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/server/openapi/bypasses"
 	"workspace-engine/pkg/server/openapi/deployments"
 	"workspace-engine/pkg/server/openapi/deploymentversions"
 	"workspace-engine/pkg/server/openapi/environments"
@@ -32,6 +33,7 @@ type Server struct {
 	environments.Environments
 	releasetargets.ReleaseTargets
 	policies.Policies
+	bypasses.Bypasses
 	relations.Relations
 	resources.Resources
 	systems.Systems

@@ -1747,6 +1747,103 @@
             "summary": "List workspace IDs"
          }
       },
+      "/v1/workspaces/{workspaceId}/bypasses": {
+         "get": {
+            "description": "Returns a list of policy bypasses for workspace {workspaceId}.",
+            "operationId": "listBypasses",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "bypasses": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/PolicyBypass"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of policy bypasses"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List policy bypasses"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/bypasses/{bypassId}": {
+         "get": {
+            "description": "Returns a specific policy bypass by ID.",
+            "operationId": "getBypass",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Policy bypass ID",
+                  "in": "path",
+                  "name": "bypassId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/PolicyBypass"
+                        }
+                     }
+                  },
+                  "description": "The requested policy bypass"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get policy bypass"
+         }
+      },
       "/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list": {
          "get": {
             "description": "Returns jobs grouped by environment and release target for a deployment version.",

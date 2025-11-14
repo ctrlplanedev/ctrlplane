@@ -27,6 +27,7 @@ func initGlobalRegistry() {
 		globalRegistry.Register("deployment_variable_value", func() persistence.Entity { return &oapi.DeploymentVariableValue{} })
 		globalRegistry.Register("environment", func() persistence.Entity { return &oapi.Environment{} })
 		globalRegistry.Register("policy", func() persistence.Entity { return &oapi.Policy{} })
+		globalRegistry.Register("policy_bypass", func() persistence.Entity { return &oapi.PolicyBypass{} })
 		globalRegistry.Register("system", func() persistence.Entity { return &oapi.System{} })
 		globalRegistry.Register("release", func() persistence.Entity { return &oapi.Release{} })
 		globalRegistry.Register("job", func() persistence.Entity { return &oapi.Job{} })

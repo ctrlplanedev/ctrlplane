@@ -47,6 +47,11 @@ func (e *SoakTimeEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeEnvironment | evaluator.ScopeVersion
 }
 
+// RuleType returns the rule type identifier for bypass matching.
+func (e *SoakTimeEvaluator) RuleType() string {
+	return evaluator.RuleTypeEnvironmentProgression
+}
+
 // Evaluate checks if the soak time requirement is satisfied.
 func (e *SoakTimeEvaluator) Evaluate(
 	ctx context.Context,

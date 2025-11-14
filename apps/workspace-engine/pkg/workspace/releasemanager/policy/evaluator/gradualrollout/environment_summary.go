@@ -26,6 +26,11 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) ScopeFields() evaluator.Scop
 	return evaluator.ScopeEnvironment | evaluator.ScopeVersion
 }
 
+// RuleType returns the rule type identifier for bypass matching.
+func (e *GradualRolloutEnvironmentSummaryEvaluator) RuleType() string {
+	return evaluator.RuleTypeGradualRollout
+}
+
 // formatDuration converts a duration to a human-readable string
 func formatDuration(d time.Duration) string {
 	if d < time.Minute {

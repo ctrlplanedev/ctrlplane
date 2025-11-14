@@ -235,14 +235,36 @@ func (p *Planner) findDeployableVersion(
 		return nil
 	}
 
+	// Check for policy bypass ONCE upfront (independent of version)
+	// We'll use the first candidate version to check for bypass, as bypasses are version-scoped
+	var bypass *oapi.PolicyBypass
+	if len(candidateVersions) > 0 {
+		bypass = p.checkPolicyBypass(ctx, candidateVersions[0], releaseTarget)
+		if bypass != nil {
+			span.AddEvent("Policy bypass active",
+				oteltrace.WithAttributes(
+					attribute.String("bypass.id", bypass.Id),
+					attribute.String("bypass.justification", bypass.Justification),
+					attribute.String("bypass.created_by", bypass.CreatedBy),
+				))
+		}
+	}
+
 	evaluators := p.policyManager.PlannerGlobalEvaluators()
+
+	// Filter global evaluators by bypass (no specific policy, so pass empty string)
+	evaluators = p.filterBypassedEvaluators(evaluators, bypass, "")
+
 	for _, policy := range policies {
 		// Skip disabled policies
 		if !policy.Enabled {
 			continue
 		}
 		for _, rule := range policy.Rules {
-			evaluators = append(evaluators, p.policyManager.PlannerPolicyEvaluators(&rule)...)
+			policyEvaluators := p.policyManager.PlannerPolicyEvaluators(&rule)
+			// Filter evaluators for this specific policy
+			policyEvaluators = p.filterBypassedEvaluators(policyEvaluators, bypass, policy.Id)
+			evaluators = append(evaluators, policyEvaluators...)
 		}
 	}
 
@@ -393,6 +415,50 @@ func (p *Planner) findDeployableVersion(
 
 	span.SetStatus(codes.Ok, "no deployable version (all blocked)")
 	return nil
+}
+
+// checkPolicyBypass looks for the most specific bypass matching the given version and release target.
+// Returns nil if no active bypass is found.
+func (p *Planner) checkPolicyBypass(
+	ctx context.Context,
+	version *oapi.DeploymentVersion,
+	releaseTarget *oapi.ReleaseTarget,
+) *oapi.PolicyBypass {
+	return p.store.PolicyBypasses.GetForTarget(
+		version.Id,
+		releaseTarget.EnvironmentId,
+		releaseTarget.ResourceId,
+	)
+}
+
+// filterBypassedEvaluators removes evaluators whose rule types are bypassed.
+// If policyId is provided, only bypasses that match that policy are considered.
+// Returns the filtered list of evaluators.
+func (p *Planner) filterBypassedEvaluators(
+	evaluators []evaluator.Evaluator,
+	bypass *oapi.PolicyBypass,
+	policyId string,
+) []evaluator.Evaluator {
+	if bypass == nil {
+		return evaluators
+	}
+
+	// Check if this bypass applies to the given policy
+	if !bypass.MatchesPolicy(policyId) {
+		return evaluators
+	}
+
+	filtered := make([]evaluator.Evaluator, 0, len(evaluators))
+	for _, eval := range evaluators {
+		// Check if this evaluator's rule type is bypassed
+		if bypass.BypassesRuleType(eval.RuleType()) {
+			// Skip this evaluator - it's bypassed
+			continue
+		}
+		filtered = append(filtered, eval)
+	}
+
+	return filtered
 }
 
 func (p *Planner) Scheduler() *ReconciliationScheduler {

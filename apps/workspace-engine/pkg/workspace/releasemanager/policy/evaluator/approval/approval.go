@@ -32,6 +32,11 @@ func (m *AnyApprovalEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeEnvironment | evaluator.ScopeVersion
 }
 
+// RuleType returns the rule type identifier for bypass matching.
+func (m *AnyApprovalEvaluator) RuleType() string {
+	return evaluator.RuleTypeApproval
+}
+
 // Evaluate checks if the version has enough approvals for the environment.
 // The memoization wrapper ensures Environment and Version are present.
 func (m *AnyApprovalEvaluator) Evaluate(

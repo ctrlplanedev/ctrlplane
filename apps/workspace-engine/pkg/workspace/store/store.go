@@ -18,6 +18,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.Environments = NewEnvironments(store)
 	store.Resources = NewResources(store)
 	store.Policies = NewPolicies(store)
+	store.PolicyBypasses = NewPolicyBypasses(store)
 	store.ReleaseTargets = NewReleaseTargets(store)
 	store.DeploymentVersions = NewDeploymentVersions(store)
 	store.DeploymentVariableValues = NewDeploymentVariableValues(store)
@@ -44,6 +45,7 @@ type Store struct {
 	changeset *statechange.ChangeSet[any]
 
 	Policies                 *Policies
+	PolicyBypasses           *PolicyBypasses
 	Resources                *Resources
 	ResourceProviders        *ResourceProviders
 	ResourceVariables        *ResourceVariables

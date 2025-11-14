@@ -70,6 +70,11 @@ func (e *GradualRolloutEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeEnvironment | evaluator.ScopeVersion | evaluator.ScopeReleaseTarget
 }
 
+// RuleType returns the rule type identifier for bypass matching.
+func (e *GradualRolloutEvaluator) RuleType() string {
+	return evaluator.RuleTypeGradualRollout
+}
+
 func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*time.Time, error) {
 	// "start time" is when the approval condition passes
 	policiesForTarget, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)

@@ -34,10 +34,10 @@ func NewScheduler(store *store.Store) *Scheduler {
 // Each metric gets its own goroutine with a ticker at its interval
 func (s *Scheduler) StartVerification(ctx context.Context, verificationID string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	// Check if already running
 	if _, exists := s.cancelFuncs[verificationID]; exists {
+		s.mu.Unlock()
 		log.Debug("Verification already running", "verification_id", verificationID)
 		return
 	}
@@ -45,6 +45,7 @@ func (s *Scheduler) StartVerification(ctx context.Context, verificationID string
 	// Check if verification is already in a completed state
 	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
 	if !ok {
+		s.mu.Unlock()
 		log.Error("Verification not found", "verification_id", verificationID)
 		return
 	}
@@ -52,23 +53,45 @@ func (s *Scheduler) StartVerification(ctx context.Context, verificationID string
 	status := verification.Status()
 	if status == oapi.ReleaseVerificationStatusPassed ||
 		status == oapi.ReleaseVerificationStatusFailed {
+		s.mu.Unlock()
 		log.Debug("Verification already completed, not starting goroutines",
 			"verification_id", verificationID,
 			"status", status)
 		return
 	}
 
-	// Start a goroutine for each metric
+	// Prepare cancel functions and wait group
 	cancelFuncs := make([]context.CancelFunc, 0, len(verification.Metrics))
+	var wg sync.WaitGroup
+	wg.Add(len(verification.Metrics))
+
+	// Start a goroutine for each metric
 	for metricIndex := range verification.Metrics {
 		metricCtx, cancel := context.WithCancel(ctx)
 		cancelFuncs = append(cancelFuncs, cancel)
-		go s.runMetricLoop(metricCtx, verificationID, metricIndex)
+		go s.runMetricLoop(metricCtx, verificationID, metricIndex, &wg)
 	}
 
 	s.cancelFuncs[verificationID] = cancelFuncs
+	s.mu.Unlock()
 
 	log.Info("Started verification goroutines", "verification_id", verificationID, "metric_count", len(cancelFuncs))
+
+	// Wait for all goroutines to start with a reasonable timeout
+	// Use a channel to implement timeout on WaitGroup
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	// Wait for goroutines to start or timeout after 5 seconds
+	select {
+	case <-done:
+		// All goroutines started successfully
+	case <-time.After(5 * time.Second):
+		log.Warn("Timeout waiting for verification goroutines to start", "verification_id", verificationID)
+	}
 }
 
 // StopVerification stops all goroutines for a verification
@@ -87,7 +110,10 @@ func (s *Scheduler) StopVerification(verificationID string) {
 
 // runMetricLoop runs measurements for a single metric on a ticker interval
 // All state is read from and written to the store - this goroutine is stateless
-func (s *Scheduler) runMetricLoop(ctx context.Context, verificationID string, metricIndex int) {
+func (s *Scheduler) runMetricLoop(ctx context.Context, verificationID string, metricIndex int, wg *sync.WaitGroup) {
+	// Signal completion when done with setup and first measurement
+	defer wg.Done()
+
 	// Read the verification to get the metric
 	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
 	if !ok {
@@ -111,6 +137,7 @@ func (s *Scheduler) runMetricLoop(ctx context.Context, verificationID string, me
 	defer ticker.Stop()
 
 	// Run first measurement immediately
+	// This happens before wg.Done() is called (via defer) so StartVerification waits for it
 	if err := s.runMeasurement(ctx, verificationID, metricIndex); err != nil {
 		log.Error("Failed to run measurement", "verification_id", verificationID, "metric_index", metricIndex, "error", err)
 	}
