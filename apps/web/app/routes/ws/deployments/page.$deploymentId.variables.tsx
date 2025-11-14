@@ -22,15 +22,13 @@ function VariablesTable() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        {variables.map((variable) => (
-          <DeploymentVariableSection
-            key={variable.variable.id}
-            variable={variable}
-          />
-        ))}
-      </div>
+    <div className="space-y-4 p-4">
+      {variables.map((variable) => (
+        <DeploymentVariableSection
+          key={variable.variable.id}
+          variable={variable}
+        />
+      ))}
     </div>
   );
 }
