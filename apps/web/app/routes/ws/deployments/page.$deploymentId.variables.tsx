@@ -21,9 +21,13 @@ function VariablesTable() {
     );
   }
 
+  const sortedVariables = variables.sort((a, b) =>
+    a.variable.key.localeCompare(b.variable.key),
+  );
+
   return (
     <div className="space-y-4 p-4">
-      {variables.map((variable) => (
+      {sortedVariables.map((variable) => (
         <DeploymentVariableSection
           key={variable.variable.id}
           variable={variable}
