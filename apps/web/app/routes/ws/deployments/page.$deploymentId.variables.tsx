@@ -1,5 +1,6 @@
 import { DeploymentPageHeader } from "./_components/DeploymentPageHeader";
 import { useDeployment } from "./_components/DeploymentProvider";
+import { DeploymentVariableSection } from "./_components/variables/DeploymentVariableSection";
 
 export function meta() {
   return [
@@ -22,14 +23,14 @@ function VariablesTable() {
 
   return (
     <div className="space-y-6">
-      {variables.map((variable) => (
-        <div key={variable.variable.id}>
-          <span>{variable.variable.key}</span>
-          <pre className="font-mono text-xs">
-            {JSON.stringify(variable.values, null, 2)}
-          </pre>
-        </div>
-      ))}
+      <div className="space-y-4">
+        {variables.map((variable) => (
+          <DeploymentVariableSection
+            key={variable.variable.id}
+            variable={variable}
+          />
+        ))}
+      </div>
     </div>
   );
 }
