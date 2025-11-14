@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"github.com/charmbracelet/log"
@@ -147,7 +148,8 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		trigger = trace.TriggerFirstBoot
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, targetsToReconcile, false, trigger)
+	ws.ReleaseManager().ReconcileTargets(ctx, targetsToReconcile,
+		releasemanager.WithTrigger(trigger))
 
 	return nil
 }

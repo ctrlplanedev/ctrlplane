@@ -60,6 +60,19 @@ local openapi = import '../lib/openapi.libsonnet';
       environmentProgression: openapi.schemaRef('EnvironmentProgressionRule'),
       gradualRollout: openapi.schemaRef('GradualRolloutRule'),
       retry: openapi.schemaRef('RetryRule'),
+      versionSelector: openapi.schemaRef('VersionSelectorRule'),
+    },
+  },
+
+  VersionSelectorRule: {
+    type: 'object',
+    required: ['selector'],
+    properties: {
+      selector: openapi.schemaRef('Selector'),
+      description: {
+        type: 'string',
+        description: 'Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments"',
+      },
     },
   },
 
@@ -248,6 +261,68 @@ local openapi = import '../lib/openapi.libsonnet';
     properties: {
       environmentId: { type: 'string' },
       versionId: { type: 'string' },
+    },
+  },
+
+  PolicyBypass: {
+    type: 'object',
+    required: ['id', 'workspaceId', 'versionId', 'bypassRuleTypes', 'justification', 'createdBy', 'createdAt'],
+    properties: {
+      id: {
+        type: 'string',
+        description: 'Unique identifier for the bypass',
+      },
+      workspaceId: {
+        type: 'string',
+        description: 'Workspace this bypass belongs to',
+      },
+      versionId: {
+        type: 'string',
+        description: 'Deployment version this bypass applies to',
+      },
+      environmentId: {
+        type: 'string',
+        description: 'Environment this bypass applies to. If null, applies to all environments.',
+      },
+      resourceId: {
+        type: 'string',
+        description: 'Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).',
+      },
+      policyIds: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Policy IDs this bypass applies to. If empty, applies to all policies.',
+      },
+
+      // Which policy rule types to bypass
+      bypassRuleTypes: {
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: ['approval', 'environmentProgression', 'gradualRollout', 'retry'],
+        },
+        description: 'Which policy rule types to bypass.',
+      },
+
+      // Audit fields
+      justification: {
+        type: 'string',
+        description: 'Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation)',
+      },
+      createdBy: {
+        type: 'string',
+        description: 'User ID who created this bypass',
+      },
+      createdAt: {
+        type: 'string',
+        format: 'date-time',
+        description: 'When this bypass was created',
+      },
+      expiresAt: {
+        type: 'string',
+        format: 'date-time',
+        description: 'When this bypass expires. If null, bypass never expires.',
+      },
     },
   },
 }

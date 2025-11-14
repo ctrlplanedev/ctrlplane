@@ -39,31 +39,11 @@ func NewStateCache(store *store.Store, planner *deployment.Planner) *StateCache 
 	}
 }
 
-type GetOption func(*GetOptions)
-
-type GetOptions struct {
-	resourceRelationships map[string][]*oapi.EntityRelation
-	bypassCache           bool
-}
-
-func WithResourceRelationships(relationships map[string][]*oapi.EntityRelation) GetOption {
-	return func(opts *GetOptions) {
-		opts.resourceRelationships = relationships
-	}
-}
-
-// WithBypassCache forces a fresh computation, bypassing the cache.
-func WithBypassCache() GetOption {
-	return func(opts *GetOptions) {
-		opts.bypassCache = true
-	}
-}
-
 // Get retrieves a release target state from cache, computing it if not present.
 // If resourceRelationships are provided, they will be passed to the planner to avoid recomputation.
 // If bypassCache is true, always computes fresh state.
-func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...GetOption) (*oapi.ReleaseTargetState, error) {
-	options := &GetOptions{}
+func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
+	options := &options{}
 	for _, opt := range opts {
 		opt(options)
 	}
@@ -77,7 +57,7 @@ func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget
 		}
 	}
 
-	return sc.compute(ctx, releaseTarget, WithCachedRelationships(options.resourceRelationships))
+	return sc.compute(ctx, releaseTarget, WithResourceRelationships(options.resourceRelationships))
 }
 
 // Set stores a release target state in the cache with a TTL.
@@ -90,49 +70,11 @@ func (sc *StateCache) Invalidate(releaseTarget *oapi.ReleaseTarget) {
 	sc.cache.Del(releaseTarget.Key())
 }
 
-// ComputeOption is a functional option for the Compute method.
-type ComputeOption func(*computeOptions)
-
-type computeOptions struct {
-	desiredRelease *oapi.Release
-	currentRelease *oapi.Release
-	latestJob      *oapi.Job
-	relationships  map[string][]*oapi.EntityRelation
-}
-
-// WithCachedRelationships provides the cached relationships to avoid recomputation.
-func WithCachedRelationships(relationships map[string][]*oapi.EntityRelation) ComputeOption {
-	return func(opts *computeOptions) {
-		opts.relationships = relationships
-	}
-}
-
-// WithDesiredRelease provides the desired release to avoid recomputation.
-func WithDesiredRelease(release *oapi.Release) ComputeOption {
-	return func(opts *computeOptions) {
-		opts.desiredRelease = release
-	}
-}
-
-// WithCurrentRelease provides the current release to avoid recomputation.
-func WithCurrentRelease(release *oapi.Release) ComputeOption {
-	return func(opts *computeOptions) {
-		opts.currentRelease = release
-	}
-}
-
-// WithLatestJob provides the latest job to avoid recomputation.
-func WithLatestJob(job *oapi.Job) ComputeOption {
-	return func(opts *computeOptions) {
-		opts.latestJob = job
-	}
-}
-
-// Compute computes the release target state from scratch and caches it.
+// compute computes the release target state from scratch and caches it.
 // This involves gathering current release and job information.
 // Callers can provide already-known information via options to avoid redundant queries.
-func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...ComputeOption) (rts *oapi.ReleaseTargetState, err error) {
-	options := &computeOptions{}
+func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (rts *oapi.ReleaseTargetState, err error) {
+	options := &options{}
 	for _, opt := range opts {
 		opt(options)
 	}
@@ -140,8 +82,8 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 	// Get desired release (compute if not provided)
 	desiredRelease := options.desiredRelease
 	if desiredRelease == nil {
-		if options.relationships != nil {
-			desiredRelease, err = sc.planner.PlanDeployment(ctx, releaseTarget, deployment.WithResourceRelatedEntities(options.relationships))
+		if options.resourceRelationships != nil {
+			desiredRelease, err = sc.planner.PlanDeployment(ctx, releaseTarget, deployment.WithResourceRelatedEntities(options.resourceRelationships))
 			if err != nil {
 				return nil, err
 			}

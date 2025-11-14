@@ -243,7 +243,7 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 	assert.False(t, result2.Allowed)
 	assert.True(t, result2.ActionRequired)
 	assert.NotNil(t, result2.ActionType)
-	assert.Equal(t, oapi.Wait, *result2.ActionType)
+	assert.Equal(t, oapi.RuleEvaluationActionTypeWait, *result2.ActionType)
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 
 	// Position 2: deploys after 120 seconds - should be pending
@@ -256,7 +256,7 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 	assert.False(t, result3.Allowed)
 	assert.True(t, result3.ActionRequired)
 	assert.NotNil(t, result3.ActionType)
-	assert.Equal(t, oapi.Wait, *result3.ActionType)
+	assert.Equal(t, oapi.RuleEvaluationActionTypeWait, *result3.ActionType)
 	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
 }
 
@@ -472,7 +472,7 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 		assert.False(t, result.Allowed, "target should be pending")
 		assert.True(t, result.ActionRequired, "target should require action")
 		assert.NotNil(t, result.ActionType, "target should have action type")
-		assert.Equal(t, oapi.Wait, *result.ActionType)
+		assert.Equal(t, oapi.RuleEvaluationActionTypeWait, *result.ActionType)
 		assert.Equal(t, "Rollout has not started yet", result.Message)
 		assert.Nil(t, result.Details["rollout_start_time"])
 		assert.Nil(t, result.Details["target_rollout_time"])
@@ -1058,7 +1058,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 	assert.False(t, result1.Allowed)
 	assert.True(t, result1.ActionRequired)
 	assert.NotNil(t, result1.ActionType)
-	assert.Equal(t, oapi.Wait, *result1.ActionType)
+	assert.Equal(t, oapi.RuleEvaluationActionTypeWait, *result1.ActionType)
 	assert.Equal(t, "Rollout has not started yet", result1.Message)
 	assert.Nil(t, result1.Details["rollout_start_time"])
 	assert.Nil(t, result1.Details["target_rollout_time"])
@@ -1484,7 +1484,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 	assert.False(t, result1.Allowed)
 	assert.True(t, result1.ActionRequired)
 	assert.NotNil(t, result1.ActionType)
-	assert.Equal(t, oapi.Wait, *result1.ActionType)
+	assert.Equal(t, oapi.RuleEvaluationActionTypeWait, *result1.ActionType)
 	assert.Equal(t, "Rollout has not started yet", result1.Message)
 	assert.Nil(t, result1.Details["rollout_start_time"])
 	assert.Nil(t, result1.Details["target_rollout_time"])
@@ -1597,7 +1597,7 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 	assert.False(t, result1.Allowed)
 	assert.True(t, result1.ActionRequired)
 	assert.NotNil(t, result1.ActionType)
-	assert.Equal(t, oapi.Wait, *result1.ActionType)
+	assert.Equal(t, oapi.RuleEvaluationActionTypeWait, *result1.ActionType)
 	assert.Equal(t, "Rollout has not started yet", result1.Message)
 	assert.Nil(t, result1.Details["rollout_start_time"])
 	assert.Nil(t, result1.Details["target_rollout_time"])
@@ -1700,7 +1700,7 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 
 		if result.Allowed {
 			allowedCount++
-		} else if result.ActionRequired && result.ActionType != nil && *result.ActionType == oapi.Wait {
+		} else if result.ActionRequired && result.ActionType != nil && *result.ActionType == oapi.RuleEvaluationActionTypeWait {
 			pendingCount++
 		}
 	}
@@ -1964,7 +1964,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 
 		if result.Allowed {
 			allowedCount++
-		} else if result.ActionRequired && result.ActionType != nil && *result.ActionType == oapi.Wait {
+		} else if result.ActionRequired && result.ActionType != nil && *result.ActionType == oapi.RuleEvaluationActionTypeWait {
 			pendingCount++
 		}
 	}
@@ -2029,7 +2029,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	assert.False(t, result.Allowed, "position 1 should not be allowed yet")
 	assert.True(t, result.ActionRequired, "should require action (waiting)")
 	require.NotNil(t, result.ActionType)
-	assert.Equal(t, oapi.Wait, *result.ActionType)
+	assert.Equal(t, oapi.RuleEvaluationActionTypeWait, *result.ActionType)
 
 	// NextEvaluationTime should be set to the target rollout time
 	require.NotNil(t, result.NextEvaluationTime, "NextEvaluationTime should be set when target is pending")

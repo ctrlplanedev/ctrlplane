@@ -13,6 +13,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
@@ -89,7 +90,8 @@ func HandleDeploymentCreated(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerDeploymentCreated)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
+		releasemanager.WithTrigger(trace.TriggerDeploymentCreated))
 
 	return nil
 }
@@ -179,7 +181,8 @@ func HandleDeploymentUpdated(
 		}
 
 		if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
-			ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget, false, trace.TriggerDeploymentUpdated)
+			ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget,
+				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated))
 		}
 	}
 

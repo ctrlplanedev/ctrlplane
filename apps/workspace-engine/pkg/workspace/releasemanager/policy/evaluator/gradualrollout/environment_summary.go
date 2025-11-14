@@ -173,7 +173,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	}
 
 	if pendingTargets == totalTargets && nextDeploymentTime == nil {
-		return result.WithActionRequired(oapi.Wait).WithMessage("Waiting for rollout to start")
+		return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage("Waiting for rollout to start")
 	}
 
 	// Build progress message
@@ -196,13 +196,13 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 			progressMsg += fmt.Sprintf(" • Est. completion in %s", completionTime)
 		}
 
-		return result.WithActionRequired(oapi.Wait).WithMessage(progressMsg)
+		return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage(progressMsg)
 	}
 
 	if pendingTargets > 0 {
 		progressMsg = fmt.Sprintf("Rollout in progress — %d/%d deployed, %d pending",
 			deployedTargets, totalTargets, pendingTargets)
-		return result.WithActionRequired(oapi.Wait).WithMessage(progressMsg)
+		return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage(progressMsg)
 	}
 
 	if deniedTargets > 0 {
@@ -211,6 +211,6 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	}
 
 	// Fallback for unexpected states
-	return result.WithActionRequired(oapi.Wait).WithMessage(fmt.Sprintf("Rollout status: %d/%d deployed",
+	return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage(fmt.Sprintf("Rollout status: %d/%d deployed",
 		deployedTargets, totalTargets))
 }

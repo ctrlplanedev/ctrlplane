@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
@@ -138,7 +139,8 @@ func HandleResourceUpdated(
 			return err
 		}
 
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerResourceCreated)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+			releasemanager.WithTrigger(trace.TriggerResourceCreated))
 	}
 
 	return nil

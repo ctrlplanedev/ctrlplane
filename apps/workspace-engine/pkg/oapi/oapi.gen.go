@@ -88,6 +88,14 @@ const (
 	True NullValue = true
 )
 
+// Defines values for PolicyBypassBypassRuleTypes.
+const (
+	PolicyBypassBypassRuleTypesApproval               PolicyBypassBypassRuleTypes = "approval"
+	PolicyBypassBypassRuleTypesEnvironmentProgression PolicyBypassBypassRuleTypes = "environmentProgression"
+	PolicyBypassBypassRuleTypesGradualRollout         PolicyBypassBypassRuleTypes = "gradualRollout"
+	PolicyBypassBypassRuleTypesRetry                  PolicyBypassBypassRuleTypes = "retry"
+)
+
 // Defines values for PropertyMatcherOperator.
 const (
 	Contains   PropertyMatcherOperator = "contains"
@@ -127,8 +135,8 @@ const (
 
 // Defines values for RuleEvaluationActionType.
 const (
-	Approval RuleEvaluationActionType = "approval"
-	Wait     RuleEvaluationActionType = "wait"
+	RuleEvaluationActionTypeApproval RuleEvaluationActionType = "approval"
+	RuleEvaluationActionTypeWait     RuleEvaluationActionType = "wait"
 )
 
 // AnyApprovalRule defines model for AnyApprovalRule.
@@ -419,6 +427,45 @@ type Policy struct {
 	WorkspaceId string                 `json:"workspaceId"`
 }
 
+// PolicyBypass defines model for PolicyBypass.
+type PolicyBypass struct {
+	// BypassRuleTypes Which policy rule types to bypass.
+	BypassRuleTypes []PolicyBypassBypassRuleTypes `json:"bypassRuleTypes"`
+
+	// CreatedAt When this bypass was created
+	CreatedAt time.Time `json:"createdAt"`
+
+	// CreatedBy User ID who created this bypass
+	CreatedBy string `json:"createdBy"`
+
+	// EnvironmentId Environment this bypass applies to. If null, applies to all environments.
+	EnvironmentId *string `json:"environmentId,omitempty"`
+
+	// ExpiresAt When this bypass expires. If null, bypass never expires.
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+
+	// Id Unique identifier for the bypass
+	Id string `json:"id"`
+
+	// Justification Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation)
+	Justification string `json:"justification"`
+
+	// PolicyIds Policy IDs this bypass applies to. If empty, applies to all policies.
+	PolicyIds *[]string `json:"policyIds,omitempty"`
+
+	// ResourceId Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).
+	ResourceId *string `json:"resourceId,omitempty"`
+
+	// VersionId Deployment version this bypass applies to
+	VersionId string `json:"versionId"`
+
+	// WorkspaceId Workspace this bypass belongs to
+	WorkspaceId string `json:"workspaceId"`
+}
+
+// PolicyBypassBypassRuleTypes defines model for PolicyBypass.BypassRuleTypes.
+type PolicyBypassBypassRuleTypes string
+
 // PolicyEvaluation defines model for PolicyEvaluation.
 type PolicyEvaluation struct {
 	Policy      *Policy          `json:"policy,omitempty"`
@@ -435,6 +482,7 @@ type PolicyRule struct {
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
+	VersionSelector        *VersionSelectorRule        `json:"versionSelector,omitempty"`
 }
 
 // PolicyTargetSelector defines model for PolicyTargetSelector.
@@ -603,7 +651,7 @@ type RetryRule struct {
 	// MaxRetries Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
 	MaxRetries int32 `json:"maxRetries"`
 
-	// RetryOnStatuses Job statuses that count toward the retry limit. If null or empty and maxRetries > 0, defaults to ["failure", "invalidIntegration"] (smart default: only retry on errors, not on success). If maxRetries = 0, counts all statuses (strict: no retries at all). Example: ["failure", "cancelled"] will only count failed/cancelled jobs.
+	// RetryOnStatuses Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs.
 	RetryOnStatuses *[]JobStatus `json:"retryOnStatuses,omitempty"`
 }
 
@@ -730,6 +778,13 @@ type VerificationMetricStatus struct {
 
 	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
 	SuccessCondition string `json:"successCondition"`
+}
+
+// VersionSelectorRule defines model for VersionSelectorRule.
+type VersionSelectorRule struct {
+	// Description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments"
+	Description *string  `json:"description,omitempty"`
+	Selector    Selector `json:"selector"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.

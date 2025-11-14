@@ -160,7 +160,9 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		}()
 
 		relationships := resourceRelationships[state.entity.ResourceId]
-		if err := m.reconcileTargetWithRelationships(ctx, state.entity, false, relationships, recorder); err != nil {
+		// Pass options directly - trigger is TriggerScheduled (set in recorder creation above)
+		if err := m.reconcileTargetWithRelationships(ctx, state.entity, recorder,
+			WithResourceRelationships(relationships)); err != nil {
 			log.Warn("error reconciling release target",
 				"release_target", state.entity.Key(),
 				"error", err.Error())
@@ -278,7 +280,9 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		return err
 	}
 
-	return m.ReconcileTarget(ctx, releaseTarget, true, trace.TriggerManual)
+	return m.ReconcileTarget(ctx, releaseTarget,
+		WithSkipEligibilityCheck(true),
+		WithTrigger(trace.TriggerManual))
 }
 
 // reconcileTargetWithRelationships is like ReconcileTarget but accepts pre-computed resource relationships.
@@ -287,19 +291,25 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 func (m *Manager) reconcileTargetWithRelationships(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
-	forceRedeploy bool,
-	resourceRelationships map[string][]*oapi.EntityRelation,
 	recorder *trace.ReconcileTarget,
+	opts ...Option,
 ) error {
+	// Extract options for logging only
+	options := &options{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	ctx, span := tracer.Start(ctx, "reconcileTargetWithRelationships",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
-			attribute.Bool("force_redeploy", forceRedeploy),
+			attribute.Bool("skip_eligibility_check", options.skipEligibilityCheck),
 		))
 	defer span.End()
 
 	// Delegate to deployment orchestrator for the three-phase deployment process
-	desiredRelease, job, err := m.deployment.Reconcile(ctx, releaseTarget, forceRedeploy, resourceRelationships, recorder)
+	// Pass opts directly to Reconcile
+	desiredRelease, job, err := m.deployment.Reconcile(ctx, releaseTarget, recorder, opts...)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "reconciliation failed")
@@ -320,21 +330,28 @@ func (m *Manager) reconcileTargetWithRelationships(
 	return nil
 }
 
-func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.ReleaseTarget, forceRedeploy bool, trigger trace.TriggerReason) error {
+func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.ReleaseTarget, opts ...Option) error {
+	// Extract options for logging only
+	options := &options{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	ctx, span := tracer.Start(ctx, "ReconcileTargets",
 		oteltrace.WithAttributes(
 			attribute.Int("reconcile.count", len(releaseTargets)),
-			attribute.Bool("force_redeploy", forceRedeploy),
-			attribute.String("trigger", string(trigger)),
+			attribute.Bool("skip_eligibility_check", options.skipEligibilityCheck),
+			attribute.String("trigger", string(options.trigger)),
 		))
 	defer span.End()
 
 	// Process targets in parallel for better performance
+	// Pass opts directly to each ReconcileTarget call
 	concurrency.ProcessInChunks(
 		ctx,
 		releaseTargets,
 		func(pctx context.Context, rt *oapi.ReleaseTarget) (any, error) {
-			if err := m.ReconcileTarget(pctx, rt, forceRedeploy, trigger); err != nil {
+			if err := m.ReconcileTarget(pctx, rt, opts...); err != nil {
 				log.Error("failed to reconcile release target",
 					"release_target", rt.Key(),
 					"error", err.Error())
@@ -359,32 +376,39 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 //	Phase 2 (ELIGIBILITY): jobEligibilityChecker.ShouldCreateJob() - "Should we create a job?" (read-only)
 //	  System-level checks for job creation: retry logic, duplicate prevention, etc.
 //	  This is separate from user policies - it's about when to create jobs.
-//	  Can be skipped when forceRedeploy is true (e.g., for explicit redeploy operations).
+//	  Can be skipped when WithSkipEligibilityCheck option is set (e.g., for explicit redeploy operations).
 //
 //	Phase 3 (EXECUTION): executor.ExecuteRelease() - "Create the job" (writes)
 //	  Persists release, creates job, dispatches to integration.
 //
-// Parameters:
-//   - forceRedeploy: if true, skips eligibility checks and always creates a new job
+// Options:
+//   - WithSkipEligibilityCheck: if true, skips Phase 2 eligibility checks and creates a job if planning produces a desired release
+//   - WithTrigger: specifies the trigger reason for this reconciliation
 //
 // Returns early if:
 //   - No desired release (no versions available or blocked by user policies)
-//   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
-func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, forceRedeploy bool, trigger trace.TriggerReason) error {
+//   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless skipEligibilityCheck is true
+func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) error {
+	// Extract options for logging and trace recorder creation
+	options := &options{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	ctx, span := tracer.Start(ctx, "ReconcileTarget",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
 			attribute.String("release_target.deployment_id", releaseTarget.DeploymentId),
 			attribute.String("release_target.environment_id", releaseTarget.EnvironmentId),
 			attribute.String("release_target.resource_id", releaseTarget.ResourceId),
-			attribute.Bool("force_redeploy", forceRedeploy),
-			attribute.String("trigger", string(trigger)),
+			attribute.Bool("skip_eligibility_check", options.skipEligibilityCheck),
+			attribute.String("trigger", string(options.trigger)),
 		))
 	defer span.End()
 
 	// Create trace recorder for deployment analysis
 	workspaceID := m.store.ID()
-	recorder := trace.NewReconcileTarget(workspaceID, releaseTarget.Key(), trigger)
+	recorder := trace.NewReconcileTarget(workspaceID, releaseTarget.Key(), options.trigger)
 
 	// Ensure trace is persisted even if reconciliation fails
 	defer func() {
@@ -433,12 +457,14 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	span.SetAttributes(attribute.Int("related_entities.count", totalRelatedEntities))
 
 	// Delegate to the implementation that accepts pre-computed relationships
-	return m.reconcileTargetWithRelationships(ctx, releaseTarget, forceRedeploy, resourceRelationships, recorder)
+	// Pass opts directly and add the pre-computed relationships
+	return m.reconcileTargetWithRelationships(ctx, releaseTarget, recorder,
+		append(opts, WithResourceRelationships(resourceRelationships))...)
 }
 
 // GetReleaseTargetStateWithRelationships computes and returns the release target state,
 // optionally using pre-computed resource relationships.
-func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...GetOption) (*oapi.ReleaseTargetState, error) {
+func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
 	ctx, span := tracer.Start(ctx, "GetReleaseTargetState",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),

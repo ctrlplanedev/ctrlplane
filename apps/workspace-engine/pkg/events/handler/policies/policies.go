@@ -5,6 +5,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"encoding/json"
@@ -55,7 +56,8 @@ func HandlePolicyCreated(
 	log.Info("Policy created - reconciling affected targets",
 		"policy_id", policy.Id,
 		"affected_targets_count", len(affectedTargets))
-	ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets, false, trace.TriggerPolicyUpdated)
+	ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
+		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 
 	return nil
 }
@@ -105,7 +107,8 @@ func HandlePolicyUpdated(
 		"policy_id", policy.Id,
 		"policy_enabled", policy.Enabled,
 		"affected_targets_count", len(affectedTargets))
-	ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets, false, trace.TriggerPolicyUpdated)
+	ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
+		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 
 	return nil
 }
@@ -150,7 +153,8 @@ func HandlePolicyDeleted(
 	}
 
 	// Reconcile all affected targets so previously blocked deployments can proceed
-	ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets, false, trace.TriggerPolicyUpdated)
+	ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
+		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 
 	return nil
 }

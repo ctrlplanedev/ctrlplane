@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"go.opentelemetry.io/otel"
@@ -38,11 +39,8 @@ func HandleDeploymentVersionCreated(
 		return err
 	}
 
-	for _, releaseTarget := range releaseTargets {
-		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVersionCreated)
-		}
-	}
+	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
+		releasemanager.WithTrigger(trace.TriggerVersionCreated))
 
 	return nil
 }
@@ -69,11 +67,8 @@ func HandleDeploymentVersionUpdated(
 	if err != nil {
 		return err
 	}
-	for _, releaseTarget := range releaseTargets {
-		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerVersionCreated)
-		}
-	}
+	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
+		releasemanager.WithTrigger(trace.TriggerVersionCreated))
 
 	return nil
 }
@@ -101,14 +96,8 @@ func HandleDeploymentVersionDeleted(
 		return err
 	}
 
-	reconileReleaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, releaseTarget := range releaseTargets {
-		if releaseTarget.DeploymentId == deploymentVersion.DeploymentId {
-			reconileReleaseTargets = append(reconileReleaseTargets, releaseTarget)
-		}
-	}
-
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerVersionCreated)
+	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
+		releasemanager.WithTrigger(trace.TriggerVersionCreated))
 
 	return nil
 }

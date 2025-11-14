@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"github.com/charmbracelet/log"
@@ -82,7 +83,8 @@ func HandleUserApprovalRecordCreated(
 		"environment_id", userApprovalRecord.EnvironmentId,
 		"affected_targets_count", len(relevantTargets))
 
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalCreated)
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
+		releasemanager.WithTrigger(trace.TriggerApprovalCreated))
 
 	return nil
 }
@@ -115,7 +117,8 @@ func HandleUserApprovalRecordUpdated(
 		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalUpdated)
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
+		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
 
 	return nil
 }
@@ -148,7 +151,8 @@ func HandleUserApprovalRecordDeleted(
 		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets, false, trace.TriggerApprovalUpdated)
+	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
+		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
 
 	return nil
 }

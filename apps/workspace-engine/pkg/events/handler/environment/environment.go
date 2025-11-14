@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
@@ -71,7 +72,8 @@ func HandleEnvironmentCreated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget, false, trace.TriggerEnvironmentCreated)
+		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+			releasemanager.WithTrigger(trace.TriggerEnvironmentCreated))
 	}
 
 	return nil
@@ -164,7 +166,8 @@ func HandleEnvironmentUpdated(
 		reconileReleaseTargets = append(reconileReleaseTargets, addedReleaseTarget)
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets, false, trace.TriggerEnvironmentUpdated)
+	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
+		releasemanager.WithTrigger(trace.TriggerEnvironmentUpdated))
 
 	return nil
 }

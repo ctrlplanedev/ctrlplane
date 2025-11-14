@@ -1178,6 +1178,41 @@ export interface components {
       selectors: components["schemas"]["PolicyTargetSelector"][];
       workspaceId: string;
     };
+    PolicyBypass: {
+      /** @description Which policy rule types to bypass. */
+      bypassRuleTypes: (
+        | "approval"
+        | "environmentProgression"
+        | "gradualRollout"
+        | "retry"
+      )[];
+      /**
+       * Format: date-time
+       * @description When this bypass was created
+       */
+      createdAt: string;
+      /** @description User ID who created this bypass */
+      createdBy: string;
+      /** @description Environment this bypass applies to. If null, applies to all environments. */
+      environmentId?: string;
+      /**
+       * Format: date-time
+       * @description When this bypass expires. If null, bypass never expires.
+       */
+      expiresAt?: string;
+      /** @description Unique identifier for the bypass */
+      id: string;
+      /** @description Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation) */
+      justification: string;
+      /** @description Policy IDs this bypass applies to. If empty, applies to all policies. */
+      policyIds?: string[];
+      /** @description Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally). */
+      resourceId?: string;
+      /** @description Deployment version this bypass applies to */
+      versionId: string;
+      /** @description Workspace this bypass belongs to */
+      workspaceId: string;
+    };
     PolicyEvaluation: {
       policy?: components["schemas"]["Policy"];
       ruleResults: components["schemas"]["RuleEvaluation"][];
@@ -1191,6 +1226,7 @@ export interface components {
       id: string;
       policyId: string;
       retry?: components["schemas"]["RetryRule"];
+      versionSelector?: components["schemas"]["VersionSelectorRule"];
     };
     PolicyTargetSelector: {
       deploymentSelector?: components["schemas"]["Selector"];
@@ -1352,7 +1388,7 @@ export interface components {
        * @description Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
        */
       maxRetries: number;
-      /** @description Job statuses that count toward the retry limit. If null or empty and maxRetries > 0, defaults to ["failure", "invalidIntegration"] (smart default: only retry on errors, not on success). If maxRetries = 0, counts all statuses (strict: no retries at all). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
+      /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
       retryOnStatuses?: components["schemas"]["JobStatus"][];
     };
     RuleEvaluation: {
@@ -1449,6 +1485,11 @@ export interface components {
     VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
       /** @description Individual verification measurements taken for this metric */
       measurements: components["schemas"]["VerificationMeasurement"][];
+    };
+    VersionSelectorRule: {
+      /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
+      description?: string;
+      selector: components["schemas"]["Selector"];
     };
   };
   responses: never;

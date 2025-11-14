@@ -797,6 +797,78 @@
             ],
             "type": "object"
          },
+         "PolicyBypass": {
+            "properties": {
+               "bypassRuleTypes": {
+                  "description": "Which policy rule types to bypass.",
+                  "items": {
+                     "enum": [
+                        "approval",
+                        "environmentProgression",
+                        "gradualRollout",
+                        "retry"
+                     ],
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "createdAt": {
+                  "description": "When this bypass was created",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "createdBy": {
+                  "description": "User ID who created this bypass",
+                  "type": "string"
+               },
+               "environmentId": {
+                  "description": "Environment this bypass applies to. If null, applies to all environments.",
+                  "type": "string"
+               },
+               "expiresAt": {
+                  "description": "When this bypass expires. If null, bypass never expires.",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "description": "Unique identifier for the bypass",
+                  "type": "string"
+               },
+               "justification": {
+                  "description": "Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation)",
+                  "type": "string"
+               },
+               "policyIds": {
+                  "description": "Policy IDs this bypass applies to. If empty, applies to all policies.",
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "resourceId": {
+                  "description": "Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).",
+                  "type": "string"
+               },
+               "versionId": {
+                  "description": "Deployment version this bypass applies to",
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "description": "Workspace this bypass belongs to",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workspaceId",
+               "versionId",
+               "bypassRuleTypes",
+               "justification",
+               "createdBy",
+               "createdAt"
+            ],
+            "type": "object"
+         },
          "PolicyEvaluation": {
             "properties": {
                "policy": {
@@ -840,6 +912,9 @@
                },
                "retry": {
                   "$ref": "#/components/schemas/RetryRule"
+               },
+               "versionSelector": {
+                  "$ref": "#/components/schemas/VersionSelectorRule"
                }
             },
             "required": [
@@ -1334,7 +1409,7 @@
                   "type": "integer"
                },
                "retryOnStatuses": {
-                  "description": "Job statuses that count toward the retry limit. If null or empty and maxRetries > 0, defaults to [\"failure\", \"invalidIntegration\"] (smart default: only retry on errors, not on success). If maxRetries = 0, counts all statuses (strict: no retries at all). Example: [\"failure\", \"cancelled\"] will only count failed/cancelled jobs.",
+                  "description": "Job statuses that count toward the retry limit. If null or empty, defaults to [\"failure\", \"invalidIntegration\", \"invalidJobAgent\"] for maxRetries > 0, or [\"failure\", \"invalidIntegration\", \"invalidJobAgent\", \"successful\"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: [\"failure\", \"cancelled\"] will only count failed/cancelled jobs.",
                   "items": {
                      "$ref": "#/components/schemas/JobStatus"
                   },
@@ -1573,6 +1648,21 @@
                   "type": "object"
                }
             ]
+         },
+         "VersionSelectorRule": {
+            "properties": {
+               "description": {
+                  "description": "Human-readable description of what this version selector does. Example: \"Only deploy v2.x versions to staging environments\"",
+                  "type": "string"
+               },
+               "selector": {
+                  "$ref": "#/components/schemas/Selector"
+               }
+            },
+            "required": [
+               "selector"
+            ],
+            "type": "object"
          }
       }
    },

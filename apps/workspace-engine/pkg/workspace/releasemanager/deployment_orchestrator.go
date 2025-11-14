@@ -50,15 +50,14 @@ func NewDeploymentOrchestrator(store *store.Store) *DeploymentOrchestrator {
 //	Phase 2 (ELIGIBILITY): jobEligibilityChecker.ShouldCreateJob() - "Should we create a job?" (read-only)
 //	  System-level checks for job creation: retry logic, duplicate prevention, etc.
 //	  This is separate from user policies - it's about when to create jobs.
-//	  Can be skipped when forceRedeploy is true (e.g., for explicit redeploy operations).
+//	  Can be skipped when skipEligibilityCheck option is set (e.g., for explicit redeploy operations).
 //
 //	Phase 3 (EXECUTION): executor.ExecuteRelease() - "Create the job" (writes)
 //	  Persists release, creates job, dispatches to integration.
 //
-// Parameters:
-//   - releaseTarget: the release target to reconcile
-//   - forceRedeploy: if true, skips eligibility checks and always creates a new job
-//   - resourceRelationships: pre-computed relationships to avoid redundant computation
+// Options:
+//   - WithSkipEligibilityCheck: if true, skips Phase 2 eligibility checks
+//   - WithResourceRelationships: pre-computed relationships to avoid redundant computation
 //
 // Returns:
 //   - desiredRelease: the desired release computed during planning (may be nil)
@@ -66,18 +65,23 @@ func NewDeploymentOrchestrator(store *store.Store) *DeploymentOrchestrator {
 //
 // Returns early if:
 //   - No desired release (no versions available or blocked by user policies)
-//   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless forceRedeploy is true
+//   - Job should not be created (already attempted, retry limit exceeded, etc.) - unless skipEligibilityCheck is true
 func (o *DeploymentOrchestrator) Reconcile(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
-	forceRedeploy bool,
-	resourceRelationships map[string][]*oapi.EntityRelation,
 	recorder *trace.ReconcileTarget,
+	opts ...Option,
 ) (*oapi.Release, *oapi.Job, error) {
+	// Extract options for span attributes and eligibility check
+	options := &options{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	ctx, span := tracer.Start(ctx, "DeploymentOrchestrator.Reconcile",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
-			attribute.Bool("force_redeploy", forceRedeploy),
+			attribute.Bool("skip_eligibility_check", options.skipEligibilityCheck),
 		))
 	defer span.End()
 
@@ -87,7 +91,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 	desiredRelease, err := o.planner.PlanDeployment(
 		ctx,
 		releaseTarget,
-		deployment.WithResourceRelatedEntities(resourceRelationships),
+		deployment.WithResourceRelatedEntities(options.resourceRelationships),
 		deployment.WithTraceRecorder(recorder),
 	)
 	if err != nil {
@@ -104,8 +108,8 @@ func (o *DeploymentOrchestrator) Reconcile(
 	}
 
 	// Phase 2: ELIGIBILITY - Should we create a job for this release? (READ-ONLY)
-	// Skip eligibility check if this is a forced redeploy
-	if !forceRedeploy {
+	// Skip eligibility check when requested (e.g., for manual redeploys)
+	if !options.skipEligibilityCheck {
 		span.AddEvent("Phase 2: Checking job eligibility")
 		eligibilityResult, err := o.jobEligibilityChecker.ShouldCreateJob(ctx, desiredRelease, recorder)
 		if err != nil {
@@ -144,7 +148,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 			return desiredRelease, nil, nil
 		}
 	} else {
-		span.AddEvent("Phase 2: Skipping eligibility check (forced redeploy)")
+		span.AddEvent("Phase 2: Skipping eligibility check (explicitly requested)")
 	}
 
 	// Phase 3: EXECUTION - Create the job (WRITES)
