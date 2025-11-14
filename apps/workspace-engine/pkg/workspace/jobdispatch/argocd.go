@@ -74,6 +74,10 @@ func getK8sCompatibleName(name string) string {
 	// Ensure it starts and ends with alphanumeric
 	cleaned = strings.Trim(cleaned, "-_.")
 
+	if len(cleaned) > 63 {
+		return cleaned[:63]
+	}
+
 	return cleaned
 }
 
