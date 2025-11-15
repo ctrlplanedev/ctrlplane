@@ -25,6 +25,7 @@ import {
 } from "~/components/ui/select";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "../_components/DeploymentProvider";
+import { ArgoCDConfig } from "./_components/ArgoCD";
 import { GithubAgentConfig } from "./_components/GithubAgentConfig";
 import { useAllJobAgents, useSelectedJobAgent } from "./_hooks/job-agents";
 
@@ -89,6 +90,9 @@ function JobAgentConfigSection({
               )}
               {selectedJobAgent?.type === "github-app" && (
                 <GithubAgentConfig form={form} />
+              )}
+              {selectedJobAgent?.type === "argo-cd" && (
+                <ArgoCDConfig form={form} />
               )}
             </>
           </FormControl>

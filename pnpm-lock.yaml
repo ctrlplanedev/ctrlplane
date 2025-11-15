@@ -405,8 +405,8 @@ importers:
         specifier: ^10.2.0
         version: 10.2.0(react@19.2.0)
       '@monaco-editor/react':
-        specifier: ^4.7.0
-        version: 4.7.0(monaco-editor@0.52.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        specifier: 4.8.0-rc.2
+        version: 4.8.0-rc.2(monaco-editor@0.52.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-accordion':
         specifier: ^1.2.11
         version: 1.2.11(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -506,6 +506,9 @@ importers:
       isbot:
         specifier: ^5.1.31
         version: 5.1.31
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       ldrs:
         specifier: ^1.1.9
         version: 1.1.9
@@ -588,6 +591,9 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.1.13
         version: 4.1.14(vite@7.1.10(@types/node@22.16.2)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.36.0)(tsx@4.20.3)(yaml@2.6.0))
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/lodash':
         specifier: 'catalog:'
         version: 4.17.12
@@ -2970,11 +2976,11 @@ packages:
   '@mjackson/node-fetch-server@0.2.0':
     resolution: {integrity: sha512-EMlH1e30yzmTpGLQjlFmaDAjyOeZhng1/XCd7DExR8PNAnG/G1tyruZxEoUe11ClnwGhGrtsdnyyUx1frSzjng==}
 
-  '@monaco-editor/loader@1.5.0':
-    resolution: {integrity: sha512-hKoGSM+7aAc7eRTRjpqAZucPmoNOC4UUbknb/VNoTkEIkCPhqV8LfbsgM1webRM7S/z21eHEx9Fkwx8Z/C/+Xw==}
+  '@monaco-editor/loader@1.6.1':
+    resolution: {integrity: sha512-w3tEnj9HYEC73wtjdpR089AqkUPskFRcdkxsiSFt3SoUc3OHpmu+leP94CXBm4mHfefmhsdfI0ZQu6qJ0wgtPg==}
 
-  '@monaco-editor/react@4.7.0':
-    resolution: {integrity: sha512-cyzXQCtO47ydzxpQtCGSQGOC8Gk3ZUeBXFAxD+CWXYFo5OqZyZUonFl0DwUlTyAfRHntBfw2p3w4s9R6oe1eCA==}
+  '@monaco-editor/react@4.8.0-rc.2':
+    resolution: {integrity: sha512-RzFHKBCnRA4RnozaG/EPhKsbkhX5wcApSa5MElR/AD2ojxhMY+QP+G8aJpxALCnIwKs6L0dec5MJ0nAjMUEqnA==}
     peerDependencies:
       monaco-editor: '>= 0.25.0 < 1'
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -11160,13 +11166,13 @@ snapshots:
 
   '@mjackson/node-fetch-server@0.2.0': {}
 
-  '@monaco-editor/loader@1.5.0':
+  '@monaco-editor/loader@1.6.1':
     dependencies:
       state-local: 1.0.7
 
-  '@monaco-editor/react@4.7.0(monaco-editor@0.52.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@monaco-editor/react@4.8.0-rc.2(monaco-editor@0.52.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
-      '@monaco-editor/loader': 1.5.0
+      '@monaco-editor/loader': 1.6.1
       monaco-editor: 0.52.0
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
