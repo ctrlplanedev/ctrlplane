@@ -140,6 +140,117 @@ func TestEngine_JobAgentUpdate(t *testing.T) {
 	}
 }
 
+func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
+	jobAgentID := "job-agent-1"
+	deploymentID := "deployment-1"
+	environmentID := "environment-1"
+	resourceID := "resource-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Original Name"),
+			integration.JobAgentType("kubernetes"),
+			integration.JobAgentConfig(map[string]any{
+				"namespace": "default",
+				"timeout":   300,
+				"retries":   3,
+			}),
+		),
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("environment-1"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+		),
+	)
+
+	ctx := context.Background()
+
+	jobs := engine.Workspace().Jobs().GetPending()
+	if len(jobs) != 1 {
+		t.Fatalf("expected 1 pending job, got %d", len(jobs))
+	}
+
+	var job *oapi.Job
+	for _, j := range jobs {
+		job = j
+		break
+	}
+
+	if job.JobAgentId != jobAgentID {
+		t.Fatalf("job agent mismatch: got %s, want %s", job.JobAgentId, jobAgentID)
+	}
+
+	if job.JobAgentConfig["namespace"] != "default" {
+		t.Fatalf("job agent config namespace mismatch: got %s, want default", job.JobAgentConfig["namespace"])
+	}
+
+	if job.JobAgentConfig["timeout"] != float64(300) {
+		t.Fatalf("job agent config timeout mismatch: got %v, want 300", job.JobAgentConfig["timeout"])
+	}
+
+	if job.JobAgentConfig["retries"] != float64(3) {
+		t.Fatalf("job agent config retries mismatch: got %v, want 3", job.JobAgentConfig["retries"])
+	}
+
+	job.Status = oapi.JobStatusSuccessful
+	engine.Workspace().Jobs().Upsert(ctx, job)
+
+	ja := &oapi.JobAgent{
+		Id: jobAgentID,
+		Config: map[string]any{
+			"namespace": "custom-namespace",
+			"timeout":   600,
+			"retries":   5,
+		},
+	}
+
+	engine.PushEvent(ctx, handler.JobAgentUpdate, ja)
+
+	// Verify updated values
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job, got %d", len(pendingJobs))
+	}
+
+	var updatedJob *oapi.Job
+	for _, j := range pendingJobs {
+		updatedJob = j
+		break
+	}
+
+	if updatedJob.JobAgentId != jobAgentID {
+		t.Fatalf("job agent mismatch: got %s, want %s", updatedJob.JobAgentId, jobAgentID)
+	}
+
+	if updatedJob.JobAgentConfig["namespace"] != "custom-namespace" {
+		t.Fatalf("job agent config namespace mismatch: got %s, want custom-namespace", updatedJob.JobAgentConfig["namespace"])
+	}
+
+	if updatedJob.JobAgentConfig["timeout"] != float64(600) {
+		t.Fatalf("job agent config timeout mismatch: got %d, want 600", updatedJob.JobAgentConfig["timeout"])
+	}
+
+	if updatedJob.JobAgentConfig["retries"] != float64(5) {
+		t.Fatalf("job agent config retries mismatch: got %d, want 5", updatedJob.JobAgentConfig["retries"])
+	}
+}
+
 func TestEngine_JobAgentDelete(t *testing.T) {
 	jobAgentID := "job-agent-1"
 

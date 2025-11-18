@@ -101,3 +101,13 @@ func (e *Deployments) ForResource(ctx context.Context, resource *oapi.Resource) 
 	}
 	return deployments, nil
 }
+
+func (e *Deployments) ForJobAgent(ctx context.Context, jobAgent *oapi.JobAgent) ([]*oapi.Deployment, error) {
+	deployments := make([]*oapi.Deployment, 0)
+	for _, deployment := range e.Items() {
+		if *deployment.JobAgentId == jobAgent.Id {
+			deployments = append(deployments, deployment)
+		}
+	}
+	return deployments, nil
+}

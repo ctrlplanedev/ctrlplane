@@ -695,6 +695,12 @@ func JobAgentType(agentType string) JobAgentOption {
 	}
 }
 
+func JobAgentConfig(config map[string]any) JobAgentOption {
+	return func(_ *TestWorkspace, ja *oapi.JobAgent) {
+		ja.Config = config
+	}
+}
+
 // ===== Policy Options =====
 
 func PolicyName(name string) PolicyOption {
