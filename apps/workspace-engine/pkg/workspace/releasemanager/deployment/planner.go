@@ -73,7 +73,7 @@ func WithTraceRecorder(recorder *trace.ReconcileTarget) planDeploymentOptions {
 	}
 }
 
-func WithEarliestVersionForEvaluation(version *oapi.DeploymentVersion) planDeploymentOptions {
+func WithVersionAndNewer(version *oapi.DeploymentVersion) planDeploymentOptions {
 	return func(cfg *planDeploymentConfig) {
 		cfg.earliestVersionForEvaluation = version
 	}

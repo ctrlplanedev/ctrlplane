@@ -93,7 +93,7 @@ func (o *DeploymentOrchestrator) Reconcile(
 		releaseTarget,
 		deployment.WithResourceRelatedEntities(options.resourceRelationships),
 		deployment.WithTraceRecorder(recorder),
-		deployment.WithEarliestVersionForEvaluation(options.earliestVersionForEvaluation),
+		deployment.WithVersionAndNewer(options.earliestVersionForEvaluation),
 	)
 	if err != nil {
 		span.RecordError(err)

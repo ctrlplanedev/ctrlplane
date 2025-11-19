@@ -36,7 +36,7 @@ func WithTrigger(trigger trace.TriggerReason) Option {
 	}
 }
 
-func WithEarliestVersionForEvaluation(version *oapi.DeploymentVersion) Option {
+func WithVersionAndNewer(version *oapi.DeploymentVersion) Option {
 	return func(opts *options) {
 		opts.earliestVersionForEvaluation = version
 	}
