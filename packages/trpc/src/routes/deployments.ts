@@ -65,20 +65,19 @@ export const deploymentsRouter = router({
       z.object({
         workspaceId: z.string(),
         deploymentId: z.string(),
+        query: z.string().optional(),
         limit: z.number().min(1).max(1000).default(1000),
         offset: z.number().min(0).default(0),
       }),
     )
     .query(async ({ input }) => {
+      const { workspaceId, deploymentId, query, limit, offset } = input;
       const response = await getClientFor(input.workspaceId).GET(
         "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/release-targets",
         {
           params: {
-            path: {
-              workspaceId: input.workspaceId,
-              deploymentId: input.deploymentId,
-            },
-            query: { limit: input.limit, offset: input.offset },
+            path: { workspaceId, deploymentId },
+            query: { limit, offset, query },
           },
         },
       );

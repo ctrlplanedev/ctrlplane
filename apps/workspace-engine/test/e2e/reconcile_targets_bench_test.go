@@ -26,14 +26,14 @@ import (
 func BenchmarkReconcileTargets_DeploymentVersionCreated(b *testing.B) {
 	// Benchmark configuration - adjust these to match production scale
 	const (
-		numDeployments      = 50
-		numResources        = 100
-		numEnvironments     = 20
-		numRegions          = 5
-		numZones            = 10
-		numPolicies         = 2
-		numRelationships    = 2
-		resourceBatchSize   = 1000
+		numDeployments    = 50
+		numResources      = 100
+		numEnvironments   = 20
+		numRegions        = 5
+		numZones          = 10
+		numPolicies       = 2
+		numRelationships  = 2
+		resourceBatchSize = 1000
 	)
 
 	b.Logf("Setting up production-scale benchmark environment...")
@@ -181,8 +181,8 @@ func BenchmarkReconcileTargets_DeploymentVersionCreated(b *testing.B) {
 	policy2.Selectors = []oapi.PolicyTargetSelector{*selector2}
 	policy2.Rules = []oapi.PolicyRule{
 		{
-			Id:       uuid.New().String(),
-			PolicyId: policy2.Id,
+			Id:        uuid.New().String(),
+			PolicyId:  policy2.Id,
 			CreatedAt: time.Now().Format(time.RFC3339),
 		},
 	}

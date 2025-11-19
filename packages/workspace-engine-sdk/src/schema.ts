@@ -1875,6 +1875,8 @@ export interface operations {
         limit?: number;
         /** @description Number of items to skip */
         offset?: number;
+        /** @description Filter by resource name */
+        query?: string;
       };
       header?: never;
       path: {

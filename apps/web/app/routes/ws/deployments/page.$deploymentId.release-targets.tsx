@@ -3,8 +3,9 @@ import type { FC } from "react";
 import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
 import _ from "lodash";
-import { ChevronRight } from "lucide-react";
-import { Link } from "react-router";
+import { ChevronRight, Search } from "lucide-react";
+import { Link, useSearchParams } from "react-router";
+import { useDebounce } from "react-use";
 
 import { trpc } from "~/api/trpc";
 import {
@@ -25,6 +26,7 @@ import {
   JobStatusBadge,
   JobStatusDisplayName,
 } from "../_components/JobStatusBadge";
+import { Input } from "../../../components/ui/input";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { RedeployDialog } from "./_components/RedeployDialog";
@@ -185,13 +187,32 @@ const EnvironmentReleaseTargetsGroup: FC<
   );
 };
 
+function useResourceName() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get("resourceName") ?? "";
+  const [search, setSearch] = useState(query);
+  const [searchDebounced, setSearchDebounced] = useState(search);
+  useDebounce(
+    () => {
+      setSearchDebounced(search);
+      setSearchParams({ resourceName: search });
+    },
+    500,
+    [search],
+  );
+
+  return { search, setSearch, searchDebounced };
+}
+
 export default function ReleaseTargetsPage() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
+  const { search, setSearch, searchDebounced } = useResourceName();
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
     workspaceId: workspace.id,
     deploymentId: deployment.id,
+    query: searchDebounced,
     limit: 1000,
     offset: 0,
   });
@@ -242,6 +263,18 @@ export default function ReleaseTargetsPage() {
         <DeploymentsNavbarTabs />
       </header>
       <div>
+        <div className="flex items-center gap-2 p-2">
+          <div className="relative flex-1 flex-grow">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search resources..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
         <Table className="border-b">
           <TableBody>
             {environments.map((environment) => {

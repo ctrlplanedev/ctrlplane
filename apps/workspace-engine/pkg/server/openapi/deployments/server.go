@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -15,7 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, deploymentId string) ([]*oapi.ReleaseTarget, error) {
+func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, deploymentId string, resourceName *string) ([]*oapi.ReleaseTarget, error) {
 	releaseTargets, err := ws.ReleaseTargets().Items()
 	if err != nil {
 		return nil, err
@@ -24,6 +25,18 @@ func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, dep
 	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
 	for _, releaseTarget := range releaseTargets {
 		if releaseTarget.DeploymentId == deploymentId {
+			if resourceName == nil {
+				releaseTargetsList = append(releaseTargetsList, releaseTarget)
+				continue
+			}
+
+			resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
+			if !ok {
+				continue
+			}
+			if !strings.Contains(strings.ToLower(resource.Name), strings.ToLower(*resourceName)) {
+				continue
+			}
 			releaseTargetsList = append(releaseTargetsList, releaseTarget)
 		}
 	}
@@ -244,8 +257,10 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		offset = *params.Offset
 	}
 
+	log.Info("Getting release targets for deployment", "deploymentId", deploymentId, "query", params.Query)
+
 	// Build list of release targets for this deployment, filtering out any nils
-	releaseTargetsList, err := getReleaseTargetsForDeployment(c, ws, deploymentId)
+	releaseTargetsList, err := getReleaseTargetsForDeployment(c, ws, deploymentId, params.Query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -392,7 +407,7 @@ func (s *Deployments) GetPoliciesForDeployment(c *gin.Context, workspaceId strin
 		return
 	}
 
-	releaseTargets, err := getReleaseTargetsForDeployment(c, ws, deploymentId)
+	releaseTargets, err := getReleaseTargetsForDeployment(c, ws, deploymentId, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

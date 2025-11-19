@@ -63,6 +63,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.deploymentIdParam(),
         openapi.limitParam(),
         openapi.offsetParam(),
+        openapi.queryStringParam('query', 'Filter by resource name'),
       ],
       responses: openapi.paginatedResponse(openapi.schemaRef('ReleaseTargetWithState'))
                  + openapi.notFoundResponse()

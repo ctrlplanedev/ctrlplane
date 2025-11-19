@@ -808,6 +808,9 @@ type GetReleaseTargetsForDeploymentParams struct {
 
 	// Offset Number of items to skip
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Query Filter by resource name
+	Query *string `form:"query,omitempty" json:"query,omitempty"`
 }
 
 // GetDeploymentResourcesParams defines parameters for GetDeploymentResources.
@@ -2071,6 +2074,14 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForDeployment(c *gin.Context
 	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "query" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "query", c.Request.URL.Query(), &params.Query)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter query: %w", err), http.StatusBadRequest)
 		return
 	}
 

@@ -2260,6 +2260,15 @@
                      "minimum": 0,
                      "type": "integer"
                   }
+               },
+               {
+                  "description": "Filter by resource name",
+                  "in": "query",
+                  "name": "query",
+                  "required": false,
+                  "schema": {
+                     "type": "string"
+                  }
                }
             ],
             "responses": {
