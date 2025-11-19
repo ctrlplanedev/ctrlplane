@@ -25,7 +25,7 @@ func New(store *store.Store) *Manager {
 
 // GetCandidateVersions returns all versions for a deployment, sorted newest to oldest.
 // The caller is responsible for filtering based on policies or other criteria.
-func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.ReleaseTarget) []*oapi.DeploymentVersion {
+func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.ReleaseTarget, earliestVersionForEvaluation *oapi.DeploymentVersion) []*oapi.DeploymentVersion {
 	_, span := tracer.Start(ctx, "GetCandidateVersions",
 		trace.WithAttributes(
 			attribute.String("deployment.id", releaseTarget.DeploymentId),
@@ -70,5 +70,17 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.
 		)
 	}
 
-	return filtered
+	if earliestVersionForEvaluation == nil {
+		return filtered
+	}
+
+	laterThanEarliestVersion := []*oapi.DeploymentVersion{}
+	for _, version := range filtered {
+		if version.CreatedAt.Before(earliestVersionForEvaluation.CreatedAt) {
+			break
+		}
+
+		laterThanEarliestVersion = append(laterThanEarliestVersion, version)
+	}
+	return laterThanEarliestVersion
 }
