@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { cn } from "~/lib/utils";
+import { JobStatusBadge } from "../../_components/JobStatusBadge";
 import { JobActions } from "./JobActions";
-import { JobStatusBadge } from "./JobStatusBadge";
 import { VariablesCell } from "./VariablesCell";
 
 type JobsTableProps = {

@@ -1,4 +1,4 @@
-const JobStatusDisplayName = {
+export const JobStatusDisplayName = {
   cancelled: "Cancelled",
   skipped: "Skipped",
   inProgress: "In Progress",

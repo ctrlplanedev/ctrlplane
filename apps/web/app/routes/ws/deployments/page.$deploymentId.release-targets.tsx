@@ -21,23 +21,13 @@ import { SidebarTrigger } from "~/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableRow } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
+import {
+  JobStatusBadge,
+  JobStatusDisplayName,
+} from "../_components/JobStatusBadge";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { RedeployDialog } from "./_components/RedeployDialog";
-
-const JobStatusDisplayName: Record<string, string> = {
-  unknown: "Unknown",
-  cancelled: "Cancelled",
-  skipped: "Skipped",
-  inProgress: "In Progress",
-  actionRequired: "Action Required",
-  pending: "Pending",
-  failure: "Failure",
-  invalidJobAgent: "Invalid Job Agent",
-  invalidIntegration: "Invalid Integration",
-  externalRunNotFound: "External Run Not Found",
-  successful: "Successful",
-};
 
 type ReleaseTarget = {
   releaseTarget: {
@@ -170,7 +160,12 @@ const EnvironmentReleaseTargetsGroup: FC<
               </div>
             </TableCell>
             <TableCell>
-              {JobStatusDisplayName[state.latestJob?.status ?? "unknown"]}
+              <JobStatusBadge
+                status={
+                  (state.latestJob?.status ??
+                    "unknown") as keyof typeof JobStatusDisplayName
+                }
+              />
             </TableCell>
             <TableCell
               className={cn(
