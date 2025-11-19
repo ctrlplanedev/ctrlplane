@@ -40,7 +40,8 @@ func HandleDeploymentVersionCreated(
 	}
 
 	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
-		releasemanager.WithTrigger(trace.TriggerVersionCreated))
+		releasemanager.WithTrigger(trace.TriggerVersionCreated),
+		releasemanager.WithEarliestVersionForEvaluation(deploymentVersion))
 
 	return nil
 }
@@ -68,7 +69,8 @@ func HandleDeploymentVersionUpdated(
 		return err
 	}
 	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
-		releasemanager.WithTrigger(trace.TriggerVersionCreated))
+		releasemanager.WithTrigger(trace.TriggerVersionCreated),
+		releasemanager.WithEarliestVersionForEvaluation(deploymentVersion))
 
 	return nil
 }

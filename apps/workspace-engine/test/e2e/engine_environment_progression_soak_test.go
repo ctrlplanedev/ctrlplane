@@ -663,8 +663,10 @@ func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
 	engine.PushEvent(ctx, handler.JobUpdate, v2StagingJob)
 
 	// Trigger policy re-evaluation
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version2)
 	time.Sleep(100 * time.Millisecond)
+
+	// send a workspace tick to trigger reconciliation
+	engine.PushEvent(ctx, handler.WorkspaceTick, nil)
 
 	// v2.0.0 production job should NOT be created
 	// (even though v1.0.0 has past soak time, v2.0.0's own soak time hasn't elapsed)

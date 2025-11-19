@@ -56,8 +56,9 @@ func NewPlanner(
 type planDeploymentOptions func(*planDeploymentConfig)
 
 type planDeploymentConfig struct {
-	resourceRelatedEntities map[string][]*oapi.EntityRelation
-	recorder                *trace.ReconcileTarget
+	resourceRelatedEntities      map[string][]*oapi.EntityRelation
+	recorder                     *trace.ReconcileTarget
+	earliestVersionForEvaluation *oapi.DeploymentVersion
 }
 
 func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) planDeploymentOptions {
@@ -69,6 +70,12 @@ func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) pla
 func WithTraceRecorder(recorder *trace.ReconcileTarget) planDeploymentOptions {
 	return func(cfg *planDeploymentConfig) {
 		cfg.recorder = recorder
+	}
+}
+
+func WithEarliestVersionForEvaluation(version *oapi.DeploymentVersion) planDeploymentOptions {
+	return func(cfg *planDeploymentConfig) {
+		cfg.earliestVersionForEvaluation = version
 	}
 }
 
@@ -104,7 +111,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 
 	// Step 1: Get candidate versions (sorted newest to oldest)
 	span.AddEvent("Step 1: Getting candidate versions")
-	candidateVersions := p.versionManager.GetCandidateVersions(ctx, releaseTarget)
+	candidateVersions := p.versionManager.GetCandidateVersions(ctx, releaseTarget, cfg.earliestVersionForEvaluation)
 	span.SetAttributes(attribute.Int("candidate_versions.count", len(candidateVersions)))
 
 	if len(candidateVersions) == 0 {

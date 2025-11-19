@@ -8,9 +8,10 @@ import (
 // options is a unified options struct for all releasemanager methods
 type options struct {
 	// ReleaseManager options
-	skipEligibilityCheck  bool
-	trigger               trace.TriggerReason
-	resourceRelationships map[string][]*oapi.EntityRelation
+	skipEligibilityCheck         bool
+	trigger                      trace.TriggerReason
+	resourceRelationships        map[string][]*oapi.EntityRelation
+	earliestVersionForEvaluation *oapi.DeploymentVersion
 
 	// StateCache options
 	bypassCache    bool
@@ -32,6 +33,12 @@ func WithSkipEligibilityCheck(skip bool) Option {
 func WithTrigger(trigger trace.TriggerReason) Option {
 	return func(opts *options) {
 		opts.trigger = trigger
+	}
+}
+
+func WithEarliestVersionForEvaluation(version *oapi.DeploymentVersion) Option {
+	return func(opts *options) {
+		opts.earliestVersionForEvaluation = version
 	}
 }
 
