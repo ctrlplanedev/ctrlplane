@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"sigs.k8s.io/yaml"
 
+	"github.com/Masterminds/sprig/v3"
 	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
@@ -126,7 +127,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 
 	span.SetAttributes(attribute.String("argocd.server_url", cfg.ServerUrl))
 
-	t, err := template.New("argoCDAgentConfig").Parse(cfg.Template)
+	t, err := template.New("argoCDAgentConfig").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(cfg.Template)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse template")
