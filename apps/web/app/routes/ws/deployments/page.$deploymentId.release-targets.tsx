@@ -14,10 +14,17 @@ import {
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
 import { Input } from "~/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { Table, TableBody } from "~/components/ui/table";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { JobStatusDisplayName } from "../_components/JobStatusBadge";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { EnvironmentReleaseTargetsGroup } from "./_components/release-targets/EnvironmentReleaseTargetsGroup";
@@ -42,10 +49,49 @@ function useResource() {
   return { search, setSearch, searchDebounced };
 }
 
+function useJobStatus() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const jobStatus = searchParams.get("jobStatus") as
+    | keyof typeof JobStatusDisplayName
+    | undefined;
+
+  const setJobStatus = (jobStatus: string) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (jobStatus === "all") newSearchParams.delete("jobStatus");
+    if (jobStatus !== "all") newSearchParams.set("jobStatus", jobStatus);
+    setSearchParams(newSearchParams);
+  };
+
+  return { jobStatus, setJobStatus };
+}
+
+function JobStatusSelect() {
+  const { jobStatus, setJobStatus } = useJobStatus();
+  return (
+    <Select value={jobStatus} onValueChange={setJobStatus}>
+      <SelectTrigger>
+        {jobStatus == null
+          ? "Select job status"
+          : JobStatusDisplayName[jobStatus]}
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All statuses</SelectItem>
+        {Object.keys(JobStatusDisplayName).map((status) => (
+          <SelectItem key={status} value={status}>
+            {JobStatusDisplayName[status as keyof typeof JobStatusDisplayName]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export default function ReleaseTargetsPage() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
   const { search, setSearch, searchDebounced } = useResource();
+  const { jobStatus } = useJobStatus();
+  console.log("jobStatus", { jobStatus });
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
     workspaceId: workspace.id,
@@ -65,9 +111,13 @@ export default function ReleaseTargetsPage() {
     ) ?? [];
 
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];
+  const filteredReleaseTargets = releaseTargets.filter((rt) => {
+    if (jobStatus == null) return true;
+    return rt.state.latestJob?.status === jobStatus;
+  });
 
   const groupByEnvironmentId = _.groupBy(
-    releaseTargets,
+    filteredReleaseTargets,
     (rt) => rt.releaseTarget.environmentId,
   );
   return (
@@ -111,6 +161,7 @@ export default function ReleaseTargetsPage() {
               className="pl-10"
             />
           </div>
+          <JobStatusSelect />
         </div>
 
         <Table className="border-b">
