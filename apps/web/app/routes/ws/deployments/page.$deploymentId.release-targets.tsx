@@ -30,11 +30,13 @@ function useResource() {
   useDebounce(
     () => {
       setSearchDebounced(search);
-      if (search === "") setSearchParams({});
-      if (search !== "") setSearchParams({ query: search });
+      const newSearchParams = new URLSearchParams(searchParams);
+      if (search === "") newSearchParams.delete("query");
+      if (search !== "") newSearchParams.set("query", search);
+      setSearchParams(newSearchParams);
     },
     500,
-    [search],
+    [search, searchParams],
   );
 
   return { search, setSearch, searchDebounced };
