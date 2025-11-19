@@ -22,9 +22,9 @@ import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { EnvironmentReleaseTargetsGroup } from "./_components/release-targets/EnvironmentReleaseTargetsGroup";
 
-function useResourceName() {
+function useResource() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const query = searchParams.get("resourceName") ?? "";
+  const query = searchParams.get("resource") ?? "";
   const [search, setSearch] = useState(query);
   const [searchDebounced, setSearchDebounced] = useState(search);
   useDebounce(
@@ -43,7 +43,7 @@ function useResourceName() {
 export default function ReleaseTargetsPage() {
   const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
-  const { search, setSearch, searchDebounced } = useResourceName();
+  const { search, setSearch, searchDebounced } = useResource();
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
     workspaceId: workspace.id,
