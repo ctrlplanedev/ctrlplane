@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"sigs.k8s.io/yaml"
 
 	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
@@ -79,6 +80,18 @@ func getK8sCompatibleName(name string) string {
 	}
 
 	return cleaned
+}
+
+func unmarshalApplication(data []byte, app *v1alpha1.Application) error {
+	if err := yaml.Unmarshal(data, app); err == nil {
+		return nil
+	}
+
+	if err := json.Unmarshal(data, app); err != nil {
+		return fmt.Errorf("failed to parse as YAML or JSON: %w", err)
+	}
+
+	return nil
 }
 
 func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
@@ -146,7 +159,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	defer closer.Close()
 
 	var app v1alpha1.Application
-	if err := json.Unmarshal(buf.Bytes(), &app); err != nil {
+	if err := unmarshalApplication(buf.Bytes(), &app); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse template output")
 		return fmt.Errorf("failed to parse template output as ArgoCD Application: %w", err)
