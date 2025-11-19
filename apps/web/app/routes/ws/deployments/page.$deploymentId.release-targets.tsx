@@ -30,7 +30,8 @@ function useResourceName() {
   useDebounce(
     () => {
       setSearchDebounced(search);
-      setSearchParams({ resourceName: search });
+      if (search === "") setSearchParams({});
+      if (search !== "") setSearchParams({ query: search });
     },
     500,
     [search],
