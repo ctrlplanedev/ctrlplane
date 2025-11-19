@@ -66,6 +66,11 @@ func HandleUserApprovalRecordCreated(
 		return err
 	}
 
+	version, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
+	if !ok {
+		return fmt.Errorf("version %s not found", userApprovalRecord.VersionId)
+	}
+
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
 
 	relevantTargets, err := getRelevantTargets(ctx, ws, userApprovalRecord)
@@ -84,7 +89,8 @@ func HandleUserApprovalRecordCreated(
 		"affected_targets_count", len(relevantTargets))
 
 	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
-		releasemanager.WithTrigger(trace.TriggerApprovalCreated))
+		releasemanager.WithTrigger(trace.TriggerApprovalCreated),
+		releasemanager.WithVersionAndNewer(version))
 
 	return nil
 }
@@ -105,6 +111,11 @@ func HandleUserApprovalRecordUpdated(
 		return err
 	}
 
+	version, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
+	if !ok {
+		return fmt.Errorf("version %s not found", userApprovalRecord.VersionId)
+	}
+
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
 
 	relevantTargets, err := getRelevantTargets(ctx, ws, userApprovalRecord)
@@ -118,7 +129,8 @@ func HandleUserApprovalRecordUpdated(
 	}
 
 	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
-		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
+		releasemanager.WithTrigger(trace.TriggerApprovalUpdated),
+		releasemanager.WithVersionAndNewer(version))
 
 	return nil
 }
@@ -139,6 +151,11 @@ func HandleUserApprovalRecordDeleted(
 		return err
 	}
 
+	version, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
+	if !ok {
+		return fmt.Errorf("version %s not found", userApprovalRecord.VersionId)
+	}
+
 	ws.UserApprovalRecords().Remove(ctx, userApprovalRecord.Key())
 
 	relevantTargets, err := getRelevantTargets(ctx, ws, userApprovalRecord)
@@ -152,7 +169,8 @@ func HandleUserApprovalRecordDeleted(
 	}
 
 	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
-		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
+		releasemanager.WithTrigger(trace.TriggerApprovalUpdated),
+		releasemanager.WithVersionAndNewer(version))
 
 	return nil
 }
