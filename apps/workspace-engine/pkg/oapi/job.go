@@ -32,19 +32,23 @@ func (r *Release) ToTemplatable() (*TemplatableRelease, error) {
 	}, nil
 }
 
-type TemplatableJobWithRelease struct {
+type TemplatableJob struct {
 	JobWithRelease
-	Release *TemplatableRelease
+	Release   *TemplatableRelease
+	Relations map[string][]*EntityRelation
 }
 
-func (j *JobWithRelease) ToTemplatable() (*TemplatableJobWithRelease,
+func (j *JobWithRelease) ToTemplatable(
+	relations map[string][]*EntityRelation,
+) (*TemplatableJob,
 	error) {
 	release, err := j.Release.ToTemplatable()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get templatable release: %w", err)
 	}
-	return &TemplatableJobWithRelease{
+	return &TemplatableJob{
 		JobWithRelease: *j,
 		Release:        release,
+		Relations:      relations,
 	}, nil
 }
