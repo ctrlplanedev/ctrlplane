@@ -293,6 +293,14 @@ func (p *Planner) findDeployableVersion(
 		return evaluators[i].Complexity() < evaluators[j].Complexity()
 	})
 
+	evaluatorTypes := make([]string, 0, len(evaluators))
+	for _, eval := range evaluators {
+		evaluatorTypes = append(evaluatorTypes, eval.RuleType())
+	}
+	span.SetAttributes(
+		attribute.StringSlice("evaluator.types", evaluatorTypes),
+	)
+
 	scope := evaluator.EvaluatorScope{
 		Environment:   environment,
 		ReleaseTarget: releaseTarget,
