@@ -75,6 +75,10 @@ func (e *GradualRolloutEvaluator) RuleType() string {
 	return evaluator.RuleTypeGradualRollout
 }
 
+func (e *GradualRolloutEvaluator) Complexity() int {
+	return 2
+}
+
 func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*time.Time, error) {
 	// "start time" is when the approval condition passes
 	policiesForTarget, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)

@@ -53,6 +53,8 @@ type Evaluator interface {
 	// RuleType returns the type identifier for this evaluator (e.g., "approval", "gradualRollout").
 	// This is used for policy bypass matching.
 	RuleType() string
+
+	Complexity() int
 }
 
 // Rule type constants for policy bypass matching

@@ -48,6 +48,10 @@ func (m *MemoizedEvaluator) RuleType() string {
 	return m.evaluator.RuleType()
 }
 
+func (m *MemoizedEvaluator) Complexity() int {
+	return m.evaluator.Complexity()
+}
+
 // Evaluate returns the cached result if the relevant scope fields match,
 // otherwise evaluates and caches the result.
 // If the scope doesn't have the required fields, returns a denial without calling the evaluator.

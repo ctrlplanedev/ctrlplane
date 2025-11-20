@@ -47,6 +47,10 @@ func (e *Evaluator) RuleType() string {
 	return "versionSelector"
 }
 
+func (e *Evaluator) Complexity() int {
+	return 1
+}
+
 // Evaluate evaluates the version selector rule against the given scope.
 // It checks if the version matches the selector criteria for the target release target.
 func (e *Evaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {

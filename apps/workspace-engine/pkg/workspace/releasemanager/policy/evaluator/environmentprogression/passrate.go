@@ -39,6 +39,10 @@ func (e *PassRateEvaluator) RuleType() string {
 	return evaluator.RuleTypeEnvironmentProgression
 }
 
+func (e *PassRateEvaluator) Complexity() int {
+	return 1
+}
+
 func (e *PassRateEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
 	tracker := NewReleaseTargetJobTracker(ctx, e.store, scope.Environment, scope.Version, e.successStatuses)
 	successPercentage := tracker.GetSuccessPercentage()

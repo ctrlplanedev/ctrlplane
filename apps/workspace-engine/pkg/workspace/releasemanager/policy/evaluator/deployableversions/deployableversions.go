@@ -34,6 +34,10 @@ func (e *DeployableVersionStatusEvaluator) RuleType() string {
 	return evaluator.RuleTypeDeployableVersions
 }
 
+func (e *DeployableVersionStatusEvaluator) Complexity() int {
+	return 1
+}
+
 // Evaluate checks if a version is in a deployable status.
 // The memoization wrapper ensures Version is present.
 func (e *DeployableVersionStatusEvaluator) Evaluate(

@@ -37,6 +37,10 @@ func (m *AnyApprovalEvaluator) RuleType() string {
 	return evaluator.RuleTypeApproval
 }
 
+func (m *AnyApprovalEvaluator) Complexity() int {
+	return 1
+}
+
 // Evaluate checks if the version has enough approvals for the environment.
 // The memoization wrapper ensures Environment and Version are present.
 func (m *AnyApprovalEvaluator) Evaluate(

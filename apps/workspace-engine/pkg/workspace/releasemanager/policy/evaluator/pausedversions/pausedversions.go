@@ -31,6 +31,10 @@ func (e *PausedVersionsEvaluator) RuleType() string {
 	return evaluator.RuleTypePausedVersions
 }
 
+func (e *PausedVersionsEvaluator) Complexity() int {
+	return 1
+}
+
 // Evaluate checks if a paused version is allowed to deploy to a target.
 // The memoization wrapper ensures Version and ReleaseTarget are present.
 func (e *PausedVersionsEvaluator) Evaluate(

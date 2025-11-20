@@ -32,6 +32,10 @@ func (m *MockEvaluator) RuleType() string {
 	return "mock"
 }
 
+func (m *MockEvaluator) Complexity() int {
+	return 1
+}
+
 func (m *MockEvaluator) GetCallCount() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()

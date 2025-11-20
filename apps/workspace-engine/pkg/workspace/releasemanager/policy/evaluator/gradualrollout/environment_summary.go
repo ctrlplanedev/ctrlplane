@@ -31,6 +31,10 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) RuleType() string {
 	return evaluator.RuleTypeGradualRollout
 }
 
+func (e *GradualRolloutEnvironmentSummaryEvaluator) Complexity() int {
+	return 2
+}
+
 // formatDuration converts a duration to a human-readable string
 func formatDuration(d time.Duration) string {
 	if d < time.Minute {

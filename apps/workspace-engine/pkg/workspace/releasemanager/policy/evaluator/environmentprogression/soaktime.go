@@ -52,6 +52,10 @@ func (e *SoakTimeEvaluator) RuleType() string {
 	return evaluator.RuleTypeEnvironmentProgression
 }
 
+func (e *SoakTimeEvaluator) Complexity() int {
+	return 3
+}
+
 // Evaluate checks if the soak time requirement is satisfied.
 func (e *SoakTimeEvaluator) Evaluate(
 	ctx context.Context,

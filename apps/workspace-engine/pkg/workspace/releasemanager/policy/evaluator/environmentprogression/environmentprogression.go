@@ -48,6 +48,10 @@ func (e *EnvironmentProgressionEvaluator) RuleType() string {
 	return evaluator.RuleTypeEnvironmentProgression
 }
 
+func (e *EnvironmentProgressionEvaluator) Complexity() int {
+	return 3
+}
+
 // Evaluate checks if a version can progress to an environment based on its success in dependency environments.
 // The memoization wrapper ensures Environment and Version are present.
 func (e *EnvironmentProgressionEvaluator) Evaluate(

@@ -3,6 +3,7 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -287,6 +288,10 @@ func (p *Planner) findDeployableVersion(
 
 	policyEvaluators := p.collectPolicyEvaluators(policies, bypass)
 	evaluators = append(evaluators, policyEvaluators...)
+
+	sort.Slice(evaluators, func(i, j int) bool {
+		return evaluators[i].Complexity() < evaluators[j].Complexity()
+	})
 
 	scope := evaluator.EvaluatorScope{
 		Environment:   environment,
