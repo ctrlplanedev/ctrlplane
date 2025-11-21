@@ -13,7 +13,6 @@ import (
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
@@ -112,14 +111,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return err
 	}
 
-	relations, err := d.store.Relationships.GetRelatedEntities(ctx, relationships.NewResourceEntity(jobWithRelease.Resource))
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to get related entities")
-		return err
-	}
-
-	templatableJobWithRelease, err := jobWithRelease.ToTemplatable(relations)
+	templatableJobWithRelease, err := jobWithRelease.ToTemplatable()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get templatable job")
