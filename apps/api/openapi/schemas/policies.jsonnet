@@ -97,6 +97,7 @@ local openapi = import '../lib/openapi.libsonnet';
       anyApproval: openapi.schemaRef('AnyApprovalRule'),
       environmentProgression: openapi.schemaRef('EnvironmentProgressionRule'),
       gradualRollout: openapi.schemaRef('GradualRolloutRule'),
+      deploymentDependency: openapi.schemaRef('DeploymentDependencyRule'),
     },
   },
 
@@ -152,6 +153,14 @@ local openapi = import '../lib/openapi.libsonnet';
                      '"linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. ' +
                      'See rolloutType algorithm documentation for details.',
       },
+    },
+  },
+
+  DeploymentDependencyRule: {
+    type: 'object',
+    required: ['dependsOnDeploymentSelector'],
+    properties: {
+      dependsOnDeploymentSelector: openapi.schemaRef('Selector'),
     },
   },
 }

@@ -334,6 +334,17 @@
             ],
             "type": "object"
          },
+         "DeploymentDependencyRule": {
+            "properties": {
+               "dependsOnDeploymentSelector": {
+                  "$ref": "#/components/schemas/Selector"
+               }
+            },
+            "required": [
+               "dependsOnDeploymentSelector"
+            ],
+            "type": "object"
+         },
          "DeploymentVariable": {
             "properties": {
                "defaultValue": {
@@ -909,6 +920,9 @@
                },
                "createdAt": {
                   "type": "string"
+               },
+               "deploymentDependency": {
+                  "$ref": "#/components/schemas/DeploymentDependencyRule"
                },
                "environmentProgression": {
                   "$ref": "#/components/schemas/EnvironmentProgressionRule"

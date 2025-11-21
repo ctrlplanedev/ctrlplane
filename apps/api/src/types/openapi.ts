@@ -791,6 +791,9 @@ export interface components {
             deployment: components["schemas"]["Deployment"];
             system: components["schemas"]["System"];
         };
+        DeploymentDependencyRule: {
+            dependsOnDeploymentSelector: components["schemas"]["Selector"];
+        };
         DeploymentVariable: {
             defaultValue?: components["schemas"]["LiteralValue"];
             deploymentId: string;
@@ -970,6 +973,7 @@ export interface components {
         PolicyRule: {
             anyApproval?: components["schemas"]["AnyApprovalRule"];
             createdAt: string;
+            deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
             environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
             gradualRollout?: components["schemas"]["GradualRolloutRule"];
             id: string;
