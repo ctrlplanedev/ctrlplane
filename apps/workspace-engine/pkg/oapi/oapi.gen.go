@@ -183,6 +183,14 @@ type DeploymentAndSystem struct {
 	System     System     `json:"system"`
 }
 
+// DeploymentDependencyRule defines model for DeploymentDependencyRule.
+type DeploymentDependencyRule struct {
+	DependsOnDeploymentSelector Selector `json:"dependsOnDeploymentSelector"`
+
+	// Reference Reference to the entity that this rule depends on
+	Reference *string `json:"reference,omitempty"`
+}
+
 // DeploymentVariable defines model for DeploymentVariable.
 type DeploymentVariable struct {
 	DefaultValue *LiteralValue `json:"defaultValue,omitempty"`
@@ -477,6 +485,7 @@ type PolicyEvaluation struct {
 type PolicyRule struct {
 	AnyApproval            *AnyApprovalRule            `json:"anyApproval,omitempty"`
 	CreatedAt              string                      `json:"createdAt"`
+	DeploymentDependency   *DeploymentDependencyRule   `json:"deploymentDependency,omitempty"`
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`
