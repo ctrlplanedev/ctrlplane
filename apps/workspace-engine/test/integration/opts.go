@@ -880,6 +880,34 @@ func WithRuleRetryWithBackoff(maxRetries int32, backoffSeconds int32, strategy o
 	}
 }
 
+// ===== DeploymentDependencyRule Options =====
+
+type DeploymentDependencyRuleOption func(*TestWorkspace, *oapi.DeploymentDependencyRule) error
+
+func DeploymentDependencyRuleDependsOnDeploymentSelector(cel string) DeploymentDependencyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.DeploymentDependencyRule) error {
+		sel := &oapi.Selector{}
+		if err := sel.FromCelSelector(oapi.CelSelector{Cel: cel}); err != nil {
+			return err
+		}
+		r.DependsOnDeploymentSelector = *sel
+		return nil
+	}
+}
+
+func WithRuleDeploymentDependency(options ...DeploymentDependencyRuleOption) PolicyRuleOption {
+	return func(ws *TestWorkspace, r *oapi.PolicyRule) error {
+		rule := &oapi.DeploymentDependencyRule{}
+		for _, option := range options {
+			if err := option(ws, rule); err != nil {
+				return err
+			}
+		}
+		r.DeploymentDependency = rule
+		return nil
+	}
+}
+
 // ===== EnvironmentProgressionRule Options =====
 
 type EnvironmentProgressionRuleOption func(*TestWorkspace, *oapi.EnvironmentProgressionRule) error

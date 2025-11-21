@@ -327,3 +327,30 @@ func TestDeploymentDependencyEvaluator_NoMatchingDeploymentsFails(t *testing.T) 
 	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget2})
 	assert.False(t, result.Allowed, "expected denied when no matching deployments are found")
 }
+
+func TestDeploymentDependencyEvaluator_NotEnoughUpstreamReleaseTargetsFails(t *testing.T) {
+	ctx := context.Background()
+
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	system1ID := "system-1"
+	generateEnvironment(ctx, system1ID, st)
+	deployment1 := generateDeployment(ctx, system1ID, st)
+
+	system2ID := "system-2"
+	environment2 := generateEnvironment(ctx, system2ID, st)
+	deployment2 := generateDeployment(ctx, system2ID, st)
+
+	resource := generateResource(ctx, st)
+
+	releaseTarget2 := generateReleaseTarget(ctx, resource, environment2, deployment2, st)
+
+	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
+	rule := generateDependencyRule(cel)
+
+	eval := NewEvaluator(st, rule)
+
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget2})
+	assert.False(t, result.Allowed, "expected denied when not enough upstream release targets are found")
+}
