@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -71,6 +72,26 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[st
 		jobs[job.Id] = job
 	}
 	return jobs
+}
+
+func (j *Jobs) GetLatestCompletedJobForReleaseTarget(releaseTarget *oapi.ReleaseTarget) *oapi.Job {
+	jobs := j.GetJobsForReleaseTarget(releaseTarget)
+	if len(jobs) == 0 {
+		return nil
+	}
+	jobsList := make([]*oapi.Job, 0)
+	for _, job := range jobs {
+		if job.CompletedAt != nil {
+			jobsList = append(jobsList, job)
+		}
+	}
+	if len(jobsList) == 0 {
+		return nil
+	}
+	sort.Slice(jobsList, func(i, j int) bool {
+		return jobsList[i].CompletedAt.After(*jobsList[j].CompletedAt)
+	})
+	return jobsList[0]
 }
 
 func (j *Jobs) GetJobsInProcessingStateForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[string]*oapi.Job {

@@ -61,6 +61,7 @@ local openapi = import '../lib/openapi.libsonnet';
       gradualRollout: openapi.schemaRef('GradualRolloutRule'),
       retry: openapi.schemaRef('RetryRule'),
       versionSelector: openapi.schemaRef('VersionSelectorRule'),
+      deploymentDependency: openapi.schemaRef('DeploymentDependencyRule'),
     },
   },
 
@@ -155,6 +156,18 @@ local openapi = import '../lib/openapi.libsonnet';
         format: 'int32',
         minimum: 0,
         description: 'Maximum age of dependency deployment before blocking progression (prevents stale promotions)',
+      },
+    },
+  },
+
+  DeploymentDependencyRule: {
+    type: 'object',
+    required: ['dependsOnDeploymentSelector'],
+    properties: {
+      dependsOnDeploymentSelector: openapi.schemaRef('Selector'),
+      reference: {
+        type: 'string',
+        description: 'Reference to the entity that this rule depends on',
       },
     },
   },
