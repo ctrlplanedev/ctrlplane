@@ -992,6 +992,16 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
 
+	// Create staging release targets but no jobs - environment progression NOT satisfied
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
+
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	versionCreatedAt := baseTime
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
@@ -1508,6 +1518,16 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
+
+	// Create staging release targets but no jobs - environment progression NOT satisfied
+	for _, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: stagingEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+	}
 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	versionCreatedAt := baseTime
@@ -2181,6 +2201,126 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 	// NextEvaluationTime should be nil because we're waiting for approval (external dependency)
 	assert.Nil(t, result.NextEvaluationTime,
 		"NextEvaluationTime should be nil when waiting for external dependencies like approval")
+}
+
+// TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets tests that when
+// environment progression passes because there are no release targets in the dependent
+// environment, gradual rollout starts immediately from version.CreatedAt
+func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	stagingEnv := generateEnvironment(ctx, systemID, st)
+	stagingEnv.Name = "staging"
+	st.Environments.Upsert(ctx, stagingEnv)
+
+	prodEnv := generateEnvironment(ctx, systemID, st)
+	prodEnv.Name = "production"
+	st.Environments.Upsert(ctx, prodEnv)
+
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	twoMinutesLater := baseTime.Add(2 * time.Minute)
+	timeGetter := func() time.Time {
+		return twoMinutesLater
+	}
+
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		rule:       rule,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create selector for staging environment
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	minSuccessPercentage := float32(100.0)
+	envProgPolicy := &oapi.Policy{
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+					DependsOnEnvironmentSelector: selector,
+					MinimumSuccessPercentage:     &minSuccessPercentage,
+				},
+			},
+		},
+	}
+
+	st.Policies.Upsert(ctx, envProgPolicy)
+
+	// CRITICAL: Don't create any staging release targets
+	// This means environment progression should pass with satisfiedAt = version.CreatedAt
+
+	// Create production release targets for each resource
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: prodEnv.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 0: should deploy immediately from version.CreatedAt (offset = 0)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed)
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be version.CreatedAt since no staging targets exist
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result1.Details["rollout_start_time"])
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result1.Details["target_rollout_time"])
+
+	// Position 1: deploys after 60 seconds from version.CreatedAt (offset = 60 seconds)
+	scope2 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: releaseTargets[1],
+	}
+	result2 := eval.Evaluate(ctx, scope2)
+	assert.True(t, result2.Allowed)
+	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result2.Details["rollout_start_time"])
+	assert.Equal(t, versionCreatedAt.Add(60*time.Second).Format(time.RFC3339), result2.Details["target_rollout_time"])
+
+	// Position 2: deploys after 120 seconds from version.CreatedAt (offset = 120 seconds)
+	scope3 := evaluator.EvaluatorScope{
+		Environment:   prodEnv,
+		Version:       version,
+		ReleaseTarget: releaseTargets[2],
+	}
+	result3 := eval.Evaluate(ctx, scope3)
+	assert.True(t, result3.Allowed)
+	assert.Equal(t, int32(2), result3.Details["target_rollout_position"])
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result3.Details["rollout_start_time"])
+	assert.Equal(t, versionCreatedAt.Add(120*time.Second).Format(time.RFC3339), result3.Details["target_rollout_time"])
 }
 
 // TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized tests that NextEvaluationTime
