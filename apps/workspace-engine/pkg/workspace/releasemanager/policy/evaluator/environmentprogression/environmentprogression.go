@@ -283,10 +283,6 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		return results.NewDeniedResult("No jobs found")
 	}
 
-	if len(tracker.ReleaseTargets) == 0 {
-		return results.NewDeniedResult("No release targets found")
-	}
-
 	passRateResult := passRateEvaluator.Evaluate(ctx, scope)
 	span.SetAttributes(attribute.Bool("pass_rate.allowed", passRateResult.Allowed))
 	if !passRateResult.Allowed {

@@ -210,6 +210,7 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
