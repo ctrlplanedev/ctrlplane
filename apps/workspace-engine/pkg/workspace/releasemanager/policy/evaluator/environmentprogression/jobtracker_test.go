@@ -153,6 +153,10 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 		DeploymentId:  "deploy-1",
 	}
 
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
+	st.ReleaseTargets.Upsert(ctx, rt3)
+
 	// Create releases
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -230,6 +234,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -317,6 +324,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 
 	// Create release
 	release1 := &oapi.Release{
@@ -370,6 +378,8 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -442,7 +452,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	// Create release
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -501,6 +511,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 
 	// Create release
 	release1 := &oapi.Release{
@@ -561,7 +572,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	// Create release
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -614,6 +625,9 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -689,6 +703,9 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 		DeploymentId:  "deploy-1",
 	}
 
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
+
 	// Create releases
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -761,6 +778,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 
 	// Create release
 	release1 := &oapi.Release{
@@ -841,6 +859,10 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
+	st.ReleaseTargets.Upsert(ctx, rt3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -1060,6 +1082,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -1141,6 +1165,10 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
+
+	st.ReleaseTargets.Upsert(ctx, rt1)
+	st.ReleaseTargets.Upsert(ctx, rt2)
+	st.ReleaseTargets.Upsert(ctx, rt3)
 
 	// Create releases
 	release1 := &oapi.Release{

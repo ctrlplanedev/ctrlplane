@@ -81,6 +81,7 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -145,6 +146,7 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -208,6 +210,7 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -266,6 +269,7 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -329,6 +333,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -425,6 +430,7 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -489,6 +495,7 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -552,6 +559,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
@@ -618,6 +626,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
