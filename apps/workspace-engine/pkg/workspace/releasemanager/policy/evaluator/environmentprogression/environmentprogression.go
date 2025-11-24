@@ -273,6 +273,9 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 
 	// Check if there are jobs and release targets
 	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, nil)
+	if len(tracker.ReleaseTargets) == 0 {
+		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed")
+	}
 	span.SetAttributes(attribute.Int("job_count", len(tracker.Jobs())))
 	span.SetAttributes(attribute.Int("release_target_count", len(tracker.ReleaseTargets)))
 

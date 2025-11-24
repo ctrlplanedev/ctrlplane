@@ -83,6 +83,25 @@ func setupTestStore() *store.Store {
 	}
 	st.Resources.Upsert(ctx, resource)
 
+	// Create a release target per environment
+	devReleaseTarget := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-dev",
+		DeploymentId:  "deploy-1",
+	}
+	stagingReleaseTarget := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-staging",
+		DeploymentId:  "deploy-1",
+	}
+	prodReleaseTarget := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-prod",
+		DeploymentId:  "deploy-1",
+	}
+	st.ReleaseTargets.Upsert(ctx, devReleaseTarget)
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
+	st.ReleaseTargets.Upsert(ctx, prodReleaseTarget)
 	return st
 }
 
@@ -922,6 +941,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
+	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -971,4 +991,49 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 	// Assert
 	assert.False(t, result.Allowed, "expected not allowed (soak time not satisfied)")
 	assert.Nil(t, result.SatisfiedAt, "satisfiedAt should be nil when requirements are not satisfied")
+}
+
+// TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed tests that when there are no release targets, the evaluator allows the environment progression.
+func TestEnvironmentProgressionEvaluator_NoReleaseTargets_Allowed(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	st.ReleaseTargets.Remove("resource-1-env-staging-deploy-1")
+
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:           "version-1",
+		Name:         "v1.0.0",
+		Tag:          "v1.0.0",
+		DeploymentId: "deploy-1",
+		Status:       oapi.DeploymentVersionStatusReady,
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	selector := oapi.Selector{}
+	err := selector.FromCelSelector(oapi.CelSelector{
+		Cel: "environment.name == 'staging'",
+	})
+	require.NoError(t, err)
+
+	soakMinutes := int32(30)
+	rule := &oapi.PolicyRule{
+		EnvironmentProgression: &oapi.EnvironmentProgressionRule{
+			DependsOnEnvironmentSelector: selector,
+			MinimumSockTimeMinutes:       &soakMinutes,
+		},
+	}
+
+	eval := NewEvaluator(st, rule.EnvironmentProgression)
+	prodEnv, _ := st.Environments.Get("env-prod")
+
+	scope := evaluator.EvaluatorScope{
+		Environment: prodEnv,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Assert
+	assert.True(t, result.Allowed, "expected allowed (no release targets)")
 }

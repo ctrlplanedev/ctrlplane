@@ -86,7 +86,9 @@ func NewReleaseTargetJobTracker(
 		successfulReleaseTargets: make(map[string]time.Time, 0),
 	}
 
-	rtt.compute(ctx)
+	if len(releaseTargets) > 0 {
+		rtt.compute(ctx)
+	}
 
 	return rtt
 }
