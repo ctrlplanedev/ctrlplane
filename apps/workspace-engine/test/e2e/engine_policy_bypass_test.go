@@ -80,7 +80,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
 		RuleId:        "rule-1",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "incident-commander",
 		CreatedAt:     time.Now(),
 		ExpiresAt:     &expiresAt,
@@ -167,7 +167,7 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
 		RuleId:        "rule-1",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "security-team",
 		CreatedAt:     time.Now(),
 	}
@@ -178,7 +178,7 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
 		RuleId:        "rule-2",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "security-team",
 		CreatedAt:     time.Now(),
 	}
@@ -261,7 +261,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 		EnvironmentId: &environmentID,
 		ResourceId:    nil, // Wildcard - all resources
 		RuleId:        "rule-1",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "ops-team",
 		CreatedAt:     time.Now(),
 	}
@@ -345,7 +345,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 		EnvironmentId: nil, // Wildcard - all environments
 		ResourceId:    nil, // Wildcard - all resources
 		RuleId:        "rule-1",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "cto",
 		CreatedAt:     time.Now(),
 	}
@@ -440,7 +440,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
 		RuleId:        "rule-1",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
 	}
@@ -527,7 +527,7 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
 		RuleId:        "rule-1",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
 		ExpiresAt:     &pastTime,
@@ -599,7 +599,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
 		RuleId:        "rule-1",
-		Reason:        &reason,
+		Reason:        reason,
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
 	}

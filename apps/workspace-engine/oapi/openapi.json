@@ -862,7 +862,7 @@
                "workspaceId",
                "versionId",
                "ruleId",
-               "justification",
+               "reason",
                "createdBy",
                "createdAt"
             ],

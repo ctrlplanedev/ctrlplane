@@ -279,7 +279,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   PolicyBypass: {
     type: 'object',
-    required: ['id', 'workspaceId', 'versionId', 'ruleId', 'justification', 'createdBy', 'createdAt'],
+    required: ['id', 'workspaceId', 'versionId', 'ruleId', 'reason', 'createdBy', 'createdAt'],
     properties: {
       id: {
         type: 'string',

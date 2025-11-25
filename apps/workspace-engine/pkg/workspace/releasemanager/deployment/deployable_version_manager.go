@@ -141,7 +141,7 @@ func (m *DeployableVersionManager) recordAllowedVersionEvaluationsToPlanning(ver
 			attribute.String("ctrlplane.version_name", version.Name),
 			attribute.String("ctrlplane.version_tag", version.Tag),
 		)
-		evaluation.SetResult(trace.ResultBlocked, result.Message).End()
+		evaluation.SetResult(trace.ResultAllowed, result.Message).End()
 	}
 }
 

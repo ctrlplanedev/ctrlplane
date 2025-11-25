@@ -445,7 +445,7 @@ type PolicyBypass struct {
 	Id string `json:"id"`
 
 	// Reason Required reason for why this bypass is needed (e.g., incident ticket, emergency situation)
-	Reason *string `json:"reason,omitempty"`
+	Reason string `json:"reason"`
 
 	// ResourceId Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).
 	ResourceId *string `json:"resourceId,omitempty"`
