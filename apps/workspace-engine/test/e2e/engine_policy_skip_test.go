@@ -73,7 +73,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 	// Create a bypass to skip approval
 	expiresAt := time.Now().Add(1 * time.Hour)
 	reason := "Emergency fix for production incident #123"
-	bypass := &oapi.PolicyBypass{
+	bypass := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
@@ -85,7 +85,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 		CreatedAt:     time.Now(),
 		ExpiresAt:     &expiresAt,
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
 
 	// Trigger reconciliation by updating the version (simulate version event)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -160,7 +160,7 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 
 	// Create bypass for both approval and gradual rollout
 	reason := "Critical security patch - immediate deployment required"
-	bypass1 := &oapi.PolicyBypass{
+	bypass1 := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
@@ -171,7 +171,7 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 		CreatedBy:     "security-team",
 		CreatedAt:     time.Now(),
 	}
-	bypass2 := &oapi.PolicyBypass{
+	bypass2 := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
@@ -182,8 +182,8 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 		CreatedBy:     "security-team",
 		CreatedAt:     time.Now(),
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass1)
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass2)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass1)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass2)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// Job should be created immediately
@@ -254,7 +254,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 
 	// Create bypass for environment (all resources)
 	reason := "Environment-wide emergency bypass"
-	bypass := &oapi.PolicyBypass{
+	bypass := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
@@ -265,7 +265,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 		CreatedBy:     "ops-team",
 		CreatedAt:     time.Now(),
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// All 3 resources should have jobs created
@@ -338,7 +338,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 
 	// Create bypass for version (all environments)
 	reason := "Global bypass for critical version"
-	bypass := &oapi.PolicyBypass{
+	bypass := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
@@ -349,7 +349,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 		CreatedBy:     "cto",
 		CreatedAt:     time.Now(),
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// Both environments should have jobs
@@ -433,7 +433,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 
 	// Create bypass for policy 1 only
 	reason := "Bypass only policy-1, policy-2 still applies"
-	bypass := &oapi.PolicyBypass{
+	bypass := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
@@ -444,7 +444,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// Still no jobs (policy 2 still blocks)
@@ -520,7 +520,7 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 	// Create bypass that already expired
 	pastTime := time.Now().Add(-1 * time.Hour)
 	reason := "Expired bypass"
-	bypass := &oapi.PolicyBypass{
+	bypass := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
@@ -532,7 +532,7 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 		CreatedAt:     time.Now(),
 		ExpiresAt:     &pastTime,
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// No jobs because bypass is expired
@@ -592,7 +592,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 
 	// Create bypass
 	reason := "Temporary bypass"
-	bypass := &oapi.PolicyBypass{
+	bypass := &oapi.PolicySkip{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version1.Id,
@@ -603,7 +603,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 		CreatedBy:     "admin",
 		CreatedAt:     time.Now(),
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
+	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version1)
 
 	// Job should be created
@@ -613,7 +613,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 	}
 
 	// Delete the bypass
-	engine.PushEvent(ctx, handler.PolicyBypassDelete, bypass)
+	engine.PushEvent(ctx, handler.PolicySkipDelete, bypass)
 
 	// Create new version
 	version2 := c.NewDeploymentVersion()

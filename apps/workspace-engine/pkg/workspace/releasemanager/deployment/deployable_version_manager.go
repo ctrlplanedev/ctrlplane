@@ -96,7 +96,7 @@ func (m *DeployableVersionManager) getEvaluators(ctx context.Context, policies [
 }
 
 func (m *DeployableVersionManager) filterBypassedEvaluators(evaluators []evaluator.Evaluator, versionId string) []evaluator.Evaluator {
-	allBypasses := m.store.PolicyBypasses.GetAllForTarget(versionId, m.releaseTarget.EnvironmentId, m.releaseTarget.ResourceId)
+	allBypasses := m.store.PolicySkips.GetAllForTarget(versionId, m.releaseTarget.EnvironmentId, m.releaseTarget.ResourceId)
 
 	skippedRules := make(map[string]bool)
 	for _, bypass := range allBypasses {

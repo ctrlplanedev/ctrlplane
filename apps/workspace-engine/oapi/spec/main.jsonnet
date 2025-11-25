@@ -11,7 +11,7 @@
     (import 'paths/workspace.jsonnet') +
     (import 'paths/resource.jsonnet') +
     (import 'paths/policy.jsonnet') +
-    (import 'paths/policy-bypass.jsonnet') +
+    (import 'paths/policy-skip.jsonnet') +
     (import 'paths/release-target.jsonnet') +
     (import 'paths/relationship.jsonnet') +
     (import 'paths/deployment.jsonnet') +

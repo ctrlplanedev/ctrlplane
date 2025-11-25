@@ -812,62 +812,6 @@
             ],
             "type": "object"
          },
-         "PolicyBypass": {
-            "properties": {
-               "createdAt": {
-                  "description": "When this bypass was created",
-                  "format": "date-time",
-                  "type": "string"
-               },
-               "createdBy": {
-                  "description": "User ID who created this bypass",
-                  "type": "string"
-               },
-               "environmentId": {
-                  "description": "Environment this bypass applies to. If null, applies to all environments.",
-                  "type": "string"
-               },
-               "expiresAt": {
-                  "description": "When this bypass expires. If null, bypass never expires.",
-                  "format": "date-time",
-                  "type": "string"
-               },
-               "id": {
-                  "description": "Unique identifier for the bypass",
-                  "type": "string"
-               },
-               "reason": {
-                  "description": "Required reason for why this bypass is needed (e.g., incident ticket, emergency situation)",
-                  "type": "string"
-               },
-               "resourceId": {
-                  "description": "Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).",
-                  "type": "string"
-               },
-               "ruleId": {
-                  "description": "Rule ID this bypass applies to",
-                  "type": "string"
-               },
-               "versionId": {
-                  "description": "Deployment version this bypass applies to",
-                  "type": "string"
-               },
-               "workspaceId": {
-                  "description": "Workspace this bypass belongs to",
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "workspaceId",
-               "versionId",
-               "ruleId",
-               "reason",
-               "createdBy",
-               "createdAt"
-            ],
-            "type": "object"
-         },
          "PolicyEvaluation": {
             "properties": {
                "policy": {
@@ -922,6 +866,62 @@
             "required": [
                "id",
                "policyId",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "PolicySkip": {
+            "properties": {
+               "createdAt": {
+                  "description": "When this skip was created",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "createdBy": {
+                  "description": "User ID who created this skip",
+                  "type": "string"
+               },
+               "environmentId": {
+                  "description": "Environment this skip applies to. If null, applies to all environments.",
+                  "type": "string"
+               },
+               "expiresAt": {
+                  "description": "When this skip expires. If null, skip never expires.",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "description": "Unique identifier for the skip",
+                  "type": "string"
+               },
+               "reason": {
+                  "description": "Required reason for why this skip is needed (e.g., incident ticket, emergency situation)",
+                  "type": "string"
+               },
+               "resourceId": {
+                  "description": "Resource this skip applies to. If null, applies to all resources (in the environment if specified, or globally).",
+                  "type": "string"
+               },
+               "ruleId": {
+                  "description": "Rule ID this skip applies to",
+                  "type": "string"
+               },
+               "versionId": {
+                  "description": "Deployment version this skip applies to",
+                  "type": "string"
+               },
+               "workspaceId": {
+                  "description": "Workspace this skip belongs to",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workspaceId",
+               "versionId",
+               "ruleId",
+               "reason",
+               "createdBy",
                "createdAt"
             ],
             "type": "object"
@@ -1747,103 +1747,6 @@
                }
             },
             "summary": "List workspace IDs"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/bypasses": {
-         "get": {
-            "description": "Returns a list of policy bypasses for workspace {workspaceId}.",
-            "operationId": "listBypasses",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "properties": {
-                              "bypasses": {
-                                 "items": {
-                                    "$ref": "#/components/schemas/PolicyBypass"
-                                 },
-                                 "type": "array"
-                              }
-                           },
-                           "type": "object"
-                        }
-                     }
-                  },
-                  "description": "A list of policy bypasses"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "List policy bypasses"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/bypasses/{bypassId}": {
-         "get": {
-            "description": "Returns a specific policy bypass by ID.",
-            "operationId": "getBypass",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "Policy bypass ID",
-                  "in": "path",
-                  "name": "bypassId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/PolicyBypass"
-                        }
-                     }
-                  },
-                  "description": "The requested policy bypass"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get policy bypass"
          }
       },
       "/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list": {
@@ -3890,6 +3793,103 @@
                }
             },
             "summary": "Get rule"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/policy-skips": {
+         "get": {
+            "description": "Returns a list of policy skips for workspace {workspaceId}.",
+            "operationId": "listPolicySkips",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "skips": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/PolicySkip"
+                                 },
+                                 "type": "array"
+                              }
+                           },
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "A list of policy skips"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "List policy skips for a workspace"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/policy-skips/{policySkipId}": {
+         "get": {
+            "description": "Returns a specific policy skip by ID.",
+            "operationId": "getPolicySkip",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Policy skip ID",
+                  "in": "path",
+                  "name": "policySkipId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/PolicySkip"
+                        }
+                     }
+                  },
+                  "description": "The requested policy skip"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get policy skip by ID"
          }
       },
       "/v1/workspaces/{workspaceId}/relationship-rules": {

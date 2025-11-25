@@ -7,141 +7,141 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-func NewPolicyBypasses(store *Store) *PolicyBypasses {
-	return &PolicyBypasses{
+func NewPolicySkips(store *Store) *PolicySkips {
+	return &PolicySkips{
 		repo:  store.repo,
 		store: store,
 	}
 }
 
-type PolicyBypasses struct {
+type PolicySkips struct {
 	repo  *repository.InMemoryStore
 	store *Store
 }
 
-func (pb *PolicyBypasses) Items() map[string]*oapi.PolicyBypass {
-	return pb.repo.PolicyBypasses.Items()
+func (pb *PolicySkips) Items() map[string]*oapi.PolicySkip {
+	return pb.repo.PolicySkips.Items()
 }
 
-func (pb *PolicyBypasses) Get(id string) (*oapi.PolicyBypass, bool) {
-	return pb.repo.PolicyBypasses.Get(id)
+func (pb *PolicySkips) Get(id string) (*oapi.PolicySkip, bool) {
+	return pb.repo.PolicySkips.Get(id)
 }
 
-func (pb *PolicyBypasses) Upsert(ctx context.Context, bypass *oapi.PolicyBypass) {
-	pb.repo.PolicyBypasses.Set(bypass.Id, bypass)
-	pb.store.changeset.RecordUpsert(bypass)
+func (pb *PolicySkips) Upsert(ctx context.Context, skip *oapi.PolicySkip) {
+	pb.repo.PolicySkips.Set(skip.Id, skip)
+	pb.store.changeset.RecordUpsert(skip)
 }
 
-func (pb *PolicyBypasses) Remove(ctx context.Context, id string) {
-	bypass, ok := pb.repo.PolicyBypasses.Get(id)
-	if !ok || bypass == nil {
+func (pb *PolicySkips) Remove(ctx context.Context, id string) {
+	skip, ok := pb.repo.PolicySkips.Get(id)
+	if !ok || skip == nil {
 		return
 	}
 
-	pb.repo.PolicyBypasses.Remove(id)
-	pb.store.changeset.RecordDelete(bypass)
+	pb.repo.PolicySkips.Remove(id)
+	pb.store.changeset.RecordDelete(skip)
 }
 
-// GetForTarget finds the most specific bypass matching the given version, environment, and resource.
+// GetForTarget finds the most specific skip matching the given version, environment, and resource.
 // Precedence (most to least specific):
 // 1. Exact match: version + environment + resource
 // 2. Environment wildcard: version + environment + nil
 // 3. Full wildcard: version + nil + nil
 //
-// Returns the first non-expired matching bypass, or nil if none found.
-func (pb *PolicyBypasses) GetForTarget(
+// Returns the first non-expired matching skip, or nil if none found.
+func (pb *PolicySkips) GetForTarget(
 	versionId string,
 	environmentId string,
 	resourceId string,
-) *oapi.PolicyBypass {
+) *oapi.PolicySkip {
 	now := time.Now()
 
 	// Try exact match: version + environment + resource
-	for _, bypass := range pb.repo.PolicyBypasses.Items() {
-		if bypass.VersionId != versionId {
+	for _, skip := range pb.repo.PolicySkips.Items() {
+		if skip.VersionId != versionId {
 			continue
 		}
 
 		// Check if expired
-		if bypass.ExpiresAt != nil && bypass.ExpiresAt.Before(now) {
+		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
 		// Exact match
-		if bypass.EnvironmentId != nil && *bypass.EnvironmentId == environmentId &&
-			bypass.ResourceId != nil && *bypass.ResourceId == resourceId {
-			return bypass
+		if skip.EnvironmentId != nil && *skip.EnvironmentId == environmentId &&
+			skip.ResourceId != nil && *skip.ResourceId == resourceId {
+			return skip
 		}
 	}
 
 	// Try environment wildcard: version + environment (all resources)
-	for _, bypass := range pb.repo.PolicyBypasses.Items() {
-		if bypass.VersionId != versionId {
+	for _, skip := range pb.repo.PolicySkips.Items() {
+		if skip.VersionId != versionId {
 			continue
 		}
 
 		// Check if expired
-		if bypass.ExpiresAt != nil && bypass.ExpiresAt.Before(now) {
+		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
 		// Environment match, resource wildcard
-		if bypass.EnvironmentId != nil && *bypass.EnvironmentId == environmentId &&
-			bypass.ResourceId == nil {
-			return bypass
+		if skip.EnvironmentId != nil && *skip.EnvironmentId == environmentId &&
+			skip.ResourceId == nil {
+			return skip
 		}
 	}
 
 	// Try full wildcard: version only (all environments and resources)
-	for _, bypass := range pb.repo.PolicyBypasses.Items() {
-		if bypass.VersionId != versionId {
+	for _, skip := range pb.repo.PolicySkips.Items() {
+		if skip.VersionId != versionId {
 			continue
 		}
 
 		// Check if expired
-		if bypass.ExpiresAt != nil && bypass.ExpiresAt.Before(now) {
+		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
 		// Full wildcard
-		if bypass.EnvironmentId == nil && bypass.ResourceId == nil {
-			return bypass
+		if skip.EnvironmentId == nil && skip.ResourceId == nil {
+			return skip
 		}
 	}
 
 	return nil
 }
 
-// GetAllForTarget returns ALL non-expired bypasses that match the target, ordered by specificity.
-// This is useful when multiple bypasses might apply and you want to OR their rule types together.
-func (pb *PolicyBypasses) GetAllForTarget(
+// GetAllForTarget returns ALL non-expired skips that match the target, ordered by specificity.
+// This is useful when multiple skips might apply and you want to OR their rule types together.
+func (pb *PolicySkips) GetAllForTarget(
 	versionId string,
 	environmentId string,
 	resourceId string,
-) []*oapi.PolicyBypass {
+) []*oapi.PolicySkip {
 	now := time.Now()
-	var matches []*oapi.PolicyBypass
+	var matches []*oapi.PolicySkip
 
-	// Collect all matching non-expired bypasses
-	for _, bypass := range pb.repo.PolicyBypasses.Items() {
-		if bypass.VersionId != versionId {
+	// Collect all matching non-expired skips
+	for _, skip := range pb.repo.PolicySkips.Items() {
+		if skip.VersionId != versionId {
 			continue
 		}
 
 		// Check if expired
-		if bypass.ExpiresAt != nil && bypass.ExpiresAt.Before(now) {
+		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
 
-		// Check if this bypass matches the target
-		matches = append(matches, bypass)
-		if bypass.EnvironmentId != nil && *bypass.EnvironmentId == environmentId {
-			if bypass.ResourceId == nil || *bypass.ResourceId == resourceId {
-				matches = append(matches, bypass)
+		// Check if this skip matches the target
+		matches = append(matches, skip)
+		if skip.EnvironmentId != nil && *skip.EnvironmentId == environmentId {
+			if skip.ResourceId == nil || *skip.ResourceId == resourceId {
+				matches = append(matches, skip)
 			}
-		} else if bypass.EnvironmentId == nil {
+		} else if skip.EnvironmentId == nil {
 			// Full wildcard matches
-			matches = append(matches, bypass)
+			matches = append(matches, skip)
 		}
 	}
 

@@ -10,7 +10,7 @@ import (
 	"workspace-engine/pkg/events/handler/jobagents"
 	"workspace-engine/pkg/events/handler/jobs"
 	"workspace-engine/pkg/events/handler/policies"
-	"workspace-engine/pkg/events/handler/policybypass"
+	"workspace-engine/pkg/events/handler/policyskip"
 	"workspace-engine/pkg/events/handler/redeploy"
 	"workspace-engine/pkg/events/handler/relationshiprules"
 	"workspace-engine/pkg/events/handler/resources"
@@ -68,8 +68,8 @@ var handlers = handler.HandlerRegistry{
 	handler.PolicyUpdate: policies.HandlePolicyUpdated,
 	handler.PolicyDelete: policies.HandlePolicyDeleted,
 
-	handler.PolicyBypassCreate: policybypass.HandlePolicyBypassCreated,
-	handler.PolicyBypassDelete: policybypass.HandlePolicyBypassDeleted,
+	handler.PolicySkipCreate: policyskip.HandlePolicySkipCreated,
+	handler.PolicySkipDelete: policyskip.HandlePolicySkipDeleted,
 
 	handler.RelationshipRuleCreate: relationshiprules.HandleRelationshipRuleCreated,
 	handler.RelationshipRuleUpdate: relationshiprules.HandleRelationshipRuleUpdated,

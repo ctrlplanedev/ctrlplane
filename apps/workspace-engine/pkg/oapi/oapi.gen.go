@@ -427,39 +427,6 @@ type Policy struct {
 	WorkspaceId string                 `json:"workspaceId"`
 }
 
-// PolicyBypass defines model for PolicyBypass.
-type PolicyBypass struct {
-	// CreatedAt When this bypass was created
-	CreatedAt time.Time `json:"createdAt"`
-
-	// CreatedBy User ID who created this bypass
-	CreatedBy string `json:"createdBy"`
-
-	// EnvironmentId Environment this bypass applies to. If null, applies to all environments.
-	EnvironmentId *string `json:"environmentId,omitempty"`
-
-	// ExpiresAt When this bypass expires. If null, bypass never expires.
-	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
-
-	// Id Unique identifier for the bypass
-	Id string `json:"id"`
-
-	// Reason Required reason for why this bypass is needed (e.g., incident ticket, emergency situation)
-	Reason string `json:"reason"`
-
-	// ResourceId Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).
-	ResourceId *string `json:"resourceId,omitempty"`
-
-	// RuleId Rule ID this bypass applies to
-	RuleId string `json:"ruleId"`
-
-	// VersionId Deployment version this bypass applies to
-	VersionId string `json:"versionId"`
-
-	// WorkspaceId Workspace this bypass belongs to
-	WorkspaceId string `json:"workspaceId"`
-}
-
 // PolicyEvaluation defines model for PolicyEvaluation.
 type PolicyEvaluation struct {
 	Policy      *Policy          `json:"policy,omitempty"`
@@ -478,6 +445,39 @@ type PolicyRule struct {
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	VersionSelector        *VersionSelectorRule        `json:"versionSelector,omitempty"`
+}
+
+// PolicySkip defines model for PolicySkip.
+type PolicySkip struct {
+	// CreatedAt When this skip was created
+	CreatedAt time.Time `json:"createdAt"`
+
+	// CreatedBy User ID who created this skip
+	CreatedBy string `json:"createdBy"`
+
+	// EnvironmentId Environment this skip applies to. If null, applies to all environments.
+	EnvironmentId *string `json:"environmentId,omitempty"`
+
+	// ExpiresAt When this skip expires. If null, skip never expires.
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+
+	// Id Unique identifier for the skip
+	Id string `json:"id"`
+
+	// Reason Required reason for why this skip is needed (e.g., incident ticket, emergency situation)
+	Reason string `json:"reason"`
+
+	// ResourceId Resource this skip applies to. If null, applies to all resources (in the environment if specified, or globally).
+	ResourceId *string `json:"resourceId,omitempty"`
+
+	// RuleId Rule ID this skip applies to
+	RuleId string `json:"ruleId"`
+
+	// VersionId Deployment version this skip applies to
+	VersionId string `json:"versionId"`
+
+	// WorkspaceId Workspace this skip belongs to
+	WorkspaceId string `json:"workspaceId"`
 }
 
 // PolicyTargetSelector defines model for PolicyTargetSelector.
@@ -1659,12 +1659,6 @@ type ServerInterface interface {
 	// List workspace IDs
 	// (GET /v1/workspaces)
 	ListWorkspaceIds(c *gin.Context)
-	// List policy bypasses
-	// (GET /v1/workspaces/{workspaceId}/bypasses)
-	ListBypasses(c *gin.Context, workspaceId string)
-	// Get policy bypass
-	// (GET /v1/workspaces/{workspaceId}/bypasses/{bypassId})
-	GetBypass(c *gin.Context, workspaceId string, bypassId string)
 	// Get deployment version jobs list
 	// (GET /v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list)
 	GetDeploymentVersionJobsList(c *gin.Context, workspaceId string, versionId string)
@@ -1740,6 +1734,12 @@ type ServerInterface interface {
 	// Get rule
 	// (GET /v1/workspaces/{workspaceId}/policies/{policyId}/rules/{ruleId})
 	GetRule(c *gin.Context, workspaceId string, policyId string, ruleId string)
+	// List policy skips for a workspace
+	// (GET /v1/workspaces/{workspaceId}/policy-skips)
+	ListPolicySkips(c *gin.Context, workspaceId string)
+	// Get policy skip by ID
+	// (GET /v1/workspaces/{workspaceId}/policy-skips/{policySkipId})
+	GetPolicySkip(c *gin.Context, workspaceId string, policySkipId string)
 	// Get relationship rules for a given workspace
 	// (GET /v1/workspaces/{workspaceId}/relationship-rules)
 	GetRelationshipRules(c *gin.Context, workspaceId string, params GetRelationshipRulesParams)
@@ -1829,63 +1829,6 @@ func (siw *ServerInterfaceWrapper) ListWorkspaceIds(c *gin.Context) {
 	}
 
 	siw.Handler.ListWorkspaceIds(c)
-}
-
-// ListBypasses operation middleware
-func (siw *ServerInterfaceWrapper) ListBypasses(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.ListBypasses(c, workspaceId)
-}
-
-// GetBypass operation middleware
-func (siw *ServerInterfaceWrapper) GetBypass(c *gin.Context) {
-
-	var err error
-
-	// ------------- Path parameter "workspaceId" -------------
-	var workspaceId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Path parameter "bypassId" -------------
-	var bypassId string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "bypassId", c.Param("bypassId"), &bypassId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter bypassId: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetBypass(c, workspaceId, bypassId)
 }
 
 // GetDeploymentVersionJobsList operation middleware
@@ -2899,6 +2842,63 @@ func (siw *ServerInterfaceWrapper) GetRule(c *gin.Context) {
 	siw.Handler.GetRule(c, workspaceId, policyId, ruleId)
 }
 
+// ListPolicySkips operation middleware
+func (siw *ServerInterfaceWrapper) ListPolicySkips(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListPolicySkips(c, workspaceId)
+}
+
+// GetPolicySkip operation middleware
+func (siw *ServerInterfaceWrapper) GetPolicySkip(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "policySkipId" -------------
+	var policySkipId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "policySkipId", c.Param("policySkipId"), &policySkipId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter policySkipId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPolicySkip(c, workspaceId, policySkipId)
+}
+
 // GetRelationshipRules operation middleware
 func (siw *ServerInterfaceWrapper) GetRelationshipRules(c *gin.Context) {
 
@@ -3581,8 +3581,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.POST(options.BaseURL+"/v1/validate/resource-selector", wrapper.ValidateResourceSelector)
 	router.GET(options.BaseURL+"/v1/workspaces", wrapper.ListWorkspaceIds)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/bypasses", wrapper.ListBypasses)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/bypasses/:bypassId", wrapper.GetBypass)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployment-versions/:versionId/jobs-list", wrapper.GetDeploymentVersionJobsList)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments", wrapper.ListDeployments)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/deployments/:deploymentId", wrapper.GetDeployment)
@@ -3608,6 +3606,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/rules/:ruleId", wrapper.GetRule)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policy-skips", wrapper.ListPolicySkips)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policy-skips/:policySkipId", wrapper.GetPolicySkip)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.GetRelationshipRules)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:relationshipRuleId", wrapper.GetRelationshipRule)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/evaluate", wrapper.EvaluateReleaseTarget)

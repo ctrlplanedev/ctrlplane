@@ -1,4 +1,4 @@
-package bypasses
+package policyskips
 
 import (
 	"net/http"
@@ -10,15 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Bypasses struct{}
+type PolicySkips struct{}
 
-func New() *Bypasses {
-	return &Bypasses{}
+func New() *PolicySkips {
+	return &PolicySkips{}
 }
 
-// ListBypasses returns all policy bypasses for a workspace
-// GET /v1/workspaces/{workspaceId}/bypasses
-func (b *Bypasses) ListBypasses(c *gin.Context, workspaceId string) {
+// ListPolicySkips returns all policy skips for a workspace
+// GET /v1/workspaces/{workspaceId}/skips
+func (p *PolicySkips) ListPolicySkips(c *gin.Context, workspaceId string) {
 	ws, err := getWorkspaceForRequest(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -27,19 +27,19 @@ func (b *Bypasses) ListBypasses(c *gin.Context, workspaceId string) {
 		return
 	}
 
-	bypasses := make([]*oapi.PolicyBypass, 0)
-	for _, bypass := range ws.Store().PolicyBypasses.Items() {
-		bypasses = append(bypasses, bypass)
+	skips := make([]*oapi.PolicySkip, 0)
+	for _, skip := range ws.Store().PolicySkips.Items() {
+		skips = append(skips, skip)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"bypasses": bypasses,
+		"skips": skips,
 	})
 }
 
-// GetBypass returns a specific policy bypass by ID
-// GET /v1/workspaces/{workspaceId}/bypasses/{bypassId}
-func (b *Bypasses) GetBypass(c *gin.Context, workspaceId string, bypassId string) {
+// GetPolicySkip returns a specific policy skip by ID
+// GET /v1/workspaces/{workspaceId}/skips/{skipId}
+func (p *PolicySkips) GetPolicySkip(c *gin.Context, workspaceId string, bypassId string) {
 	ws, err := getWorkspaceForRequest(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -48,7 +48,7 @@ func (b *Bypasses) GetBypass(c *gin.Context, workspaceId string, bypassId string
 		return
 	}
 
-	bypass, ok := ws.Store().PolicyBypasses.Get(bypassId)
+	bypass, ok := ws.Store().PolicySkips.Get(bypassId)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Policy bypass not found",

@@ -41,7 +41,7 @@ func New(wsId string) *InMemoryStore {
 		DeploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
 		Environments:             createTypedStore[*oapi.Environment](router, "environment"),
 		Policies:                 createTypedStore[*oapi.Policy](router, "policy"),
-		PolicyBypasses:           createTypedStore[*oapi.PolicyBypass](router, "policy_bypass"),
+		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		Systems:                  createTypedStore[*oapi.System](router, "system"),
 		Releases:                 createTypedStore[*oapi.Release](router, "release"),
 		Jobs:                     createTypedStore[*oapi.Job](router, "job"),
@@ -69,7 +69,7 @@ type InMemoryStore struct {
 
 	Environments         cmap.ConcurrentMap[string, *oapi.Environment]
 	Policies             cmap.ConcurrentMap[string, *oapi.Policy]
-	PolicyBypasses       cmap.ConcurrentMap[string, *oapi.PolicyBypass]
+	PolicySkips          cmap.ConcurrentMap[string, *oapi.PolicySkip]
 	Systems              cmap.ConcurrentMap[string, *oapi.System]
 	Releases             cmap.ConcurrentMap[string, *oapi.Release]
 	ReleaseVerifications cmap.ConcurrentMap[string, *oapi.ReleaseVerification]

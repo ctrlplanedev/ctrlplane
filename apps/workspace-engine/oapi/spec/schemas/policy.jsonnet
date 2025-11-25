@@ -277,53 +277,53 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  PolicyBypass: {
+  PolicySkip: {
     type: 'object',
     required: ['id', 'workspaceId', 'versionId', 'ruleId', 'reason', 'createdBy', 'createdAt'],
     properties: {
       id: {
         type: 'string',
-        description: 'Unique identifier for the bypass',
+        description: 'Unique identifier for the skip',
       },
       workspaceId: {
         type: 'string',
-        description: 'Workspace this bypass belongs to',
+        description: 'Workspace this skip belongs to',
       },
       versionId: {
         type: 'string',
-        description: 'Deployment version this bypass applies to',
+        description: 'Deployment version this skip applies to',
       },
       environmentId: {
         type: 'string',
-        description: 'Environment this bypass applies to. If null, applies to all environments.',
+        description: 'Environment this skip applies to. If null, applies to all environments.',
       },
       resourceId: {
         type: 'string',
-        description: 'Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).',
+        description: 'Resource this skip applies to. If null, applies to all resources (in the environment if specified, or globally).',
       },
       ruleId: {
         type: 'string',
-        description: 'Rule ID this bypass applies to',
+        description: 'Rule ID this skip applies to',
       },
 
       // Audit fields
       reason: {
         type: 'string',
-        description: 'Required reason for why this bypass is needed (e.g., incident ticket, emergency situation)',
+        description: 'Required reason for why this skip is needed (e.g., incident ticket, emergency situation)',
       },
       createdBy: {
         type: 'string',
-        description: 'User ID who created this bypass',
+        description: 'User ID who created this skip',
       },
       createdAt: {
         type: 'string',
         format: 'date-time',
-        description: 'When this bypass was created',
+        description: 'When this skip was created',
       },
       expiresAt: {
         type: 'string',
         format: 'date-time',
-        description: 'When this bypass expires. If null, bypass never expires.',
+        description: 'When this skip expires. If null, skip never expires.',
       },
     },
   },

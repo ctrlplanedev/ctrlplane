@@ -1,4 +1,4 @@
-package policybypass
+package policyskip
 
 import (
 	"context"
@@ -8,30 +8,30 @@ import (
 	"workspace-engine/pkg/workspace"
 )
 
-func HandlePolicyBypassCreated(
+func HandlePolicySkipCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	bypass := &oapi.PolicyBypass{}
+	bypass := &oapi.PolicySkip{}
 	if err := json.Unmarshal(event.Data, bypass); err != nil {
 		return err
 	}
 
-	ws.Store().PolicyBypasses.Upsert(ctx, bypass)
+	ws.Store().PolicySkips.Upsert(ctx, bypass)
 	return nil
 }
 
-func HandlePolicyBypassDeleted(
+func HandlePolicySkipDeleted(
 	ctx context.Context,
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	bypass := &oapi.PolicyBypass{}
+	bypass := &oapi.PolicySkip{}
 	if err := json.Unmarshal(event.Data, bypass); err != nil {
 		return err
 	}
 
-	ws.Store().PolicyBypasses.Remove(ctx, bypass.Id)
+	ws.Store().PolicySkips.Remove(ctx, bypass.Id)
 	return nil
 }
