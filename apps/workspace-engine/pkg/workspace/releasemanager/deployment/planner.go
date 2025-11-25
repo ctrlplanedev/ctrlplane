@@ -58,6 +58,7 @@ type planDeploymentConfig struct {
 	resourceRelatedEntities      map[string][]*oapi.EntityRelation
 	recorder                     *trace.ReconcileTarget
 	earliestVersionForEvaluation *oapi.DeploymentVersion
+	forceDeployVersion           *oapi.DeploymentVersion
 }
 
 func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) planDeploymentOptions {
@@ -75,6 +76,12 @@ func WithTraceRecorder(recorder *trace.ReconcileTarget) planDeploymentOptions {
 func WithVersionAndNewer(version *oapi.DeploymentVersion) planDeploymentOptions {
 	return func(cfg *planDeploymentConfig) {
 		cfg.earliestVersionForEvaluation = version
+	}
+}
+
+func WithForceDeployVersion(version *oapi.DeploymentVersion) planDeploymentOptions {
+	return func(cfg *planDeploymentConfig) {
+		cfg.forceDeployVersion = version
 	}
 }
 
@@ -126,9 +133,14 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		return nil, nil
 	}
 
+	deployableVersion := cfg.forceDeployVersion
+
 	// Step 2: Find first version that passes user-defined policies
-	span.AddEvent("Step 2: Finding deployable version")
-	deployableVersion := p.findDeployableVersion(ctx, candidateVersions, releaseTarget, planning)
+	if deployableVersion == nil {
+		span.AddEvent("Step 2: Finding deployable version")
+		deployableVersion = p.findDeployableVersion(ctx, candidateVersions, releaseTarget, planning)
+	}
+
 	if deployableVersion == nil {
 		span.AddEvent("No deployable version found (blocked by policies)")
 		span.SetAttributes(

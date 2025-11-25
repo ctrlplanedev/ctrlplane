@@ -285,6 +285,16 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		WithTrigger(trace.TriggerManual))
 }
 
+func (m *Manager) ForceDeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarget, version *oapi.DeploymentVersion) error {
+	ctx, span := tracer.Start(ctx, "ForceDeploy")
+	defer span.End()
+
+	return m.ReconcileTarget(ctx, releaseTarget,
+		WithSkipEligibilityCheck(true),
+		WithTrigger(trace.TriggerManual),
+		WithForceDeployVersion(version))
+}
+
 // reconcileTargetWithRelationships is like ReconcileTarget but accepts pre-computed resource relationships.
 // This is an optimization to avoid recomputing relationships for multiple release targets that share the same resource.
 // After reconciliation completes, it caches the computed state for use by other APIs.

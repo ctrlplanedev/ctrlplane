@@ -572,6 +572,12 @@ type ReleaseTarget struct {
 	ResourceId    string `json:"resourceId"`
 }
 
+// ReleaseTargetForceDeployEvent defines model for ReleaseTargetForceDeployEvent.
+type ReleaseTargetForceDeployEvent struct {
+	ReleaseTarget ReleaseTarget     `json:"releaseTarget"`
+	Version       DeploymentVersion `json:"version"`
+}
+
 // ReleaseTargetState defines model for ReleaseTargetState.
 type ReleaseTargetState struct {
 	CurrentRelease *Release `json:"currentRelease,omitempty"`
