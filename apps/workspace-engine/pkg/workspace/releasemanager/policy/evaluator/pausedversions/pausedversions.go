@@ -31,6 +31,10 @@ func (e *PausedVersionsEvaluator) RuleType() string {
 	return evaluator.RuleTypePausedVersions
 }
 
+func (e *PausedVersionsEvaluator) RuleId() string {
+	return "pausedVersions"
+}
+
 func (e *PausedVersionsEvaluator) Complexity() int {
 	return 1
 }

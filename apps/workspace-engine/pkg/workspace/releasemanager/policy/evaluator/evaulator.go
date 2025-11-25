@@ -54,6 +54,8 @@ type Evaluator interface {
 	// This is used for policy bypass matching.
 	RuleType() string
 
+	RuleId() string
+
 	Complexity() int
 }
 

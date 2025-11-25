@@ -279,7 +279,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   PolicyBypass: {
     type: 'object',
-    required: ['id', 'workspaceId', 'versionId', 'bypassRuleTypes', 'justification', 'createdBy', 'createdAt'],
+    required: ['id', 'workspaceId', 'versionId', 'ruleId', 'reason', 'createdBy', 'createdAt'],
     properties: {
       id: {
         type: 'string',
@@ -301,26 +301,15 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'string',
         description: 'Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).',
       },
-      policyIds: {
-        type: 'array',
-        items: { type: 'string' },
-        description: 'Policy IDs this bypass applies to. If empty, applies to all policies.',
-      },
-
-      // Which policy rule types to bypass
-      bypassRuleTypes: {
-        type: 'array',
-        items: {
-          type: 'string',
-          enum: ['approval', 'environmentProgression', 'gradualRollout', 'retry'],
-        },
-        description: 'Which policy rule types to bypass.',
+      ruleId: {
+        type: 'string',
+        description: 'Rule ID this bypass applies to',
       },
 
       // Audit fields
-      justification: {
+      reason: {
         type: 'string',
-        description: 'Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation)',
+        description: 'Required reason for why this bypass is needed (e.g., incident ticket, emergency situation)',
       },
       createdBy: {
         type: 'string',

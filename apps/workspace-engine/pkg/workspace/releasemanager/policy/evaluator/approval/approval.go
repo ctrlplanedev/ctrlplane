@@ -13,17 +13,19 @@ import (
 var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
 type AnyApprovalEvaluator struct {
-	store *store.Store
-	rule  *oapi.AnyApprovalRule
+	store  *store.Store
+	ruleId string
+	rule   *oapi.AnyApprovalRule
 }
 
-func NewEvaluator(store *store.Store, approvalRule *oapi.AnyApprovalRule) evaluator.Evaluator {
-	if approvalRule == nil || store == nil {
+func NewEvaluator(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
+	if approvalRule == nil || approvalRule.AnyApproval == nil || store == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(&AnyApprovalEvaluator{
-		store: store,
-		rule:  approvalRule,
+		store:  store,
+		ruleId: approvalRule.Id,
+		rule:   approvalRule.AnyApproval,
 	})
 }
 
@@ -35,6 +37,10 @@ func (m *AnyApprovalEvaluator) ScopeFields() evaluator.ScopeFields {
 // RuleType returns the rule type identifier for bypass matching.
 func (m *AnyApprovalEvaluator) RuleType() string {
 	return evaluator.RuleTypeApproval
+}
+
+func (m *AnyApprovalEvaluator) RuleId() string {
+	return m.ruleId
 }
 
 func (m *AnyApprovalEvaluator) Complexity() int {

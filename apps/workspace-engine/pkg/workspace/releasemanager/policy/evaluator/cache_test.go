@@ -32,6 +32,10 @@ func (m *MockEvaluator) RuleType() string {
 	return "mock"
 }
 
+func (m *MockEvaluator) RuleId() string {
+	return "mock"
+}
+
 func (m *MockEvaluator) Complexity() int {
 	return 1
 }

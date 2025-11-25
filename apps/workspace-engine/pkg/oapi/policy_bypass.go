@@ -2,7 +2,6 @@ package oapi
 
 import (
 	"fmt"
-	"slices"
 	"time"
 )
 
@@ -39,24 +38,4 @@ func (pb *PolicyBypass) IsExpired() bool {
 		return false
 	}
 	return time.Now().After(*pb.ExpiresAt)
-}
-
-// MatchesPolicy checks if the bypass applies to the given policy
-// Returns true if PolicyIds is nil/empty (applies to all) or contains the policyId
-func (pb *PolicyBypass) MatchesPolicy(policyId string) bool {
-	if pb.PolicyIds == nil || len(*pb.PolicyIds) == 0 {
-		return true
-	}
-
-	return slices.Contains(*pb.PolicyIds, policyId)
-}
-
-// BypassesRuleType checks if the bypass includes the given rule type
-func (pb *PolicyBypass) BypassesRuleType(ruleType string) bool {
-	for _, rt := range pb.BypassRuleTypes {
-		if string(rt) == ruleType {
-			return true
-		}
-	}
-	return false
 }

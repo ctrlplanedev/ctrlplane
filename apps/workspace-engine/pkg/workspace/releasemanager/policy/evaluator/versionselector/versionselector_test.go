@@ -86,8 +86,11 @@ func TestNewEvaluator(t *testing.T) {
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 		eval := NewEvaluator(nil, rule)
 		assert.Nil(t, eval)
@@ -97,8 +100,11 @@ func TestNewEvaluator(t *testing.T) {
 		selector := &oapi.Selector{}
 		_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 		eval := NewEvaluator(s, rule)
 		assert.NotNil(t, eval)
@@ -113,13 +119,17 @@ func TestScopeFields(t *testing.T) {
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
-	rule := &oapi.VersionSelectorRule{
-		Selector: *selector,
+	rule := &oapi.PolicyRule{
+		Id: "versionSelector",
+		VersionSelector: &oapi.VersionSelectorRule{
+			Selector: *selector,
+		},
 	}
 
 	eval := &Evaluator{
-		store: s,
-		rule:  rule,
+		store:  s,
+		ruleId: rule.Id,
+		rule:   rule.VersionSelector,
 	}
 
 	scopeFields := eval.ScopeFields()
@@ -144,8 +154,11 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 			Cel: `version.tag.startsWith("v2.")`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -172,8 +185,11 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 			Cel: `version.tag.startsWith("v2.")`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -206,8 +222,11 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 			Cel: `environment.name == "staging"`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -229,8 +248,11 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 			Cel: `environment.name == "production"`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -262,8 +284,11 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 			Cel: `resource.metadata["tier"] == "production"`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -285,8 +310,11 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 			Cel: `resource.metadata["tier"] == "staging"`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -318,8 +346,11 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 			Cel: `version.tag.startsWith("v2.") && environment.name == "staging" && resource.metadata["canary"] == "true"`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -341,8 +372,11 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 			Cel: `version.tag.startsWith("v3.") && environment.name == "staging"`,
 		})
 
-		rule := &oapi.VersionSelectorRule{
-			Selector: *selector,
+		rule := &oapi.PolicyRule{
+			Id: "versionSelector",
+			VersionSelector: &oapi.VersionSelectorRule{
+				Selector: *selector,
+			},
 		}
 
 		eval := NewEvaluator(s, rule)
@@ -373,8 +407,11 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 		Cel: `invalid CEL expression!!!`,
 	})
 
-	rule := &oapi.VersionSelectorRule{
-		Selector: *selector,
+	rule := &oapi.PolicyRule{
+		Id: "versionSelector",
+		VersionSelector: &oapi.VersionSelectorRule{
+			Selector: *selector,
+		},
 	}
 
 	eval := NewEvaluator(s, rule)
@@ -409,8 +446,11 @@ func TestEvaluate_MissingDeployment(t *testing.T) {
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
-	rule := &oapi.VersionSelectorRule{
-		Selector: *selector,
+	rule := &oapi.PolicyRule{
+		Id: "versionSelector",
+		VersionSelector: &oapi.VersionSelectorRule{
+			Selector: *selector,
+		},
 	}
 
 	eval := NewEvaluator(s, rule)
@@ -444,8 +484,11 @@ func TestEvaluate_MissingResource(t *testing.T) {
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
-	rule := &oapi.VersionSelectorRule{
-		Selector: *selector,
+	rule := &oapi.PolicyRule{
+		Id: "versionSelector",
+		VersionSelector: &oapi.VersionSelectorRule{
+			Selector: *selector,
+		},
 	}
 
 	eval := NewEvaluator(s, rule)
@@ -477,9 +520,12 @@ func TestEvaluate_WithDescription(t *testing.T) {
 	})
 
 	description := "Only deploy v2.x versions to staging"
-	rule := &oapi.VersionSelectorRule{
-		Selector:    *selector,
-		Description: &description,
+	rule := &oapi.PolicyRule{
+		Id: "versionSelector",
+		VersionSelector: &oapi.VersionSelectorRule{
+			Selector:    *selector,
+			Description: &description,
+		},
 	}
 
 	eval := NewEvaluator(s, rule)

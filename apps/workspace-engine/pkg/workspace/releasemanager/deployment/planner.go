@@ -128,7 +128,7 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 
 	// Step 2: Find first version that passes user-defined policies
 	span.AddEvent("Step 2: Finding deployable version")
-	deployableVersion := p.findDeployableVersion(ctx, candidateVersions, releaseTarget, planning)
+	deployableVersion := NewDeployableVersionManager(p.store, p.policyManager, p.scheduler, releaseTarget, planning).Find(ctx, candidateVersions)
 	if deployableVersion == nil {
 		span.AddEvent("No deployable version found (blocked by policies)")
 		span.SetAttributes(
