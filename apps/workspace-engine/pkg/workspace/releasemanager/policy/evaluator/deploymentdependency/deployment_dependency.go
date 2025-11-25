@@ -16,18 +16,20 @@ import (
 var tracer = otel.Tracer("DeploymentDependencyEvaluator")
 
 type DeploymentDependencyEvaluator struct {
-	store *store.Store
-	rule  *oapi.DeploymentDependencyRule
+	store  *store.Store
+	ruleId string
+	rule   *oapi.DeploymentDependencyRule
 }
 
-func NewEvaluator(store *store.Store, rule *oapi.DeploymentDependencyRule) evaluator.Evaluator {
-	if rule == nil || store == nil {
+func NewEvaluator(store *store.Store, dependencyRule *oapi.PolicyRule) evaluator.Evaluator {
+	if dependencyRule == nil || dependencyRule.DeploymentDependency == nil || store == nil {
 		return nil
 	}
 
 	return evaluator.WithMemoization(&DeploymentDependencyEvaluator{
-		store: store,
-		rule:  rule,
+		store:  store,
+		ruleId: dependencyRule.Id,
+		rule:   dependencyRule.DeploymentDependency,
 	})
 }
 
@@ -37,6 +39,10 @@ func (e *DeploymentDependencyEvaluator) ScopeFields() evaluator.ScopeFields {
 
 func (e *DeploymentDependencyEvaluator) RuleType() string {
 	return "deploymentDependency"
+}
+
+func (e *DeploymentDependencyEvaluator) RuleId() string {
+	return e.ruleId
 }
 
 func (e *DeploymentDependencyEvaluator) Complexity() int {

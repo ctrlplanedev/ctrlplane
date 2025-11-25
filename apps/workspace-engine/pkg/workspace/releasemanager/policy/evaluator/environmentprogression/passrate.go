@@ -39,6 +39,10 @@ func (e *PassRateEvaluator) RuleType() string {
 	return evaluator.RuleTypeEnvironmentProgression
 }
 
+func (e *PassRateEvaluator) RuleId() string {
+	return "passRate"
+}
+
 func (e *PassRateEvaluator) Complexity() int {
 	return 1
 }

@@ -21,20 +21,22 @@ var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentp
 var _ evaluator.Evaluator = &EnvironmentProgressionEvaluator{}
 
 type EnvironmentProgressionEvaluator struct {
-	store *store.Store
-	rule  *oapi.EnvironmentProgressionRule
+	store  *store.Store
+	ruleId string
+	rule   *oapi.EnvironmentProgressionRule
 }
 
 func NewEvaluator(
 	store *store.Store,
-	rule *oapi.EnvironmentProgressionRule,
+	environmentProgressionRule *oapi.PolicyRule,
 ) evaluator.Evaluator {
-	if rule == nil || store == nil {
+	if environmentProgressionRule == nil || environmentProgressionRule.EnvironmentProgression == nil || store == nil {
 		return nil
 	}
 	return evaluator.WithMemoization(&EnvironmentProgressionEvaluator{
-		store: store,
-		rule:  rule,
+		store:  store,
+		ruleId: environmentProgressionRule.Id,
+		rule:   environmentProgressionRule.EnvironmentProgression,
 	})
 }
 
@@ -46,6 +48,10 @@ func (e *EnvironmentProgressionEvaluator) ScopeFields() evaluator.ScopeFields {
 // RuleType returns the rule type identifier for bypass matching.
 func (e *EnvironmentProgressionEvaluator) RuleType() string {
 	return evaluator.RuleTypeEnvironmentProgression
+}
+
+func (e *EnvironmentProgressionEvaluator) RuleId() string {
+	return e.ruleId
 }
 
 func (e *EnvironmentProgressionEvaluator) Complexity() int {

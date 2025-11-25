@@ -37,6 +37,7 @@ func ClearTestTimeGetterFactory() {
 
 type GradualRolloutEvaluator struct {
 	store     *store.Store
+	ruleId    string
 	rule      *oapi.GradualRolloutRule
 	hashingFn func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error)
 
@@ -44,8 +45,8 @@ type GradualRolloutEvaluator struct {
 	timeGetter func() time.Time
 }
 
-func NewEvaluator(store *store.Store, rule *oapi.GradualRolloutRule) evaluator.Evaluator {
-	if rule == nil || store == nil {
+func NewEvaluator(store *store.Store, rolloutRule *oapi.PolicyRule) evaluator.Evaluator {
+	if rolloutRule == nil || rolloutRule.GradualRollout == nil || store == nil {
 		return nil
 	}
 
@@ -59,7 +60,8 @@ func NewEvaluator(store *store.Store, rule *oapi.GradualRolloutRule) evaluator.E
 
 	return evaluator.WithMemoization(&GradualRolloutEvaluator{
 		store:      store,
-		rule:       rule,
+		ruleId:     rolloutRule.Id,
+		rule:       rolloutRule.GradualRollout,
 		hashingFn:  fnvHashingFn,
 		timeGetter: timeGetter,
 	})
@@ -73,6 +75,10 @@ func (e *GradualRolloutEvaluator) ScopeFields() evaluator.ScopeFields {
 // RuleType returns the rule type identifier for bypass matching.
 func (e *GradualRolloutEvaluator) RuleType() string {
 	return evaluator.RuleTypeGradualRollout
+}
+
+func (e *GradualRolloutEvaluator) RuleId() string {
+	return e.ruleId
 }
 
 func (e *GradualRolloutEvaluator) Complexity() int {
@@ -105,7 +111,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 			// Only consider the approval rule if present
 			if rule.AnyApproval != nil {
 				foundApprovalPolicy = true
-				approvalEvaluator := approval.NewEvaluator(e.store, rule.AnyApproval)
+				approvalEvaluator := approval.NewEvaluator(e.store, &rule)
 				if approvalEvaluator == nil {
 					continue
 				}
@@ -121,7 +127,7 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 
 			if rule.EnvironmentProgression != nil {
 				foundEnvironmentProgressionPolicy = true
-				environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.store, rule.EnvironmentProgression)
+				environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.store, &rule)
 				if environmentProgressionEvaluator == nil {
 					continue
 				}

@@ -88,14 +88,6 @@ const (
 	True NullValue = true
 )
 
-// Defines values for PolicyBypassBypassRuleTypes.
-const (
-	PolicyBypassBypassRuleTypesApproval               PolicyBypassBypassRuleTypes = "approval"
-	PolicyBypassBypassRuleTypesEnvironmentProgression PolicyBypassBypassRuleTypes = "environmentProgression"
-	PolicyBypassBypassRuleTypesGradualRollout         PolicyBypassBypassRuleTypes = "gradualRollout"
-	PolicyBypassBypassRuleTypesRetry                  PolicyBypassBypassRuleTypes = "retry"
-)
-
 // Defines values for PropertyMatcherOperator.
 const (
 	Contains   PropertyMatcherOperator = "contains"
@@ -135,8 +127,8 @@ const (
 
 // Defines values for RuleEvaluationActionType.
 const (
-	RuleEvaluationActionTypeApproval RuleEvaluationActionType = "approval"
-	RuleEvaluationActionTypeWait     RuleEvaluationActionType = "wait"
+	Approval RuleEvaluationActionType = "approval"
+	Wait     RuleEvaluationActionType = "wait"
 )
 
 // AnyApprovalRule defines model for AnyApprovalRule.
@@ -437,9 +429,6 @@ type Policy struct {
 
 // PolicyBypass defines model for PolicyBypass.
 type PolicyBypass struct {
-	// BypassRuleTypes Which policy rule types to bypass.
-	BypassRuleTypes []PolicyBypassBypassRuleTypes `json:"bypassRuleTypes"`
-
 	// CreatedAt When this bypass was created
 	CreatedAt time.Time `json:"createdAt"`
 
@@ -455,14 +444,14 @@ type PolicyBypass struct {
 	// Id Unique identifier for the bypass
 	Id string `json:"id"`
 
-	// Justification Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation)
-	Justification string `json:"justification"`
-
-	// PolicyIds Policy IDs this bypass applies to. If empty, applies to all policies.
-	PolicyIds *[]string `json:"policyIds,omitempty"`
+	// Reason Required reason for why this bypass is needed (e.g., incident ticket, emergency situation)
+	Reason *string `json:"reason,omitempty"`
 
 	// ResourceId Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).
 	ResourceId *string `json:"resourceId,omitempty"`
+
+	// RuleId Rule ID this bypass applies to
+	RuleId string `json:"ruleId"`
 
 	// VersionId Deployment version this bypass applies to
 	VersionId string `json:"versionId"`
@@ -470,9 +459,6 @@ type PolicyBypass struct {
 	// WorkspaceId Workspace this bypass belongs to
 	WorkspaceId string `json:"workspaceId"`
 }
-
-// PolicyBypassBypassRuleTypes defines model for PolicyBypass.BypassRuleTypes.
-type PolicyBypassBypassRuleTypes string
 
 // PolicyEvaluation defines model for PolicyEvaluation.
 type PolicyEvaluation struct {

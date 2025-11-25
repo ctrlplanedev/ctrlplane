@@ -814,19 +814,6 @@
          },
          "PolicyBypass": {
             "properties": {
-               "bypassRuleTypes": {
-                  "description": "Which policy rule types to bypass.",
-                  "items": {
-                     "enum": [
-                        "approval",
-                        "environmentProgression",
-                        "gradualRollout",
-                        "retry"
-                     ],
-                     "type": "string"
-                  },
-                  "type": "array"
-               },
                "createdAt": {
                   "description": "When this bypass was created",
                   "format": "date-time",
@@ -849,19 +836,16 @@
                   "description": "Unique identifier for the bypass",
                   "type": "string"
                },
-               "justification": {
-                  "description": "Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation)",
+               "reason": {
+                  "description": "Required reason for why this bypass is needed (e.g., incident ticket, emergency situation)",
                   "type": "string"
-               },
-               "policyIds": {
-                  "description": "Policy IDs this bypass applies to. If empty, applies to all policies.",
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                },
                "resourceId": {
                   "description": "Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally).",
+                  "type": "string"
+               },
+               "ruleId": {
+                  "description": "Rule ID this bypass applies to",
                   "type": "string"
                },
                "versionId": {
@@ -877,7 +861,7 @@
                "id",
                "workspaceId",
                "versionId",
-               "bypassRuleTypes",
+               "ruleId",
                "justification",
                "createdBy",
                "createdAt"

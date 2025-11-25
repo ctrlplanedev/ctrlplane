@@ -48,6 +48,10 @@ func (m *MemoizedEvaluator) RuleType() string {
 	return m.evaluator.RuleType()
 }
 
+func (m *MemoizedEvaluator) RuleId() string {
+	return m.evaluator.RuleId()
+}
+
 func (m *MemoizedEvaluator) Complexity() int {
 	return m.evaluator.Complexity()
 }

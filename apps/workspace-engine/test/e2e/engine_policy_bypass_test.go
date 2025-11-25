@@ -50,6 +50,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -70,16 +71,19 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 	}
 
 	// Create a bypass to skip approval
+	expiresAt := time.Now().Add(1 * time.Hour)
+	reason := "Emergency fix for production incident #123"
 	bypass := &oapi.PolicyBypass{
-		Id:              uuid.New().String(),
-		WorkspaceId:     engine.Workspace().ID,
-		VersionId:       version.Id,
-		EnvironmentId:   &environmentID,
-		ResourceId:      &resourceID,
-		BypassRuleTypes: []oapi.PolicyBypassBypassRuleTypes{oapi.PolicyBypassBypassRuleTypesApproval},
-		Justification:   "Emergency fix for production incident #123",
-		CreatedBy:       "incident-commander",
-		CreatedAt:       time.Now(),
+		Id:            uuid.New().String(),
+		WorkspaceId:   engine.Workspace().ID,
+		VersionId:     version.Id,
+		EnvironmentId: &environmentID,
+		ResourceId:    &resourceID,
+		RuleId:        "rule-1",
+		Reason:        &reason,
+		CreatedBy:     "incident-commander",
+		CreatedAt:     time.Now(),
+		ExpiresAt:     &expiresAt,
 	}
 	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
 
@@ -131,9 +135,11 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-2"),
 				integration.WithRuleGradualRollout(300), // 5 minute intervals
 			),
 		),
@@ -153,21 +159,31 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 	}
 
 	// Create bypass for both approval and gradual rollout
-	bypass := &oapi.PolicyBypass{
+	reason := "Critical security patch - immediate deployment required"
+	bypass1 := &oapi.PolicyBypass{
 		Id:            uuid.New().String(),
 		WorkspaceId:   engine.Workspace().ID,
 		VersionId:     version.Id,
 		EnvironmentId: &environmentID,
 		ResourceId:    &resourceID,
-		BypassRuleTypes: []oapi.PolicyBypassBypassRuleTypes{
-			oapi.PolicyBypassBypassRuleTypesApproval,
-			oapi.PolicyBypassBypassRuleTypesGradualRollout,
-		},
-		Justification: "Critical security patch - immediate deployment required",
+		RuleId:        "rule-1",
+		Reason:        &reason,
 		CreatedBy:     "security-team",
 		CreatedAt:     time.Now(),
 	}
-	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
+	bypass2 := &oapi.PolicyBypass{
+		Id:            uuid.New().String(),
+		WorkspaceId:   engine.Workspace().ID,
+		VersionId:     version.Id,
+		EnvironmentId: &environmentID,
+		ResourceId:    &resourceID,
+		RuleId:        "rule-2",
+		Reason:        &reason,
+		CreatedBy:     "security-team",
+		CreatedAt:     time.Now(),
+	}
+	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass1)
+	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass2)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// Job should be created immediately
@@ -217,6 +233,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -236,16 +253,17 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 	}
 
 	// Create bypass for environment (all resources)
+	reason := "Environment-wide emergency bypass"
 	bypass := &oapi.PolicyBypass{
-		Id:              uuid.New().String(),
-		WorkspaceId:     engine.Workspace().ID,
-		VersionId:       version.Id,
-		EnvironmentId:   &environmentID,
-		ResourceId:      nil, // Wildcard - all resources
-		BypassRuleTypes: []oapi.PolicyBypassBypassRuleTypes{oapi.PolicyBypassBypassRuleTypesApproval},
-		Justification:   "Environment-wide emergency bypass",
-		CreatedBy:       "ops-team",
-		CreatedAt:       time.Now(),
+		Id:            uuid.New().String(),
+		WorkspaceId:   engine.Workspace().ID,
+		VersionId:     version.Id,
+		EnvironmentId: &environmentID,
+		ResourceId:    nil, // Wildcard - all resources
+		RuleId:        "rule-1",
+		Reason:        &reason,
+		CreatedBy:     "ops-team",
+		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -299,6 +317,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -318,16 +337,17 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 	}
 
 	// Create bypass for version (all environments)
+	reason := "Global bypass for critical version"
 	bypass := &oapi.PolicyBypass{
-		Id:              uuid.New().String(),
-		WorkspaceId:     engine.Workspace().ID,
-		VersionId:       version.Id,
-		EnvironmentId:   nil, // Wildcard - all environments
-		ResourceId:      nil, // Wildcard - all resources
-		BypassRuleTypes: []oapi.PolicyBypassBypassRuleTypes{oapi.PolicyBypassBypassRuleTypesApproval},
-		Justification:   "Global bypass for critical version",
-		CreatedBy:       "cto",
-		CreatedAt:       time.Now(),
+		Id:            uuid.New().String(),
+		WorkspaceId:   engine.Workspace().ID,
+		VersionId:     version.Id,
+		EnvironmentId: nil, // Wildcard - all environments
+		ResourceId:    nil, // Wildcard - all resources
+		RuleId:        "rule-1",
+		Reason:        &reason,
+		CreatedBy:     "cto",
+		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -378,6 +398,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(2),
 			),
 		),
@@ -391,6 +412,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-2"),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -410,18 +432,17 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 	}
 
 	// Create bypass for policy 1 only
-	policyIds := []string{policy1ID}
+	reason := "Bypass only policy-1, policy-2 still applies"
 	bypass := &oapi.PolicyBypass{
-		Id:              uuid.New().String(),
-		WorkspaceId:     engine.Workspace().ID,
-		VersionId:       version.Id,
-		EnvironmentId:   &environmentID,
-		ResourceId:      &resourceID,
-		PolicyIds:       &policyIds,
-		BypassRuleTypes: []oapi.PolicyBypassBypassRuleTypes{oapi.PolicyBypassBypassRuleTypesApproval},
-		Justification:   "Bypass only policy-1, policy-2 still applies",
-		CreatedBy:       "admin",
-		CreatedAt:       time.Now(),
+		Id:            uuid.New().String(),
+		WorkspaceId:   engine.Workspace().ID,
+		VersionId:     version.Id,
+		EnvironmentId: &environmentID,
+		ResourceId:    &resourceID,
+		RuleId:        "rule-1",
+		Reason:        &reason,
+		CreatedBy:     "admin",
+		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -498,17 +519,18 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 
 	// Create bypass that already expired
 	pastTime := time.Now().Add(-1 * time.Hour)
+	reason := "Expired bypass"
 	bypass := &oapi.PolicyBypass{
-		Id:              uuid.New().String(),
-		WorkspaceId:     engine.Workspace().ID,
-		VersionId:       version.Id,
-		EnvironmentId:   &environmentID,
-		ResourceId:      &resourceID,
-		BypassRuleTypes: []oapi.PolicyBypassBypassRuleTypes{oapi.PolicyBypassBypassRuleTypesApproval},
-		Justification:   "Expired bypass",
-		CreatedBy:       "admin",
-		CreatedAt:       time.Now(),
-		ExpiresAt:       &pastTime,
+		Id:            uuid.New().String(),
+		WorkspaceId:   engine.Workspace().ID,
+		VersionId:     version.Id,
+		EnvironmentId: &environmentID,
+		ResourceId:    &resourceID,
+		RuleId:        "rule-1",
+		Reason:        &reason,
+		CreatedBy:     "admin",
+		CreatedAt:     time.Now(),
+		ExpiresAt:     &pastTime,
 	}
 	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
@@ -555,6 +577,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
+				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
 			),
 		),
@@ -568,16 +591,17 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, version1)
 
 	// Create bypass
+	reason := "Temporary bypass"
 	bypass := &oapi.PolicyBypass{
-		Id:              uuid.New().String(),
-		WorkspaceId:     engine.Workspace().ID,
-		VersionId:       version1.Id,
-		EnvironmentId:   &environmentID,
-		ResourceId:      &resourceID,
-		BypassRuleTypes: []oapi.PolicyBypassBypassRuleTypes{oapi.PolicyBypassBypassRuleTypesApproval},
-		Justification:   "Temporary bypass",
-		CreatedBy:       "admin",
-		CreatedAt:       time.Now(),
+		Id:            uuid.New().String(),
+		WorkspaceId:   engine.Workspace().ID,
+		VersionId:     version1.Id,
+		EnvironmentId: &environmentID,
+		ResourceId:    &resourceID,
+		RuleId:        "rule-1",
+		Reason:        &reason,
+		CreatedBy:     "admin",
+		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicyBypassCreate, bypass)
 	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version1)

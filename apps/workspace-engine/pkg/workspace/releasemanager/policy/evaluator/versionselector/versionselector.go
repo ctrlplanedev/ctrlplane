@@ -20,20 +20,22 @@ var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versionselec
 // Evaluator evaluates version selector rules using CEL expressions.
 // It provides bidirectional filtering between versions and release targets.
 type Evaluator struct {
-	store *store.Store
-	rule  *oapi.VersionSelectorRule
+	store  *store.Store
+	ruleId string
+	rule   *oapi.VersionSelectorRule
 }
 
 // NewEvaluator creates a new version selector evaluator.
 // Returns nil if the rule or store is nil.
-func NewEvaluator(store *store.Store, rule *oapi.VersionSelectorRule) evaluator.Evaluator {
-	if rule == nil || store == nil {
+func NewEvaluator(store *store.Store, versionSelectorRule *oapi.PolicyRule) evaluator.Evaluator {
+	if versionSelectorRule == nil || versionSelectorRule.VersionSelector == nil || store == nil {
 		return nil
 	}
 
 	return evaluator.WithMemoization(&Evaluator{
-		store: store,
-		rule:  rule,
+		store:  store,
+		ruleId: versionSelectorRule.Id,
+		rule:   versionSelectorRule.VersionSelector,
 	})
 }
 
@@ -45,6 +47,10 @@ func (e *Evaluator) ScopeFields() evaluator.ScopeFields {
 // RuleType returns the rule type identifier for bypass matching.
 func (e *Evaluator) RuleType() string {
 	return "versionSelector"
+}
+
+func (e *Evaluator) RuleId() string {
+	return e.ruleId
 }
 
 func (e *Evaluator) Complexity() int {

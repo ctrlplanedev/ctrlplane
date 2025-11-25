@@ -11,15 +11,16 @@ import (
 )
 
 type GradualRolloutEnvironmentSummaryEvaluator struct {
-	store *store.Store
-	rule  *oapi.GradualRolloutRule
+	store  *store.Store
+	ruleId string
+	rule   *oapi.GradualRolloutRule
 }
 
-func NewSummaryEvaluator(store *store.Store, rule *oapi.GradualRolloutRule) evaluator.Evaluator {
-	if rule == nil || store == nil {
+func NewSummaryEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
+	if rule == nil || rule.GradualRollout == nil || store == nil {
 		return nil
 	}
-	return &GradualRolloutEnvironmentSummaryEvaluator{store: store, rule: rule}
+	return &GradualRolloutEnvironmentSummaryEvaluator{store: store, ruleId: rule.Id, rule: rule.GradualRollout}
 }
 
 func (e *GradualRolloutEnvironmentSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
@@ -29,6 +30,10 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) ScopeFields() evaluator.Scop
 // RuleType returns the rule type identifier for bypass matching.
 func (e *GradualRolloutEnvironmentSummaryEvaluator) RuleType() string {
 	return evaluator.RuleTypeGradualRollout
+}
+
+func (e *GradualRolloutEnvironmentSummaryEvaluator) RuleId() string {
+	return e.ruleId
 }
 
 func (e *GradualRolloutEnvironmentSummaryEvaluator) Complexity() int {
@@ -102,7 +107,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 			Version:       version,
 			ReleaseTarget: releaseTarget,
 		}
-		evaluation := NewEvaluator(e.store, e.rule).Evaluate(ctx, scope)
+		evaluation := NewEvaluator(e.store, &oapi.PolicyRule{Id: "gradualRolloutSummary", GradualRollout: e.rule}).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 		var targetTime *time.Time
@@ -182,7 +187,7 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	}
 
 	if pendingTargets == totalTargets && nextDeploymentTime == nil {
-		return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage("Waiting for rollout to start")
+		return result.WithActionRequired(oapi.Wait).WithMessage("Waiting for rollout to start")
 	}
 
 	// Build progress message
@@ -205,13 +210,13 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 			progressMsg += fmt.Sprintf(" • Est. completion in %s", completionTime)
 		}
 
-		return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage(progressMsg)
+		return result.WithActionRequired(oapi.Wait).WithMessage(progressMsg)
 	}
 
 	if pendingTargets > 0 {
 		progressMsg = fmt.Sprintf("Rollout in progress — %d/%d deployed, %d pending",
 			deployedTargets, totalTargets, pendingTargets)
-		return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage(progressMsg)
+		return result.WithActionRequired(oapi.Wait).WithMessage(progressMsg)
 	}
 
 	if deniedTargets > 0 {
@@ -220,6 +225,6 @@ func (e *GradualRolloutEnvironmentSummaryEvaluator) Evaluate(ctx context.Context
 	}
 
 	// Fallback for unexpected states
-	return result.WithActionRequired(oapi.RuleEvaluationActionTypeWait).WithMessage(fmt.Sprintf("Rollout status: %d/%d deployed",
+	return result.WithActionRequired(oapi.Wait).WithMessage(fmt.Sprintf("Rollout status: %d/%d deployed",
 		deployedTargets, totalTargets))
 }

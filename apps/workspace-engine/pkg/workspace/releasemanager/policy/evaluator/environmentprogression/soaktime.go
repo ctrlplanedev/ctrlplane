@@ -52,6 +52,10 @@ func (e *SoakTimeEvaluator) RuleType() string {
 	return evaluator.RuleTypeEnvironmentProgression
 }
 
+func (e *SoakTimeEvaluator) RuleId() string {
+	return "soakTime"
+}
+
 func (e *SoakTimeEvaluator) Complexity() int {
 	return 3
 }
