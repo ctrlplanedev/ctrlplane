@@ -65,7 +65,7 @@ func (m *DeployableVersionManager) getEnvironment(ctx context.Context) (*oapi.En
 		err := fmt.Errorf("environment %s not found", m.releaseTarget.EnvironmentId)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "environment not found")
-		return nil, fmt.Errorf("environment %s not found", m.releaseTarget.EnvironmentId)
+		return nil, err
 	}
 
 	return environment, nil
