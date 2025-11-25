@@ -41,46 +41,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/workspaces/{workspaceId}/bypasses": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List policy bypasses
-     * @description Returns a list of policy bypasses for workspace {workspaceId}.
-     */
-    get: operations["listBypasses"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/workspaces/{workspaceId}/bypasses/{bypassId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get policy bypass
-     * @description Returns a specific policy bypass by ID.
-     */
-    get: operations["getBypass"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/workspaces/{workspaceId}/deployment-versions/{versionId}/jobs-list": {
     parameters: {
       query?: never;
@@ -573,6 +533,46 @@ export interface paths {
      * @description Returns a specific rule by ID.
      */
     get: operations["getRule"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/policy-skips": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List policy skips for a workspace
+     * @description Returns a list of policy skips for workspace {workspaceId}.
+     */
+    get: operations["listPolicySkips"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/policy-skips/{policySkipId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get policy skip by ID
+     * @description Returns a specific policy skip by ID.
+     */
+    get: operations["getPolicySkip"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1223,41 +1223,6 @@ export interface components {
       selectors: components["schemas"]["PolicyTargetSelector"][];
       workspaceId: string;
     };
-    PolicyBypass: {
-      /** @description Which policy rule types to bypass. */
-      bypassRuleTypes: (
-        | "approval"
-        | "environmentProgression"
-        | "gradualRollout"
-        | "retry"
-      )[];
-      /**
-       * Format: date-time
-       * @description When this bypass was created
-       */
-      createdAt: string;
-      /** @description User ID who created this bypass */
-      createdBy: string;
-      /** @description Environment this bypass applies to. If null, applies to all environments. */
-      environmentId?: string;
-      /**
-       * Format: date-time
-       * @description When this bypass expires. If null, bypass never expires.
-       */
-      expiresAt?: string;
-      /** @description Unique identifier for the bypass */
-      id: string;
-      /** @description Required explanation for why this bypass is needed (e.g., incident ticket, emergency situation) */
-      justification: string;
-      /** @description Policy IDs this bypass applies to. If empty, applies to all policies. */
-      policyIds?: string[];
-      /** @description Resource this bypass applies to. If null, applies to all resources (in the environment if specified, or globally). */
-      resourceId?: string;
-      /** @description Deployment version this bypass applies to */
-      versionId: string;
-      /** @description Workspace this bypass belongs to */
-      workspaceId: string;
-    };
     PolicyEvaluation: {
       policy?: components["schemas"]["Policy"];
       ruleResults: components["schemas"]["RuleEvaluation"][];
@@ -1273,6 +1238,34 @@ export interface components {
       policyId: string;
       retry?: components["schemas"]["RetryRule"];
       versionSelector?: components["schemas"]["VersionSelectorRule"];
+    };
+    PolicySkip: {
+      /**
+       * Format: date-time
+       * @description When this skip was created
+       */
+      createdAt: string;
+      /** @description User ID who created this skip */
+      createdBy: string;
+      /** @description Environment this skip applies to. If null, applies to all environments. */
+      environmentId?: string;
+      /**
+       * Format: date-time
+       * @description When this skip expires. If null, skip never expires.
+       */
+      expiresAt?: string;
+      /** @description Unique identifier for the skip */
+      id: string;
+      /** @description Required reason for why this skip is needed (e.g., incident ticket, emergency situation) */
+      reason: string;
+      /** @description Resource this skip applies to. If null, applies to all resources (in the environment if specified, or globally). */
+      resourceId?: string;
+      /** @description Rule ID this skip applies to */
+      ruleId: string;
+      /** @description Deployment version this skip applies to */
+      versionId: string;
+      /** @description Workspace this skip belongs to */
+      workspaceId: string;
     };
     PolicyTargetSelector: {
       deploymentSelector?: components["schemas"]["Selector"];
@@ -1596,74 +1589,6 @@ export interface operations {
           "application/json": {
             workspaceIds?: string[];
           };
-        };
-      };
-    };
-  };
-  listBypasses: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace */
-        workspaceId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description A list of policy bypasses */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            bypasses?: components["schemas"]["PolicyBypass"][];
-          };
-        };
-      };
-      /** @description Resource not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getBypass: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description ID of the workspace */
-        workspaceId: string;
-        /** @description Policy bypass ID */
-        bypassId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The requested policy bypass */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PolicyBypass"];
-        };
-      };
-      /** @description Resource not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
         };
       };
     };
@@ -2852,6 +2777,74 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  listPolicySkips: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A list of policy skips */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            skips?: components["schemas"]["PolicySkip"][];
+          };
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getPolicySkip: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Policy skip ID */
+        policySkipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The requested policy skip */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicySkip"];
         };
       };
       /** @description Resource not found */
