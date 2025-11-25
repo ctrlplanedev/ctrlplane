@@ -12,6 +12,7 @@ type options struct {
 	trigger                      trace.TriggerReason
 	resourceRelationships        map[string][]*oapi.EntityRelation
 	earliestVersionForEvaluation *oapi.DeploymentVersion
+	forceDeployVersion           *oapi.DeploymentVersion
 
 	// StateCache options
 	bypassCache    bool
@@ -39,6 +40,12 @@ func WithTrigger(trigger trace.TriggerReason) Option {
 func WithVersionAndNewer(version *oapi.DeploymentVersion) Option {
 	return func(opts *options) {
 		opts.earliestVersionForEvaluation = version
+	}
+}
+
+func WithForceDeployVersion(version *oapi.DeploymentVersion) Option {
+	return func(opts *options) {
+		opts.forceDeployVersion = version
 	}
 }
 

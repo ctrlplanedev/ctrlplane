@@ -27,3 +27,12 @@ func HandleReleaseTargetDeploy(ctx context.Context, ws *workspace.Workspace, eve
 
 	return nil
 }
+
+func HandleReleaseTargetForceDeploy(ctx context.Context, ws *workspace.Workspace, event handler.RawEvent) error {
+	releaseTargetForceDeployEvent := &oapi.ReleaseTargetForceDeployEvent{}
+	if err := json.Unmarshal(event.Data, releaseTargetForceDeployEvent); err != nil {
+		return err
+	}
+
+	return ws.ReleaseManager().ForceDeploy(ctx, &releaseTargetForceDeployEvent.ReleaseTarget, &releaseTargetForceDeployEvent.Version)
+}

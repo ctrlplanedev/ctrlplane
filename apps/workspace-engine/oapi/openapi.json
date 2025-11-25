@@ -1172,6 +1172,21 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetForceDeployEvent": {
+            "properties": {
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "version"
+            ],
+            "type": "object"
+         },
          "ReleaseTargetState": {
             "properties": {
                "currentRelease": {
