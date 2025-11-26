@@ -68,6 +68,7 @@ local securitySchemes = {
       (import 'schemas/resource-provider.jsonnet') +
       (import 'schemas/relationship-rules.jsonnet') +
       (import 'schemas/release.jsonnet') +
-      (import 'schemas/job-agents.jsonnet'),
+      (import 'schemas/job-agents.jsonnet') +
+      (import 'schemas/verifications.jsonnet'),
   },
 }

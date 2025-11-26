@@ -628,6 +628,57 @@
             ],
             "type": "object"
          },
+         "HTTPMetricProvider": {
+            "properties": {
+               "body": {
+                  "description": "Request body (supports Go templates)",
+                  "type": "string"
+               },
+               "headers": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "HTTP headers (values support Go templates)",
+                  "type": "object"
+               },
+               "method": {
+                  "default": "GET",
+                  "description": "HTTP method",
+                  "enum": [
+                     "GET",
+                     "POST",
+                     "PUT",
+                     "PATCH",
+                     "DELETE",
+                     "HEAD",
+                     "OPTIONS"
+                  ],
+                  "type": "string"
+               },
+               "timeout": {
+                  "default": "30s",
+                  "description": "Request timeout (duration string, e.g., \"30s\")",
+                  "type": "string"
+               },
+               "type": {
+                  "description": "Provider type",
+                  "enum": [
+                     "http"
+                  ],
+                  "type": "string"
+               },
+               "url": {
+                  "description": "HTTP endpoint URL (supports Go templates)",
+                  "example": "http://{{ .resource.name }}.{{ .environment.name }}/health",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "url"
+            ],
+            "type": "object"
+         },
          "IntegerValue": {
             "type": "integer"
          },
@@ -833,6 +884,19 @@
                },
                {
                   "$ref": "#/components/schemas/NullValue"
+               }
+            ]
+         },
+         "MetricProvider": {
+            "discriminator": {
+               "mapping": {
+                  "http": "#/components/schemas/HTTPMetricProvider"
+               },
+               "propertyName": "type"
+            },
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/HTTPMetricProvider"
                }
             ]
          },
@@ -1146,6 +1210,42 @@
                   "$ref": "#/components/schemas/Job"
                }
             },
+            "type": "object"
+         },
+         "ReleaseVerification": {
+            "properties": {
+               "createdAt": {
+                  "description": "When verification was created",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobId": {
+                  "type": "string"
+               },
+               "message": {
+                  "description": "Summary message of verification result",
+                  "type": "string"
+               },
+               "metrics": {
+                  "description": "Metrics associated with this verification",
+                  "items": {
+                     "$ref": "#/components/schemas/VerificationMetricStatus"
+                  },
+                  "type": "array"
+               },
+               "releaseId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "releaseId",
+               "metrics",
+               "createdAt"
+            ],
             "type": "object"
          },
          "Resource": {
@@ -1743,6 +1843,94 @@
                },
                {
                   "$ref": "#/components/schemas/SensitiveValue"
+               }
+            ]
+         },
+         "VerificationMeasurement": {
+            "properties": {
+               "data": {
+                  "additionalProperties": true,
+                  "description": "Raw measurement data",
+                  "type": "object"
+               },
+               "measuredAt": {
+                  "description": "When measurement was taken",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "message": {
+                  "description": "Measurement result message",
+                  "type": "string"
+               },
+               "passed": {
+                  "description": "Whether this measurement passed",
+                  "type": "boolean"
+               }
+            },
+            "required": [
+               "passed",
+               "measuredAt"
+            ],
+            "type": "object"
+         },
+         "VerificationMetricSpec": {
+            "properties": {
+               "count": {
+                  "description": "Number of measurements to take",
+                  "minimum": 1,
+                  "type": "integer"
+               },
+               "failureLimit": {
+                  "default": 0,
+                  "description": "Stop after this many failures (0 = no limit)",
+                  "type": "integer"
+               },
+               "interval": {
+                  "description": "Interval between measurements (duration string, e.g., \"30s\", \"5m\")",
+                  "example": "30s",
+                  "type": "string"
+               },
+               "name": {
+                  "description": "Name of the verification metric",
+                  "type": "string"
+               },
+               "provider": {
+                  "$ref": "#/components/schemas/MetricProvider"
+               },
+               "successCondition": {
+                  "description": "CEL expression to evaluate measurement success (e.g., \"result.statusCode == 200\")",
+                  "example": "result.statusCode == 200",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "interval",
+               "count",
+               "successCondition",
+               "provider"
+            ],
+            "type": "object"
+         },
+         "VerificationMetricStatus": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/VerificationMetricSpec"
+               },
+               {
+                  "properties": {
+                     "measurements": {
+                        "description": "Individual verification measurements taken for this metric",
+                        "items": {
+                           "$ref": "#/components/schemas/VerificationMeasurement"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "measurements"
+                  ],
+                  "type": "object"
                }
             ]
          },
@@ -4754,6 +4942,68 @@
                }
             },
             "summary": "Get release"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications": {
+         "get": {
+            "description": "Returns all verifications for a specific release with their results.",
+            "operationId": "getReleaseVerifications",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the release",
+                  "in": "path",
+                  "name": "releaseId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "items": {
+                              "$ref": "#/components/schemas/ReleaseVerification"
+                           },
+                           "type": "array"
+                        }
+                     }
+                  },
+                  "description": "List of verifications for the release"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get release verifications"
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers": {

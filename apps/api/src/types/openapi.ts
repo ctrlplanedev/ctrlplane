@@ -553,6 +553,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get release verifications
+         * @description Returns all verifications for a specific release with their results.
+         */
+        get: operations["getReleaseVerifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/resource-providers": {
         parameters: {
             query?: never;
@@ -915,6 +935,35 @@ export interface components {
              */
             timeScaleInterval: number;
         };
+        HTTPMetricProvider: {
+            /** @description Request body (supports Go templates) */
+            body?: string;
+            /** @description HTTP headers (values support Go templates) */
+            headers?: {
+                [key: string]: string;
+            };
+            /**
+             * @description HTTP method
+             * @default GET
+             * @enum {string}
+             */
+            method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+            /**
+             * @description Request timeout (duration string, e.g., "30s")
+             * @default 30s
+             */
+            timeout: string;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "http";
+            /**
+             * @description HTTP endpoint URL (supports Go templates)
+             * @example http://{{ .resource.name }}.{{ .environment.name }}/health
+             */
+            url: string;
+        };
         IntegerValue: number;
         Job: {
             /** Format: date-time */
@@ -967,6 +1016,7 @@ export interface components {
             };
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
+        MetricProvider: components["schemas"]["HTTPMetricProvider"];
         /** @enum {boolean} */
         NullValue: true;
         NumberValue: number;
@@ -1051,6 +1101,20 @@ export interface components {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
             latestJob?: components["schemas"]["Job"];
+        };
+        ReleaseVerification: {
+            /**
+             * Format: date-time
+             * @description When verification was created
+             */
+            createdAt: string;
+            id: string;
+            jobId?: string;
+            /** @description Summary message of verification result */
+            message?: string;
+            /** @description Metrics associated with this verification */
+            metrics: components["schemas"]["VerificationMetricStatus"][];
+            releaseId: string;
         };
         Resource: {
             config: {
@@ -1250,6 +1314,47 @@ export interface components {
             versionId: string;
         };
         Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
+        VerificationMeasurement: {
+            /** @description Raw measurement data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description When measurement was taken
+             */
+            measuredAt: string;
+            /** @description Measurement result message */
+            message?: string;
+            /** @description Whether this measurement passed */
+            passed: boolean;
+        };
+        VerificationMetricSpec: {
+            /** @description Number of measurements to take */
+            count: number;
+            /**
+             * @description Stop after this many failures (0 = no limit)
+             * @default 0
+             */
+            failureLimit: number;
+            /**
+             * @description Interval between measurements (duration string, e.g., "30s", "5m")
+             * @example 30s
+             */
+            interval: string;
+            /** @description Name of the verification metric */
+            name: string;
+            provider: components["schemas"]["MetricProvider"];
+            /**
+             * @description CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
+             * @example result.statusCode == 200
+             */
+            successCondition: string;
+        };
+        VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
+            /** @description Individual verification measurements taken for this metric */
+            measurements: components["schemas"]["VerificationMeasurement"][];
+        };
         Workspace: {
             /** @description AWS IAM role ARN for integrations */
             awsRoleArn?: string | null;
@@ -3208,6 +3313,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Release"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReleaseVerifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the release */
+                releaseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of verifications for the release */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseVerification"][];
                 };
             };
             /** @description Invalid request */

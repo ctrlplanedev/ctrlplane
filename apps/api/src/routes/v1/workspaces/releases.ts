@@ -21,7 +21,23 @@ const getRelease: AsyncTypedHandler<
   return;
 };
 
+const getReleaseVerifications: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, releaseId } = req.params;
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications",
+    { params: { path: { workspaceId, releaseId } } },
+  );
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Unknown error", 500);
+
+  res.json(response.data);
+};
+
 export const releaseRouter = Router({ mergeParams: true }).get(
   "/:releaseId",
   asyncHandler(getRelease),
+  asyncHandler(getReleaseVerifications),
 );
