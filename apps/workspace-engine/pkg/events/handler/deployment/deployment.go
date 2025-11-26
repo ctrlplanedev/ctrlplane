@@ -306,11 +306,13 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 		if newJob.Status != oapi.JobStatusInvalidJobAgent {
 			go func(jobToDispatch *oapi.Job) {
 				if err := jobDispatcher.DispatchJob(ctx, jobToDispatch); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
+					message := err.Error()
 					log.Error("error dispatching retriggered job to integration",
 						"jobId", jobToDispatch.Id,
-						"error", err.Error())
+						"error", message)
 					jobToDispatch.Status = oapi.JobStatusInvalidIntegration
 					jobToDispatch.UpdatedAt = time.Now()
+					jobToDispatch.Message = &message
 					ws.Jobs().Upsert(ctx, jobToDispatch)
 				}
 			}(newJob)

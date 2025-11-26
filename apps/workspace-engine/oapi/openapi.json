@@ -532,6 +532,9 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "message": {
+                  "type": "string"
+               },
                "metadata": {
                   "additionalProperties": {
                      "type": "string"
@@ -641,6 +644,7 @@
                         "id",
                         "jobAgentConfig",
                         "jobAgentId",
+                        "message",
                         "metadata",
                         "releaseId",
                         "startedAt",

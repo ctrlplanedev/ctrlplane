@@ -75,6 +75,7 @@ const (
 	Id             JobUpdateEventFieldsToUpdate = "id"
 	JobAgentConfig JobUpdateEventFieldsToUpdate = "jobAgentConfig"
 	JobAgentId     JobUpdateEventFieldsToUpdate = "jobAgentId"
+	Message        JobUpdateEventFieldsToUpdate = "message"
 	Metadata       JobUpdateEventFieldsToUpdate = "metadata"
 	ReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
 	StartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
@@ -337,6 +338,7 @@ type Job struct {
 	Id             string                 `json:"id"`
 	JobAgentConfig map[string]interface{} `json:"jobAgentConfig"`
 	JobAgentId     string                 `json:"jobAgentId"`
+	Message        *string                `json:"message,omitempty"`
 	Metadata       map[string]string      `json:"metadata"`
 	ReleaseId      string                 `json:"releaseId"`
 	StartedAt      *time.Time             `json:"startedAt,omitempty"`
