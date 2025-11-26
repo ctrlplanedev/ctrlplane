@@ -28,4 +28,12 @@ local openapi = import '../lib/openapi.libsonnet';
       createdAt: { type: 'string' },
     },
   },
+  ReleaseTargetState: {
+    type: 'object',
+    properties: {
+      desiredRelease: openapi.schemaRef('Release'),
+      currentRelease: openapi.schemaRef('Release'),
+      latestJob: openapi.schemaRef('Job'),
+    },
+  },
 }

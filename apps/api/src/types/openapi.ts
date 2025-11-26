@@ -513,6 +513,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the state for a release target
+         * @description Returns the state for a release target {releaseTargetKey}.
+         */
+        get: operations["getReleaseTargetState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/releases/{releaseId}": {
         parameters: {
             query?: never;
@@ -1026,6 +1046,11 @@ export interface components {
             deploymentId: string;
             environmentId: string;
             resourceId: string;
+        };
+        ReleaseTargetState: {
+            currentRelease?: components["schemas"]["Release"];
+            desiredRelease?: components["schemas"]["Release"];
+            latestJob?: components["schemas"]["Job"];
         };
         Resource: {
             config: {
@@ -3094,6 +3119,52 @@ export interface operations {
                         /** @description Total number of items available */
                         total: number;
                     };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReleaseTargetState: {
+        parameters: {
+            query?: {
+                /** @description Whether to bypass the cache */
+                bypassCache?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Key of the release target */
+                releaseTargetKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state for the release target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseTargetState"];
                 };
             };
             /** @description Invalid request */

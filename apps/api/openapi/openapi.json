@@ -1134,6 +1134,20 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetState": {
+            "properties": {
+               "currentRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "desiredRelease": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "latestJob": {
+                  "$ref": "#/components/schemas/Job"
+               }
+            },
+            "type": "object"
+         },
          "Resource": {
             "properties": {
                "config": {
@@ -4613,6 +4627,74 @@
                }
             },
             "summary": "Get jobs for a release target"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
+         "get": {
+            "description": "Returns the state for a release target {releaseTargetKey}.",
+            "operationId": "getReleaseTargetState",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Key of the release target",
+                  "in": "path",
+                  "name": "releaseTargetKey",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Whether to bypass the cache",
+                  "in": "query",
+                  "name": "bypassCache",
+                  "required": false,
+                  "schema": {
+                     "type": "boolean"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ReleaseTargetState"
+                        }
+                     }
+                  },
+                  "description": "The state for the release target"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get the state for a release target"
          }
       },
       "/v1/workspaces/{workspaceId}/releases/{releaseId}": {

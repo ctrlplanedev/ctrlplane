@@ -48,9 +48,33 @@ const getReleaseTargetDesiredRelease: AsyncTypedHandler<
   res.status(200).json(desiredReleaseResponse.data);
 };
 
+const getReleaseTargetState: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, releaseTargetKey } = req.params;
+  const { bypassCache } = req.query;
+
+  const stateResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state",
+    {
+      params: {
+        path: { workspaceId, releaseTargetKey },
+        query: { bypassCache },
+      },
+    },
+  );
+
+  if (stateResponse.error != null)
+    throw new ApiError(stateResponse.error.error ?? "Unknown error", 500);
+
+  res.status(200).json(stateResponse.data);
+};
+
 const releaseTargetKeyRouter = Router({ mergeParams: true })
   .get("/jobs", asyncHandler(getReleaseTargetJobs))
-  .get("/desired-release", asyncHandler(getReleaseTargetDesiredRelease));
+  .get("/desired-release", asyncHandler(getReleaseTargetDesiredRelease))
+  .get("/state", asyncHandler(getReleaseTargetState));
 
 export const releaseTargetsRouter = Router({ mergeParams: true }).use(
   "/:releaseTargetKey",
