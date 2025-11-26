@@ -107,12 +107,12 @@ function ExpiresAtSelect({ form }: { form: UseFormReturn<FormSchema> }) {
       name="expiresAt"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Expires At</FormLabel>
+          <FormLabel>Expires At (optional)</FormLabel>
           <FormControl>
             <DateTimePicker
               value={field.value}
               onChange={field.onChange}
-              placeholder="Expires at (optional)"
+              placeholder=""
             />
           </FormControl>
         </FormItem>
