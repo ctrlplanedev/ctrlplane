@@ -1,11 +1,13 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { AlertCircleIcon, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { isPresent } from "ts-is-present";
 
 import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { PolicySkipDialog } from "./PolicySkip";
 
 function usePolicyEvaluations(versionId: string, environmentId: string) {
   const { workspace } = useWorkspace();
@@ -70,8 +72,18 @@ export function DeploymentVersion({
     <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
       {data.policyResults.map(({ policy, ruleResults }, idx) => (
         <div key={idx} className="w-full space-y-1 rounded-lg border p-2">
-          <div className="mb-2 font-semibold">
+          <div className="mb-2 flex items-center font-semibold">
             {policy == null ? "Global Policies" : policy.name}
+            <div className="flex-grow" />
+            <PolicySkipDialog
+              environmentId={environment.id}
+              versionId={version.id}
+              policy={policy}
+            >
+              <Button size="sm" variant="outline" className="h-4 px-1 text-xs">
+                Configure skips
+              </Button>
+            </PolicySkipDialog>
           </div>
 
           {ruleResults.map((rule, idx) => (

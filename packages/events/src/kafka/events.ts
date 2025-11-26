@@ -44,6 +44,9 @@ export enum Event {
   PolicyUpdated = "policy.updated",
   PolicyDeleted = "policy.deleted",
 
+  PolicySkipCreated = "policy-skip.created",
+  PolicySkipDeleted = "policy-skip.deleted",
+
   RelationshipRuleCreated = "relationship-rule.created",
   RelationshipRuleUpdated = "relationship-rule.updated",
   RelationshipRuleDeleted = "relationship-rule.deleted",
@@ -188,6 +191,8 @@ export type GoEventPayload = {
   [Event.PolicyCreated]: WorkspaceEngine["schemas"]["Policy"];
   [Event.PolicyUpdated]: WorkspaceEngine["schemas"]["Policy"];
   [Event.PolicyDeleted]: WorkspaceEngine["schemas"]["Policy"];
+  [Event.PolicySkipCreated]: WorkspaceEngine["schemas"]["PolicySkip"];
+  [Event.PolicySkipDeleted]: WorkspaceEngine["schemas"]["PolicySkip"];
   [Event.JobUpdated]: WorkspaceEngine["schemas"]["JobUpdateEvent"];
   [Event.UserApprovalRecordCreated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
   [Event.UserApprovalRecordUpdated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];

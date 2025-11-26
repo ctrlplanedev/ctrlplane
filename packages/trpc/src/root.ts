@@ -6,6 +6,7 @@ import { githubRouter } from "./routes/github.js";
 import { jobAgentsRouter } from "./routes/job-agents.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { policiesRouter } from "./routes/policies.js";
+import { policySkipsRouter } from "./routes/policy-skips.js";
 import { redeployRouter } from "./routes/redeploy.js";
 import { relationshipsRouter } from "./routes/relationships.js";
 import { resourceProvidersRouter } from "./routes/resource-providers.js";
@@ -29,6 +30,7 @@ export const appRouter = router({
   jobs: jobsRouter,
   relationships: relationshipsRouter,
   policies: policiesRouter,
+  policySkips: policySkipsRouter,
   redeploy: redeployRouter,
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
