@@ -1,3 +1,10 @@
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+
 export const JobStatusDisplayName = {
   cancelled: "Cancelled",
   skipped: "Skipped",
@@ -36,7 +43,7 @@ const JobStatusBadgeColor: Record<string, string> = {
     "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800",
 };
 
-export function JobStatusBadge({
+function JobStatusBadgeInner({
   status,
 }: {
   status: keyof typeof JobStatusDisplayName;
@@ -48,4 +55,27 @@ export function JobStatusBadge({
       {JobStatusDisplayName[status]}
     </span>
   );
+}
+
+export function JobStatusBadge({
+  status,
+  message,
+}: {
+  status: keyof typeof JobStatusDisplayName;
+  message?: string | null;
+}) {
+  if (message != null) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <JobStatusBadgeInner status={status} />
+          </TooltipTrigger>
+          <TooltipContent>{message}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return <JobStatusBadgeInner status={status} />;
 }
