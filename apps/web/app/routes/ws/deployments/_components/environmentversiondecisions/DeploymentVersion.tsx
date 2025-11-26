@@ -7,7 +7,7 @@ import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { PolicySkipDialog } from "./PolicySkip";
+import { PolicySkipDialog } from "./policy-skip/PolicySkipDialog";
 
 function usePolicyEvaluations(versionId: string, environmentId: string) {
   const { workspace } = useWorkspace();
@@ -78,7 +78,7 @@ export function DeploymentVersion({
             <PolicySkipDialog
               environmentId={environment.id}
               versionId={version.id}
-              policy={policy}
+              rules={policy?.rules ?? []}
             >
               <Button size="sm" variant="outline" className="h-4 px-1 text-xs">
                 Configure skips
