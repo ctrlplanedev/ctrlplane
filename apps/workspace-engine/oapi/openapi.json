@@ -4527,6 +4527,68 @@
             "summary": "Get release"
          }
       },
+      "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications": {
+         "get": {
+            "description": "Returns all verifications for a specific release with their results.",
+            "operationId": "getReleaseVerifications",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the release",
+                  "in": "path",
+                  "name": "releaseId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "items": {
+                              "$ref": "#/components/schemas/ReleaseVerification"
+                           },
+                           "type": "array"
+                        }
+                     }
+                  },
+                  "description": "List of verifications for the release"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get release verifications"
+         }
+      },
       "/v1/workspaces/{workspaceId}/resource-providers": {
          "get": {
             "operationId": "getResourceProviders",
