@@ -1,3 +1,5 @@
+import { AlertCircle } from "lucide-react";
+
 import {
   Tooltip,
   TooltipContent,
@@ -71,7 +73,10 @@ export function JobStatusBadge({
           <TooltipTrigger>
             <JobStatusBadgeInner status={status} />
           </TooltipTrigger>
-          <TooltipContent>{message}</TooltipContent>
+          <TooltipContent className="flex items-center gap-1.5">
+            {message}
+            <AlertCircle className="size-2.5" />
+          </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
