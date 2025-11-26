@@ -100,6 +100,7 @@ export const EnvironmentReleaseTargetsGroup: FC<
             </TableCell>
             <TableCell>
               <JobStatusBadge
+                message={state.latestJob?.message}
                 status={
                   (state.latestJob?.status ??
                     "unknown") as keyof typeof JobStatusDisplayName

@@ -97,7 +97,7 @@ function JobsTableRow({
         </div>
       </TableCell>
       <TableCell>
-        <JobStatusBadge status={job.status} />
+        <JobStatusBadge {...job} />
       </TableCell>
       <LinksCell job={job} />
       <TableCell className="text-muted-foreground">
