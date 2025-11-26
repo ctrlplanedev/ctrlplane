@@ -1,13 +1,25 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { AlertCircleIcon, Check, X } from "lucide-react";
 import { toast } from "sonner";
-import { isPresent } from "ts-is-present";
 
 import { trpc } from "~/api/trpc";
 import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { PolicySkipDialog } from "./policy-skip/PolicySkipDialog";
+
+const GLOBAL_EVALUATORS: WorkspaceEngine["schemas"]["PolicyRule"][] = [
+  {
+    id: "pausedVersions",
+    policyId: "",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "deployableVersions",
+    policyId: "",
+    createdAt: new Date().toISOString(),
+  },
+];
 
 function usePolicyEvaluations(versionId: string, environmentId: string) {
   const { workspace } = useWorkspace();
@@ -78,7 +90,7 @@ export function DeploymentVersion({
             <PolicySkipDialog
               environmentId={environment.id}
               versionId={version.id}
-              rules={policy?.rules ?? []}
+              rules={policy?.rules ?? GLOBAL_EVALUATORS}
             >
               <Button size="sm" variant="outline" className="h-4 px-1 text-xs">
                 Configure skips
