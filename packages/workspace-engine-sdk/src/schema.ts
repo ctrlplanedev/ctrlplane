@@ -1188,6 +1188,7 @@ export interface components {
         [key: string]: unknown;
       };
       jobAgentId: string;
+      message?: string;
       metadata: {
         [key: string]: string;
       };
@@ -1230,6 +1231,7 @@ export interface components {
         | "id"
         | "jobAgentConfig"
         | "jobAgentId"
+        | "message"
         | "metadata"
         | "releaseId"
         | "startedAt"
