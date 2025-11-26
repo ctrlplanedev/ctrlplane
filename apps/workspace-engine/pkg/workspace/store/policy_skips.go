@@ -134,7 +134,6 @@ func (pb *PolicySkips) GetAllForTarget(
 		}
 
 		// Check if this skip matches the target
-		matches = append(matches, skip)
 		if skip.EnvironmentId != nil && *skip.EnvironmentId == environmentId {
 			if skip.ResourceId == nil || *skip.ResourceId == resourceId {
 				matches = append(matches, skip)
