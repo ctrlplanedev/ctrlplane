@@ -369,7 +369,6 @@ export default function DeploymentDetail() {
 
               {selectedEnvironment != null && (
                 <EnvironmentVersionDecisions
-                  allEnvironments={environments}
                   environment={selectedEnvironment}
                   deploymentId={deployment.id}
                   versions={versions}

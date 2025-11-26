@@ -9,7 +9,6 @@ import {
 import { DeploymentVersion } from "./DeploymentVersion";
 
 type EnvironmentVersionDecisionsProps = {
-  allEnvironments: WorkspaceEngine["schemas"]["Environment"][];
   environment: WorkspaceEngine["schemas"]["Environment"];
   deploymentId: string;
   versions: WorkspaceEngine["schemas"]["DeploymentVersion"][];
@@ -18,7 +17,6 @@ type EnvironmentVersionDecisionsProps = {
 };
 
 export function EnvironmentVersionDecisions({
-  allEnvironments,
   environment,
   versions,
   open,
