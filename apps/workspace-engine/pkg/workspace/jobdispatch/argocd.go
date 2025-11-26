@@ -31,10 +31,19 @@ import (
 
 var argoCDTracer = otel.Tracer("ArgoCDDispatcher")
 
+type argoCDVerificationConfig struct {
+	Name             string `json:"name"`
+	Interval         string `json:"interval"`
+	Count            int    `json:"count"`
+	SuccessCondition string `json:"successCondition"`
+	FailureLimit     *int   `json:"failureLimit,omitempty"`
+}
+
 type argoCDAgentConfig struct {
-	ServerUrl string `json:"serverUrl"`
-	ApiKey    string `json:"apiKey"`
-	Template  string `json:"template"`
+	ServerUrl     string                     `json:"serverUrl"`
+	ApiKey        string                     `json:"apiKey"`
+	Template      string                     `json:"template"`
+	Verifications []argoCDVerificationConfig `json:"verifications,omitempty"`
 }
 
 type ArgoCDDispatcher struct {
@@ -311,12 +320,15 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		attribute.String("release.id", jobWithRelease.Release.ID()),
 	)
 
+	if len(cfg.Verifications) == 0 {
+		span.SetStatus(codes.Ok, "no verifications configured, skipping verification")
+		return nil
+	}
+
 	baseURL := cfg.ServerUrl
 	if !strings.HasPrefix(baseURL, "https://") {
 		baseURL = "https://" + baseURL
 	}
-
-	// Query the specific ArgoCD Application
 	appURL := fmt.Sprintf("%s/api/v1/applications/%s", baseURL, appName)
 
 	method := oapi.GET
@@ -334,16 +346,16 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		Type:    oapi.Http,
 	})
 
-	failureLimit := 5
-	metrics := []oapi.VerificationMetricSpec{
-		{
-			Name:             "argocd-application-health",
-			Interval:         "30s",
-			Count:            10,
-			SuccessCondition: "result.statusCode == 200 && result.json.status.health.status == 'Healthy' && result.json.status.sync.status == 'Synced'",
-			FailureLimit:     &failureLimit, // early stop on 2 failures
+	metrics := make([]oapi.VerificationMetricSpec, len(cfg.Verifications))
+	for i, v := range cfg.Verifications {
+		metrics[i] = oapi.VerificationMetricSpec{
+			Name:             v.Name,
+			Interval:         v.Interval,
+			Count:            v.Count,
+			SuccessCondition: v.SuccessCondition,
+			FailureLimit:     v.FailureLimit,
 			Provider:         provider,
-		},
+		}
 	}
 
 	// Create a verification manager on-demand and start verification for this release.
