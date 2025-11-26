@@ -7,6 +7,7 @@ import (
 	celselector "workspace-engine/pkg/selector/langs/cel"
 	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/server/openapi/utils"
+	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
@@ -213,4 +214,52 @@ func (s *ReleaseTargets) GetJobsForReleaseTarget(c *gin.Context, workspaceId str
 		"offset": params.Offset,
 		"limit":  params.Limit,
 	})
+}
+
+func (s *ReleaseTargets) GetReleaseTargetState(c *gin.Context, workspaceId string, releaseTargetKey string, params oapi.GetReleaseTargetStateParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	releaseTarget := ws.ReleaseTargets().Get(releaseTargetKey)
+	if releaseTarget == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Release target not found",
+		})
+		return
+	}
+
+	var state *oapi.ReleaseTargetState
+	if params.BypassCache != nil && *params.BypassCache {
+		state, err = ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), releaseTarget, releasemanager.WithBypassCache())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to get release target state: " + err.Error(),
+			})
+			return
+		}
+	}
+
+	if params.BypassCache == nil || !*params.BypassCache {
+		state, err = ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), releaseTarget)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to get release target state: " + err.Error(),
+			})
+			return
+		}
+	}
+
+	if state == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Release target state not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, state)
 }

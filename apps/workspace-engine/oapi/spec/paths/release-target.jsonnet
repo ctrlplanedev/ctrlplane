@@ -88,4 +88,26 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state': {
+    get: {
+      summary: 'Get the state for a release target',
+      operationId: 'getReleaseTargetState',
+      description: 'Returns the state for a release target {releaseTargetKey}.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.releaseTargetKeyParam(),
+        {
+          name: 'bypassCache',
+          'in': 'query',
+          description: 'Whether to bypass the cache',
+          schema: { type: 'boolean' },
+          required: false,
+        },
+      ],
+      responses: openapi.okResponse(
+        openapi.schemaRef('ReleaseTargetState'),
+        'The state for the release target',
+      ) + openapi.notFoundResponse(),
+    },
+  },
 }

@@ -4410,6 +4410,64 @@
             "summary": "Get policies for a release target"
          }
       },
+      "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state": {
+         "get": {
+            "description": "Returns the state for a release target {releaseTargetKey}.",
+            "operationId": "getReleaseTargetState",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Key of the release target",
+                  "in": "path",
+                  "name": "releaseTargetKey",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Whether to bypass the cache",
+                  "in": "query",
+                  "name": "bypassCache",
+                  "required": false,
+                  "schema": {
+                     "type": "boolean"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ReleaseTargetState"
+                        }
+                     }
+                  },
+                  "description": "The state for the release target"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get the state for a release target"
+         }
+      },
       "/v1/workspaces/{workspaceId}/releases/{releaseId}": {
          "get": {
             "description": "Returns a specific release by ID.",

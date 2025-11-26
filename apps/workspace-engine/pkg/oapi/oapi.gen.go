@@ -910,6 +910,12 @@ type GetJobsForReleaseTargetParams struct {
 	Cel *string `form:"cel,omitempty" json:"cel,omitempty"`
 }
 
+// GetReleaseTargetStateParams defines parameters for GetReleaseTargetState.
+type GetReleaseTargetStateParams struct {
+	// BypassCache Whether to bypass the cache
+	BypassCache *bool `form:"bypassCache,omitempty" json:"bypassCache,omitempty"`
+}
+
 // GetResourceProvidersParams defines parameters for GetResourceProviders.
 type GetResourceProvidersParams struct {
 	// Limit Maximum number of items to return
@@ -1761,6 +1767,9 @@ type ServerInterface interface {
 	// Get policies for a release target
 	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/policies)
 	GetPoliciesForReleaseTarget(c *gin.Context, workspaceId string, releaseTargetKey string)
+	// Get the state for a release target
+	// (GET /v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/state)
+	GetReleaseTargetState(c *gin.Context, workspaceId string, releaseTargetKey string, params GetReleaseTargetStateParams)
 	// Get release
 	// (GET /v1/workspaces/{workspaceId}/releases/{releaseId})
 	GetRelease(c *gin.Context, workspaceId string, releaseId string)
@@ -3170,6 +3179,50 @@ func (siw *ServerInterfaceWrapper) GetPoliciesForReleaseTarget(c *gin.Context) {
 	siw.Handler.GetPoliciesForReleaseTarget(c, workspaceId, releaseTargetKey)
 }
 
+// GetReleaseTargetState operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetState(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "releaseTargetKey" -------------
+	var releaseTargetKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "releaseTargetKey", c.Param("releaseTargetKey"), &releaseTargetKey, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter releaseTargetKey: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReleaseTargetStateParams
+
+	// ------------- Optional query parameter "bypassCache" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "bypassCache", c.Request.URL.Query(), &params.BypassCache)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter bypassCache: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReleaseTargetState(c, workspaceId, releaseTargetKey, params)
+}
+
 // GetRelease operation middleware
 func (siw *ServerInterfaceWrapper) GetRelease(c *gin.Context) {
 
@@ -3660,6 +3713,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/desired-release", wrapper.GetReleaseTargetDesiredRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/jobs", wrapper.GetJobsForReleaseTarget)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/policies", wrapper.GetPoliciesForReleaseTarget)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/release-targets/:releaseTargetKey/state", wrapper.GetReleaseTargetState)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/releases/:releaseId", wrapper.GetRelease)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers", wrapper.GetResourceProviders)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/cache-batch", wrapper.CacheBatch)
