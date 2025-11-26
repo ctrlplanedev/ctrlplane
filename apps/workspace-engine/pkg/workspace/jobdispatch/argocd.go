@@ -334,14 +334,13 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		Type:    oapi.Http,
 	})
 
-	failureLimit := 2
+	failureLimit := 5
 	metrics := []oapi.VerificationMetricSpec{
 		{
-			Name:     "argocd-application-health",
-			Interval: "30s", // check every 30s
-			Count:    10,    // take up to 10 measurements
-			// Require ArgoCD application to be Healthy and Synced
-			SuccessCondition: "result.statusCode == 200 && result.body.status.health.status == 'Healthy' && result.body.status.sync.status == 'Synced'",
+			Name:             "argocd-application-health",
+			Interval:         "30s",
+			Count:            10,
+			SuccessCondition: "result.statusCode == 200 && result.json.status.health.status == 'Healthy' && result.json.status.sync.status == 'Synced'",
 			FailureLimit:     &failureLimit, // early stop on 2 failures
 			Provider:         provider,
 		},
