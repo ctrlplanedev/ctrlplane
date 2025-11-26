@@ -36,8 +36,6 @@ const getReleaseVerifications: AsyncTypedHandler<
   res.json(response.data);
 };
 
-export const releaseRouter = Router({ mergeParams: true }).get(
-  "/:releaseId",
-  asyncHandler(getRelease),
-  asyncHandler(getReleaseVerifications),
-);
+export const releaseRouter = Router({ mergeParams: true })
+  .get("/:releaseId", asyncHandler(getRelease))
+  .get("/:releaseId/verifications", asyncHandler(getReleaseVerifications));
