@@ -13,12 +13,12 @@ func HandlePolicySkipCreated(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	bypass := &oapi.PolicySkip{}
-	if err := json.Unmarshal(event.Data, bypass); err != nil {
+	skip := &oapi.PolicySkip{}
+	if err := json.Unmarshal(event.Data, skip); err != nil {
 		return err
 	}
 
-	ws.Store().PolicySkips.Upsert(ctx, bypass)
+	ws.Store().PolicySkips.Upsert(ctx, skip)
 	return nil
 }
 
@@ -27,11 +27,11 @@ func HandlePolicySkipDeleted(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
-	bypass := &oapi.PolicySkip{}
-	if err := json.Unmarshal(event.Data, bypass); err != nil {
+	skip := &oapi.PolicySkip{}
+	if err := json.Unmarshal(event.Data, skip); err != nil {
 		return err
 	}
 
-	ws.Store().PolicySkips.Remove(ctx, bypass.Id)
+	ws.Store().PolicySkips.Remove(ctx, skip.Id)
 	return nil
 }
