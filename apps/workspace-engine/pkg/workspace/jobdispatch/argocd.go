@@ -96,7 +96,7 @@ func unmarshalApplication(data []byte, app *v1alpha1.Application) error {
 }
 
 func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
-	ctx, span := argoCDTracer.Start(ctx, "DispatchJob")
+	ctx, span := argoCDTracer.Start(ctx, "ArgoCDDispatcher.DispatchJob")
 	defer span.End()
 
 	span.SetAttributes(
