@@ -1737,6 +1737,9 @@ type ServerInterface interface {
 	// List policy skips for a workspace
 	// (GET /v1/workspaces/{workspaceId}/policy-skips)
 	ListPolicySkips(c *gin.Context, workspaceId string)
+	// Get policy skips for an environment and version
+	// (GET /v1/workspaces/{workspaceId}/policy-skips/environment/{environmentId}/version/{deploymentVersionId})
+	GetPolicySkipsForEnvironmentAndVersion(c *gin.Context, workspaceId string, environmentId string, deploymentVersionId string)
 	// Get policy skip by ID
 	// (GET /v1/workspaces/{workspaceId}/policy-skips/{policySkipId})
 	GetPolicySkip(c *gin.Context, workspaceId string, policySkipId string)
@@ -2866,6 +2869,48 @@ func (siw *ServerInterfaceWrapper) ListPolicySkips(c *gin.Context) {
 	siw.Handler.ListPolicySkips(c, workspaceId)
 }
 
+// GetPolicySkipsForEnvironmentAndVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetPolicySkipsForEnvironmentAndVersion(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "environmentId" -------------
+	var environmentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "environmentId", c.Param("environmentId"), &environmentId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter environmentId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "deploymentVersionId" -------------
+	var deploymentVersionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "deploymentVersionId", c.Param("deploymentVersionId"), &deploymentVersionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter deploymentVersionId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPolicySkipsForEnvironmentAndVersion(c, workspaceId, environmentId, deploymentVersionId)
+}
+
 // GetPolicySkip operation middleware
 func (siw *ServerInterfaceWrapper) GetPolicySkip(c *gin.Context) {
 
@@ -3607,6 +3652,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/release-targets", wrapper.GetReleaseTargetsForPolicy)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policies/:policyId/rules/:ruleId", wrapper.GetRule)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policy-skips", wrapper.ListPolicySkips)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policy-skips/environment/:environmentId/version/:deploymentVersionId", wrapper.GetPolicySkipsForEnvironmentAndVersion)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/policy-skips/:policySkipId", wrapper.GetPolicySkip)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules", wrapper.GetRelationshipRules)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/relationship-rules/:relationshipRuleId", wrapper.GetRelationshipRule)

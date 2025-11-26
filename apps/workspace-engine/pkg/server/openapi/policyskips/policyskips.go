@@ -74,3 +74,18 @@ func getWorkspaceForRequest(c *gin.Context, workspaceId string) (*workspace.Work
 
 	return nil, err
 }
+
+func (p *PolicySkips) GetPolicySkipsForEnvironmentAndVersion(c *gin.Context, workspaceId string, environmentId string, deploymentVersionId string) {
+	ws, err := getWorkspaceForRequest(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	policySkips := ws.Store().PolicySkips.GetAllForTarget(deploymentVersionId, environmentId, "")
+	c.JSON(http.StatusOK, gin.H{
+		"items": policySkips,
+	})
+}

@@ -45,4 +45,26 @@ local openapi = import '../lib/openapi.libsonnet';
       ) + openapi.notFoundResponse(),
     },
   },
+
+  '/v1/workspaces/{workspaceId}/policy-skips/environment/{environmentId}/version/{deploymentVersionId}': {
+    get: {
+      summary: 'Get policy skips for an environment and version',
+      operationId: 'getPolicySkipsForEnvironmentAndVersion',
+      description: 'Returns a list of policy skips for an environment and version.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.environmentIdParam(),
+        openapi.deploymentVersionIdParam(),
+      ],
+      responses: openapi.okResponse(
+        {
+          type: 'object',
+          properties: {
+            items: { type: 'array', items: openapi.schemaRef('PolicySkip') },
+          },
+        },
+        'A list of policy skips'
+      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
 }
