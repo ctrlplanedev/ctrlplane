@@ -7,7 +7,7 @@ import (
 
 // CompactionKey implements the persistence.Entity interface for PolicyBypass
 func (ps *PolicySkip) CompactionKey() (string, string) {
-	return "PolicySkip", ps.Id
+	return "policy_skip", ps.Id
 }
 
 // Key generates a lookup key for the skip based on version, environment, and resource
