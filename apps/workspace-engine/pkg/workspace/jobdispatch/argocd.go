@@ -32,11 +32,9 @@ import (
 var argoCDTracer = otel.Tracer("ArgoCDDispatcher")
 
 type argoCDVerificationConfig struct {
-	Name             string `json:"name"`
-	Interval         string `json:"interval"`
-	Count            int    `json:"count"`
-	SuccessCondition string `json:"successCondition"`
-	FailureLimit     *int   `json:"failureLimit,omitempty"`
+	Interval     string `json:"interval"`
+	Count        int    `json:"count"`
+	FailureLimit *int   `json:"failureLimit,omitempty"`
 }
 
 type argoCDAgentConfig struct {
@@ -349,10 +347,10 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	metrics := make([]oapi.VerificationMetricSpec, len(cfg.Verifications))
 	for i, v := range cfg.Verifications {
 		metrics[i] = oapi.VerificationMetricSpec{
-			Name:             v.Name,
+			Name:             fmt.Sprintf("%s-argocd-application-health", appName),
 			Interval:         v.Interval,
 			Count:            v.Count,
-			SuccessCondition: v.SuccessCondition,
+			SuccessCondition: "result.statusCode == 200 && result.json.status.health.status == 'Healthy'",
 			FailureLimit:     v.FailureLimit,
 			Provider:         provider,
 		}
