@@ -31,17 +31,10 @@ import (
 
 var argoCDTracer = otel.Tracer("ArgoCDDispatcher")
 
-type argoCDVerificationConfig struct {
-	Interval     string `json:"interval"`
-	Count        int    `json:"count"`
-	FailureLimit *int   `json:"failureLimit,omitempty"`
-}
-
 type argoCDAgentConfig struct {
-	ServerUrl     string                     `json:"serverUrl"`
-	ApiKey        string                     `json:"apiKey"`
-	Template      string                     `json:"template"`
-	Verifications []argoCDVerificationConfig `json:"verifications,omitempty"`
+	ServerUrl string `json:"serverUrl"`
+	ApiKey    string `json:"apiKey"`
+	Template  string `json:"template"`
 }
 
 type ArgoCDDispatcher struct {
@@ -132,6 +125,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return err
 	}
 
+	span.SetAttributes(attribute.String("cfg", fmt.Sprintf("%+v", cfg)))
 	span.SetAttributes(attribute.String("argocd.server_url", cfg.ServerUrl))
 
 	t, err := template.New("argoCDAgentConfig").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(cfg.Template)
@@ -318,11 +312,6 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		attribute.String("release.id", jobWithRelease.Release.ID()),
 	)
 
-	if len(cfg.Verifications) == 0 {
-		span.SetStatus(codes.Ok, "no verifications configured, skipping verification")
-		return nil
-	}
-
 	baseURL := cfg.ServerUrl
 	if !strings.HasPrefix(baseURL, "https://") {
 		baseURL = "https://" + baseURL
@@ -344,16 +333,16 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		Type:    oapi.Http,
 	})
 
-	metrics := make([]oapi.VerificationMetricSpec, len(cfg.Verifications))
-	for i, v := range cfg.Verifications {
-		metrics[i] = oapi.VerificationMetricSpec{
+	failureLimit := 3
+	metrics := []oapi.VerificationMetricSpec{
+		{
 			Name:             fmt.Sprintf("%s-argocd-application-health", appName),
-			Interval:         v.Interval,
-			Count:            v.Count,
+			Interval:         "30s",
+			Count:            10,
 			SuccessCondition: "result.statusCode == 200 && result.json.status.health.status == 'Healthy'",
-			FailureLimit:     v.FailureLimit,
+			FailureLimit:     &failureLimit,
 			Provider:         provider,
-		}
+		},
 	}
 
 	// Create a verification manager on-demand and start verification for this release.
