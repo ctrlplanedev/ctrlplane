@@ -47,14 +47,17 @@ const JobStatusBadgeColor: Record<string, string> = {
 
 function JobStatusBadgeInner({
   status,
+  hasMessage = false,
 }: {
   status: keyof typeof JobStatusDisplayName;
+  hasMessage?: boolean;
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${JobStatusBadgeColor[status] ?? "border-neutral-200 bg-neutral-100 text-neutral-700"}`}
+      className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-medium ${JobStatusBadgeColor[status] ?? "border-neutral-200 bg-neutral-100 text-neutral-700"}`}
     >
       {JobStatusDisplayName[status]}
+      {hasMessage && <AlertCircle className="size-2.5" />}
     </span>
   );
 }
@@ -71,11 +74,10 @@ export function JobStatusBadge({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger>
-            <JobStatusBadgeInner status={status} />
+            <JobStatusBadgeInner status={status} hasMessage />
           </TooltipTrigger>
-          <TooltipContent className="flex items-center gap-1.5">
+          <TooltipContent className="flex max-w-sm items-center gap-1.5 break-words">
             {message}
-            <AlertCircle className="size-2.5" />
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
