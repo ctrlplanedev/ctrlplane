@@ -1,5 +1,4 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-import type { FC } from "react";
 import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
 import { ChevronRight } from "lucide-react";
@@ -13,8 +12,11 @@ import {
   JobStatusDisplayName,
 } from "../../../_components/JobStatusBadge";
 import { RedeployDialog } from "../RedeployDialog";
+import { VersionDisplay } from "./VersionDisplay";
 
 type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
+type ReleaseTargetState = WorkspaceEngine["schemas"]["ReleaseTargetState"];
+type Resource = WorkspaceEngine["schemas"]["Resource"];
 
 type Environment = WorkspaceEngine["schemas"]["Environment"];
 type EnvironmentReleaseTargetsGroupProps = {
@@ -22,9 +24,53 @@ type EnvironmentReleaseTargetsGroupProps = {
   environment: Environment;
 };
 
-export const EnvironmentReleaseTargetsGroup: FC<
-  EnvironmentReleaseTargetsGroupProps
-> = ({ releaseTargets, environment }) => {
+type ReleaseTargetRowProps = {
+  releaseTarget: {
+    deploymentId: string;
+    environmentId: string;
+    resourceId: string;
+  };
+  state: ReleaseTargetState;
+  resource: Resource;
+};
+
+function ReleaseTargetRow({
+  releaseTarget,
+  state,
+  resource,
+}: ReleaseTargetRowProps) {
+  return (
+    <TableRow key={releaseTarget.resourceId}>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <ResourceIcon
+            kind={resource?.kind ?? ""}
+            version={resource?.version ?? ""}
+          />
+          {resource?.name}
+        </div>
+      </TableCell>
+      <TableCell>
+        <JobStatusBadge
+          message={state.latestJob?.message}
+          status={
+            (state.latestJob?.status ??
+              "unknown") as keyof typeof JobStatusDisplayName
+          }
+        />
+      </TableCell>
+      <VersionDisplay {...state} />
+      <TableCell className="text-right">
+        <RedeployDialog releaseTarget={releaseTarget} />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+export function EnvironmentReleaseTargetsGroup({
+  releaseTargets,
+  environment,
+}: EnvironmentReleaseTargetsGroupProps) {
   const [open, setOpen] = useState(true);
 
   let cel: string | undefined = undefined;
@@ -64,63 +110,14 @@ export const EnvironmentReleaseTargetsGroup: FC<
           </div>
         </TableCell>
       </TableRow>
-      {rts.map(({ releaseTarget, state, resource }) => {
-        const fromVersionRaw =
-          state.currentRelease?.version.name ||
-          state.currentRelease?.version.tag;
-        const toVersion =
-          (state.desiredRelease?.version.name ||
-            state.desiredRelease?.version.tag) ??
-          "unknown";
-        const isInSync = !!fromVersionRaw && fromVersionRaw === toVersion;
-
-        let versionDisplay;
-        if (!fromVersionRaw) {
-          versionDisplay = (
-            <span className="italic text-neutral-500">
-              Not yet deployed → {toVersion}
-            </span>
-          );
-        } else if (isInSync) {
-          versionDisplay = toVersion;
-        } else {
-          versionDisplay = `${fromVersionRaw} → ${toVersion}`;
-        }
-
-        return (
-          <TableRow key={releaseTarget.resourceId}>
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <ResourceIcon
-                  kind={resource?.kind ?? ""}
-                  version={resource?.version ?? ""}
-                />
-                {resource?.name}
-              </div>
-            </TableCell>
-            <TableCell>
-              <JobStatusBadge
-                message={state.latestJob?.message}
-                status={
-                  (state.latestJob?.status ??
-                    "unknown") as keyof typeof JobStatusDisplayName
-                }
-              />
-            </TableCell>
-            <TableCell
-              className={cn(
-                isInSync ? "text-green-500" : "text-blue-500",
-                "text-right font-mono text-sm",
-              )}
-            >
-              {versionDisplay}
-            </TableCell>
-            <TableCell className="text-right">
-              <RedeployDialog releaseTarget={releaseTarget} />
-            </TableCell>
-          </TableRow>
-        );
-      })}
+      {rts.map(({ releaseTarget, state, resource }) => (
+        <ReleaseTargetRow
+          key={releaseTarget.resourceId}
+          releaseTarget={releaseTarget}
+          state={state}
+          resource={resource}
+        />
+      ))}
     </Fragment>
   );
-};
+}
