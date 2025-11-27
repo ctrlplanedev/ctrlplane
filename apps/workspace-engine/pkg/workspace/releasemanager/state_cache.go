@@ -95,6 +95,10 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 		}
 	}
 
+	if desiredRelease != nil {
+		desiredRelease.Verification = sc.store.ReleaseVerifications.GetMostRecentVerificationForRelease(desiredRelease.ID())
+	}
+
 	// Get current release (compute if not provided)
 	currentRelease := options.currentRelease
 	if currentRelease == nil {
@@ -105,6 +109,10 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 		} else {
 			currentRelease = cr
 		}
+	}
+
+	if currentRelease != nil {
+		currentRelease.Verification = sc.store.ReleaseVerifications.GetMostRecentVerificationForRelease(currentRelease.ID())
 	}
 
 	// Get latest job (compute if not provided)
