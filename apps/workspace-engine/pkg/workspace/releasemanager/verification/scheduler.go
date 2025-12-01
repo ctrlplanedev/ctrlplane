@@ -176,7 +176,7 @@ func (s *scheduler) runMetricLoop(ctx context.Context, verificationID string, me
 						// Don't fail the metric completion due to hook errors
 					}
 				}
-				
+
 				log.Info("Metric complete, stopping loop",
 					"verification_id", verificationID,
 					"metric_index", metricIndex,

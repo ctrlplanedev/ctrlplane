@@ -817,7 +817,7 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
 	require.True(t, exists)
-	
+
 	hooks.mu.Lock()
 	assert.Equal(t, verification.Id, hooks.verificationStartedCalls[0])
 	hooks.mu.Unlock()
@@ -855,7 +855,7 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 
 	// Verify hook was called
 	assert.Equal(t, 1, hooks.getVerificationStoppedCount())
-	
+
 	hooks.mu.Lock()
 	assert.Equal(t, verification.Id, hooks.verificationStoppedCalls[0])
 	hooks.mu.Unlock()
@@ -990,14 +990,14 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
 	hooks := newMockHooks()
-	
+
 	// Inject errors in all hooks
 	hooks.errorOnVerificationStarted = assert.AnError
 	hooks.errorOnMeasurementTaken = assert.AnError
 	hooks.errorOnMetricComplete = assert.AnError
 	hooks.errorOnVerificationComplete = assert.AnError
 	hooks.errorOnVerificationStopped = assert.AnError
-	
+
 	manager := NewManager(s, WithHooks(hooks))
 
 	release := createTestRelease(s, ctx)
@@ -1079,7 +1079,7 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 		metricIndices[call.metricIndex] = true
 	}
 	hooks.mu.Unlock()
-	
+
 	// Should have measurements from both metrics (index 0 and 1)
 	assert.GreaterOrEqual(t, len(metricIndices), 1)
 
