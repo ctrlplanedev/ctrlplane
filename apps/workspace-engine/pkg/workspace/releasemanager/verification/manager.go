@@ -21,14 +21,29 @@ var tracer = otel.Tracer("workspace/releasemanager/verification")
 // It uses a scheduler to run verifications from the store
 type Manager struct {
 	store     *store.Store
-	scheduler *Scheduler
+	scheduler *scheduler
+	hooks     VerificationHooks
 }
 
-func NewManager(store *store.Store) *Manager {
-	return &Manager{
+func NewManager(store *store.Store, opts ...ManagerOption) *Manager {
+	m := &Manager{
 		store:     store,
-		scheduler: NewScheduler(store),
+		hooks:     DefaultHooks(),
 	}
+	for _, opt := range opts {
+		opt(m)
+	}
+
+	m.scheduler = newScheduler(store, m.hooks)
+	return m
+}
+
+type ManagerOption func(*Manager)
+
+func WithHooks(hooks VerificationHooks) ManagerOption {
+    return func(m *Manager) {
+        m.hooks = hooks
+    }
 }
 
 // OnLoad restarts goroutines for any unfinished verifications
@@ -122,6 +137,14 @@ func (m *Manager) StartVerification(
 	// Start goroutine for this verification
 	m.scheduler.StartVerification(ctx, verificationRecord.Id)
 
+	// Call hook after verification is started
+	if err := m.hooks.OnVerificationStarted(ctx, verificationRecord); err != nil {
+		log.Error("Verification started hook failed",
+			"verification_id", verificationRecord.Id,
+			"error", err)
+		// Don't fail the verification due to hook errors
+	}
+
 	span.SetAttributes(attribute.String("verification.status", "created"))
 	span.SetStatus(codes.Ok, "verification created")
 
@@ -146,6 +169,14 @@ func (m *Manager) StopVerification(ctx context.Context, releaseID string) {
 	if verification, exists := m.store.ReleaseVerifications.GetByReleaseId(releaseID); exists {
 		// Stop the goroutines
 		m.scheduler.StopVerification(verification.Id)
+
+		// Call hook after verification is stopped
+		if err := m.hooks.OnVerificationStopped(ctx, verification); err != nil {
+			log.Error("Verification stopped hook failed",
+				"verification_id", verification.Id,
+				"error", err)
+			// Don't fail the stop operation due to hook errors
+		}
 
 		span.SetStatus(codes.Ok, "verification stopped")
 		log.Info("Stopped verification for release",

@@ -2,6 +2,7 @@ package verification
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -675,4 +676,413 @@ func BenchmarkManager_Restore(b *testing.B) {
 			manager.scheduler.StopVerification(verification.Id)
 		}
 	}
+}
+
+// Mock hooks for testing
+type mockHooks struct {
+	mu sync.Mutex
+
+	verificationStartedCalls  []string
+	measurementTakenCalls     []measurementCall
+	metricCompleteCalls       []metricCall
+	verificationCompleteCalls []string
+	verificationStoppedCalls  []string
+
+	// Allow injecting errors for testing error handling
+	errorOnVerificationStarted  error
+	errorOnMeasurementTaken     error
+	errorOnMetricComplete       error
+	errorOnVerificationComplete error
+	errorOnVerificationStopped  error
+}
+
+type measurementCall struct {
+	verificationID string
+	metricIndex    int
+	measurement    *oapi.VerificationMeasurement
+}
+
+type metricCall struct {
+	verificationID string
+	metricIndex    int
+}
+
+func newMockHooks() *mockHooks {
+	return &mockHooks{
+		verificationStartedCalls:  make([]string, 0),
+		measurementTakenCalls:     make([]measurementCall, 0),
+		metricCompleteCalls:       make([]metricCall, 0),
+		verificationCompleteCalls: make([]string, 0),
+		verificationStoppedCalls:  make([]string, 0),
+	}
+}
+
+func (m *mockHooks) OnVerificationStarted(ctx context.Context, verification *oapi.ReleaseVerification) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.verificationStartedCalls = append(m.verificationStartedCalls, verification.Id)
+	return m.errorOnVerificationStarted
+}
+
+func (m *mockHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.measurementTakenCalls = append(m.measurementTakenCalls, measurementCall{
+		verificationID: verification.Id,
+		metricIndex:    metricIndex,
+		measurement:    measurement,
+	})
+	return m.errorOnMeasurementTaken
+}
+
+func (m *mockHooks) OnMetricComplete(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.metricCompleteCalls = append(m.metricCompleteCalls, metricCall{
+		verificationID: verification.Id,
+		metricIndex:    metricIndex,
+	})
+	return m.errorOnMetricComplete
+}
+
+func (m *mockHooks) OnVerificationComplete(ctx context.Context, verification *oapi.ReleaseVerification) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.verificationCompleteCalls = append(m.verificationCompleteCalls, verification.Id)
+	return m.errorOnVerificationComplete
+}
+
+func (m *mockHooks) OnVerificationStopped(ctx context.Context, verification *oapi.ReleaseVerification) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.verificationStoppedCalls = append(m.verificationStoppedCalls, verification.Id)
+	return m.errorOnVerificationStopped
+}
+
+func (m *mockHooks) getVerificationStartedCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.verificationStartedCalls)
+}
+
+func (m *mockHooks) getMeasurementTakenCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.measurementTakenCalls)
+}
+
+func (m *mockHooks) getMetricCompleteCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.metricCompleteCalls)
+}
+
+func (m *mockHooks) getVerificationCompleteCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.verificationCompleteCalls)
+}
+
+func (m *mockHooks) getVerificationStoppedCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.verificationStoppedCalls)
+}
+
+// Hook tests
+
+func TestManager_HooksOnVerificationStarted(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	hooks := newMockHooks()
+	manager := NewManager(s, WithHooks(hooks))
+
+	release := createTestRelease(s, ctx)
+
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Name:             "health-check",
+			Interval:         "30s",
+			Count:            5,
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+		},
+	}
+
+	err := manager.StartVerification(ctx, release, metrics)
+	require.NoError(t, err)
+
+	// Verify hook was called
+	assert.Equal(t, 1, hooks.getVerificationStartedCount())
+
+	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	require.True(t, exists)
+	
+	hooks.mu.Lock()
+	assert.Equal(t, verification.Id, hooks.verificationStartedCalls[0])
+	hooks.mu.Unlock()
+
+	// Clean up
+	manager.scheduler.StopVerification(verification.Id)
+}
+
+func TestManager_HooksOnVerificationStopped(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	hooks := newMockHooks()
+	manager := NewManager(s, WithHooks(hooks))
+
+	release := createTestRelease(s, ctx)
+
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Name:             "health-check",
+			Interval:         "30s",
+			Count:            5,
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+		},
+	}
+
+	err := manager.StartVerification(ctx, release, metrics)
+	require.NoError(t, err)
+
+	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	require.True(t, exists)
+
+	// Stop the verification
+	manager.StopVerification(ctx, release.ID())
+
+	// Verify hook was called
+	assert.Equal(t, 1, hooks.getVerificationStoppedCount())
+	
+	hooks.mu.Lock()
+	assert.Equal(t, verification.Id, hooks.verificationStoppedCalls[0])
+	hooks.mu.Unlock()
+}
+
+func TestManager_HooksOnMeasurementTaken(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	hooks := newMockHooks()
+	manager := NewManager(s, WithHooks(hooks))
+
+	release := createTestRelease(s, ctx)
+
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Name:             "health-check",
+			Interval:         "100ms",
+			Count:            3,
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+		},
+	}
+
+	err := manager.StartVerification(ctx, release, metrics)
+	require.NoError(t, err)
+
+	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	require.True(t, exists)
+
+	// Wait for at least one measurement to be taken
+	time.Sleep(200 * time.Millisecond)
+
+	// Verify hook was called at least once
+	assert.GreaterOrEqual(t, hooks.getMeasurementTakenCount(), 1)
+
+	hooks.mu.Lock()
+	if len(hooks.measurementTakenCalls) > 0 {
+		assert.Equal(t, verification.Id, hooks.measurementTakenCalls[0].verificationID)
+		assert.Equal(t, 0, hooks.measurementTakenCalls[0].metricIndex)
+		assert.NotNil(t, hooks.measurementTakenCalls[0].measurement)
+	}
+	hooks.mu.Unlock()
+
+	// Clean up
+	manager.scheduler.StopVerification(verification.Id)
+}
+
+func TestManager_HooksOnMetricComplete(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	hooks := newMockHooks()
+	manager := NewManager(s, WithHooks(hooks))
+
+	release := createTestRelease(s, ctx)
+
+	// Use a very short interval and low count to complete quickly
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Name:             "health-check",
+			Interval:         "50ms",
+			Count:            2, // Only 2 measurements to complete quickly
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+		},
+	}
+
+	err := manager.StartVerification(ctx, release, metrics)
+	require.NoError(t, err)
+
+	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	require.True(t, exists)
+
+	// Wait for metric to complete (2 measurements at 50ms interval + buffer)
+	time.Sleep(300 * time.Millisecond)
+
+	// Verify hook was called
+	assert.GreaterOrEqual(t, hooks.getMetricCompleteCount(), 1)
+
+	hooks.mu.Lock()
+	if len(hooks.metricCompleteCalls) > 0 {
+		assert.Equal(t, verification.Id, hooks.metricCompleteCalls[0].verificationID)
+		assert.Equal(t, 0, hooks.metricCompleteCalls[0].metricIndex)
+	}
+	hooks.mu.Unlock()
+
+	// Clean up
+	manager.scheduler.StopVerification(verification.Id)
+}
+
+func TestManager_HooksOnVerificationComplete(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	hooks := newMockHooks()
+	manager := NewManager(s, WithHooks(hooks))
+
+	release := createTestRelease(s, ctx)
+
+	// Use a very short interval and low count to complete quickly
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Name:             "health-check",
+			Interval:         "50ms",
+			Count:            2, // Only 2 measurements to complete quickly
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+		},
+	}
+
+	err := manager.StartVerification(ctx, release, metrics)
+	require.NoError(t, err)
+
+	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	require.True(t, exists)
+
+	// Wait for verification to complete (2 measurements at 50ms interval + buffer)
+	time.Sleep(300 * time.Millisecond)
+
+	// Verify hook was called
+	assert.GreaterOrEqual(t, hooks.getVerificationCompleteCount(), 1)
+
+	hooks.mu.Lock()
+	if len(hooks.verificationCompleteCalls) > 0 {
+		assert.Equal(t, verification.Id, hooks.verificationCompleteCalls[0])
+	}
+	hooks.mu.Unlock()
+
+	// Clean up
+	manager.scheduler.StopVerification(verification.Id)
+}
+
+func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	hooks := newMockHooks()
+	
+	// Inject errors in all hooks
+	hooks.errorOnVerificationStarted = assert.AnError
+	hooks.errorOnMeasurementTaken = assert.AnError
+	hooks.errorOnMetricComplete = assert.AnError
+	hooks.errorOnVerificationComplete = assert.AnError
+	hooks.errorOnVerificationStopped = assert.AnError
+	
+	manager := NewManager(s, WithHooks(hooks))
+
+	release := createTestRelease(s, ctx)
+
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Name:             "health-check",
+			Interval:         "50ms",
+			Count:            2,
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+		},
+	}
+
+	// StartVerification should succeed despite hook error
+	err := manager.StartVerification(ctx, release, metrics)
+	require.NoError(t, err)
+
+	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	require.True(t, exists)
+
+	// Wait for some measurements
+	time.Sleep(200 * time.Millisecond)
+
+	// StopVerification should succeed despite hook error
+	manager.StopVerification(ctx, release.ID())
+
+	// Verify hooks were still called despite errors
+	assert.Equal(t, 1, hooks.getVerificationStartedCount())
+	assert.GreaterOrEqual(t, hooks.getMeasurementTakenCount(), 1)
+	assert.Equal(t, 1, hooks.getVerificationStoppedCount())
+}
+
+func TestManager_HooksWithMultipleMetrics(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	hooks := newMockHooks()
+	manager := NewManager(s, WithHooks(hooks))
+
+	release := createTestRelease(s, ctx)
+
+	// Create multiple metrics
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Name:             "health-check-1",
+			Interval:         "50ms",
+			Count:            2,
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+		},
+		{
+			Name:             "health-check-2",
+			Interval:         "50ms",
+			Count:            2,
+			SuccessCondition: "result.statusCode == 200",
+			Provider:         createHTTPProvider("http://example.com/metrics", oapi.GET),
+		},
+	}
+
+	err := manager.StartVerification(ctx, release, metrics)
+	require.NoError(t, err)
+
+	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	require.True(t, exists)
+
+	// Wait for both metrics to complete
+	time.Sleep(300 * time.Millisecond)
+
+	// Verify hooks were called for both metrics
+	assert.Equal(t, 1, hooks.getVerificationStartedCount())
+	assert.GreaterOrEqual(t, hooks.getMeasurementTakenCount(), 2) // At least one per metric
+	assert.GreaterOrEqual(t, hooks.getMetricCompleteCount(), 2)   // Both metrics should complete
+	assert.Equal(t, 1, hooks.getVerificationCompleteCount())      // Only one verification complete
+
+	// Verify different metric indices were recorded
+	hooks.mu.Lock()
+	metricIndices := make(map[int]bool)
+	for _, call := range hooks.measurementTakenCalls {
+		metricIndices[call.metricIndex] = true
+	}
+	hooks.mu.Unlock()
+	
+	// Should have measurements from both metrics (index 0 and 1)
+	assert.GreaterOrEqual(t, len(metricIndices), 1)
+
+	// Clean up
+	manager.scheduler.StopVerification(verification.Id)
 }

@@ -143,7 +143,7 @@ func createTestVerification(s *store.Store, ctx context.Context, releaseID strin
 
 func TestNewScheduler(t *testing.T) {
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	assert.NotNil(t, scheduler)
 	assert.NotNil(t, scheduler.store)
@@ -154,7 +154,7 @@ func TestNewScheduler(t *testing.T) {
 func TestScheduler_StartVerification_NotFound(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	// Try to start a verification that doesn't exist
 	nonExistentID := uuid.New().String()
@@ -169,7 +169,7 @@ func TestScheduler_StartVerification_NotFound(t *testing.T) {
 func TestScheduler_StartVerification_AlreadyRunning(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 	verification := createTestVerification(s, ctx, release.ID(), 1, "1h")
@@ -200,7 +200,7 @@ func TestScheduler_StartVerification_AlreadyRunning(t *testing.T) {
 func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 	verification := createTestVerification(s, ctx, release.ID(), 1, "1h")
@@ -230,7 +230,7 @@ func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 func TestScheduler_StartVerification_Success(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 	verification := createTestVerification(s, ctx, release.ID(), 3, "1h")
@@ -250,7 +250,7 @@ func TestScheduler_StartVerification_Success(t *testing.T) {
 func TestScheduler_StopVerification(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 	verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
@@ -272,7 +272,7 @@ func TestScheduler_StopVerification(t *testing.T) {
 
 func TestScheduler_StopVerification_NotRunning(t *testing.T) {
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	nonExistentID := uuid.New().String()
 
@@ -285,7 +285,7 @@ func TestScheduler_StopVerification_NotRunning(t *testing.T) {
 func TestScheduler_StopVerification_MultipleTimes(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 	verification := createTestVerification(s, ctx, release.ID(), 1, "1h")
@@ -302,7 +302,7 @@ func TestScheduler_StopVerification_MultipleTimes(t *testing.T) {
 func TestScheduler_BuildProviderContext_Success(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -321,7 +321,7 @@ func TestScheduler_BuildProviderContext_Success(t *testing.T) {
 
 func TestScheduler_BuildProviderContext_ReleaseNotFound(t *testing.T) {
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	nonExistentID := uuid.New().String()
 	providerCtx, err := scheduler.buildProviderContext(nonExistentID)
@@ -334,7 +334,7 @@ func TestScheduler_BuildProviderContext_ReleaseNotFound(t *testing.T) {
 func TestScheduler_BuildProviderContext_WithVariables(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -361,7 +361,7 @@ func TestScheduler_BuildProviderContext_WithVariables(t *testing.T) {
 func TestScheduler_ConcurrentStartStop(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	// Create multiple verifications
 	verificationIDs := make([]string, 10)
@@ -409,7 +409,7 @@ func TestScheduler_ConcurrentStartStop(t *testing.T) {
 func TestScheduler_MultipleMetrics(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -431,7 +431,7 @@ func TestScheduler_MultipleMetrics(t *testing.T) {
 func TestScheduler_RestartAfterStop(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 	verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
@@ -463,7 +463,7 @@ func TestScheduler_RestartAfterStop(t *testing.T) {
 func TestScheduler_VerificationWithNoMetrics(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -493,7 +493,7 @@ func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -533,7 +533,7 @@ func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -567,7 +567,7 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -604,7 +604,7 @@ func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
 
@@ -635,7 +635,7 @@ func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 func BenchmarkScheduler_StartVerification(b *testing.B) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	// Pre-create verifications
 	verificationIDs := make([]string, b.N)
@@ -659,7 +659,7 @@ func BenchmarkScheduler_StartVerification(b *testing.B) {
 func BenchmarkScheduler_StopVerification(b *testing.B) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	// Pre-create and start verifications
 	verificationIDs := make([]string, b.N)
@@ -679,7 +679,7 @@ func BenchmarkScheduler_StopVerification(b *testing.B) {
 func BenchmarkScheduler_ConcurrentOperations(b *testing.B) {
 	ctx := context.Background()
 	s := newTestStore()
-	scheduler := NewScheduler(s)
+	scheduler := newScheduler(s, DefaultHooks())
 
 	// Pre-create verifications
 	verificationIDs := make([]string, 100)

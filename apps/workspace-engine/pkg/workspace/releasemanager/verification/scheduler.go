@@ -13,26 +13,28 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// Scheduler manages goroutines for running verification measurements
+// scheduler manages goroutines for running verification measurements
 // Each metric in each verification gets its own goroutine with a ticker
-type Scheduler struct {
+type scheduler struct {
 	store *store.Store
+	hooks VerificationHooks
 
 	mu          sync.Mutex
 	cancelFuncs map[string][]context.CancelFunc // Map of verification ID to list of cancel functions (one per metric)
 }
 
-// NewScheduler creates a new verification scheduler
-func NewScheduler(store *store.Store) *Scheduler {
-	return &Scheduler{
+// newScheduler creates a new verification scheduler
+func newScheduler(store *store.Store, hooks VerificationHooks) *scheduler {
+	return &scheduler{
 		store:       store,
+		hooks:       hooks,
 		cancelFuncs: make(map[string][]context.CancelFunc),
 	}
 }
 
 // StartVerification starts goroutines for all metrics in a verification
 // Each metric gets its own goroutine with a ticker at its interval
-func (s *Scheduler) StartVerification(ctx context.Context, verificationID string) {
+func (s *scheduler) StartVerification(ctx context.Context, verificationID string) {
 	s.mu.Lock()
 
 	// Check if already running
@@ -95,7 +97,7 @@ func (s *Scheduler) StartVerification(ctx context.Context, verificationID string
 }
 
 // StopVerification stops all goroutines for a verification
-func (s *Scheduler) StopVerification(verificationID string) {
+func (s *scheduler) StopVerification(verificationID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -110,7 +112,7 @@ func (s *Scheduler) StopVerification(verificationID string) {
 
 // runMetricLoop runs measurements for a single metric on a ticker interval
 // All state is read from and written to the store - this goroutine is stateless
-func (s *Scheduler) runMetricLoop(ctx context.Context, verificationID string, metricIndex int, wg *sync.WaitGroup) {
+func (s *scheduler) runMetricLoop(ctx context.Context, verificationID string, metricIndex int, wg *sync.WaitGroup) {
 	// Signal completion when done with setup and first measurement
 	defer wg.Done()
 
@@ -164,6 +166,17 @@ func (s *Scheduler) runMetricLoop(ctx context.Context, verificationID string, me
 			metric := &verification.Metrics[metricIndex]
 			measurements := metrics.NewMeasurements(metric.Measurements)
 			if !measurements.ShouldContinue(metric) {
+				// Reload verification to get the latest state for the hook
+				if latestVerification, ok := s.store.ReleaseVerifications.Get(verificationID); ok {
+					if err := s.hooks.OnMetricComplete(ctx, latestVerification, metricIndex); err != nil {
+						log.Error("Metric complete hook failed",
+							"verification_id", verificationID,
+							"metric_index", metricIndex,
+							"error", err)
+						// Don't fail the metric completion due to hook errors
+					}
+				}
+				
 				log.Info("Metric complete, stopping loop",
 					"verification_id", verificationID,
 					"metric_index", metricIndex,
@@ -180,7 +193,7 @@ func (s *Scheduler) runMetricLoop(ctx context.Context, verificationID string, me
 }
 
 // buildProviderContext creates the context needed for metric providers
-func (s *Scheduler) buildProviderContext(releaseID string) (*provider.ProviderContext, error) {
+func (s *scheduler) buildProviderContext(releaseID string) (*provider.ProviderContext, error) {
 	release, ok := s.store.Releases.Get(releaseID)
 	if !ok {
 		return nil, fmt.Errorf("release not found: %s", releaseID)
@@ -214,7 +227,7 @@ func (s *Scheduler) buildProviderContext(releaseID string) (*provider.ProviderCo
 
 // runMeasurement executes a single measurement for a specific metric
 // Reads state from store, measures, updates store
-func (s *Scheduler) runMeasurement(ctx context.Context, verificationID string, metricIndex int) error {
+func (s *scheduler) runMeasurement(ctx context.Context, verificationID string, metricIndex int) error {
 	// Read fresh state from store
 	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
 	if !ok {
@@ -272,6 +285,19 @@ func (s *Scheduler) runMeasurement(ctx context.Context, verificationID string, m
 		verification.Metrics[metricIndex].Measurements = append(verification.Metrics[metricIndex].Measurements, result)
 	}
 
+	// Call hook after measurement is taken
+	lastMeasurementIndex := len(verification.Metrics[metricIndex].Measurements) - 1
+	if lastMeasurementIndex >= 0 {
+		lastMeasurement := &verification.Metrics[metricIndex].Measurements[lastMeasurementIndex]
+		if hookErr := s.hooks.OnMeasurementTaken(ctx, verification, metricIndex, lastMeasurement); hookErr != nil {
+			log.Error("Measurement taken hook failed",
+				"verification_id", verificationID,
+				"metric_index", metricIndex,
+				"error", hookErr)
+			// Don't fail the measurement due to hook errors
+		}
+	}
+
 	// Update summary message if all metrics complete
 	status := verification.Status()
 	if status != oapi.ReleaseVerificationStatusRunning {
@@ -288,6 +314,14 @@ func (s *Scheduler) runMeasurement(ctx context.Context, verificationID string, m
 		message := fmt.Sprintf("Verification %s: %d/%d measurements passed across %d metrics",
 			status, passedMeasurements, totalMeasurements, len(verification.Metrics))
 		verification.Message = &message
+
+		// Call hook when verification completes
+		if hookErr := s.hooks.OnVerificationComplete(ctx, verification); hookErr != nil {
+			log.Error("Verification complete hook failed",
+				"verification_id", verificationID,
+				"error", hookErr)
+			// Don't fail the verification due to hook errors
+		}
 	}
 
 	// Save updated verification to store
