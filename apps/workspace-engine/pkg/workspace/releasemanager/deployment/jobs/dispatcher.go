@@ -19,7 +19,8 @@ type Dispatcher struct {
 // NewDispatcher creates a new job dispatcher.
 func NewDispatcher(store *store.Store, verification *verification.Manager) *Dispatcher {
 	return &Dispatcher{
-		store: store,
+		store:        store,
+		verification: verification,
 	}
 }
 
