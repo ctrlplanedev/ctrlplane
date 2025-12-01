@@ -273,7 +273,7 @@ func getJobsToRetrigger(ws *workspace.Workspace, deployment *oapi.Deployment) []
 func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, jobsToRetrigger []*oapi.Job) {
 	// Create job factory and dispatcher
 	jobFactory := jobs.NewFactory(ws.Store())
-	jobDispatcher := jobs.NewDispatcher(ws.Store())
+	jobDispatcher := jobs.NewDispatcher(ws.Store(), ws.ReleaseManager().VerificationManager())
 
 	for _, job := range jobsToRetrigger {
 		// Get the release for this job

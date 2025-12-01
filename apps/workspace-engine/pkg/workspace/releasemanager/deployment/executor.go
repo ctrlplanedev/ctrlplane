@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
@@ -24,11 +25,11 @@ type Executor struct {
 }
 
 // NewExecutor creates a new deployment executor.
-func NewExecutor(store *store.Store) *Executor {
+func NewExecutor(store *store.Store, verification *verification.Manager) *Executor {
 	return &Executor{
 		store:         store,
 		jobFactory:    jobs.NewFactory(store),
-		jobDispatcher: jobs.NewDispatcher(store),
+		jobDispatcher: jobs.NewDispatcher(store, verification),
 	}
 }
 

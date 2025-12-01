@@ -6,16 +6,18 @@ import (
 	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobdispatch"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 )
 
 // Dispatcher sends jobs to configured job agents for execution.
 type Dispatcher struct {
-	store *store.Store
+	store        *store.Store
+	verification *verification.Manager
 }
 
 // NewDispatcher creates a new job dispatcher.
-func NewDispatcher(store *store.Store) *Dispatcher {
+func NewDispatcher(store *store.Store, verification *verification.Manager) *Dispatcher {
 	return &Dispatcher{
 		store: store,
 	}
@@ -36,7 +38,7 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 	}
 
 	if jobAgent.Type == string(jobdispatch.JobAgentTypeArgoCD) {
-		return jobdispatch.NewArgoCDDispatcher(d.store).DispatchJob(ctx, job)
+		return jobdispatch.NewArgoCDDispatcher(d.store, d.verification).DispatchJob(ctx, job)
 	}
 
 	return ErrUnsupportedJobAgent

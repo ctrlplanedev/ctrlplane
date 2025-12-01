@@ -38,12 +38,14 @@ type argoCDAgentConfig struct {
 }
 
 type ArgoCDDispatcher struct {
-	store *store.Store
+	store        *store.Store
+	verification *verification.Manager
 }
 
-func NewArgoCDDispatcher(store *store.Store) *ArgoCDDispatcher {
+func NewArgoCDDispatcher(store *store.Store, verification *verification.Manager) *ArgoCDDispatcher {
 	return &ArgoCDDispatcher{
-		store: store,
+		store:        store,
+		verification: verification,
 	}
 }
 
@@ -343,9 +345,7 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		},
 	}
 
-	// Create a verification manager on-demand and start verification for this release.
-	manager := verification.NewManager(d.store)
-	if err := manager.StartVerification(ctx, &jobWithRelease.Release, metrics); err != nil {
+	if err := d.verification.StartVerification(ctx, &jobWithRelease.Release, metrics); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to start verification")
 		return err

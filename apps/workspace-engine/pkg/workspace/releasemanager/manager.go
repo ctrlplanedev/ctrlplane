@@ -43,9 +43,9 @@ func New(store *store.Store, traceStore PersistenceStore) *Manager {
 		panic("traceStore cannot be nil - deployment tracing is mandatory")
 	}
 
-	deploymentOrch := NewDeploymentOrchestrator(store)
-	stateCache := NewStateCache(store, deploymentOrch.Planner())
 	verificationManager := verification.NewManager(store)
+	deploymentOrch := NewDeploymentOrchestrator(store, verificationManager)
+	stateCache := NewStateCache(store, deploymentOrch.Planner())
 
 	return &Manager{
 		store:        store,
@@ -63,6 +63,10 @@ func New(store *store.Store, traceStore PersistenceStore) *Manager {
 type targetState struct {
 	entity   *oapi.ReleaseTarget
 	isDelete bool
+}
+
+func (m *Manager) VerificationManager() *verification.Manager {
+	return m.verification
 }
 
 // ProcessChanges handles detected changes to release targets (WRITES TO STORE).

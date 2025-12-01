@@ -6,6 +6,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -19,7 +20,8 @@ func setupTestExecutor(t *testing.T) (*Executor, *store.Store) {
 	t.Helper()
 	cs := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", cs)
-	executor := NewExecutor(testStore)
+	testVerification := verification.NewManager(testStore)
+	executor := NewExecutor(testStore, testVerification)
 	return executor, testStore
 }
 
