@@ -102,11 +102,32 @@ local openapi = import '../lib/openapi.libsonnet';
   MetricProvider: {
     oneOf: [
       openapi.schemaRef('HTTPMetricProvider'),
+      openapi.schemaRef('SleepMetricProvider'),
     ],
     discriminator: {
       propertyName: 'type',
       mapping: {
         http: '#/components/schemas/HTTPMetricProvider',
+        sleep: '#/components/schemas/SleepMetricProvider',
+      },
+    },
+  },
+
+  SleepMetricProvider: {
+    type: 'object',
+    required: ['type', 'duration'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['sleep'],
+        description: 'Provider type',
+      },
+      duration: {
+        type: 'integer',
+        format: 'int',
+        example: 30,
+        minimum: 1,
+        maximum: 3600,
       },
     },
   },

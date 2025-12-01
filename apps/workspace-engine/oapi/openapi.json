@@ -729,13 +729,17 @@
          "MetricProvider": {
             "discriminator": {
                "mapping": {
-                  "http": "#/components/schemas/HTTPMetricProvider"
+                  "http": "#/components/schemas/HTTPMetricProvider",
+                  "sleep": "#/components/schemas/SleepMetricProvider"
                },
                "propertyName": "type"
             },
             "oneOf": [
                {
                   "$ref": "#/components/schemas/HTTPMetricProvider"
+               },
+               {
+                  "$ref": "#/components/schemas/SleepMetricProvider"
                }
             ]
          },
@@ -1496,6 +1500,29 @@
             },
             "required": [
                "valueHash"
+            ],
+            "type": "object"
+         },
+         "SleepMetricProvider": {
+            "properties": {
+               "duration": {
+                  "example": 30,
+                  "format": "int",
+                  "maximum": 3600,
+                  "minimum": 1,
+                  "type": "integer"
+               },
+               "type": {
+                  "description": "Provider type",
+                  "enum": [
+                     "sleep"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "duration"
             ],
             "type": "object"
          },

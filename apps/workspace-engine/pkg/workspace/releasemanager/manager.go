@@ -46,6 +46,8 @@ func New(store *store.Store, traceStore PersistenceStore) *Manager {
 	verificationManager := verification.NewManager(store)
 	deploymentOrch := NewDeploymentOrchestrator(store, verificationManager)
 	stateCache := NewStateCache(store, deploymentOrch.Planner())
+	verificationHooks := newReleaseManagerVerificationHooks(store, stateCache)
+	verificationManager.SetHooks(verificationHooks)
 
 	return &Manager{
 		store:        store,

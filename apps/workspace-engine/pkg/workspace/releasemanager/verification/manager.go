@@ -27,8 +27,8 @@ type Manager struct {
 
 func NewManager(store *store.Store, opts ...ManagerOption) *Manager {
 	m := &Manager{
-		store:     store,
-		hooks:     DefaultHooks(),
+		store: store,
+		hooks: DefaultHooks(),
 	}
 	for _, opt := range opts {
 		opt(m)
@@ -38,12 +38,17 @@ func NewManager(store *store.Store, opts ...ManagerOption) *Manager {
 	return m
 }
 
+func (m *Manager) SetHooks(hooks VerificationHooks) {
+	m.hooks = hooks
+	m.scheduler = newScheduler(m.store, hooks)
+}
+
 type ManagerOption func(*Manager)
 
 func WithHooks(hooks VerificationHooks) ManagerOption {
-    return func(m *Manager) {
-        m.hooks = hooks
-    }
+	return func(m *Manager) {
+		m.hooks = hooks
+	}
 }
 
 // OnLoad restarts goroutines for any unfinished verifications

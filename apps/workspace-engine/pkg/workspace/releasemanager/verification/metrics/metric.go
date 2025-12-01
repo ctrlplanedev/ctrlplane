@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/http"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/sleep"
 
 	"github.com/charmbracelet/log"
 )
@@ -24,6 +25,13 @@ func CreateProvider(providerCfg oapi.MetricProvider) (provider.Provider, error) 
 			return nil, fmt.Errorf("failed to parse HTTP provider: %w", err)
 		}
 		return http.NewFromOAPI(httpProvider)
+
+	case "sleep":
+		sleepProvider, err := providerCfg.AsSleepMetricProvider()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse sleep provider: %w", err)
+		}
+		return sleep.NewFromOAPI(sleepProvider)
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", discriminator)
 	}

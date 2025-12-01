@@ -132,6 +132,11 @@ const (
 	Wait     RuleEvaluationActionType = "wait"
 )
 
+// Defines values for SleepMetricProviderType.
+const (
+	Sleep SleepMetricProviderType = "sleep"
+)
+
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -694,6 +699,17 @@ type Selector struct {
 type SensitiveValue struct {
 	ValueHash string `json:"valueHash"`
 }
+
+// SleepMetricProvider defines model for SleepMetricProvider.
+type SleepMetricProvider struct {
+	Duration int `json:"duration"`
+
+	// Type Provider type
+	Type SleepMetricProviderType `json:"type"`
+}
+
+// SleepMetricProviderType Provider type
+type SleepMetricProviderType string
 
 // StringValue defines model for StringValue.
 type StringValue = string
@@ -1328,6 +1344,34 @@ func (t *MetricProvider) MergeHTTPMetricProvider(v HTTPMetricProvider) error {
 	return err
 }
 
+// AsSleepMetricProvider returns the union data inside the MetricProvider as a SleepMetricProvider
+func (t MetricProvider) AsSleepMetricProvider() (SleepMetricProvider, error) {
+	var body SleepMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSleepMetricProvider overwrites any union data inside the MetricProvider as the provided SleepMetricProvider
+func (t *MetricProvider) FromSleepMetricProvider(v SleepMetricProvider) error {
+	v.Type = "sleep"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSleepMetricProvider performs a merge with any union data inside the MetricProvider, using the provided SleepMetricProvider
+func (t *MetricProvider) MergeSleepMetricProvider(v SleepMetricProvider) error {
+	v.Type = "sleep"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t MetricProvider) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1344,6 +1388,8 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 	switch discriminator {
 	case "http":
 		return t.AsHTTPMetricProvider()
+	case "sleep":
+		return t.AsSleepMetricProvider()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}
