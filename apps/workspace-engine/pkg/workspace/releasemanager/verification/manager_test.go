@@ -1087,6 +1087,11 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 		return completedCount >= 2
 	}, 500*time.Millisecond, 10*time.Millisecond, "Both metrics should complete")
 
+	// Wait for hooks to be called for both metrics
+	require.Eventually(t, func() bool {
+		return hooks.getMetricCompleteCount() >= 2
+	}, 500*time.Millisecond, 10*time.Millisecond, "Both metric complete hooks should be called")
+
 	// Verify hooks were called for both metrics
 	assert.Equal(t, 1, hooks.getVerificationStartedCount())
 	assert.GreaterOrEqual(t, hooks.getMeasurementTakenCount(), 2) // At least one per metric
