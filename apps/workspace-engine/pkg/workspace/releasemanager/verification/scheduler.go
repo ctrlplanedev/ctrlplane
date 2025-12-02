@@ -247,21 +247,35 @@ func (s *scheduler) runMeasurement(ctx context.Context, verificationID string, m
 		return fmt.Errorf("metric index out of range after reload: %d", metricIndex)
 	}
 
-	// Update metric with result
-	if err != nil {
-		// Add failed measurement
-		errorMsg := fmt.Sprintf("Measurement error: %s", err.Error())
-		errorData := map[string]any{"error": err.Error()}
-		verification.Metrics[metricIndex].Measurements = append(verification.Metrics[metricIndex].Measurements, oapi.VerificationMeasurement{
-			Message:    &errorMsg,
-			Passed:     false,
-			MeasuredAt: time.Now(),
-			Data:       &errorData,
-		})
-	} else {
-		// Add successful measurement
-		verification.Metrics[metricIndex].Measurements = append(verification.Metrics[metricIndex].Measurements, result)
-	}
+	verification, _ = s.store.ReleaseVerifications.Update(
+		ctx, verificationID, func(valueInMap *oapi.ReleaseVerification) *oapi.ReleaseVerification {
+			// Make a deep copy to avoid race conditions
+			updated := *valueInMap
+			updated.Metrics = make([]oapi.VerificationMetricStatus, len(valueInMap.Metrics))
+			for i := range valueInMap.Metrics {
+				updated.Metrics[i] = valueInMap.Metrics[i]
+				// Copy measurements slice
+				updated.Metrics[i].Measurements = make([]oapi.VerificationMeasurement, len(valueInMap.Metrics[i].Measurements))
+				copy(updated.Metrics[i].Measurements, valueInMap.Metrics[i].Measurements)
+			}
+
+			if err != nil {
+				// Add failed measurement
+				errorMsg := fmt.Sprintf("Measurement error: %s", err.Error())
+				errorData := map[string]any{"error": err.Error()}
+				updated.Metrics[metricIndex].Measurements = append(updated.Metrics[metricIndex].Measurements, oapi.VerificationMeasurement{
+					Message:    &errorMsg,
+					Passed:     false,
+					MeasuredAt: time.Now(),
+					Data:       &errorData,
+				})
+			} else {
+				// Add successful measurement
+				updated.Metrics[metricIndex].Measurements = append(updated.Metrics[metricIndex].Measurements, result)
+			}
+			return &updated
+		},
+	)
 
 	// Call hook after measurement is taken
 	lastMeasurementIndex := len(verification.Metrics[metricIndex].Measurements) - 1

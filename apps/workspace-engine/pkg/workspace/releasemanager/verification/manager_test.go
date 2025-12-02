@@ -24,6 +24,17 @@ func createHTTPProvider(url string, method oapi.HTTPMetricProviderMethod) oapi.M
 	return provider
 }
 
+func createHTTPProviderWithTimeout(url string, method oapi.HTTPMetricProviderMethod, timeout string) oapi.MetricProvider {
+	provider := oapi.MetricProvider{}
+	provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+		Url:     url,
+		Method:  &method,
+		Type:    oapi.Http,
+		Timeout: &timeout,
+	})
+	return provider
+}
+
 // Tests for Manager
 
 func TestNewManager(t *testing.T) {
@@ -911,14 +922,14 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 
 	release := createTestRelease(s, ctx)
 
-	// Use a very short interval and low count to complete quickly
+	// Use a very short interval, low count, and short timeout to complete quickly
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
 			Interval:         "50ms",
 			Count:            2, // Only 2 measurements to complete quickly
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createHTTPProviderWithTimeout("http://example.com/health", oapi.GET, "10ms"),
 		},
 	}
 
@@ -928,12 +939,12 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
 	require.True(t, exists)
 
-	// Wait for metric to complete (2 measurements at 50ms interval + buffer)
-	time.Sleep(300 * time.Millisecond)
+	// Wait for metric to complete using Eventually to poll for completion
+	assert.Eventually(t, func() bool {
+		return hooks.getMetricCompleteCount() >= 1
+	}, 2*time.Second, 50*time.Millisecond, "OnMetricComplete hook should be called")
 
-	// Verify hook was called
-	assert.GreaterOrEqual(t, hooks.getMetricCompleteCount(), 1)
-
+	// Verify hook was called with correct parameters
 	hooks.mu.Lock()
 	if len(hooks.metricCompleteCalls) > 0 {
 		assert.Equal(t, verification.Id, hooks.metricCompleteCalls[0].verificationID)
@@ -953,14 +964,14 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 
 	release := createTestRelease(s, ctx)
 
-	// Use a very short interval and low count to complete quickly
+	// Use a very short interval, low count, and short timeout to complete quickly
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
 			Interval:         "50ms",
 			Count:            2, // Only 2 measurements to complete quickly
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createHTTPProviderWithTimeout("http://example.com/health", oapi.GET, "10ms"),
 		},
 	}
 
@@ -970,12 +981,12 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
 	require.True(t, exists)
 
-	// Wait for verification to complete (2 measurements at 50ms interval + buffer)
-	time.Sleep(300 * time.Millisecond)
+	// Wait for verification to complete using Eventually to poll for completion
+	assert.Eventually(t, func() bool {
+		return hooks.getVerificationCompleteCount() >= 1
+	}, 2*time.Second, 50*time.Millisecond, "OnVerificationComplete hook should be called")
 
-	// Verify hook was called
-	assert.GreaterOrEqual(t, hooks.getVerificationCompleteCount(), 1)
-
+	// Verify hook was called with correct parameters
 	hooks.mu.Lock()
 	if len(hooks.verificationCompleteCalls) > 0 {
 		assert.Equal(t, verification.Id, hooks.verificationCompleteCalls[0])

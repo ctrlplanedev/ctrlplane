@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -21,6 +22,22 @@ func NewReleaseVerifications(store *Store) *ReleaseVerifications {
 func (r *ReleaseVerifications) Upsert(ctx context.Context, verification *oapi.ReleaseVerification) {
 	r.repo.ReleaseVerifications.Set(verification.Id, verification)
 	r.store.changeset.RecordUpsert(verification)
+}
+
+func (r *ReleaseVerifications) Update(ctx context.Context, id string, cb func(valueInMap *oapi.ReleaseVerification) *oapi.ReleaseVerification) (*oapi.ReleaseVerification, error) {
+	verification, ok := r.Get(id)
+	if !ok {
+		return nil, fmt.Errorf("verification not found: %s", id)
+	}
+	newVerification := r.repo.ReleaseVerifications.Upsert(
+		verification.Id, nil,
+		func(exist bool, valueInMap *oapi.ReleaseVerification, newValue *oapi.ReleaseVerification) *oapi.ReleaseVerification {
+			clone := *valueInMap
+			return cb(&clone)
+		},
+	)
+	r.store.changeset.RecordUpsert(newVerification)
+	return newVerification, nil
 }
 
 func (r *ReleaseVerifications) Get(id string) (*oapi.ReleaseVerification, bool) {
