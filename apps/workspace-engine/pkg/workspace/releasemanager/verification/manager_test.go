@@ -1064,7 +1064,17 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 	require.True(t, exists)
 
 	// Wait for both metrics to complete
-	time.Sleep(300 * time.Millisecond)
+	// Poll until both metrics have completed their measurements
+	require.Eventually(t, func() bool {
+		verification, _ = s.ReleaseVerifications.GetByReleaseId(release.ID())
+		completedCount := 0
+		for _, metric := range verification.Metrics {
+			if len(metric.Measurements) >= metric.Count {
+				completedCount++
+			}
+		}
+		return completedCount >= 2
+	}, 500*time.Millisecond, 10*time.Millisecond, "Both metrics should complete")
 
 	// Verify hooks were called for both metrics
 	assert.Equal(t, 1, hooks.getVerificationStartedCount())

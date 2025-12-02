@@ -503,14 +503,22 @@ func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
-	// Wait for some measurements to be taken
-	// Note: measurements will fail because we're using a mock HTTP endpoint
-	// but we're just testing that the goroutine is running
-	time.Sleep(350 * time.Millisecond)
-
-	// Get updated verification from store
-	updatedVerification, ok := s.ReleaseVerifications.Get(verification.Id)
-	require.True(t, ok)
+	// Wait for measurements to be taken
+	// Poll until we have at least 2 measurements
+	// Interval is 100ms, so 2 measurements should happen within 300ms
+	var updatedVerification *oapi.ReleaseVerification
+	require.Eventually(t, func() bool {
+		var ok bool
+		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		if !ok {
+			return false
+		}
+		totalMeasurements := 0
+		for _, metric := range updatedVerification.Metrics {
+			totalMeasurements += len(metric.Measurements)
+		}
+		return totalMeasurements >= 2
+	}, 1*time.Second, 20*time.Millisecond, "should have taken at least 2 measurements")
 
 	// Should have at least 2-3 measurements (initial + 2-3 ticks)
 	totalMeasurements := 0
@@ -545,12 +553,16 @@ func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
-	// Wait for initial measurement plus some buffer time
-	time.Sleep(200 * time.Millisecond)
-
-	// Get updated verification
-	updatedVerification, ok := s.ReleaseVerifications.Get(verification.Id)
-	require.True(t, ok)
+	// Wait for the metric to complete (1 measurement)
+	var updatedVerification *oapi.ReleaseVerification
+	require.Eventually(t, func() bool {
+		var ok bool
+		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		if !ok {
+			return false
+		}
+		return len(updatedVerification.Metrics[0].Measurements) >= 1
+	}, 1*time.Second, 20*time.Millisecond, "should have taken 1 measurement")
 
 	// Should have exactly 1 measurement (goroutine should have stopped)
 	assert.Equal(t, 1, len(updatedVerification.Metrics[0].Measurements))
@@ -580,12 +592,17 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
-	// Wait for measurements (they will fail since the HTTP endpoint doesn't exist)
-	time.Sleep(300 * time.Millisecond)
-
-	// Get updated verification
-	updatedVerification, ok := s.ReleaseVerifications.Get(verification.Id)
-	require.True(t, ok)
+	// Wait for measurements to reach failure limit
+	// Poll until we have at least 2 failed measurements (the failure limit)
+	var updatedVerification *oapi.ReleaseVerification
+	require.Eventually(t, func() bool {
+		var ok bool
+		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		if !ok {
+			return false
+		}
+		return len(updatedVerification.Metrics[0].Measurements) >= 2
+	}, 1*time.Second, 20*time.Millisecond, "should have at least 2 measurements")
 
 	// Should have stopped after reaching failure limit
 	measurementCount := len(updatedVerification.Metrics[0].Measurements)
@@ -614,12 +631,23 @@ func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
-	// Wait for measurements
-	time.Sleep(350 * time.Millisecond)
-
-	// Get updated verification
-	updatedVerification, ok := s.ReleaseVerifications.Get(verification.Id)
-	require.True(t, ok)
+	// Wait for all metrics to take measurements
+	// Poll until all 3 metrics have at least 2 measurements each
+	var updatedVerification *oapi.ReleaseVerification
+	require.Eventually(t, func() bool {
+		var ok bool
+		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		if !ok {
+			return false
+		}
+		// Check if all metrics have at least 2 measurements
+		for _, metric := range updatedVerification.Metrics {
+			if len(metric.Measurements) < 2 {
+				return false
+			}
+		}
+		return true
+	}, 1*time.Second, 20*time.Millisecond, "all metrics should have at least 2 measurements")
 
 	// Each metric should have taken measurements
 	for i, metric := range updatedVerification.Metrics {

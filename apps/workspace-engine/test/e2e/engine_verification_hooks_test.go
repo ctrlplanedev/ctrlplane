@@ -71,10 +71,8 @@ func TestEngineVerificationHooks(t *testing.T) {
 		Provider:         metricProvider,
 	}
 
-	go func() {
-		err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, []oapi.VerificationMetricSpec{metric})
-		assert.NoError(t, err)
-	}()
+	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, []oapi.VerificationMetricSpec{metric})
+	assert.NoError(t, err)
 
 	time.Sleep(500 * time.Millisecond)
 
