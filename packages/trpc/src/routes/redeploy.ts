@@ -19,4 +19,22 @@ export const redeployRouter = router({
     .mutation(({ input: { workspaceId, releaseTarget } }) =>
       eventDispatcher.dispatchRedeploy(workspaceId, releaseTarget),
     ),
+
+  releaseTargets: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        releaseTargets: z.array(
+          z.object({
+            deploymentId: z.string(),
+            environmentId: z.string(),
+            resourceId: z.string(),
+          }),
+        ),
+      }),
+    )
+    .mutation(async ({ input: { workspaceId, releaseTargets } }) => {
+      for (const releaseTarget of releaseTargets)
+        await eventDispatcher.dispatchRedeploy(workspaceId, releaseTarget);
+    }),
 });

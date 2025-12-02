@@ -12,6 +12,7 @@ import {
   JobStatusDisplayName,
 } from "../../../_components/JobStatusBadge";
 import { RedeployDialog } from "../RedeployDialog";
+import { RedeployAllDialog } from "./RedeployAllDialog";
 import { VersionDisplay } from "./VersionDisplay";
 
 type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
@@ -103,10 +104,7 @@ export function EnvironmentReleaseTargetsGroup({
               />
             </Button>
             <div className="grow">{environment.name} </div>
-            <span className="max-w-[60vw] shrink-0 truncate font-mono text-xs text-muted-foreground">
-              {cel?.replaceAll("\n", " ").trim() ??
-                jsonSelector?.trim().replaceAll("\n", " ")}
-            </span>
+            <RedeployAllDialog releaseTargets={rts} />
           </div>
         </TableCell>
       </TableRow>

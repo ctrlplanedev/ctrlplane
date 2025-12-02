@@ -44,7 +44,11 @@ export function RedeployDialog({ releaseTarget }: RedeployDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-6 w-20 rounded-sm">
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-6 w-fit rounded-sm py-3"
+        >
           Redeploy
         </Button>
       </DialogTrigger>
