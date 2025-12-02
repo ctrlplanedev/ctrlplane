@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { PolicySkipDialog } from "./policy-skip/PolicySkipDialog";
+import { RuleResult } from "./RuleResult";
 
 const GLOBAL_EVALUATORS: WorkspaceEngine["schemas"]["PolicyRule"][] = [
   {
@@ -98,31 +99,13 @@ export function DeploymentVersion({
             </PolicySkipDialog>
           </div>
 
-          {ruleResults.map((rule, idx) => (
-            <div key={idx} className="flex items-center gap-2 text-xs">
-              <div>
-                {rule.allowed ? (
-                  <Check className="size-3 text-green-500" />
-                ) : rule.actionRequired ? (
-                  <AlertCircleIcon className="size-3 text-red-500" />
-                ) : (
-                  <X className="size-3 text-green-500" />
-                )}
-              </div>
-              <div key={idx}>{rule.message}</div>
-              <div className="flex-grow" />
-              <div className="text-xs text-muted-foreground">
-                {rule.actionType == "approval" && (
-                  <Button
-                    className="h-5 bg-green-500/10 px-1.5 text-xs text-green-600 hover:bg-green-500/20 dark:text-green-400"
-                    onClick={onClickApprove}
-                    disabled={isPending}
-                  >
-                    Approve
-                  </Button>
-                )}
-              </div>
-            </div>
+          {ruleResults.map((ruleResult) => (
+            <RuleResult
+              key={ruleResult.ruleId}
+              ruleResult={ruleResult}
+              onClickApprove={onClickApprove}
+              isPending={isPending}
+            />
           ))}
         </div>
       ))}
