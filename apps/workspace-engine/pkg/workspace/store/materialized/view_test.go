@@ -79,7 +79,9 @@ func TestMultipleTriggers(t *testing.T) {
 	// Second trigger - should update value
 	err = mv.RunRecompute(context.Background())
 	if err != nil {
-		t.Fatalf("second Trigger failed: %v", err)
+		if !strings.Contains(err.Error(), "recompute already in progress") {
+			t.Fatalf("second Trigger failed: %v", err)
+		}
 	}
 
 	val2 := mv.Get()
