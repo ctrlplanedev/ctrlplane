@@ -65,7 +65,6 @@ const (
 	RuleTypeEnvironmentProgression = "environmentProgression"
 	RuleTypeGradualRollout         = "gradualRollout"
 	RuleTypeRetry                  = "retry"
-	RuleTypePausedVersions         = "pausedVersions"
 	RuleTypeDeployableVersions     = "deployableVersions"
 )
 

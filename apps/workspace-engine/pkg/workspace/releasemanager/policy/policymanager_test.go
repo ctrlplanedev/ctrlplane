@@ -116,8 +116,8 @@ func TestGlobalEvaluators(t *testing.T) {
 
 	evals := m.PlannerGlobalEvaluators()
 
-	// Should return pausedversions and deployableversions evaluators
-	assert.Len(t, evals, 2, "expected 2 global evaluators")
+	// Should return deployableversions evaluator (which handles both ready and paused versions)
+	assert.Len(t, evals, 1, "expected 1 global evaluator")
 
 	// Verify all evaluators are not nil
 	for _, eval := range evals {

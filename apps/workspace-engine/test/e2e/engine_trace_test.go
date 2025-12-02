@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
@@ -170,6 +171,7 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"), // Added to ensure policy matches
 			),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
@@ -182,6 +184,7 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("true"), // Added to ensure policy matches
 			),
 			integration.WithPolicyRule(
 				integration.WithRuleGradualRollout(300),
@@ -199,6 +202,16 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
+	// Add approval so the approval policy passes and gradual rollout can be evaluated
+	approval := &oapi.UserApprovalRecord{
+		VersionId:     dv.Id,
+		EnvironmentId: environmentId,
+		Status:        oapi.ApprovalStatusApproved,
+		UserId:        "test-user",
+		CreatedAt:     "2024-01-01T00:00:00Z",
+	}
+	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval)
+
 	// Get traces
 	spans := integration.GetAllTraces(engine)
 	if len(spans) == 0 {
@@ -206,9 +219,13 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 	}
 
 	// Count evaluation spans
+	// We expect:
+	// - 1 global evaluator (deployableVersions - handles ready and paused statuses)
+	// - 2 policy-specific evaluators (approval + gradual rollout, both with matching selectors)
+	// Total: at least 3 evaluations
 	evaluationCount := integration.CountSpansByType(spans, trace.NodeTypeEvaluation)
-	if evaluationCount < 2 {
-		t.Errorf("expected at least 2 policy evaluations, got %d", evaluationCount)
+	if evaluationCount < 3 {
+		t.Errorf("expected at least 3 policy evaluations (1 global + 2 policy-specific), got %d", evaluationCount)
 	}
 
 	// Verify planning phase contains evaluations

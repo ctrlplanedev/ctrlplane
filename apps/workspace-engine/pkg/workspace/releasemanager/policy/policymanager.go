@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/gradualrollout"
-	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/pausedversions"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/versionselector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
@@ -50,7 +49,6 @@ func (m *Manager) PlannerPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Eva
 
 func (m *Manager) PlannerGlobalEvaluators() []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		pausedversions.NewEvaluator(m.store),
 		deployableversions.NewEvaluator(m.store),
 	)
 }
