@@ -379,7 +379,7 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 	verification := createTestVerification(s, ctx, release.ID(), 1, "30s")
 
 	// Make verification failed by hitting failure limit
-	for i := 0; i < *verification.Metrics[0].FailureLimit; i++ {
+	for i := 0; i <= *verification.Metrics[0].FailureLimit; i++ {
 		msg := "Failed"
 		verification.Metrics[0].Measurements = append(verification.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,
@@ -430,7 +430,7 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 	s.ReleaseVerifications.Upsert(ctx, passedVerification)
 
 	failedVerification := createTestVerification(s, ctx, failedRelease.ID(), 1, "1h")
-	for i := 0; i < *failedVerification.Metrics[0].FailureLimit; i++ {
+	for i := 0; i <= *failedVerification.Metrics[0].FailureLimit; i++ {
 		msg := "Failed"
 		failedVerification.Metrics[0].Measurements = append(failedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,

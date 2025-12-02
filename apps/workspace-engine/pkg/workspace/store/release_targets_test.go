@@ -165,7 +165,6 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				Interval:         "30s",
 				Count:            2,
 				SuccessCondition: "result.statusCode == 200",
-				FailureLimit:     ptr(1),
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
 					{Passed: false, MeasuredAt: createdAt},

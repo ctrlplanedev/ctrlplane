@@ -166,18 +166,14 @@ func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
 			}
 		}
 
-		if failureLimit > 0 && failedCount >= failureLimit {
+		if failedCount > failureLimit {
 			return ReleaseVerificationStatusFailed
 		}
 
 		// Check if metric is complete
 		if len(metric.Measurements) < metric.Count {
 			allCompleted = false
-		} else {
-			// Metric is complete, check if it failed
-			if failedCount > 0 {
-				anyFailed = true
-			}
+			continue
 		}
 	}
 
