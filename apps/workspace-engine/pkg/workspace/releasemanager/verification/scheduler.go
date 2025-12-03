@@ -7,67 +7,66 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
 )
 
-// scheduler manages goroutines for running verification measurements
-// Each metric in each verification gets its own goroutine with a ticker
+// scheduler manages goroutines for running verification measurements.
+// Each metric in each verification gets its own goroutine with a ticker.
+// The scheduler delegates measurement execution to the executor and
+// store updates to the recorder.
 type scheduler struct {
-	store *store.Store
-	hooks VerificationHooks
+	store    *store.Store
+	executor *MeasurementExecutor
+	recorder *MeasurementRecorder
+	hooks    VerificationHooks
 
 	mu                  sync.Mutex
-	cancelFuncs         map[string][]context.CancelFunc // Map of verification ID to list of cancel functions (one per metric)
-	completionHookFired map[string]bool                 // Track if completion hook was already fired for a verification
+	cancelFuncs         map[string][]context.CancelFunc // verification ID -> cancel functions (one per metric)
+	completionHookFired map[string]bool                 // tracks if completion hook was already fired
 }
 
 // newScheduler creates a new verification scheduler
 func newScheduler(store *store.Store, hooks VerificationHooks) *scheduler {
 	return &scheduler{
 		store:               store,
+		executor:            NewMeasurementExecutor(store),
+		recorder:            NewMeasurementRecorder(store),
 		hooks:               hooks,
 		cancelFuncs:         make(map[string][]context.CancelFunc),
 		completionHookFired: make(map[string]bool),
 	}
 }
 
-// StartVerification starts goroutines for all metrics in a verification
-// Each metric gets its own goroutine with a ticker at its interval
+// StartVerification starts goroutines for all metrics in a verification.
+// Each metric gets its own goroutine with a ticker at its interval.
 func (s *scheduler) StartVerification(ctx context.Context, verificationID string) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	// Check if already running
 	if _, exists := s.cancelFuncs[verificationID]; exists {
-		s.mu.Unlock()
 		log.Debug("Verification already running", "verification_id", verificationID)
 		return
 	}
 
-	// Check if verification is already in a completed state
+	// Check if verification exists and is not already completed
 	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
 	if !ok {
-		s.mu.Unlock()
 		log.Error("Verification not found", "verification_id", verificationID)
 		return
 	}
 
-	status := verification.Status()
-	if status == oapi.ReleaseVerificationStatusPassed ||
-		status == oapi.ReleaseVerificationStatusFailed {
-		s.mu.Unlock()
+	if s.isCompleted(verification) {
 		log.Debug("Verification already completed, not starting goroutines",
 			"verification_id", verificationID,
-			"status", status)
+			"status", verification.Status())
 		return
 	}
 
-	// Prepare cancel functions and wait group
-	cancelFuncs := make([]context.CancelFunc, 0, len(verification.Metrics))
-
 	// Start a goroutine for each metric
+	cancelFuncs := make([]context.CancelFunc, 0, len(verification.Metrics))
 	for metricIndex := range verification.Metrics {
 		metricCtx, cancel := context.WithCancel(ctx)
 		cancelFuncs = append(cancelFuncs, cancel)
@@ -75,9 +74,10 @@ func (s *scheduler) StartVerification(ctx context.Context, verificationID string
 	}
 
 	s.cancelFuncs[verificationID] = cancelFuncs
-	s.mu.Unlock()
 
-	log.Info("Started verification goroutines", "verification_id", verificationID, "metric_count", len(cancelFuncs))
+	log.Info("Started verification goroutines",
+		"verification_id", verificationID,
+		"metric_count", len(cancelFuncs))
 }
 
 // StopVerification stops all goroutines for a verification
@@ -91,29 +91,18 @@ func (s *scheduler) StopVerification(verificationID string) {
 		}
 		delete(s.cancelFuncs, verificationID)
 		delete(s.completionHookFired, verificationID)
-		log.Info("Stopped verification goroutines", "verification_id", verificationID, "metric_count", len(cancelFuncs))
+		log.Info("Stopped verification goroutines",
+			"verification_id", verificationID,
+			"metric_count", len(cancelFuncs))
 	}
 }
 
-// runMetricLoop runs measurements for a single metric on a ticker interval
-// All state is read from and written to the store - this goroutine is stateless
+// runMetricLoop runs measurements for a single metric on a ticker interval.
+// All state is read from and written to the store - this goroutine is stateless.
 func (s *scheduler) runMetricLoop(ctx context.Context, verificationID string, metricIndex int) {
-	// Read the verification to get the metric
-	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
-	if !ok {
-		log.Error("Verification not found", "verification_id", verificationID)
-		return
-	}
-
-	if metricIndex >= len(verification.Metrics) {
-		log.Error("Metric index out of range", "verification_id", verificationID, "metric_index", metricIndex)
-		return
-	}
-
-	metric := &verification.Metrics[metricIndex]
-	interval, err := metric.GetInterval()
+	interval, err := s.getMetricInterval(verificationID, metricIndex)
 	if err != nil {
-		log.Error("Failed to parse interval", "verification_id", verificationID, "metric_index", metricIndex, "error", err)
+		log.Error("Failed to get metric interval", "error", err)
 		return
 	}
 
@@ -121,217 +110,195 @@ func (s *scheduler) runMetricLoop(ctx context.Context, verificationID string, me
 	defer ticker.Stop()
 
 	// Run first measurement immediately
-	if err := s.runMeasurement(ctx, verificationID, metricIndex); err != nil {
-		log.Error("Failed to run measurement", "verification_id", verificationID, "metric_index", metricIndex, "error", err)
-	}
+	s.runMeasurementCycle(ctx, verificationID, metricIndex)
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Debug("Metric loop cancelled", "verification_id", verificationID, "metric_index", metricIndex)
+			log.Debug("Metric loop cancelled",
+				"verification_id", verificationID,
+				"metric_index", metricIndex)
 			return
+
 		case <-ticker.C:
-			// Read fresh state from store
-			verification, ok := s.store.ReleaseVerifications.Get(verificationID)
-			if !ok {
-				log.Warn("Verification not found in store, stopping", "verification_id", verificationID)
+			if s.shouldStopMetric(ctx, verificationID, metricIndex) {
 				return
 			}
-
-			if metricIndex >= len(verification.Metrics) {
-				log.Warn("Metric index out of range, stopping", "verification_id", verificationID, "metric_index", metricIndex)
-				return
-			}
-
-			// Check if this metric is complete
-			metric := &verification.Metrics[metricIndex]
-			measurements := metrics.NewMeasurements(metric.Measurements)
-			if !measurements.ShouldContinue(metric) {
-				// Reload verification to get the latest state for the hook
-				if latestVerification, ok := s.store.ReleaseVerifications.Get(verificationID); ok {
-					if err := s.hooks.OnMetricComplete(ctx, latestVerification, metricIndex); err != nil {
-						log.Error("Metric complete hook failed",
-							"verification_id", verificationID,
-							"metric_index", metricIndex,
-							"error", err)
-						// Don't fail the metric completion due to hook errors
-					}
-				}
-
-				log.Info("Metric complete, stopping loop",
-					"verification_id", verificationID,
-					"metric_index", metricIndex,
-					"metric_name", metric.Name)
-				return
-			}
-
-			// Run measurement
-			if err := s.runMeasurement(ctx, verificationID, metricIndex); err != nil {
-				log.Error("Failed to run measurement", "verification_id", verificationID, "metric_index", metricIndex, "error", err)
-			}
+			s.runMeasurementCycle(ctx, verificationID, metricIndex)
 		}
 	}
 }
 
-// buildProviderContext creates the context needed for metric providers
-func (s *scheduler) buildProviderContext(releaseID string) (*provider.ProviderContext, error) {
-	release, ok := s.store.Releases.Get(releaseID)
-	if !ok {
-		return nil, fmt.Errorf("release not found: %s", releaseID)
-	}
-
-	// Get the resource
-	resource, _ := s.store.Resources.Get(release.ReleaseTarget.ResourceId)
-
-	// Get the environment
-	environment, _ := s.store.Environments.Get(release.ReleaseTarget.EnvironmentId)
-
-	// Get the deployment
-	deployment, _ := s.store.Deployments.Get(release.Version.DeploymentId)
-
-	// Get variables from release
-	variables := make(map[string]any)
-	for k, v := range release.Variables {
-		variables[k] = v
-	}
-
-	return &provider.ProviderContext{
-		Release:     release,
-		Resource:    resource,
-		Environment: environment,
-		Version:     &release.Version,
-		Target:      &release.ReleaseTarget,
-		Deployment:  deployment,
-		Variables:   variables,
-	}, nil
-}
-
-// runMeasurement executes a single measurement for a specific metric
-// Reads state from store, measures, updates store
-func (s *scheduler) runMeasurement(ctx context.Context, verificationID string, metricIndex int) error {
-	// Read fresh state from store
+// runMeasurementCycle executes one measurement and handles all related side effects.
+func (s *scheduler) runMeasurementCycle(ctx context.Context, verificationID string, metricIndex int) {
+	// Fetch verification once to get metric and releaseID
 	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
 	if !ok {
-		return fmt.Errorf("verification not found: %s", verificationID)
+		log.Error("Verification not found", "verification_id", verificationID)
+		return
 	}
 
 	if metricIndex >= len(verification.Metrics) {
-		return fmt.Errorf("metric index out of range: %d", metricIndex)
+		log.Error("Metric index out of range",
+			"verification_id", verificationID,
+			"metric_index", metricIndex)
+		return
 	}
 
 	metric := &verification.Metrics[metricIndex]
 
-	log.Debug("Running measurement",
-		"verification_id", verificationID,
-		"metric_index", metricIndex,
-		"metric_name", metric.Name,
-		"release_id", verification.ReleaseId)
+	// Execute measurement with direct objects
+	measurement, err := s.executor.Execute(ctx, metric, verification.ReleaseId)
 
-	// Build provider context
-	providerCtx, err := s.buildProviderContext(verification.ReleaseId)
+	// Record result (measurement or error)
 	if err != nil {
-		return fmt.Errorf("failed to build provider context: %w", err)
+		verification, err = s.recorder.RecordError(ctx, verificationID, metricIndex, err)
+		if err != nil {
+			log.Error("Failed to record error", "error", err)
+			return
+		}
+	} else {
+		verification, err = s.recorder.RecordMeasurement(ctx, verificationID, metricIndex, measurement)
+		if err != nil {
+			log.Error("Failed to record measurement", "error", err)
+			return
+		}
 	}
 
-	// Take measurement using the Measure function
-	result, err := metrics.Measure(ctx, metric, providerCtx)
+	// Fire hooks and update status
+	s.handlePostMeasurement(ctx, verification, metricIndex)
+}
 
-	// Lock to protect concurrent modification of verification object
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// Reload verification to get latest state
-	verification, ok = s.store.ReleaseVerifications.Get(verificationID)
-	if !ok {
-		return fmt.Errorf("verification not found after measurement")
-	}
-
-	if metricIndex >= len(verification.Metrics) {
-		return fmt.Errorf("metric index out of range after reload: %d", metricIndex)
-	}
-
-	verification, _ = s.store.ReleaseVerifications.Update(
-		ctx, verificationID, func(valueInMap *oapi.ReleaseVerification) *oapi.ReleaseVerification {
-			// Make a deep copy to avoid race conditions
-			updated := *valueInMap
-			updated.Metrics = make([]oapi.VerificationMetricStatus, len(valueInMap.Metrics))
-			for i := range valueInMap.Metrics {
-				updated.Metrics[i] = valueInMap.Metrics[i]
-				// Copy measurements slice
-				updated.Metrics[i].Measurements = make([]oapi.VerificationMeasurement, len(valueInMap.Metrics[i].Measurements))
-				copy(updated.Metrics[i].Measurements, valueInMap.Metrics[i].Measurements)
-			}
-
-			if err != nil {
-				// Add failed measurement
-				errorMsg := fmt.Sprintf("Measurement error: %s", err.Error())
-				errorData := map[string]any{"error": err.Error()}
-				updated.Metrics[metricIndex].Measurements = append(updated.Metrics[metricIndex].Measurements, oapi.VerificationMeasurement{
-					Message:    &errorMsg,
-					Passed:     false,
-					MeasuredAt: time.Now(),
-					Data:       &errorData,
-				})
-			} else {
-				// Add successful measurement
-				updated.Metrics[metricIndex].Measurements = append(updated.Metrics[metricIndex].Measurements, result)
-			}
-			return &updated
-		},
-	)
-
-	// Call hook after measurement is taken
-	lastMeasurementIndex := len(verification.Metrics[metricIndex].Measurements) - 1
-	if lastMeasurementIndex >= 0 {
-		lastMeasurement := &verification.Metrics[metricIndex].Measurements[lastMeasurementIndex]
-		if hookErr := s.hooks.OnMeasurementTaken(ctx, verification, metricIndex, lastMeasurement); hookErr != nil {
+// handlePostMeasurement fires hooks and updates verification status after a measurement.
+func (s *scheduler) handlePostMeasurement(
+	ctx context.Context,
+	verification *oapi.ReleaseVerification,
+	metricIndex int,
+) {
+	// Fire measurement taken hook
+	lastIdx := len(verification.Metrics[metricIndex].Measurements) - 1
+	if lastIdx >= 0 {
+		lastMeasurement := &verification.Metrics[metricIndex].Measurements[lastIdx]
+		if err := s.hooks.OnMeasurementTaken(ctx, verification, metricIndex, lastMeasurement); err != nil {
 			log.Error("Measurement taken hook failed",
-				"verification_id", verificationID,
+				"verification_id", verification.Id,
 				"metric_index", metricIndex,
-				"error", hookErr)
-			// Don't fail the measurement due to hook errors
+				"error", err)
 		}
 	}
 
-	// Update summary message if all metrics complete
+	// Check if verification is complete and fire completion hook
 	status := verification.Status()
-	if status != oapi.ReleaseVerificationStatusRunning {
-		totalMeasurements := 0
-		passedMeasurements := 0
-		for _, m := range verification.Metrics {
-			for _, measurement := range m.Measurements {
-				totalMeasurements++
-				if measurement.Passed {
-					passedMeasurements++
-				}
-			}
-		}
-		message := fmt.Sprintf("Verification %s: %d/%d measurements passed across %d metrics",
-			status, passedMeasurements, totalMeasurements, len(verification.Metrics))
-		verification.Message = &message
-
-		// Call hook when verification completes (only once per verification)
-		if !s.completionHookFired[verificationID] {
-			s.completionHookFired[verificationID] = true
-			if hookErr := s.hooks.OnVerificationComplete(ctx, verification); hookErr != nil {
-				log.Error("Verification complete hook failed",
-					"verification_id", verificationID,
-					"error", hookErr)
-				// Don't fail the verification due to hook errors
-			}
-		}
+	if status == oapi.ReleaseVerificationStatusRunning {
+		return
 	}
 
-	// Save updated verification to store
-	s.store.ReleaseVerifications.Upsert(ctx, verification)
+	s.mu.Lock()
+	alreadyFired := s.completionHookFired[verification.Id]
+	if !alreadyFired {
+		s.completionHookFired[verification.Id] = true
+	}
+	s.mu.Unlock()
+
+	if alreadyFired {
+		return
+	}
+
+	// Update summary message
+	message := s.buildSummaryMessage(verification, status)
+	if err := s.recorder.UpdateMessage(ctx, verification.Id, message); err != nil {
+		log.Error("Failed to update verification message", "error", err)
+	}
+
+	// Fire completion hook
+	if err := s.hooks.OnVerificationComplete(ctx, verification); err != nil {
+		log.Error("Verification complete hook failed",
+			"verification_id", verification.Id,
+			"error", err)
+	}
 
 	log.Info("Metric measurement completed",
-		"verification_id", verificationID,
+		"verification_id", verification.Id,
 		"metric_index", metricIndex,
 		"metric_name", verification.Metrics[metricIndex].Name,
 		"release_id", verification.ReleaseId,
 		"verification_status", status,
 		"metric_measurement_count", len(verification.Metrics[metricIndex].Measurements))
+}
 
-	return nil
+// shouldStopMetric checks if a metric loop should stop and fires the metric complete hook.
+func (s *scheduler) shouldStopMetric(ctx context.Context, verificationID string, metricIndex int) bool {
+	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
+	if !ok {
+		log.Warn("Verification not found in store, stopping",
+			"verification_id", verificationID)
+		return true
+	}
+
+	if metricIndex >= len(verification.Metrics) {
+		log.Warn("Metric index out of range, stopping",
+			"verification_id", verificationID,
+			"metric_index", metricIndex)
+		return true
+	}
+
+	metric := &verification.Metrics[metricIndex]
+	measurements := metrics.NewMeasurements(metric.Measurements)
+
+	if measurements.ShouldContinue(metric) {
+		return false
+	}
+
+	// Metric is complete - fire hook
+	if err := s.hooks.OnMetricComplete(ctx, verification, metricIndex); err != nil {
+		log.Error("Metric complete hook failed",
+			"verification_id", verificationID,
+			"metric_index", metricIndex,
+			"error", err)
+	}
+
+	log.Info("Metric complete, stopping loop",
+		"verification_id", verificationID,
+		"metric_index", metricIndex,
+		"metric_name", metric.Name)
+
+	return true
+}
+
+// Helper methods
+
+func (s *scheduler) isCompleted(v *oapi.ReleaseVerification) bool {
+	status := v.Status()
+	return status == oapi.ReleaseVerificationStatusPassed ||
+		status == oapi.ReleaseVerificationStatusFailed
+}
+
+func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (time.Duration, error) {
+	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
+	if !ok {
+		return 0, fmt.Errorf("verification not found: %s", verificationID)
+	}
+
+	if metricIndex >= len(verification.Metrics) {
+		return 0, fmt.Errorf("metric index out of range: %d", metricIndex)
+	}
+
+	return verification.Metrics[metricIndex].GetInterval()
+}
+
+func (s *scheduler) buildSummaryMessage(v *oapi.ReleaseVerification, status oapi.ReleaseVerificationStatus) string {
+	totalMeasurements := 0
+	passedMeasurements := 0
+
+	for _, m := range v.Metrics {
+		for _, measurement := range m.Measurements {
+			totalMeasurements++
+			if measurement.Passed {
+				passedMeasurements++
+			}
+		}
+	}
+
+	return fmt.Sprintf("Verification %s: %d/%d measurements passed across %d metrics",
+		status, passedMeasurements, totalMeasurements, len(v.Metrics))
 }

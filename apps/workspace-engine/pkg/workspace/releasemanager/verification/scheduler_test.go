@@ -299,65 +299,6 @@ func TestScheduler_StopVerification_MultipleTimes(t *testing.T) {
 	})
 }
 
-func TestScheduler_BuildProviderContext_Success(t *testing.T) {
-	ctx := context.Background()
-	s := newTestStore()
-	scheduler := newScheduler(s, DefaultHooks())
-
-	release := createTestRelease(s, ctx)
-
-	providerCtx, err := scheduler.buildProviderContext(release.ID())
-
-	require.NoError(t, err)
-	require.NotNil(t, providerCtx)
-	assert.Equal(t, release, providerCtx.Release)
-	assert.NotNil(t, providerCtx.Resource)
-	assert.NotNil(t, providerCtx.Environment)
-	assert.NotNil(t, providerCtx.Version)
-	assert.NotNil(t, providerCtx.Target)
-	assert.NotNil(t, providerCtx.Deployment)
-	assert.NotNil(t, providerCtx.Variables)
-}
-
-func TestScheduler_BuildProviderContext_ReleaseNotFound(t *testing.T) {
-	s := newTestStore()
-	scheduler := newScheduler(s, DefaultHooks())
-
-	nonExistentID := uuid.New().String()
-	providerCtx, err := scheduler.buildProviderContext(nonExistentID)
-
-	assert.Error(t, err)
-	assert.Nil(t, providerCtx)
-	assert.Contains(t, err.Error(), "release not found")
-}
-
-func TestScheduler_BuildProviderContext_WithVariables(t *testing.T) {
-	ctx := context.Background()
-	s := newTestStore()
-	scheduler := newScheduler(s, DefaultHooks())
-
-	release := createTestRelease(s, ctx)
-
-	// Add variables to release
-	envVal := oapi.LiteralValue{}
-	envVal.FromStringValue("production")
-	versionVal := oapi.LiteralValue{}
-	versionVal.FromStringValue("1.2.3")
-	release.Variables = map[string]oapi.LiteralValue{
-		"env":     envVal,
-		"version": versionVal,
-	}
-	s.Releases.Upsert(ctx, release)
-
-	providerCtx, err := scheduler.buildProviderContext(release.ID())
-
-	require.NoError(t, err)
-	require.NotNil(t, providerCtx)
-	assert.Equal(t, 2, len(providerCtx.Variables))
-	assert.Contains(t, providerCtx.Variables, "env")
-	assert.Contains(t, providerCtx.Variables, "version")
-}
-
 func TestScheduler_ConcurrentStartStop(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
