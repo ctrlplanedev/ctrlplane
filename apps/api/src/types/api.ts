@@ -1,7 +1,7 @@
+import type { Session } from "@ctrlplane/auth/server";
 import type { db } from "@ctrlplane/db/client";
 import type { User } from "@ctrlplane/db/schema";
 import type { Request as ExpressRequest, Response } from "express";
-import type { Session } from "next-auth";
 
 import type { paths } from "./openapi.js";
 
