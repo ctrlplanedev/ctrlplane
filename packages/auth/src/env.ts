@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-properties */
-import { createEnv } from "@t3-oss/env-nextjs";
+import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 export const env = createEnv({
@@ -23,7 +23,7 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().min(1).optional(),
     RESEND_AUDIENCE_ID: z.string().min(1).optional(),
   },
-  client: {},
-  experimental__runtimeEnv: {},
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
+  runtimeEnv: process.env,
+  emptyStringAsUndefined: true,
 });

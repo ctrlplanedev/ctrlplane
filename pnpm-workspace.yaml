@@ -11,7 +11,6 @@ catalog:
   "@octokit/auth-app": ^7.1.5
   "@octokit/rest": ^20.1.1
   "@t3-oss/env-core": 0.11.1
-  "@t3-oss/env-nextjs": ^0.11.1
   "@tabler/icons-react": ^3.31.0
   "@types/lodash": ^4.17.5
   "@types/ms": ^0.7.34
