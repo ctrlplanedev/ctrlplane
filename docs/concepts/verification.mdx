@@ -51,12 +51,9 @@ policies:
   - name: qa-smoke-tests
     description: Run E2E smoke tests in QA before promotion
     selectors:
-      - type: environment
-        operator: equals
-        value: qa
+      - environment: environment.name == "qa"
     rules:
-      - type: verification
-        verification:
+      - verification:
           metrics:
             - name: e2e-smoke-tests
               interval: 30s
