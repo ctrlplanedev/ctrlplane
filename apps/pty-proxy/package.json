@@ -24,7 +24,6 @@
     "express": "^5.1.0",
     "helmet": "^7.1.0",
     "ms": "catalog:",
-    "next-auth": "catalog:",
     "uuid": "^10.0.0",
     "ws": "^8.17.0",
     "zod": "catalog:"

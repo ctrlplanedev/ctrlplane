@@ -45,7 +45,6 @@
     "express-openapi-validator": "^5.3.7",
     "helmet": "^7.1.0",
     "ms": "catalog:",
-    "next-auth": "catalog:",
     "openapi-fetch": "^0.13.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^10.0.0",

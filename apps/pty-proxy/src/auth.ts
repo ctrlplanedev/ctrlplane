@@ -1,5 +1,5 @@
+import type { Session } from "@ctrlplane/auth/server";
 import type { IncomingMessage } from "http";
-import type { Session } from "next-auth";
 
 import { logger } from "@ctrlplane/logger";
 
