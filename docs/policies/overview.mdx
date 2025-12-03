@@ -1,0 +1,305 @@
+# Policies
+
+**Policies** in Ctrlplane define rules that govern how releases progress through
+your environments. They help you build confidence in your deployment process by
+enforcing quality gates, automating checks, and ensuring consistency across your
+infrastructure.
+
+## Building Confidence Through Policies
+
+The primary purpose of policies is to help you deploy with confidence. As
+releases move through your environments, policies ensure that each stage meets
+your quality standards before progressing to the next.
+
+```
+Development → QA → Staging → Production
+     ↓          ↓       ↓          ↓
+   (none)    smoke   integration  full
+             tests     tests     gates
+```
+
+With policies, you can:
+
+- **Start simple, grow complex** - Begin with basic health checks in QA, add
+  integration tests in staging, require approvals and verification in production
+- **Catch issues early** - Run smoke tests in QA to catch problems before they
+  reach production
+- **Automate quality gates** - Let verification results automatically determine
+  if a release can proceed
+- **Reduce deployment anxiety** - Know that every production deployment has
+  passed through proven checks
+- **Customize per environment** - Apply stricter rules where they matter most
+
+## Policy Structure
+
+A policy consists of:
+
+1. **Name & Description** - Identify and document the policy's purpose
+2. **Selectors** - Define which releases the policy applies to
+3. **Rules** - Specify the behavior or requirements
+
+```yaml
+policies:
+  - name: production-gates
+    description: Require verification and approval for production
+    selectors:
+      - environment: environment.name == "production"
+    rules:
+      - verification:
+          metrics:
+            - name: health-check
+              # ... metric configuration
+      - approval:
+          required: 1
+```
+
+## Policy Selectors
+
+Selectors determine which releases a policy applies to. Policies only affect
+releases that match **all** specified selectors.
+
+### Environment Selector
+
+Target releases going to specific environments:
+
+```yaml
+selectors:
+  # Single environment
+  - environment: environment.name == "production"
+
+  # Multiple environments
+  - environment: environment.name in ["staging", "production"]
+
+  # Pattern matching
+  - environment: environment.name.startsWith("prod-")
+```
+
+### Resource Selector
+
+Target releases for specific resources:
+
+```yaml
+selectors:
+  # By resource kind
+  - resource: resource.kind == "Kubernetes"
+
+  # By resource metadata
+  - resource: resource.metadata.region == "us-east-1"
+
+  # By resource name pattern
+  - resource: resource.name.contains("critical")
+```
+
+### Deployment Selector
+
+Target releases for specific deployments:
+
+```yaml
+selectors:
+  # By deployment name
+  - deployment: deployment.name == "api-service"
+
+  # By deployment metadata
+  - deployment: deployment.metadata.team == "platform"
+```
+
+### Combined Selectors
+
+Combine multiple selectors (all must match):
+
+```yaml
+selectors:
+  - environment: environment.name == "production"
+  - deployment: deployment.metadata.tier == "critical"
+  - resource: resource.kind == "Kubernetes"
+```
+
+## Policy Rules
+
+Rules define what the policy enforces. Multiple rules can be combined in a
+single policy.
+
+### Verification Rule
+
+Run automated checks after deployment:
+
+```yaml
+rules:
+  - verification:
+      metrics:
+        - name: error-rate
+          interval: 1m
+          count: 5
+          provider:
+            type: datadog
+            apiKey: "{{.variables.dd_api_key}}"
+            appKey: "{{.variables.dd_app_key}}"
+            query: sum:errors{service:{{.resource.name}}}
+          successCondition: result.value < 0.01
+```
+
+See [Verification](./verification) for detailed configuration options.
+
+### Gradual Rollout Rule
+
+Control the pace of deployments across multiple targets:
+
+```yaml
+rules:
+  - gradualRollout:
+      rolloutType: linear
+      timeScaleInterval: 300 # 5 minutes between batches
+```
+
+See [Gradual Rollouts](./gradual-rollouts) for detailed configuration options.
+
+### Approval Rule
+
+Require manual approval before deployment:
+
+```yaml
+rules:
+  - approval:
+      required: 1 # Number of approvals needed
+      allowedUsers:
+        - user@example.com
+      allowedGroups:
+        - platform-team
+```
+
+## Policy Evaluation
+
+When a release is created, Ctrlplane:
+
+1. **Finds matching policies** - Evaluates selectors against the release
+2. **Merges rules** - Combines rules from all matching policies
+3. **Applies rules** - Enforces each rule type in order
+
+### Rule Execution Order
+
+1. **Approval rules** - Must be satisfied first
+2. **Gradual rollout rules** - Control deployment timing
+3. **Verification rules** - Run after deployment completes
+
+## Common Patterns
+
+### Environment Progression
+
+Different requirements per environment:
+
+```yaml
+policies:
+  # QA: Light verification
+  - name: qa-policy
+    selectors:
+      - environment: environment.name == "qa"
+    rules:
+      - verification:
+          metrics:
+            - name: smoke-test
+              interval: 30s
+              count: 3
+              provider:
+                type: http
+                url: "http://{{.resource.name}}/health"
+              successCondition: result.ok
+
+  # Staging: More thorough verification
+  - name: staging-policy
+    selectors:
+      - environment: environment.name == "staging"
+    rules:
+      - verification:
+          metrics:
+            - name: integration-tests
+              interval: 1m
+              count: 5
+              provider:
+                type: http
+                url: "http://test-runner/run?service={{.resource.name}}"
+              successCondition: result.json.passed == true
+
+  # Production: Full gates
+  - name: production-policy
+    selectors:
+      - environment: environment.name == "production"
+    rules:
+      - approval:
+          required: 1
+      - gradualRollout:
+          rolloutType: linear
+          timeScaleInterval: 300
+      - verification:
+          metrics:
+            - name: error-rate
+              interval: 2m
+              count: 5
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: sum:errors{service:{{.resource.name}},env:prod}
+              successCondition: result.value < 0.01
+```
+
+### Critical Service Protection
+
+Extra protection for critical services:
+
+```yaml
+policies:
+  - name: critical-service-gates
+    selectors:
+      - deployment: deployment.metadata.tier == "critical"
+      - environment: environment.name == "production"
+    rules:
+      - approval:
+          required: 2
+          allowedGroups:
+            - sre-team
+            - service-owners
+      - gradualRollout:
+          rolloutType: linear
+          timeScaleInterval: 600 # 10 minutes
+      - verification:
+          metrics:
+            - name: error-rate
+              interval: 1m
+              count: 10
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: sum:errors{service:{{.resource.name}}}
+              successCondition: result.value < 0.001
+              failureLimit: 1
+```
+
+## Best Practices
+
+### Policy Organization
+
+- ✅ Use descriptive policy names
+- ✅ Document policy purpose in description
+- ✅ Start with permissive policies and tighten over time
+- ✅ Test policies in lower environments first
+
+### Selector Design
+
+- ✅ Be specific with selectors to avoid unexpected matches
+- ✅ Use environment selectors for environment-specific rules
+- ✅ Use metadata for cross-cutting concerns (team, tier, etc.)
+- ✅ Test selector expressions before applying
+
+### Rule Configuration
+
+- ✅ Set reasonable timeouts and failure limits
+- ✅ Use verification to catch issues before they impact users
+- ✅ Require approvals for high-risk deployments
+- ✅ Use gradual rollouts for large-scale deployments
+
+## Next Steps
+
+- [Verification](./verification) - Automated post-deployment checks
+- [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
+- [Selectors](../concepts/selectors) - Deep dive into selector syntax

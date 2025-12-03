@@ -26,9 +26,16 @@
               "concepts/environments",
               "concepts/deployments",
               "concepts/releases-and-jobs",
-              "concepts/verification",
               "concepts/release-targets",
               "concepts/selectors"
+            ]
+          },
+          {
+            "group": "Policies",
+            "pages": [
+              "policies/overview",
+              "policies/verification",
+              "policies/gradual-rollouts"
             ]
           }
         ]

@@ -1,0 +1,200 @@
+# Gradual Rollouts
+
+**Gradual rollouts** allow you to control the pace of deployments across
+multiple release targets. Instead of deploying to all targets simultaneously,
+you can stagger deployments over time to reduce risk and catch issues early.
+
+## Overview
+
+When deploying to multiple targets (e.g., multiple Kubernetes clusters in
+production), gradual rollouts let you:
+
+- **Reduce blast radius** - If something goes wrong, only a subset of targets
+  are affected
+- **Catch issues early** - Problems surface in early batches before full rollout
+- **Control timing** - Space out deployments to manage load and monitoring
+
+## Configuration
+
+Add a gradual rollout rule to your policy:
+
+```yaml
+policies:
+  - name: production-rollout
+    selectors:
+      - environment: environment.name == "production"
+    rules:
+      - gradualRollout:
+          rolloutType: linear
+          timeScaleInterval: 300 # seconds between batches
+```
+
+## Rollout Types
+
+### Linear Rollout
+
+Deploy to each target at a fixed interval:
+
+```yaml
+gradualRollout:
+  rolloutType: linear
+  timeScaleInterval: 300 # 5 minutes between each target
+```
+
+**Example with 5 targets**:
+
+```
+t+0m:   Target 1 deployed
+t+5m:   Target 2 deployed
+t+10m:  Target 3 deployed
+t+15m:  Target 4 deployed
+t+20m:  Target 5 deployed
+```
+
+### Linear Normalized Rollout
+
+Deployments are spaced evenly so that the last target is scheduled at or before
+the `timeScaleInterval`:
+
+```yaml
+gradualRollout:
+  rolloutType: linear-normalized
+  timeScaleInterval: 600 # Complete rollout within 10 minutes
+```
+
+**Example with 5 targets and 10 minute window**:
+
+```
+t+0m:   Target 1 deployed
+t+2m:   Target 2 deployed
+t+4m:   Target 3 deployed
+t+6m:   Target 4 deployed
+t+8m:   Target 5 deployed
+```
+
+## Combining with Verification
+
+Gradual rollouts work well with verification rules. You can verify each batch
+before proceeding:
+
+```yaml
+policies:
+  - name: production-canary
+    selectors:
+      - environment: environment.name == "production"
+    rules:
+      - gradualRollout:
+          rolloutType: linear
+          timeScaleInterval: 600
+      - verification:
+          metrics:
+            - name: error-rate
+              interval: 1m
+              count: 5
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: sum:errors{service:{{.resource.name}},env:prod}
+              successCondition: result.value < 0.01
+              failureLimit: 1
+```
+
+## Common Patterns
+
+### Conservative Production Rollout
+
+Long intervals with thorough verification:
+
+```yaml
+policies:
+  - name: conservative-rollout
+    selectors:
+      - environment: environment.name == "production"
+    rules:
+      - approval:
+          required: 1
+      - gradualRollout:
+          rolloutType: linear
+          timeScaleInterval: 900 # 15 minutes between targets
+      - verification:
+          metrics:
+            - name: health-check
+              interval: 1m
+              count: 10
+              provider:
+                type: http
+                url: "http://{{.resource.name}}/health"
+              successCondition: result.ok
+              failureLimit: 2
+```
+
+### Fast Staging Rollout
+
+Quick rollout for non-production environments:
+
+```yaml
+policies:
+  - name: staging-rollout
+    selectors:
+      - environment: environment.name == "staging"
+    rules:
+      - gradualRollout:
+          rolloutType: linear-normalized
+          timeScaleInterval: 120 # Complete within 2 minutes
+```
+
+### Critical Service Rollout
+
+Extra cautious rollout for critical services:
+
+```yaml
+policies:
+  - name: critical-service-rollout
+    selectors:
+      - deployment: deployment.metadata.tier == "critical"
+      - environment: environment.name == "production"
+    rules:
+      - approval:
+          required: 2
+      - gradualRollout:
+          rolloutType: linear
+          timeScaleInterval: 1800 # 30 minutes between targets
+      - verification:
+          metrics:
+            - name: error-rate
+              interval: 2m
+              count: 10
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: sum:errors{service:{{.resource.name}}}
+              successCondition: result.value < 0.001
+              failureLimit: 1
+```
+
+## Best Practices
+
+### Timing Guidelines
+
+| Environment | Rollout Type      | Interval    | Notes                          |
+| ----------- | ----------------- | ----------- | ------------------------------ |
+| QA          | linear-normalized | 60-120s     | Fast feedback                  |
+| Staging     | linear-normalized | 120-300s    | Reasonable pace                |
+| Production  | linear            | 300-900s    | Conservative, time to monitor  |
+| Critical    | linear            | 900-1800s   | Extra time for verification    |
+
+### Recommendations
+
+- ✅ Use longer intervals for production environments
+- ✅ Combine with verification to catch issues between batches
+- ✅ Use `linear-normalized` when you have a time constraint
+- ✅ Use `linear` when you want consistent spacing regardless of target count
+- ✅ Monitor each batch before the next one deploys
+
+## Next Steps
+
+- [Verification](./verification) - Add health checks between rollout batches
+- [Policies Overview](./overview) - Learn about policy structure
+
