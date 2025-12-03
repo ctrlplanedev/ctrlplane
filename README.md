@@ -3,7 +3,7 @@
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://ctrlplane.dev/logo-white.png">
       <source media="(prefers-color-scheme: light)" srcset="https://ctrlplane.dev/logo-black.png">
-      <img src="https://ctrlplane.dev/logo-black.png" height="60">
+      <img src="https://ctrlplane.dev/logo-black.png" alt="Ctrlplane" width="250">
     </picture>
   </a>
 </p>
