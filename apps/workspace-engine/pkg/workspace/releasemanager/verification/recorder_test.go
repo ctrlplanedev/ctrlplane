@@ -318,4 +318,3 @@ func TestRecorder_AppendMeasurement_PreservesExistingMeasurements(t *testing.T) 
 	// Other metric should be unaffected
 	assert.Len(t, updated.Metrics[1].Measurements, 0)
 }
-

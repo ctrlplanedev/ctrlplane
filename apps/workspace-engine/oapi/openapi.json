@@ -56,6 +56,44 @@
             ],
             "type": "object"
          },
+         "DatadogMetricProvider": {
+            "properties": {
+               "apiKey": {
+                  "description": "Datadog API key (supports Go templates for variable references)",
+                  "example": "{{.variables.dd_api_key}}",
+                  "type": "string"
+               },
+               "appKey": {
+                  "description": "Datadog Application key (supports Go templates for variable references)",
+                  "example": "{{.variables.dd_app_key}}",
+                  "type": "string"
+               },
+               "query": {
+                  "description": "Datadog metrics query (supports Go templates)",
+                  "example": "sum:requests.error.rate{service:{{.resource.name}}}",
+                  "type": "string"
+               },
+               "site": {
+                  "default": "datadoghq.com",
+                  "description": "Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)",
+                  "type": "string"
+               },
+               "type": {
+                  "description": "Provider type",
+                  "enum": [
+                     "datadog"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "query",
+               "apiKey",
+               "appKey"
+            ],
+            "type": "object"
+         },
          "DeployDecision": {
             "properties": {
                "policyResults": {
@@ -729,6 +767,7 @@
          "MetricProvider": {
             "discriminator": {
                "mapping": {
+                  "datadog": "#/components/schemas/DatadogMetricProvider",
                   "http": "#/components/schemas/HTTPMetricProvider",
                   "sleep": "#/components/schemas/SleepMetricProvider"
                },
@@ -740,6 +779,9 @@
                },
                {
                   "$ref": "#/components/schemas/SleepMetricProvider"
+               },
+               {
+                  "$ref": "#/components/schemas/DatadogMetricProvider"
                }
             ]
          },

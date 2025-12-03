@@ -21,6 +21,11 @@ const (
 	ApprovalStatusRejected ApprovalStatus = "rejected"
 )
 
+// Defines values for DatadogMetricProviderType.
+const (
+	Datadog DatadogMetricProviderType = "datadog"
+)
+
 // Defines values for DeploymentVersionStatus.
 const (
 	DeploymentVersionStatusBuilding    DeploymentVersionStatus = "building"
@@ -157,6 +162,27 @@ type CelMatcher struct {
 type CelSelector struct {
 	Cel string `json:"cel"`
 }
+
+// DatadogMetricProvider defines model for DatadogMetricProvider.
+type DatadogMetricProvider struct {
+	// ApiKey Datadog API key (supports Go templates for variable references)
+	ApiKey string `json:"apiKey"`
+
+	// AppKey Datadog Application key (supports Go templates for variable references)
+	AppKey string `json:"appKey"`
+
+	// Query Datadog metrics query (supports Go templates)
+	Query string `json:"query"`
+
+	// Site Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
+	Site *string `json:"site,omitempty"`
+
+	// Type Provider type
+	Type DatadogMetricProviderType `json:"type"`
+}
+
+// DatadogMetricProviderType Provider type
+type DatadogMetricProviderType string
 
 // DeployDecision defines model for DeployDecision.
 type DeployDecision struct {
@@ -1372,6 +1398,34 @@ func (t *MetricProvider) MergeSleepMetricProvider(v SleepMetricProvider) error {
 	return err
 }
 
+// AsDatadogMetricProvider returns the union data inside the MetricProvider as a DatadogMetricProvider
+func (t MetricProvider) AsDatadogMetricProvider() (DatadogMetricProvider, error) {
+	var body DatadogMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDatadogMetricProvider overwrites any union data inside the MetricProvider as the provided DatadogMetricProvider
+func (t *MetricProvider) FromDatadogMetricProvider(v DatadogMetricProvider) error {
+	v.Type = "datadog"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDatadogMetricProvider performs a merge with any union data inside the MetricProvider, using the provided DatadogMetricProvider
+func (t *MetricProvider) MergeDatadogMetricProvider(v DatadogMetricProvider) error {
+	v.Type = "datadog"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t MetricProvider) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1386,6 +1440,8 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "datadog":
+		return t.AsDatadogMetricProvider()
 	case "http":
 		return t.AsHTTPMetricProvider()
 	case "sleep":

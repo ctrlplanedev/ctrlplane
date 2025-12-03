@@ -122,4 +122,3 @@ func (r *MeasurementRecorder) appendMeasurement(
 
 	return &updated
 }
-

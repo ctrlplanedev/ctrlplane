@@ -103,12 +103,14 @@ local openapi = import '../lib/openapi.libsonnet';
     oneOf: [
       openapi.schemaRef('HTTPMetricProvider'),
       openapi.schemaRef('SleepMetricProvider'),
+      openapi.schemaRef('DatadogMetricProvider'),
     ],
     discriminator: {
       propertyName: 'type',
       mapping: {
         http: '#/components/schemas/HTTPMetricProvider',
         sleep: '#/components/schemas/SleepMetricProvider',
+        datadog: '#/components/schemas/DatadogMetricProvider',
       },
     },
   },
@@ -165,6 +167,38 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'string',
         description: 'Request timeout (duration string, e.g., "30s")',
         default: '30s',
+      },
+    },
+  },
+
+  DatadogMetricProvider: {
+    type: 'object',
+    required: ['type', 'query', 'apiKey', 'appKey'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['datadog'],
+        description: 'Provider type',
+      },
+      query: {
+        type: 'string',
+        description: 'Datadog metrics query (supports Go templates)',
+        example: 'sum:requests.error.rate{service:{{.resource.name}}}',
+      },
+      apiKey: {
+        type: 'string',
+        description: 'Datadog API key (supports Go templates for variable references)',
+        example: '{{.variables.dd_api_key}}',
+      },
+      appKey: {
+        type: 'string',
+        description: 'Datadog Application key (supports Go templates for variable references)',
+        example: '{{.variables.dd_app_key}}',
+      },
+      site: {
+        type: 'string',
+        description: 'Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)',
+        default: 'datadoghq.com',
       },
     },
   },

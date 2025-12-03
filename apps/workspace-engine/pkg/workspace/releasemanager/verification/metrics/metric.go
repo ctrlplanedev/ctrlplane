@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/datadog"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/http"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/sleep"
 
@@ -32,6 +33,14 @@ func CreateProvider(providerCfg oapi.MetricProvider) (provider.Provider, error) 
 			return nil, fmt.Errorf("failed to parse sleep provider: %w", err)
 		}
 		return sleep.NewFromOAPI(sleepProvider)
+
+	case "datadog":
+		datadogProvider, err := providerCfg.AsDatadogMetricProvider()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse Datadog provider: %w", err)
+		}
+		return datadog.NewFromOAPI(datadogProvider)
+
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", discriminator)
 	}
