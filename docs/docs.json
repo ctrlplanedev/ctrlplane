@@ -3,9 +3,13 @@
   "theme": "mint",
   "name": "docs",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#6B46C1",
+    "light": "#805AD5",
+    "dark": "#553C9A",
+    "anchors": {
+      "from": "#6B46C1",
+      "to": "#805AD5"
+    }
   },
   "favicon": "/favicon.png",
   "navigation": {
@@ -26,6 +30,7 @@
               "concepts/environments",
               "concepts/deployments",
               "concepts/releases-and-jobs",
+              "concepts/verification",
               "concepts/release-targets",
               "concepts/selectors"
             ]
@@ -65,12 +70,7 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
+    "links": [],
     "primary": {
       "type": "button",
       "label": "Dashboard",

@@ -1,0 +1,835 @@
+# Verification
+
+**Verification** allows you to validate that a deployment is healthy after it
+completes. Ctrlplane can automatically run verification checks by querying
+metrics from external providers and evaluating success conditions.
+
+## Overview
+
+The verification flow:
+
+```
+Job Completed Successfully
+         ↓
+Policy Evaluated (check for verification rules)
+         ↓
+Verification Started (based on policy selectors)
+         ↓
+Metric Provider Queries (at configured intervals)
+         ↓
+Success Condition Evaluated (CEL expression)
+         ↓
+Verification Passed / Failed
+         ↓
+Release Promotion or Rollback (based on policy)
+```
+
+## Why Use Verification?
+
+Verification helps you:
+
+- **Catch Issues Early** - Detect problems before they impact users
+- **Automate Rollbacks** - Trigger rollback policies when verification fails
+- **Build Confidence** - Ensure deployments meet quality standards
+- **Gate Promotions** - Block progression to production until QA verifies
+- **Environment-Specific Checks** - Run different verifications per environment
+
+## Verification in Policies
+
+Verification is configured as part of **policies**, not directly on deployments.
+This allows you to:
+
+- Apply different verifications to different environments
+- Reuse verification configurations across deployments via selectors
+- Gate promotions based on verification results
+- Run smoke tests in QA before promoting to production
+
+### Basic Policy with Verification
+
+```yaml
+policies:
+  - name: qa-smoke-tests
+    description: Run E2E smoke tests in QA before promotion
+    selectors:
+      - type: environment
+        operator: equals
+        value: qa
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: e2e-smoke-tests
+              interval: 30s
+              count: 5
+              provider:
+                type: http
+                url: "http://e2e-runner.qa/run?service={{.resource.name}}"
+              successCondition: result.ok && result.json.passed == true
+              failureLimit: 1
+```
+
+### Environment-Specific Verifications
+
+Different environments can have completely different verification requirements:
+
+```yaml
+policies:
+  # QA: Run E2E smoke tests
+  - name: qa-verification
+    selectors:
+      - type: environment
+        operator: equals
+        value: qa
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: e2e-smoke-tests
+              interval: 1m
+              count: 3
+              provider:
+                type: http
+                url: "http://e2e-runner/smoke?env=qa&service={{.resource.name}}"
+              successCondition: result.json.all_passed == true
+
+  # Staging: Check error rates and latency
+  - name: staging-verification
+    selectors:
+      - type: environment
+        operator: equals
+        value: staging
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: error-rate
+              interval: 30s
+              count: 10
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: sum:errors{service:{{.resource.name}},env:staging}.as_rate()
+              successCondition: result.value < 0.01
+              failureLimit: 2
+
+  # Production: Comprehensive health checks
+  - name: production-verification
+    selectors:
+      - type: environment
+        operator: equals
+        value: production
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: error-rate
+              interval: 1m
+              count: 10
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: sum:errors{service:{{.resource.name}},env:prod}.as_rate()
+              successCondition: result.value < 0.005
+              failureLimit: 2
+            - name: p99-latency
+              interval: 1m
+              count: 10
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: avg:latency.p99{service:{{.resource.name}},env:prod}
+              successCondition: result.value < 200
+              failureLimit: 2
+```
+
+### Reusable Verification with Selectors
+
+Use policy selectors to apply the same verification across multiple deployments
+or environments:
+
+```yaml
+policies:
+  # Apply to all backend services
+  - name: backend-health-verification
+    selectors:
+      - type: metadata
+        key: service-type
+        operator: equals
+        value: backend
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: health-check
+              interval: 30s
+              count: 5
+              provider:
+                type: http
+                url: "http://{{.resource.name}}/health"
+              successCondition: result.ok
+
+  # Apply to all services with canary deployments
+  - name: canary-verification
+    selectors:
+      - type: metadata
+        key: deployment-strategy
+        operator: equals
+        value: canary
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: canary-error-comparison
+              interval: 2m
+              count: 5
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: |
+                  sum:errors{service:{{.resource.name}},version:canary}.as_rate() /
+                  sum:errors{service:{{.resource.name}},version:stable}.as_rate()
+              successCondition: result.value < 1.1
+```
+
+## Verification for Progressive Delivery
+
+Use verification to gate promotion through environments:
+
+```yaml
+policies:
+  # QA must pass smoke tests before staging
+  - name: qa-gate
+    selectors:
+      - type: environment
+        operator: equals
+        value: qa
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: smoke-tests
+              interval: 30s
+              count: 3
+              provider:
+                type: http
+                url: "http://smoke-test-runner/run"
+                method: POST
+                body: |
+                  {
+                    "service": "{{.resource.name}}",
+                    "version": "{{.version.tag}}",
+                    "environment": "qa"
+                  }
+              successCondition: result.json.status == "passed"
+              failureLimit: 0
+
+  # Staging must pass before production
+  - name: staging-gate
+    selectors:
+      - type: environment
+        operator: equals
+        value: staging
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: integration-tests
+              interval: 1m
+              count: 5
+              provider:
+                type: http
+                url: "http://integration-runner/run?service={{.resource.name}}"
+              successCondition:
+                result.json.passed_count == result.json.total_count
+```
+
+## Metric Configuration
+
+### Metric Properties
+
+| Property           | Type    | Required | Description                                   |
+| ------------------ | ------- | -------- | --------------------------------------------- |
+| `name`             | string  | Yes      | Name of the verification metric               |
+| `interval`         | string  | Yes      | Time between measurements (e.g., "30s", "5m") |
+| `count`            | integer | Yes      | Number of measurements to take                |
+| `provider`         | object  | Yes      | Metric provider configuration                 |
+| `successCondition` | string  | Yes      | CEL expression to evaluate success            |
+| `failureLimit`     | integer | No       | Stop after this many failures (0 = no limit)  |
+
+## Metric Providers
+
+Ctrlplane supports multiple metric providers for collecting verification data.
+
+### HTTP Provider
+
+Query any HTTP endpoint that returns JSON:
+
+```yaml
+provider:
+  type: http
+  url: "http://{{.resource.name}}/health"
+  method: GET
+  headers:
+    Authorization: "Bearer {{.variables.health_token}}"
+  timeout: 30s
+```
+
+**Response Data Available in CEL**:
+
+- `result.ok` - true if status code is 2xx
+- `result.statusCode` - HTTP status code
+- `result.body` - Response body as string
+- `result.json` - Parsed JSON response
+- `result.headers` - Response headers
+- `result.duration` - Request duration in milliseconds
+
+**Example Success Conditions**:
+
+```yaml
+# Status code check
+successCondition: result.ok
+
+# JSON field check
+successCondition: result.json.healthy == true
+
+# Numeric threshold
+successCondition: result.json.error_rate < 0.01
+
+# Combined conditions
+successCondition: result.ok && result.json.ready == true
+```
+
+### Datadog Provider
+
+Query metrics from Datadog's Metrics API:
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  site: datadoghq.com
+  query: |
+    sum:requests.error.rate{service:{{.resource.name}},env:{{.environment.name}}}
+```
+
+**Configuration**:
+
+| Property | Required | Description                                  |
+| -------- | -------- | -------------------------------------------- |
+| `apiKey` | Yes      | Datadog API key (supports templates)         |
+| `appKey` | Yes      | Datadog Application key (supports templates) |
+| `query`  | Yes      | Datadog metrics query (supports templates)   |
+| `site`   | No       | Datadog site (default: `datadoghq.com`)      |
+
+**Supported Sites**:
+
+- `datadoghq.com` (US1 - default)
+- `datadoghq.eu` (EU)
+- `us3.datadoghq.com` (US3)
+- `us5.datadoghq.com` (US5)
+- `ap1.datadoghq.com` (AP1)
+
+**Response Data Available in CEL**:
+
+- `result.ok` - true if API call succeeded
+- `result.statusCode` - HTTP status code
+- `result.value` - Last metric value from the query
+- `result.json` - Full Datadog API response
+- `result.query` - The resolved query string
+- `result.duration` - Request duration in milliseconds
+
+**Example Success Conditions**:
+
+```yaml
+# Error rate below threshold
+successCondition: result.value < 0.01
+
+# Combined with ok check
+successCondition: result.ok && result.value < 0.05
+
+# Absolute value check
+successCondition: result.value >= 0 && result.value < 100
+```
+
+**Example Queries**:
+
+```yaml
+# Error rate
+query: sum:requests.error.rate{service:api-service}
+
+# Latency percentile
+query: avg:trace.http.request.duration.by.service.99p{service:api-service}
+
+# With environment tags
+query: sum:requests{service:{{.resource.name}},env:{{.environment.name}}}
+
+# Rate of 5xx errors
+query: sum:http.requests{status_code:5*,service:{{.resource.name}}}.as_rate()
+```
+
+## Template Variables
+
+All provider configurations support Go templates with access to deployment
+context:
+
+### Available Context
+
+```yaml
+# Resource information
+{{.resource.name}}
+{{.resource.identifier}}
+{{.resource.kind}}
+
+# Environment information
+{{.environment.name}}
+{{.environment.id}}
+
+# Deployment information
+{{.deployment.name}}
+{{.deployment.slug}}
+
+# Version information
+{{.version.tag}}
+{{.version.id}}
+
+# Custom variables (from deployment variables)
+{{.variables.my_variable}}
+{{.variables.dd_api_key}}
+```
+
+### Storing Secrets in Variables
+
+For sensitive values like API keys, use deployment variables:
+
+1. **Create a deployment variable**:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -d '{
+    "key": "dd_api_key",
+    "description": "Datadog API key for verification"
+  }'
+```
+
+2. **Set the value**:
+
+```bash
+curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -d '{
+    "value": "your-actual-api-key"
+  }'
+```
+
+3. **Reference in verification config**:
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  query: sum:errors{service:api}
+```
+
+## Success Conditions (CEL)
+
+Success conditions are written in
+[CEL (Common Expression Language)](https://github.com/google/cel-spec). The
+measurement data is available as the `result` variable.
+
+### Basic Expressions
+
+```yaml
+# Boolean check
+successCondition: result.ok
+
+# Numeric comparison
+successCondition: result.value < 0.01
+
+# String comparison
+successCondition: result.json.status == "healthy"
+
+# Null check
+successCondition: result.json.error == null
+```
+
+### Logical Operators
+
+```yaml
+# AND
+successCondition: result.ok && result.json.ready
+
+# OR
+successCondition: result.json.status == "healthy" || result.json.status == "degraded"
+
+# NOT
+successCondition: !result.json.maintenance_mode
+
+# Combined
+successCondition: result.ok && (result.value < 0.01 || result.json.bypass == true)
+```
+
+### Numeric Operations
+
+```yaml
+# Comparison operators: <, >, <=, >=, ==, !=
+successCondition: result.value >= 0.95
+
+# Arithmetic
+successCondition: result.json.success_count / result.json.total_count > 0.99
+```
+
+## Verification Lifecycle
+
+### 1. Policy Evaluation
+
+When a job completes, Ctrlplane evaluates policies to determine which
+verifications apply based on the policy selectors (environment, metadata, etc.).
+
+### 2. Verification Starts
+
+If a matching policy has verification rules, Ctrlplane creates a verification
+record and starts the measurement process.
+
+### 3. Measurements Taken
+
+For each configured metric, measurements are taken at the specified interval:
+
+```
+Metric: error-rate (interval: 30s, count: 10)
+
+t+0s:   Measurement 1 → Passed (value: 0.005)
+t+30s:  Measurement 2 → Passed (value: 0.007)
+t+60s:  Measurement 3 → Failed (value: 0.015)
+t+90s:  Measurement 4 → Passed (value: 0.008)
+...
+t+270s: Measurement 10 → Passed (value: 0.006)
+```
+
+### 4. Verification Result
+
+The final status is determined by:
+
+- **Passed**: All measurements passed, or failures stayed below `failureLimit`
+- **Failed**: Failures exceeded `failureLimit`
+
+### 5. Policy Action
+
+Based on the verification result, the policy can:
+
+- **Allow promotion** to the next environment
+- **Trigger rollback** to a previous version
+- **Block release** until manual intervention
+
+### Verification Status
+
+| Status      | Description                                   |
+| ----------- | --------------------------------------------- |
+| `running`   | Verification in progress, taking measurements |
+| `passed`    | All checks passed within acceptable limits    |
+| `failed`    | Too many measurements failed                  |
+| `cancelled` | Verification was manually cancelled           |
+
+## Viewing Verification Results
+
+### Via Web UI
+
+1. Navigate to the deployment
+2. Click on a release
+3. View the "Verification" tab
+4. See individual measurements and their data
+
+### Via API
+
+```bash
+# Get release verification status
+curl https://app.ctrlplane.dev/api/v1/releases/{releaseId}/verification \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+**Response**:
+
+```json
+{
+  "id": "ver_abc123",
+  "releaseId": "rel_xyz789",
+  "status": "passed",
+  "metrics": [
+    {
+      "name": "error-rate",
+      "interval": "30s",
+      "count": 10,
+      "measurements": [
+        {
+          "passed": true,
+          "measuredAt": "2024-01-15T12:00:00Z",
+          "data": {
+            "value": 0.005,
+            "ok": true
+          }
+        }
+      ]
+    }
+  ],
+  "createdAt": "2024-01-15T12:00:00Z"
+}
+```
+
+## Common Patterns
+
+### QA Smoke Tests Before Promotion
+
+```yaml
+policies:
+  - name: qa-smoke-gate
+    description: Run smoke tests in QA before allowing staging deployment
+    selectors:
+      - type: environment
+        operator: equals
+        value: qa
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: smoke-tests
+              interval: 30s
+              count: 1
+              provider:
+                type: http
+                url: "http://smoke-runner.qa/run"
+                method: POST
+                body: |
+                  {
+                    "service": "{{.resource.name}}",
+                    "version": "{{.version.tag}}"
+                  }
+              successCondition: result.json.status == "passed"
+              failureLimit: 0
+```
+
+### Production Canary Verification
+
+```yaml
+policies:
+  - name: canary-verification
+    selectors:
+      - type: environment
+        operator: equals
+        value: production
+      - type: metadata
+        key: rollout-phase
+        operator: equals
+        value: canary
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: error-rate-comparison
+              interval: 5m
+              count: 6
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: |
+                  sum:errors{service:{{.resource.name}},version:{{.version.tag}}}.as_rate()
+              successCondition: result.value < 0.01
+              failureLimit: 1
+```
+
+### Multi-Tier Verification
+
+```yaml
+policies:
+  # Tier 1: Basic health
+  - name: tier1-health
+    selectors:
+      - type: environment
+        operator: in
+        values: [qa, staging, production]
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: health-check
+              interval: 10s
+              count: 3
+              provider:
+                type: http
+                url: "http://{{.resource.name}}/health"
+              successCondition: result.ok
+
+  # Tier 2: Performance (staging + production only)
+  - name: tier2-performance
+    selectors:
+      - type: environment
+        operator: in
+        values: [staging, production]
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: latency-check
+              interval: 1m
+              count: 5
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: avg:latency.p99{service:{{.resource.name}}}
+              successCondition: result.value < 500
+
+  # Tier 3: Business metrics (production only)
+  - name: tier3-business
+    selectors:
+      - type: environment
+        operator: equals
+        value: production
+    rules:
+      - type: verification
+        verification:
+          metrics:
+            - name: conversion-rate
+              interval: 5m
+              count: 3
+              provider:
+                type: datadog
+                apiKey: "{{.variables.dd_api_key}}"
+                appKey: "{{.variables.dd_app_key}}"
+                query: avg:business.conversion_rate{service:{{.resource.name}}}
+              successCondition: result.value >= 0.02
+```
+
+## Best Practices
+
+### Policy Organization
+
+**Do**:
+
+- ✅ Use clear, descriptive policy names
+- ✅ Group verifications by environment or purpose
+- ✅ Use selectors to target specific deployments/environments
+- ✅ Start with lenient thresholds and tighten over time
+
+**Don't**:
+
+- ❌ Create one giant policy with all verifications
+- ❌ Apply production-level verification to development
+- ❌ Skip verification in lower environments
+
+### Metric Configuration
+
+**Do**:
+
+- ✅ Use multiple measurements (`count > 1`) to reduce noise
+- ✅ Set appropriate `failureLimit` to allow transient failures
+- ✅ Use meaningful metric names
+- ✅ Store API keys in variables, not inline
+
+**Don't**:
+
+- ❌ Set `count: 1` for critical checks (too sensitive to noise)
+- ❌ Use very short intervals that might overwhelm systems
+- ❌ Hardcode sensitive credentials in config
+
+### Environment-Specific Recommendations
+
+| Environment | Verification Focus                  | Timing         |
+| ----------- | ----------------------------------- | -------------- |
+| QA          | Smoke tests, E2E tests              | Quick (1-3min) |
+| Staging     | Integration tests, error rates      | Medium (5min)  |
+| Production  | Error rates, latency, business KPIs | Extended (10m) |
+
+### Success Conditions
+
+**Good Examples**:
+
+```yaml
+# Clear threshold
+successCondition: result.value < 0.01
+
+# Multiple checks
+successCondition: result.ok && result.json.ready
+
+# Reasonable tolerance
+successCondition: result.value >= 0.95
+```
+
+**Avoid**:
+
+```yaml
+# Too strict (100% required)
+successCondition: result.value == 0
+
+# Meaningless check
+successCondition: true
+
+# Overly complex
+successCondition: (result.a > 1 && result.b < 2) || (result.c == 3 && result.d != 4) || ...
+```
+
+### Timing
+
+| Scenario              | Recommended Interval | Recommended Count |
+| --------------------- | -------------------- | ----------------- |
+| Quick smoke test      | 10-30s               | 3-5               |
+| Standard verification | 30s-1m               | 5-10              |
+| Extended soak test    | 5m                   | 12-24             |
+
+### Failure Limits
+
+| Risk Tolerance | Failure Limit | Notes                  |
+| -------------- | ------------- | ---------------------- |
+| Strict         | 1             | Fail on first failure  |
+| Normal         | 2-3           | Allow transient issues |
+| Lenient        | 5+            | For noisy metrics      |
+
+## Troubleshooting
+
+### Verification always fails
+
+- Check if the provider can reach the target (network, DNS)
+- Verify API credentials are correct
+- Test the query manually
+- Review measurement data for unexpected values
+- Check if success condition is too strict
+
+### Verification not running
+
+- Verify the policy selector matches the release target
+- Check that the policy is enabled
+- Review policy evaluation logs
+- Ensure verification is configured in the policy rules
+
+### Verification times out
+
+- Increase provider timeout
+- Check target system availability
+- Verify network connectivity
+- Check if the metrics endpoint is slow
+
+### Wrong verification applied
+
+- Review policy selectors
+- Check policy priority/ordering
+- Verify environment and metadata values
+- Review which policies matched the release
+
+### Unexpected metric values
+
+- Test the query directly against the provider
+- Check for data lag in metrics systems
+- Verify the correct service/resource is being queried
+- Review template variable resolution
+
+## Next Steps
+
+- [Releases and Jobs](./releases-and-jobs) - Understand the deployment lifecycle
+- [Deployments](./deployments) - Configure deployments
+- [Selectors](./selectors) - Learn about policy selectors
