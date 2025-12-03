@@ -19,16 +19,18 @@ type scheduler struct {
 	store *store.Store
 	hooks VerificationHooks
 
-	mu          sync.Mutex
-	cancelFuncs map[string][]context.CancelFunc // Map of verification ID to list of cancel functions (one per metric)
+	mu                  sync.Mutex
+	cancelFuncs         map[string][]context.CancelFunc // Map of verification ID to list of cancel functions (one per metric)
+	completionHookFired map[string]bool                 // Track if completion hook was already fired for a verification
 }
 
 // newScheduler creates a new verification scheduler
 func newScheduler(store *store.Store, hooks VerificationHooks) *scheduler {
 	return &scheduler{
-		store:       store,
-		hooks:       hooks,
-		cancelFuncs: make(map[string][]context.CancelFunc),
+		store:               store,
+		hooks:               hooks,
+		cancelFuncs:         make(map[string][]context.CancelFunc),
+		completionHookFired: make(map[string]bool),
 	}
 }
 
@@ -88,6 +90,7 @@ func (s *scheduler) StopVerification(verificationID string) {
 			cancel()
 		}
 		delete(s.cancelFuncs, verificationID)
+		delete(s.completionHookFired, verificationID)
 		log.Info("Stopped verification goroutines", "verification_id", verificationID, "metric_count", len(cancelFuncs))
 	}
 }
@@ -307,12 +310,15 @@ func (s *scheduler) runMeasurement(ctx context.Context, verificationID string, m
 			status, passedMeasurements, totalMeasurements, len(verification.Metrics))
 		verification.Message = &message
 
-		// Call hook when verification completes
-		if hookErr := s.hooks.OnVerificationComplete(ctx, verification); hookErr != nil {
-			log.Error("Verification complete hook failed",
-				"verification_id", verificationID,
-				"error", hookErr)
-			// Don't fail the verification due to hook errors
+		// Call hook when verification completes (only once per verification)
+		if !s.completionHookFired[verificationID] {
+			s.completionHookFired[verificationID] = true
+			if hookErr := s.hooks.OnVerificationComplete(ctx, verification); hookErr != nil {
+				log.Error("Verification complete hook failed",
+					"verification_id", verificationID,
+					"error", hookErr)
+				// Don't fail the verification due to hook errors
+			}
 		}
 	}
 

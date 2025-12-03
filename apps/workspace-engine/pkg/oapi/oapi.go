@@ -153,9 +153,6 @@ func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
 		return ReleaseVerificationStatusRunning
 	}
 
-	allCompleted := true
-	anyFailed := false
-
 	for _, metric := range rv.Metrics {
 		// Check if this metric has hit its failure limit
 		failureLimit := metric.GetFailureLimit()
@@ -166,29 +163,14 @@ func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
 			}
 		}
 
-		if failureLimit > 0 && failedCount >= failureLimit {
+		if failedCount > failureLimit {
 			return ReleaseVerificationStatusFailed
 		}
 
 		// Check if metric is complete
 		if len(metric.Measurements) < metric.Count {
-			allCompleted = false
-		} else {
-			// Metric is complete, check if it failed
-			if failedCount > 0 {
-				anyFailed = true
-			}
+			return ReleaseVerificationStatusRunning
 		}
-	}
-
-	// If any metric is incomplete, still running
-	if !allCompleted {
-		return ReleaseVerificationStatusRunning
-	}
-
-	// All metrics complete
-	if anyFailed {
-		return ReleaseVerificationStatusFailed
 	}
 
 	return ReleaseVerificationStatusPassed
