@@ -1,0 +1,276 @@
+---
+title: Deployment Dependency
+description:
+  Learn how to use deployment dependency rules to create dependencies between
+  different deployments.
+---
+
+**Deployment dependency rules** ensure that one deployment succeeds before
+another can proceed. Use them to coordinate related services, enforce deployment
+order across microservices, or manage infrastructure dependencies.
+
+## Overview
+
+```mermaid
+flowchart LR
+    A[Database Migration] -->|Must succeed| B[API Service]
+    B -->|Must succeed| C[Frontend]
+```
+
+## Why Use Deployment Dependencies?
+
+Deployment dependency rules help you:
+
+- **Coordinate services** - Deploy database before API, API before frontend
+- **Manage infrastructure** - Infrastructure changes before application updates
+- **Enforce order** - Shared libraries before dependent services
+- **Reduce failures** - Prevent cascading failures from out-of-order deploys
+
+## Configuration
+
+Add a deployment dependency rule to your policy:
+
+```yaml
+policies:
+  - name: api-requires-database
+    selectors:
+      - deployment: deployment.name == "api-service"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              name: database-migration
+```
+
+## Properties
+
+| Property                       | Type     | Required | Description                                    |
+| ------------------------------ | -------- | -------- | ---------------------------------------------- |
+| `dependsOnDeploymentSelector`  | Selector | Yes      | Selector for the prerequisite deployment(s)    |
+| `reference`                    | string   | No       | Reference to the dependency entity             |
+
+## Common Patterns
+
+### Database Before API
+
+Ensure database migrations complete before API deploys:
+
+```yaml
+policies:
+  - name: api-requires-db-migration
+    selectors:
+      - deployment: deployment.name == "api-service"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              name: database-migration
+```
+
+### Service Dependency Chain
+
+Create a chain of dependencies:
+
+```yaml
+policies:
+  # API depends on database
+  - name: api-depends-on-db
+    selectors:
+      - deployment: deployment.name == "api-service"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              name: database-migration
+
+  # Frontend depends on API
+  - name: frontend-depends-on-api
+    selectors:
+      - deployment: deployment.name == "frontend"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              name: api-service
+```
+
+### Shared Library Dependencies
+
+Ensure shared libraries are deployed before dependent services:
+
+```yaml
+policies:
+  - name: services-require-shared-lib
+    selectors:
+      - deployment: deployment.metadata.usesSharedLib == "true"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              type: shared-library
+```
+
+### Infrastructure First
+
+Deploy infrastructure changes before application updates:
+
+```yaml
+policies:
+  - name: app-requires-infrastructure
+    selectors:
+      - deployment: deployment.metadata.type == "application"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              type: infrastructure
+```
+
+### Multi-Service Dependency
+
+Depend on multiple services:
+
+```yaml
+policies:
+  - name: gateway-requires-services
+    selectors:
+      - deployment: deployment.name == "api-gateway"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchExpression:
+              - key: name
+                operator: In
+                values:
+                  - auth-service
+                  - user-service
+                  - billing-service
+```
+
+### By Team or Domain
+
+Dependencies based on metadata:
+
+```yaml
+policies:
+  - name: frontend-requires-backend
+    selectors:
+      - deployment: deployment.metadata.layer == "frontend"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              layer: backend
+```
+
+## Dependency Resolution
+
+### 1. Release Created
+
+A new version is released for a deployment with dependency rules.
+
+### 2. Dependency Check
+
+Ctrlplane identifies all deployments matching `dependsOnDeploymentSelector`.
+
+### 3. Status Evaluation
+
+For each dependency, Ctrlplane checks if the same version (or compatible
+version) has been successfully deployed.
+
+### 4. Deployment Allowed
+
+Once all dependencies are satisfied, the deployment can proceed.
+
+## Combining with Other Rules
+
+### With Environment Progression
+
+```yaml
+policies:
+  - name: api-full-gates
+    selectors:
+      - deployment: deployment.name == "api-service"
+      - environment: environment.name == "production"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              name: database-migration
+      - environmentProgression:
+          dependsOnEnvironmentSelector:
+            matchLabels:
+              name: staging
+      - approval:
+          required: 1
+```
+
+### With Gradual Rollout
+
+```yaml
+policies:
+  - name: frontend-controlled-release
+    selectors:
+      - deployment: deployment.name == "frontend"
+    rules:
+      - deploymentDependency:
+          dependsOnDeploymentSelector:
+            matchLabels:
+              name: api-service
+      - gradualRollout:
+          rolloutType: linear
+          timeScaleInterval: 300
+```
+
+## Best Practices
+
+### Dependency Design
+
+| Pattern                    | Use Case                              |
+| -------------------------- | ------------------------------------- |
+| Database → API             | Schema changes before code            |
+| API → Frontend             | API contracts before consumers        |
+| Infrastructure → App       | Platform changes before workloads     |
+| Shared lib → Services      | Common code before dependents         |
+| Config → Application       | Configuration before apps             |
+
+### Recommendations
+
+- ✅ Keep dependency chains short (2-3 levels max)
+- ✅ Use metadata to group related deployments
+- ✅ Document why dependencies exist
+- ✅ Test dependency resolution in staging
+- ✅ Monitor for circular dependency issues
+
+### Anti-Patterns
+
+- ❌ Deep dependency chains (> 3 levels)
+- ❌ Circular dependencies (A → B → A)
+- ❌ Over-coupling unrelated services
+- ❌ Using dependencies when environment progression would suffice
+
+## Troubleshooting
+
+### Deployment Blocked
+
+If a deployment is blocked waiting for dependencies:
+
+1. Check the dependency deployment's status
+2. Verify the selector matches the expected deployment
+3. Ensure the dependency version is compatible
+4. Review the dependency deployment's success status
+
+### Circular Dependencies
+
+If you encounter circular dependency errors:
+
+1. Review the dependency graph
+2. Break the cycle by removing one dependency
+3. Consider using environment progression instead
+
+## Next Steps
+
+- [Policies Overview](./overview) - Learn about policy structure
+- [Environment Progression](./environment-progression) - Cross-environment gates
+- [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
+

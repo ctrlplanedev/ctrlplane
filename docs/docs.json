@@ -34,8 +34,13 @@
             "group": "Policies",
             "pages": [
               "policies/overview",
+              "policies/approval",
+              "policies/environment-progression",
+              "policies/gradual-rollouts",
+              "policies/retry",
               "policies/verification",
-              "policies/gradual-rollouts"
+              "policies/version-selector",
+              "policies/deployment-dependency"
             ]
           }
         ]

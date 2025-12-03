@@ -1,4 +1,9 @@
-# Gradual Rollouts
+---
+title: Gradual Rollouts
+description:
+  Learn how to use gradual rollouts to control the pace of deployments across
+  multiple release targets.
+---
 
 **Gradual rollouts** allow you to control the pace of deployments across
 multiple release targets. Instead of deploying to all targets simultaneously,
@@ -178,12 +183,12 @@ policies:
 
 ### Timing Guidelines
 
-| Environment | Rollout Type      | Interval    | Notes                          |
-| ----------- | ----------------- | ----------- | ------------------------------ |
-| QA          | linear-normalized | 60-120s     | Fast feedback                  |
-| Staging     | linear-normalized | 120-300s    | Reasonable pace                |
-| Production  | linear            | 300-900s    | Conservative, time to monitor  |
-| Critical    | linear            | 900-1800s   | Extra time for verification    |
+| Environment | Rollout Type      | Interval  | Notes                         |
+| ----------- | ----------------- | --------- | ----------------------------- |
+| QA          | linear-normalized | 60-120s   | Fast feedback                 |
+| Staging     | linear-normalized | 120-300s  | Reasonable pace               |
+| Production  | linear            | 300-900s  | Conservative, time to monitor |
+| Critical    | linear            | 900-1800s | Extra time for verification   |
 
 ### Recommendations
 
@@ -197,4 +202,3 @@ policies:
 
 - [Verification](./verification) - Add health checks between rollout batches
 - [Policies Overview](./overview) - Learn about policy structure
-
