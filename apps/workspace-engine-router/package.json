@@ -7,7 +7,6 @@
     "test": "go test ./...",
     "generate": "go generate ./...",
     "format": "bash -c 'go fmt ./...'",
-    "lint": "bash -c 'golangci-lint run ./...'",
     "clean": "go clean ./..."
   }
 }
