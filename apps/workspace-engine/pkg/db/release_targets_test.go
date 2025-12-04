@@ -41,7 +41,7 @@ func TestReleaseTarget_WriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx for deletion: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	err = deleteReleaseTarget(ctx, releaseTarget, tx)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestReleaseTarget_MultipleWritesAndDeletes(t *testing.T) {
 
 	err = deleteReleaseTarget(ctx, releaseTarget, tx)
 	if err != nil {
-		tx.Rollback(ctx)
+		_ = tx.Rollback(ctx)
 		t.Fatalf("failed to delete initial release target: %v", err)
 	}
 
@@ -112,7 +112,7 @@ func TestReleaseTarget_MultipleWritesAndDeletes(t *testing.T) {
 
 		err = writeReleaseTarget(ctx, releaseTarget, tx)
 		if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 			t.Fatalf("iteration %d: failed to write release target: %v", i, err)
 		}
 
@@ -142,7 +142,7 @@ func TestReleaseTarget_MultipleWritesAndDeletes(t *testing.T) {
 
 		err = deleteReleaseTarget(ctx, releaseTarget, tx)
 		if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 			t.Fatalf("iteration %d: failed to delete release target: %v", i, err)
 		}
 
@@ -192,7 +192,7 @@ func TestReleaseTarget_WriteIsIdempotent(t *testing.T) {
 
 	err = deleteReleaseTarget(ctx, releaseTarget, tx)
 	if err != nil {
-		tx.Rollback(ctx)
+		_ = tx.Rollback(ctx)
 		t.Fatalf("failed to delete initial release target: %v", err)
 	}
 
@@ -206,7 +206,7 @@ func TestReleaseTarget_WriteIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	err = writeReleaseTarget(ctx, releaseTarget, tx)
 	if err != nil {
@@ -264,7 +264,7 @@ func TestReleaseTarget_DeleteNonexistent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// This should not error, just delete 0 rows
 	err = deleteReleaseTarget(ctx, releaseTarget, tx)
@@ -305,7 +305,7 @@ func TestReleaseTarget_WriteMultipleDifferent(t *testing.T) {
 
 	err = deleteReleaseTarget(ctx, releaseTargetToDelete, tx)
 	if err != nil {
-		tx.Rollback(ctx)
+		_ = tx.Rollback(ctx)
 		t.Fatalf("failed to delete initial release target: %v", err)
 	}
 
@@ -319,7 +319,7 @@ func TestReleaseTarget_WriteMultipleDifferent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	deploymentID2 := uuid.New().String()
 	deploymentDescription2 := "deployment-2"
@@ -358,7 +358,7 @@ func TestReleaseTarget_WriteMultipleDifferent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	err = writeReleaseTarget(ctx, releaseTarget1, tx)
 	if err != nil {
@@ -393,7 +393,7 @@ func TestReleaseTarget_WriteMultipleDifferent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin delete tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	err = deleteReleaseTarget(ctx, releaseTarget1, tx)
 	if err != nil {

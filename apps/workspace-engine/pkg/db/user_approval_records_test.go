@@ -26,6 +26,7 @@ func validateRetrievedUserApprovalRecords(t *testing.T, actualRecords []*oapi.Us
 
 		if actualRecord == nil {
 			t.Fatalf("expected user approval record with user_id %v and version_id %v not found", expectedRecord.UserId, expectedRecord.VersionId)
+			return
 		}
 
 		if actualRecord.UserId != expectedRecord.UserId {
@@ -647,7 +648,7 @@ func TestDBUserApprovalRecords_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	reason := "Approved via write function"
 	approvalRecord := &oapi.UserApprovalRecord{
@@ -729,7 +730,7 @@ func TestDBUserApprovalRecords_WriteUpsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	reason1 := "Initial approval"
 	approvalRecord := &oapi.UserApprovalRecord{
@@ -756,7 +757,7 @@ func TestDBUserApprovalRecords_WriteUpsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	reason2 := "Changed mind, rejecting"
 	approvalRecord.Status = oapi.ApprovalStatusRejected
@@ -841,7 +842,7 @@ func TestDBUserApprovalRecords_WriteWithoutReason(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	approvalRecord := &oapi.UserApprovalRecord{
 		UserId:        userID,
@@ -927,7 +928,7 @@ func TestDBUserApprovalRecords_BasicDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	reason := "Approved for deletion test"
 	approvalRecord := &oapi.UserApprovalRecord{
@@ -963,7 +964,7 @@ func TestDBUserApprovalRecords_BasicDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteUserApprovalRecord(t.Context(), approvalRecord, tx)
 	if err != nil {
@@ -1035,7 +1036,7 @@ func TestDBUserApprovalRecords_DeleteNonexistent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	approvalRecord := &oapi.UserApprovalRecord{
 		UserId:        userID,
@@ -1113,7 +1114,7 @@ func TestDBUserApprovalRecords_DeleteOneOfMany(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	reason1 := "User 1 approval"
 	record1 := &oapi.UserApprovalRecord{
@@ -1164,7 +1165,7 @@ func TestDBUserApprovalRecords_DeleteOneOfMany(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteUserApprovalRecord(t.Context(), record1, tx)
 	if err != nil {

@@ -502,6 +502,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 
 	if job2 == nil {
 		t.Fatalf("job2 for version v2.0.0 not found")
+		return
 	}
 
 	// State 4: New job fails - current release should still be v1.0.0
@@ -725,6 +726,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 
 	if job2 == nil {
 		t.Fatalf("job2 for version v2.0.0 not found")
+		return
 	}
 
 	// Get fresh job instance and update it
@@ -756,6 +758,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 
 	if job3 == nil {
 		t.Fatalf("job3 for version v3.0.0 not found")
+		return
 	}
 
 	// Get fresh job instance and update it

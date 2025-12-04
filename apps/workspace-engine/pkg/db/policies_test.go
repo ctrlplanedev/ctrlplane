@@ -26,6 +26,7 @@ func validateRetrievedPolicies(t *testing.T, actualPolicies []*oapi.Policy, expe
 
 		if actual == nil {
 			t.Fatalf("expected policy with id %s not found", expected.Id)
+			return
 		}
 		if actual.Id != expected.Id {
 			t.Fatalf("expected policy id %s, got %s", expected.Id, actual.Id)
@@ -61,6 +62,7 @@ func validateRetrievedPolicies(t *testing.T, actualPolicies []*oapi.Policy, expe
 			}
 			if actualSelector == nil {
 				t.Fatalf("expected selector with id %s not found", expectedSelector.Id)
+				return
 			}
 			if actualSelector.Id != expectedSelector.Id {
 				t.Fatalf("selector %d: expected id %s, got %s", i, expectedSelector.Id, actualSelector.Id)
@@ -84,6 +86,7 @@ func validateRetrievedPolicies(t *testing.T, actualPolicies []*oapi.Policy, expe
 			}
 			if actualRule == nil {
 				t.Fatalf("expected rule with id %s not found", expectedRule.Id)
+				return
 			}
 			if actualRule.PolicyId != expected.Id {
 				t.Fatalf("rule %d: expected policy_id %s, got %s", i, expected.Id, actualRule.PolicyId)
@@ -106,7 +109,7 @@ func TestDBPolicies_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	description := "test policy description"
@@ -149,7 +152,7 @@ func TestDBPolicies_WithDeploymentSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	deploymentSelector := &oapi.Selector{}
@@ -193,7 +196,7 @@ func TestDBPolicies_WithEnvironmentSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	environmentSelector := &oapi.Selector{}
@@ -237,7 +240,7 @@ func TestDBPolicies_WithResourceSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	resourceSelector := &oapi.Selector{}
@@ -281,7 +284,7 @@ func TestDBPolicies_WithAllSelectors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	deploymentSelector := &oapi.Selector{}
@@ -329,7 +332,7 @@ func TestDBPolicies_WithMultipleSelectors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	deploymentSelector := &oapi.Selector{}
@@ -388,7 +391,7 @@ func TestDBPolicies_WithAnyApprovalRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	policy := &oapi.Policy{
@@ -435,7 +438,7 @@ func TestDBPolicies_WithDifferentMinApprovals(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create policies with different minApprovals values
 	policies := []*oapi.Policy{
@@ -520,7 +523,7 @@ func TestDBPolicies_WithSelectorsAndRules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	deploymentSelector := &oapi.Selector{}
@@ -575,7 +578,7 @@ func TestDBPolicies_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	policy := &oapi.Policy{
@@ -609,7 +612,7 @@ func TestDBPolicies_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deletePolicy(t.Context(), policyID, tx)
 	if err != nil {
@@ -636,7 +639,7 @@ func TestDBPolicies_UpdateSelectors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	deploymentSelector := &oapi.Selector{}
@@ -669,7 +672,7 @@ func TestDBPolicies_UpdateSelectors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	environmentSelector := &oapi.Selector{}
 	resourceSelector := &oapi.Selector{}
@@ -709,7 +712,7 @@ func TestDBPolicies_UpdateRules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	policy := &oapi.Policy{
@@ -745,7 +748,7 @@ func TestDBPolicies_UpdateRules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policy.Rules[0].AnyApproval.MinApprovals = 5
 
@@ -774,7 +777,7 @@ func TestDBPolicies_NonexistentWorkspaceThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policy := &oapi.Policy{
 		Id:          uuid.New().String(),
@@ -905,7 +908,7 @@ func TestDBPolicies_MultiplePolicies(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	deploymentSelector := &oapi.Selector{}
 	environmentSelector := &oapi.Selector{}
@@ -1012,7 +1015,7 @@ func TestDBPolicies_WithJsonDeploymentSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 
@@ -1106,7 +1109,7 @@ func TestDBPolicies_WithJsonResourceSelectorContent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 
@@ -1205,7 +1208,7 @@ func TestDBPolicies_EnabledAndPriorityFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create policies with different enabled and priority values
 	policies := []*oapi.Policy{
@@ -1287,6 +1290,7 @@ func TestDBPolicies_EnabledAndPriorityFields(t *testing.T) {
 
 		if actual == nil {
 			t.Fatalf("expected policy with id %s not found", expected.Id)
+			return
 		}
 
 		if actual.Enabled != expected.Enabled {
@@ -1306,7 +1310,7 @@ func TestDBPolicies_UpdateEnabledAndPriority(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policyID := uuid.New().String()
 	policy := &oapi.Policy{
@@ -1343,7 +1347,7 @@ func TestDBPolicies_UpdateEnabledAndPriority(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	policy.Enabled = true
 	policy.Priority = 50

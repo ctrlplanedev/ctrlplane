@@ -25,6 +25,7 @@ func validateRetrievedRelationships(t *testing.T, actualRules []*oapi.Relationsh
 
 		if actual == nil {
 			t.Fatalf("expected relationship rule with id %s not found", expected.Id)
+			return
 		}
 		if actual.Id != expected.Id {
 			t.Fatalf("expected id %s, got %s", expected.Id, actual.Id)
@@ -70,7 +71,7 @@ func TestDBRelationships_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	ruleID := uuid.New().String()
 	description := "test relationship rule"
@@ -121,7 +122,7 @@ func TestDBRelationships_WithPropertyMatcher(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	ruleID := uuid.New().String()
 	rule := &oapi.RelationshipRule{
@@ -175,7 +176,7 @@ func TestDBRelationships_WithMultiplePropertyMatchers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	ruleID := uuid.New().String()
 	rule := &oapi.RelationshipRule{
@@ -239,7 +240,7 @@ func TestDBRelationships_DifferentRelationshipTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create rules with different relationship types
 	rules := []*oapi.RelationshipRule{
@@ -308,7 +309,7 @@ func TestDBRelationships_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	ruleID := uuid.New().String()
 	rule := &oapi.RelationshipRule{
@@ -348,7 +349,7 @@ func TestDBRelationships_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteRelationshipRule(t.Context(), ruleID, tx)
 	if err != nil {
@@ -375,7 +376,7 @@ func TestDBRelationships_UpdateMatchers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	ruleID := uuid.New().String()
 	rule := &oapi.RelationshipRule{
@@ -417,7 +418,7 @@ func TestDBRelationships_UpdateMatchers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	if err := rule.Matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
 		Properties: []oapi.PropertyMatcher{
@@ -461,7 +462,7 @@ func TestDBRelationships_NonexistentWorkspaceThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	rule := &oapi.RelationshipRule{
 		Id:               uuid.New().String(),
@@ -499,7 +500,7 @@ func TestDBRelationships_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx1.Rollback(t.Context())
+	defer func() { _ = tx1.Rollback(t.Context()) }()
 
 	rule1 := &oapi.RelationshipRule{
 		Id:               uuid.New().String(),
@@ -531,7 +532,7 @@ func TestDBRelationships_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx2.Rollback(t.Context())
+	defer func() { _ = tx2.Rollback(t.Context()) }()
 
 	rule2 := &oapi.RelationshipRule{
 		Id:               uuid.New().String(),

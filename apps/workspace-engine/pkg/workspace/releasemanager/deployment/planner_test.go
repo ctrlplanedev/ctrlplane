@@ -598,10 +598,10 @@ func TestPlanDeployment_MultipleResourcesSameDeployment(t *testing.T) {
 	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource1 := createTestResourceForPlanner(workspaceID, resource1ID, "resource-1")
-	testStore.Resources.Upsert(ctx, resource1)
+	_, _ = testStore.Resources.Upsert(ctx, resource1)
 
 	resource2 := createTestResourceForPlanner(workspaceID, resource2ID, "resource-2")
-	testStore.Resources.Upsert(ctx, resource2)
+	_, _ = testStore.Resources.Upsert(ctx, resource2)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)

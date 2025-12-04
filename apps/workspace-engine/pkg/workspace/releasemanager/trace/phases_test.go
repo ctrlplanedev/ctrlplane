@@ -422,6 +422,7 @@ func TestExecutionPhase_TriggerJob(t *testing.T) {
 
 	if job == nil {
 		t.Fatal("expected non-nil Job")
+		return
 	}
 
 	if job.recorder != rt {

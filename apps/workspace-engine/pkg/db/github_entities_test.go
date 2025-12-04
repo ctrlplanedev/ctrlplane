@@ -25,6 +25,7 @@ func validateRetrievedGithubEntities(t *testing.T, actualEntities []*oapi.Github
 
 		if actualEntity == nil {
 			t.Fatalf("expected github entity with installation_id %v and slug %v not found", expectedEntity.InstallationId, expectedEntity.Slug)
+			return
 		}
 
 		if actualEntity.InstallationId != expectedEntity.InstallationId {

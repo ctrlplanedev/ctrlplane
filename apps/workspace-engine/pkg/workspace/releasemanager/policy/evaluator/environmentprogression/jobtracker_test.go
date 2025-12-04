@@ -36,8 +36,8 @@ func setupTestStoreForJobTracker() *store.Store {
 		Name:     "prod",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env1)
-	st.Environments.Upsert(ctx, env2)
+	_ = st.Environments.Upsert(ctx, env1)
+	_ = st.Environments.Upsert(ctx, env2)
 
 	// Create deployment
 	jobAgentId := "agent-1"
@@ -153,9 +153,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 		DeploymentId:  "deploy-1",
 	}
 
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
-	st.ReleaseTargets.Upsert(ctx, rt3)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -176,9 +176,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	// Create successful job for release1
 	completedAt := time.Now().Add(-5 * time.Minute)
@@ -235,8 +235,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 		DeploymentId:  "deploy-1",
 	}
 
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -251,8 +251,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	// Create successful jobs for both
 	completedAt1 := time.Now().Add(-5 * time.Minute)
@@ -324,7 +324,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	// Create release
 	release1 := &oapi.Release{
@@ -333,7 +333,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create successful job completed 15 minutes ago
 	completedAt := time.Now().Add(-15 * time.Minute)
@@ -378,8 +378,8 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -394,8 +394,8 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	// Create successful job completed 20 minutes ago
 	completedAt1 := time.Now().Add(-20 * time.Minute)
@@ -452,7 +452,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	// Create release
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -460,7 +460,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create successful job completed 5 minutes ago
 	completedAt := time.Now().Add(-5 * time.Minute)
@@ -511,7 +511,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	// Create release
 	release1 := &oapi.Release{
@@ -520,7 +520,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create successful job
 	completedAt := time.Now().Add(-5 * time.Minute)
@@ -572,7 +572,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	// Create release
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -580,7 +580,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create successful job completed 5 minutes ago
 	completedAt := time.Now().Add(-5 * time.Minute)
@@ -626,8 +626,8 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 		DeploymentId:  "deploy-1",
 	}
 
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -642,8 +642,8 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	// Create jobs
 	completedAt := time.Now().Add(-5 * time.Minute)
@@ -703,8 +703,8 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 		DeploymentId:  "deploy-1",
 	}
 
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -719,8 +719,8 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	// Create jobs for both
 	completedAt1 := time.Now().Add(-5 * time.Minute)
@@ -778,7 +778,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	// Create release
 	release1 := &oapi.Release{
@@ -787,7 +787,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create multiple successful jobs for same release target
 	// First success (oldest)
@@ -860,9 +860,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 		DeploymentId:  "deploy-1",
 	}
 
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
-	st.ReleaseTargets.Upsert(ctx, rt3)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -883,9 +883,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	// Create successful jobs with specific timestamps
 	// Job 1 completes first (pass rate 33%)
@@ -991,8 +991,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	// Create successful job for only one release target
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
@@ -1082,8 +1082,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 		EnvironmentId: "env-1",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -1098,8 +1098,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	// Create successful jobs
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
@@ -1166,9 +1166,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 		DeploymentId:  "deploy-1",
 	}
 
-	st.ReleaseTargets.Upsert(ctx, rt1)
-	st.ReleaseTargets.Upsert(ctx, rt2)
-	st.ReleaseTargets.Upsert(ctx, rt3)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -1189,9 +1189,9 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	// Create successful jobs with out-of-order completion times
 	// Job 2 completes first (10:05)

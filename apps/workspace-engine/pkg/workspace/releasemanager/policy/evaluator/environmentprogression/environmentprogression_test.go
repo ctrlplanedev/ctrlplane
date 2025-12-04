@@ -400,14 +400,14 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
 
 	stagingReleaseTarget3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -648,7 +648,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget1,
@@ -779,14 +779,14 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget2)
 
 	stagingReleaseTarget3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget3)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget1,

@@ -88,7 +88,7 @@ func HandleUserApprovalRecordCreated(
 		"environment_id", userApprovalRecord.EnvironmentId,
 		"affected_targets_count", len(relevantTargets))
 
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalCreated),
 		releasemanager.WithVersionAndNewer(version))
 
@@ -128,7 +128,7 @@ func HandleUserApprovalRecordUpdated(
 		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalUpdated),
 		releasemanager.WithVersionAndNewer(version))
 
@@ -168,7 +168,7 @@ func HandleUserApprovalRecordDeleted(
 		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
 		releasemanager.WithTrigger(trace.TriggerApprovalUpdated),
 		releasemanager.WithVersionAndNewer(version))
 

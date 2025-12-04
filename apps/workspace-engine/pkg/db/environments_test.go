@@ -25,6 +25,7 @@ func validateRetrievedEnvironments(t *testing.T, actualEnvironments []*oapi.Envi
 
 		if actualEnv == nil {
 			t.Fatalf("expected environment with id %s not found", expectedEnv.Id)
+			return
 		}
 		if actualEnv.Id != expectedEnv.Id {
 			t.Fatalf("expected environment id %s, got %s", expectedEnv.Id, actualEnv.Id)
@@ -53,7 +54,7 @@ func TestDBEnvironments_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first (required for environment)
 	systemID := uuid.New().String()
@@ -109,7 +110,7 @@ func TestDBEnvironments_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -158,7 +159,7 @@ func TestDBEnvironments_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteEnvironment(t.Context(), envID, tx)
 	if err != nil {
@@ -185,7 +186,7 @@ func TestDBEnvironments_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -229,7 +230,7 @@ func TestDBEnvironments_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	updatedDescription := "updated-description"
 	env.Name = envName + "-updated"
@@ -260,7 +261,7 @@ func TestDBEnvironments_NonexistentSystemThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Try to create environment with non-existent system
 	env := &oapi.Environment{
@@ -291,7 +292,7 @@ func TestDBEnvironments_MultipleEnvironments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -355,7 +356,7 @@ func TestDBEnvironments_WithJsonResourceSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -462,7 +463,7 @@ func TestDBEnvironments_UpdateResourceSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -519,7 +520,7 @@ func TestDBEnvironments_UpdateResourceSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	updatedSelector := &oapi.Selector{}
 	err = updatedSelector.FromJsonSelector(oapi.JsonSelector{
@@ -585,7 +586,7 @@ func TestDBEnvironments_ReadRawUnwrappedSelectorFromDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()

@@ -69,7 +69,7 @@ func TestDBDeployments_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -124,7 +124,7 @@ func TestDBDeployments_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -174,7 +174,7 @@ func TestDBDeployments_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteDeployment(t.Context(), deploymentID, tx)
 	if err != nil {
@@ -201,7 +201,7 @@ func TestDBDeployments_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -244,7 +244,7 @@ func TestDBDeployments_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	updatedDescription := "updated description"
 	deployment.Name = deployment.Name + "-updated"
@@ -279,7 +279,7 @@ func TestDBDeployments_WithJobAgentConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -340,7 +340,7 @@ func TestDBDeployments_NonexistentSystemThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	description := "test"
 	deployment := &oapi.Deployment{
@@ -374,7 +374,7 @@ func TestDBDeployments_WithJsonResourceSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -475,7 +475,7 @@ func TestDBDeployments_UpdateResourceSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a system first
 	systemID := uuid.New().String()
@@ -531,7 +531,7 @@ func TestDBDeployments_UpdateResourceSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	updatedSelector := &oapi.Selector{}
 	err = updatedSelector.FromJsonSelector(oapi.JsonSelector{

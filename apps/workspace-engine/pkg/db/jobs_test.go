@@ -31,6 +31,7 @@ func validateRetrievedJobs(t *testing.T, actualJobs []*oapi.Job, expectedJobs []
 
 		if actual == nil {
 			t.Fatalf("expected job with id %s not found", expected.Id)
+			return
 		}
 		if actual.Id != expected.Id {
 			t.Fatalf("expected job id %s, got %s", expected.Id, actual.Id)
@@ -134,7 +135,7 @@ func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	jobAgentID = uuid.New().String()
 	jobAgent := &oapi.JobAgent{
@@ -174,7 +175,7 @@ func createJobPrerequisites(t *testing.T, workspaceID string, conn *pgxpool.Conn
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	if err := writeRelease(ctx, release, workspaceID, tx); err != nil {
 		t.Fatalf("failed to create release: %v", err)
@@ -218,7 +219,7 @@ func cleanupJobs(t *testing.T, conn *pgxpool.Conn, jobIDs ...string) {
 		t.Logf("Cleanup: Failed to begin tx: %v", err)
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, jobID := range jobIDs {
 		if err := deleteJob(ctx, jobID, tx); err != nil {
@@ -240,7 +241,7 @@ func TestDBJobs_BasicWrite(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -248,7 +249,7 @@ func TestDBJobs_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	externalID := "github-run-123"
@@ -312,7 +313,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -321,7 +322,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -359,7 +360,7 @@ func TestDBJobs_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	startedAt := time.Now()
 	externalID := "github-run-456"
@@ -397,7 +398,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -406,7 +407,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -444,7 +445,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	startedAt := time.Now()
 	job.Status = oapi.JobStatusInProgress
@@ -466,7 +467,7 @@ func TestDBJobs_CompleteJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	completedAt := time.Now()
 	job.Status = oapi.JobStatusSuccessful
@@ -501,7 +502,7 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -510,7 +511,7 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -555,7 +556,7 @@ func TestDBJobs_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteJob(t.Context(), jobID, tx)
 	if err != nil {
@@ -584,7 +585,7 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -592,7 +593,7 @@ func TestDBJobs_MultipleJobsForSameRelease(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	now := time.Now()
 
@@ -664,7 +665,7 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -672,7 +673,7 @@ func TestDBJobs_ComplexJobAgentConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -731,7 +732,7 @@ func TestDBJobs_AllJobStatuses(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -754,7 +755,7 @@ func TestDBJobs_AllJobStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	now := time.Now()
 
@@ -955,7 +956,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 	// Create store and add release to it (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	// Also index by UUID for job lookup
 	testStore.Repo().Releases.Set(releaseID, &release)
 
@@ -964,7 +965,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	now := time.Now()
 
@@ -1066,7 +1067,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx for update: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Update job1 to in-progress
 	updateStartedAt := time.Now()
@@ -1098,6 +1099,7 @@ func TestDBJobs_WriteAndRetrieveWithReleaseJob(t *testing.T) {
 
 	if foundUpdatedJob == nil {
 		t.Fatalf("updated job not found")
+		return
 	}
 
 	if foundUpdatedJob.Status != oapi.JobStatusInProgress {
@@ -1119,14 +1121,14 @@ func TestDBJobs_BasicMetadata(t *testing.T) {
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
 	tx, err := conn.Begin(t.Context())
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -1197,14 +1199,14 @@ func TestDBJobs_EmptyMetadata(t *testing.T) {
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
 	tx, err := conn.Begin(t.Context())
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -1257,7 +1259,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
 	// Create job with initial metadata
@@ -1265,7 +1267,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -1309,7 +1311,7 @@ func TestDBJobs_MetadataUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx for update: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	updatedMetadata := map[string]string{
 		"environment": "production", // Changed value
@@ -1363,7 +1365,7 @@ func TestDBJobs_MetadataRemoval(t *testing.T) {
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
 	// Create job with metadata
@@ -1371,7 +1373,7 @@ func TestDBJobs_MetadataRemoval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobID := uuid.New().String()
 	now := time.Now()
@@ -1415,7 +1417,7 @@ func TestDBJobs_MetadataRemoval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx for update: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	job.Metadata = nil
 	job.UpdatedAt = time.Now()
@@ -1461,14 +1463,14 @@ func TestDBJobs_MultipleJobsWithDifferentMetadata(t *testing.T) {
 	// Create store and add release to it
 	sc := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", sc)
-	testStore.Releases.Upsert(t.Context(), &release)
+	_ = testStore.Releases.Upsert(t.Context(), &release)
 	testStore.Repo().Releases.Set(releaseID, &release)
 
 	tx, err := conn.Begin(t.Context())
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	now := time.Now()
 

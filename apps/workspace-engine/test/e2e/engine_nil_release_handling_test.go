@@ -270,6 +270,7 @@ func TestEngine_ReleaseTargetStateWithNilRelease(t *testing.T) {
 
 	if state == nil {
 		t.Fatalf("state should not be nil even if there's an error")
+		return
 	}
 
 	// Current release should be nil because the release doesn't exist
@@ -362,6 +363,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	}
 	if jobToCorrupt == nil {
 		t.Fatalf("no pending job found to corrupt")
+		return
 	}
 
 	// Delete one release while keeping the job

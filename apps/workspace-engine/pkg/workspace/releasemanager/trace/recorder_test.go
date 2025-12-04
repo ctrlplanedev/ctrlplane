@@ -26,6 +26,7 @@ func TestNewReconcileTarget(t *testing.T) {
 
 	if rt == nil {
 		t.Fatal("expected non-nil ReconcileTarget")
+		return
 	}
 
 	if rt.workspaceID != workspaceID {
@@ -62,6 +63,7 @@ func TestNewReconcileTargetWithStore(t *testing.T) {
 
 	if rt == nil {
 		t.Fatal("expected non-nil ReconcileTarget")
+		return
 	}
 
 	if rt.store != store {
@@ -76,6 +78,7 @@ func TestReconcileTarget_StartPlanning(t *testing.T) {
 
 	if planning == nil {
 		t.Fatal("expected non-nil PlanningPhase")
+		return
 	}
 
 	if planning.recorder != rt {
@@ -98,6 +101,7 @@ func TestReconcileTarget_StartEligibility(t *testing.T) {
 
 	if eligibility == nil {
 		t.Fatal("expected non-nil EligibilityPhase")
+		return
 	}
 
 	if eligibility.recorder != rt {
@@ -116,6 +120,7 @@ func TestReconcileTarget_StartExecution(t *testing.T) {
 
 	if execution == nil {
 		t.Fatal("expected non-nil ExecutionPhase")
+		return
 	}
 
 	if execution.recorder != rt {
@@ -134,6 +139,7 @@ func TestReconcileTarget_StartAction(t *testing.T) {
 
 	if action == nil {
 		t.Fatal("expected non-nil Action")
+		return
 	}
 
 	if action.recorder != rt {

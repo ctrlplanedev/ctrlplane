@@ -134,6 +134,7 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 
 	if newJob == nil {
 		t.Fatalf("no new pending job created after variable change")
+		return
 	}
 
 	if newJob.ReleaseId == initialReleaseID {

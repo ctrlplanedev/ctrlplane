@@ -36,6 +36,7 @@ func validateRetrievedReleases(t *testing.T, actualReleases []*oapi.Release, exp
 				expectedRelease.ReleaseTarget.ResourceId,
 				expectedRelease.ReleaseTarget.EnvironmentId,
 				expectedRelease.ReleaseTarget.DeploymentId)
+			return
 		}
 
 		// Validate release target
@@ -100,7 +101,7 @@ func createReleasePrerequisites(t *testing.T, workspaceID string, conn *pgxpool.
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Create system
 	systemID = uuid.New().String()
@@ -227,7 +228,7 @@ func TestDBReleases_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a release
 	release := &oapi.Release{
@@ -282,7 +283,7 @@ func TestDBReleases_EmptyVariables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a release with no variables
 	release := &oapi.Release{
@@ -333,7 +334,7 @@ func TestDBReleases_ComplexVariables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create a release with complex variables
 	release := &oapi.Release{
@@ -392,7 +393,7 @@ func TestDBReleases_SameTargetDifferentVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	versionID2 := uuid.New().String()
 	version2 := &oapi.DeploymentVersion{
@@ -418,7 +419,7 @@ func TestDBReleases_SameTargetDifferentVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	release1 := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -453,7 +454,7 @@ func TestDBReleases_SameTargetDifferentVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	release2 := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -505,7 +506,7 @@ func TestDBReleases_MultipleResourcesSameDeployment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	resourceID2 := uuid.New().String()
 	resource2 := &oapi.Resource{
@@ -540,7 +541,7 @@ func TestDBReleases_MultipleResourcesSameDeployment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	release1 := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -622,7 +623,7 @@ func TestDBReleases_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx1: %v", err)
 	}
-	defer tx1.Rollback(t.Context())
+	defer func() { _ = tx1.Rollback(t.Context()) }()
 
 	release1 := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -657,7 +658,7 @@ func TestDBReleases_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx2: %v", err)
 	}
-	defer tx2.Rollback(t.Context())
+	defer func() { _ = tx2.Rollback(t.Context()) }()
 
 	release2 := &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -724,7 +725,7 @@ func TestDBReleases_NonexistentReleaseTargetThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Try to create a release with non-existent release target
 	release := &oapi.Release{
@@ -763,7 +764,7 @@ func TestDBReleases_VariableValueSnapshot_Deduplication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	versionID2 := uuid.New().String()
 	version2 := &oapi.DeploymentVersion{
@@ -812,7 +813,7 @@ func TestDBReleases_VariableValueSnapshot_Deduplication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	sharedVariables := map[string]oapi.LiteralValue{
 		"ENV":      stringLiteral("production"),

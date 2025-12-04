@@ -316,7 +316,7 @@ func TestEngine_RelationshipRuleRemovalMultiple(t *testing.T) {
 
 	// Remove rules 1 and 2
 	_ = engine.Workspace().RelationshipRules().Remove(ctx, rule1ID)
-	engine.Workspace().RelationshipRules().Remove(ctx, rule2ID)
+	_ = engine.Workspace().RelationshipRules().Remove(ctx, rule2ID)
 
 	// Verify only rule 3 remains
 	remainingRules := engine.Workspace().RelationshipRules().Items()

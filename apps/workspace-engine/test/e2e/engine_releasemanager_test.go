@@ -349,6 +349,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 
 	if appJob == nil {
 		t.Fatal("no job found for application resource")
+		return
 	}
 
 	// Verify the job is pending

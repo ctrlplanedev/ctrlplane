@@ -143,6 +143,7 @@ func TestDBWorkspaces_GetLatestWorkspaceSnapshots(t *testing.T) {
 	ws1Snapshot := snapshots[ws1ID]
 	if ws1Snapshot == nil {
 		t.Fatal("No snapshot returned for ws1")
+		return
 	}
 	if ws1Snapshot.Offset != 100 {
 		t.Fatalf("Expected ws1 snapshot with offset 100 (highest), got %d", ws1Snapshot.Offset)
@@ -155,6 +156,7 @@ func TestDBWorkspaces_GetLatestWorkspaceSnapshots(t *testing.T) {
 	ws2SnapshotResult := snapshots[ws2ID]
 	if ws2SnapshotResult == nil {
 		t.Fatal("No snapshot returned for ws2")
+		return
 	}
 	if ws2SnapshotResult.Offset != 200 {
 		t.Fatalf("Expected ws2 snapshot with offset 200, got %d", ws2SnapshotResult.Offset)

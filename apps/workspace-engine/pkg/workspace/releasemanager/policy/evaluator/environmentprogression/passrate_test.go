@@ -40,7 +40,7 @@ func setupTestStoreForPassRate() *store.Store {
 		SystemId:         "system-1",
 		ResourceSelector: resourceSelector,
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	// Create deployment
 	jobAgentId := "agent-1"
@@ -55,7 +55,7 @@ func setupTestStoreForPassRate() *store.Store {
 		JobAgentConfig:   map[string]any{},
 		ResourceSelector: resourceSelector,
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	return st
 }
@@ -83,21 +83,21 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt3)
+	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	// Create releases
 	release1 := &oapi.Release{
@@ -118,9 +118,9 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	// Create resources for release targets
 	resource2 := &oapi.Resource{
@@ -141,8 +141,8 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource2)
-	st.Resources.Upsert(ctx, resource3)
+	_, _ = st.Resources.Upsert(ctx, resource2)
+	_, _ = st.Resources.Upsert(ctx, resource3)
 	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err)
 
@@ -214,21 +214,21 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt3)
+	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -248,9 +248,9 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	resource2 := &oapi.Resource{
 		Id:          "resource-2",
@@ -270,8 +270,8 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource2)
-	st.Resources.Upsert(ctx, resource3)
+	_, _ = st.Resources.Upsert(ctx, resource2)
+	_, _ = st.Resources.Upsert(ctx, resource3)
 	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err)
 
@@ -331,21 +331,21 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	rt2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt2)
+	_ = st.ReleaseTargets.Upsert(ctx, rt2)
 
 	rt3 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-3",
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt3)
+	_ = st.ReleaseTargets.Upsert(ctx, rt3)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -365,9 +365,9 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	resource2 := &oapi.Resource{
 		Id:          "resource-2",
@@ -387,8 +387,8 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource2)
-	st.Resources.Upsert(ctx, resource3)
+	_, _ = st.Resources.Upsert(ctx, resource2)
+	_, _ = st.Resources.Upsert(ctx, resource3)
 	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err)
 
@@ -470,7 +470,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -478,7 +478,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create resource for release target
 	resource1 := &oapi.Resource{
@@ -490,7 +490,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource1)
+	_, _ = st.Resources.Upsert(ctx, resource1)
 	// Ensure ReleaseTargets are computed after adding resource
 	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
@@ -574,7 +574,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
@@ -582,7 +582,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create resource for release target
 	resource1 := &oapi.Resource{
@@ -594,7 +594,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource1)
+	_, _ = st.Resources.Upsert(ctx, resource1)
 	_, err := st.ReleaseTargets.Items()
 	require.NoError(t, err, "failed to get release targets")
 

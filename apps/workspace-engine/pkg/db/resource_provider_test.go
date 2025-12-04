@@ -25,6 +25,7 @@ func validateRetrievedResourceProviders(t *testing.T, actualProviders []*oapi.Re
 
 		if actualProvider == nil {
 			t.Fatalf("expected resource provider with id %v not found", expectedProvider.Id)
+			return
 		}
 
 		if actualProvider.Name != expectedProvider.Name {
@@ -218,7 +219,7 @@ func TestDBResourceProvider_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	providerID := uuid.New().String()
 	providerName := "write-test-provider"
@@ -266,7 +267,7 @@ func TestDBResourceProvider_WriteUpsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	provider := &oapi.ResourceProvider{
 		Id:          providerID1,
@@ -293,7 +294,7 @@ func TestDBResourceProvider_WriteUpsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	provider.Id = providerID2
 	provider.CreatedAt = createdAt2
@@ -355,7 +356,7 @@ func TestDBResourceProvider_BasicDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteResourceProvider(t.Context(), providerID, tx)
 	if err != nil {
@@ -388,7 +389,7 @@ func TestDBResourceProvider_DeleteNonexistent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Should not error when deleting non-existent provider
 	err = deleteResourceProvider(t.Context(), nonExistentProviderID, tx)
@@ -440,7 +441,7 @@ func TestDBResourceProvider_DeleteOneOfMany(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteResourceProvider(t.Context(), provider1ID, tx)
 	if err != nil {

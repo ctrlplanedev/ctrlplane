@@ -46,7 +46,7 @@ func TestDBSystems_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-system-%s", id[:8])
@@ -85,7 +85,7 @@ func TestDBSystems_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-system-%s", id[:8])
@@ -111,7 +111,7 @@ func TestDBSystems_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	expectedSystems := []*oapi.System{sys}
 	actualSystems, err := getSystems(t.Context(), workspaceID)
@@ -147,7 +147,7 @@ func TestDBSystems_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-system-%s", id[:8])
@@ -173,7 +173,7 @@ func TestDBSystems_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	sys.Description = &description
 	err = writeSystem(t.Context(), sys, tx)
@@ -202,7 +202,7 @@ func TestDBSystems_NonexistentWorkspaceThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	description := "test-description"
 	sys := &oapi.System{

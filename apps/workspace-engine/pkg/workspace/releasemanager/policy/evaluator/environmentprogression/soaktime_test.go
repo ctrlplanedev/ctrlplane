@@ -25,7 +25,7 @@ func setupTestStoreForSoakTime() *store.Store {
 		Name:        "test-system",
 		WorkspaceId: "workspace-1",
 	}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	// Create resource selector that matches all resources
 	resourceSelector := &oapi.Selector{}
@@ -40,7 +40,7 @@ func setupTestStoreForSoakTime() *store.Store {
 		SystemId:         "system-1",
 		ResourceSelector: resourceSelector,
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	// Create deployment
 	jobAgentId := "agent-1"
@@ -55,7 +55,7 @@ func setupTestStoreForSoakTime() *store.Store {
 		JobAgentConfig:   map[string]any{},
 		ResourceSelector: resourceSelector,
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	return st
 }
@@ -81,14 +81,14 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a successful job that completed 40 minutes ago
 	// With 30 minute soak time, this should be satisfied
@@ -146,14 +146,14 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a successful job that completed only 10 minutes ago
 	// With 30 minute soak time, this should not be satisfied
@@ -210,14 +210,14 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a pending job (not successful)
 	job1 := &oapi.Job{
@@ -269,14 +269,14 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Use fixed time for predictable results
 	soakMinutes := int32(15)
@@ -333,14 +333,14 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 
@@ -430,14 +430,14 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a job with InProgress status (which we'll treat as successful)
 	soakMinutes := int32(30)
@@ -495,14 +495,14 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 	// Create a job that completed exactly 30 minutes ago
@@ -559,14 +559,14 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 	// Job completed 10 minutes ago - soak time of 30 minutes NOT met yet
@@ -626,14 +626,14 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, rt1)
+	_ = st.ReleaseTargets.Upsert(ctx, rt1)
 	release1 := &oapi.Release{
 		ReleaseTarget: *rt1,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release1)
 
 	soakMinutes := int32(30)
 	// Job completed 40 minutes ago - soak time of 30 minutes IS met

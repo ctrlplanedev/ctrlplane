@@ -25,6 +25,7 @@ func validateRetrievedJobAgents(t *testing.T, actualJobAgents []*oapi.JobAgent, 
 
 		if actual == nil {
 			t.Fatalf("expected job agent with id %s not found", expected.Id)
+			return
 		}
 		if actual.Id != expected.Id {
 			t.Fatalf("expected job agent id %s, got %s", expected.Id, actual.Id)
@@ -62,7 +63,7 @@ func TestDBJobAgents_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-job-agent-%s", id[:8])
@@ -103,7 +104,7 @@ func TestDBJobAgents_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-job-agent-%s", id[:8])
@@ -137,7 +138,7 @@ func TestDBJobAgents_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteJobAgent(t.Context(), id, tx)
 	if err != nil {
@@ -164,7 +165,7 @@ func TestDBJobAgents_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-job-agent-%s", id[:8])
@@ -193,7 +194,7 @@ func TestDBJobAgents_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobAgent.Name = name + "-updated"
 	jobAgent.Type = "docker"
@@ -228,7 +229,7 @@ func TestDBJobAgents_ComplexConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-job-agent-%s", id[:8])
@@ -273,7 +274,7 @@ func TestDBJobAgents_NonexistentWorkspaceThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	jobAgent := &oapi.JobAgent{
 		Id:          uuid.New().String(),

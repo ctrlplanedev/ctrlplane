@@ -40,6 +40,7 @@ func validateRetrievedResources(t *testing.T, actualResources []*oapi.Resource, 
 
 		if actualResource == nil {
 			t.Fatalf("expected resource with id %s not found", expectedResource.Id)
+			return
 		}
 		if actualResource.Id != expectedResource.Id {
 			t.Fatalf("expected resource id %s, got %s", expectedResource.Id, actualResource.Id)
@@ -110,7 +111,7 @@ func TestDBResources_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
@@ -160,7 +161,7 @@ func TestDBResources_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
@@ -195,7 +196,7 @@ func TestDBResources_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	expectedResources := []*oapi.Resource{resource}
 	actualResources, err := getResources(t.Context(), workspaceID)
@@ -231,7 +232,7 @@ func TestDBResources_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
@@ -266,7 +267,7 @@ func TestDBResources_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Update the resource
 	resource.Version = "v2"
@@ -306,7 +307,7 @@ func TestDBResources_MetadataUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
@@ -342,7 +343,7 @@ func TestDBResources_MetadataUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	resource.Metadata = map[string]string{
 		"key1": "value1-updated",
@@ -376,7 +377,7 @@ func TestDBResources_EmptyMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
@@ -419,7 +420,7 @@ func TestDBResources_WithTimestamps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
@@ -466,7 +467,7 @@ func TestDBResources_ComplexConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-resource-%s", id[:8])
@@ -517,7 +518,7 @@ func TestDBResources_NonexistentWorkspaceThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	createdAt := time.Now()
 	resource := &oapi.Resource{
@@ -552,7 +553,7 @@ func TestDBResources_MultipleResources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	createdAt := time.Now()
 	resources := []*oapi.Resource{
@@ -622,7 +623,7 @@ func TestDBResources_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx1.Rollback(t.Context())
+	defer func() { _ = tx1.Rollback(t.Context()) }()
 
 	createdAt := time.Now()
 	resource1 := &oapi.Resource{
@@ -652,7 +653,7 @@ func TestDBResources_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx2.Rollback(t.Context())
+	defer func() { _ = tx2.Rollback(t.Context()) }()
 
 	resource2 := &oapi.Resource{
 		Id:          uuid.New().String(),
@@ -709,7 +710,7 @@ func TestDBResources_SoftDeleteFiltering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	createdAt := time.Now()
 	deletedAt := time.Now()
