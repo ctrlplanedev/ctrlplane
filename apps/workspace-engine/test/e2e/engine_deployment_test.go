@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
@@ -314,6 +315,135 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 
 	if timeout, ok := jobConfig["timeout"].(float64); !ok || timeout != 300 {
 		t.Fatalf("job config timeout mismatch: got %v, want 300", jobConfig["timeout"])
+	}
+}
+
+func TestEngine_DeploymentJobAgentConfigUpdateCreatesNewJob(t *testing.T) {
+	jobAgentID := "job-agent-1"
+	deploymentID := "deployment-1"
+	resourceID := "resource-1"
+	environmentID := "environment-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgentConfig(map[string]any{
+					"namespace": "custom-namespace",
+					"timeout":   300,
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Verify deployment has job agent config
+	d, _ := engine.Workspace().Deployments().Get(deploymentID)
+	config := d.JobAgentConfig
+
+	if config["namespace"] != "custom-namespace" {
+		t.Fatalf("deployment job agent config namespace mismatch: got %v, want custom-namespace", config["namespace"])
+	}
+
+	if timeout, ok := config["timeout"].(float64); !ok || timeout != 300 {
+		t.Fatalf("deployment job agent config timeout mismatch: got %v, want 300", config["timeout"])
+	}
+
+	// Verify job was created with merged config
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job, got %d", len(pendingJobs))
+	}
+
+	var job *oapi.Job
+	for _, j := range pendingJobs {
+		job = j
+		break
+	}
+	jobConfig := job.JobAgentConfig
+
+	// Verify merged config includes deployment-specific settings
+	if jobConfig["namespace"] != "custom-namespace" {
+		t.Fatalf("job config namespace mismatch: got %v, want custom-namespace", jobConfig["namespace"])
+	}
+
+	if timeout, ok := jobConfig["timeout"].(float64); !ok || timeout != 300 {
+		t.Fatalf("job config timeout mismatch: got %v, want 300", jobConfig["timeout"])
+	}
+
+	// mark job as successful
+	now := time.Now()
+	jobUpdateEvent := &oapi.JobUpdateEvent{
+		Id:      &job.Id,
+		AgentId: &jobAgentID,
+		Job: oapi.Job{
+			Id:          job.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.Status,
+			oapi.CompletedAt,
+		},
+	}
+	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
+
+	newDeployment := &oapi.Deployment{
+		Id:          d.Id,
+		Description: d.Description,
+		JobAgentConfig: map[string]any{
+			"namespace": "custom-namespace-2",
+			"timeout":   400,
+		},
+		JobAgentId:       &jobAgentID,
+		Name:             d.Name,
+		ResourceSelector: d.ResourceSelector,
+		Slug:             d.Slug,
+		SystemId:         d.SystemId,
+	}
+	engine.PushEvent(ctx, handler.DeploymentUpdate, newDeployment)
+
+	// verify new job was created
+	pendingJobs = engine.Workspace().Jobs().GetPending()
+	if len(pendingJobs) != 1 {
+		t.Fatalf("expected 1 pending job, got %d", len(pendingJobs))
+	}
+
+	var newJob *oapi.Job
+	for _, j := range pendingJobs {
+		newJob = j
+		break
+	}
+	newJobConfig := newJob.JobAgentConfig
+
+	if newJobConfig["namespace"] != "custom-namespace-2" {
+		t.Fatalf("new job config namespace mismatch: got %v, want custom-namespace-2", newJobConfig["namespace"])
+	}
+
+	if timeout, ok := newJobConfig["timeout"].(float64); !ok || timeout != 400 {
+		t.Fatalf("new job config timeout mismatch: got %v, want 400", newJobConfig["timeout"])
 	}
 }
 

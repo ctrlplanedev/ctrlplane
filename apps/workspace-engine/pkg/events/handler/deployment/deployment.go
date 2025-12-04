@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"sort"
 	"time"
 
@@ -130,28 +131,12 @@ func getAddedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseT
 	return addedReleaseTargets
 }
 
-func HandleDeploymentUpdated(
+func updateDeploymentRelations(
 	ctx context.Context,
 	ws *workspace.Workspace,
-	event handler.RawEvent,
-) error {
-	deployment := &oapi.Deployment{}
-	if err := json.Unmarshal(event.Data, deployment); err != nil {
-		return err
-	}
-
-	oldReleaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deployment.Id)
-	if err != nil {
-		return err
-	}
-
+	deployment *oapi.Deployment,
+) {
 	oldRelations := ws.Relations().ForEntity(relationships.NewDeploymentEntity(deployment))
-
-	// Upsert the new deployment
-	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
-		return err
-	}
-
 	newRelations := computeRelations(ctx, ws, deployment)
 	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
 
@@ -162,28 +147,103 @@ func HandleDeploymentUpdated(
 	for _, relation := range newRelations {
 		ws.Relations().Upsert(ctx, relation)
 	}
+}
+
+func upsertTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
+	for _, releaseTarget := range releaseTargets {
+		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getIsJobAgentConfigChanged(oldDeployment *oapi.Deployment, newDeployment *oapi.Deployment) bool {
+	if newDeployment == nil {
+		return false
+	}
+
+	if oldDeployment == nil && newDeployment.JobAgentConfig != nil {
+		return true
+	}
+
+	if oldDeployment == nil && newDeployment.JobAgentConfig == nil {
+		return false
+	}
+
+	return !reflect.DeepEqual(oldDeployment.JobAgentConfig, newDeployment.JobAgentConfig)
+}
+
+func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
+	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
+		for _, releaseTarget := range releaseTargets {
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
+			)
+		}
+	}
+	return nil
+}
+
+func redeployTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
+	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
+		for _, releaseTarget := range releaseTargets {
+			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
+				releasemanager.WithSkipEligibilityCheck(true),
+			)
+		}
+	}
+	return nil
+}
+
+func HandleDeploymentUpdated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	deployment := &oapi.Deployment{}
+	if err := json.Unmarshal(event.Data, deployment); err != nil {
+		return err
+	}
+
+	oldDeployment, _ := ws.Deployments().Get(deployment.Id)
+	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
+		return err
+	}
+
+	updateDeploymentRelations(ctx, ws, deployment)
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
 	if err != nil {
 		return err
 	}
 
-	removedReleaseTargets := getRemovedReleaseTargets(oldReleaseTargets, releaseTargets)
-	addedReleaseTargets := getAddedReleaseTargets(oldReleaseTargets, releaseTargets)
+	oldReleaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, deployment.Id)
+	if err != nil {
+		return err
+	}
 
+	removedReleaseTargets := getRemovedReleaseTargets(oldReleaseTargets, releaseTargets)
 	for _, removedReleaseTarget := range removedReleaseTargets {
 		ws.ReleaseTargets().Remove(removedReleaseTarget.Key())
 	}
-	for _, addedReleaseTarget := range addedReleaseTargets {
-		err := ws.ReleaseTargets().Upsert(ctx, addedReleaseTarget)
-		if err != nil {
-			return err
-		}
 
-		if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
-			ws.ReleaseManager().ReconcileTarget(ctx, addedReleaseTarget,
-				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated))
-		}
+	addedReleaseTargets := getAddedReleaseTargets(oldReleaseTargets, releaseTargets)
+	err = upsertTargets(ctx, ws, deployment, addedReleaseTargets)
+	if err != nil {
+		return err
+	}
+
+	isJobAgentConfigChanged := getIsJobAgentConfigChanged(oldDeployment, deployment)
+	if isJobAgentConfigChanged {
+		return redeployTargets(ctx, ws, deployment, releaseTargets)
+	}
+
+	err = reconcileTargets(ctx, ws, deployment, addedReleaseTargets)
+	if err != nil {
+		return err
 	}
 
 	jobsToRetrigger := getJobsToRetrigger(ws, deployment)
