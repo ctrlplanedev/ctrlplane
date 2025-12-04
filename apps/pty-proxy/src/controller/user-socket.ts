@@ -26,15 +26,6 @@ export class UserSocket {
     }
 
     const { user } = session;
-    if (user == null) {
-      logger.error("User connection rejected - no user in session");
-      return null;
-    }
-    if (user.id == null) {
-      logger.error("User connection rejected - no user ID");
-      return null;
-    }
-
     logger.info(`User connection accepted ${user.email}`, {
       userId: user.id,
     });

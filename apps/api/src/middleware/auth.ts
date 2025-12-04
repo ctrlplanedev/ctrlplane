@@ -36,7 +36,7 @@ export const requireAuth = async (
     // 2. Fall back to session authentication
     const session = await getSession(req);
 
-    if (!session?.user?.id)
+    if (!session?.user.id)
       throw new UnauthorizedError("Authentication required");
 
     // Fetch full user from database
@@ -101,7 +101,7 @@ export const optionalAuth = async (
     // 2. Fall back to session authentication
     const session = await getSession(req);
 
-    if (session?.user?.id) {
+    if (session?.user.id) {
       // Fetch full user from database
       const sessionUser = await db
         .select()
