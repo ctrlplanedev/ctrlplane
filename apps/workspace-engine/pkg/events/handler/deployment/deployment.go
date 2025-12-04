@@ -149,7 +149,7 @@ func updateDeploymentRelations(
 	}
 }
 
-func upsertTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
+func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets []*oapi.ReleaseTarget) error {
 	for _, releaseTarget := range releaseTargets {
 		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 		if err != nil {
@@ -231,7 +231,7 @@ func HandleDeploymentUpdated(
 	}
 
 	addedReleaseTargets := getAddedReleaseTargets(oldReleaseTargets, releaseTargets)
-	err = upsertTargets(ctx, ws, deployment, addedReleaseTargets)
+	err = upsertTargets(ctx, ws, addedReleaseTargets)
 	if err != nil {
 		return err
 	}
