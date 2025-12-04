@@ -104,12 +104,6 @@ func (m *Manager) StartVerification(
 
 	releaseID := release.ID()
 
-	// Check if verification already exists
-	if _, exists := m.store.ReleaseVerifications.GetByReleaseId(releaseID); exists {
-		span.AddEvent("Verification already exists for release")
-		return nil
-	}
-
 	// Require metric configuration
 	if len(metrics) == 0 {
 		return fmt.Errorf("at least one metric configuration is required for verification")
