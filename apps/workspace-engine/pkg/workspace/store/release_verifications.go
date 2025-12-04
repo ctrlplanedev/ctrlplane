@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -49,11 +50,23 @@ func (r *ReleaseVerifications) Items() map[string]*oapi.ReleaseVerification {
 }
 
 func (r *ReleaseVerifications) GetByReleaseId(releaseId string) (*oapi.ReleaseVerification, bool) {
-	for _, verification := range r.repo.ReleaseVerifications.Items() {
+	verifications := r.repo.ReleaseVerifications.Items()
+	verificationsSlice := make([]*oapi.ReleaseVerification, 0, len(verifications))
+	for _, verification := range verifications {
+		if verification.ReleaseId == releaseId {
+			verificationsSlice = append(verificationsSlice, verification)
+		}
+	}
+	sort.Slice(verificationsSlice, func(i, j int) bool {
+		return verificationsSlice[i].CreatedAt.After(verificationsSlice[j].CreatedAt)
+	})
+
+	for _, verification := range verificationsSlice {
 		if verification.ReleaseId == releaseId {
 			return verification, true
 		}
 	}
+
 	return nil, false
 }
 

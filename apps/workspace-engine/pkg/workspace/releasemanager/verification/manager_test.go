@@ -184,10 +184,10 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 	err = manager.StartVerification(ctx, release, metrics)
 	require.NoError(t, err)
 
-	// Verify no new verification was created
+	// Verify new verification was created
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
 	require.True(t, exists)
-	assert.Equal(t, firstVerificationID, verification.Id, "should still be the same verification")
+	assert.NotEqual(t, firstVerificationID, verification.Id, "should be a new verification")
 
 	// Clean up
 	manager.scheduler.StopVerification(verification.Id)
