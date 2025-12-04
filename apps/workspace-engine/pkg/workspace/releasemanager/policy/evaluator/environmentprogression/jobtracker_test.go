@@ -23,7 +23,7 @@ func setupTestStoreForJobTracker() *store.Store {
 		Name:        "test-system",
 		WorkspaceId: "workspace-1",
 	}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	// Create environments
 	env1 := &oapi.Environment{
@@ -51,7 +51,7 @@ func setupTestStoreForJobTracker() *store.Store {
 		Description:    &description,
 		JobAgentConfig: map[string]any{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	// Create version
 	version := &oapi.DeploymentVersion{

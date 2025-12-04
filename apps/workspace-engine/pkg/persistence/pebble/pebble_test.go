@@ -361,7 +361,7 @@ func TestPebbleStore_ConcurrentAccess(t *testing.T) {
 			changes := persistence.NewChangesBuilder("workspace-1").
 				Set(&testEntity{ID: "concurrent", Name: "Entity"}).
 				Build()
-			store.Save(ctx, changes)
+			_ = store.Save(ctx, changes)
 			done <- true
 		}(i)
 	}
@@ -476,7 +476,7 @@ func BenchmarkPebbleStore_Save(b *testing.B) {
 		changes := persistence.NewChangesBuilder("workspace-1").
 			Set(&testEntity{ID: "e1", Name: "Entity"}).
 			Build()
-		store.Save(ctx, changes)
+		_ = store.Save(ctx, changes)
 	}
 }
 
@@ -500,11 +500,11 @@ func BenchmarkPebbleStore_Load(b *testing.B) {
 		changes := persistence.NewChangesBuilder("workspace-1").
 			Set(&testEntity{ID: "e1", Name: "Entity"}).
 			Build()
-		store.Save(ctx, changes)
+		_ = store.Save(ctx, changes)
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		store.Load(ctx, "workspace-1")
+		_, _ = store.Load(ctx, "workspace-1")
 	}
 }

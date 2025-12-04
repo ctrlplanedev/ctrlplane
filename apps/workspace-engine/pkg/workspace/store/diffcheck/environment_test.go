@@ -201,14 +201,14 @@ func TestHasEnvironmentChanges_DescriptionSetToNil(t *testing.T) {
 func TestHasEnvironmentChanges_ResourceSelectorChanged(t *testing.T) {
 	// Create selectors with JsonSelector
 	oldSelector := &oapi.Selector{}
-	oldSelector.FromJsonSelector(oapi.JsonSelector{
+	_ = oldSelector.FromJsonSelector(oapi.JsonSelector{
 		Json: map[string]interface{}{
 			"env": "prod",
 		},
 	})
 
 	newSelector := &oapi.Selector{}
-	newSelector.FromJsonSelector(oapi.JsonSelector{
+	_ = newSelector.FromJsonSelector(oapi.JsonSelector{
 		Json: map[string]interface{}{
 			"env": "staging",
 		},
@@ -243,7 +243,7 @@ func TestHasEnvironmentChanges_ResourceSelectorChanged(t *testing.T) {
 
 func TestHasEnvironmentChanges_ResourceSelectorNilToSet(t *testing.T) {
 	newSelector := &oapi.Selector{}
-	newSelector.FromJsonSelector(oapi.JsonSelector{
+	_ = newSelector.FromJsonSelector(oapi.JsonSelector{
 		Json: map[string]interface{}{
 			"env": "prod",
 		},

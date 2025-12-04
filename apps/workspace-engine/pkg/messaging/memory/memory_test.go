@@ -649,11 +649,11 @@ func TestE2E_ConcurrentConsumers(t *testing.T) {
 				}
 
 				var event map[string]any
-				msg.Unmarshal(&event)
+				_ = msg.Unmarshal(&event)
 				msgID := int(event["id"].(float64))
 				messageIDs = append(messageIDs, msgID)
 				messagesRead++
-				consumer.CommitMessage(msg)
+				_ = consumer.CommitMessage(msg)
 			}
 
 			resultsChan <- consumerResult{
@@ -745,7 +745,7 @@ func TestE2E_DifferentConsumerGroups(t *testing.T) {
 					break
 				}
 				messagesRead++
-				consumer.CommitMessage(msg)
+				_ = consumer.CommitMessage(msg)
 			}
 
 			resultsChan <- consumerResult{
@@ -835,10 +835,10 @@ func TestE2E_SeekAndReplay(t *testing.T) {
 		require.NoError(t, err)
 
 		var event map[string]any
-		msg.Unmarshal(&event)
+		_ = msg.Unmarshal(&event)
 		firstRun = append(firstRun, int(event["seq"].(float64)))
 
-		consumer.CommitMessage(msg)
+		_ = consumer.CommitMessage(msg)
 	}
 
 	// Seek back to beginning
@@ -852,7 +852,7 @@ func TestE2E_SeekAndReplay(t *testing.T) {
 		require.NoError(t, err)
 
 		var event map[string]any
-		msg.Unmarshal(&event)
+		_ = msg.Unmarshal(&event)
 		secondRun = append(secondRun, int(event["seq"].(float64)))
 	}
 
@@ -867,7 +867,7 @@ func TestE2E_SeekAndReplay(t *testing.T) {
 	require.NoError(t, err)
 
 	var event map[string]any
-	msg.Unmarshal(&event)
+	_ = msg.Unmarshal(&event)
 	assert.Equal(t, 5, int(event["seq"].(float64)), "should read from offset 5")
 }
 
@@ -985,7 +985,7 @@ func TestE2E_HighThroughput(t *testing.T) {
 
 		// Commit every 100 messages
 		if messagesRead%100 == 0 {
-			consumer.CommitMessage(msg)
+			_ = consumer.CommitMessage(msg)
 		}
 	}
 

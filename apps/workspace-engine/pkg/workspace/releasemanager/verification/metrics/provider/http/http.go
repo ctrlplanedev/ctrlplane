@@ -163,7 +163,7 @@ func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderCo
 	bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 1024*1024))
 
 	var jsonBody any
-	json.Unmarshal(bodyBytes, &jsonBody)
+	_ = json.Unmarshal(bodyBytes, &jsonBody)
 
 	// Return raw data for evaluation
 	data := map[string]any{

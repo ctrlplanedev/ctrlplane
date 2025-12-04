@@ -25,7 +25,7 @@ func setupTestStore() *store.Store {
 		Name:        "test-system",
 		WorkspaceId: "workspace-1",
 	}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	// Create resource selector that matches all resources
 	resourceSelector := &oapi.Selector{}
@@ -52,9 +52,9 @@ func setupTestStore() *store.Store {
 		SystemId:         "system-1",
 		ResourceSelector: resourceSelector,
 	}
-	st.Environments.Upsert(ctx, devEnv)
-	st.Environments.Upsert(ctx, stagingEnv)
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, devEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	// Create deployment
 	jobAgentId := "agent-1"
@@ -69,7 +69,7 @@ func setupTestStore() *store.Store {
 		JobAgentConfig:   map[string]any{},
 		ResourceSelector: resourceSelector,
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	// Create resource
 	resource := &oapi.Resource{
@@ -81,7 +81,7 @@ func setupTestStore() *store.Store {
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource)
+	_, _ = st.Resources.Upsert(ctx, resource)
 
 	// Create a release target per environment
 	devReleaseTarget := &oapi.ReleaseTarget{
@@ -99,9 +99,9 @@ func setupTestStore() *store.Store {
 		EnvironmentId: "env-prod",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, devReleaseTarget)
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
-	st.ReleaseTargets.Upsert(ctx, prodReleaseTarget)
+	_ = st.ReleaseTargets.Upsert(ctx, devReleaseTarget)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
+	_ = st.ReleaseTargets.Upsert(ctx, prodReleaseTarget)
 	return st
 }
 
@@ -180,7 +180,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -188,7 +188,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, stagingRelease)
+	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job for the staging release
 	completedAt := time.Now().Add(-10 * time.Minute)
@@ -268,7 +268,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, stagingRelease)
+	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job that completed very recently (2 minutes ago)
 	completedAt := time.Now().Add(-2 * time.Minute)
@@ -393,7 +393,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
 
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
@@ -428,9 +428,9 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	// Create resources for release targets
 	resource2 := &oapi.Resource{
@@ -451,8 +451,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource2)
-	st.Resources.Upsert(ctx, resource3)
+	_, _ = st.Resources.Upsert(ctx, resource2)
+	_, _ = st.Resources.Upsert(ctx, resource3)
 	// ReleaseTargets are computed automatically from resources and deployments
 	// Call Items() to ensure ReleaseTargets are computed and available
 	_, err := st.ReleaseTargets.Items()
@@ -557,7 +557,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -565,7 +565,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, stagingRelease)
+	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job that completed 40 minutes ago
 	// With 30 minute soak time requirement, it should be satisfied
@@ -641,7 +641,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
 
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
@@ -662,8 +662,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	resource2 := &oapi.Resource{
 		Id:          "resource-2",
@@ -674,7 +674,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource2)
+	_, _ = st.Resources.Upsert(ctx, resource2)
 	// ReleaseTargets are computed automatically from resources and deployments
 
 	// Job 1 completes first (pass rate 50% - meets requirement)
@@ -772,7 +772,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget1)
 
 	stagingReleaseTarget2 := &oapi.ReleaseTarget{
 		ResourceId:    "resource-2",
@@ -806,9 +806,9 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
-	st.Releases.Upsert(ctx, release3)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release3)
 
 	resource2 := &oapi.Resource{
 		Id:          "resource-2",
@@ -828,8 +828,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		Metadata:    map[string]string{},
 		CreatedAt:   time.Now(),
 	}
-	st.Resources.Upsert(ctx, resource2)
-	st.Resources.Upsert(ctx, resource3)
+	_, _ = st.Resources.Upsert(ctx, resource2)
+	_, _ = st.Resources.Upsert(ctx, resource3)
 	// ReleaseTargets are computed automatically from resources and deployments
 	// Call Items() to ensure ReleaseTargets are computed and available
 	_, err := st.ReleaseTargets.Items()
@@ -949,7 +949,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		EnvironmentId: "env-staging",
 		DeploymentId:  "deploy-1",
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingReleaseTarget)
 
 	stagingRelease := &oapi.Release{
 		ReleaseTarget: *stagingReleaseTarget,
@@ -957,7 +957,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, stagingRelease)
+	_ = st.Releases.Upsert(ctx, stagingRelease)
 
 	// Create a successful job that completed very recently (soak time not met)
 	completedAt := time.Now().Add(-2 * time.Minute)

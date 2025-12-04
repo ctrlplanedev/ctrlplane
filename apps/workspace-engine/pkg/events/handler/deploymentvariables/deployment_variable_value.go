@@ -42,7 +42,7 @@ func HandleDeploymentVariableValueCreated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 	}
 	return nil
@@ -65,7 +65,7 @@ func HandleDeploymentVariableValueUpdated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 	}
 
@@ -88,7 +88,7 @@ func HandleDeploymentVariableValueDeleted(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 	}
 	return nil

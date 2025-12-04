@@ -16,7 +16,7 @@ import (
 // Helper function to create a metric provider
 func createHTTPProvider(url string, method oapi.HTTPMetricProviderMethod) oapi.MetricProvider {
 	provider := oapi.MetricProvider{}
-	provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:    url,
 		Method: &method,
 		Type:   oapi.Http,
@@ -26,7 +26,7 @@ func createHTTPProvider(url string, method oapi.HTTPMetricProviderMethod) oapi.M
 
 func createHTTPProviderWithTimeout(url string, method oapi.HTTPMetricProviderMethod, timeout string) oapi.MetricProvider {
 	provider := oapi.MetricProvider{}
-	provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:     url,
 		Method:  &method,
 		Type:    oapi.Http,
@@ -57,7 +57,7 @@ func TestManager_StartVerification_Success(t *testing.T) {
 	// Create metric specs
 	method := oapi.GET
 	provider := oapi.MetricProvider{}
-	provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:    "http://example.com/health",
 		Method: &method,
 		Type:   oapi.Http,
@@ -107,13 +107,13 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 
 	method := oapi.GET
 	provider1 := oapi.MetricProvider{}
-	provider1.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider1.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:    "http://example.com/health",
 		Method: &method,
 		Type:   oapi.Http,
 	})
 	provider2 := oapi.MetricProvider{}
-	provider2.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider2.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:    "http://example.com/status",
 		Method: &method,
 		Type:   oapi.Http,
@@ -158,7 +158,7 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 
 	method := oapi.GET
 	provider := oapi.MetricProvider{}
-	provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:    "http://example.com/health",
 		Method: &method,
 		Type:   oapi.Http,
@@ -517,7 +517,7 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	failureLimit := 5
 
 	provider := oapi.MetricProvider{}
-	provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:     "http://api.example.com/verify",
 		Method:  &method,
 		Type:    oapi.Http,
@@ -623,7 +623,7 @@ func BenchmarkManager_StartVerification(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.StartVerification(ctx, releases[i], metrics)
+		_ = manager.StartVerification(ctx, releases[i], metrics)
 	}
 
 	// Clean up
@@ -653,7 +653,7 @@ func BenchmarkManager_StopVerification(b *testing.B) {
 	releases := make([]*oapi.Release, b.N)
 	for i := 0; i < b.N; i++ {
 		releases[i] = createTestRelease(s, ctx)
-		manager.StartVerification(ctx, releases[i], metrics)
+		_ = manager.StartVerification(ctx, releases[i], metrics)
 	}
 
 	b.ResetTimer()
@@ -680,7 +680,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		manager := NewManager(stores[i])
-		manager.Restore(ctx)
+		_ = manager.Restore(ctx)
 
 		// Clean up
 		for _, verification := range stores[i].ReleaseVerifications.Items() {

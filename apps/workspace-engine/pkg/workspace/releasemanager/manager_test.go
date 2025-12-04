@@ -96,7 +96,7 @@ func TestProcessChanges_DeleteOnly(t *testing.T) {
 		},
 		Variables: map[string]oapi.LiteralValue{},
 	}
-	testStore.Releases.Upsert(ctx, release)
+	_ = testStore.Releases.Upsert(ctx, release)
 
 	// Create a pending job for this release target
 	job := createTestJob(release.ID(), oapi.JobStatusPending)
@@ -259,7 +259,7 @@ func TestProcessChanges_OnlyPendingJobsCancelled(t *testing.T) {
 		},
 		Variables: map[string]oapi.LiteralValue{},
 	}
-	testStore.Releases.Upsert(ctx, release)
+	_ = testStore.Releases.Upsert(ctx, release)
 
 	// Create jobs in different states
 	pendingJob := createTestJob(release.ID(), oapi.JobStatusPending)
@@ -318,7 +318,7 @@ func TestProcessChanges_MixedOperations(t *testing.T) {
 		},
 		Variables: map[string]oapi.LiteralValue{},
 	}
-	testStore.Releases.Upsert(ctx, release2)
+	_ = testStore.Releases.Upsert(ctx, release2)
 	job2 := createTestJob(release2.ID(), oapi.JobStatusPending)
 	testStore.Jobs.Upsert(ctx, job2)
 

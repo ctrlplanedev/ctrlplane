@@ -14,15 +14,6 @@ import (
 )
 
 // ===== Test Helper Functions =====
-
-func setupTestJobEligibilityChecker(t *testing.T) (*JobEligibilityChecker, *store.Store) {
-	t.Helper()
-	cs := statechange.NewChangeSet[any]()
-	testStore := store.New("test-workspace", cs)
-	checker := NewJobEligibilityChecker(testStore)
-	return checker, testStore
-}
-
 func setupStoreWithResourceForEligibility(t *testing.T, resourceID string) *store.Store {
 	cs := statechange.NewChangeSet[any]()
 	st := store.New("test-workspace", cs)

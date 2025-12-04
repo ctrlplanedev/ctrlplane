@@ -25,6 +25,7 @@ func validateRetrievedDeploymentVersions(t *testing.T, actualVersions []*oapi.De
 
 		if actual == nil {
 			t.Fatalf("expected deployment version with id %s not found", expected.Id)
+			return
 		}
 		if actual.Id != expected.Id {
 			t.Fatalf("expected deployment version id %s, got %s", expected.Id, actual.Id)
@@ -90,7 +91,7 @@ func TestDBDeploymentVersions_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()
@@ -168,7 +169,7 @@ func TestDBDeploymentVersions_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()
@@ -233,7 +234,7 @@ func TestDBDeploymentVersions_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteDeploymentVersion(t.Context(), versionID, tx)
 	if err != nil {
@@ -260,7 +261,7 @@ func TestDBDeploymentVersions_AllStatuses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()
@@ -358,7 +359,7 @@ func TestDBDeploymentVersions_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()
@@ -420,7 +421,7 @@ func TestDBDeploymentVersions_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	updatedMessage := "updated message"
 	version.Status = oapi.DeploymentVersionStatusReady
@@ -458,7 +459,7 @@ func TestDBDeploymentVersions_NonexistentDeploymentThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	version := &oapi.DeploymentVersion{
 		Id:             uuid.New().String(),

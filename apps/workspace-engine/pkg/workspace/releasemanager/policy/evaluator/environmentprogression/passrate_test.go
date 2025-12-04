@@ -25,7 +25,7 @@ func setupTestStoreForPassRate() *store.Store {
 		Name:        "test-system",
 		WorkspaceId: "workspace-1",
 	}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	// Create resource selector that matches all resources
 	resourceSelector := &oapi.Selector{}

@@ -111,7 +111,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDeployed(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	// Set time far enough in the future that all rollouts are complete
@@ -164,7 +164,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	// Set current time
@@ -239,7 +239,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartialRollout(t *testing.T) 
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	// Set time to 90 seconds after start
@@ -300,7 +300,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_NextDeploymentReady(t *testin
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	// Set time to exactly 120 seconds (when position 2 becomes ready)
@@ -355,7 +355,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithTimingDetails(t *testing.
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	// Set time to 30 seconds after start
@@ -407,7 +407,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -418,7 +418,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_PartiallyBlocked(t *testing.T
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
-		st.Releases.Upsert(ctx, release)
+		_ = st.Releases.Upsert(ctx, release)
 	}
 
 	// Set time far in the future
@@ -467,7 +467,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_Messages(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	timeGetter := func() time.Time {
@@ -555,7 +555,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_LinearNormalized(t *testing.T
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	// With 3 targets and timeScaleInterval=60:
@@ -611,7 +611,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	// Approval happens 1 hour after version creation
@@ -696,7 +696,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_SingleTarget(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	timeGetter := func() time.Time {
@@ -747,7 +747,7 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_ZeroTimeScaleInterval(t *test
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	timeGetter := func() time.Time {

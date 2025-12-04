@@ -105,7 +105,7 @@ func TestMeasure(t *testing.T) {
 						t.Errorf("expected GET method, got %s", r.Method)
 					}
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte("test response"))
+					_, _ = w.Write([]byte("test response"))
 				}))
 			},
 			providerCtx:    &provider.ProviderContext{},
@@ -130,7 +130,7 @@ func TestMeasure(t *testing.T) {
 						t.Errorf("expected POST method, got %s", r.Method)
 					}
 					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte(`{"success":true}`))
+					_, _ = w.Write([]byte(`{"success":true}`))
 				}))
 			},
 			providerCtx:    &provider.ProviderContext{},
@@ -177,7 +177,7 @@ func TestMeasure(t *testing.T) {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusOK)
-					json.NewEncoder(w).Encode(map[string]any{
+					_ = json.NewEncoder(w).Encode(map[string]any{
 						"metric": "value",
 						"count":  42,
 					})
@@ -208,7 +208,7 @@ func TestMeasure(t *testing.T) {
 			setupServer: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusNotFound)
-					w.Write([]byte("not found"))
+					_, _ = w.Write([]byte("not found"))
 				}))
 			},
 			providerCtx:    &provider.ProviderContext{},
@@ -224,7 +224,7 @@ func TestMeasure(t *testing.T) {
 			setupServer: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusInternalServerError)
-					w.Write([]byte("internal error"))
+					_, _ = w.Write([]byte("internal error"))
 				}))
 			},
 			providerCtx:    &provider.ProviderContext{},

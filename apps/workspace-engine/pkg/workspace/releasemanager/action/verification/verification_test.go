@@ -17,10 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func newTestStore() *store.Store {
 	wsId := uuid.New().String()
 	changeset := statechange.NewChangeSet[any]()
@@ -34,7 +30,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Id:   systemId,
 		Name: "test-system",
 	}
-	s.Systems.Upsert(ctx, system)
+	_ = s.Systems.Upsert(ctx, system)
 
 	// Create resource
 	resourceId := uuid.New().String()
@@ -45,7 +41,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Identifier: "test-res-1",
 		CreatedAt:  time.Now(),
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 
 	// Create environment
 	environmentId := uuid.New().String()
@@ -55,9 +51,9 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		SystemId: systemId,
 	}
 	selector := &oapi.Selector{}
-	selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
-	s.Environments.Upsert(ctx, environment)
+	_ = s.Environments.Upsert(ctx, environment)
 
 	// Create deployment
 	deploymentId := uuid.New().String()
@@ -68,9 +64,9 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		SystemId: systemId,
 	}
 	deploymentSelector := &oapi.Selector{}
-	deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 
 	// Create version
 	versionId := uuid.New().String()
@@ -88,7 +84,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		EnvironmentId: environmentId,
 		DeploymentId:  deploymentId,
 	}
-	s.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = s.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	// Create release
 	release := &oapi.Release{
@@ -96,7 +92,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, release)
+	_ = s.Releases.Upsert(ctx, release)
 
 	return release
 }

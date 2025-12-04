@@ -25,6 +25,7 @@ func validateRetrievedDeployments(t *testing.T, actualDeployments []*oapi.Deploy
 
 		if actual == nil {
 			t.Fatalf("expected deployment with id %s not found", expected.Id)
+			return
 		}
 		if actual.Id != expected.Id {
 			t.Fatalf("expected deployment id %s, got %s", expected.Id, actual.Id)

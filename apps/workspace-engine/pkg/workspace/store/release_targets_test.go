@@ -23,7 +23,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		Name:        "test-system",
 		Description: ptr("Test system"),
 	}
-	s.Systems.Upsert(ctx, system)
+	_ = s.Systems.Upsert(ctx, system)
 
 	// Create resource
 	resourceId := uuid.New().String()
@@ -37,7 +37,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		Config:     map[string]interface{}{},
 		CreatedAt:  time.Now(),
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 
 	// Create environment
 	environmentId := uuid.New().String()
@@ -48,9 +48,9 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		SystemId:    systemId,
 	}
 	selector := &oapi.Selector{}
-	selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
-	s.Environments.Upsert(ctx, environment)
+	_ = s.Environments.Upsert(ctx, environment)
 
 	// Create deployment
 	deploymentId := uuid.New().String()
@@ -62,9 +62,9 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		SystemId:    systemId,
 	}
 	deploymentSelector := &oapi.Selector{}
-	deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 
 	// Create version
 	versionId := uuid.New().String()
@@ -82,7 +82,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		EnvironmentId: environmentId,
 		DeploymentId:  deploymentId,
 	}
-	s.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = s.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	// Create release
 	release := &oapi.Release{
@@ -90,7 +90,7 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, release)
+	_ = s.Releases.Upsert(ctx, release)
 
 	// Create job
 	job := &oapi.Job{
@@ -238,7 +238,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	// Create system, resource, environment, deployment (shared)
 	systemId := uuid.New().String()
 	system := &oapi.System{Id: systemId, Name: "test-system"}
-	s.Systems.Upsert(ctx, system)
+	_ = s.Systems.Upsert(ctx, system)
 
 	resourceId := uuid.New().String()
 	resource := &oapi.Resource{
@@ -248,21 +248,21 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 		Identifier: "test-res-1",
 		CreatedAt:  time.Now(),
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 
 	environmentId := uuid.New().String()
 	environment := &oapi.Environment{Id: environmentId, Name: "test-env", SystemId: systemId}
 	selector := &oapi.Selector{}
-	selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
-	s.Environments.Upsert(ctx, environment)
+	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
 	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment", SystemId: systemId}
 	deploymentSelector := &oapi.Selector{}
-	deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 
 	// Create release target
 	releaseTarget := &oapi.ReleaseTarget{
@@ -270,7 +270,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 		EnvironmentId: environmentId,
 		DeploymentId:  deploymentId,
 	}
-	s.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = s.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	// Create older release with passed verification
 	olderVersionId := uuid.New().String()
@@ -287,7 +287,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 		Version:       *olderVersion,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, olderRelease)
+	_ = s.Releases.Upsert(ctx, olderRelease)
 
 	olderJobCompletedAt := time.Now().Add(-1 * time.Hour)
 	olderJob := &oapi.Job{
@@ -318,7 +318,7 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 		Version:       *newerVersion,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, newerRelease)
+	_ = s.Releases.Upsert(ctx, newerRelease)
 
 	newerJobCompletedAt := time.Now()
 	newerJob := &oapi.Job{
@@ -353,7 +353,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	// Create system, resource, environment, deployment (shared)
 	systemId := uuid.New().String()
 	system := &oapi.System{Id: systemId, Name: "test-system"}
-	s.Systems.Upsert(ctx, system)
+	_ = s.Systems.Upsert(ctx, system)
 
 	resourceId := uuid.New().String()
 	resource := &oapi.Resource{
@@ -363,21 +363,21 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 		Identifier: "test-res-1",
 		CreatedAt:  time.Now(),
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 
 	environmentId := uuid.New().String()
 	environment := &oapi.Environment{Id: environmentId, Name: "test-env", SystemId: systemId}
 	selector := &oapi.Selector{}
-	selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
-	s.Environments.Upsert(ctx, environment)
+	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
 	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment", SystemId: systemId}
 	deploymentSelector := &oapi.Selector{}
-	deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 
 	// Create release target
 	releaseTarget := &oapi.ReleaseTarget{
@@ -385,7 +385,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 		EnvironmentId: environmentId,
 		DeploymentId:  deploymentId,
 	}
-	s.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = s.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	// Create older release with passed verification
 	olderVersionId := uuid.New().String()
@@ -402,7 +402,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 		Version:       *olderVersion,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, olderRelease)
+	_ = s.Releases.Upsert(ctx, olderRelease)
 
 	olderJobCompletedAt := time.Now().Add(-1 * time.Hour)
 	olderJob := &oapi.Job{
@@ -433,7 +433,7 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 		Version:       *newerVersion,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, newerRelease)
+	_ = s.Releases.Upsert(ctx, newerRelease)
 
 	newerJobCompletedAt := time.Now()
 	newerJob := &oapi.Job{
@@ -495,7 +495,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	// Create system, resource, environment, deployment (shared)
 	systemId := uuid.New().String()
 	system := &oapi.System{Id: systemId, Name: "test-system"}
-	s.Systems.Upsert(ctx, system)
+	_ = s.Systems.Upsert(ctx, system)
 
 	resourceId := uuid.New().String()
 	resource := &oapi.Resource{
@@ -505,21 +505,21 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 		Identifier: "test-res-1",
 		CreatedAt:  time.Now(),
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 
 	environmentId := uuid.New().String()
 	environment := &oapi.Environment{Id: environmentId, Name: "test-env", SystemId: systemId}
 	selector := &oapi.Selector{}
-	selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
-	s.Environments.Upsert(ctx, environment)
+	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
 	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment", SystemId: systemId}
 	deploymentSelector := &oapi.Selector{}
-	deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 
 	// Create release target
 	releaseTarget := &oapi.ReleaseTarget{
@@ -527,7 +527,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 		EnvironmentId: environmentId,
 		DeploymentId:  deploymentId,
 	}
-	s.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = s.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	// Create older release without verification
 	olderVersionId := uuid.New().String()
@@ -544,7 +544,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 		Version:       *olderVersion,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, olderRelease)
+	_ = s.Releases.Upsert(ctx, olderRelease)
 
 	olderJobCompletedAt := time.Now().Add(-1 * time.Hour)
 	olderJob := &oapi.Job{
@@ -572,7 +572,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 		Version:       *newerVersion,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, newerRelease)
+	_ = s.Releases.Upsert(ctx, newerRelease)
 
 	newerJobCompletedAt := time.Now()
 	newerJob := &oapi.Job{

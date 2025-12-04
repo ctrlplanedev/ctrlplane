@@ -15,7 +15,7 @@ import (
 // Helper to create a selector that matches all
 func createMatchAllSelector() *oapi.Selector {
 	selector := &oapi.Selector{}
-	selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{
+	_ = selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{
 		"operator":   "and",
 		"conditions": []interface{}{},
 	}})
@@ -29,14 +29,14 @@ func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 
 	// Create system, environment, deployment, resource
 	system := &oapi.System{Id: "system-1", Name: "test-system"}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
@@ -45,7 +45,7 @@ func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	resource := &oapi.Resource{
 		Id:         "resource-1",
@@ -57,7 +57,7 @@ func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 		Version:    "v1",
 		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
-	st.Resources.Upsert(ctx, resource)
+	_, _ = st.Resources.Upsert(ctx, resource)
 
 	// Create a policy with retry rules
 	maxRetries1 := int32(3)
@@ -135,14 +135,14 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 
 	// Create system, environment, deployment, resource
 	system := &oapi.System{Id: "system-1", Name: "test-system"}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
@@ -151,7 +151,7 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	resource := &oapi.Resource{
 		Id:         "resource-1",
@@ -163,7 +163,7 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 		Version:    "v1",
 		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
-	st.Resources.Upsert(ctx, resource)
+	_, _ = st.Resources.Upsert(ctx, resource)
 
 	// Create a policy with NO retry rules
 	policy := &oapi.Policy{
@@ -213,14 +213,14 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 
 	// Create system, environment, deployment, resource
 	system := &oapi.System{Id: "system-1", Name: "test-system"}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
@@ -229,7 +229,7 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	resource := &oapi.Resource{
 		Id:         "resource-1",
@@ -241,7 +241,7 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 		Version:    "v1",
 		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
-	st.Resources.Upsert(ctx, resource)
+	_, _ = st.Resources.Upsert(ctx, resource)
 
 	// Create a DISABLED policy with retry rules
 	maxRetries := int32(3)
@@ -292,14 +292,14 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 
 	// Create system, environment, deployment, resource
 	system := &oapi.System{Id: "system-1", Name: "test-system"}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
@@ -308,7 +308,7 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	resource := &oapi.Resource{
 		Id:         "resource-1",
@@ -320,7 +320,7 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 		Version:    "v1",
 		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
-	st.Resources.Upsert(ctx, resource)
+	_, _ = st.Resources.Upsert(ctx, resource)
 
 	// Create multiple policies with retry rules
 	maxRetries1 := int32(3)
@@ -405,14 +405,14 @@ func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
 
 	// Create system, environment, deployment, resource
 	system := &oapi.System{Id: "system-1", Name: "test-system"}
-	st.Systems.Upsert(ctx, system)
+	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
@@ -421,7 +421,7 @@ func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	resource := &oapi.Resource{
 		Id:         "resource-1",
@@ -433,7 +433,7 @@ func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
 		Version:    "v1",
 		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
-	st.Resources.Upsert(ctx, resource)
+	_, _ = st.Resources.Upsert(ctx, resource)
 
 	// Create a policy with multiple rule types
 	maxRetries := int32(3)

@@ -28,7 +28,7 @@ func (p *ProviderContext) Map() map[string]any {
 	}
 	data, _ := json.Marshal(p)
 	var result map[string]any
-	json.Unmarshal(data, &result)
+	_ = json.Unmarshal(data, &result)
 	p.mapCache = result
 	return p.mapCache
 }

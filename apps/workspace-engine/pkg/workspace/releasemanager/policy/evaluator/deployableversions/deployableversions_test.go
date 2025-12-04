@@ -95,7 +95,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 		Version:       *version,
 		ReleaseTarget: *releaseTarget,
 	}
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	eval := NewEvaluator(st)
 
@@ -380,7 +380,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 		Version:       *version,
 		ReleaseTarget: *target1,
 	}
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	eval := NewEvaluator(st)
 
@@ -444,7 +444,7 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 		Version:       *version2,
 		ReleaseTarget: *releaseTarget,
 	}
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	// Need fresh evaluator due to memoization
 	eval = NewEvaluator(st)
@@ -501,8 +501,8 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 		Version:       *readyVersion,
 		ReleaseTarget: *target2,
 	}
-	st.Releases.Upsert(ctx, release1)
-	st.Releases.Upsert(ctx, release2)
+	_ = st.Releases.Upsert(ctx, release1)
+	_ = st.Releases.Upsert(ctx, release2)
 
 	eval := NewEvaluator(st)
 
@@ -559,7 +559,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *
 		Version:       *version,
 		ReleaseTarget: *devTarget,
 	}
-	st.Releases.Upsert(ctx, devRelease)
+	_ = st.Releases.Upsert(ctx, devRelease)
 
 	eval := NewEvaluator(st)
 
@@ -638,7 +638,7 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 		Version:       *otherVersion,
 		ReleaseTarget: *target,
 	}
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	eval := NewEvaluator(st)
 
@@ -681,7 +681,7 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 		Version:       *version,
 		ReleaseTarget: *target1,
 	}
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	eval := NewEvaluator(st)
 
@@ -761,7 +761,7 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 					Version:       *version,
 					ReleaseTarget: *target,
 				}
-				st.Releases.Upsert(ctx, release)
+				_ = st.Releases.Upsert(ctx, release)
 
 				// Need fresh evaluator due to memoization
 				evalWithRelease := NewEvaluator(st)

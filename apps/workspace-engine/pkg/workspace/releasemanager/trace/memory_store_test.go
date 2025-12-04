@@ -13,10 +13,12 @@ func TestNewInMemoryStore(t *testing.T) {
 
 	if store == nil {
 		t.Fatal("expected non-nil store")
+		return
 	}
 
 	if store.spans == nil {
 		t.Error("expected spans slice to be initialized")
+		return
 	}
 
 	if len(store.spans) != 0 {

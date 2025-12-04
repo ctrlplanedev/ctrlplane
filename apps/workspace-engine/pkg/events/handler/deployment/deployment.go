@@ -71,7 +71,7 @@ func HandleDeploymentCreated(
 
 	relations := computeRelations(ctx, ws, deployment)
 	for _, relation := range relations {
-		ws.Relations().Upsert(ctx, relation)
+		_ = ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
@@ -91,7 +91,7 @@ func HandleDeploymentCreated(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerDeploymentCreated))
 
 	return nil
@@ -145,7 +145,7 @@ func updateDeploymentRelations(
 	}
 
 	for _, relation := range newRelations {
-		ws.Relations().Upsert(ctx, relation)
+		_ = ws.Relations().Upsert(ctx, relation)
 	}
 }
 
@@ -178,7 +178,7 @@ func getIsJobAgentConfigChanged(oldDeployment *oapi.Deployment, newDeployment *o
 func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
 		for _, releaseTarget := range releaseTargets {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
 			)
 		}
@@ -189,7 +189,7 @@ func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *
 func redeployTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
 		for _, releaseTarget := range releaseTargets {
-			ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
 				releasemanager.WithSkipEligibilityCheck(true),
 			)

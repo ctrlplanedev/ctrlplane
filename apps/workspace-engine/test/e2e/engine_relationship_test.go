@@ -165,7 +165,7 @@ func TestEngine_RelationshipRuleRemoval(t *testing.T) {
 
 	// Remove rule 1
 	ctx := context.Background()
-	engine.Workspace().RelationshipRules().Remove(ctx, relationshipRuleID1)
+	_ = engine.Workspace().RelationshipRules().Remove(ctx, relationshipRuleID1)
 
 	// Verify rule 1 is gone
 	_, exists = engine.Workspace().RelationshipRules().Get(relationshipRuleID1)
@@ -250,7 +250,7 @@ func TestEngine_RelationshipRuleRemovalWithResources(t *testing.T) {
 	}
 
 	// Remove the relationship rule
-	engine.Workspace().RelationshipRules().Remove(ctx, relationshipRuleID)
+	_ = engine.Workspace().RelationshipRules().Remove(ctx, relationshipRuleID)
 
 	// Verify the rule is gone
 	_, exists = engine.Workspace().RelationshipRules().Get(relationshipRuleID)
@@ -315,7 +315,7 @@ func TestEngine_RelationshipRuleRemovalMultiple(t *testing.T) {
 	}
 
 	// Remove rules 1 and 2
-	engine.Workspace().RelationshipRules().Remove(ctx, rule1ID)
+	_ = engine.Workspace().RelationshipRules().Remove(ctx, rule1ID)
 	engine.Workspace().RelationshipRules().Remove(ctx, rule2ID)
 
 	// Verify only rule 3 remains
@@ -359,7 +359,7 @@ func TestEngine_RelationshipRuleRemovalAndRecreation(t *testing.T) {
 	}
 
 	// Remove the rule
-	engine.Workspace().RelationshipRules().Remove(ctx, relationshipRuleID)
+	_ = engine.Workspace().RelationshipRules().Remove(ctx, relationshipRuleID)
 
 	// Verify rule is gone
 	_, exists = engine.Workspace().RelationshipRules().Get(relationshipRuleID)
@@ -443,7 +443,7 @@ func TestEngine_RelationshipRuleRemovalWithCrossEntityTypes(t *testing.T) {
 	}
 
 	// Remove first relationship rule
-	engine.Workspace().RelationshipRules().Remove(ctx, rule1ID)
+	_ = engine.Workspace().RelationshipRules().Remove(ctx, rule1ID)
 
 	// Verify first rule is gone
 	_, exists := engine.Workspace().RelationshipRules().Get(rule1ID)

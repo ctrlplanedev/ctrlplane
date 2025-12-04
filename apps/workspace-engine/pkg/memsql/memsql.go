@@ -50,9 +50,9 @@ func NewMemSQL[T any](tableBuilder *TableBuilder) *MemSQL[T] {
 	db.SetConnMaxLifetime(0) // Don't close connections (in-memory database)
 
 	// Additional performance optimizations
-	db.Exec("PRAGMA synchronous=NORMAL") // Faster, still safe for in-memory
-	db.Exec("PRAGMA cache_size=-64000")  // 64MB cache
-	db.Exec("PRAGMA temp_store=MEMORY")  // Use RAM for temp tables
+	_, _ = db.Exec("PRAGMA synchronous=NORMAL") // Faster, still safe for in-memory
+	_, _ = db.Exec("PRAGMA cache_size=-64000")  // 64MB cache
+	_, _ = db.Exec("PRAGMA temp_store=MEMORY")  // Use RAM for temp tables
 
 	// Drop table if it exists, then create it fresh
 	if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)); err != nil {

@@ -42,7 +42,7 @@ func generateEnvironment(ctx context.Context, systemID string, store *store.Stor
 		Id:               uuid.New().String(),
 		ResourceSelector: generateResourceSelector(),
 	}
-	store.Environments.Upsert(ctx, environment)
+	_ = store.Environments.Upsert(ctx, environment)
 	return environment
 }
 
@@ -52,7 +52,7 @@ func generateDeployment(ctx context.Context, systemID string, store *store.Store
 		Id:               uuid.New().String(),
 		ResourceSelector: generateResourceSelector(),
 	}
-	store.Deployments.Upsert(ctx, deployment)
+	_ = store.Deployments.Upsert(ctx, deployment)
 	return deployment
 }
 
@@ -64,7 +64,7 @@ func generateResources(ctx context.Context, numResources int, store *store.Store
 			Identifier: fmt.Sprintf("test-resource-%d", i),
 			Kind:       "service",
 		}
-		store.Resources.Upsert(ctx, resource)
+		_, _ = store.Resources.Upsert(ctx, resource)
 		resources[i] = resource
 	}
 	return resources
@@ -133,7 +133,7 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -210,7 +210,7 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -289,7 +289,7 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -366,7 +366,7 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -465,7 +465,7 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -572,7 +572,7 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -623,11 +623,11 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -688,7 +688,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		stagingReleaseTargets[i] = releaseTarget
 	}
 
@@ -700,7 +700,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
-		st.Releases.Upsert(ctx, release)
+		_ = st.Releases.Upsert(ctx, release)
 
 		completedAt := successTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
@@ -722,7 +722,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -751,11 +751,11 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 1, st)
@@ -814,14 +814,14 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, stagingRT)
+	_ = st.ReleaseTargets.Upsert(ctx, stagingRT)
 
 	// Create release and successful job in staging
 	release := &oapi.Release{
 		ReleaseTarget: *stagingRT,
 		Version:       *version,
 	}
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	// Job completes 1 hour after version creation
 	jobCompletedAt := baseTime.Add(1 * time.Hour)
@@ -841,7 +841,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, prodRT)
+	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after soak time is satisfied
 	scope1 := evaluator.EvaluatorScope{
@@ -868,11 +868,11 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -935,7 +935,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		stagingReleaseTargets[i] = releaseTarget
 	}
 
@@ -948,7 +948,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
-		st.Releases.Upsert(ctx, release)
+		_ = st.Releases.Upsert(ctx, release)
 
 		completedAt := successTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
@@ -968,7 +968,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, prodRT)
+	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after both conditions are satisfied (soak time is later)
 	scope1 := evaluator.EvaluatorScope{
@@ -995,11 +995,11 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -1011,7 +1011,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -1070,7 +1070,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, prodRT)
+	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
 		Environment:   prodEnv,
@@ -1097,11 +1097,11 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -1187,7 +1187,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		stagingReleaseTargets[i] = releaseTarget
 	}
 
@@ -1196,7 +1196,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
-		st.Releases.Upsert(ctx, release)
+		_ = st.Releases.Upsert(ctx, release)
 
 		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
@@ -1216,7 +1216,7 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, prodRT)
+	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after the later condition (environment progression)
 	scope1 := evaluator.EvaluatorScope{
@@ -1243,11 +1243,11 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -1316,7 +1316,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		stagingReleaseTargets[i] = releaseTarget
 	}
 
@@ -1325,7 +1325,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
-		st.Releases.Upsert(ctx, release)
+		_ = st.Releases.Upsert(ctx, release)
 
 		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
@@ -1362,7 +1362,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, prodRT)
+	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	// Position 0: deploys after the later condition (approval)
 	scope1 := evaluator.EvaluatorScope{
@@ -1388,11 +1388,11 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -1461,7 +1461,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		stagingReleaseTargets[i] = releaseTarget
 	}
 
@@ -1470,7 +1470,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 			ReleaseTarget: *rt,
 			Version:       *version,
 		}
-		st.Releases.Upsert(ctx, release)
+		_ = st.Releases.Upsert(ctx, release)
 
 		completedAt := envProgTime.Add(time.Duration(i) * time.Minute)
 		job := &oapi.Job{
@@ -1499,7 +1499,7 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, prodRT)
+	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
 		Environment:   prodEnv,
@@ -1526,11 +1526,11 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -1542,7 +1542,7 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 	}
 
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -1623,7 +1623,7 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 		DeploymentId:  deployment.Id,
 		ResourceId:    resources[0].Id,
 	}
-	st.ReleaseTargets.Upsert(ctx, prodRT)
+	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
 		Environment:   prodEnv,
@@ -1717,7 +1717,7 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -1817,7 +1817,7 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -1882,11 +1882,11 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 5, st)
@@ -1951,7 +1951,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		stagingReleaseTargets[i] = releaseTarget
 	}
 
@@ -1961,7 +1961,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 			ReleaseTarget: *stagingRT,
 			Version:       *version,
 		}
-		st.Releases.Upsert(ctx, release)
+		_ = st.Releases.Upsert(ctx, release)
 
 		completedAt := stagingCompletionTime
 		job := &oapi.Job{
@@ -1983,7 +1983,7 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		prodReleaseTargets[i] = releaseTarget
 	}
 
@@ -2054,7 +2054,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -2119,7 +2119,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenAllowed(t *testing.T) {
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -2205,7 +2205,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -2237,11 +2237,11 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 	systemID := uuid.New().String()
 	stagingEnv := generateEnvironment(ctx, systemID, st)
 	stagingEnv.Name = "staging"
-	st.Environments.Upsert(ctx, stagingEnv)
+	_ = st.Environments.Upsert(ctx, stagingEnv)
 
 	prodEnv := generateEnvironment(ctx, systemID, st)
 	prodEnv.Name = "production"
-	st.Environments.Upsert(ctx, prodEnv)
+	_ = st.Environments.Upsert(ctx, prodEnv)
 
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 3, st)
@@ -2305,7 +2305,7 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 
@@ -2387,7 +2387,7 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.
 			DeploymentId:  deployment.Id,
 			ResourceId:    resource.Id,
 		}
-		st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
 

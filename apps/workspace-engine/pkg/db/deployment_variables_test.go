@@ -25,6 +25,7 @@ func validateRetrievedDeploymentVariables(t *testing.T, actualVars []*oapi.Deplo
 
 		if actual == nil {
 			t.Fatalf("expected deployment variable with id %s not found", expected.Id)
+			return
 		}
 		if actual.Id != expected.Id {
 			t.Fatalf("expected deployment variable id %s, got %s", expected.Id, actual.Id)
@@ -46,7 +47,7 @@ func TestDBDeploymentVariables_BasicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()
@@ -113,7 +114,7 @@ func TestDBDeploymentVariables_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()
@@ -176,7 +177,7 @@ func TestDBDeploymentVariables_BasicWriteAndDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	err = deleteDeploymentVariable(t.Context(), varID, tx)
 	if err != nil {
@@ -203,7 +204,7 @@ func TestDBDeploymentVariables_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()
@@ -259,7 +260,7 @@ func TestDBDeploymentVariables_BasicWriteAndUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	updatedDescription := "updated description"
 	variable.Key = "UPDATED_CONFIG_VAR"
@@ -290,7 +291,7 @@ func TestDBDeploymentVariables_NonexistentDeploymentThrowsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	varDescription := "test"
 	variable := &oapi.DeploymentVariable{
@@ -322,7 +323,7 @@ func TestDBDeploymentVariables_MultipleVariables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx.Rollback(t.Context())
+	defer func() { _ = tx.Rollback(t.Context()) }()
 
 	// Create system and deployment
 	systemID := uuid.New().String()

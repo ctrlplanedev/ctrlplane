@@ -189,7 +189,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			attribute.Int("chunk_size", 100),
 			attribute.Int("concurrency", 10),
 		))
-	concurrency.ProcessInChunks(ctx, states, processFn)
+	_, _ = concurrency.ProcessInChunks(ctx, states, processFn)
 
 	span.AddEvent("Completed processing changes")
 	return nil
@@ -321,7 +321,7 @@ func (m *Manager) reconcileTargetWithRelationships(
 		span.SetStatus(codes.Error, "reconciliation failed")
 		// Still cache the state even on error if we have a desired release
 		if desiredRelease != nil {
-			m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
+			_, _ = m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
 		}
 		return err
 	}
@@ -330,7 +330,7 @@ func (m *Manager) reconcileTargetWithRelationships(
 	// Do this after reconciliation completes so the state reflects the latest job
 	if desiredRelease != nil {
 		span.AddEvent("Caching release target state")
-		m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
+		_, _ = m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
 	}
 
 	return nil
@@ -353,7 +353,7 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 
 	// Process targets in parallel for better performance
 	// Pass opts directly to each ReconcileTarget call
-	concurrency.ProcessInChunks(
+	_, _ = concurrency.ProcessInChunks(
 		ctx,
 		releaseTargets,
 		func(pctx context.Context, rt *oapi.ReleaseTarget) (any, error) {
@@ -419,11 +419,8 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 	// Ensure trace is persisted even if reconciliation fails
 	defer func() {
 		// Complete the trace recorder with appropriate status
+		// Note: errors are captured in the trace phases, status defaults to completed
 		status := trace.StatusCompleted
-		if span.SpanContext().IsValid() {
-			// Check if span has error status
-			// We'll default to completed, errors will be captured in the trace phases
-		}
 		recorder.Complete(status)
 
 		// Persist traces - log error but don't fail reconciliation

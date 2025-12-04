@@ -68,7 +68,7 @@ func HandleResourceCreated(
 
 	relations := computeRelations(ctx, ws, resource)
 	for _, relation := range relations {
-		ws.Relations().Upsert(ctx, relation)
+		_ = ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := computeReleaseTargets(ctx, ws, resource)
@@ -77,7 +77,7 @@ func HandleResourceCreated(
 	}
 
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseTargets().Upsert(ctx, releaseTarget)
+		_ = ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 	}
 
 	return nil
@@ -139,7 +139,7 @@ func HandleResourceUpdated(
 			return err
 		}
 
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerResourceCreated))
 	}
 

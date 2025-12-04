@@ -31,7 +31,7 @@ func HandleResourceVariableCreated(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 
 	return nil
@@ -57,7 +57,7 @@ func HandleResourceVariableUpdated(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 
 	return nil
@@ -83,7 +83,7 @@ func HandleResourceVariableDeleted(
 		}
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 
 	return nil

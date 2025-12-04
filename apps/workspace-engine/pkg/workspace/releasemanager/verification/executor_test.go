@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +29,7 @@ func TestExecutor_Execute_Success(t *testing.T) {
 	// Create a test HTTP server that returns 200
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "healthy"}`))
+		_, _ = w.Write([]byte(`{"status": "healthy"}`))
 	}))
 	defer server.Close()
 
@@ -70,7 +69,7 @@ func TestExecutor_Execute_FailedMeasurement(t *testing.T) {
 	// Create a test HTTP server that returns 500
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "internal server error"}`))
+		_, _ = w.Write([]byte(`{"error": "internal server error"}`))
 	}))
 	defer server.Close()
 
@@ -172,14 +171,14 @@ func TestExecutor_BuildProviderContext_WithVariables(t *testing.T) {
 
 	// Add variables to release
 	envVal := oapi.LiteralValue{}
-	envVal.FromStringValue("production")
+	_ = envVal.FromStringValue("production")
 	versionVal := oapi.LiteralValue{}
-	versionVal.FromStringValue("1.2.3")
+	_ = versionVal.FromStringValue("1.2.3")
 	release.Variables = map[string]oapi.LiteralValue{
 		"env":     envVal,
 		"version": versionVal,
 	}
-	s.Releases.Upsert(ctx, release)
+	_ = s.Releases.Upsert(ctx, release)
 
 	providerCtx, err := executor.BuildProviderContext(release.ID())
 
@@ -188,20 +187,6 @@ func TestExecutor_BuildProviderContext_WithVariables(t *testing.T) {
 	assert.Equal(t, 2, len(providerCtx.Variables))
 	assert.Contains(t, providerCtx.Variables, "env")
 	assert.Contains(t, providerCtx.Variables, "version")
-}
-
-// Helper function to create a verification with a specific URL
-func createVerificationWithURL(s *store.Store, ctx context.Context, releaseID string, url string) *oapi.ReleaseVerification {
-	verification := &oapi.ReleaseVerification{
-		Id:        uuid.New().String(),
-		ReleaseId: releaseID,
-		Metrics: []oapi.VerificationMetricStatus{
-			createHTTPMetricStatus(url),
-		},
-		CreatedAt: time.Now(),
-	}
-	s.ReleaseVerifications.Upsert(ctx, verification)
-	return verification
 }
 
 // Helper function to create an HTTP metric status
@@ -215,7 +200,7 @@ func createHTTPMetricStatus(url string) oapi.VerificationMetricStatus {
 		Timeout: &timeout,
 	}
 	provider := oapi.MetricProvider{}
-	provider.FromHTTPMetricProvider(httpProvider)
+	_ = provider.FromHTTPMetricProvider(httpProvider)
 
 	return oapi.VerificationMetricStatus{
 		Name:             "test-metric",

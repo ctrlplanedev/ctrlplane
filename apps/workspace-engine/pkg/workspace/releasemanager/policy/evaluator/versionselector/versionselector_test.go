@@ -28,7 +28,7 @@ func createTestDeployment(ctx context.Context, s *store.Store) *oapi.Deployment 
 		Slug:     "test-deployment",
 		SystemId: uuid.New().String(),
 	}
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 	return deployment
 }
 
@@ -38,7 +38,7 @@ func createTestEnvironment(ctx context.Context, s *store.Store, systemID string)
 		Name:     "staging",
 		SystemId: systemID,
 	}
-	s.Environments.Upsert(ctx, env)
+	_ = s.Environments.Upsert(ctx, env)
 	return env
 }
 
@@ -49,7 +49,7 @@ func createTestResource(ctx context.Context, s *store.Store, metadata map[string
 		Kind:       "service",
 		Metadata:   metadata,
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 	return resource
 }
 

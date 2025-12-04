@@ -58,14 +58,14 @@ func TestStore_MultipleWorkspaces(t *testing.T) {
 	changes1 := persistence.NewChangesBuilder("workspace-1").
 		Set(&mockEntity{id: "e1", name: "Entity 1"}).
 		Build()
-	store.Save(ctx, changes1)
+	_ = store.Save(ctx, changes1)
 
 	// Add changes for workspace 2 using fluent API
 	changes2 := persistence.NewChangesBuilder("workspace-2").
 		Set(&mockEntity{id: "e2", name: "Entity 2"}).
 		Set(&mockEntity{id: "e2", name: "Entity 2 Updated"}).
 		Build()
-	store.Save(ctx, changes2)
+	_ = store.Save(ctx, changes2)
 
 	// Verify workspace 1 has 1 entity
 	loaded1, err := store.Load(ctx, "workspace-1")
@@ -101,7 +101,7 @@ func TestStore_AutoTimestamp(t *testing.T) {
 		Build()
 
 	before := time.Now().Add(-1 * time.Second) // Account for builder creation time
-	store.Save(ctx, changes)
+	_ = store.Save(ctx, changes)
 	after := time.Now()
 
 	// Load back and verify timestamp was set
@@ -185,7 +185,7 @@ func TestStore_ConcurrentAccess(t *testing.T) {
 			changes := persistence.NewChangesBuilder(namespace).
 				Set(&mockEntity{id: "e1", name: "Entity"}).
 				Build()
-			store.Save(ctx, changes)
+			_ = store.Save(ctx, changes)
 			done <- true
 		}(i)
 	}

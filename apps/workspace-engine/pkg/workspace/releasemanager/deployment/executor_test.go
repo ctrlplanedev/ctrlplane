@@ -87,7 +87,7 @@ func TestExecuteRelease_Success(t *testing.T) {
 	testStore.JobAgents.Upsert(ctx, jobAgent)
 
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	// Create release
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
@@ -136,7 +136,7 @@ func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
 		JobAgentId:       nil, // No job agent
 		JobAgentConfig:   map[string]any{},
 	}
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	// Create release
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
@@ -191,7 +191,7 @@ func TestExecuteRelease_SkipsDispatchForInvalidJobAgent(t *testing.T) {
 
 	// Create deployment with non-existent job agent
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", nonExistentJobAgentID)
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	// Create release
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
@@ -230,7 +230,7 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 	testStore.JobAgents.Upsert(ctx, jobAgent)
 
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	// Create and execute multiple releases
 	releases := []*oapi.Release{

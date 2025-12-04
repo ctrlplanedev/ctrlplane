@@ -54,7 +54,7 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		Id:   systemId,
 		Name: "test-system",
 	}
-	s.Systems.Upsert(ctx, system)
+	_ = s.Systems.Upsert(ctx, system)
 
 	// Create resource
 	resourceId := uuid.New().String()
@@ -65,7 +65,7 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		Identifier: "test-res-1",
 		CreatedAt:  time.Now(),
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 
 	// Create environment
 	environmentId := uuid.New().String()
@@ -75,9 +75,9 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		SystemId: systemId,
 	}
 	selector := &oapi.Selector{}
-	selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
-	s.Environments.Upsert(ctx, environment)
+	_ = s.Environments.Upsert(ctx, environment)
 
 	// Create deployment
 	deploymentId := uuid.New().String()
@@ -88,9 +88,9 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		SystemId: systemId,
 	}
 	deploymentSelector := &oapi.Selector{}
-	deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 
 	// Create version
 	versionId := uuid.New().String()
@@ -108,7 +108,7 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		EnvironmentId: environmentId,
 		DeploymentId:  deploymentId,
 	}
-	s.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = s.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	// Create release
 	release := &oapi.Release{
@@ -116,7 +116,7 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, release)
+	_ = s.Releases.Upsert(ctx, release)
 
 	// Create policy
 	policy := &oapi.Policy{
@@ -366,7 +366,7 @@ func TestOrchestrator_OnJobStatusChange_NoPolicies(t *testing.T) {
 		Id:   systemId,
 		Name: "test-system",
 	}
-	s.Systems.Upsert(ctx, system)
+	_ = s.Systems.Upsert(ctx, system)
 
 	resourceId := uuid.New().String()
 	resource := &oapi.Resource{
@@ -376,7 +376,7 @@ func TestOrchestrator_OnJobStatusChange_NoPolicies(t *testing.T) {
 		Identifier: "test-res-1",
 		CreatedAt:  time.Now(),
 	}
-	s.Resources.Upsert(ctx, resource)
+	_, _ = s.Resources.Upsert(ctx, resource)
 
 	environmentId := uuid.New().String()
 	environment := &oapi.Environment{
@@ -385,9 +385,9 @@ func TestOrchestrator_OnJobStatusChange_NoPolicies(t *testing.T) {
 		SystemId: systemId,
 	}
 	selector := &oapi.Selector{}
-	selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
-	s.Environments.Upsert(ctx, environment)
+	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
 	deployment := &oapi.Deployment{
@@ -397,9 +397,9 @@ func TestOrchestrator_OnJobStatusChange_NoPolicies(t *testing.T) {
 		SystemId: systemId,
 	}
 	deploymentSelector := &oapi.Selector{}
-	deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
-	s.Deployments.Upsert(ctx, deployment)
+	_ = s.Deployments.Upsert(ctx, deployment)
 
 	versionId := uuid.New().String()
 	version := &oapi.DeploymentVersion{
@@ -415,14 +415,14 @@ func TestOrchestrator_OnJobStatusChange_NoPolicies(t *testing.T) {
 		EnvironmentId: environmentId,
 		DeploymentId:  deploymentId,
 	}
-	s.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = s.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	release := &oapi.Release{
 		ReleaseTarget: *releaseTarget,
 		Version:       *version,
 		Variables:     map[string]oapi.LiteralValue{},
 	}
-	s.Releases.Upsert(ctx, release)
+	_ = s.Releases.Upsert(ctx, release)
 
 	// No policy created, so no policies should apply
 

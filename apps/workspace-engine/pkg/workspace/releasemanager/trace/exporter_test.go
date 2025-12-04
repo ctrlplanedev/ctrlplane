@@ -15,10 +15,12 @@ func TestInMemoryExporter_Creation(t *testing.T) {
 
 	if exporter == nil {
 		t.Fatal("expected non-nil exporter")
+		return
 	}
 
 	if exporter.spans == nil {
 		t.Error("expected spans slice to be initialized")
+		return
 	}
 
 	if len(exporter.spans) != 0 {

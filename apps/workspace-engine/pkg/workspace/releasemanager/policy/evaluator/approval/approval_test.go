@@ -25,7 +25,7 @@ func setupStore(versionId string, environmentId string, approvers []string) *sto
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(context.Background(), env)
+	_ = st.Environments.Upsert(context.Background(), env)
 
 	for _, userId := range approvers {
 		record := &oapi.UserApprovalRecord{
@@ -188,7 +188,7 @@ func TestAnyApprovalEvaluator_MultipleVersionsIsolated(t *testing.T) {
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	// Version 1: 2 approvals
 	for _, userId := range []string{"user-1", "user-2"} {
@@ -308,7 +308,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_ExactlyMinApprovals(t *testing.T) {
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	// Create approval records with specific timestamps
 	// We need 2 approvals, so the 2nd approval (index 1) should be the satisfying one
@@ -375,7 +375,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_MoreThanMinApprovals(t *testing.T) {
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	// Create 5 approvals, but only need 2
 	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
@@ -430,7 +430,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_SingleApproval(t *testing.T) {
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	firstApprovalTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 	secondApprovalTime := firstApprovalTime.Add(5 * time.Minute)
@@ -484,7 +484,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) {
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	// Only 1 approval, but need 3
 	approvalTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
@@ -528,7 +528,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_NoApprovalsRequired(t *testing.T) {
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 	version := &oapi.DeploymentVersion{
@@ -569,7 +569,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 		Name:     "test-env",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, env)
+	_ = st.Environments.Upsert(ctx, env)
 
 	baseTime := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 
@@ -641,7 +641,7 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 		SystemId:   "system-1",
 		JobAgentId: &jobAgentId,
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	// Create version
 	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
@@ -669,7 +669,7 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 		Variables:     map[string]oapi.LiteralValue{},
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	// Rule requires 2 approvals, but we have none
 	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}

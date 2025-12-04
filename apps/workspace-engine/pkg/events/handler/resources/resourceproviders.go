@@ -200,7 +200,7 @@ func HandleResourceProviderSetResources(
 		newRelations := computeRelations(ctx, ws, resource)
 
 		for _, relation := range newRelations {
-			ws.Relations().Upsert(ctx, relation)
+			_ = ws.Relations().Upsert(ctx, relation)
 		}
 
 		// Compute and upsert release targets for this resource
@@ -216,7 +216,7 @@ func HandleResourceProviderSetResources(
 		}
 
 		for _, releaseTarget := range releaseTargets {
-			ws.ReleaseTargets().Upsert(ctx, releaseTarget)
+			_ = ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 		}
 	}
 

@@ -61,7 +61,7 @@ func HandleJobAgentUpdated(
 		return err
 	}
 	for _, releaseTarget := range affectedReleaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithSkipEligibilityCheck(true),
 			releasemanager.WithTrigger(trace.TriggerJobAgentUpdated))
 	}

@@ -327,7 +327,7 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	}
 
 	provider := oapi.MetricProvider{}
-	provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
 		Url:     appURL,
 		Method:  &method,
 		Timeout: &timeout,

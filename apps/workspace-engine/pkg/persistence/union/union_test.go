@@ -66,13 +66,13 @@ func TestUnionStore_LoadMergesFromAll(t *testing.T) {
 	changes1 := persistence.NewChangesBuilder(namespace).
 		Set(&mockEntity{id: "e1", name: "Entity 1"}).
 		Build()
-	store1.Save(ctx, changes1)
+	_ = store1.Save(ctx, changes1)
 
 	// Store2 has entity e2
 	changes2 := persistence.NewChangesBuilder(namespace).
 		Set(&mockEntity{id: "e2", name: "Entity 2"}).
 		Build()
-	store2.Save(ctx, changes2)
+	_ = store2.Save(ctx, changes2)
 
 	// Create union store
 	unionStore := union.New(store1, store2)
@@ -97,13 +97,13 @@ func TestUnionStore_KeepsLatestByTimestamp(t *testing.T) {
 	changes1 := persistence.NewChangesBuilder(namespace).
 		Set(&mockEntity{id: "e1", name: "Old Version"}, persistence.WithTimestamp(now.Add(-1*time.Hour))).
 		Build()
-	store1.Save(ctx, changes1)
+	_ = store1.Save(ctx, changes1)
 
 	// Store2 has newer version
 	changes2 := persistence.NewChangesBuilder(namespace).
 		Set(&mockEntity{id: "e1", name: "New Version"}, persistence.WithTimestamp(now)).
 		Build()
-	store2.Save(ctx, changes2)
+	_ = store2.Save(ctx, changes2)
 
 	// Create union store
 	unionStore := union.New(store1, store2)
@@ -187,18 +187,18 @@ func TestUnionStore_CompactionAcrossStores(t *testing.T) {
 		Set(&mockEntity{id: "e1", name: "v1"}, persistence.WithTimestamp(now.Add(-2*time.Hour))).
 		Set(&mockEntity{id: "e2", name: "v1"}, persistence.WithTimestamp(now.Add(-2*time.Hour))).
 		Build()
-	store1.Save(ctx, changes1)
+	_ = store1.Save(ctx, changes1)
 
 	changes2 := persistence.NewChangesBuilder(namespace).
 		Set(&mockEntity{id: "e1", name: "v2"}, persistence.WithTimestamp(now.Add(-1*time.Hour))).
 		Set(&mockEntity{id: "e3", name: "v1"}, persistence.WithTimestamp(now.Add(-1*time.Hour))).
 		Build()
-	store2.Save(ctx, changes2)
+	_ = store2.Save(ctx, changes2)
 
 	changes3 := persistence.NewChangesBuilder(namespace).
 		Set(&mockEntity{id: "e2", name: "v2"}, persistence.WithTimestamp(now)).
 		Build()
-	store3.Save(ctx, changes3)
+	_ = store3.Save(ctx, changes3)
 
 	// Create union store
 	unionStore := union.New(store1, store2, store3)

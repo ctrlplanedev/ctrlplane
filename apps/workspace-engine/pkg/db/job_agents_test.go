@@ -304,7 +304,7 @@ func TestDBJobAgents_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx1.Rollback(t.Context())
+	defer func() { _ = tx1.Rollback(t.Context()) }()
 
 	jobAgent1 := &oapi.JobAgent{
 		Id:          uuid.New().String(),
@@ -329,7 +329,7 @@ func TestDBJobAgents_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx2.Rollback(t.Context())
+	defer func() { _ = tx2.Rollback(t.Context()) }()
 
 	jobAgent2 := &oapi.JobAgent{
 		Id:          uuid.New().String(),

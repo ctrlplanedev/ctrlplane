@@ -817,7 +817,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	// Create store for workspace 1 (indexed by both hash ID and UUID)
 	sc := statechange.NewChangeSet[any]()
 	testStore1 := store.New("test-workspace", sc)
-	testStore1.Releases.Upsert(t.Context(), &release1)
+	_ = testStore1.Releases.Upsert(t.Context(), &release1)
 	// Also index by UUID for job lookup
 	testStore1.Repo().Releases.Set(releaseID1, &release1)
 
@@ -828,7 +828,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	// Create store for workspace 2 (indexed by both hash ID and UUID)
 	sc2 := statechange.NewChangeSet[any]()
 	testStore2 := store.New("test-workspace", sc2)
-	testStore2.Releases.Upsert(t.Context(), &release2)
+	_ = testStore2.Releases.Upsert(t.Context(), &release2)
 	// Also index by UUID for job lookup
 	testStore2.Repo().Releases.Set(releaseID2, &release2)
 
@@ -837,7 +837,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx1: %v", err)
 	}
-	defer tx1.Rollback(t.Context())
+	defer func() { _ = tx1.Rollback(t.Context()) }()
 
 	job1ID := uuid.New().String()
 	now := time.Now()
@@ -874,7 +874,7 @@ func TestDBJobs_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx2: %v", err)
 	}
-	defer tx2.Rollback(t.Context())
+	defer func() { _ = tx2.Rollback(t.Context()) }()
 
 	job2ID := uuid.New().String()
 	job2 := &oapi.Job{

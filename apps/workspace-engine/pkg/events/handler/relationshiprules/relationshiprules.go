@@ -31,7 +31,7 @@ func HandleRelationshipRuleCreated(
 		return err
 	}
 	for _, relation := range relations {
-		ws.Relations().Upsert(ctx, relation)
+		_ = ws.Relations().Upsert(ctx, relation)
 	}
 
 	return ws.RelationshipRules().Upsert(ctx, relationshipRule)
@@ -55,7 +55,7 @@ func HandleRelationshipRuleUpdated(
 	}
 	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
 	for _, relation := range newRelations {
-		ws.Relations().Upsert(ctx, relation)
+		_ = ws.Relations().Upsert(ctx, relation)
 	}
 	for _, relation := range removedRelations {
 		ws.Relations().Remove(relation.Key())
@@ -80,7 +80,7 @@ func HandleRelationshipRuleDeleted(
 		}
 	}
 
-	ws.RelationshipRules().Remove(ctx, relationshipRule.Id)
+	_ = ws.RelationshipRules().Remove(ctx, relationshipRule.Id)
 
 	return nil
 }

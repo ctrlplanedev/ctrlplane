@@ -3,7 +3,6 @@ package versionselector
 import (
 	"context"
 	"fmt"
-	"strings"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -260,18 +259,4 @@ func (e *Evaluator) evaluateJSON(
 	return results.NewAllowedResult("Version selector: version matches selector").
 		WithDetail("version_id", scope.Version.Id).
 		WithDetail("version_tag", scope.Version.Tag)
-}
-
-// getDescription returns a user-friendly description of the selector
-func (e *Evaluator) getDescription() string {
-	if e.rule.Description != nil && strings.TrimSpace(*e.rule.Description) != "" {
-		return *e.rule.Description
-	}
-
-	// Try to extract CEL expression
-	if celSelector, err := e.rule.Selector.AsCelSelector(); err == nil {
-		return fmt.Sprintf("CEL: %s", celSelector.Cel)
-	}
-
-	return "version selector"
 }

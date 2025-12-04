@@ -49,6 +49,7 @@ func TestNewPropertyMatcher(t *testing.T) {
 			matcher := NewPropertyMatcher(tt.inputMatcher)
 			if matcher == nil {
 				t.Fatal("NewPropertyMatcher returned nil")
+				return
 			}
 			if string(matcher.Operator) != tt.expectedOperator {
 				t.Errorf("expected operator %q, got %q", tt.expectedOperator, matcher.Operator)

@@ -148,7 +148,7 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 		trigger = trace.TriggerFirstBoot
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, targetsToReconcile,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, targetsToReconcile,
 		releasemanager.WithTrigger(trigger))
 
 	return nil

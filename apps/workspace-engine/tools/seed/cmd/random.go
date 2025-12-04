@@ -208,13 +208,6 @@ func runRandomResources(cmd *cobra.Command, args []string) {
 		log.Fatalf("Invalid count: %s", args[0])
 	}
 
-	// Initialize random seed
-	if randomSeed == 0 {
-		rand.Seed(time.Now().UnixNano())
-	} else {
-		rand.Seed(randomSeed)
-	}
-
 	log.Infof("Generating %d random resources for workspace %s", count, workspaceID)
 
 	// Create Kafka producer

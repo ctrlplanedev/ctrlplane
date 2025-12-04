@@ -201,7 +201,7 @@ func TestEngine_VariableResolution_PriorityZeroVsNegative(t *testing.T) {
 	}
 
 	// Priority 0 should win over negative priority
-	priorityTest, _ := release.Variables["priority_test"]
+	priorityTest := release.Variables["priority_test"]
 	value, _ := priorityTest.AsStringValue()
 
 	if value != "zero-priority" {
@@ -410,7 +410,7 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 	}
 
 	release1, _ := engine.Workspace().Releases().Get(job1.ReleaseId)
-	config1, _ := release1.Variables["env_specific_config"]
+	config1 := release1.Variables["env_specific_config"]
 	config1Str, _ := config1.AsStringValue()
 
 	if config1Str != "production-config" {
@@ -436,7 +436,7 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 	}
 
 	release2, _ := engine.Workspace().Releases().Get(job2.ReleaseId)
-	config2, _ := release2.Variables["env_specific_config"]
+	config2 := release2.Variables["env_specific_config"]
 	config2Str, _ := config2.AsStringValue()
 
 	if config2Str != "development-config" {

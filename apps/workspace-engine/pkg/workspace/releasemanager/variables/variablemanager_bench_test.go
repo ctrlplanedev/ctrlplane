@@ -225,7 +225,7 @@ func setupVariableBenchmark(
 			Matcher:          matcher,
 			Metadata:         map[string]string{},
 		}
-		st.Relationships.Upsert(ctx, relRule)
+		_ = st.Relationships.Upsert(ctx, relRule)
 
 		// Link resource to database
 		resource.Metadata["db_id"] = dbID
@@ -678,7 +678,7 @@ func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, 
 		Matcher:          dbMatcher,
 		Metadata:         map[string]string{},
 	}
-	st.Relationships.Upsert(ctx, dbRelRule)
+	_ = st.Relationships.Upsert(ctx, dbRelRule)
 
 	// Create relationship rule 2: Service to VPC
 	vpcRelRuleID := uuid.New().String()
@@ -723,7 +723,7 @@ func setupLargeRelationshipBenchmark(b *testing.B, numResources int) (*Manager, 
 		Matcher:          vpcMatcher,
 		Metadata:         map[string]string{},
 	}
-	st.Relationships.Upsert(ctx, vpcRelRule)
+	_ = st.Relationships.Upsert(ctx, vpcRelRule)
 
 	// Create 10 deployment variables that use references
 	referenceConfigs := []struct {
@@ -966,7 +966,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		Matcher:          dbMatcher,
 		Metadata:         map[string]string{},
 	}
-	st.Relationships.Upsert(ctx, dbRelRule)
+	_ = st.Relationships.Upsert(ctx, dbRelRule)
 
 	// Create relationship rules - service -> cache
 	cacheRelRuleID := uuid.New().String()
@@ -1009,7 +1009,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		Matcher:          cacheMatcher,
 		Metadata:         map[string]string{},
 	}
-	st.Relationships.Upsert(ctx, cacheRelRule)
+	_ = st.Relationships.Upsert(ctx, cacheRelRule)
 
 	// Create relationship rules - service -> queue
 	queueRelRuleID := uuid.New().String()
@@ -1052,7 +1052,7 @@ func BenchmarkEvaluate_NxM_AmplifiedScaling(b *testing.B) {
 		Matcher:          queueMatcher,
 		Metadata:         map[string]string{},
 	}
-	st.Relationships.Upsert(ctx, queueRelRule)
+	_ = st.Relationships.Upsert(ctx, queueRelRule)
 
 	// Create 30 deployment variables that use references
 	// This simulates a complex application with many dependencies
@@ -1288,7 +1288,7 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 				Matcher:          dbMatcher,
 				Metadata:         map[string]string{},
 			}
-			st.Relationships.Upsert(ctx, dbRelRule)
+			_ = st.Relationships.Upsert(ctx, dbRelRule)
 
 			// Create relationship rules - service -> vpc
 			vpcRelRuleID := uuid.New().String()
@@ -1331,7 +1331,7 @@ func BenchmarkEvaluate_MultipleReleaseTargets_ProductionScenario(b *testing.B) {
 				Matcher:          vpcMatcher,
 				Metadata:         map[string]string{},
 			}
-			st.Relationships.Upsert(ctx, vpcRelRule)
+			_ = st.Relationships.Upsert(ctx, vpcRelRule)
 
 			// Create 10 deployment variables that use references
 			referenceConfigs := []struct {

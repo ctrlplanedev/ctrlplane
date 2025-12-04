@@ -57,7 +57,7 @@ func (m *DeployableVersionManager) getPolicies(ctx context.Context) ([]*oapi.Pol
 }
 
 func (m *DeployableVersionManager) getEnvironment(ctx context.Context) (*oapi.Environment, error) {
-	ctx, span := deployableVersionTracer.Start(ctx, "GetEnvironment")
+	_, span := deployableVersionTracer.Start(ctx, "GetEnvironment")
 	defer span.End()
 
 	environment, ok := m.store.Environments.Get(m.releaseTarget.EnvironmentId)
@@ -72,7 +72,7 @@ func (m *DeployableVersionManager) getEnvironment(ctx context.Context) (*oapi.En
 }
 
 func (m *DeployableVersionManager) getEvaluators(ctx context.Context, policies []*oapi.Policy) ([]evaluator.Evaluator, error) {
-	ctx, span := deployableVersionTracer.Start(ctx, "GetEvaluators")
+	_, span := deployableVersionTracer.Start(ctx, "GetEvaluators")
 	defer span.End()
 
 	evaluators := m.policyManager.PlannerGlobalEvaluators()

@@ -64,7 +64,7 @@ func HandleEnvironmentCreated(
 
 	relations := computeRelations(ctx, ws, environment)
 	for _, relation := range relations {
-		ws.Relations().Upsert(ctx, relation)
+		_ = ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, environment)
@@ -72,7 +72,7 @@ func HandleEnvironmentCreated(
 		return err
 	}
 	for _, releaseTarget := range releaseTargets {
-		ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
+		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerEnvironmentCreated))
 	}
 
@@ -142,7 +142,7 @@ func HandleEnvironmentUpdated(
 	}
 
 	for _, relation := range newRelations {
-		ws.Relations().Upsert(ctx, relation)
+		_ = ws.Relations().Upsert(ctx, relation)
 	}
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, environment)
@@ -166,7 +166,7 @@ func HandleEnvironmentUpdated(
 		reconileReleaseTargets = append(reconileReleaseTargets, addedReleaseTarget)
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerEnvironmentUpdated))
 
 	return nil

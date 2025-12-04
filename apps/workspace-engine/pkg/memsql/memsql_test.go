@@ -1505,6 +1505,7 @@ func TestMemSQL_StructPB_ComplexNested(t *testing.T) {
 	meta := deployments[0].Metadata
 	if meta == nil {
 		t.Fatal("Metadata should not be nil")
+		return
 	}
 
 	// Check version

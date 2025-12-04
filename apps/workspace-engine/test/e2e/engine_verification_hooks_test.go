@@ -58,7 +58,7 @@ func TestEngineVerificationHooks(t *testing.T) {
 	release := releasesSlice[0]
 
 	metricProvider := oapi.MetricProvider{}
-	metricProvider.FromSleepMetricProvider(oapi.SleepMetricProvider{
+	_ = metricProvider.FromSleepMetricProvider(oapi.SleepMetricProvider{
 		Type:     oapi.Sleep,
 		Duration: 3,
 	})

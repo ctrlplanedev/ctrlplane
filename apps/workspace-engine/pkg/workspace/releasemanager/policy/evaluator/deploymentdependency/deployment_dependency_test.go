@@ -28,7 +28,7 @@ func generateEnvironment(ctx context.Context, systemID string, store *store.Stor
 		Id:               uuid.New().String(),
 		ResourceSelector: generateMatchAllSelector(),
 	}
-	store.Environments.Upsert(ctx, environment)
+	_ = store.Environments.Upsert(ctx, environment)
 	return environment
 }
 
@@ -38,7 +38,7 @@ func generateDeployment(ctx context.Context, systemID string, store *store.Store
 		Id:               uuid.New().String(),
 		ResourceSelector: generateMatchAllSelector(),
 	}
-	store.Deployments.Upsert(ctx, deployment)
+	_ = store.Deployments.Upsert(ctx, deployment)
 	return deployment
 }
 
@@ -48,7 +48,7 @@ func generateResource(ctx context.Context, store *store.Store) *oapi.Resource {
 		Identifier: "test-resource",
 		Kind:       "service",
 	}
-	store.Resources.Upsert(ctx, resource)
+	_, _ = store.Resources.Upsert(ctx, resource)
 	return resource
 }
 
@@ -58,7 +58,7 @@ func generateReleaseTarget(ctx context.Context, resource *oapi.Resource, environ
 		EnvironmentId: environment.Id,
 		DeploymentId:  deployment.Id,
 	}
-	store.ReleaseTargets.Upsert(ctx, releaseTarget)
+	_ = store.ReleaseTargets.Upsert(ctx, releaseTarget)
 	return releaseTarget
 }
 
@@ -88,7 +88,7 @@ func generateReleaseAndJob(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		},
 	}
 
-	st.Releases.Upsert(ctx, release)
+	_ = st.Releases.Upsert(ctx, release)
 
 	var completedAt *time.Time
 	if jobStatus != oapi.JobStatusPending && jobStatus != oapi.JobStatusInProgress {

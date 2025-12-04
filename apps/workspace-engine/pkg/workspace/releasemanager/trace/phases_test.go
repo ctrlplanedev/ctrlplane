@@ -14,6 +14,7 @@ func TestPlanningPhase_StartEvaluation(t *testing.T) {
 
 	if eval == nil {
 		t.Fatal("expected non-nil Evaluation")
+		return
 	}
 
 	if eval.recorder != rt {
@@ -237,6 +238,7 @@ func TestEligibilityPhase_StartCheck(t *testing.T) {
 
 	if check == nil {
 		t.Fatal("expected non-nil Check")
+		return
 	}
 
 	if check.recorder != rt {

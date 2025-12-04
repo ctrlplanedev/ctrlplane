@@ -202,7 +202,7 @@ func TestMeasure(t *testing.T) {
 					}
 
 					w.WriteHeader(http.StatusOK)
-					json.NewEncoder(w).Encode(map[string]any{
+					_ = json.NewEncoder(w).Encode(map[string]any{
 						"data": map[string]any{
 							"type": "timeseries_response",
 							"attributes": map[string]any{
@@ -240,7 +240,7 @@ func TestMeasure(t *testing.T) {
 			setupServer: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
-					w.Write([]byte(`{"errors": ["Forbidden"]}`))
+					_, _ = w.Write([]byte(`{"errors": ["Forbidden"]}`))
 				}))
 			},
 			providerCtx:    &provider.ProviderContext{},
@@ -262,7 +262,7 @@ func TestMeasure(t *testing.T) {
 			setupServer: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusOK)
-					json.NewEncoder(w).Encode(map[string]any{
+					_ = json.NewEncoder(w).Encode(map[string]any{
 						"data": map[string]any{
 							"type": "timeseries_response",
 							"attributes": map[string]any{
@@ -279,11 +279,8 @@ func TestMeasure(t *testing.T) {
 			wantError:      false,
 			checkResult: func(t *testing.T, data map[string]any) {
 				// Value extraction should fail gracefully for empty series
-				if data["value"] != nil {
-					if _, ok := data["value"].(float64); ok {
-						// That's fine, we extracted a zero value
-					}
-				}
+				// If value exists and is a float64, that's fine (we extracted a zero value)
+				_ = data["value"]
 			},
 		},
 	}
@@ -381,7 +378,7 @@ func measureWithTestServer(p *Provider, ctx context.Context, providerCtx *provid
 	defer resp.Body.Close()
 
 	var jsonResponse map[string]any
-	json.NewDecoder(resp.Body).Decode(&jsonResponse)
+	_ = json.NewDecoder(resp.Body).Decode(&jsonResponse)
 
 	value, _ := extractMetricValue(jsonResponse)
 

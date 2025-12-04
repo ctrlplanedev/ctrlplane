@@ -165,19 +165,6 @@ func mustCreateValueFromLiteral(value interface{}) *oapi.Value {
 	return v
 }
 
-// Helper function to create a Value with a reference
-func mustCreateValueFromReference(reference string, path []string) *oapi.Value {
-	v := &oapi.Value{}
-	rv := oapi.ReferenceValue{
-		Reference: reference,
-		Path:      path,
-	}
-	if err := v.FromReferenceValue(rv); err != nil {
-		panic(err)
-	}
-	return v
-}
-
 // TestVariableManager_OnlyDeploymentKeysReturned tests that only variables
 // defined in the deployment are returned, even if resource has more variables
 func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {

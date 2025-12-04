@@ -343,9 +343,9 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	}
 
 	literalValue := oapi.LiteralValue{}
-	literalValue.FromStringValue("test-value")
+	_ = literalValue.FromStringValue("test-value")
 	value := oapi.Value{}
-	value.FromLiteralValue(literalValue)
+	_ = value.FromLiteralValue(literalValue)
 
 	resourceVariable := &oapi.ResourceVariable{
 		ResourceId: resourceId,
@@ -575,7 +575,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	// Create release
 	releaseId := uuid.New().String()
 	replicasValue := oapi.LiteralValue{}
-	replicasValue.FromStringValue("3")
+	_ = replicasValue.FromStringValue("3")
 
 	release := &oapi.Release{
 		Version: oapi.DeploymentVersion{

@@ -369,14 +369,14 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 
 func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 	oldSelector := &oapi.Selector{}
-	oldSelector.FromJsonSelector(oapi.JsonSelector{
+	_ = oldSelector.FromJsonSelector(oapi.JsonSelector{
 		Json: map[string]interface{}{
 			"app": "api",
 		},
 	})
 
 	newSelector := &oapi.Selector{}
-	newSelector.FromJsonSelector(oapi.JsonSelector{
+	_ = newSelector.FromJsonSelector(oapi.JsonSelector{
 		Json: map[string]interface{}{
 			"app": "web",
 		},

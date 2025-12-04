@@ -806,7 +806,7 @@ func TestDBPolicies_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx1.Rollback(t.Context())
+	defer func() { _ = tx1.Rollback(t.Context()) }()
 
 	policy1 := &oapi.Policy{
 		Id:          uuid.New().String(),
@@ -842,7 +842,7 @@ func TestDBPolicies_WorkspaceIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to begin tx: %v", err)
 	}
-	defer tx2.Rollback(t.Context())
+	defer func() { _ = tx2.Rollback(t.Context()) }()
 
 	policy2 := &oapi.Policy{
 		Id:          uuid.New().String(),

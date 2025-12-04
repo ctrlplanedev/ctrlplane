@@ -14,7 +14,7 @@ import (
 func createMatchAllSelector() *oapi.Selector {
 	selector := &oapi.Selector{}
 	// Empty AND condition matches everything
-	selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{
+	_ = selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{
 		"operator":   "and",
 		"conditions": []interface{}{},
 	}})
@@ -34,14 +34,14 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	// Create a policy with multiple rules:
 	// Rule 1: has approval (no retry)
@@ -147,14 +147,14 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	// Policy 1: allows 3 retries
 	maxRetries1 := int32(3)
@@ -274,14 +274,14 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	// Policy with multiple rules but NO retry rules
 	policy := &oapi.Policy{
@@ -365,14 +365,14 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 		SystemId:       "system-1",
 		JobAgentConfig: map[string]interface{}{},
 	}
-	st.Deployments.Upsert(ctx, deployment)
+	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
 		Id:       "env-1",
 		Name:     "production",
 		SystemId: "system-1",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	// Disabled policy with retry rule
 	maxRetries := int32(5)

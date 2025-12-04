@@ -128,16 +128,16 @@ func TestPlanDeployment_NoVersions(t *testing.T) {
 	resourceID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	releaseTarget := createTestReleaseTargetForPlanner(environmentID, deploymentID, resourceID)
 
@@ -162,16 +162,16 @@ func TestPlanDeployment_SingleReadyVersion(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)
@@ -203,16 +203,16 @@ func TestPlanDeployment_MultipleVersions_SelectsNewest(t *testing.T) {
 	resourceID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	// Create versions with different timestamps
 	oldVersion := createTestDeploymentVersionForPlanner(uuid.New().String(), deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
@@ -253,16 +253,16 @@ func TestPlanDeployment_SkipsNonReadyVersions(t *testing.T) {
 	resourceID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	// Create building version (should be skipped)
 	buildingVersion := createTestDeploymentVersionForPlanner(uuid.New().String(), deploymentID, "v3.0.0", oapi.DeploymentVersionStatusBuilding)
@@ -304,16 +304,16 @@ func TestPlanDeployment_AllVersionsBlocked(t *testing.T) {
 	resourceID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	// Create only non-ready versions
 	buildingVersion := createTestDeploymentVersionForPlanner(uuid.New().String(), deploymentID, "v1.0.0", oapi.DeploymentVersionStatusBuilding)
@@ -345,13 +345,13 @@ func TestPlanDeployment_ResourceNotFound(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	// Don't create resource - this should cause an error when version exists
 
@@ -393,16 +393,16 @@ func TestPlanDeployment_WithVariables(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)
@@ -450,16 +450,16 @@ func TestPlanDeployment_WithPrecomputedRelationships(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)
@@ -504,16 +504,16 @@ func TestPlanDeployment_DifferentVersionStatuses(t *testing.T) {
 			versionID := uuid.New().String()
 
 			system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-			testStore.Systems.Upsert(ctx, system)
+			_ = testStore.Systems.Upsert(ctx, system)
 
 			env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-			testStore.Environments.Upsert(ctx, env)
+			_ = testStore.Environments.Upsert(ctx, env)
 
 			deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-			testStore.Deployments.Upsert(ctx, deployment)
+			_ = testStore.Deployments.Upsert(ctx, deployment)
 
 			resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-			testStore.Resources.Upsert(ctx, resource)
+			_, _ = testStore.Resources.Upsert(ctx, resource)
 
 			version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", tc.status)
 			testStore.DeploymentVersions.Upsert(ctx, versionID, version)
@@ -548,15 +548,15 @@ func TestPlanDeployment_EnvironmentNotFound(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	// Don't create environment - this should cause the planner to fail
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)
@@ -589,13 +589,13 @@ func TestPlanDeployment_MultipleResourcesSameDeployment(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource1 := createTestResourceForPlanner(workspaceID, resource1ID, "resource-1")
 	testStore.Resources.Upsert(ctx, resource1)
@@ -643,16 +643,16 @@ func TestPlanDeployment_VariableEvaluationError(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)
@@ -684,16 +684,16 @@ func TestFindDeployableVersion_VersionIndependentPolicyBlocks(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)
@@ -724,16 +724,16 @@ func TestPlanDeployment_ConsistentReleaseIDs(t *testing.T) {
 	versionID := uuid.New().String()
 
 	system := createTestSystemForPlanner(workspaceID, systemID, "test-system")
-	testStore.Systems.Upsert(ctx, system)
+	_ = testStore.Systems.Upsert(ctx, system)
 
 	env := createTestEnvironmentForPlanner(systemID, environmentID, "test-env")
-	testStore.Environments.Upsert(ctx, env)
+	_ = testStore.Environments.Upsert(ctx, env)
 
 	deployment := createTestDeploymentForPlanner(workspaceID, systemID, deploymentID, "test-deployment")
-	testStore.Deployments.Upsert(ctx, deployment)
+	_ = testStore.Deployments.Upsert(ctx, deployment)
 
 	resource := createTestResourceForPlanner(workspaceID, resourceID, "test-resource")
-	testStore.Resources.Upsert(ctx, resource)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	version := createTestDeploymentVersionForPlanner(versionID, deploymentID, "v1.0.0", oapi.DeploymentVersionStatusReady)
 	testStore.DeploymentVersions.Upsert(ctx, versionID, version)

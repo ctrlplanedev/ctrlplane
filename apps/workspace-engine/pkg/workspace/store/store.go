@@ -123,7 +123,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 					continue
 				}
 
-				s.ReleaseTargets.Upsert(ctx, &oapi.ReleaseTarget{
+				_ = s.ReleaseTargets.Upsert(ctx, &oapi.ReleaseTarget{
 					EnvironmentId: environment.Id,
 					DeploymentId:  deployment.Id,
 					ResourceId:    resource.Id,
@@ -143,7 +143,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 			return err
 		}
 		for _, relation := range relations {
-			s.Relations.Upsert(ctx, relation)
+			_ = s.Relations.Upsert(ctx, relation)
 		}
 	}
 

@@ -28,7 +28,7 @@ func HandleDeploymentVariableCreated(
 		return err
 	}
 
-	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 
 	return nil
@@ -50,7 +50,7 @@ func HandleDeploymentVariableUpdated(
 	if err != nil {
 		return err
 	}
-	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 
 	return nil
@@ -72,7 +72,7 @@ func HandleDeploymentVariableDeleted(
 	if err != nil {
 		return err
 	}
-	ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
+	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 	return nil
 }

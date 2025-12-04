@@ -309,7 +309,7 @@ func TestEvaluatePolicy(t *testing.T) {
 			testManager := New(testStore)
 
 			// Add environment and version to store
-			testStore.Environments.Upsert(ctx, environment)
+			_ = testStore.Environments.Upsert(ctx, environment)
 			testStore.DeploymentVersions.Upsert(ctx, version.Id, version)
 
 			if tt.setupStore != nil {
@@ -383,7 +383,7 @@ func TestEvaluatePolicy_MultipleRules(t *testing.T) {
 		SystemId: "system-1",
 		Name:     "production",
 	}
-	st.Environments.Upsert(ctx, environment)
+	_ = st.Environments.Upsert(ctx, environment)
 
 	version := &oapi.DeploymentVersion{
 		Id:           "version-1",
