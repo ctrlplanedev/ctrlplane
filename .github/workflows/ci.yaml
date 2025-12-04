@@ -24,6 +24,9 @@ jobs:
         shell: bash
         run: cp .env.example .env
 
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
       - name: Lint
         run: pnpm lint && pnpm lint:ws
 
