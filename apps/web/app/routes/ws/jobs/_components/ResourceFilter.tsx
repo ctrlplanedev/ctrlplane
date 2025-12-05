@@ -21,13 +21,15 @@ import { useResourceId } from "../hooks";
 function useResourcesSearch() {
   const { workspace } = useWorkspace();
 
-  const [cel, setCel] = useState("true");
+  const [cel, setCel] = useState("");
   const [celDebounced, setCelDebounced] = useState(cel);
   useDebounce(() => setCelDebounced(cel), 1000, [cel]);
 
   const { data, isLoading } = trpc.resource.list.useQuery({
     workspaceId: workspace.id,
-    selector: { cel: celDebounced },
+    selector: {
+      cel: `resource.name.contains('${celDebounced}') || resource.identifier.contains('${celDebounced}')`,
+    },
     limit: 20,
     offset: 0,
   });
