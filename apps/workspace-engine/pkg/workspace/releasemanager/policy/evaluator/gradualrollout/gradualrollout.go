@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -85,6 +86,82 @@ func (e *GradualRolloutEvaluator) Complexity() int {
 	return 2
 }
 
+func (e *GradualRolloutEvaluator) getStartTimeFromApprovalRule(ctx context.Context, rule *oapi.PolicyRule, scope evaluator.EvaluatorScope, allSkips []*oapi.PolicySkip) *time.Time {
+	skips := make([]*oapi.PolicySkip, 0)
+	for _, skip := range allSkips {
+		if skip.RuleId == rule.Id {
+			skips = append(skips, skip)
+		}
+	}
+
+	// If there are skips for this rule, the approval rule was "satisfied" when:
+	// - the latest skip was created, if the version already existed
+	// - the version was created, and there was a preexisting skip for this rule and scope
+	if len(skips) > 0 {
+		sort.Slice(skips, func(i, j int) bool {
+			return skips[i].CreatedAt.After(skips[j].CreatedAt)
+		})
+
+		latestSkipCreatedAt := skips[0].CreatedAt
+
+		if latestSkipCreatedAt.After(scope.Version.CreatedAt) {
+			return &latestSkipCreatedAt
+		}
+
+		return &scope.Version.CreatedAt
+	}
+
+	approvalEvaluator := approval.NewEvaluator(e.store, rule)
+	if approvalEvaluator == nil {
+		return nil
+	}
+
+	result := approvalEvaluator.Evaluate(ctx, scope)
+	if !result.Allowed || result.SatisfiedAt == nil {
+		return nil
+	}
+
+	return result.SatisfiedAt
+}
+
+func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(ctx context.Context, rule *oapi.PolicyRule, scope evaluator.EvaluatorScope, allSkips []*oapi.PolicySkip) *time.Time {
+	skips := make([]*oapi.PolicySkip, 0)
+	for _, skip := range allSkips {
+		if skip.RuleId == rule.Id {
+			skips = append(skips, skip)
+		}
+	}
+
+	// If there are skips for this rule, the environment progression rule was "satisfied" when:
+	// - the latest skip was created, if the version already existed
+	// - the version was created, and there was a preexisting skip for this rule and scope
+	if len(skips) > 0 {
+		sort.Slice(skips, func(i, j int) bool {
+			return skips[i].CreatedAt.After(skips[j].CreatedAt)
+		})
+
+		latestSkipCreatedAt := skips[0].CreatedAt
+
+		if latestSkipCreatedAt.After(scope.Version.CreatedAt) {
+			return &latestSkipCreatedAt
+		}
+
+		return &scope.Version.CreatedAt
+	}
+
+	environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.store, rule)
+	if environmentProgressionEvaluator == nil {
+		return nil
+	}
+
+	result := environmentProgressionEvaluator.Evaluate(ctx, scope)
+	if !result.Allowed || result.SatisfiedAt == nil {
+		return nil
+	}
+
+	return result.SatisfiedAt
+}
+
 func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*time.Time, error) {
 	// "start time" is when the approval condition passes
 	policiesForTarget, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
@@ -103,6 +180,8 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 		Version:     version,
 	}
 
+	allSkips := e.store.PolicySkips.GetAllForTarget(version.Id, environment.Id, releaseTarget.ResourceId)
+
 	for _, policy := range policiesForTarget {
 		if !policy.Enabled {
 			continue
@@ -111,32 +190,20 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 			// Only consider the approval rule if present
 			if rule.AnyApproval != nil {
 				foundApprovalPolicy = true
-				approvalEvaluator := approval.NewEvaluator(e.store, &rule)
-				if approvalEvaluator == nil {
-					continue
-				}
-
-				result := approvalEvaluator.Evaluate(ctx, scope)
-				if result.Allowed && result.SatisfiedAt != nil {
-					// pick the latest SatisfiedAt if multiple approvals exist
-					if approvalSatisfiedAt == nil || result.SatisfiedAt.After(*approvalSatisfiedAt) {
-						approvalSatisfiedAt = result.SatisfiedAt
+				ruleSatisfiedAt := e.getStartTimeFromApprovalRule(ctx, &rule, scope, allSkips)
+				if ruleSatisfiedAt != nil {
+					if approvalSatisfiedAt == nil || ruleSatisfiedAt.After(*approvalSatisfiedAt) {
+						approvalSatisfiedAt = ruleSatisfiedAt
 					}
 				}
 			}
 
 			if rule.EnvironmentProgression != nil {
 				foundEnvironmentProgressionPolicy = true
-				environmentProgressionEvaluator := environmentprogression.NewEvaluator(e.store, &rule)
-				if environmentProgressionEvaluator == nil {
-					continue
-				}
-
-				result := environmentProgressionEvaluator.Evaluate(ctx, scope)
-				if result.Allowed && result.SatisfiedAt != nil {
-					// pick the latest SatisfiedAt if multiple environment progression policies exist
-					if environmentProgressionSatisfiedAt == nil || result.SatisfiedAt.After(*environmentProgressionSatisfiedAt) {
-						environmentProgressionSatisfiedAt = result.SatisfiedAt
+				ruleSatisfiedAt := e.getStartTimeFromEnvironmentProgressionRule(ctx, &rule, scope, allSkips)
+				if ruleSatisfiedAt != nil {
+					if environmentProgressionSatisfiedAt == nil || ruleSatisfiedAt.After(*environmentProgressionSatisfiedAt) {
+						environmentProgressionSatisfiedAt = ruleSatisfiedAt
 					}
 				}
 			}
