@@ -73,19 +73,6 @@ export function EnvironmentReleaseTargetsGroup({
   environment,
 }: EnvironmentReleaseTargetsGroupProps) {
   const [open, setOpen] = useState(true);
-
-  let cel: string | undefined = undefined;
-  let jsonSelector: string | undefined = undefined;
-
-  if (environment.resourceSelector) {
-    if ("cel" in environment.resourceSelector) {
-      cel = environment.resourceSelector.cel;
-    }
-    if ("json" in environment.resourceSelector) {
-      jsonSelector = JSON.stringify(environment.resourceSelector.json, null, 2);
-    }
-  }
-
   const rts = open ? releaseTargets : [];
 
   return (

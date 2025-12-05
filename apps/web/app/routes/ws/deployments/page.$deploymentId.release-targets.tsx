@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { useState } from "react";
 import _ from "lodash";
 import { Search } from "lucide-react";
@@ -168,6 +167,7 @@ export default function ReleaseTargetsPage() {
           <TableBody>
             {environments.map((environment) => {
               const releaseTargets = groupByEnvironmentId[environment.id] ?? [];
+              if (releaseTargets.length === 0) return null;
               return (
                 <EnvironmentReleaseTargetsGroup
                   key={environment.id}
