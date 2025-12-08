@@ -874,6 +874,22 @@ export interface components {
         };
         /** @enum {string} */
         DeploymentVersionStatus: "unspecified" | "building" | "ready" | "failed" | "rejected";
+        DeploymentWindowRule: {
+            /**
+             * @description If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
+             * @default true
+             */
+            allowWindow: boolean;
+            /**
+             * Format: int32
+             * @description Duration of each deployment window in minutes
+             */
+            durationMinutes: number;
+            /** @description RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9) */
+            rrule: string;
+            /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
+            timezone?: string;
+        };
         Environment: {
             /** Format: date-time */
             createdAt: string;
@@ -1044,6 +1060,7 @@ export interface components {
             anyApproval?: components["schemas"]["AnyApprovalRule"];
             createdAt: string;
             deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
+            deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
             environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
             gradualRollout?: components["schemas"]["GradualRolloutRule"];
             id: string;

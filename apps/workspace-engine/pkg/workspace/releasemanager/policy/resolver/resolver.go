@@ -135,3 +135,8 @@ func GradualRolloutRuleExtractor(rule *oapi.PolicyRule) *oapi.GradualRolloutRule
 func EnvironmentProgressionRuleExtractor(rule *oapi.PolicyRule) *oapi.EnvironmentProgressionRule {
 	return rule.EnvironmentProgression
 }
+
+// DeploymentWindowRuleExtractor extracts DeploymentWindowRule from a PolicyRule.
+func DeploymentWindowRuleExtractor(rule *oapi.PolicyRule) *oapi.DeploymentWindowRule {
+	return rule.DeploymentWindow
+}

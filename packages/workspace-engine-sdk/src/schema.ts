@@ -1009,6 +1009,33 @@ export interface components {
     CelSelector: {
       cel: string;
     };
+    DatadogMetricProvider: {
+      /**
+       * @description Datadog API key (supports Go templates for variable references)
+       * @example {{.variables.dd_api_key}}
+       */
+      apiKey: string;
+      /**
+       * @description Datadog Application key (supports Go templates for variable references)
+       * @example {{.variables.dd_app_key}}
+       */
+      appKey: string;
+      /**
+       * @description Datadog metrics query (supports Go templates)
+       * @example sum:requests.error.rate{service:{{.resource.name}}}
+       */
+      query: string;
+      /**
+       * @description Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
+       * @default datadoghq.com
+       */
+      site: string;
+      /**
+       * @description Provider type (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: "datadog";
+    };
     DeployDecision: {
       policyResults: components["schemas"]["PolicyEvaluation"][];
     };
@@ -1079,6 +1106,22 @@ export interface components {
       | "failed"
       | "rejected"
       | "paused";
+    DeploymentWindowRule: {
+      /**
+       * @description If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
+       * @default true
+       */
+      allowWindow: boolean;
+      /**
+       * Format: int32
+       * @description Duration of each deployment window in minutes
+       */
+      durationMinutes: number;
+      /** @description RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9) */
+      rrule: string;
+      /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
+      timezone?: string;
+    };
     DeploymentWithVariables: {
       deployment: components["schemas"]["Deployment"];
       variables: components["schemas"]["DeploymentVariableWithValues"][];
@@ -1261,7 +1304,10 @@ export interface components {
       | components["schemas"]["StringValue"]
       | components["schemas"]["ObjectValue"]
       | components["schemas"]["NullValue"];
-    MetricProvider: components["schemas"]["HTTPMetricProvider"];
+    MetricProvider:
+      | components["schemas"]["HTTPMetricProvider"]
+      | components["schemas"]["SleepMetricProvider"]
+      | components["schemas"]["DatadogMetricProvider"];
     /** @enum {boolean} */
     NullValue: true;
     NumberValue: number;
@@ -1294,6 +1340,7 @@ export interface components {
       anyApproval?: components["schemas"]["AnyApprovalRule"];
       createdAt: string;
       deploymentDependency?: components["schemas"]["DeploymentDependencyRule"];
+      deploymentWindow?: components["schemas"]["DeploymentWindowRule"];
       environmentProgression?: components["schemas"]["EnvironmentProgressionRule"];
       gradualRollout?: components["schemas"]["GradualRolloutRule"];
       id: string;
@@ -1526,6 +1573,18 @@ export interface components {
       | components["schemas"]["CelSelector"];
     SensitiveValue: {
       valueHash: string;
+    };
+    SleepMetricProvider: {
+      /**
+       * Format: int
+       * @example 30
+       */
+      duration: number;
+      /**
+       * @description Provider type (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: "sleep";
     };
     StringValue: string;
     System: {

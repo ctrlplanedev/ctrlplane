@@ -308,6 +308,34 @@
             ],
             "type": "string"
          },
+         "DeploymentWindowRule": {
+            "properties": {
+               "allowWindow": {
+                  "default": true,
+                  "description": "If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)",
+                  "type": "boolean"
+               },
+               "durationMinutes": {
+                  "description": "Duration of each deployment window in minutes",
+                  "format": "int32",
+                  "minimum": 1,
+                  "type": "integer"
+               },
+               "rrule": {
+                  "description": "RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9)",
+                  "type": "string"
+               },
+               "timezone": {
+                  "description": "IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "rrule",
+               "durationMinutes"
+            ],
+            "type": "object"
+         },
          "DeploymentWithVariables": {
             "properties": {
                "deployment": {
@@ -893,6 +921,9 @@
                },
                "deploymentDependency": {
                   "$ref": "#/components/schemas/DeploymentDependencyRule"
+               },
+               "deploymentWindow": {
+                  "$ref": "#/components/schemas/DeploymentWindowRule"
                },
                "environmentProgression": {
                   "$ref": "#/components/schemas/EnvironmentProgressionRule"

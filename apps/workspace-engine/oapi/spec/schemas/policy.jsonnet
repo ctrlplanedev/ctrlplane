@@ -62,6 +62,7 @@ local openapi = import '../lib/openapi.libsonnet';
       retry: openapi.schemaRef('RetryRule'),
       versionSelector: openapi.schemaRef('VersionSelectorRule'),
       deploymentDependency: openapi.schemaRef('DeploymentDependencyRule'),
+      deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
     },
   },
 
@@ -168,6 +169,32 @@ local openapi = import '../lib/openapi.libsonnet';
       reference: {
         type: 'string',
         description: 'Reference to the entity that this rule depends on',
+      },
+    },
+  },
+
+  DeploymentWindowRule: {
+    type: 'object',
+    required: ['rrule', 'durationMinutes'],
+    properties: {
+      rrule: {
+        type: 'string',
+        description: 'RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9)',
+      },
+      durationMinutes: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 1,
+        description: 'Duration of each deployment window in minutes',
+      },
+      timezone: {
+        type: 'string',
+        description: 'IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified',
+      },
+      allowWindow: {
+        type: 'boolean',
+        default: true,
+        description: 'If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)',
       },
     },
   },

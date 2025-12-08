@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentwindow"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
@@ -163,7 +164,12 @@ func (e *GradualRolloutEvaluator) getStartTimeFromEnvironmentProgressionRule(ctx
 }
 
 func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, environment *oapi.Environment, version *oapi.DeploymentVersion, releaseTarget *oapi.ReleaseTarget) (*time.Time, error) {
-	// "start time" is when the approval condition passes
+	// "start time" is when all conditions pass:
+	// - approval rules (if any)
+	// - environment progression rules (if any)
+	// - deployment window rules:
+	//   - allow windows: rollout starts when window opens (if outside)
+	//   - deny windows: rollout starts when window ends (if inside)
 	policiesForTarget, err := e.store.ReleaseTargets.GetPolicies(ctx, releaseTarget)
 	if err != nil {
 		return nil, err
@@ -174,6 +180,9 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 
 	var environmentProgressionSatisfiedAt *time.Time
 	var foundEnvironmentProgressionPolicy bool
+
+	// Collect all deployment window rules
+	var deploymentWindowRules []*oapi.DeploymentWindowRule
 
 	scope := evaluator.EvaluatorScope{
 		Environment: environment,
@@ -207,37 +216,73 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 					}
 				}
 			}
+
+			// Collect all deployment window rules (both allow and deny)
+			if rule.DeploymentWindow != nil {
+				deploymentWindowRules = append(deploymentWindowRules, rule.DeploymentWindow)
+			}
 		}
 	}
 
-	// If no approval policies exist, use version creation time as rollout start
+	// Calculate base start time from approval/progression rules
+	var baseStartTime *time.Time
+
+	// If no approval policies exist, use version creation time as base
 	if !foundApprovalPolicy && !foundEnvironmentProgressionPolicy {
-		return &version.CreatedAt, nil
-	}
-
-	// If approval policies exist but none are satisfied, return error
-	if foundApprovalPolicy && approvalSatisfiedAt == nil {
-		return nil, fmt.Errorf("approval condition not yet satisfied for rollout start")
-	}
-
-	if foundEnvironmentProgressionPolicy && environmentProgressionSatisfiedAt == nil {
-		return nil, fmt.Errorf("environment progression condition not yet satisfied for rollout start")
-	}
-
-	if foundApprovalPolicy && foundEnvironmentProgressionPolicy {
-		// Return the later of the two times - that's when both conditions are satisfied
-		if approvalSatisfiedAt.After(*environmentProgressionSatisfiedAt) {
-			return approvalSatisfiedAt, nil
+		baseStartTime = &version.CreatedAt
+	} else {
+		// If approval policies exist but none are satisfied, return error
+		if foundApprovalPolicy && approvalSatisfiedAt == nil {
+			return nil, fmt.Errorf("approval condition not yet satisfied for rollout start")
 		}
-		return environmentProgressionSatisfiedAt, nil
+
+		if foundEnvironmentProgressionPolicy && environmentProgressionSatisfiedAt == nil {
+			return nil, fmt.Errorf("environment progression condition not yet satisfied for rollout start")
+		}
+
+		if foundApprovalPolicy && foundEnvironmentProgressionPolicy {
+			// Use the later of the two times - that's when both conditions are satisfied
+			if approvalSatisfiedAt.After(*environmentProgressionSatisfiedAt) {
+				baseStartTime = approvalSatisfiedAt
+			} else {
+				baseStartTime = environmentProgressionSatisfiedAt
+			}
+		} else if foundApprovalPolicy {
+			baseStartTime = approvalSatisfiedAt
+		} else {
+			baseStartTime = environmentProgressionSatisfiedAt
+		}
 	}
 
-	// Only one policy type was found - return whichever one is satisfied
-	if foundApprovalPolicy {
-		return approvalSatisfiedAt, nil
+	// Adjust for deployment windows
+	// - Allow windows: if outside, push to when window opens
+	// - Deny windows: if inside, push to when window ends
+	finalStartTime := baseStartTime
+	for _, windowRule := range deploymentWindowRules {
+		isAllowWindow := windowRule.AllowWindow == nil || *windowRule.AllowWindow
+
+		if isAllowWindow {
+			// Allow window: push to next window start if outside
+			nextWindowStart, err := deploymentwindow.GetNextWindowStart(windowRule, *baseStartTime)
+			if err != nil {
+				continue
+			}
+			if nextWindowStart != nil && (finalStartTime == nil || nextWindowStart.After(*finalStartTime)) {
+				finalStartTime = nextWindowStart
+			}
+		} else {
+			// Deny window: push to window end if inside
+			windowEnd, err := deploymentwindow.GetDenyWindowEnd(windowRule, *baseStartTime)
+			if err != nil {
+				continue
+			}
+			if windowEnd != nil && (finalStartTime == nil || windowEnd.After(*finalStartTime)) {
+				finalStartTime = windowEnd
+			}
+		}
 	}
 
-	return environmentProgressionSatisfiedAt, nil
+	return finalStartTime, nil
 }
 
 func (e *GradualRolloutEvaluator) getDeploymentOffset(

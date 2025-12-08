@@ -256,6 +256,21 @@ type DeploymentVersion struct {
 // DeploymentVersionStatus defines model for DeploymentVersionStatus.
 type DeploymentVersionStatus string
 
+// DeploymentWindowRule defines model for DeploymentWindowRule.
+type DeploymentWindowRule struct {
+	// AllowWindow If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)
+	AllowWindow *bool `json:"allowWindow,omitempty"`
+
+	// DurationMinutes Duration of each deployment window in minutes
+	DurationMinutes int32 `json:"durationMinutes"`
+
+	// Rrule RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9)
+	Rrule string `json:"rrule"`
+
+	// Timezone IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified
+	Timezone *string `json:"timezone,omitempty"`
+}
+
 // DeploymentWithVariables defines model for DeploymentWithVariables.
 type DeploymentWithVariables struct {
 	Deployment Deployment                     `json:"deployment"`
@@ -472,6 +487,7 @@ type PolicyRule struct {
 	AnyApproval            *AnyApprovalRule            `json:"anyApproval,omitempty"`
 	CreatedAt              string                      `json:"createdAt"`
 	DeploymentDependency   *DeploymentDependencyRule   `json:"deploymentDependency,omitempty"`
+	DeploymentWindow       *DeploymentWindowRule       `json:"deploymentWindow,omitempty"`
 	EnvironmentProgression *EnvironmentProgressionRule `json:"environmentProgression,omitempty"`
 	GradualRollout         *GradualRolloutRule         `json:"gradualRollout,omitempty"`
 	Id                     string                      `json:"id"`

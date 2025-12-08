@@ -2637,3 +2637,664 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.
 	assert.WithinDuration(t, expectedRolloutTime, *result.NextEvaluationTime, 1*time.Second,
 		"NextEvaluationTime should match linear-normalized schedule")
 }
+
+// =============================================================================
+// Deployment Window Integration Tests
+// =============================================================================
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+// TestGradualRolloutEvaluator_DeploymentWindow_InsideAllowWindow tests that when the version
+// is created inside an allow window, rollout starts immediately from version creation time.
+func TestGradualRolloutEvaluator_DeploymentWindow_InsideAllowWindow(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	// Version created at 10:00 AM (inside 9am-5pm window)
+	baseTime := time.Date(2025, 1, 6, 10, 0, 0, 0, time.UTC) // Monday
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create policy with deployment window (9am-5pm weekdays = allow window)
+	deploymentWindowPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "deployment-window-rule",
+				DeploymentWindow: &oapi.DeploymentWindowRule{
+					// Every day at 9am UTC
+					Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+					DurationMinutes: 480, // 8 hours (9am-5pm)
+					Timezone:        stringPtr("UTC"),
+					AllowWindow:     boolPtr(true),
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, deploymentWindowPolicy)
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 0: should deploy immediately from version.CreatedAt (no window adjustment needed)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed, "position 0 should be allowed")
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be version.CreatedAt since we're inside the window
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result1.Details["rollout_start_time"])
+}
+
+// TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow tests that when the version
+// is created outside an allow window, rollout starts when the window opens.
+func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	// Version created at 11pm (OUTSIDE 9am-5pm window)
+	// Window will next open at 9am the next day
+	baseTime := time.Date(2025, 1, 6, 23, 0, 0, 0, time.UTC)       // Monday 11pm
+	nextWindowStart := time.Date(2025, 1, 7, 9, 0, 0, 0, time.UTC) // Tuesday 9am
+
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	// Current time is Tuesday 10am (inside the window)
+	currentTime := time.Date(2025, 1, 7, 10, 0, 0, 0, time.UTC)
+
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create policy with deployment window (9am-5pm daily = allow window)
+	deploymentWindowPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "deployment-window-rule",
+				DeploymentWindow: &oapi.DeploymentWindowRule{
+					Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+					DurationMinutes: 480, // 8 hours (9am-5pm)
+					Timezone:        stringPtr("UTC"),
+					AllowWindow:     boolPtr(true),
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, deploymentWindowPolicy)
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 0: rollout start time should be adjusted to window open (9am)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed, "position 0 should be allowed (current time is after adjusted rollout start)")
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be adjusted to window open time, not version.CreatedAt
+	assert.Equal(t, nextWindowStart.Format(time.RFC3339), result1.Details["rollout_start_time"],
+		"rollout should start when window opens, not when version was created")
+
+	// Position 1: should deploy 60 seconds after window opens
+	scope2 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[1],
+	}
+	result2 := eval.Evaluate(ctx, scope2)
+	assert.True(t, result2.Allowed, "position 1 should be allowed")
+	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
+	expectedRolloutTime := nextWindowStart.Add(60 * time.Second)
+	assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result2.Details["target_rollout_time"])
+}
+
+// TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart tests that
+// when a version is created inside a deny window, the rollout start is pushed to when
+// the deny window ends, preventing frontloading.
+func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	// Version created at 2:30am Sunday (INSIDE 2am-6am deny window)
+	versionCreatedAt := time.Date(2025, 1, 5, 2, 30, 0, 0, time.UTC)
+	denyWindowEnd := time.Date(2025, 1, 5, 6, 0, 0, 0, time.UTC) // 6am
+	currentTime := time.Date(2025, 1, 5, 6, 30, 0, 0, time.UTC)  // 6:30am (after deny window)
+
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create policy with DENY window (Sunday 2am-6am maintenance window)
+	deploymentWindowPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "deny-window-rule",
+				DeploymentWindow: &oapi.DeploymentWindowRule{
+					Rrule:           "FREQ=WEEKLY;BYDAY=SU;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
+					DurationMinutes: 240, // 4 hours (2am-6am)
+					Timezone:        stringPtr("UTC"),
+					AllowWindow:     boolPtr(false), // DENY window
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, deploymentWindowPolicy)
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 0: rollout start time should be pushed to deny window end (6am)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed, "position 0 should be allowed")
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	// Rollout start time should be pushed to deny window end, not version.CreatedAt
+	assert.Equal(t, denyWindowEnd.Format(time.RFC3339), result1.Details["rollout_start_time"],
+		"rollout should start when deny window ends, not when version was created")
+}
+
+// TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowOutsideNoChange tests that
+// when a version is created outside a deny window, the rollout start is not affected.
+func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowOutsideNoChange(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	// Version created at 10am (OUTSIDE 2am-6am deny window)
+	versionCreatedAt := time.Date(2025, 1, 5, 10, 0, 0, 0, time.UTC)
+	currentTime := time.Date(2025, 1, 5, 12, 0, 0, 0, time.UTC)
+
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create policy with DENY window (Sunday 2am-6am maintenance window)
+	deploymentWindowPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "deny-window-rule",
+				DeploymentWindow: &oapi.DeploymentWindowRule{
+					Rrule:           "FREQ=WEEKLY;BYDAY=SU;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
+					DurationMinutes: 240, // 4 hours (2am-6am)
+					Timezone:        stringPtr("UTC"),
+					AllowWindow:     boolPtr(false), // DENY window
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, deploymentWindowPolicy)
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 0: rollout start time should be version.CreatedAt (not inside deny window)
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed, "position 0 should be allowed")
+	assert.Equal(t, int32(0), result1.Details["target_rollout_position"])
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result1.Details["rollout_start_time"],
+		"rollout should start from version creation time when outside deny window")
+}
+
+// TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading tests that
+// deny windows prevent frontloading of deployments when the window ends.
+func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 5, st)
+
+	// Version created at 1am (targets 60-240 would fall inside deny window without adjustment)
+	// Without adjustment: targets scheduled 2am-5am would all deploy at 6am (frontloading!)
+	versionCreatedAt := time.Date(2025, 1, 5, 1, 0, 0, 0, time.UTC) // 1am - outside window initially
+	// But we want to test when version is created INSIDE the deny window
+	// Let's use 3am instead
+	versionCreatedAt = time.Date(2025, 1, 5, 3, 0, 0, 0, time.UTC) // 3am - inside 2am-6am deny window
+	denyWindowEnd := time.Date(2025, 1, 5, 6, 0, 0, 0, time.UTC)   // 6am
+
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	// Current time is 6:05am (just after deny window ends)
+	currentTime := time.Date(2025, 1, 5, 6, 5, 0, 0, time.UTC)
+
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	// 60 second intervals between deployments
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create policy with DENY window (2am-6am maintenance)
+	deploymentWindowPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "deny-window-rule",
+				DeploymentWindow: &oapi.DeploymentWindowRule{
+					Rrule:           "FREQ=WEEKLY;BYDAY=SU;BYHOUR=2;BYMINUTE=0;BYSECOND=0",
+					DurationMinutes: 240, // 4 hours (2am-6am)
+					Timezone:        stringPtr("UTC"),
+					AllowWindow:     boolPtr(false), // DENY window
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, deploymentWindowPolicy)
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Test that deployments are properly spaced from deny window END time
+	// Position 0: 6:00am (deny window ends)
+	// Position 1: 6:01am
+	// Position 2: 6:02am
+	// etc.
+
+	// At 6:05am, positions 0-4 should be allowed, position 5+ should be pending
+	for i, rt := range releaseTargets {
+		scope := evaluator.EvaluatorScope{
+			Environment:   environment,
+			Version:       version,
+			ReleaseTarget: rt,
+		}
+		result := eval.Evaluate(ctx, scope)
+
+		expectedRolloutTime := denyWindowEnd.Add(time.Duration(i) * 60 * time.Second)
+
+		if i <= 4 {
+			assert.True(t, result.Allowed, "position %d should be allowed at 6:05am", i)
+		} else {
+			assert.False(t, result.Allowed, "position %d should be pending at 6:05am", i)
+		}
+
+		// Verify rollout start time is deny window end time, not version creation time
+		assert.Equal(t, denyWindowEnd.Format(time.RFC3339), result.Details["rollout_start_time"],
+			"rollout should start from deny window end time for position %d", i)
+
+		// Verify individual target rollout times are spaced correctly
+		assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result.Details["target_rollout_time"],
+			"position %d should have correct rollout time", i)
+	}
+}
+
+// TestGradualRolloutEvaluator_DeploymentWindow_NoWindowsExistingBehavior tests that
+// when no deployment windows are configured, rollout behaves as before.
+func TestGradualRolloutEvaluator_DeploymentWindow_NoWindowsExistingBehavior(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 3, st)
+
+	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	twoHoursLater := baseTime.Add(2 * time.Hour)
+
+	versionCreatedAt := baseTime
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return twoHoursLater
+	}
+
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// NO deployment window policy - just a policy with other rules
+	otherPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "retry-rule",
+				Retry: &oapi.RetryRule{
+					MaxRetries: 3,
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, otherPolicy)
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Position 0: should use version.CreatedAt as rollout start
+	scope1 := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTargets[0],
+	}
+	result1 := eval.Evaluate(ctx, scope1)
+	assert.True(t, result1.Allowed, "position 0 should be allowed")
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result1.Details["rollout_start_time"],
+		"rollout should start from version creation time when no windows configured")
+}
+
+// TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading tests that
+// deployment windows prevent frontloading of deployments when the window opens.
+func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 5, st)
+
+	// Version created at midnight (OUTSIDE 9am-5pm window)
+	// Without window adjustment, targets 0-17 would all be scheduled before 9am
+	// and would all deploy at 9am simultaneously (frontloading!)
+	versionCreatedAt := time.Date(2025, 1, 6, 0, 0, 0, 0, time.UTC) // Monday midnight
+	windowOpenTime := time.Date(2025, 1, 6, 9, 0, 0, 0, time.UTC)   // Monday 9am
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	// Current time is 9:05am (just after window opens)
+	currentTime := time.Date(2025, 1, 6, 9, 5, 0, 0, time.UTC)
+
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	// 60 second intervals between deployments
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	// Create policy with deployment window (9am-5pm daily)
+	deploymentWindowPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "deployment-window-rule",
+				DeploymentWindow: &oapi.DeploymentWindowRule{
+					Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+					DurationMinutes: 480, // 8 hours
+					Timezone:        stringPtr("UTC"),
+					AllowWindow:     boolPtr(true),
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, deploymentWindowPolicy)
+
+	// Create release targets
+	releaseTargets := make([]*oapi.ReleaseTarget, len(resources))
+	for i, resource := range resources {
+		releaseTarget := &oapi.ReleaseTarget{
+			EnvironmentId: environment.Id,
+			DeploymentId:  deployment.Id,
+			ResourceId:    resource.Id,
+		}
+		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+		releaseTargets[i] = releaseTarget
+	}
+
+	// Test that deployments are properly spaced from window open time
+	// Position 0: 9:00am (window opens)
+	// Position 1: 9:01am
+	// Position 2: 9:02am
+	// etc.
+
+	// At 9:05am, positions 0-4 should be allowed, position 5 should be pending
+	for i, rt := range releaseTargets {
+		scope := evaluator.EvaluatorScope{
+			Environment:   environment,
+			Version:       version,
+			ReleaseTarget: rt,
+		}
+		result := eval.Evaluate(ctx, scope)
+
+		expectedRolloutTime := windowOpenTime.Add(time.Duration(i) * 60 * time.Second)
+
+		if i <= 4 {
+			// Positions 0-4 have rollout times at or before 9:04am, should be allowed at 9:05am
+			assert.True(t, result.Allowed, "position %d should be allowed at 9:05am", i)
+		} else {
+			// Position 5+ has rollout time at 9:05am or later, should be pending
+			assert.False(t, result.Allowed, "position %d should be pending at 9:05am", i)
+			assert.True(t, result.ActionRequired, "position %d should require action", i)
+		}
+
+		// Verify rollout start time is window open time, not version creation time
+		assert.Equal(t, windowOpenTime.Format(time.RFC3339), result.Details["rollout_start_time"],
+			"rollout should start from window open time for position %d", i)
+
+		// Verify individual target rollout times are spaced correctly
+		assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result.Details["target_rollout_time"],
+			"position %d should have correct rollout time", i)
+	}
+}
