@@ -890,6 +890,10 @@ export interface components {
             /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
             timezone?: string;
         };
+        DeploymentWithVariables: {
+            deployment: components["schemas"]["Deployment"];
+            variables: components["schemas"]["DeploymentVariableWithValues"][];
+        };
         Environment: {
             /** Format: date-time */
             createdAt: string;
@@ -934,10 +938,6 @@ export interface components {
         ErrorResponse: {
             /** @example Workspace not found */
             error?: string;
-        };
-        GetDeploymentResponse: {
-            deployment: components["schemas"]["Deployment"];
-            variables: components["schemas"]["DeploymentVariableWithValues"][];
         };
         GradualRolloutRule: {
             /**
@@ -1859,7 +1859,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetDeploymentResponse"];
+                    "application/json": components["schemas"]["DeploymentWithVariables"];
                 };
             };
             /** @description Invalid request */
@@ -2540,7 +2540,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -2799,7 +2802,12 @@ export interface operations {
     };
     listPolicies: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
             header?: never;
             path: {
                 /** @description ID of the workspace */
@@ -2809,24 +2817,21 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A list of policies */
+            /** @description Paginated list of items */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        policies?: components["schemas"]["Policy"][];
+                        items: components["schemas"]["Policy"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
                     };
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

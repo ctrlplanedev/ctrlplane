@@ -5,6 +5,9 @@ local openapi = import '../lib/openapi.libsonnet';
     post: {
       summary: 'Create a new job agent',
       operationId: 'createJobAgent',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
       requestBody: {
         required: true,
         content: {

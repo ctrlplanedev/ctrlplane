@@ -21,7 +21,7 @@ const listPolicies: AsyncTypedHandler<
   if (response.error?.error != null)
     throw new ApiError(response.error.error, 500);
 
-  res.status(200).json(response.data?.policies ?? []);
+  res.status(200).json({ items: response.data?.policies ?? [] });
   return;
 };
 

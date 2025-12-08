@@ -7,16 +7,10 @@ local openapi = import '../lib/openapi.libsonnet';
       operationId: 'listPolicies',
       parameters: [
         openapi.workspaceIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
       ],
-      responses: openapi.okResponse(
-        {
-          type: 'object',
-          properties: {
-            policies: { type: 'array', items: openapi.schemaRef('Policy') },
-          },
-        },
-        'A list of policies'
-      ) + openapi.notFoundResponse(),
+      responses: openapi.paginatedResponse(openapi.schemaRef('Policy'))
     },
     post: {
       summary: 'Create a policy',

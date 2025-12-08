@@ -76,6 +76,25 @@ export const deleteSystem: AsyncTypedHandler<
   res.status(204).json({ message: "System deleted successfully" });
 };
 
+export const getSystems: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/systems",
+  "get"
+> = async (req, res) => {
+  const { workspaceId } = req.params;
+  const { limit, offset } = req.query;
+  const systems = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/systems",
+    {
+      params: {
+        path: { workspaceId },
+        query: { limit, offset },
+      },
+    },
+  );
+
+  res.status(200).json(systems.data);
+};
+
 export const createSystem: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/systems",
   "post"
@@ -98,6 +117,7 @@ export const createSystem: AsyncTypedHandler<
 };
 export const systemRouter = Router({ mergeParams: true })
   .post("/", asyncHandler(createSystem))
+  .get("/", asyncHandler(getSystems))
   .get("/:systemId", asyncHandler(getSystem))
   .delete("/:systemId", asyncHandler(deleteSystem))
   .put("/:systemId", asyncHandler(upsertSystem));
