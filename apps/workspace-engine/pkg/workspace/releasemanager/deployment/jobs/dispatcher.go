@@ -42,5 +42,9 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 		return jobdispatch.NewArgoCDDispatcher(d.store, d.verification).DispatchJob(ctx, job)
 	}
 
+	if jobAgent.Type == string(jobdispatch.JobAgentTypeTFCloud) {
+		return jobdispatch.NewTerraformDispatcher(d.store).DispatchJob(ctx, job)
+	}
+
 	return ErrUnsupportedJobAgent
 }
