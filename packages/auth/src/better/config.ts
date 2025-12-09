@@ -38,5 +38,5 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [env.BASE_URL, "http://localhost:5173"],
-  advanced: { generateId: false },
+  generateId: false,
 });
