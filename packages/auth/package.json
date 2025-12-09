@@ -45,7 +45,7 @@
     "@ctrlplane/validators": "workspace:*",
     "@node-rs/bcrypt": "^1.10.0",
     "@t3-oss/env-core": "catalog:",
-    "better-auth": "^1.3.28",
+    "better-auth": "^1.4.6",
     "lodash": "catalog:",
     "react": "catalog:react19",
     "react-dom": "catalog:react19",

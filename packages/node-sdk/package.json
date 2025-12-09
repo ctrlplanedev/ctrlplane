@@ -24,7 +24,7 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
-    "@openapitools/openapi-generator-cli": "^2.21.0",
+    "@openapitools/openapi-generator-cli": "^2.25.2",
     "@types/node": "catalog:node22",
     "eslint": "catalog:",
     "prettier": "catalog:",

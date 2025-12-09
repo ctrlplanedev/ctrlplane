@@ -83,7 +83,7 @@
     "@tailwindcss/vite": "^4.1.17",
     "@types/js-yaml": "^4.0.9",
     "@types/lodash": "catalog:",
-    "@types/node": "^22.19.2",
+    "@types/node": "catalog:node22",
     "@types/react": "catalog:react19",
     "@types/react-dom": "catalog:react19",
     "tailwind-scrollbar": "catalog:tailwindcssv4",
