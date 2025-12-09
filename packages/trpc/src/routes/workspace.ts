@@ -243,4 +243,30 @@ export const workspaceRouter = router({
 
       return updatedWorkspace;
     }),
+
+  invite: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        email: z.string().email(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { workspaceId, email } = input;
+      const targetUser = await ctx.db
+        .select()
+        .from(schema.user)
+        .where(eq(schema.user.email, email))
+        .then(takeFirst);
+
+      await ctx.db.insert(schema.entityRole).values({
+        roleId: predefinedRoles.admin.id,
+        scopeType: "workspace",
+        scopeId: workspaceId,
+        entityType: "user",
+        entityId: targetUser.id,
+      });
+
+      return { success: true };
+    }),
 });
