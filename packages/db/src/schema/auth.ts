@@ -58,7 +58,10 @@ export const userRelations = relations(user, ({ many }) => ({
 }));
 
 export const account = pgTable("account", {
-  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
@@ -89,7 +92,10 @@ export const accountRelations = relations(account, ({ one }) => ({
 }));
 
 export const session = pgTable("session", {
-  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   token: text("session_token").notNull().unique(),
   userId: uuid("user_id")
     .notNull()
@@ -110,7 +116,7 @@ export const sessionRelations = relations(session, ({ one }) => ({
 }));
 
 export const verification = pgTable("verification", {
-  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  id: text("id").notNull().primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
