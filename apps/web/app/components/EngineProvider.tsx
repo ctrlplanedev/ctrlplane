@@ -4,9 +4,9 @@ import { createContext, useContext } from "react";
 import "ldrs/react/Grid.css";
 
 import { Grid } from "ldrs/react";
-import { useTheme } from "next-themes";
 
 import { trpc } from "~/api/trpc";
+import { useTheme } from "./ThemeProvider";
 import { useWorkspace } from "./WorkspaceProvider";
 
 // Define the WorkspaceContext type and default value
@@ -26,15 +26,8 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     { refetchInterval: 1000 },
   );
 
-  const { theme, systemTheme } = useTheme();
-  const color =
-    theme == "system"
-      ? systemTheme === "dark"
-        ? "white"
-        : "black"
-      : theme === "dark"
-        ? "white"
-        : "black";
+  const { theme } = useTheme();
+  const color = theme == "dark" ? "white" : "black";
   const status = engine ?? { healthy: false, message: "Engine reloading" };
   return (
     <EngineContext.Provider value={{ status }}>

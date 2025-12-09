@@ -55,7 +55,6 @@
     "ldrs": "^1.1.9",
     "lodash": "catalog:",
     "lucide-react": "^0.441.0",
-    "next-themes": "^0.3.0",
     "nuqs": "^2.8.4",
     "openapi-fetch": "^0.13.8",
     "pretty-ms": "^9.3.0",
