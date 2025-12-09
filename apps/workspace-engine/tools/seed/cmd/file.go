@@ -7,12 +7,13 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 var fileCmd = &cobra.Command{
 	Use:   "file [path]",
-	Short: "Seed workspace from a JSON file",
-	Long:  `Seeds a workspace with events from a JSON file containing event data.`,
+	Short: "Seed workspace from a JSON or YAML file",
+	Long:  `Seeds a workspace with events from a JSON or YAML file containing event data.`,
 	Args:  cobra.ExactArgs(1),
 	Run:   runFileSeed,
 }
@@ -45,7 +46,7 @@ func runFileSeed(cmd *cobra.Command, args []string) {
 	}
 
 	dataJSON := make([]event, 0)
-	if err := json.Unmarshal(data, &dataJSON); err != nil {
+	if err := yaml.Unmarshal(data, &dataJSON); err != nil {
 		log.Fatalf("Failed to unmarshal file: %v", err)
 	}
 
