@@ -367,11 +367,8 @@ func (d *TerraformDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) er
 		}
 	}
 
-	// Skip manual run creation for VCS-connected workspaces
-	// VCS triggers will automatically create runs when changes are detected
 	if workspace.VCSRepo != nil && workspace.VCSRepo.Identifier != "" {
 		span.SetAttributes(attribute.Bool("vcs_connected", true))
-		return nil
 	}
 
 	autoApply := true
