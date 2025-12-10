@@ -61,16 +61,19 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[st
 	if releaseTarget == nil {
 		return jobs
 	}
-	for _, job := range j.repo.Jobs.Items() {
-		release, ok := j.repo.Releases.Get(job.ReleaseId)
-		if !ok || release == nil {
-			continue
-		}
-		if release.ReleaseTarget.Key() != releaseTarget.Key() {
-			continue
-		}
-		jobs[job.Id] = job
+
+	releases, err := j.repo.Releases.GetBy("release_target_key", releaseTarget.Key())
+	if err != nil {
+		return jobs
 	}
+
+	for _, release := range releases {
+		releaseJobs := j.store.Releases.Jobs(release.ID())
+		for _, job := range releaseJobs {
+			jobs[job.Id] = job
+		}
+	}
+
 	return jobs
 }
 

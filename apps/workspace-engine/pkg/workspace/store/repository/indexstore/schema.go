@@ -1,6 +1,8 @@
 package indexstore
 
-import "github.com/hashicorp/go-memdb"
+import (
+	"github.com/hashicorp/go-memdb"
+)
 
 var JobSchema = &memdb.TableSchema{
 	Name: "job",
@@ -40,7 +42,8 @@ var JobSchema = &memdb.TableSchema{
 
 var Schema = &memdb.DBSchema{
 	Tables: map[string]*memdb.TableSchema{
-		"job": JobSchema,
+		"job":     JobSchema,
+		"release": ReleaseSchema,
 	},
 }
 

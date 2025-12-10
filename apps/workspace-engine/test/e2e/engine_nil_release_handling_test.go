@@ -8,8 +8,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
-
-	"github.com/google/uuid"
 )
 
 // TestEngine_JobsWithNilReleaseReference tests that the system handles jobs
@@ -113,82 +111,6 @@ func TestEngine_JobsWithNilReleaseReference(t *testing.T) {
 	}
 	if currentJob != nil {
 		t.Fatalf("expected nil current job, got %v", currentJob)
-	}
-}
-
-// TestEngine_JobsWithNilReleaseInMap tests the scenario where a nil value
-// is explicitly stored in the releases map (e.g., due to deserialization bug)
-func TestEngine_JobsWithNilReleaseInMap(t *testing.T) {
-	engine := integration.NewTestWorkspace(t)
-	workspaceID := engine.Workspace().ID
-	ctx := context.Background()
-
-	// Setup entities
-	jobAgent := c.NewJobAgent(workspaceID)
-	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
-
-	sys := c.NewSystem(workspaceID)
-	engine.PushEvent(ctx, handler.SystemCreate, sys)
-
-	deployment := c.NewDeployment(sys.Id)
-	deployment.JobAgentId = &jobAgent.Id
-	deployment.JobAgentConfig = map[string]any{}
-	deployment.ResourceSelector = &oapi.Selector{}
-	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
-
-	environment := c.NewEnvironment(sys.Id)
-	environment.ResourceSelector = &oapi.Selector{}
-	_ = environment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, environment)
-
-	resource := c.NewResource(workspaceID)
-	engine.PushEvent(ctx, handler.ResourceCreate, resource)
-
-	// Don't create a real deployment version - we only want to test the fake job with nil release
-
-	// Create a fake job with a fake release ID
-	fakeReleaseId := uuid.New().String()
-	fakeJob := &oapi.Job{
-		Id:             uuid.New().String(),
-		ReleaseId:      fakeReleaseId,
-		JobAgentId:     jobAgent.Id,
-		JobAgentConfig: map[string]any{},
-		Status:         oapi.JobStatusPending,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		Metadata:       map[string]string{},
-	}
-
-	// Insert the job
-	engine.Workspace().Jobs().Upsert(ctx, fakeJob)
-
-	// EDGE CASE 2: Manually insert nil into the releases map
-	// This simulates a deserialization bug or database corruption
-	engine.Workspace().Store().Repo().Releases.Set(fakeReleaseId, nil)
-
-	// Verify nil is in the map
-	release, ok := engine.Workspace().Store().Repo().Releases.Get(fakeReleaseId)
-	if !ok {
-		t.Fatalf("expected key to exist in map")
-	}
-	if release != nil {
-		t.Fatalf("expected nil release in map, got %v", release)
-	}
-
-	// CRITICAL: This should NOT panic when accessing nil release
-	releaseTarget := &oapi.ReleaseTarget{
-		ResourceId:    resource.Id,
-		EnvironmentId: environment.Id,
-		DeploymentId:  deployment.Id,
-	}
-
-	// This should handle the nil release gracefully
-	jobsForTarget := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
-
-	// The job should be filtered out because its release is nil
-	if len(jobsForTarget) != 0 {
-		t.Fatalf("expected 0 jobs for release target (release is nil), got %d", len(jobsForTarget))
 	}
 }
 

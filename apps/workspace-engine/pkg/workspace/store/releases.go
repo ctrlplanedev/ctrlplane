@@ -19,7 +19,7 @@ type Releases struct {
 }
 
 func (r *Releases) Upsert(ctx context.Context, release *oapi.Release) error {
-	r.repo.Releases.Set(release.ID(), release)
+	r.repo.Releases.Set(release)
 	r.store.changeset.RecordUpsert(release)
 	return nil
 }
@@ -44,10 +44,11 @@ func (r *Releases) Remove(ctx context.Context, id string) {
 
 func (r *Releases) Jobs(releaseId string) map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
-	for _, job := range r.repo.Jobs.Items() {
-		if job.ReleaseId != releaseId {
-			continue
-		}
+	jobItems, err := r.repo.Jobs.GetBy("release_id", releaseId)
+	if err != nil {
+		return jobs
+	}
+	for _, job := range jobItems {
 		jobs[job.Id] = job
 	}
 	return jobs

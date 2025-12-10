@@ -13,27 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper function to create a metric provider
-func createHTTPProvider(url string, method oapi.HTTPMetricProviderMethod) oapi.MetricProvider {
-	provider := oapi.MetricProvider{}
-	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:    url,
-		Method: &method,
-		Type:   oapi.Http,
-	})
-	return provider
-}
-
-func createHTTPProviderWithTimeout(url string, method oapi.HTTPMetricProviderMethod, timeout string) oapi.MetricProvider {
-	provider := oapi.MetricProvider{}
-	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:     url,
-		Method:  &method,
-		Type:    oapi.Http,
-		Timeout: &timeout,
-	})
-	return provider
-}
+// Note: Test helpers (NewTestServer, createTestHTTPProvider, etc.) are defined in scheduler_test.go
 
 // Tests for Manager
 
@@ -52,16 +32,13 @@ func TestManager_StartVerification_Success(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
-	// Create metric specs
-	method := oapi.GET
-	provider := oapi.MetricProvider{}
-	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:    "http://example.com/health",
-		Method: &method,
-		Type:   oapi.Http,
-	})
+	// Create metric specs using test server
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
@@ -69,7 +46,7 @@ func TestManager_StartVerification_Success(t *testing.T) {
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			FailureLimit:     ptr(2),
-			Provider:         provider,
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -103,35 +80,26 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
-	method := oapi.GET
-	provider1 := oapi.MetricProvider{}
-	_ = provider1.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:    "http://example.com/health",
-		Method: &method,
-		Type:   oapi.Http,
-	})
-	provider2 := oapi.MetricProvider{}
-	_ = provider2.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:    "http://example.com/status",
-		Method: &method,
-		Type:   oapi.Http,
-	})
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         provider1,
+			Provider:         createTestHTTPProvider(ts.URL+"/health", oapi.GET),
 		},
 		{
 			Name:             "availability-check",
 			Interval:         "1m",
 			Count:            3,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         provider2,
+			Provider:         createTestHTTPProvider(ts.URL+"/status", oapi.GET),
 		},
 	}
 
@@ -154,22 +122,19 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
-	method := oapi.GET
-	provider := oapi.MetricProvider{}
-	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:    "http://example.com/health",
-		Method: &method,
-		Type:   oapi.Http,
-	})
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         provider,
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -216,6 +181,10 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	failureLimit := 3
@@ -226,7 +195,7 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 			Count:            10,
 			SuccessCondition: "result.statusCode == 200",
 			FailureLimit:     &failureLimit,
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -248,6 +217,10 @@ func TestManager_StopVerification_Success(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	metrics := []oapi.VerificationMetricSpec{
@@ -256,7 +229,7 @@ func TestManager_StopVerification_Success(t *testing.T) {
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -467,13 +440,17 @@ func TestManager_StartAndStopMultiple(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -508,6 +485,10 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	method := oapi.POST
@@ -518,7 +499,7 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 
 	provider := oapi.MetricProvider{}
 	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
-		Url:     "http://api.example.com/verify",
+		Url:     ts.URL + "/verify",
 		Method:  &method,
 		Type:    oapi.Http,
 		Timeout: &timeout,
@@ -564,6 +545,10 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	metrics := []oapi.VerificationMetricSpec{
@@ -573,7 +558,7 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 			Count:            3,
 			SuccessCondition: "result.statusCode == 200",
 			FailureLimit:     ptr(2),
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -588,6 +573,9 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
 	require.True(t, exists)
 	assert.GreaterOrEqual(t, len(verification.Metrics[0].Measurements), 1)
+
+	// Verify test server received requests
+	assert.GreaterOrEqual(t, ts.RequestCount(), 1)
 
 	// Stop verification
 	manager.StopVerification(ctx, release.ID())
@@ -605,13 +593,17 @@ func BenchmarkManager_StartVerification(b *testing.B) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -639,13 +631,17 @@ func BenchmarkManager_StopVerification(b *testing.B) {
 	s := newTestStore()
 	manager := NewManager(s)
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -808,6 +804,10 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 	hooks := newMockHooks()
 	manager := NewManager(s, WithHooks(hooks))
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	metrics := []oapi.VerificationMetricSpec{
@@ -816,7 +816,7 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -843,6 +843,10 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 	hooks := newMockHooks()
 	manager := NewManager(s, WithHooks(hooks))
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	metrics := []oapi.VerificationMetricSpec{
@@ -851,7 +855,7 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 			Interval:         "30s",
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -878,6 +882,10 @@ func TestManager_HooksOnMeasurementTaken(t *testing.T) {
 	hooks := newMockHooks()
 	manager := NewManager(s, WithHooks(hooks))
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	metrics := []oapi.VerificationMetricSpec{
@@ -886,7 +894,7 @@ func TestManager_HooksOnMeasurementTaken(t *testing.T) {
 			Interval:         "100ms",
 			Count:            3,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -920,6 +928,10 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 	hooks := newMockHooks()
 	manager := NewManager(s, WithHooks(hooks))
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	// Use a very short interval, low count, and short timeout to complete quickly
@@ -929,7 +941,7 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 			Interval:         "50ms",
 			Count:            2, // Only 2 measurements to complete quickly
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProviderWithTimeout("http://example.com/health", oapi.GET, "10ms"),
+			Provider:         createTestHTTPProviderWithTimeout(ts.URL, oapi.GET, "100ms"),
 		},
 	}
 
@@ -962,6 +974,10 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 	hooks := newMockHooks()
 	manager := NewManager(s, WithHooks(hooks))
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	// Use a very short interval, low count, and short timeout to complete quickly
@@ -971,7 +987,7 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 			Interval:         "50ms",
 			Count:            2, // Only 2 measurements to complete quickly
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProviderWithTimeout("http://example.com/health", oapi.GET, "10ms"),
+			Provider:         createTestHTTPProviderWithTimeout(ts.URL, oapi.GET, "100ms"),
 		},
 	}
 
@@ -1002,6 +1018,10 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 	s := newTestStore()
 	hooks := newMockHooks()
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	// Inject errors in all hooks
 	hooks.errorOnVerificationStarted = assert.AnError
 	hooks.errorOnMeasurementTaken = assert.AnError
@@ -1019,7 +1039,7 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 			Interval:         "50ms",
 			Count:            2,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
 
@@ -1048,6 +1068,10 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 	hooks := newMockHooks()
 	manager := NewManager(s, WithHooks(hooks))
 
+	// Create test server
+	ts := NewTestServer()
+	defer ts.Close()
+
 	release := createTestRelease(s, ctx)
 
 	// Create multiple metrics
@@ -1057,14 +1081,14 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 			Interval:         "50ms",
 			Count:            2,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/health", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL+"/health", oapi.GET),
 		},
 		{
 			Name:             "health-check-2",
 			Interval:         "50ms",
 			Count:            2,
 			SuccessCondition: "result.statusCode == 200",
-			Provider:         createHTTPProvider("http://example.com/metrics", oapi.GET),
+			Provider:         createTestHTTPProvider(ts.URL+"/metrics", oapi.GET),
 		},
 	}
 

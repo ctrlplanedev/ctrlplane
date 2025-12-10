@@ -2,6 +2,9 @@ package verification
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +20,76 @@ import (
 // Helper functions
 func ptr[T any](v T) *T {
 	return &v
+}
+
+// TestServer wraps httptest.Server with helper methods for verification tests
+type TestServer struct {
+	*httptest.Server
+	statusCode   int
+	responseBody any
+	requestCount int
+	mu           sync.Mutex
+}
+
+// NewTestServer creates a test HTTP server that returns configurable responses.
+// The server returns 200 with {"status": "ok"} by default.
+func NewTestServer() *TestServer {
+	ts := &TestServer{
+		statusCode:   http.StatusOK,
+		responseBody: map[string]any{"status": "ok"},
+	}
+
+	ts.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts.mu.Lock()
+		ts.requestCount++
+		statusCode := ts.statusCode
+		body := ts.responseBody
+		ts.mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(body)
+	}))
+
+	return ts
+}
+
+// SetResponse configures the server's response for subsequent requests
+func (ts *TestServer) SetResponse(statusCode int, body any) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	ts.statusCode = statusCode
+	ts.responseBody = body
+}
+
+// RequestCount returns the number of requests received
+func (ts *TestServer) RequestCount() int {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.requestCount
+}
+
+// createTestHTTPProvider creates an HTTP metric provider pointing to the test server
+func createTestHTTPProvider(serverURL string, method oapi.HTTPMetricProviderMethod) oapi.MetricProvider {
+	provider := oapi.MetricProvider{}
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+		Url:    serverURL,
+		Method: &method,
+		Type:   oapi.Http,
+	})
+	return provider
+}
+
+// createTestHTTPProviderWithTimeout creates an HTTP metric provider with custom timeout
+func createTestHTTPProviderWithTimeout(serverURL string, method oapi.HTTPMetricProviderMethod, timeout string) oapi.MetricProvider {
+	provider := oapi.MetricProvider{}
+	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
+		Url:     serverURL,
+		Method:  &method,
+		Type:    oapi.Http,
+		Timeout: &timeout,
+	})
+	return provider
 }
 
 func newTestStore() *store.Store {
@@ -105,12 +178,16 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 }
 
 func createTestVerification(s *store.Store, ctx context.Context, releaseID string, metricCount int, interval string) *oapi.ReleaseVerification {
+	return createTestVerificationWithURL(s, ctx, releaseID, metricCount, interval, "http://localhost/health")
+}
+
+func createTestVerificationWithURL(s *store.Store, ctx context.Context, releaseID string, metricCount int, interval string, url string) *oapi.ReleaseVerification {
 	metrics := make([]oapi.VerificationMetricStatus, metricCount)
 	for i := 0; i < metricCount; i++ {
 		// Create a simple HTTP provider config
 		method := oapi.GET
 		httpProvider := oapi.HTTPMetricProvider{
-			Url:    "http://example.com/health",
+			Url:    url,
 			Method: &method,
 			Type:   oapi.Http,
 		}
