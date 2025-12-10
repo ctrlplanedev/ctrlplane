@@ -37,6 +37,37 @@ export const resourcesRouter = router({
       return data;
     }),
 
+  delete: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        resourceIdentifier: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, resourceIdentifier } = input;
+      const result = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
+        {
+          params: { path: { workspaceId, resourceIdentifier } },
+        },
+      );
+      if (result.error) {
+        throw new Error(
+          `Failed to fetch resource: ${JSON.stringify(result.error)}`,
+        );
+      }
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.ResourceDeleted,
+        timestamp: Date.now(),
+        data: result.data,
+      });
+
+      return result.data;
+    }),
+
   get: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

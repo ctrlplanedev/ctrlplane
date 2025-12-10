@@ -1,4 +1,3 @@
-import { ExternalLink } from "lucide-react";
 import { Link } from "react-router";
 
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
@@ -18,6 +17,7 @@ import { LinksSection } from "./_components/LinksSection";
 import { MetadataSection } from "./_components/MetadataSection";
 import { RelationsSection } from "./_components/RelationsSection";
 import { ReleaseTargets } from "./_components/ReleaseTargets";
+import { ResourceActions } from "./_components/ResourceActions";
 import { ResourceBasicInfo } from "./_components/ResourceBasicInfo";
 import { useResource } from "./_components/ResourceProvider";
 import { ResourceVariables } from "./_components/Variables";
@@ -65,7 +65,10 @@ export function ResourceHeader() {
         className="h-12 w-12"
       />
       <div className="flex-1 space-y-1">
-        <h1 className="text-3xl font-bold">{resource.name}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">{resource.name}</h1>
+          <ResourceActions />
+        </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span className="font-mono">{resource.identifier}</span>
           <span>•</span>
@@ -79,19 +82,7 @@ export function ResourceHeader() {
 }
 
 export default function ResourceDetail() {
-  const { workspace } = useWorkspace();
   const { resource } = useResource();
-
-  const links =
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    resource.metadata[ReservedMetadataKey.Links] != null
-      ? (JSON.parse(resource.metadata[ReservedMetadataKey.Links]) as Record<
-          string,
-          string
-        >)
-      : {};
-
-  // Filter out reserved metadata keys for display
   const displayMetadata = Object.fromEntries(
     Object.entries(resource.metadata).filter(
       ([key]) => !Object.values(ReservedMetadataKey).includes(key as any),
