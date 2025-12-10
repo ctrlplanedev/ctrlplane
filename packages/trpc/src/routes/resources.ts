@@ -41,15 +41,18 @@ export const resourcesRouter = router({
     .input(
       z.object({
         workspaceId: z.string(),
-        resourceIdentifier: z.string(),
+        identifier: z.string(),
       }),
     )
     .mutation(async ({ input }) => {
-      const { workspaceId, resourceIdentifier } = input;
+      const { workspaceId, identifier } = input;
+      const resourceIdentifier = encodeURIComponent(identifier);
       const result = await getClientFor(workspaceId).GET(
         "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
         {
-          params: { path: { workspaceId, resourceIdentifier } },
+          params: {
+            path: { workspaceId, resourceIdentifier },
+          },
         },
       );
       if (result.error) {
