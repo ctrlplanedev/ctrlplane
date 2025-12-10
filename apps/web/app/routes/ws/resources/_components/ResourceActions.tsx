@@ -35,7 +35,7 @@ function useDeleteResource() {
   const handleDelete = () =>
     mutateAsync({
       workspaceId: workspace.id,
-      resourceIdentifier: resource.identifier,
+      identifier: resource.identifier,
     })
       .then(() => toast.success("Resource deletion queued successfully"))
       .then(() => navigate(`/${workspace.slug}/resources`));
