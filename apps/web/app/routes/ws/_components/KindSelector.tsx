@@ -1,3 +1,4 @@
+import { capitalCase } from "change-case";
 import { useSearchParams } from "react-router";
 
 import { trpc } from "~/api/trpc";
@@ -41,13 +42,15 @@ export function KindSelector() {
   return (
     <Select value={kind ?? "all"} onValueChange={setKind}>
       <SelectTrigger>
-        <SelectValue placeholder="Select resource kind" />
+        {kind == null || kind === "all"
+          ? "Select kind"
+          : capitalCase(kind ?? "")}
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">All</SelectItem>
         {kinds.map((kind) => (
           <SelectItem key={kind} value={kind}>
-            {kind.charAt(0).toUpperCase() + kind.slice(1)}
+            {capitalCase(kind)}
           </SelectItem>
         ))}
       </SelectContent>
