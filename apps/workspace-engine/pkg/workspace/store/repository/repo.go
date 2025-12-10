@@ -4,6 +4,9 @@ import (
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/workspace/store/repository/indexstore"
+
+	"github.com/hashicorp/go-memdb"
 )
 
 // createTypedStore creates an in-memory store and registers it with the persistence router.
@@ -14,23 +17,24 @@ func createTypedStore[E any](router *persistence.RepositoryRouter, entityType st
 	return store
 }
 
-// func createMemSQLStore[T any](router *persistence.RepositoryRouter, entityType string, tableBuilder *memsql.TableBuilder) *memsql.MemSQL[T] {
-// 	store := memsql.NewMemSQL[T](tableBuilder)
-// 	router.Register(entityType, &MemSQLAdapter[T]{store: store})
-// 	return store
-// }
+func createMemDBStore[E persistence.Entity](router *persistence.RepositoryRouter, entityType string, db *memdb.MemDB) *indexstore.Store[E] {
+	adapter := indexstore.NewMemDBAdapter[E](db, entityType)
+	router.Register(entityType, adapter)
 
-// func createMapStore[T any](router *persistence.RepositoryRouter, entityType string) Map[T] {
-// 	store := Map[T]{}
-// 	router.Register(entityType, &MapStoreAdapter[T]{store: store})
-// 	return store
-// }
+	return indexstore.NewStore[E](db, entityType)
+}
 
 func New(wsId string) *InMemoryStore {
 	router := persistence.NewRepositoryRouter()
+	memdb, err := indexstore.NewDB()
+	if err != nil {
+		panic(err)
+	}
 
 	return &InMemoryStore{
-		router:                   router,
+		router: router,
+		db:     memdb,
+
 		ReleaseVerifications:     createTypedStore[*oapi.ReleaseVerification](router, "release_verification"),
 		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
 		ResourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
@@ -44,7 +48,7 @@ func New(wsId string) *InMemoryStore {
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		Systems:                  createTypedStore[*oapi.System](router, "system"),
 		Releases:                 createTypedStore[*oapi.Release](router, "release"),
-		Jobs:                     createTypedStore[*oapi.Job](router, "job"),
+		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		JobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
@@ -57,6 +61,7 @@ func New(wsId string) *InMemoryStore {
 // for receiving generic persistence updates from Kafka/Pebble.
 type InMemoryStore struct {
 	router *persistence.RepositoryRouter
+	db     *memdb.MemDB
 
 	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
@@ -74,7 +79,7 @@ type InMemoryStore struct {
 	Releases             cmap.ConcurrentMap[string, *oapi.Release]
 	ReleaseVerifications cmap.ConcurrentMap[string, *oapi.ReleaseVerification]
 
-	Jobs      cmap.ConcurrentMap[string, *oapi.Job]
+	Jobs      *indexstore.Store[*oapi.Job]
 	JobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
 
 	GithubEntities      cmap.ConcurrentMap[string, *oapi.GithubEntity]

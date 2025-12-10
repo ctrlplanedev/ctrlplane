@@ -8,7 +8,7 @@ import (
 // String converts a LiteralValue to its string representation,
 // handling strings, numbers, booleans, and other JSON types.
 func (lv LiteralValue) String() string {
-	var value interface{}
+	var value any
 	if err := json.Unmarshal(lv.union, &value); err != nil {
 		return ""
 	}

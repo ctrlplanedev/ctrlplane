@@ -25,7 +25,7 @@ func (j *Jobs) Items() map[string]*oapi.Job {
 }
 
 func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
-	j.repo.Jobs.Set(job.Id, job)
+	j.repo.Jobs.Set(job)
 	j.store.changeset.RecordUpsert(job)
 }
 
@@ -46,11 +46,11 @@ func (j *Jobs) GetPending() map[string]*oapi.Job {
 
 func (j *Jobs) GetJobsForAgent(agentId string) map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
-
-	for _, job := range j.repo.Jobs.Items() {
-		if job.JobAgentId != agentId {
-			continue
-		}
+	jobItems, err := j.repo.Jobs.GetBy("job_agent_id", agentId)
+	if err != nil {
+		return nil
+	}
+	for _, job := range jobItems {
 		jobs[job.Id] = job
 	}
 	return jobs
