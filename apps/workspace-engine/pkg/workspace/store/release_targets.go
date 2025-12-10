@@ -15,9 +15,12 @@ var tracer = otel.Tracer("workspace/store/release_targets")
 
 func NewReleaseTargets(store *Store) *ReleaseTargets {
 	db := store.repo.DB()
+	getKey := func(entity *oapi.ReleaseTarget) string {
+		return entity.Key()
+	}
 	rt := &ReleaseTargets{
 		store:          store,
-		releaseTargets: indexstore.NewStore[*oapi.ReleaseTarget](db, "release_target"),
+		releaseTargets: indexstore.NewStore(db, "release_target", getKey),
 	}
 	return rt
 }

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
@@ -20,8 +21,15 @@ func createTypedStore[E any](router *persistence.RepositoryRouter, entityType st
 func createMemDBStore[E persistence.Entity](router *persistence.RepositoryRouter, entityType string, db *memdb.MemDB) *indexstore.Store[E] {
 	adapter := indexstore.NewMemDBAdapter[E](db, entityType)
 	router.Register(entityType, adapter)
-
-	return indexstore.NewStore[E](db, entityType)
+	fn := func(entity E) string {
+		keyer, ok := any(entity).(persistence.Entity)
+		if !ok {
+			panic(fmt.Errorf("entity does not implement persistence.Entity interface"))
+		}
+		_, key := keyer.CompactionKey()
+		return key
+	}
+	return indexstore.NewStore[E](db, entityType, fn)
 }
 
 func New(wsId string) *InMemoryStore {

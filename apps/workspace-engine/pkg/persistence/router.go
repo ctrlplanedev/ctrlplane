@@ -43,7 +43,7 @@ func (r *RepositoryRouter) Apply(ctx context.Context, changes Changes) error {
 		entityType, _ := change.Entity.CompactionKey()
 		repo, exists := r.repositories[entityType]
 		if !exists {
-			continue
+			return fmt.Errorf("no repository registered for entity type: %s", entityType)
 		}
 
 		var err error

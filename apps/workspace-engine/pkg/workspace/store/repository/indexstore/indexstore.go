@@ -2,23 +2,24 @@ package indexstore
 
 import (
 	"fmt"
-	"workspace-engine/pkg/persistence"
 
 	"github.com/hashicorp/go-memdb"
 )
 
 // Store is a generic wrapper around memdb for a specific table.
 // It provides type-safe read operations for querying entities.
-type Store[E persistence.Entity] struct {
+type Store[E any] struct {
 	db        *memdb.MemDB
 	tableName string
+	getKey    func(E) string
 }
 
 // NewStore creates a new Store for a specific table.
-func NewStore[E persistence.Entity](db *memdb.MemDB, tableName string) *Store[E] {
+func NewStore[E any](db *memdb.MemDB, tableName string, getKey func(E) string) *Store[E] {
 	return &Store[E]{
 		db:        db,
 		tableName: tableName,
+		getKey:    getKey,
 	}
 }
 
@@ -114,7 +115,7 @@ func (s *Store[E]) Items() map[string]E {
 		if !ok {
 			continue
 		}
-		_, id := entity.CompactionKey()
+		id := s.getKey(entity)
 		entities[id] = entity
 	}
 	return entities
