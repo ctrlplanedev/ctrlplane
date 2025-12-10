@@ -404,3 +404,27 @@ func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId str
 		"items":  releaseTargetsWithState,
 	})
 }
+
+func (r *Resources) GetKindsForWorkspace(c *gin.Context, workspaceId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	kinds := make(map[string]bool)
+	for _, resource := range ws.Resources().Items() {
+		kinds[resource.Kind] = true
+	}
+
+	kindsList := make([]string, 0, len(kinds))
+	for kind := range kinds {
+		kindsList = append(kindsList, kind)
+	}
+
+	sort.Strings(kindsList)
+
+	c.JSON(http.StatusOK, kindsList)
+}

@@ -1905,6 +1905,9 @@ type ServerInterface interface {
 	// Get a resource provider by name
 	// (GET /v1/workspaces/{workspaceId}/resource-providers/name/{name})
 	GetResourceProviderByName(c *gin.Context, workspaceId string, name string)
+	// Get kinds for a workspace
+	// (GET /v1/workspaces/{workspaceId}/resources/kinds)
+	GetKindsForWorkspace(c *gin.Context, workspaceId string)
 	// Query resources with CEL expression
 	// (POST /v1/workspaces/{workspaceId}/resources/query)
 	QueryResources(c *gin.Context, workspaceId string, params QueryResourcesParams)
@@ -3512,6 +3515,30 @@ func (siw *ServerInterfaceWrapper) GetResourceProviderByName(c *gin.Context) {
 	siw.Handler.GetResourceProviderByName(c, workspaceId, name)
 }
 
+// GetKindsForWorkspace operation middleware
+func (siw *ServerInterfaceWrapper) GetKindsForWorkspace(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetKindsForWorkspace(c, workspaceId)
+}
+
 // QueryResources operation middleware
 func (siw *ServerInterfaceWrapper) QueryResources(c *gin.Context) {
 
@@ -3875,6 +3902,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers", wrapper.GetResourceProviders)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/cache-batch", wrapper.CacheBatch)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resource-providers/name/:name", wrapper.GetResourceProviderByName)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/kinds", wrapper.GetKindsForWorkspace)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/relationships", wrapper.GetRelationshipsForResource)

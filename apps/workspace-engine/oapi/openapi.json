@@ -4896,6 +4896,59 @@
             "summary": "Get a resource provider by name"
          }
       },
+      "/v1/workspaces/{workspaceId}/resources/kinds": {
+         "get": {
+            "description": "Returns a list of all resource kinds in a workspace.",
+            "operationId": "getKindsForWorkspace",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "items": {
+                              "type": "string"
+                           },
+                           "type": "array"
+                        }
+                     }
+                  },
+                  "description": "The requested kinds"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get kinds for a workspace"
+         }
+      },
       "/v1/workspaces/{workspaceId}/resources/query": {
          "post": {
             "description": "Returns paginated resources that match the provided CEL expression. Use the \"resource\" variable in your expression to access resource properties.",

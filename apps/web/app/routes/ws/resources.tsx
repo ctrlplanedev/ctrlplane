@@ -17,6 +17,7 @@ import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { CreateResourceDialog } from "./_components/CreateResourceDialog";
+import { KindSelector, useKindFilter } from "./_components/KindSelector";
 import { ResourceRow } from "./resources/_components/ResourceRow";
 
 export function meta() {
@@ -36,8 +37,11 @@ function useSearch() {
   const [searchDebounced, setSearchDebounced] = useState(search);
   useDebounce(
     () => {
+      const newParams = new URLSearchParams(searchParams);
+      if (search === "") newParams.set("cel", "true");
+      if (search !== "") newParams.set("cel", search);
+      setSearchParams(newParams);
       setSearchDebounced(search);
-      setSearchParams({ cel: search });
     },
     1_000,
     [search],
@@ -59,10 +63,12 @@ export default function Resources() {
 
   const { search, setSearch, searchDebounced } = useSearch();
   const { cleanedCel, isLoading } = useCleanedCel(searchDebounced);
+  const { kind } = useKindFilter();
   const { data: resources } = trpc.resource.list.useQuery(
     {
       workspaceId: workspace.id,
       selector: { cel: cleanedCel },
+      kind,
       limit: 200,
       offset: 0,
     },
@@ -98,6 +104,9 @@ export default function Resources() {
           <Badge variant="outline" className="h-9">
             {resources?.total} resource{resources?.total === 1 ? "" : "s"}
           </Badge>
+
+          <KindSelector />
+
           <div className="flex min-w-[350px] items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

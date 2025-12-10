@@ -108,6 +108,24 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/resources/kinds': {
+    get: {
+      summary: 'Get kinds for a workspace',
+      operationId: 'getKindsForWorkspace',
+      description: 'Returns a list of all resource kinds in a workspace.',
+      parameters: [
+        openapi.workspaceIdParam(),
+      ],
+      responses: openapi.okResponse(
+        {
+          type: 'array',
+          items: { type: 'string' },
+        },
+        'The requested kinds',
+      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/resources/query': {
     post: {
       summary: 'Query resources with CEL expression',

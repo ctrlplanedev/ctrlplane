@@ -85,16 +85,26 @@ export const resourcesRouter = router({
         selector: z
           .object({ json: z.record(z.string(), z.unknown()) })
           .or(z.object({ cel: z.string() })),
+        kind: z.string().optional(),
         limit: z.number().min(1).max(1000).default(50),
         offset: z.number().min(0).default(0),
       }),
     )
     .query(async ({ input }) => {
-      const { workspaceId, selector, limit, offset } = input;
+      const { workspaceId, selector, kind, limit, offset } = input;
+
+      const filter = (() => {
+        if (kind == null) return selector;
+        const kindFilter = `resource.kind == "${kind}"`;
+        if ("cel" in selector)
+          return { cel: `(${selector.cel}) && ${kindFilter}` };
+        return { cel: kindFilter };
+      })();
+
       const result = await getClientFor(input.workspaceId).POST(
         "/v1/workspaces/{workspaceId}/resources/query",
         {
-          body: { filter: selector },
+          body: { filter },
           params: { path: { workspaceId }, query: { limit, offset } },
         },
       );
@@ -219,5 +229,22 @@ export const resourcesRouter = router({
           value: formattedValue,
         },
       });
+    }),
+
+  kinds: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid() }))
+    .query(async ({ input }) => {
+      const { workspaceId } = input;
+      const result = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/resources/kinds",
+        { params: { path: { workspaceId } } },
+      );
+
+      if (result.error != null)
+        throw new Error(
+          `Failed to fetch resource kinds: ${JSON.stringify(result.error)}`,
+        );
+
+      return result.data;
     }),
 });
