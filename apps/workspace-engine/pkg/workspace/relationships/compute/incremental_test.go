@@ -22,7 +22,6 @@ func TestFindRelationsForEntityAndRule_FromEntity(t *testing.T) {
 		Kind:        "pod",
 		Version:     "v1",
 		Metadata:    map[string]string{"region": "us-east"},
-		
 	}
 
 	// Create deployments that should match

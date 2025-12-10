@@ -63,6 +63,7 @@ local openapi = import '../lib/openapi.libsonnet';
       versionSelector: openapi.schemaRef('VersionSelectorRule'),
       deploymentDependency: openapi.schemaRef('DeploymentDependencyRule'),
       deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
+      verification: openapi.schemaRef('VerificationRule'),
     },
   },
 

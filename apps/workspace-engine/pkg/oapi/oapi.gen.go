@@ -142,6 +142,14 @@ const (
 	Sleep SleepMetricProviderType = "sleep"
 )
 
+// Defines values for VerificationRuleTriggerOn.
+const (
+	JobCreated VerificationRuleTriggerOn = "jobCreated"
+	JobFailure VerificationRuleTriggerOn = "jobFailure"
+	JobStarted VerificationRuleTriggerOn = "jobStarted"
+	JobSuccess VerificationRuleTriggerOn = "jobSuccess"
+)
+
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -493,6 +501,7 @@ type PolicyRule struct {
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
+	Verification           *VerificationRule           `json:"verification,omitempty"`
 	VersionSelector        *VersionSelectorRule        `json:"versionSelector,omitempty"`
 }
 
@@ -834,6 +843,18 @@ type VerificationMetricStatus struct {
 	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
 	SuccessCondition string `json:"successCondition"`
 }
+
+// VerificationRule defines model for VerificationRule.
+type VerificationRule struct {
+	// Metrics Metrics to verify
+	Metrics []VerificationMetricSpec `json:"metrics"`
+
+	// TriggerOn When to trigger verification
+	TriggerOn *VerificationRuleTriggerOn `json:"triggerOn,omitempty"`
+}
+
+// VerificationRuleTriggerOn When to trigger verification
+type VerificationRuleTriggerOn string
 
 // VersionSelectorRule defines model for VersionSelectorRule.
 type VersionSelectorRule struct {

@@ -1065,6 +1065,7 @@ export interface components {
             gradualRollout?: components["schemas"]["GradualRolloutRule"];
             id: string;
             policyId: string;
+            verification?: components["schemas"]["VerificationRule"];
         };
         PolicyTargetSelector: {
             deploymentSelector?: components["schemas"]["Selector"];
@@ -1371,6 +1372,16 @@ export interface components {
         VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
             /** @description Individual verification measurements taken for this metric */
             measurements: components["schemas"]["VerificationMeasurement"][];
+        };
+        VerificationRule: {
+            /** @description Metrics to verify */
+            metrics: components["schemas"]["VerificationMetricSpec"][];
+            /**
+             * @description When to trigger verification
+             * @default jobSuccess
+             * @enum {string}
+             */
+            triggerOn: "jobCreated" | "jobStarted" | "jobSuccess" | "jobFailure";
         };
         Workspace: {
             /** @description AWS IAM role ARN for integrations */

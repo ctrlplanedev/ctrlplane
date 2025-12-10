@@ -202,4 +202,23 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
+
+  VerificationRule: {
+    type: 'object',
+    required: ['metrics'],
+    properties: {
+      triggerOn: {
+        type: 'string',
+        enum: ['jobCreated', 'jobStarted', 'jobSuccess', 'jobFailure'],
+        default: 'jobSuccess',
+        description: 'When to trigger verification',
+      },
+      metrics: {
+        type: 'array',
+        items: openapi.schemaRef('VerificationMetricSpec'),
+        minItems: 1,
+        description: 'Metrics to verify',
+      },
+    },
+  },
 }

@@ -115,36 +115,25 @@ func (v *VerificationAction) extractVerificationMetrics(
 	return allMetrics
 }
 
-// VerificationRule represents the verification configuration in a policy rule
-// Note: This will be added to oapi.PolicyRule once the OpenAPI schema is updated
-type VerificationRule struct {
-	TriggerOn *string                       `json:"triggerOn,omitempty"`
-	Metrics   []oapi.VerificationMetricSpec `json:"metrics"`
-}
-
 // getVerificationRule extracts the verification rule from a policy rule
-// TODO: Once oapi.PolicyRule has a Verification field, update this to use it directly
-func (v *VerificationAction) getVerificationRule(rule *oapi.PolicyRule) *VerificationRule {
-	// Placeholder: This will be replaced with rule.Verification once OpenAPI schema is updated
-	// For now, return nil to indicate no verification rules exist
-	_ = rule
-	return nil
+func (v *VerificationAction) getVerificationRule(rule *oapi.PolicyRule) *oapi.VerificationRule {
+	return rule.Verification
 }
 
 // getTriggerFromRule determines the trigger for a verification rule
-func (v *VerificationAction) getTriggerFromRule(rule *VerificationRule) action.ActionTrigger {
+func (v *VerificationAction) getTriggerFromRule(rule *oapi.VerificationRule) action.ActionTrigger {
 	if rule.TriggerOn == nil {
 		return action.TriggerJobSuccess // Default
 	}
 
 	switch *rule.TriggerOn {
-	case "jobCreated":
+	case oapi.JobCreated:
 		return action.TriggerJobCreated
-	case "jobStarted":
+	case oapi.JobStarted:
 		return action.TriggerJobStarted
-	case "jobSuccess":
+	case oapi.JobSuccess:
 		return action.TriggerJobSuccess
-	case "jobFailure":
+	case oapi.JobFailure:
 		return action.TriggerJobFailure
 	default:
 		return action.TriggerJobSuccess

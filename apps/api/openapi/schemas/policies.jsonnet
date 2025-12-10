@@ -99,6 +99,7 @@ local openapi = import '../lib/openapi.libsonnet';
       gradualRollout: openapi.schemaRef('GradualRolloutRule'),
       deploymentDependency: openapi.schemaRef('DeploymentDependencyRule'),
       deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
+      verification: openapi.schemaRef('VerificationRule'),
     },
   },
 

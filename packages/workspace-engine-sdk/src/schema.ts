@@ -1366,6 +1366,7 @@ export interface components {
       id: string;
       policyId: string;
       retry?: components["schemas"]["RetryRule"];
+      verification?: components["schemas"]["VerificationRule"];
       versionSelector?: components["schemas"]["VersionSelectorRule"];
     };
     PolicySkip: {
@@ -1665,6 +1666,16 @@ export interface components {
     VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
       /** @description Individual verification measurements taken for this metric */
       measurements: components["schemas"]["VerificationMeasurement"][];
+    };
+    VerificationRule: {
+      /** @description Metrics to verify */
+      metrics: components["schemas"]["VerificationMetricSpec"][];
+      /**
+       * @description When to trigger verification
+       * @default jobSuccess
+       * @enum {string}
+       */
+      triggerOn: "jobCreated" | "jobStarted" | "jobSuccess" | "jobFailure";
     };
     VersionSelectorRule: {
       /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
