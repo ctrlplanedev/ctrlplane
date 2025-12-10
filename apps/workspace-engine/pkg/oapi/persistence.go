@@ -72,3 +72,7 @@ func (dvv *DeploymentVariableValue) CompactionKey() (string, string) {
 func (rv *ReleaseVerification) CompactionKey() (string, string) {
 	return "release_verification", rv.Id
 }
+
+func (rt *ReleaseTarget) CompactionKey() (string, string) {
+	return "release_target", rt.Key()
+}

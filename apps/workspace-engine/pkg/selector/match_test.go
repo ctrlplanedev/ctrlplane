@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/jsonselector/unknown"
 )
@@ -1116,4 +1117,186 @@ func TestMatch_CelSelector_ComplexExpressions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMatch_Cache_ResourceUpdatedAtInvalidation(t *testing.T) {
+	ctx := context.Background()
+	selector := createCelSelector(t, "resource.name == 'server-v1'")
+
+	now := time.Now()
+	later := now.Add(time.Hour) // Use a significantly different time
+
+	// Resource v1 - matches selector
+	resourceV1 := &oapi.Resource{
+		Id:        "cache-invalidation-test-1",
+		Name:      "server-v1",
+		Kind:      "server",
+		CreatedAt: now,
+		UpdatedAt: &now,
+	}
+
+	match1, err := Match(ctx, selector, resourceV1)
+	if err != nil {
+		t.Fatalf("Match() error = %v", err)
+	}
+	if !match1 {
+		t.Error("Match() for v1 resource = false, want true")
+	}
+
+	// Resource v2 - same ID, different UpdatedAt, different name (doesn't match selector)
+	// This simulates an entity being updated
+	resourceV2 := &oapi.Resource{
+		Id:        "cache-invalidation-test-1",
+		Name:      "server-v2", // Changed - no longer matches selector
+		Kind:      "server",
+		CreatedAt: now,
+		UpdatedAt: &later, // Different UpdatedAt = different cache key
+	}
+
+	match2, err := Match(ctx, selector, resourceV2)
+	if err != nil {
+		t.Fatalf("Match() error = %v", err)
+	}
+	if match2 {
+		t.Error("Match() for v2 resource should be false (name changed), got true")
+	}
+}
+
+func TestMatch_Cache_ResourceCreatedAtFallback(t *testing.T) {
+	ctx := context.Background()
+	selector := createCelSelector(t, "resource.kind == 'database'")
+
+	now := time.Now()
+
+	// Resource without UpdatedAt should use CreatedAt for cache key
+	resource := &oapi.Resource{
+		Id:        "cache-test-resource-2",
+		Name:      "postgres",
+		Kind:      "database",
+		CreatedAt: now,
+		UpdatedAt: nil, // No UpdatedAt
+	}
+
+	match1, err := Match(ctx, selector, resource)
+	if err != nil {
+		t.Fatalf("Match() error = %v", err)
+	}
+	if !match1 {
+		t.Error("Match() = false, want true")
+	}
+
+	// Same resource should produce same result
+	match2, err := Match(ctx, selector, resource)
+	if err != nil {
+		t.Fatalf("Match() error = %v", err)
+	}
+	if !match2 {
+		t.Error("Match() should return true for same resource")
+	}
+}
+
+func TestMatch_Cache_DifferentUpdatedAtProducesDifferentKeys(t *testing.T) {
+	ctx := context.Background()
+	selector := createCelSelector(t, "resource.name == 'test'")
+
+	now := time.Now()
+	later := now.Add(time.Hour)
+
+	// Two resources with same ID but different UpdatedAt should have different cache keys
+	resource1 := &oapi.Resource{
+		Id:        "same-id-different-time",
+		Name:      "test",
+		Kind:      "server",
+		CreatedAt: now,
+		UpdatedAt: &now,
+	}
+
+	resource2 := &oapi.Resource{
+		Id:        "same-id-different-time",
+		Name:      "different-name",
+		Kind:      "server",
+		CreatedAt: now,
+		UpdatedAt: &later,
+	}
+
+	match1, _ := Match(ctx, selector, resource1)
+	if !match1 {
+		t.Error("First resource should match")
+	}
+
+	match2, _ := Match(ctx, selector, resource2)
+	if match2 {
+		t.Error("Second resource should not match (different UpdatedAt = different cache key)")
+	}
+}
+
+func TestEntityCacheKey(t *testing.T) {
+	now := time.Now()
+	later := now.Add(time.Hour)
+
+	t.Run("resource with UpdatedAt", func(t *testing.T) {
+		r := &oapi.Resource{Id: "r1", CreatedAt: now, UpdatedAt: &later}
+		key := entityCacheKey(r)
+		expected := "r1@" + later.Format(time.RFC3339Nano)
+		if key != expected {
+			t.Errorf("entityCacheKey() = %q, want %q", key, expected)
+		}
+	})
+
+	t.Run("resource without UpdatedAt uses CreatedAt", func(t *testing.T) {
+		r := &oapi.Resource{Id: "r2", CreatedAt: now, UpdatedAt: nil}
+		key := entityCacheKey(r)
+		expected := "r2@" + now.Format(time.RFC3339Nano)
+		if key != expected {
+			t.Errorf("entityCacheKey() = %q, want %q", key, expected)
+		}
+	})
+
+	t.Run("resource with zero CreatedAt returns empty (not cached)", func(t *testing.T) {
+		r := &oapi.Resource{Id: "r3", UpdatedAt: nil} // CreatedAt is zero
+		key := entityCacheKey(r)
+		if key != "" {
+			t.Errorf("entityCacheKey() for Resource with zero CreatedAt = %q, want empty string", key)
+		}
+	})
+
+	t.Run("job uses UpdatedAt", func(t *testing.T) {
+		j := &oapi.Job{Id: "j1", CreatedAt: now, UpdatedAt: later}
+		key := entityCacheKey(j)
+		expected := "j1@" + later.Format(time.RFC3339Nano)
+		if key != expected {
+			t.Errorf("entityCacheKey() = %q, want %q", key, expected)
+		}
+	})
+
+	t.Run("job with zero UpdatedAt returns empty (not cached)", func(t *testing.T) {
+		j := &oapi.Job{Id: "j2", CreatedAt: now} // UpdatedAt is zero
+		key := entityCacheKey(j)
+		if key != "" {
+			t.Errorf("entityCacheKey() for Job with zero UpdatedAt = %q, want empty string", key)
+		}
+	})
+
+	t.Run("deployment returns empty (not cached)", func(t *testing.T) {
+		d := &oapi.Deployment{Id: "d1", Name: "test"}
+		key := entityCacheKey(d)
+		if key != "" {
+			t.Errorf("entityCacheKey() for Deployment = %q, want empty string", key)
+		}
+	})
+
+	t.Run("environment returns empty (not cached)", func(t *testing.T) {
+		e := &oapi.Environment{Id: "e1", Name: "test"}
+		key := entityCacheKey(e)
+		if key != "" {
+			t.Errorf("entityCacheKey() for Environment = %q, want empty string", key)
+		}
+	})
+
+	t.Run("unknown type returns empty", func(t *testing.T) {
+		key := entityCacheKey("string-value")
+		if key != "" {
+			t.Errorf("entityCacheKey() for unknown type = %q, want empty string", key)
+		}
+	})
 }

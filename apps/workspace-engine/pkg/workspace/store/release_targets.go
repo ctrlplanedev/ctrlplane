@@ -6,6 +6,7 @@ import (
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
+	"workspace-engine/pkg/workspace/store/repository/indexstore"
 
 	"go.opentelemetry.io/otel"
 )
@@ -13,9 +14,10 @@ import (
 var tracer = otel.Tracer("workspace/store/release_targets")
 
 func NewReleaseTargets(store *Store) *ReleaseTargets {
+	db := store.repo.DB()
 	rt := &ReleaseTargets{
-		store:   store,
-		targets: make(map[string]*oapi.ReleaseTarget),
+		store:          store,
+		releaseTargets: indexstore.NewStore[*oapi.ReleaseTarget](db, "release_target"),
 	}
 	return rt
 }
@@ -23,22 +25,22 @@ func NewReleaseTargets(store *Store) *ReleaseTargets {
 type ReleaseTargets struct {
 	store *Store
 
-	targets map[string]*oapi.ReleaseTarget
+	releaseTargets *indexstore.Store[*oapi.ReleaseTarget]
 }
 
 // CurrentState returns the current state of all release targets in the system.
 func (r *ReleaseTargets) Items() (map[string]*oapi.ReleaseTarget, error) {
-	return r.targets, nil
+	return r.releaseTargets.Items(), nil
 }
 
 func (r *ReleaseTargets) Upsert(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error {
-	r.targets[releaseTarget.Key()] = releaseTarget
+	r.releaseTargets.Set(releaseTarget)
 	r.store.changeset.RecordUpsert(releaseTarget)
 	return nil
 }
 
 func (r *ReleaseTargets) Get(key string) *oapi.ReleaseTarget {
-	releaseTarget, ok := r.targets[key]
+	releaseTarget, ok := r.releaseTargets.Get(key)
 	if !ok {
 		return nil
 	}
@@ -47,7 +49,7 @@ func (r *ReleaseTargets) Get(key string) *oapi.ReleaseTarget {
 
 func (r *ReleaseTargets) Remove(key string) {
 	r.store.changeset.RecordDelete(r.Get(key))
-	delete(r.targets, key)
+	r.releaseTargets.Remove(key)
 }
 
 func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Release, *oapi.Job, error) {
@@ -157,33 +159,19 @@ func (r *ReleaseTargets) GetPolicies(ctx context.Context, releaseTarget *oapi.Re
 }
 
 func (r *ReleaseTargets) GetForResource(ctx context.Context, resourceId string) []*oapi.ReleaseTarget {
-	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, releaseTarget := range r.targets {
-		if releaseTarget.ResourceId == resourceId {
-			releaseTargets = append(releaseTargets, releaseTarget)
-		}
+	releaseTargets, err := r.releaseTargets.GetBy("resource_id", resourceId)
+	if err != nil {
+		return nil
 	}
 	return releaseTargets
 }
 
 func (r *ReleaseTargets) GetForDeployment(ctx context.Context, deploymentId string) ([]*oapi.ReleaseTarget, error) {
-	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, releaseTarget := range r.targets {
-		if releaseTarget.DeploymentId == deploymentId {
-			releaseTargets = append(releaseTargets, releaseTarget)
-		}
-	}
-	return releaseTargets, nil
+	return r.releaseTargets.GetBy("deployment_id", deploymentId)
 }
 
 func (r *ReleaseTargets) GetForEnvironment(ctx context.Context, environmentId string) ([]*oapi.ReleaseTarget, error) {
-	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, releaseTarget := range r.targets {
-		if releaseTarget.EnvironmentId == environmentId {
-			releaseTargets = append(releaseTargets, releaseTarget)
-		}
-	}
-	return releaseTargets, nil
+	return r.releaseTargets.GetBy("environment_id", environmentId)
 }
 
 func (r *ReleaseTargets) GetForSystem(ctx context.Context, systemId string) ([]*oapi.ReleaseTarget, error) {
@@ -200,7 +188,7 @@ func (r *ReleaseTargets) GetForSystem(ctx context.Context, systemId string) ([]*
 }
 
 func (r *ReleaseTargets) RemoveForResource(ctx context.Context, resourceId string) {
-	for _, releaseTarget := range r.targets {
+	for _, releaseTarget := range r.GetForResource(ctx, resourceId) {
 		if releaseTarget.ResourceId == resourceId {
 			r.Remove(releaseTarget.Key())
 		}

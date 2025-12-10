@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/store/diffcheck"
 	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -28,6 +30,26 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 		attribute.String("resource.id", resource.Id),
 	))
 	defer span.End()
+
+	// Check if resource already exists to determine if this is an update
+	existing, exists := r.repo.Resources.Get(resource.Id)
+
+	if exists && existing != nil {
+		// Preserve CreatedAt from the existing resource
+		if resource.CreatedAt.IsZero() {
+			resource.CreatedAt = existing.CreatedAt
+		}
+		// Only set UpdatedAt if there are actual changes
+		if len(diffcheck.HasResourceChanges(existing, resource)) > 0 {
+			now := time.Now()
+			resource.UpdatedAt = &now
+		}
+	} else {
+		// New resource - ensure CreatedAt is set
+		if resource.CreatedAt.IsZero() {
+			resource.CreatedAt = time.Now()
+		}
+	}
 
 	// Store the resource
 	r.repo.Resources.Set(resource.Id, resource)

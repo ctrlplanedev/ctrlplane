@@ -4,13 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
-	"github.com/dgraph-io/ristretto/v2"
-	"github.com/google/cel-go/cel"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 )
@@ -134,110 +130,6 @@ func BuildEntityMapCache(entities []*oapi.RelatableEntity) EntityMapCache {
 		}
 	}
 	return cache
-}
-
-func NewPropertyMatcher(pm *oapi.PropertyMatcher) *PropertyMatcher {
-	if pm.Operator == "" {
-		pm.Operator = "equals"
-	}
-	return &PropertyMatcher{
-		PropertyMatcher: pm,
-	}
-}
-
-// PropertyMatcher evaluates property matching between two entities
-type PropertyMatcher struct {
-	*oapi.PropertyMatcher
-}
-
-func (m *PropertyMatcher) Evaluate(ctx context.Context, from *oapi.RelatableEntity, to *oapi.RelatableEntity) bool {
-	fromValue, err := GetPropertyValue(from, m.FromProperty)
-	if err != nil {
-		return false
-	}
-	toValue, err := GetPropertyValue(to, m.ToProperty)
-	if err != nil {
-		return false
-	}
-
-	fromValueStr := extractValueAsString(fromValue)
-	toValueStr := extractValueAsString(toValue)
-
-	operator := strings.ToLower(strings.TrimSpace(string(m.Operator)))
-	switch operator {
-	case "equals":
-		return fromValueStr == toValueStr
-	case "not_equals", "notequals":
-		return fromValueStr != toValueStr
-	case "contains", "contain":
-		return strings.Contains(fromValueStr, toValueStr)
-	case "starts_with", "startswith":
-		return strings.HasPrefix(fromValueStr, toValueStr)
-	case "ends_with", "endswith":
-		return strings.HasSuffix(fromValueStr, toValueStr)
-	}
-	return true
-}
-
-var Env, _ = cel.NewEnv(
-	cel.Variable("from", cel.MapType(cel.StringType, cel.AnyType)),
-	cel.Variable("to", cel.MapType(cel.StringType, cel.AnyType)),
-)
-
-var compilationCache, _ = ristretto.NewCache(&ristretto.Config[string, cel.Program]{
-	NumCounters: 50000,
-	MaxCost:     1 << 30, // 1GB
-	BufferItems: 64,
-})
-
-func NewCelMatcher(cm *oapi.CelMatcher) (*CelMatcher, error) {
-	if program, ok := compilationCache.Get(cm.Cel); ok {
-		return &CelMatcher{program: program}, nil
-	}
-
-	ast, iss := Env.Compile(cm.Cel)
-	if iss.Err() != nil {
-		return nil, fmt.Errorf("failed to compile cel expression: %w", iss.Err())
-	}
-	program, err := Env.Program(ast)
-	if err != nil {
-		return nil, err
-	}
-	compilationCache.SetWithTTL(cm.Cel, program, 1, 24*time.Hour)
-	return &CelMatcher{
-		program: program,
-	}, nil
-}
-
-// CelMatcher evaluates CEL matching between two entities
-type CelMatcher struct {
-	program cel.Program
-}
-
-func (m *CelMatcher) Evaluate(ctx context.Context, from map[string]any, to map[string]any) bool {
-	_, span := tracer.Start(ctx, "Relationships.CelMatcher.Evaluate")
-	defer span.End()
-
-	// Convert entities to maps for CEL evaluation
-	celCtx := map[string]any{
-		"from": from,
-		"to":   to,
-	}
-	val, _, err := m.program.Eval(celCtx)
-	if err != nil {
-		if strings.Contains(err.Error(), "no such key:") {
-			return false
-		}
-		log.Warn("CEL evaluation error", "error", err)
-		return false
-	}
-	result := val.ConvertToType(cel.BoolType)
-	boolVal, ok := result.Value().(bool)
-	if !ok {
-		log.Warn("CEL result is not boolean", "result", result)
-		return false
-	}
-	return boolVal
 }
 
 // EntityToMap converts an entity (Resource, Deployment, or Environment) to a map for CEL evaluation

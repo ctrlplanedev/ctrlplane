@@ -124,20 +124,6 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 	return boolVal, nil
 }
 
-// // structToMap converts a struct to a map using JSON marshaling
-// // This is necessary because CEL cannot work with Go structs directly
-// func structToMap(v any) (map[string]any, error) {
-// 	data, err := json.Marshal(v)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	var result map[string]any
-// 	if err := json.Unmarshal(data, &result); err != nil {
-// 		return nil, err
-// 	}
-// 	return result, nil
-// }
-
 // structToMap converts a struct to a map using reflection
 // This is significantly faster than JSON marshal/unmarshal
 func structToMap(v any) (map[string]any, error) {

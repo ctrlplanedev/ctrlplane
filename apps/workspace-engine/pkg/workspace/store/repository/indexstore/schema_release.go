@@ -56,7 +56,7 @@ func (r *ReleaseTargetKeyIndexer) FromObject(obj any) (bool, []byte, error) {
 	return true, []byte(key + "\x00"), nil
 }
 
-func (r *ReleaseTargetKeyIndexer) FromArgs(args ...interface{}) ([]byte, error) {
+func (r *ReleaseTargetKeyIndexer) FromArgs(args ...any) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("must provide exactly one argument")
 	}

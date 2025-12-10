@@ -90,3 +90,7 @@ type InMemoryStore struct {
 func (s *InMemoryStore) Router() *persistence.RepositoryRouter {
 	return s.router
 }
+
+func (s *InMemoryStore) DB() *memdb.MemDB {
+	return s.db
+}

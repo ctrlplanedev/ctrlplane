@@ -22,6 +22,7 @@ func TestFindRelationsForEntityAndRule_FromEntity(t *testing.T) {
 		Kind:        "pod",
 		Version:     "v1",
 		Metadata:    map[string]string{"region": "us-east"},
+		
 	}
 
 	// Create deployments that should match
@@ -30,14 +31,14 @@ func TestFindRelationsForEntityAndRule_FromEntity(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{"region": "us-east"},
+		JobAgentConfig: map[string]any{"region": "us-east"},
 	}
 	deployment2 := &oapi.Deployment{
 		Id:             "deployment-2",
 		Name:           "Deployment 2",
 		Slug:           "deployment-2",
 		SystemId:       "system-2",
-		JobAgentConfig: map[string]interface{}{"region": "us-west"},
+		JobAgentConfig: map[string]any{"region": "us-west"},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
@@ -612,7 +613,7 @@ func TestFilterEntitiesByTypeAndSelector(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: map[string]any{},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
