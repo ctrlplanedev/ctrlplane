@@ -65,7 +65,7 @@ function Metric({ metric }: { metric: VerificationMetric }) {
             )}
           />
           <span className="text-sm font-medium">{metric.name}</span>
-          <div className="flex-grow" />
+          <div className="grow" />
           <span
             className={cn(
               "text-xs",
@@ -131,8 +131,12 @@ export function VersionDisplay({
     currentRelease,
     latestJob,
   });
-  const fromVersion = currentRelease?.version.tag ?? "Not yet deployed";
-  const toVersion = desiredRelease?.version.tag ?? "unknown";
+  const fromVersion =
+    currentRelease?.version.name ??
+    currentRelease?.version.tag ??
+    "Not yet deployed";
+  const toVersion =
+    desiredRelease?.version.name ?? desiredRelease?.version.tag ?? "unknown";
   const isInSync = fromVersion === toVersion;
   const isProgressing =
     latestJob?.status === "inProgress" || latestJob?.status === "pending";

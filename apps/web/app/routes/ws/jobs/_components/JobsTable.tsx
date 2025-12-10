@@ -29,7 +29,6 @@ function JobsTableHeader() {
         <TableHead className="font-medium">Resource</TableHead>
         <TableHead className="font-medium">Version</TableHead>
         <TableHead className="font-medium">Variables</TableHead>
-        <TableHead className="font-medium">External ID</TableHead>
         <TableHead className="font-medium">Status</TableHead>
         <TableHead className="font-medium">Links</TableHead>
         <TableHead className="font-medium">Created</TableHead>
@@ -91,11 +90,6 @@ function JobsTableRow({
         {release.version.name || release.version.tag}
       </TableCell>
       <VariablesCell jobWithRelease={jobWithRelease} />
-      <TableCell className="overflow-hidden font-mono font-medium">
-        <div className="w-[200px] truncate text-ellipsis">
-          {job.externalId ?? <span className="text-muted-foreground">—</span>}
-        </div>
-      </TableCell>
       <TableCell>
         <JobStatusBadge {...job} />
       </TableCell>

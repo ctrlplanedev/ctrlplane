@@ -3,14 +3,12 @@ import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
 import { ChevronRight } from "lucide-react";
 
+import type { JobStatusDisplayName } from "../../../_components/JobStatusBadge";
 import { Button } from "~/components/ui/button";
 import { ResourceIcon } from "~/components/ui/resource-icon";
 import { TableCell, TableRow } from "~/components/ui/table";
 import { cn } from "~/lib/utils";
-import {
-  JobStatusBadge,
-  JobStatusDisplayName,
-} from "../../../_components/JobStatusBadge";
+import { JobStatusBadge } from "../../../_components/JobStatusBadge";
 import { RedeployDialog } from "../RedeployDialog";
 import { RedeployAllDialog } from "./RedeployAllDialog";
 import { VersionDisplay } from "./VersionDisplay";
@@ -44,11 +42,8 @@ function ReleaseTargetRow({
     <TableRow key={releaseTarget.resourceId}>
       <TableCell>
         <div className="flex items-center gap-2">
-          <ResourceIcon
-            kind={resource?.kind ?? ""}
-            version={resource?.version ?? ""}
-          />
-          {resource?.name}
+          <ResourceIcon kind={resource.kind} version={resource.version} />
+          {resource.name}
         </div>
       </TableCell>
       <TableCell>

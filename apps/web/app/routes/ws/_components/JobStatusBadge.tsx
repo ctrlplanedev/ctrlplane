@@ -76,7 +76,7 @@ export function JobStatusBadge({
           <TooltipTrigger>
             <JobStatusBadgeInner status={status} hasMessage />
           </TooltipTrigger>
-          <TooltipContent className="flex max-w-sm items-center gap-1.5 break-words">
+          <TooltipContent className="wrap-break-word flex max-w-sm items-center gap-1.5">
             {message}
           </TooltipContent>
         </Tooltip>
