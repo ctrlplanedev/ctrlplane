@@ -820,6 +820,9 @@ type VerificationMetricSpec struct {
 
 	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
 	SuccessCondition string `json:"successCondition"`
+
+	// SuccessThreshold Minimum number of consecutive successful measurements required to consider the metric successful
+	SuccessThreshold *int `json:"successThreshold,omitempty"`
 }
 
 // VerificationMetricStatus defines model for VerificationMetricStatus.
@@ -842,6 +845,9 @@ type VerificationMetricStatus struct {
 
 	// SuccessCondition CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
 	SuccessCondition string `json:"successCondition"`
+
+	// SuccessThreshold Minimum number of consecutive successful measurements required to consider the metric successful
+	SuccessThreshold *int `json:"successThreshold,omitempty"`
 }
 
 // VerificationRule defines model for VerificationRule.

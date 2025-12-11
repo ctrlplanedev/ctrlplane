@@ -156,15 +156,26 @@ func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
 	for _, metric := range rv.Metrics {
 		// Check if this metric has hit its failure limit
 		failureLimit := metric.GetFailureLimit()
+		successThreshold := metric.SuccessThreshold
 		failedCount := 0
+		consecutiveSuccessCount := 0
 		for _, m := range metric.Measurements {
 			if !m.Passed {
 				failedCount++
+				consecutiveSuccessCount = 0
+			}
+
+			if m.Passed {
+				consecutiveSuccessCount++
 			}
 		}
 
 		if failedCount > failureLimit {
 			return ReleaseVerificationStatusFailed
+		}
+
+		if successThreshold != nil && consecutiveSuccessCount >= *successThreshold {
+			continue
 		}
 
 		// Check if metric is complete

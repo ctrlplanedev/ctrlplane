@@ -53,6 +53,11 @@ local openapi = import '../lib/openapi.libsonnet';
         description: 'Stop after this many failures (0 = no limit)',
         default: 0,
       },
+      successThreshold: {
+        type: 'integer',
+        description: 'Minimum number of consecutive successful measurements required to consider the metric successful',
+        example: 3,
+      },
       provider: openapi.schemaRef('MetricProvider'),
     },
   },

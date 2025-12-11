@@ -34,6 +34,18 @@ func (m Measurements) FailedCount() int {
 	return count
 }
 
+func (m Measurements) ConsecutiveSuccessCount() int {
+	count := 0
+	for i := 0; i < len(m); i++ {
+		if m[i].Passed {
+			count++
+		} else {
+			count = 0
+		}
+	}
+	return count
+}
+
 // Phase computes the current phase based on measurements
 func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.ReleaseVerificationStatus {
 	if len(m) == 0 {
@@ -65,9 +77,15 @@ func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.ReleaseV
 // ShouldContinue checks if more measurements are needed
 func (m Measurements) ShouldContinue(metric *oapi.VerificationMetricStatus) bool {
 	failureLimit := metric.GetFailureLimit()
+	successThreshold := metric.SuccessThreshold
 
 	// Stop if hit failure limit
 	if failureLimit > 0 && m.FailedCount() >= failureLimit {
+		return false
+	}
+
+	isSuccessThresholdMet := successThreshold != nil && m.ConsecutiveSuccessCount() >= *successThreshold
+	if isSuccessThresholdMet {
 		return false
 	}
 
