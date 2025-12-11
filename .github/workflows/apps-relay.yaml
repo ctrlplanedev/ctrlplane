@@ -1,30 +1,52 @@
-name: Apps / Pty Proxy
+name: Apps / Relay
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - apps/pty-proxy/**
-      - packages/db/**
-      - packages/logger/**
-      - packages/job-dispatch/**
-      - packages/auth/**
-      - packages/validators/**
-      - .github/workflows/apps-pty-proxy.yaml
-      - pnpm-lock.yaml
+      - apps/relay/**
+      - .github/workflows/apps-relay.yaml
   push:
     branches: ["main"]
     paths:
-      - apps/pty-proxy/**
-      - packages/db/**
-      - packages/logger/**
-      - packages/job-dispatch/**
-      - packages/validators/**
-      - packages/auth/**
-      - .github/workflows/apps-pty-proxy.yaml
-      - pnpm-lock.yaml
+      - apps/relay/**
+      - .github/workflows/apps-relay.yaml
 
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: apps/relay
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests with coverage
+        run: go test -race ./...
+
   build:
     runs-on: ubuntu-latest
 
@@ -35,6 +57,10 @@ jobs:
     strategy:
       matrix:
         platform: [linux/amd64]
+
+    defaults:
+      run:
+        working-directory: apps/relay
 
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +90,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ctrlplane/pty-proxy
+          images: ctrlplane/relay
           tags: |
             type=sha,format=short,prefix=
 
@@ -72,8 +98,9 @@ jobs:
         uses: docker/build-push-action@v6
         if: github.ref != 'refs/heads/main'
         with:
+          context: apps/relay
           push: false
-          file: apps/pty-proxy/Dockerfile
+          file: apps/relay/Dockerfile
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
 
@@ -81,7 +108,8 @@ jobs:
         uses: docker/build-push-action@v6
         if: github.ref == 'refs/heads/main' && env.DOCKERHUB_LOGIN == 'true'
         with:
+          context: apps/relay
           push: true
-          file: apps/pty-proxy/Dockerfile
+          file: apps/relay/Dockerfile
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}

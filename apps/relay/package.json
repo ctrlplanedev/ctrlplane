@@ -1,0 +1,12 @@
+{
+  "name": "@ctrlplane/relay",
+  "scripts": {
+    "dev": "air",
+    "build": "go build -o ./bin/relay main.go",
+    "start": "./bin/relay",
+    "test": "go test ./...",
+    "generate": "go generate ./...",
+    "format": "bash -c 'go fmt ./...'",
+    "clean": "go clean ./..."
+  }
+}
