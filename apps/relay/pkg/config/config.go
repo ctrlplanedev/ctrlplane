@@ -22,5 +22,4 @@ type Config struct {
 	// OpenTelemetry configuration
 	OTELServiceName          string `envconfig:"OTEL_SERVICE_NAME" default:"ctrlplane/relay"`
 	OTELExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"localhost:4318"`
-
 }

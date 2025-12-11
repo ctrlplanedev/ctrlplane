@@ -108,7 +108,7 @@ func main() {
 	defer cleanupTracer()
 
 	h := hub.New()
-	
+
 	srv := httphandler.NewServer(h)
 
 	http.HandleFunc("/agent/connect", srv.HandleAgent)
