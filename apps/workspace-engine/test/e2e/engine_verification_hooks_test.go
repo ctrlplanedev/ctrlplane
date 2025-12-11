@@ -175,12 +175,12 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 	metricProvider := oapi.MetricProvider{}
 	_ = metricProvider.FromSleepMetricProvider(oapi.SleepMetricProvider{
 		Type:     oapi.Sleep,
-		Duration: 5,
+		Duration: 0, // instant measurements for fast test
 	})
 
 	metric := oapi.VerificationMetricSpec{
 		Name:             "test-metric",
-		Interval:         "1s",
+		Interval:         "100ms", // short interval for quick measurements
 		Count:            5,
 		SuccessCondition: "result.ok == true",
 		SuccessThreshold: &[]int{2}[0],
@@ -189,12 +189,6 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 
 	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, []oapi.VerificationMetricSpec{metric})
 	assert.NoError(t, err)
-
-	time.Sleep(500 * time.Millisecond)
-
-	verification, exists := ws.Workspace().Store().ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
-	assert.Equal(t, release.ID(), verification.ReleaseId)
 
 	// mark job as successful
 	agentJobs := ws.Workspace().Store().Jobs.GetJobsForAgent(jobAgentID)
@@ -222,18 +216,20 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 
 	ws.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
 
-	// verify current release is nil since verification is not yet completed
+	// wait for verification to complete (with successThreshold=2, should exit early after 2 measurements)
+	time.Sleep(300 * time.Millisecond)
+
+	// verify verification exists and completed with early exit
+	verification, exists := ws.Workspace().Store().ReleaseVerifications.GetByReleaseId(release.ID())
+	assert.True(t, exists)
+	assert.Equal(t, release.ID(), verification.ReleaseId)
+	// verify early exit: should have only 2 measurements (successThreshold), not all 5 (count)
+	assert.Len(t, verification.Metrics[0].Measurements, 2, "expected early exit after 2 consecutive successes")
+
+	// verify current release is set since verification completed successfully
 	rm := ws.Workspace().ReleaseManager()
 	releaseTarget := release.ReleaseTarget
 	releaseTargetState, err := rm.GetReleaseTargetState(ctx, &releaseTarget)
-	assert.NoError(t, err)
-
-	assert.Nil(t, releaseTargetState.CurrentRelease)
-
-	time.Sleep(2 * time.Second)
-
-	// verify current release is set since verification is completed
-	releaseTargetState, err = rm.GetReleaseTargetState(ctx, &releaseTarget)
 	assert.NoError(t, err)
 
 	if releaseTargetState.CurrentRelease == nil {
