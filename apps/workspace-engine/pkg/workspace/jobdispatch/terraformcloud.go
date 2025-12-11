@@ -312,6 +312,7 @@ func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, re
 			Count:            100,
 			Interval:         "1m",
 			SuccessCondition: "result.status == 'applied' || result.status == 'planned_and_finished' || result.status == 'planned_and_saved'",
+			FailureCondition: &[]string{"result.status == 'canceled' || result.status == 'discarded' || result.status == 'errored'"}[0],
 			SuccessThreshold: &[]int{1}[0],
 			FailureLimit:     &[]int{1}[0],
 			Provider:         provider,
