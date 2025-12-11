@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { v4 as uuidv4 } from "uuid";
 
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
@@ -38,10 +39,9 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [env.BASE_URL, "http://localhost:5173"],
-  generateId: false,
   advanced: {
     database: {
-      generateId: false,
+      generateId: () => uuidv4(),
     },
   },
 });

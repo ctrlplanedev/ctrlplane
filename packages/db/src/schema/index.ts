@@ -27,3 +27,4 @@ export * from "./deployment-trace.js";
 export * from "./environment-relations.js";
 export * from "./policy-relations.js";
 export * from "./resource-relationship-rule.js";
+export * from "./changelog-entry.js";
