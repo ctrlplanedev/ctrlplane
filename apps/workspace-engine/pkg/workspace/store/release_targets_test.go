@@ -121,8 +121,8 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				SuccessCondition: "result.statusCode == 200",
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
-					{Passed: true, MeasuredAt: createdAt},
-					{Passed: true, MeasuredAt: createdAt.Add(30 * time.Second)},
+					{Status: oapi.Passed, MeasuredAt: createdAt},
+					{Status: oapi.Passed, MeasuredAt: createdAt.Add(30 * time.Second)},
 				},
 			},
 		}
@@ -136,8 +136,8 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				SuccessCondition: "result.statusCode == 200",
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
-					{Passed: false, MeasuredAt: createdAt},
-					{Passed: false, MeasuredAt: createdAt.Add(30 * time.Second)},
+					{Status: oapi.Failed, MeasuredAt: createdAt},
+					{Status: oapi.Failed, MeasuredAt: createdAt.Add(30 * time.Second)},
 				},
 			},
 		}
@@ -151,7 +151,7 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				SuccessCondition: "result.statusCode == 200",
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
-					{Passed: true, MeasuredAt: createdAt},
+					{Status: oapi.Passed, MeasuredAt: createdAt},
 				},
 			},
 		}
@@ -167,7 +167,7 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				SuccessCondition: "result.statusCode == 200",
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
-					{Passed: false, MeasuredAt: createdAt},
+					{Status: oapi.Failed, MeasuredAt: createdAt},
 				},
 			},
 		}

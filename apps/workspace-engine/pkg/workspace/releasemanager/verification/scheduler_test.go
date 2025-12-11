@@ -288,7 +288,7 @@ func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 			msg := "Success"
 			verification.Metrics[i].Measurements = append(verification.Metrics[i].Measurements, oapi.VerificationMeasurement{
 				Message:    &msg,
-				Passed:     true,
+				Status:     oapi.Passed,
 				MeasuredAt: time.Now(),
 				Data:       &map[string]any{"statusCode": 200},
 			})

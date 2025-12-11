@@ -32,7 +32,7 @@ func TestRecorder_RecordMeasurement_Success(t *testing.T) {
 	// Record a measurement
 	measurement := oapi.VerificationMeasurement{
 		Message:    ptr("Test measurement"),
-		Passed:     true,
+		Status:     oapi.Passed,
 		MeasuredAt: time.Now(),
 		Data:       &map[string]any{"status": "ok"},
 	}
@@ -42,7 +42,7 @@ func TestRecorder_RecordMeasurement_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, updated)
 	assert.Len(t, updated.Metrics[0].Measurements, 1)
-	assert.True(t, updated.Metrics[0].Measurements[0].Passed)
+	assert.Equal(t, oapi.Passed, updated.Metrics[0].Measurements[0].Status)
 }
 
 func TestRecorder_RecordMeasurement_VerificationNotFound(t *testing.T) {
@@ -52,7 +52,7 @@ func TestRecorder_RecordMeasurement_VerificationNotFound(t *testing.T) {
 
 	nonExistentID := uuid.New().String()
 	measurement := oapi.VerificationMeasurement{
-		Passed:     true,
+		Status:     oapi.Passed,
 		MeasuredAt: time.Now(),
 	}
 
@@ -71,7 +71,7 @@ func TestRecorder_RecordMeasurement_MetricIndexOutOfRange(t *testing.T) {
 	verification := createTestVerification(s, ctx, release.ID(), 1, "1m")
 
 	measurement := oapi.VerificationMeasurement{
-		Passed:     true,
+		Status:     oapi.Passed,
 		MeasuredAt: time.Now(),
 	}
 
@@ -91,9 +91,13 @@ func TestRecorder_RecordMeasurement_MultipleMeasurements(t *testing.T) {
 
 	// Record multiple measurements
 	for i := 0; i < 5; i++ {
+		status := oapi.Passed
+		if i%2 != 0 {
+			status = oapi.Failed
+		}
 		measurement := oapi.VerificationMeasurement{
 			Message:    ptr("Measurement " + string(rune('1'+i))),
-			Passed:     i%2 == 0, // Alternate pass/fail
+			Status:     status, // Alternate pass/fail
 			MeasuredAt: time.Now(),
 		}
 		_, err := recorder.RecordMeasurement(ctx, verification.Id, 0, measurement)
@@ -118,7 +122,7 @@ func TestRecorder_RecordMeasurement_MultipleMetrics(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		measurement := oapi.VerificationMeasurement{
 			Message:    ptr("Measurement for metric " + string(rune('1'+i))),
-			Passed:     true,
+			Status:     oapi.Passed,
 			MeasuredAt: time.Now(),
 		}
 		_, err := recorder.RecordMeasurement(ctx, verification.Id, i, measurement)
@@ -150,7 +154,7 @@ func TestRecorder_RecordError_Success(t *testing.T) {
 	assert.Len(t, updated.Metrics[0].Measurements, 1)
 
 	errorMeasurement := updated.Metrics[0].Measurements[0]
-	assert.False(t, errorMeasurement.Passed)
+	assert.Equal(t, oapi.Failed, errorMeasurement.Status)
 	assert.Contains(t, *errorMeasurement.Message, "Measurement error")
 	assert.Contains(t, *errorMeasurement.Message, "connection timeout")
 	assert.NotNil(t, errorMeasurement.Data)
@@ -220,7 +224,7 @@ func TestRecorder_ConcurrentRecordMeasurements(t *testing.T) {
 			defer wg.Done()
 			measurement := oapi.VerificationMeasurement{
 				Message:    ptr("Concurrent measurement " + string(rune('0'+idx))),
-				Passed:     true,
+				Status:     oapi.Passed,
 				MeasuredAt: time.Now(),
 			}
 			_, err := recorder.RecordMeasurement(ctx, verification.Id, 0, measurement)
@@ -254,7 +258,7 @@ func TestRecorder_ConcurrentRecordAndUpdate(t *testing.T) {
 				defer wg.Done()
 				measurement := oapi.VerificationMeasurement{
 					Message:    ptr("Measurement"),
-					Passed:     true,
+					Status:     oapi.Passed,
 					MeasuredAt: time.Now(),
 				}
 				_, err := recorder.RecordMeasurement(ctx, verification.Id, mIdx, measurement)
@@ -295,7 +299,7 @@ func TestRecorder_AppendMeasurement_PreservesExistingMeasurements(t *testing.T) 
 	// Record first measurement
 	measurement1 := oapi.VerificationMeasurement{
 		Message:    ptr("First measurement"),
-		Passed:     true,
+		Status:     oapi.Passed,
 		MeasuredAt: time.Now(),
 	}
 	_, err := recorder.RecordMeasurement(ctx, verification.Id, 0, measurement1)
@@ -304,7 +308,7 @@ func TestRecorder_AppendMeasurement_PreservesExistingMeasurements(t *testing.T) 
 	// Record second measurement to same metric
 	measurement2 := oapi.VerificationMeasurement{
 		Message:    ptr("Second measurement"),
-		Passed:     false,
+		Status:     oapi.Failed,
 		MeasuredAt: time.Now(),
 	}
 	updated, err := recorder.RecordMeasurement(ctx, verification.Id, 0, measurement2)
@@ -312,8 +316,8 @@ func TestRecorder_AppendMeasurement_PreservesExistingMeasurements(t *testing.T) 
 
 	// Both measurements should be preserved
 	assert.Len(t, updated.Metrics[0].Measurements, 2)
-	assert.True(t, updated.Metrics[0].Measurements[0].Passed)
-	assert.False(t, updated.Metrics[0].Measurements[1].Passed)
+	assert.Equal(t, oapi.Passed, updated.Metrics[0].Measurements[0].Status)
+	assert.Equal(t, oapi.Failed, updated.Metrics[0].Measurements[1].Status)
 
 	// Other metric should be unaffected
 	assert.Len(t, updated.Metrics[1].Measurements, 0)
