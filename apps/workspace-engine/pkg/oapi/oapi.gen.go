@@ -142,6 +142,11 @@ const (
 	Sleep SleepMetricProviderType = "sleep"
 )
 
+// Defines values for TerraformCloudRunMetricProviderType.
+const (
+	TerraformCloudRun TerraformCloudRunMetricProviderType = "terraformCloudRun"
+)
+
 // Defines values for VerificationRuleTriggerOn.
 const (
 	JobCreated VerificationRuleTriggerOn = "jobCreated"
@@ -772,6 +777,24 @@ type System struct {
 	Name        string  `json:"name"`
 	WorkspaceId string  `json:"workspaceId"`
 }
+
+// TerraformCloudRunMetricProvider defines model for TerraformCloudRunMetricProvider.
+type TerraformCloudRunMetricProvider struct {
+	// Address Terraform Cloud address
+	Address string `json:"address"`
+
+	// RunId Terraform Cloud run ID
+	RunId string `json:"runId"`
+
+	// Token Terraform Cloud token
+	Token string `json:"token"`
+
+	// Type Provider type
+	Type TerraformCloudRunMetricProviderType `json:"type"`
+}
+
+// TerraformCloudRunMetricProviderType Provider type
+type TerraformCloudRunMetricProviderType string
 
 // UserApprovalRecord defines model for UserApprovalRecord.
 type UserApprovalRecord struct {
@@ -1469,6 +1492,34 @@ func (t *MetricProvider) MergeDatadogMetricProvider(v DatadogMetricProvider) err
 	return err
 }
 
+// AsTerraformCloudRunMetricProvider returns the union data inside the MetricProvider as a TerraformCloudRunMetricProvider
+func (t MetricProvider) AsTerraformCloudRunMetricProvider() (TerraformCloudRunMetricProvider, error) {
+	var body TerraformCloudRunMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTerraformCloudRunMetricProvider overwrites any union data inside the MetricProvider as the provided TerraformCloudRunMetricProvider
+func (t *MetricProvider) FromTerraformCloudRunMetricProvider(v TerraformCloudRunMetricProvider) error {
+	v.Type = "terraformCloudRun"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTerraformCloudRunMetricProvider performs a merge with any union data inside the MetricProvider, using the provided TerraformCloudRunMetricProvider
+func (t *MetricProvider) MergeTerraformCloudRunMetricProvider(v TerraformCloudRunMetricProvider) error {
+	v.Type = "terraformCloudRun"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t MetricProvider) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"type"`
@@ -1489,6 +1540,8 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 		return t.AsHTTPMetricProvider()
 	case "sleep":
 		return t.AsSleepMetricProvider()
+	case "terraformCloudRun":
+		return t.AsTerraformCloudRunMetricProvider()
 	default:
 		return nil, errors.New("unknown discriminator value: " + discriminator)
 	}

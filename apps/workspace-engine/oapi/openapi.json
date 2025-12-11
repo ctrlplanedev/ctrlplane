@@ -797,7 +797,8 @@
                "mapping": {
                   "datadog": "#/components/schemas/DatadogMetricProvider",
                   "http": "#/components/schemas/HTTPMetricProvider",
-                  "sleep": "#/components/schemas/SleepMetricProvider"
+                  "sleep": "#/components/schemas/SleepMetricProvider",
+                  "terraformCloudRun": "#/components/schemas/TerraformCloudRunMetricProvider"
                },
                "propertyName": "type"
             },
@@ -810,6 +811,9 @@
                },
                {
                   "$ref": "#/components/schemas/DatadogMetricProvider"
+               },
+               {
+                  "$ref": "#/components/schemas/TerraformCloudRunMetricProvider"
                }
             ]
          },
@@ -1624,6 +1628,40 @@
                "id",
                "workspaceId",
                "name"
+            ],
+            "type": "object"
+         },
+         "TerraformCloudRunMetricProvider": {
+            "properties": {
+               "address": {
+                  "description": "Terraform Cloud address",
+                  "example": "https://app.terraform.io",
+                  "type": "string"
+               },
+               "runId": {
+                  "description": "Terraform Cloud run ID",
+                  "example": "run-1234567890",
+                  "type": "string"
+               },
+               "token": {
+                  "description": "Terraform Cloud token",
+                  "example": "{{.variables.terraform_cloud_token}}",
+                  "type": "string"
+               },
+               "type": {
+                  "description": "Provider type",
+                  "enum": [
+                     "terraformCloudRun"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "organization",
+               "address",
+               "token",
+               "runId"
             ],
             "type": "object"
          },

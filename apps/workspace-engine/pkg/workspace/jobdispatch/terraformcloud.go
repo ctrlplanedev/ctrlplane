@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"text/template"
@@ -20,11 +21,12 @@ import (
 
 var terraformTracer = otel.Tracer("TerraformDispatcher")
 
-type TerraformDispatcher struct {
-	store *store.Store
+type TerraformCloudDispatcher struct {
+	store        *store.Store
+	verification *verification.Manager
 }
 
-type terraformAgentConfig struct {
+type terraformCloudAgentConfig struct {
 	Organization string `json:"organization"`
 	Address      string `json:"address"`
 	Token        string `json:"token"`
@@ -180,34 +182,34 @@ func (v *VariableTemplate) toUpdateOptions() tfe.VariableUpdateOptions {
 	}
 }
 
-func NewTerraformDispatcher(store *store.Store) *TerraformDispatcher {
-	return &TerraformDispatcher{store: store}
+func NewTerraformCloudDispatcher(store *store.Store) *TerraformCloudDispatcher {
+	return &TerraformCloudDispatcher{store: store}
 }
 
-func (d *TerraformDispatcher) parseConfig(job *oapi.Job) (terraformAgentConfig, error) {
-	var parsed terraformAgentConfig
+func (d *TerraformCloudDispatcher) parseConfig(job *oapi.Job) (terraformCloudAgentConfig, error) {
+	var parsed terraformCloudAgentConfig
 	rawCfg, err := json.Marshal(job.JobAgentConfig)
 	if err != nil {
-		return terraformAgentConfig{}, err
+		return terraformCloudAgentConfig{}, err
 	}
 
 	if err := json.Unmarshal(rawCfg, &parsed); err != nil {
-		return terraformAgentConfig{}, err
+		return terraformCloudAgentConfig{}, err
 	}
 
 	if parsed.Address == "" {
-		return terraformAgentConfig{}, fmt.Errorf("missing required Terraform job config: address")
+		return terraformCloudAgentConfig{}, fmt.Errorf("missing required Terraform job config: address")
 	}
 	if parsed.Token == "" {
-		return terraformAgentConfig{}, fmt.Errorf("missing required Terraform job config: token")
+		return terraformCloudAgentConfig{}, fmt.Errorf("missing required Terraform job config: token")
 	}
 	if parsed.Template == "" {
-		return terraformAgentConfig{}, fmt.Errorf("missing required Terraform job config: template")
+		return terraformCloudAgentConfig{}, fmt.Errorf("missing required Terraform job config: template")
 	}
 	return parsed, nil
 }
 
-func (d *TerraformDispatcher) getTemplatableJob(job *oapi.Job) (*oapi.TemplatableJob, error) {
+func (d *TerraformCloudDispatcher) getTemplatableJob(job *oapi.Job) (*oapi.TemplatableJob, error) {
 	fullJob, err := d.store.Jobs.GetWithRelease(job.Id)
 	if err != nil {
 		return nil, err
@@ -215,7 +217,7 @@ func (d *TerraformDispatcher) getTemplatableJob(job *oapi.Job) (*oapi.Templatabl
 	return fullJob.ToTemplatable()
 }
 
-func (d *TerraformDispatcher) generateWorkspace(job *oapi.TemplatableJob, tfTemplate string) (*WorkspaceTemplate, error) {
+func (d *TerraformCloudDispatcher) generateWorkspace(job *oapi.TemplatableJob, tfTemplate string) (*WorkspaceTemplate, error) {
 	t, err := template.New("terraformWorkspaceTemplate").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(tfTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
@@ -234,7 +236,7 @@ func (d *TerraformDispatcher) generateWorkspace(job *oapi.TemplatableJob, tfTemp
 	return &workspace, nil
 }
 
-func (d *TerraformDispatcher) getExistingWorkspace(ctx context.Context, client *tfe.Client, organization string, workspaceName string) (*tfe.Workspace, error) {
+func (d *TerraformCloudDispatcher) getExistingWorkspace(ctx context.Context, client *tfe.Client, organization string, workspaceName string) (*tfe.Workspace, error) {
 	ws, err := client.Workspaces.Read(ctx, organization, workspaceName)
 	if err != nil {
 		if err.Error() == "resource not found" {
@@ -245,7 +247,7 @@ func (d *TerraformDispatcher) getExistingWorkspace(ctx context.Context, client *
 	return ws, nil
 }
 
-func (d *TerraformDispatcher) createWorkspace(ctx context.Context, client *tfe.Client, organization string, workspace *WorkspaceTemplate) (*tfe.Workspace, error) {
+func (d *TerraformCloudDispatcher) createWorkspace(ctx context.Context, client *tfe.Client, organization string, workspace *WorkspaceTemplate) (*tfe.Workspace, error) {
 	created, err := client.Workspaces.Create(ctx, organization, workspace.toCreateOptions())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workspace: %w", err)
@@ -253,7 +255,7 @@ func (d *TerraformDispatcher) createWorkspace(ctx context.Context, client *tfe.C
 	return created, nil
 }
 
-func (d *TerraformDispatcher) updateWorkspace(ctx context.Context, client *tfe.Client, existing *tfe.Workspace, workspace *WorkspaceTemplate) (*tfe.Workspace, error) {
+func (d *TerraformCloudDispatcher) updateWorkspace(ctx context.Context, client *tfe.Client, existing *tfe.Workspace, workspace *WorkspaceTemplate) (*tfe.Workspace, error) {
 	updated, err := client.Workspaces.UpdateByID(ctx, existing.ID, workspace.toUpdateOptions())
 	if err != nil {
 		return nil, fmt.Errorf("failed to update workspace: %w", err)
@@ -261,7 +263,7 @@ func (d *TerraformDispatcher) updateWorkspace(ctx context.Context, client *tfe.C
 	return updated, nil
 }
 
-func (d *TerraformDispatcher) syncVariables(ctx context.Context, client *tfe.Client, workspaceID string, desiredVars []VariableTemplate) error {
+func (d *TerraformCloudDispatcher) syncVariables(ctx context.Context, client *tfe.Client, workspaceID string, desiredVars []VariableTemplate) error {
 	// Get existing variables
 	existingVars, err := client.Variables.List(ctx, workspaceID, nil)
 	if err != nil {
@@ -294,7 +296,32 @@ func (d *TerraformDispatcher) syncVariables(ctx context.Context, client *tfe.Cli
 	return nil
 }
 
-func (d *TerraformDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
+func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, release *oapi.Release, config terraformCloudAgentConfig, runId string) error {
+	provider := oapi.MetricProvider{}
+	err := provider.FromTerraformCloudRunMetricProvider(oapi.TerraformCloudRunMetricProvider{
+		Address: config.Address,
+		Token:   config.Token,
+		RunId:   runId,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create Terraform Cloud run metric provider: %w", err)
+	}
+
+	metrics := []oapi.VerificationMetricSpec{
+		{
+			Count:            100,
+			Interval:         "1m",
+			SuccessCondition: "result.status == 'applied' || result.status == 'planned_and_finished' || result.status == 'planned_and_saved'",
+			SuccessThreshold: &[]int{1}[0],
+			FailureLimit:     &[]int{1}[0],
+			Provider:         provider,
+		},
+	}
+
+	return d.verification.StartVerification(ctx, release, metrics)
+}
+
+func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 	ctx, span := terraformTracer.Start(ctx, "TerraformDispatcher.DispatchJob")
 	defer span.End()
 
@@ -373,7 +400,7 @@ func (d *TerraformDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) er
 
 	autoApply := false
 	message := fmt.Sprintf("Triggered by ctrlplane job %s", job.Id)
-	_, err = client.Runs.Create(ctx, tfe.RunCreateOptions{
+	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
 		Workspace: &tfe.Workspace{ID: targetWorkspace.ID},
 		Message:   &message,
 		AutoApply: &autoApply,
@@ -381,6 +408,12 @@ func (d *TerraformDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) er
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create run")
+		return err
+	}
+
+	if err := d.createRunVerification(ctx, &templatableJob.Release.Release, cfg, run.ID); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create run verification")
 		return err
 	}
 

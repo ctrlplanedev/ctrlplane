@@ -109,6 +109,7 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('HTTPMetricProvider'),
       openapi.schemaRef('SleepMetricProvider'),
       openapi.schemaRef('DatadogMetricProvider'),
+      openapi.schemaRef('TerraformCloudRunMetricProvider'),
     ],
     discriminator: {
       propertyName: 'type',
@@ -116,6 +117,7 @@ local openapi = import '../lib/openapi.libsonnet';
         http: '#/components/schemas/HTTPMetricProvider',
         sleep: '#/components/schemas/SleepMetricProvider',
         datadog: '#/components/schemas/DatadogMetricProvider',
+        terraformCloudRun: '#/components/schemas/TerraformCloudRunMetricProvider',
       },
     },
   },
@@ -204,6 +206,33 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'string',
         description: 'Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)',
         default: 'datadoghq.com',
+      },
+    },
+  },
+
+  TerraformCloudRunMetricProvider: {
+    type: 'object',
+    required: ['type', 'organization', 'address', 'token', 'runId'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['terraformCloudRun'],
+        description: 'Provider type',
+      },
+      address: {
+        type: 'string',
+        description: 'Terraform Cloud address',
+        example: 'https://app.terraform.io',
+      },
+      token: {
+        type: 'string',
+        description: 'Terraform Cloud token',
+        example: '{{.variables.terraform_cloud_token}}',
+      },
+      runId: {
+        type: 'string',
+        description: 'Terraform Cloud run ID',
+        example: 'run-1234567890',
       },
     },
   },
