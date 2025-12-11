@@ -48,6 +48,11 @@ local openapi = import '../lib/openapi.libsonnet';
         description: 'CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")',
         example: 'result.statusCode == 200',
       },
+      failureCondition: {
+        type: 'string',
+        description: 'CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition',
+        example: 'result.statusCode == 500',
+      },
       failureLimit: {
         type: 'integer',
         description: 'Stop after this many failures (0 = no limit)',

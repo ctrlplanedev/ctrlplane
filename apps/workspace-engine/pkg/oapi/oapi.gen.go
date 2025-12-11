@@ -831,6 +831,9 @@ type VerificationMetricSpec struct {
 	// Count Number of measurements to take
 	Count int `json:"count"`
 
+	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+	FailureCondition *string `json:"failureCondition,omitempty"`
+
 	// FailureLimit Stop after this many failures (0 = no limit)
 	FailureLimit *int `json:"failureLimit,omitempty"`
 
@@ -852,6 +855,9 @@ type VerificationMetricSpec struct {
 type VerificationMetricStatus struct {
 	// Count Number of measurements to take
 	Count int `json:"count"`
+
+	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+	FailureCondition *string `json:"failureCondition,omitempty"`
 
 	// FailureLimit Stop after this many failures (0 = no limit)
 	FailureLimit *int `json:"failureLimit,omitempty"`

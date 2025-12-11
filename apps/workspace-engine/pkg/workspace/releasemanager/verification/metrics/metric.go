@@ -63,21 +63,52 @@ func Measure(ctx context.Context, metric *oapi.VerificationMetricStatus, provide
 	message := "Measurement completed"
 
 	// Evaluate success condition
-	passed := false
-	evaluator, err := NewEvaluator(metric.SuccessCondition)
+	successEvaluator, err := NewEvaluator(metric.SuccessCondition)
 	if err != nil {
 		log.Error("Failed to create evaluator", "error", err)
 		message = fmt.Sprintf("Failed to create evaluator: %s", err.Error())
-	} else {
-		passed, err = evaluator.Evaluate(data)
-		if err != nil {
-			message = fmt.Sprintf("Measurement failed: %s", err.Error())
-		}
+		return oapi.VerificationMeasurement{}, err
+	}
+
+	passed, err := successEvaluator.Evaluate(data)
+	if err != nil {
+		message = fmt.Sprintf("Measurement failed: %s", err.Error())
+	}
+
+	if !passed {
+		return oapi.VerificationMeasurement{
+			Message:    &message,
+			Passed:     passed,
+			Data:       &data,
+			MeasuredAt: measuredAt,
+		}, nil
+	}
+
+	if metric.FailureCondition == nil {
+		return oapi.VerificationMeasurement{
+			Message:    &message,
+			Passed:     passed,
+			Data:       &data,
+			MeasuredAt: measuredAt,
+		}, nil
+	}
+
+	// Evaluate failure condition
+	failureEvaluator, err := NewEvaluator(*metric.FailureCondition)
+	if err != nil {
+		log.Error("Failed to create evaluator", "error", err)
+		message = fmt.Sprintf("Failed to create evaluator: %s", err.Error())
+		return oapi.VerificationMeasurement{}, err
+	}
+
+	failed, err := failureEvaluator.Evaluate(data)
+	if err != nil {
+		message = fmt.Sprintf("Measurement failed: %s", err.Error())
 	}
 
 	return oapi.VerificationMeasurement{
 		Message:    &message,
-		Passed:     passed,
+		Passed:     !failed,
 		Data:       &data,
 		MeasuredAt: measuredAt,
 	}, nil

@@ -1742,6 +1742,11 @@
                   "minimum": 1,
                   "type": "integer"
                },
+               "failureCondition": {
+                  "description": "CEL expression to evaluate measurement failure (e.g., \"result.statusCode == 500\"), if not provided, a failure is just the opposite of the success condition",
+                  "example": "result.statusCode == 500",
+                  "type": "string"
+               },
                "failureLimit": {
                   "default": 0,
                   "description": "Stop after this many failures (0 = no limit)",
