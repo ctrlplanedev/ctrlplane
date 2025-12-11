@@ -1662,6 +1662,11 @@ export interface components {
        * @example result.statusCode == 200
        */
       successCondition: string;
+      /**
+       * @description Minimum number of consecutive successful measurements required to consider the metric successful
+       * @example 3
+       */
+      successThreshold?: number;
     };
     VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
       /** @description Individual verification measurements taken for this metric */

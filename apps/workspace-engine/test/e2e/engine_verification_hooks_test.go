@@ -125,3 +125,119 @@ func TestEngineVerificationHooks(t *testing.T) {
 	}
 	assert.Equal(t, release.ID(), releaseTargetState.CurrentRelease.ID())
 }
+
+func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
+	jobAgentID := "job-agent-1"
+	deploymentID := "deployment-1"
+	environmentID := "environment-1"
+	resourceID := "resource-1"
+
+	ws := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("test-job-agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("test-deployment"),
+				integration.DeploymentJobAgent(jobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("test-environment"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("test-resource"),
+			integration.ResourceKind("test-resource"),
+		),
+	)
+
+	ctx := context.Background()
+
+	// start verification for release
+	releases := ws.Workspace().Store().Releases.Items()
+	releasesSlice := make([]*oapi.Release, 0, len(releases))
+	for _, release := range releases {
+		releasesSlice = append(releasesSlice, release)
+	}
+	assert.Len(t, releasesSlice, 1)
+	release := releasesSlice[0]
+
+	metricProvider := oapi.MetricProvider{}
+	_ = metricProvider.FromSleepMetricProvider(oapi.SleepMetricProvider{
+		Type:     oapi.Sleep,
+		Duration: 5,
+	})
+
+	metric := oapi.VerificationMetricSpec{
+		Name:             "test-metric",
+		Interval:         "1s",
+		Count:            5,
+		SuccessCondition: "result.ok == true",
+		SuccessThreshold: &[]int{2}[0],
+		Provider:         metricProvider,
+	}
+
+	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, []oapi.VerificationMetricSpec{metric})
+	assert.NoError(t, err)
+
+	time.Sleep(500 * time.Millisecond)
+
+	verification, exists := ws.Workspace().Store().ReleaseVerifications.GetByReleaseId(release.ID())
+	assert.True(t, exists)
+	assert.Equal(t, release.ID(), verification.ReleaseId)
+
+	// mark job as successful
+	agentJobs := ws.Workspace().Store().Jobs.GetJobsForAgent(jobAgentID)
+	agentJobsSlice := make([]*oapi.Job, 0, len(agentJobs))
+	for _, job := range agentJobs {
+		agentJobsSlice = append(agentJobsSlice, job)
+	}
+	assert.Len(t, agentJobsSlice, 1)
+	agentJob := agentJobsSlice[0]
+
+	completedAt := time.Now()
+	jobUpdateEvent := oapi.JobUpdateEvent{
+		Id:      &agentJob.Id,
+		AgentId: &jobAgentID,
+		Job: oapi.Job{
+			Id:          agentJob.Id,
+			Status:      oapi.JobStatusSuccessful,
+			CompletedAt: &completedAt,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.Status,
+			oapi.CompletedAt,
+		},
+	}
+
+	ws.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
+
+	// verify current release is nil since verification is not yet completed
+	rm := ws.Workspace().ReleaseManager()
+	releaseTarget := release.ReleaseTarget
+	releaseTargetState, err := rm.GetReleaseTargetState(ctx, &releaseTarget)
+	assert.NoError(t, err)
+
+	assert.Nil(t, releaseTargetState.CurrentRelease)
+
+	time.Sleep(2 * time.Second)
+
+	// verify current release is set since verification is completed
+	releaseTargetState, err = rm.GetReleaseTargetState(ctx, &releaseTarget)
+	assert.NoError(t, err)
+
+	if releaseTargetState.CurrentRelease == nil {
+		t.Fatalf("expected current release, got nil")
+	}
+	assert.Equal(t, release.ID(), releaseTargetState.CurrentRelease.ID())
+}
