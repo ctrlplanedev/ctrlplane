@@ -1344,12 +1344,21 @@ export interface components {
             measuredAt: string;
             /** @description Measurement result message */
             message?: string;
-            /** @description Whether this measurement passed */
-            passed: boolean;
+            status: components["schemas"]["VerificationMeasurementStatus"];
         };
+        /**
+         * @description Status of a verification measurement
+         * @enum {string}
+         */
+        VerificationMeasurementStatus: "passed" | "failed" | "inconclusive";
         VerificationMetricSpec: {
             /** @description Number of measurements to take */
             count: number;
+            /**
+             * @description CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+             * @example result.statusCode == 500
+             */
+            failureCondition?: string;
             /**
              * @description Stop after this many failures (0 = no limit)
              * @default 0

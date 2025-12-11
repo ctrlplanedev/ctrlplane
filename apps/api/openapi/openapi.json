@@ -1896,16 +1896,24 @@
                   "description": "Measurement result message",
                   "type": "string"
                },
-               "passed": {
-                  "description": "Whether this measurement passed",
-                  "type": "boolean"
+               "status": {
+                  "$ref": "#/components/schemas/VerificationMeasurementStatus"
                }
             },
             "required": [
-               "passed",
+               "status",
                "measuredAt"
             ],
             "type": "object"
+         },
+         "VerificationMeasurementStatus": {
+            "description": "Status of a verification measurement",
+            "enum": [
+               "passed",
+               "failed",
+               "inconclusive"
+            ],
+            "type": "string"
          },
          "VerificationMetricSpec": {
             "properties": {
@@ -1913,6 +1921,11 @@
                   "description": "Number of measurements to take",
                   "minimum": 1,
                   "type": "integer"
+               },
+               "failureCondition": {
+                  "description": "CEL expression to evaluate measurement failure (e.g., \"result.statusCode == 500\"), if not provided, a failure is just the opposite of the success condition",
+                  "example": "result.statusCode == 500",
+                  "type": "string"
                },
                "failureLimit": {
                   "default": 0,
