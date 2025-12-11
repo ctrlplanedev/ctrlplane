@@ -147,6 +147,13 @@ const (
 	TerraformCloudRun TerraformCloudRunMetricProviderType = "terraformCloudRun"
 )
 
+// Defines values for VerificationMeasurementStatus.
+const (
+	Failed       VerificationMeasurementStatus = "failed"
+	Inconclusive VerificationMeasurementStatus = "inconclusive"
+	Passed       VerificationMeasurementStatus = "passed"
+)
+
 // Defines values for VerificationRuleTriggerOn.
 const (
 	JobCreated VerificationRuleTriggerOn = "jobCreated"
@@ -822,9 +829,12 @@ type VerificationMeasurement struct {
 	// Message Measurement result message
 	Message *string `json:"message,omitempty"`
 
-	// Passed Whether this measurement passed
-	Passed bool `json:"passed"`
+	// Status Status of a verification measurement
+	Status VerificationMeasurementStatus `json:"status"`
 }
+
+// VerificationMeasurementStatus Status of a verification measurement
+type VerificationMeasurementStatus string
 
 // VerificationMetricSpec defines model for VerificationMetricSpec.
 type VerificationMetricSpec struct {

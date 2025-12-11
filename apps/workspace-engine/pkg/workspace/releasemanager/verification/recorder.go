@@ -65,7 +65,7 @@ func (r *MeasurementRecorder) RecordError(
 
 	measurement := oapi.VerificationMeasurement{
 		Message:    &errorMsg,
-		Passed:     false,
+		Status:     oapi.Failed,
 		MeasuredAt: time.Now(),
 		Data:       &errorData,
 	}

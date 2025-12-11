@@ -41,7 +41,7 @@ func TestExecutor_Execute_Success(t *testing.T) {
 	measurement, err := executor.Execute(ctx, &metric, release.ID())
 
 	require.NoError(t, err)
-	assert.True(t, measurement.Passed)
+	assert.Equal(t, oapi.Passed, measurement.Status)
 	assert.NotNil(t, measurement.Data)
 	assert.NotZero(t, measurement.MeasuredAt)
 }
@@ -76,11 +76,12 @@ func TestExecutor_Execute_FailedMeasurement(t *testing.T) {
 	release := createTestRelease(s, ctx)
 	metric := createHTTPMetricStatus(server.URL)
 
-	// Execute measurement - should not error but should not pass
+	// Execute measurement - should not error but should fail
+	// (success condition not met, no failure condition = binary pass/fail)
 	measurement, err := executor.Execute(ctx, &metric, release.ID())
 
 	require.NoError(t, err)
-	assert.False(t, measurement.Passed) // Success condition is statusCode == 200
+	assert.Equal(t, oapi.Failed, measurement.Status)
 	assert.NotNil(t, measurement.Data)
 }
 
@@ -127,7 +128,7 @@ func TestExecutor_Execute_WithTemplatedURL(t *testing.T) {
 	measurement, err := executor.Execute(ctx, &metric, release.ID())
 
 	require.NoError(t, err)
-	assert.True(t, measurement.Passed)
+	assert.Equal(t, oapi.Passed, measurement.Status)
 }
 
 func TestExecutor_BuildProviderContext_Success(t *testing.T) {

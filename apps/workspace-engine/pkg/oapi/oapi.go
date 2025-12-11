@@ -160,13 +160,15 @@ func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
 		failedCount := 0
 		consecutiveSuccessCount := 0
 		for _, m := range metric.Measurements {
-			if !m.Passed {
+			switch m.Status {
+			case Failed:
 				failedCount++
 				consecutiveSuccessCount = 0
-			}
-
-			if m.Passed {
+			case Passed:
 				consecutiveSuccessCount++
+			case Inconclusive:
+				// Inconclusive doesn't count as failure, but breaks consecutive success
+				consecutiveSuccessCount = 0
 			}
 		}
 

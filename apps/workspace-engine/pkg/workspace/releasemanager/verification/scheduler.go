@@ -289,16 +289,23 @@ func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (t
 func (s *scheduler) buildSummaryMessage(v *oapi.ReleaseVerification, status oapi.ReleaseVerificationStatus) string {
 	totalMeasurements := 0
 	passedMeasurements := 0
+	failedMeasurements := 0
+	inconclusiveMeasurements := 0
 
 	for _, m := range v.Metrics {
 		for _, measurement := range m.Measurements {
 			totalMeasurements++
-			if measurement.Passed {
+			switch measurement.Status {
+			case oapi.Passed:
 				passedMeasurements++
+			case oapi.Failed:
+				failedMeasurements++
+			case oapi.Inconclusive:
+				inconclusiveMeasurements++
 			}
 		}
 	}
 
-	return fmt.Sprintf("Verification %s: %d/%d measurements passed across %d metrics",
-		status, passedMeasurements, totalMeasurements, len(v.Metrics))
+	return fmt.Sprintf("Verification %s: %d passed, %d failed, %d inconclusive (%d total) across %d metrics",
+		status, passedMeasurements, failedMeasurements, inconclusiveMeasurements, totalMeasurements, len(v.Metrics))
 }

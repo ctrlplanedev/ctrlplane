@@ -303,7 +303,7 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 		msg := "Success"
 		verification2.Metrics[0].Measurements = append(verification2.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,
-			Passed:     true,
+			Status:     oapi.Passed,
 			MeasuredAt: time.Now(),
 			Data:       &map[string]any{"statusCode": 200},
 		})
@@ -314,7 +314,7 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 	msg := "Success"
 	verification3.Metrics[0].Measurements = append(verification3.Metrics[0].Measurements, oapi.VerificationMeasurement{
 		Message:    &msg,
-		Passed:     true,
+		Status:     oapi.Passed,
 		MeasuredAt: time.Now(),
 		Data:       &map[string]any{"statusCode": 200},
 	})
@@ -356,7 +356,7 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 		msg := "Failed"
 		verification.Metrics[0].Measurements = append(verification.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,
-			Passed:     false,
+			Status:     oapi.Failed,
 			MeasuredAt: time.Now(),
 			Data:       &map[string]any{"statusCode": 500},
 		})
@@ -395,7 +395,7 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 		msg := "Success"
 		passedVerification.Metrics[0].Measurements = append(passedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,
-			Passed:     true,
+			Status:     oapi.Passed,
 			MeasuredAt: time.Now(),
 			Data:       &map[string]any{"statusCode": 200},
 		})
@@ -407,7 +407,7 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 		msg := "Failed"
 		failedVerification.Metrics[0].Measurements = append(failedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,
-			Passed:     false,
+			Status:     oapi.Failed,
 			MeasuredAt: time.Now(),
 			Data:       &map[string]any{"statusCode": 500},
 		})

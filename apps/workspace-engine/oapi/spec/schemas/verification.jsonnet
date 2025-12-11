@@ -84,14 +84,17 @@ local openapi = import '../lib/openapi.libsonnet';
     ],
   },
 
+  VerificationMeasurementStatus: {
+    type: 'string',
+    enum: ['passed', 'failed', 'inconclusive'],
+    description: 'Status of a verification measurement',
+  },
+
   VerificationMeasurement: {
     type: 'object',
-    required: ['passed', 'measuredAt'],
+    required: ['status', 'measuredAt'],
     properties: {
-      passed: {
-        type: 'boolean',
-        description: 'Whether this measurement passed',
-      },
+      status: openapi.schemaRef('VerificationMeasurementStatus'),
       measuredAt: {
         type: 'string',
         format: 'date-time',
