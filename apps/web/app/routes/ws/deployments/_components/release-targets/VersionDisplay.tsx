@@ -30,10 +30,18 @@ function Measurement({ measurement }: { measurement: MetricMeasurement }) {
       <span
         className={cn(
           "text-xs",
-          measurement.passed ? "text-green-500" : "text-red-500",
+          measurement.status === "passed"
+            ? "text-green-500"
+            : measurement.status === "failed"
+              ? "text-red-500"
+              : "text-muted-foreground",
         )}
       >
-        {measurement.passed ? "Passed" : "Failed"}
+        {measurement.status === "passed"
+          ? "Passed"
+          : measurement.status === "failed"
+            ? "Failed"
+            : "Inconclusive"}
       </span>
       {measurement.data != null && (
         <div className="max-h-60 overflow-y-auto rounded-md border p-2">
@@ -53,7 +61,7 @@ function Metric({ metric }: { metric: VerificationMetric }) {
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
   const latestMeasurement = sortedMeasurements.at(0);
-  const passed = latestMeasurement?.passed ?? true;
+  const passed = latestMeasurement?.status === "passed";
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>

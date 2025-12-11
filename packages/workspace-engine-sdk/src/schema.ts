@@ -1327,7 +1327,8 @@ export interface components {
     MetricProvider:
       | components["schemas"]["HTTPMetricProvider"]
       | components["schemas"]["SleepMetricProvider"]
-      | components["schemas"]["DatadogMetricProvider"];
+      | components["schemas"]["DatadogMetricProvider"]
+      | components["schemas"]["TerraformCloudRunMetricProvider"];
     /** @enum {boolean} */
     NullValue: true;
     NumberValue: number;
@@ -1614,6 +1615,28 @@ export interface components {
       name: string;
       workspaceId: string;
     };
+    TerraformCloudRunMetricProvider: {
+      /**
+       * @description Terraform Cloud address
+       * @example https://app.terraform.io
+       */
+      address: string;
+      /**
+       * @description Terraform Cloud run ID
+       * @example run-1234567890
+       */
+      runId: string;
+      /**
+       * @description Terraform Cloud token
+       * @example {{.variables.terraform_cloud_token}}
+       */
+      token: string;
+      /**
+       * @description Provider type (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: "terraformCloudRun";
+    };
     UserApprovalRecord: {
       createdAt: string;
       environmentId: string;
@@ -1638,12 +1661,21 @@ export interface components {
       measuredAt: string;
       /** @description Measurement result message */
       message?: string;
-      /** @description Whether this measurement passed */
-      passed: boolean;
+      status: components["schemas"]["VerificationMeasurementStatus"];
     };
+    /**
+     * @description Status of a verification measurement
+     * @enum {string}
+     */
+    VerificationMeasurementStatus: "passed" | "failed" | "inconclusive";
     VerificationMetricSpec: {
       /** @description Number of measurements to take */
       count: number;
+      /**
+       * @description CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
+       * @example result.statusCode == 500
+       */
+      failureCondition?: string;
       /**
        * @description Stop after this many failures (0 = no limit)
        * @default 0
