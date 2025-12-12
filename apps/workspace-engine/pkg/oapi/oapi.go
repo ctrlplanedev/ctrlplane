@@ -7,6 +7,7 @@ package oapi
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -223,4 +224,38 @@ func (rv *ReleaseVerification) CompletedAt() *time.Time {
 	}
 
 	return latest
+}
+
+// NewLiteralValue creates a new LiteralValue from a Go value
+func NewLiteralValue(value any) *LiteralValue {
+	literalValue := &LiteralValue{}
+	switch v := value.(type) {
+	case string:
+		_ = literalValue.FromStringValue(v)
+	case int:
+		_ = literalValue.FromIntegerValue(v)
+	case int64:
+		_ = literalValue.FromIntegerValue(int(v))
+	case float32:
+		_ = literalValue.FromNumberValue(v)
+	case float64:
+		_ = literalValue.FromNumberValue(float32(v))
+	case bool:
+		_ = literalValue.FromBooleanValue(v)
+	case map[string]any:
+		_ = literalValue.FromObjectValue(ObjectValue{Object: v})
+	case []any:
+		b, _ := json.Marshal(v)
+		_ = literalValue.UnmarshalJSON(b)
+	case nil:
+		_ = literalValue.FromNullValue(true)
+	}
+	return literalValue
+}
+
+// NewValueFromLiteral creates a new Value with a literal data type
+func NewValueFromLiteral(literalValue *LiteralValue) *Value {
+	value := &Value{}
+	_ = value.FromLiteralValue(*literalValue)
+	return value
 }

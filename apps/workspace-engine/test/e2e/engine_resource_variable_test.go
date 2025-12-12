@@ -3,9 +3,13 @@ package e2e
 import (
 	"context"
 	"testing"
+	"time"
 	"workspace-engine/pkg/events/handler"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_ResourceVariableCreation(t *testing.T) {
@@ -256,4 +260,255 @@ func TestEngine_ResourceVariableLiteralValue(t *testing.T) {
 	if nestedField == nil {
 		t.Fatalf("nested field not found")
 	}
+}
+
+func TestEngine_ResourceVariablesBulkUpdate_RemoveVariable(t *testing.T) {
+	resourceID := "resource-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentName("my-job-agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("system-1"),
+			integration.WithEnvironment(
+				integration.EnvironmentName("environment-1"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("env"),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionID("deployment-version-1"),
+				),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("resource-1"),
+			integration.WithResourceVariable("env", integration.ResourceVariableStringValue("production")),
+		),
+	)
+
+	ctx := context.Background()
+	engine.PushEvent(ctx, handler.ResourceVariablesBulkUpdate, oapi.ResourceVariablesBulkUpdateEvent{
+		ResourceId: resourceID,
+		Variables:  map[string]any{},
+	})
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	pendingJobsSlice := make([]*oapi.Job, 0, len(pendingJobs))
+	for _, job := range pendingJobs {
+		pendingJobsSlice = append(pendingJobsSlice, job)
+	}
+
+	assert.Len(t, pendingJobsSlice, 1, "pending jobs count is %d, want 1", len(pendingJobsSlice))
+
+	job := pendingJobsSlice[0]
+	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !ok {
+		t.Fatalf("release not found")
+	}
+
+	variables := release.Variables
+	assert.Len(t, variables, 0, "variables count is %d, want 0", len(variables))
+}
+
+func TestEngine_ResourceVariablesBulkUpdate_AddVariable(t *testing.T) {
+	resourceID := "resource-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentName("my-job-agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("system-1"),
+			integration.WithEnvironment(
+				integration.EnvironmentName("environment-1"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID("deployment-1"),
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("env"),
+				integration.WithDeploymentVariable("app_name"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("resource-1"),
+			integration.WithResourceVariable("env", integration.ResourceVariableStringValue("production")),
+		),
+	)
+
+	ctx := context.Background()
+
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = "deployment-1"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	pendingJobsSlice := make([]*oapi.Job, 0, len(pendingJobs))
+	for _, job := range pendingJobs {
+		pendingJobsSlice = append(pendingJobsSlice, job)
+	}
+
+	assert.Len(t, pendingJobsSlice, 1, "pending jobs count is %d, want 1", len(pendingJobsSlice))
+
+	job := pendingJobsSlice[0]
+	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !ok {
+		t.Fatalf("release not found")
+	}
+
+	variables := release.Variables
+	assert.Len(t, variables, 1, "variables count is %d, want 1", len(variables))
+	assert.Equal(t, "production", variables["env"].String(), "env variable value is %s, want production", variables["env"].String())
+
+	now := time.Now()
+	jobWithStatusSuccessful := oapi.Job{
+		Id:          job.Id,
+		Status:      oapi.JobStatusSuccessful,
+		CompletedAt: &now,
+	}
+
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id:  &job.Id,
+		Job: jobWithStatusSuccessful,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.Status,
+			oapi.CompletedAt,
+		},
+	})
+
+	engine.PushEvent(ctx, handler.ResourceVariablesBulkUpdate, oapi.ResourceVariablesBulkUpdateEvent{
+		ResourceId: resourceID,
+		Variables: map[string]any{
+			"app_name": "my-app",
+			"env":      "production",
+		},
+	})
+
+	pendingJobs = engine.Workspace().Jobs().GetPending()
+	pendingJobsSlice = make([]*oapi.Job, 0, len(pendingJobs))
+	for _, job := range pendingJobs {
+		pendingJobsSlice = append(pendingJobsSlice, job)
+	}
+
+	assert.Len(t, pendingJobsSlice, 1, "pending jobs count is %d, want 1", len(pendingJobsSlice))
+
+	job = pendingJobsSlice[0]
+	release, ok = engine.Workspace().Releases().Get(job.ReleaseId)
+	if !ok {
+		t.Fatalf("release not found")
+	}
+
+	variables = release.Variables
+	assert.Len(t, variables, 2, "variables count is %d, want 2", len(variables))
+	assert.Equal(t, "my-app", variables["app_name"].String(), "app_name variable value is %s, want my-app", variables["app_name"].String())
+	assert.Equal(t, "production", variables["env"].String(), "env variable value is %s, want production", variables["env"].String())
+}
+
+func TestEngine_ResourceVariablesBulkUpdate_UpdateVariable(t *testing.T) {
+	resourceID := "resource-1"
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID("job-agent-1"),
+			integration.JobAgentName("my-job-agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("system-1"),
+			integration.WithEnvironment(
+				integration.EnvironmentName("environment-1"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID("deployment-1"),
+				integration.DeploymentName("deployment-1"),
+				integration.DeploymentJobAgent("job-agent-1"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.WithDeploymentVariable("env"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+			integration.ResourceName("resource-1"),
+			integration.WithResourceVariable("env", integration.ResourceVariableStringValue("production")),
+		),
+	)
+
+	ctx := context.Background()
+
+	dv := c.NewDeploymentVersion()
+	dv.DeploymentId = "deployment-1"
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+	pendingJobsSlice := make([]*oapi.Job, 0, len(pendingJobs))
+	for _, job := range pendingJobs {
+		pendingJobsSlice = append(pendingJobsSlice, job)
+	}
+
+	assert.Len(t, pendingJobsSlice, 1, "pending jobs count is %d, want 1", len(pendingJobsSlice))
+
+	job := pendingJobsSlice[0]
+	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+	if !ok {
+		t.Fatalf("release not found")
+	}
+
+	variables := release.Variables
+	assert.Len(t, variables, 1, "variables count is %d, want 1", len(variables))
+	assert.Equal(t, "production", variables["env"].String(), "env variable value is %s, want production", variables["env"].String())
+
+	now := time.Now()
+	jobWithStatusSuccessful := oapi.Job{
+		Id:          job.Id,
+		Status:      oapi.JobStatusSuccessful,
+		CompletedAt: &now,
+	}
+
+	engine.PushEvent(ctx, handler.JobUpdate, oapi.JobUpdateEvent{
+		Id:  &job.Id,
+		Job: jobWithStatusSuccessful,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.Status,
+			oapi.CompletedAt,
+		},
+	})
+
+	engine.PushEvent(ctx, handler.ResourceVariablesBulkUpdate, oapi.ResourceVariablesBulkUpdateEvent{
+		ResourceId: resourceID,
+		Variables: map[string]any{
+			"env": "staging",
+		},
+	})
+
+	pendingJobs = engine.Workspace().Jobs().GetPending()
+	pendingJobsSlice = make([]*oapi.Job, 0, len(pendingJobs))
+	for _, job := range pendingJobs {
+		pendingJobsSlice = append(pendingJobsSlice, job)
+	}
+
+	assert.Len(t, pendingJobsSlice, 1, "pending jobs count is %d, want 1", len(pendingJobsSlice))
+
+	job = pendingJobsSlice[0]
+	release, ok = engine.Workspace().Releases().Get(job.ReleaseId)
+	if !ok {
+		t.Fatalf("release not found")
+	}
+
+	variables = release.Variables
+	assert.Len(t, variables, 1, "variables count is %d, want 1", len(variables))
+	assert.Equal(t, "staging", variables["env"].String(), "env variable value is %s, want staging", variables["env"].String())
 }

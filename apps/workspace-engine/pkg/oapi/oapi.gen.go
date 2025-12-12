@@ -702,6 +702,12 @@ type ResourceVariable struct {
 	Value      Value  `json:"value"`
 }
 
+// ResourceVariablesBulkUpdateEvent defines model for ResourceVariablesBulkUpdateEvent.
+type ResourceVariablesBulkUpdateEvent struct {
+	ResourceId string                 `json:"resourceId"`
+	Variables  map[string]interface{} `json:"variables"`
+}
+
 // RetryRule defines model for RetryRule.
 type RetryRule struct {
 	// BackoffSeconds Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.

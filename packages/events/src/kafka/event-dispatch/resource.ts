@@ -179,3 +179,19 @@ export const dispatchResourceVariableDeleted = async (
     payload: resourceVariable,
   });
 };
+
+export const dispatchResourceVariablesBulkUpdated = async (
+  resourceId: string,
+  variables: Record<string, any>,
+  source?: "api" | "scheduler" | "user-action",
+) => {
+  const workspaceId = await getWorkspaceIdForResource(resourceId);
+  await sendNodeEvent({
+    workspaceId,
+    eventType: Event.ResourceVariablesBulkUpdated,
+    eventId: resourceId,
+    timestamp: Date.now(),
+    source: source ?? "api",
+    payload: { resourceId, variables },
+  });
+};

@@ -682,7 +682,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update variables for a resource
+         * @description Updates the variables for a resource
+         */
+        patch: operations["updateVariablesForResource"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/systems": {
@@ -3630,6 +3634,57 @@ export interface operations {
                         offset: number;
                         /** @description Total number of items available */
                         total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateVariablesForResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Identifier of the resource */
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated variables */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
                     };
                 };
             };

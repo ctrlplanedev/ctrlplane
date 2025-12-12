@@ -1469,6 +1469,22 @@
             ],
             "type": "object"
          },
+         "ResourceVariablesBulkUpdateEvent": {
+            "properties": {
+               "resourceId": {
+                  "type": "string"
+               },
+               "variables": {
+                  "additionalProperties": true,
+                  "type": "object"
+               }
+            },
+            "required": [
+               "resourceId",
+               "variables"
+            ],
+            "type": "object"
+         },
          "RetryRule": {
             "properties": {
                "backoffSeconds": {

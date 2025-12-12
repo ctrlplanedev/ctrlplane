@@ -15,6 +15,7 @@ export enum Event {
   ResourceVariableCreated = "resource-variable.created",
   ResourceVariableUpdated = "resource-variable.updated",
   ResourceVariableDeleted = "resource-variable.deleted",
+  ResourceVariablesBulkUpdated = "resource-variables.bulk-updated",
 
   DeploymentCreated = "deployment.created",
   DeploymentUpdated = "deployment.updated",
@@ -102,6 +103,10 @@ export type EventPayload = {
   [Event.ResourceVariableUpdated]: {
     previous: typeof schema.resourceVariable.$inferSelect;
     current: typeof schema.resourceVariable.$inferSelect;
+  };
+  [Event.ResourceVariablesBulkUpdated]: {
+    resourceId: string;
+    variables: Record<string, any>;
   };
   [Event.ResourceVariableDeleted]: typeof schema.resourceVariable.$inferSelect;
   [Event.DeploymentCreated]: schema.Deployment;
@@ -194,6 +199,7 @@ export type GoEventPayload = {
   [Event.PolicySkipCreated]: WorkspaceEngine["schemas"]["PolicySkip"];
   [Event.PolicySkipDeleted]: WorkspaceEngine["schemas"]["PolicySkip"];
   [Event.JobUpdated]: WorkspaceEngine["schemas"]["JobUpdateEvent"];
+  [Event.ResourceVariablesBulkUpdated]: WorkspaceEngine["schemas"]["ResourceVariablesBulkUpdateEvent"];
   [Event.UserApprovalRecordCreated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
   [Event.UserApprovalRecordUpdated]: WorkspaceEngine["schemas"]["UserApprovalRecord"];
   [Event.UserApprovalRecordDeleted]: WorkspaceEngine["schemas"]["UserApprovalRecord"];

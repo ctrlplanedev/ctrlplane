@@ -46,5 +46,33 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.notFoundResponse() + 
         openapi.badRequestResponse(),
     },
+    patch: {
+      tags: ['Resources'],
+      summary: 'Update variables for a resource',
+      operationId: 'updateVariablesForResource',
+      description: 'Updates the variables for a resource',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.identifierParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              additionalProperties: true,
+            },
+          },
+        },
+      },
+      responses: openapi.acceptedResponse(
+        {
+          type: 'object',
+          additionalProperties: true,
+        },
+        'The updated variables'
+      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
   }
 }

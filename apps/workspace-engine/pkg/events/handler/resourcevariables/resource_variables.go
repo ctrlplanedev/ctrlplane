@@ -88,3 +88,29 @@ func HandleResourceVariableDeleted(
 
 	return nil
 }
+
+func HandleResourceVariablesBulkUpdated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	resourceVariablesBulkUpdateEvent := &oapi.ResourceVariablesBulkUpdateEvent{}
+	if err := json.Unmarshal(event.Data, resourceVariablesBulkUpdateEvent); err != nil {
+		return err
+	}
+
+	hasChanges, err := ws.ResourceVariables().BulkUpdate(ctx, resourceVariablesBulkUpdateEvent.ResourceId, resourceVariablesBulkUpdateEvent.Variables)
+	if err != nil {
+		return err
+	}
+
+	if hasChanges {
+		releaseTargets := ws.ReleaseTargets().GetForResource(ctx, resourceVariablesBulkUpdateEvent.ResourceId)
+		if err := ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
+			releasemanager.WithTrigger(trace.TriggerVariablesUpdated)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

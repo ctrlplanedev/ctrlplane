@@ -1536,6 +1536,12 @@ export interface components {
       resourceId: string;
       value: components["schemas"]["Value"];
     };
+    ResourceVariablesBulkUpdateEvent: {
+      resourceId: string;
+      variables: {
+        [key: string]: unknown;
+      };
+    };
     RetryRule: {
       /**
        * Format: int32

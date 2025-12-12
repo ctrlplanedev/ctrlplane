@@ -2,6 +2,7 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
+import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 const listResources: AsyncTypedHandler<
@@ -80,7 +81,38 @@ const getVariablesForResource: AsyncTypedHandler<
   res.status(200).json(result.data);
 };
 
+const updateVariablesForResource: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+  "patch"
+> = async (req, res) => {
+  const { workspaceId, identifier } = req.params;
+  const { body } = req;
+
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const resourceResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
+    { params: { path: { workspaceId, resourceIdentifier } } },
+  );
+
+  if (resourceResponse.error != null) {
+    throw new ApiError(
+      resourceResponse.error.error ?? "Failed to get resource",
+      500,
+    );
+  }
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.ResourceVariablesBulkUpdated,
+    timestamp: Date.now(),
+    data: { resourceId: resourceResponse.data.id, variables: body },
+  });
+
+  res.status(204).end();
+};
+
 export const resourceRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listResources))
   .get("/:identifier", asyncHandler(getResourceByIdentifier))
-  .get("/:identifier/variables", asyncHandler(getVariablesForResource));
+  .get("/:identifier/variables", asyncHandler(getVariablesForResource))
+  .patch("/:identifier/variables", asyncHandler(updateVariablesForResource));
