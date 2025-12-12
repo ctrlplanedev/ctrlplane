@@ -79,7 +79,6 @@ func (u *UnionChangeSet[T]) Changes() []StateChange[T] {
 	return []StateChange[T]{}
 }
 
-
 func (u *UnionChangeSet[T]) Commit() {
 	if u.changeSet != nil {
 		u.changeSet.Commit()
