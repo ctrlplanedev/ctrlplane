@@ -43,7 +43,7 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 	}
 
 	if jobAgent.Type == string(jobdispatch.JobAgentTypeTFCloud) {
-		return jobdispatch.NewTerraformCloudDispatcher(d.store).DispatchJob(ctx, job)
+		return jobdispatch.NewTerraformCloudDispatcher(d.store, d.verification).DispatchJob(ctx, job)
 	}
 
 	return ErrUnsupportedJobAgent

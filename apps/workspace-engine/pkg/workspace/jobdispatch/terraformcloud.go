@@ -182,8 +182,8 @@ func (v *VariableTemplate) toUpdateOptions() tfe.VariableUpdateOptions {
 	}
 }
 
-func NewTerraformCloudDispatcher(store *store.Store) *TerraformCloudDispatcher {
-	return &TerraformCloudDispatcher{store: store}
+func NewTerraformCloudDispatcher(store *store.Store, verification *verification.Manager) *TerraformCloudDispatcher {
+	return &TerraformCloudDispatcher{store: store, verification: verification}
 }
 
 func (d *TerraformCloudDispatcher) parseConfig(job *oapi.Job) (terraformCloudAgentConfig, error) {
