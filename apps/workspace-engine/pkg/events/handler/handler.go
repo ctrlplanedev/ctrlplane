@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"workspace-engine/pkg/messaging"
-	"workspace-engine/pkg/persistence"
-	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 
@@ -175,52 +173,17 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return ws, fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
+	// Process release target changes (reconciliation, job creation, etc.)
+	// Persistence happens automatically via the workspace's PersistingChangeSet
+	span.SetAttributes(attribute.Int("changeset.count", len(ws.Changeset().Changes())))
 	if err := ws.ReleaseManager().ProcessChanges(ctx, ws.Changeset()); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to process target changes")
 		log.Error("Failed to process target changes", "error", err)
 	}
 
-	changes := make([]persistence.Change, 0)
-	span.SetAttributes(attribute.Int("changeset.count", len(ws.Changeset().Changes())))
-	for _, change := range ws.Changeset().Changes() {
-		entity, ok := change.Entity.(persistence.Entity)
-		if !ok {
-			continue
-		}
-
-		// Map statechange type to persistence type
-		var persistenceType persistence.ChangeType
-		switch change.Type {
-		case statechange.StateChangeUpsert:
-			persistenceType = persistence.ChangeTypeSet
-		case statechange.StateChangeDelete:
-			persistenceType = persistence.ChangeTypeUnset
-		default:
-			log.Warn("Unknown state change type", "type", change.Type)
-			continue
-		}
-
-		changes = append(changes, persistence.Change{
-			Namespace:  ws.ID,
-			ChangeType: persistenceType,
-			Entity:     entity,
-			Timestamp:  change.Timestamp,
-		})
-		span.AddEvent("change", trace.WithAttributes(
-			attribute.String("change.type", string(change.Type)),
-			attribute.String("change.entity", fmt.Sprintf("%T: %+v", change.Entity, change.Entity)),
-			attribute.Int64("change.timestamp", change.Timestamp.Unix()),
-		))
-	}
-
-	if err := manager.PersistenceStore().Save(ctx, changes); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to save changes")
-		log.Error("Failed to save changes", "error", err)
-	}
-
-	ws.Changeset().Clear()
+	// Clear the changeset so we don't re-process the same changes
+	ws.Changeset().Commit()
 
 	span.SetStatus(codes.Ok, "event processed successfully")
 	log.Debug("Successfully processed event",

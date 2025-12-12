@@ -9,8 +9,6 @@ import (
 )
 
 func TestBatchBufferedChangeSet_Basic(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var batches [][]StateChange[TestEntity]
 	var mu sync.Mutex
 
@@ -21,13 +19,13 @@ func TestBatchBufferedChangeSet_Basic(t *testing.T) {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithBatchSize[TestEntity](10),
 		WithFlushInterval[TestEntity](50*time.Millisecond),
 	)
 
 	// Record 5 changes (less than batch size, will flush on interval)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		bcs.RecordUpsert(TestEntity{ID: string(rune('A' + i)), Name: "Test"})
 	}
 
@@ -48,8 +46,6 @@ func TestBatchBufferedChangeSet_Basic(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_Deduplication(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var processedBatches [][]StateChange[TestEntity]
 	var mu sync.Mutex
 
@@ -60,7 +56,7 @@ func TestBatchBufferedChangeSet_Deduplication(t *testing.T) {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithKeyFunc(func(e TestEntity) string { return e.ID }),
 		WithBatchSize[TestEntity](100),
 		WithFlushInterval[TestEntity](50*time.Millisecond),
@@ -100,8 +96,6 @@ func TestBatchBufferedChangeSet_Deduplication(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_BatchSizeFlush(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var batchCount int
 	var mu sync.Mutex
 
@@ -112,7 +106,7 @@ func TestBatchBufferedChangeSet_BatchSizeFlush(t *testing.T) {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithKeyFunc(func(e TestEntity) string { return e.ID }),
 		WithBatchSize[TestEntity](5),
 		WithFlushInterval[TestEntity](10*time.Second), // Long interval, won't trigger
@@ -135,8 +129,6 @@ func TestBatchBufferedChangeSet_BatchSizeFlush(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_DeleteOverwritesUpsert(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var processedBatches [][]StateChange[TestEntity]
 	var mu sync.Mutex
 
@@ -147,7 +139,7 @@ func TestBatchBufferedChangeSet_DeleteOverwritesUpsert(t *testing.T) {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithKeyFunc(func(e TestEntity) string { return e.ID }),
 		WithBatchSize[TestEntity](100),
 		WithFlushInterval[TestEntity](50*time.Millisecond),
@@ -170,8 +162,6 @@ func TestBatchBufferedChangeSet_DeleteOverwritesUpsert(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_PauseResume(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var processedBatches [][]StateChange[TestEntity]
 	var mu sync.Mutex
 
@@ -182,7 +172,7 @@ func TestBatchBufferedChangeSet_PauseResume(t *testing.T) {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithKeyFunc(func(e TestEntity) string { return e.ID }),
 		WithBatchSize[TestEntity](100),
 		WithFlushInterval[TestEntity](50*time.Millisecond),
@@ -217,8 +207,6 @@ func TestBatchBufferedChangeSet_PauseResume(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_Flush(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var processedBatches [][]StateChange[TestEntity]
 	var mu sync.Mutex
 
@@ -229,7 +217,7 @@ func TestBatchBufferedChangeSet_Flush(t *testing.T) {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithBatchSize[TestEntity](100),                // Large batch size
 		WithFlushInterval[TestEntity](10*time.Second), // Long interval
 	)
@@ -243,7 +231,7 @@ func TestBatchBufferedChangeSet_Flush(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Force flush - should process immediately without waiting
-	bcs.Flush()
+	bcs.Commit()
 
 	mu.Lock()
 	batchCount := len(processedBatches)
@@ -260,7 +248,7 @@ func TestBatchBufferedChangeSet_Flush(t *testing.T) {
 	// Record more and flush again
 	bcs.RecordUpsert(TestEntity{ID: "4", Name: "Fourth"})
 	time.Sleep(10 * time.Millisecond)
-	bcs.Flush()
+	bcs.Commit()
 
 	mu.Lock()
 	batchCount = len(processedBatches)
@@ -272,8 +260,6 @@ func TestBatchBufferedChangeSet_Flush(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_FlushEmpty(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var batchCount int
 	var mu sync.Mutex
 
@@ -284,10 +270,10 @@ func TestBatchBufferedChangeSet_FlushEmpty(t *testing.T) {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc)
+	bcs := NewBatchBufferedChangeSet(processFunc)
 
 	// Flush with no pending changes should not call process
-	bcs.Flush()
+	bcs.Commit()
 
 	mu.Lock()
 	count := batchCount
@@ -299,8 +285,6 @@ func TestBatchBufferedChangeSet_FlushEmpty(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_NoDeduplication(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var processedBatches [][]StateChange[TestEntity]
 	var mu sync.Mutex
 
@@ -312,7 +296,7 @@ func TestBatchBufferedChangeSet_NoDeduplication(t *testing.T) {
 	}
 
 	// No WithKeyFunc - no deduplication
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithBatchSize[TestEntity](100),
 		WithFlushInterval[TestEntity](50*time.Millisecond),
 	)
@@ -348,13 +332,17 @@ func TestBatchBufferedChangeSet_NoDeduplication(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_Ignore(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
+	var processedBatches [][]StateChange[TestEntity]
+	var mu sync.Mutex
 
 	processFunc := func(changes []StateChange[TestEntity]) error {
+		mu.Lock()
+		defer mu.Unlock()
+		processedBatches = append(processedBatches, changes)
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithFlushInterval[TestEntity](50*time.Millisecond),
 	)
 
@@ -364,11 +352,11 @@ func TestBatchBufferedChangeSet_Ignore(t *testing.T) {
 	// Record first change
 	bcs.RecordUpsert(TestEntity{ID: "1", Name: "First"})
 
-	// Ignore via delegation to inner
+	// Ignore
 	bcs.Ignore()
 	assert.True(t, bcs.IsIgnored())
 
-	// These should be ignored by inner
+	// These should be ignored
 	bcs.RecordUpsert(TestEntity{ID: "2", Name: "Ignored"})
 	bcs.RecordDelete(TestEntity{ID: "3", Name: "Ignored"})
 
@@ -378,22 +366,26 @@ func TestBatchBufferedChangeSet_Ignore(t *testing.T) {
 
 	bcs.RecordUpsert(TestEntity{ID: "4", Name: "Fourth"})
 
+	time.Sleep(100 * time.Millisecond)
 	bcs.Close()
 
-	// Inner should only have 1 and 4 (2 and 3 were ignored)
-	assert.Len(t, inner.Changes(), 2)
-	assert.Equal(t, "1", inner.Changes()[0].Entity.ID)
-	assert.Equal(t, "4", inner.Changes()[1].Entity.ID)
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Should only have processed 1 and 4 (2 and 3 were ignored)
+	totalProcessed := 0
+	for _, batch := range processedBatches {
+		totalProcessed += len(batch)
+	}
+	assert.Equal(t, 2, totalProcessed)
 }
 
 func TestBatchBufferedChangeSet_IsPaused(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	processFunc := func(changes []StateChange[TestEntity]) error {
 		return nil
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc)
+	bcs := NewBatchBufferedChangeSet(processFunc)
 
 	// Initially not paused
 	assert.False(t, bcs.IsPaused())
@@ -408,14 +400,12 @@ func TestBatchBufferedChangeSet_IsPaused(t *testing.T) {
 }
 
 func TestBatchBufferedChangeSet_WithBatchBuffer(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	processFunc := func(changes []StateChange[TestEntity]) error {
 		return nil
 	}
 
 	// Test that WithBatchBuffer option is applied
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithBatchBuffer[TestEntity](5000),
 		WithFlushInterval[TestEntity](50*time.Millisecond),
 	)
@@ -424,13 +414,9 @@ func TestBatchBufferedChangeSet_WithBatchBuffer(t *testing.T) {
 	bcs.RecordUpsert(TestEntity{ID: "1", Name: "Test"})
 
 	bcs.Close()
-
-	assert.Len(t, inner.Changes(), 1)
 }
 
 func TestBatchBufferedChangeSet_WithBatchOnError(t *testing.T) {
-	inner := NewChangeSet[TestEntity]()
-
 	var errors []error
 	var errorMu sync.Mutex
 
@@ -438,7 +424,7 @@ func TestBatchBufferedChangeSet_WithBatchOnError(t *testing.T) {
 		return assert.AnError
 	}
 
-	bcs := NewBatchBufferedChangeSet(inner, processFunc,
+	bcs := NewBatchBufferedChangeSet(processFunc,
 		WithBatchOnError[TestEntity](func(err error) {
 			errorMu.Lock()
 			defer errorMu.Unlock()

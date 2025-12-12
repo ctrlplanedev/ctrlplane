@@ -74,7 +74,7 @@ func (m *Manager) VerificationManager() *verification.Manager {
 // ProcessChanges handles detected changes to release targets (WRITES TO STORE).
 // Reconciles added/tainted targets (triggers deployments) and removes deleted targets.
 // Returns a map of cancelled jobs (for removed targets).
-func (m *Manager) ProcessChanges(ctx context.Context, changes statechange.BatchChangeSet[any]) error {
+func (m *Manager) ProcessChanges(ctx context.Context, changes statechange.ChangeSet[any]) error {
 	ctx, span := tracer.Start(ctx, "ProcessChanges",
 		oteltrace.WithAttributes(
 			attribute.Int("changes.total", len(changes.Changes())),

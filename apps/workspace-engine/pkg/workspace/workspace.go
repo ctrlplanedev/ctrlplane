@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -9,23 +10,31 @@ import (
 )
 
 func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
-	cs := statechange.NewChangeSet[any]()
-	s := store.New(id, cs)
-
 	ws := &Workspace{
 		ID:         id,
-		store:      s,
-		changeset:  cs,
 		traceStore: trace.NewInMemoryStore(),
 	}
 
-	// Apply options first to allow setting traceStore
+	// Apply options first to allow setting persistenceStore and traceStore
 	for _, option := range options {
 		option(ws)
 	}
 
+	// Create the changeset - either simple or with persistence
+	inmem := statechange.NewChangeSet[any]()
+	if ws.persistenceStore != nil {
+		// Create persisting changeset that auto-saves to the store
+		ws.persister = persistence.NewPersistingChangeSet(id, ws.persistenceStore)
+		// Union broadcasts to both: inmem for reading, persister for async persistence
+		ws.changeset = statechange.NewUnionChangeSet(inmem, ws.persister)
+	} else {
+		ws.changeset = inmem
+	}
+
+	ws.store = store.New(id, ws.changeset)
+
 	// Create release manager with trace store (will panic if nil)
-	ws.releasemanager = releasemanager.New(s, ws.traceStore)
+	ws.releasemanager = releasemanager.New(ws.store, ws.traceStore)
 
 	return ws
 }
@@ -33,10 +42,19 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 type Workspace struct {
 	ID string
 
-	changeset      statechange.BatchChangeSet[any]
-	store          *store.Store
-	releasemanager *releasemanager.Manager
-	traceStore     releasemanager.PersistenceStore
+	changeset        statechange.ChangeSet[any]
+	store            *store.Store
+	releasemanager   *releasemanager.Manager
+	traceStore       releasemanager.PersistenceStore
+	persistenceStore persistence.Store
+	persister        *persistence.PersistingChangeSet
+}
+
+// Close shuts down the workspace, flushing any pending persistence writes.
+func (w *Workspace) Close() {
+	if w.persister != nil {
+		w.persister.Close()
+	}
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -115,7 +133,7 @@ func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
 }
 
-func (w *Workspace) Changeset() statechange.BatchChangeSet[any] {
+func (w *Workspace) Changeset() statechange.ChangeSet[any] {
 	return w.changeset
 }
 

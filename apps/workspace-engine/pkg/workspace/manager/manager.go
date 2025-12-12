@@ -50,7 +50,12 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		workspaceStatus := status.Global().GetOrCreate(id)
 		workspaceStatus.SetState(status.StateInitializing, "Creating workspace instance")
 
-		ws = workspace.New(ctx, id, globalManager.workspaceCreateOptions...)
+		// Combine persistence store option with any other configured options
+		opts := append(
+			[]workspace.WorkspaceOption{workspace.WithPersistenceStore(globalManager.persistentStore)},
+			globalManager.workspaceCreateOptions...,
+		)
+		ws = workspace.New(ctx, id, opts...)
 
 		// Load from persistence
 		workspaceStatus.SetState(status.StateLoadingFromPersistence, "Loading workspace from persistent store")

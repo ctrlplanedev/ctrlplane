@@ -11,6 +11,9 @@ import (
 // PersistingChangeSet wraps a BatchBufferedChangeSet to automatically persist
 // state changes to a Store. It converts statechange types to persistence types
 // and batches writes for efficiency.
+//
+// It implements ChangeRecorder and is a pure async processor that persists
+// changes to an external store.
 type PersistingChangeSet struct {
 	*statechange.BatchBufferedChangeSet[any]
 	namespace string
@@ -28,13 +31,11 @@ func WithLogger(log *slog.Logger) PersistingChangeSetOption {
 	}
 }
 
-// NewPersistingChangeSet creates a ChangeSet that automatically persists changes
+// NewPersistingChangeSet creates a ChangeRecorder that automatically persists changes
 // to the given Store. Changes are batched and deduplicated before being written.
 //
 // The namespace is used as the partition key for all changes.
-// The inner ChangeSet records all changes for in-memory access.
 func NewPersistingChangeSet(
-	inner statechange.ChangeSet[any],
 	namespace string,
 	store Store,
 	opts ...PersistingChangeSetOption,
@@ -51,7 +52,6 @@ func NewPersistingChangeSet(
 
 	// Create the batch buffered changeset with persistence as the process function
 	p.BatchBufferedChangeSet = statechange.NewBatchBufferedChangeSet(
-		inner,
 		p.persistBatch,
 		statechange.WithKeyFunc(entityKey),
 		statechange.WithBatchSize[any](100),
@@ -117,3 +117,5 @@ func (p *PersistingChangeSet) persistBatch(stateChanges []statechange.StateChang
 func (p *PersistingChangeSet) Namespace() string {
 	return p.namespace
 }
+
+var _ statechange.ChangeRecorder[any] = (*PersistingChangeSet)(nil)

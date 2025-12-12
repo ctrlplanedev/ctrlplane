@@ -74,7 +74,6 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	assert.Equal(t, 1, len(engine.Workspace().Environments().Items()), "Should have 1 environment")
 	assert.Equal(t, 1, len(engine.Workspace().Deployments().Items()), "Should have 1 deployment")
 
-	// Clear workspace from memory to force load from persistence
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -208,7 +207,6 @@ func TestEngine_Persistence_ReleaseTargetsComputation(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(initialReleaseTargets), "Only resource-prod-east should match both selectors initially")
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -283,7 +281,6 @@ func TestEngine_Persistence_ReleasesAndJobs(t *testing.T) {
 
 	workspaceID := engine.Workspace().ID
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -374,7 +371,6 @@ func TestEngine_Persistence_ReleaseshipsAndPolicies(t *testing.T) {
 
 	workspaceID := engine.Workspace().ID
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -473,7 +469,6 @@ func TestEngine_Persistence_MultipleWorkspaces(t *testing.T) {
 	)
 	workspace2ID := engine2.Workspace().ID
 
-	// Clear both workspaces from memory
 	manager.Workspaces().Remove(workspace1ID)
 	manager.Workspaces().Remove(workspace2ID)
 
@@ -574,7 +569,6 @@ func TestEngine_Persistence_ResourceDeletion(t *testing.T) {
 	_, ok = engine.Workspace().Resources().Get(resource2ID)
 	assert.False(t, ok, "Deleted resource should not exist in memory")
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -643,7 +637,6 @@ func TestEngine_Persistence_RelationshipRuleDeletion(t *testing.T) {
 	// Verify rule 2 is gone from memory
 	assert.Equal(t, 2, len(engine.Workspace().RelationshipRules().Items()))
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -707,7 +700,6 @@ func TestEngine_Persistence_DeploymentDeletion(t *testing.T) {
 	// Verify deployment 2 is gone from memory
 	assert.Equal(t, 1, len(engine.Workspace().Deployments().Items()))
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -762,7 +754,6 @@ func TestEngine_Persistence_PolicyDeletion(t *testing.T) {
 	// Verify policy 2 is gone from memory
 	assert.Equal(t, 1, len(engine.Workspace().Policies().Items()))
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -827,7 +818,6 @@ func TestEngine_Persistence_SystemDeletion(t *testing.T) {
 	assert.Equal(t, 1, len(engine.Workspace().Systems().Items()))
 	assert.Equal(t, 1, len(engine.Workspace().Deployments().Items()))
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence
@@ -925,7 +915,6 @@ func TestEngine_Persistence_MultipleDeletions(t *testing.T) {
 	assert.Equal(t, 0, len(engine.Workspace().RelationshipRules().Items()))
 	assert.Equal(t, 0, len(engine.Workspace().Policies().Items()))
 
-	// Clear workspace from memory
 	manager.Workspaces().Remove(workspaceID)
 
 	// Load workspace from persistence

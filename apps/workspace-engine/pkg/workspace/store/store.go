@@ -10,7 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-func New(wsId string, changeset statechange.BatchChangeSet[any]) *Store {
+func New(wsId string, changeset statechange.ChangeSet[any]) *Store {
 	repo := repository.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
 

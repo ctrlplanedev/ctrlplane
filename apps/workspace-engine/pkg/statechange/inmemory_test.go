@@ -95,7 +95,7 @@ func TestClear(t *testing.T) {
 	require.Len(t, changes, 3)
 
 	// Clear the changeset
-	cs.Clear()
+	cs.Commit()
 
 	// Verify changes are cleared
 	changes = cs.Changes()
@@ -106,13 +106,13 @@ func TestClearMultipleTimes(t *testing.T) {
 	cs := NewChangeSet[TestEntity]()
 
 	cs.RecordUpsert(TestEntity{ID: "1", Name: "First"})
-	cs.Clear()
+	cs.Commit()
 
 	changes := cs.Changes()
 	assert.Empty(t, changes)
 
 	// Clear again on empty changeset
-	cs.Clear()
+	cs.Commit()
 
 	changes = cs.Changes()
 	assert.Empty(t, changes)

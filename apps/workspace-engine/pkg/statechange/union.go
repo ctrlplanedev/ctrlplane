@@ -1,66 +1,92 @@
 package statechange
 
-// UnionChangeSet writes to multiple ChangeSets simultaneously.
-// All underlying changesets receive the same changes.
+// UnionChangeSet writes to multiple ChangeRecorders simultaneously.
+// It also maintains its own batch of changes for reading.
 type UnionChangeSet[T any] struct {
-	batch      *InMemoryChangeSet[T]
-	changesets []ChangeSet[T]
+	changeSet ChangeSet[T]
+	recorders []ChangeRecorder[T]
 }
 
-// NewUnionChangeSet creates a ChangeSet that broadcasts to all provided changesets.
-func NewUnionChangeSet[T any](changesets ...ChangeSet[T]) *UnionChangeSet[T] {
+// NewUnionChangeSet creates a ChangeSet that broadcasts to all provided recorders.
+// The recorders only need write access (ChangeRecorder), while the UnionChangeSet
+// itself implements full ChangeSet for reading the accumulated changes.
+func NewUnionChangeSet[T any](changeSet ChangeSet[T], recorders ...ChangeRecorder[T]) *UnionChangeSet[T] {
 	return &UnionChangeSet[T]{
-		batch:      NewChangeSet[T](),
-		changesets: changesets,
+		changeSet: changeSet,
+		recorders: recorders,
 	}
 }
 
-// RecordUpsert records an upsert to all underlying changesets.
+// RecordUpsert records an upsert to the batch and all underlying recorders.
 func (u *UnionChangeSet[T]) RecordUpsert(entity T) {
-	for _, cs := range u.changesets {
-		cs.RecordUpsert(entity)
+	if u.changeSet != nil {
+		u.changeSet.RecordUpsert(entity)
+	}
+	for _, r := range u.recorders {
+		r.RecordUpsert(entity)
 	}
 }
 
-// RecordDelete records a delete to all underlying changesets.
+// RecordDelete records a delete to the batch and all underlying recorders.
 func (u *UnionChangeSet[T]) RecordDelete(entity T) {
-	for _, cs := range u.changesets {
-		cs.RecordDelete(entity)
+	if u.changeSet != nil {
+		u.changeSet.RecordDelete(entity)
+	}
+	for _, r := range u.recorders {
+		r.RecordDelete(entity)
 	}
 }
 
+// Ignore causes subsequent Record calls to be ignored.
 func (u *UnionChangeSet[T]) Ignore() {
-	u.batch.Ignore()
-	for _, cs := range u.changesets {
-		cs.Ignore()
+	if u.changeSet != nil {
+		u.changeSet.Ignore()
+	}
+	for _, r := range u.recorders {
+		r.Ignore()
 	}
 }
 
+// Unignore resumes recording of changes.
 func (u *UnionChangeSet[T]) Unignore() {
-	u.batch.Unignore()
-	for _, cs := range u.changesets {
-		cs.Unignore()
+	if u.changeSet != nil {
+		u.changeSet.Unignore()
+	}
+	for _, r := range u.recorders {
+		r.Unignore()
 	}
 }
 
+// IsIgnored returns whether recording is currently ignored.
+// Returns true if the batch OR any inner recorder is ignored.
 func (u *UnionChangeSet[T]) IsIgnored() bool {
-	if u.batch.IsIgnored() {
+	if u.changeSet != nil && u.changeSet.IsIgnored() {
 		return true
 	}
-	for _, cs := range u.changesets {
-		if cs.IsIgnored() {
+	for _, r := range u.recorders {
+		if r.IsIgnored() {
 			return true
 		}
 	}
 	return false
 }
 
+// Changes returns a copy of all recorded changes from the internal batch.
 func (u *UnionChangeSet[T]) Changes() []StateChange[T] {
-	return u.batch.Changes()
+	if u.changeSet != nil {
+		return u.changeSet.Changes()
+	}
+	return []StateChange[T]{}
 }
 
-func (u *UnionChangeSet[T]) Clear() {
-	u.batch.Clear()
+
+func (u *UnionChangeSet[T]) Commit() {
+	if u.changeSet != nil {
+		u.changeSet.Commit()
+	}
+	for _, r := range u.recorders {
+		r.Commit()
+	}
 }
 
-var _ BatchChangeSet[any] = (*UnionChangeSet[any])(nil)
+var _ ChangeSet[any] = (*UnionChangeSet[any])(nil)

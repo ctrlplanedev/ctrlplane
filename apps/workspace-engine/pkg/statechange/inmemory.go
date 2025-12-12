@@ -108,11 +108,16 @@ func (cs *InMemoryChangeSet[T]) Changes() []StateChange[T] {
 }
 
 // Clear removes all recorded changes.
-func (cs *InMemoryChangeSet[T]) Clear() {
+func (cs *InMemoryChangeSet[T]) Commit() {
 	cs.mutex.Lock()
 	defer cs.mutex.Unlock()
 
 	cs.changes = make([]StateChange[T], 0)
 }
 
-var _ BatchChangeSet[any] = (*InMemoryChangeSet[any])(nil)
+// Flush forces any pending changes to be saved immediately.
+func (cs *InMemoryChangeSet[T]) Flush() {
+	// No-op for in-memory changeset
+}
+
+var _ ChangeSet[any] = (*InMemoryChangeSet[any])(nil)

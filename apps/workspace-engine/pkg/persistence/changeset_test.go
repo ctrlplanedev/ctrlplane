@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"workspace-engine/pkg/statechange"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -70,10 +68,9 @@ func (m *mockStore) TotalChangeCount() int {
 }
 
 func TestPersistingChangeSet_Basic(t *testing.T) {
-	inner := statechange.NewChangeSet[any]()
 	store := &mockStore{}
 
-	pcs := NewPersistingChangeSet(inner, "test-namespace", store)
+	pcs := NewPersistingChangeSet("test-namespace", store)
 
 	// Record some changes
 	pcs.RecordUpsert(testEntity{Type: "user", ID: "1", Name: "Alice"})
@@ -96,10 +93,9 @@ func TestPersistingChangeSet_Basic(t *testing.T) {
 }
 
 func TestPersistingChangeSet_Deduplication(t *testing.T) {
-	inner := statechange.NewChangeSet[any]()
 	store := &mockStore{}
 
-	pcs := NewPersistingChangeSet(inner, "test-namespace", store)
+	pcs := NewPersistingChangeSet("test-namespace", store)
 
 	// Record multiple updates to the same entity
 	pcs.RecordUpsert(testEntity{Type: "user", ID: "1", Name: "First"})
@@ -119,10 +115,9 @@ func TestPersistingChangeSet_Deduplication(t *testing.T) {
 }
 
 func TestPersistingChangeSet_ChangeTypeMapping(t *testing.T) {
-	inner := statechange.NewChangeSet[any]()
 	store := &mockStore{}
 
-	pcs := NewPersistingChangeSet(inner, "test-namespace", store)
+	pcs := NewPersistingChangeSet("test-namespace", store)
 
 	pcs.RecordUpsert(testEntity{Type: "user", ID: "1", Name: "Alice"})
 	pcs.RecordDelete(testEntity{Type: "user", ID: "2", Name: "Bob"})
@@ -150,10 +145,9 @@ func TestPersistingChangeSet_ChangeTypeMapping(t *testing.T) {
 }
 
 func TestPersistingChangeSet_NonEntitySkipped(t *testing.T) {
-	inner := statechange.NewChangeSet[any]()
 	store := &mockStore{}
 
-	pcs := NewPersistingChangeSet(inner, "test-namespace", store)
+	pcs := NewPersistingChangeSet("test-namespace", store)
 
 	// Record a non-Entity type (should be skipped during persistence)
 	pcs.RecordUpsert("just a string")
@@ -170,10 +164,9 @@ func TestPersistingChangeSet_NonEntitySkipped(t *testing.T) {
 }
 
 func TestPersistingChangeSet_Flush(t *testing.T) {
-	inner := statechange.NewChangeSet[any]()
 	store := &mockStore{}
 
-	pcs := NewPersistingChangeSet(inner, "test-namespace", store)
+	pcs := NewPersistingChangeSet("test-namespace", store)
 
 	pcs.RecordUpsert(testEntity{Type: "user", ID: "1", Name: "Alice"})
 
@@ -181,7 +174,7 @@ func TestPersistingChangeSet_Flush(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Force flush
-	pcs.Flush()
+	pcs.Commit()
 
 	// Should be persisted immediately
 	assert.Equal(t, 1, store.TotalChangeCount())
@@ -190,10 +183,9 @@ func TestPersistingChangeSet_Flush(t *testing.T) {
 }
 
 func TestPersistingChangeSet_PauseResume(t *testing.T) {
-	inner := statechange.NewChangeSet[any]()
 	store := &mockStore{}
 
-	pcs := NewPersistingChangeSet(inner, "test-namespace", store)
+	pcs := NewPersistingChangeSet("test-namespace", store)
 
 	// Record while running
 	pcs.RecordUpsert(testEntity{Type: "user", ID: "1", Name: "First"})
@@ -214,10 +206,9 @@ func TestPersistingChangeSet_PauseResume(t *testing.T) {
 }
 
 func TestPersistingChangeSet_Namespace(t *testing.T) {
-	inner := statechange.NewChangeSet[any]()
 	store := &mockStore{}
 
-	pcs := NewPersistingChangeSet(inner, "my-workspace", store)
+	pcs := NewPersistingChangeSet("my-workspace", store)
 
 	assert.Equal(t, "my-workspace", pcs.Namespace())
 

@@ -15,8 +15,10 @@ type BatchProcessFunc[T any] func(changes []StateChange[T]) error
 // BatchBufferedChangeSet collects changes into batches, deduplicates them,
 // and processes them asynchronously. This reduces write pressure and ensures
 // only the latest state per entity is processed.
+//
+// It implements ChangeRecorder and is a pure async processor - it doesn't
+// store changes itself, only forwards them to the process function.
 type BatchBufferedChangeSet[T any] struct {
-	inner         ChangeSet[T]
 	keyFunc       KeyFunc[T]
 	process       BatchProcessFunc[T]
 	buffer        chan StateChange[T]
@@ -29,6 +31,8 @@ type BatchBufferedChangeSet[T any] struct {
 	flushInterval time.Duration
 	paused        bool
 	pauseMu       sync.RWMutex
+	ignored       bool
+	ignoreMu      sync.RWMutex
 }
 
 // BatchBufferedOption configures a BatchBufferedChangeSet.
@@ -70,7 +74,7 @@ func WithKeyFunc[T any](keyFunc KeyFunc[T]) BatchBufferedOption[T] {
 	}
 }
 
-// NewBatchBufferedChangeSet creates a ChangeSet that batches changes
+// NewBatchBufferedChangeSet creates a ChangeRecorder that batches changes
 // and processes them asynchronously.
 //
 // If a keyFunc is provided via WithKeyFunc, changes are deduplicated by key
@@ -79,12 +83,10 @@ func WithKeyFunc[T any](keyFunc KeyFunc[T]) BatchBufferedOption[T] {
 //
 // Batches are flushed when they reach batchSize or after flushInterval.
 func NewBatchBufferedChangeSet[T any](
-	inner ChangeSet[T],
 	process BatchProcessFunc[T],
 	opts ...BatchBufferedOption[T],
 ) *BatchBufferedChangeSet[T] {
 	b := &BatchBufferedChangeSet[T]{
-		inner:         inner,
 		keyFunc:       nil, // No deduplication by default
 		process:       process,
 		bufferSz:      1000,
@@ -173,7 +175,16 @@ func (b *BatchBufferedChangeSet[T]) run() {
 			flush()
 
 		case doneCh := <-b.flushCh:
-			// Force flush requested
+			// Force flush requested - first drain the buffer
+			draining := true
+			for draining {
+				select {
+				case change := <-b.buffer:
+					addChange(change)
+				default:
+					draining = false
+				}
+			}
 			flush()
 			close(doneCh) // Signal completion
 
@@ -215,6 +226,14 @@ func (b *BatchBufferedChangeSet[T]) IsPaused() bool {
 }
 
 func (b *BatchBufferedChangeSet[T]) send(change StateChange[T]) {
+	b.ignoreMu.RLock()
+	ignored := b.ignored
+	b.ignoreMu.RUnlock()
+
+	if ignored {
+		return
+	}
+
 	b.pauseMu.RLock()
 	paused := b.paused
 	b.pauseMu.RUnlock()
@@ -230,10 +249,8 @@ func (b *BatchBufferedChangeSet[T]) send(change StateChange[T]) {
 	}
 }
 
-// RecordUpsert records an upsert and queues it for batch processing.
+// RecordUpsert queues an upsert for batch processing.
 func (b *BatchBufferedChangeSet[T]) RecordUpsert(entity T) {
-	b.inner.RecordUpsert(entity)
-
 	b.send(StateChange[T]{
 		Type:      StateChangeUpsert,
 		Entity:    entity,
@@ -241,10 +258,8 @@ func (b *BatchBufferedChangeSet[T]) RecordUpsert(entity T) {
 	})
 }
 
-// RecordDelete records a delete and queues it for batch processing.
+// RecordDelete queues a delete for batch processing.
 func (b *BatchBufferedChangeSet[T]) RecordDelete(entity T) {
-	b.inner.RecordDelete(entity)
-
 	b.send(StateChange[T]{
 		Type:      StateChangeDelete,
 		Entity:    entity,
@@ -253,7 +268,7 @@ func (b *BatchBufferedChangeSet[T]) RecordDelete(entity T) {
 }
 
 // Flush forces an immediate flush of pending changes and waits for completion.
-func (b *BatchBufferedChangeSet[T]) Flush() {
+func (b *BatchBufferedChangeSet[T]) Commit() {
 	doneCh := make(chan struct{})
 	select {
 	case b.flushCh <- doneCh:
@@ -269,19 +284,25 @@ func (b *BatchBufferedChangeSet[T]) Close() {
 	b.wg.Wait()
 }
 
-// Ignore delegates to the inner ChangeSet.
+// Ignore causes subsequent Record calls to be ignored.
 func (b *BatchBufferedChangeSet[T]) Ignore() {
-	b.inner.Ignore()
+	b.ignoreMu.Lock()
+	defer b.ignoreMu.Unlock()
+	b.ignored = true
 }
 
-// Unignore delegates to the inner ChangeSet.
+// Unignore resumes recording of changes.
 func (b *BatchBufferedChangeSet[T]) Unignore() {
-	b.inner.Unignore()
+	b.ignoreMu.Lock()
+	defer b.ignoreMu.Unlock()
+	b.ignored = false
 }
 
-// IsIgnored delegates to the inner ChangeSet.
+// IsIgnored returns whether recording is currently ignored.
 func (b *BatchBufferedChangeSet[T]) IsIgnored() bool {
-	return b.inner.IsIgnored()
+	b.ignoreMu.RLock()
+	defer b.ignoreMu.RUnlock()
+	return b.ignored
 }
 
-var _ ChangeSet[any] = (*BatchBufferedChangeSet[any])(nil)
+var _ ChangeRecorder[any] = (*BatchBufferedChangeSet[any])(nil)
