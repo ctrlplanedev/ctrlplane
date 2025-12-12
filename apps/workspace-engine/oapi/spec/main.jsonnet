@@ -24,7 +24,7 @@
     (import 'paths/resource-providers.jsonnet') +
     (import 'paths/github-entity.jsonnet') +
     (import 'paths/relationship-rules.jsonnet') +
-    (import 'paths/release.jsonnet'), 
+    (import 'paths/release.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),

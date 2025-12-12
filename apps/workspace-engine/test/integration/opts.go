@@ -880,6 +880,19 @@ func WithRuleRetryWithBackoff(maxRetries int32, backoffSeconds int32, strategy o
 	}
 }
 
+// ===== VersionDebounceRule Options =====
+
+// WithRuleVersionDebounce configures a version debounce rule that limits how frequently
+// new versions can be deployed based on the version creation time interval
+func WithRuleVersionDebounce(intervalSeconds int32) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.VersionDebounce = &oapi.VersionDebounceRule{
+			IntervalSeconds: intervalSeconds,
+		}
+		return nil
+	}
+}
+
 // ===== DeploymentDependencyRule Options =====
 
 type DeploymentDependencyRuleOption func(*TestWorkspace, *oapi.DeploymentDependencyRule) error

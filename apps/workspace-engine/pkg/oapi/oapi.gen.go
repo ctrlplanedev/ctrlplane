@@ -514,6 +514,7 @@ type PolicyRule struct {
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
 	Verification           *VerificationRule           `json:"verification,omitempty"`
+	VersionDebounce        *VersionDebounceRule        `json:"versionDebounce,omitempty"`
 	VersionSelector        *VersionSelectorRule        `json:"versionSelector,omitempty"`
 }
 
@@ -906,6 +907,12 @@ type VerificationRule struct {
 
 // VerificationRuleTriggerOn When to trigger verification
 type VerificationRuleTriggerOn string
+
+// VersionDebounceRule defines model for VersionDebounceRule.
+type VersionDebounceRule struct {
+	// IntervalSeconds Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.
+	IntervalSeconds int32 `json:"intervalSeconds"`
+}
 
 // VersionSelectorRule defines model for VersionSelectorRule.
 type VersionSelectorRule struct {

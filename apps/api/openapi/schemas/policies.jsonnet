@@ -100,6 +100,20 @@ local openapi = import '../lib/openapi.libsonnet';
       deploymentDependency: openapi.schemaRef('DeploymentDependencyRule'),
       deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
       verification: openapi.schemaRef('VerificationRule'),
+      versionDebounce: openapi.schemaRef('VersionDebounceRule'),
+    },
+  },
+
+  VersionDebounceRule: {
+    type: 'object',
+    required: ['intervalSeconds'],
+    properties: {
+      intervalSeconds: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.',
+      },
     },
   },
 
