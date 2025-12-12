@@ -5,6 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
@@ -12,6 +17,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/hashicorp/go-tfe"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -322,6 +328,94 @@ func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, re
 	return d.verification.StartVerification(ctx, release, metrics)
 }
 
+func (d *TerraformCloudDispatcher) getKafkaProducer() (messaging.Producer, error) {
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
+		"bootstrap.servers":        config.Global.KafkaBrokers,
+		"enable.idempotence":       true,
+		"compression.type":         "snappy",
+		"message.send.max.retries": 10,
+		"retry.backoff.ms":         100,
+	})
+}
+
+func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config terraformCloudAgentConfig) error {
+	_, span := terraformTracer.Start(context.Background(), "sendJobUpdateEvent")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("job.id", job.Id),
+		attribute.String("run.id", run.ID),
+	)
+
+	workspaceId := d.store.ID()
+
+	runUrl := fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", config.Address, config.Organization, run.Workspace.Name, run.ID)
+	if !strings.HasPrefix(runUrl, "https://") {
+		runUrl = "https://" + runUrl
+	}
+
+	workspaceUrl := fmt.Sprintf("%s/app/%s/workspaces/%s", config.Address, config.Organization, run.Workspace.Name)
+	if !strings.HasPrefix(workspaceUrl, "https://") {
+		workspaceUrl = "https://" + workspaceUrl
+	}
+
+	links := make(map[string]string)
+	links["TFE Run"] = runUrl
+	links["TFE Workspace"] = workspaceUrl
+	linksJSON, err := json.Marshal(links)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal links")
+		return fmt.Errorf("failed to marshal links: %w", err)
+	}
+
+	now := time.Now().UTC()
+	jobWithUpdates := oapi.Job{
+		Id: job.Id,
+		Metadata: map[string]string{
+			string("ctrlplane/links"): string(linksJSON),
+		},
+		Status:      oapi.JobStatusSuccessful,
+		UpdatedAt:   now,
+		CompletedAt: &now,
+	}
+
+	eventPayload := oapi.JobUpdateEvent{
+		Id:             &job.Id,
+		Job:            jobWithUpdates,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.Metadata, oapi.CompletedAt, oapi.UpdatedAt},
+	}
+
+	producer, err := d.getKafkaProducer()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create Kafka producer")
+		return fmt.Errorf("failed to create Kafka producer: %w", err)
+	}
+	defer producer.Close()
+
+	event := map[string]any{
+		"eventType":   "job.updated",
+		"workspaceId": workspaceId,
+		"data":        eventPayload,
+		"timestamp":   time.Now().Unix(),
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal event")
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+
+	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to publish event")
+		return err
+	}
+	return nil
+}
+
 func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 	ctx, span := terraformTracer.Start(ctx, "TerraformDispatcher.DispatchJob")
 	defer span.End()
@@ -375,6 +469,11 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 			return err
 		}
 		span.SetAttributes(attribute.Bool("workspace_created", true))
+		if err := d.sendJobUpdateEvent(job, nil, cfg); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to send job update event")
+			return err
+		}
 	}
 
 	if existingWorkspace != nil {
@@ -415,6 +514,12 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 	if err := d.createRunVerification(ctx, &templatableJob.Release.Release, cfg, run.ID); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create run verification")
+		return err
+	}
+
+	if err := d.sendJobUpdateEvent(job, run, cfg); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to send job update event")
 		return err
 	}
 
