@@ -113,6 +113,12 @@ const updateVariablesForResource: AsyncTypedHandler<
 
 export const resourceRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listResources))
-  .get("/:identifier", asyncHandler(getResourceByIdentifier))
-  .get("/:identifier/variables", asyncHandler(getVariablesForResource))
-  .patch("/:identifier/variables", asyncHandler(updateVariablesForResource));
+  .get("/identifier/:identifier", asyncHandler(getResourceByIdentifier))
+  .get(
+    "/identifier/:identifier/variables",
+    asyncHandler(getVariablesForResource),
+  )
+  .patch(
+    "/identifier/:identifier/variables",
+    asyncHandler(updateVariablesForResource),
+  );
