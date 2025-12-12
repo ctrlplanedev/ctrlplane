@@ -10,7 +10,11 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/dgraph-io/ristretto/v2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var stateCacheTracer = otel.Tracer("StateCache")
 
 // StateCache manages caching of release target states.
 // It encapsulates all caching logic including cache misses, computation, and updates.
@@ -43,12 +47,18 @@ func NewStateCache(store *store.Store, planner *deployment.Planner) *StateCache 
 // If resourceRelationships are provided, they will be passed to the planner to avoid recomputation.
 // If bypassCache is true, always computes fresh state.
 func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
+	ctx, span := stateCacheTracer.Start(ctx, "Get")
+	defer span.End()
+
 	options := &options{}
 	for _, opt := range opts {
 		opt(options)
 	}
 
 	key := releaseTarget.Key()
+
+	span.SetAttributes(attribute.Bool("bypass_cache", options.bypassCache))
+	span.SetAttributes(attribute.String("release_target.key", key))
 
 	// Check cache unless bypass is requested
 	if !options.bypassCache {
@@ -74,6 +84,11 @@ func (sc *StateCache) Invalidate(releaseTarget *oapi.ReleaseTarget) {
 // This involves gathering current release and job information.
 // Callers can provide already-known information via options to avoid redundant queries.
 func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (rts *oapi.ReleaseTargetState, err error) {
+	ctx, span := stateCacheTracer.Start(ctx, "compute")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
+
 	options := &options{}
 	for _, opt := range opts {
 		opt(options)
@@ -96,12 +111,16 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 	}
 
 	if desiredRelease != nil {
+		_, verificationSpan := stateCacheTracer.Start(ctx, "GetMostRecentVerificationForDesiredRelease")
 		desiredRelease.Verification = sc.store.ReleaseVerifications.GetMostRecentVerificationForRelease(desiredRelease.ID())
+		verificationSpan.End()
 	}
 
 	// Get current release (compute if not provided)
 	currentRelease := options.currentRelease
 	if currentRelease == nil {
+		_, currentReleaseSpan := stateCacheTracer.Start(ctx, "GetCurrentRelease")
+
 		cr, _, err := sc.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
 		if err != nil {
 			// No successful job found is not an error condition - it just means no current release
@@ -109,16 +128,21 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 		} else {
 			currentRelease = cr
 		}
+		currentReleaseSpan.End()
 	}
 
 	if currentRelease != nil {
+		_, verificationSpan := stateCacheTracer.Start(ctx, "GetMostRecentVerificationForCurrentRelease")
 		currentRelease.Verification = sc.store.ReleaseVerifications.GetMostRecentVerificationForRelease(currentRelease.ID())
+		verificationSpan.End()
 	}
 
 	// Get latest job (compute if not provided)
 	latestJob := options.latestJob
 	if latestJob == nil {
+		_, latestJobSpan := stateCacheTracer.Start(ctx, "GetLatestJob")
 		latestJob, _ = sc.store.ReleaseTargets.GetLatestJob(ctx, releaseTarget)
+		latestJobSpan.End()
 	}
 
 	rts = &oapi.ReleaseTargetState{
