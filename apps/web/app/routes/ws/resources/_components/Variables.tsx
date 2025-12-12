@@ -47,7 +47,7 @@ function Value({ value }: { value: WorkspaceEngine["schemas"]["Value"] }) {
     typeof value === "number" ||
     typeof value === "boolean"
   )
-    return <span className="text-green-700">{value}</span>;
+    return <span className="text-green-700">{`${value}`}</span>;
   if (typeof value === "object")
     return (
       <pre className="text-green-700">{JSON.stringify(value, null, 2)}</pre>
