@@ -3,8 +3,8 @@ package jobdispatch
 type JobAgentType string
 
 const (
-	JobAgentTypeGithub      JobAgentType = "github-app"
-	JobAgentTypeArgoCD      JobAgentType = "argo-cd"
-	JobAgentTypeTFCloud     JobAgentType = "tfe"
-	JobAgentTypeAutoResolve JobAgentType = "auto-resolve"
+	JobAgentTypeGithub     JobAgentType = "github-app"
+	JobAgentTypeArgoCD     JobAgentType = "argo-cd"
+	JobAgentTypeTFCloud    JobAgentType = "tfe"
+	JobAgentTypeTestRunner JobAgentType = "test-runner"
 )

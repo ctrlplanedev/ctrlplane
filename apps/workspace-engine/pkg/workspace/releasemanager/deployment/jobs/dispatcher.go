@@ -46,8 +46,8 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 		return jobdispatch.NewTerraformCloudDispatcher(d.store, d.verification).DispatchJob(ctx, job)
 	}
 
-	if jobAgent.Type == string(jobdispatch.JobAgentTypeAutoResolve) {
-		return jobdispatch.NewAutoResolveDispatcher(d.store).DispatchJob(ctx, job)
+	if jobAgent.Type == string(jobdispatch.JobAgentTypeTestRunner) {
+		return jobdispatch.NewTestRunnerDispatcher(d.store).DispatchJob(ctx, job)
 	}
 
 	return ErrUnsupportedJobAgent

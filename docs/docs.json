@@ -39,8 +39,10 @@
               "policies/gradual-rollouts",
               "policies/retry",
               "policies/verification",
+              "policies/deployment-dependency",
               "policies/version-selector",
-              "policies/deployment-dependency"
+              "policies/version-debounce",
+              "policies/deployment-window"
             ]
           }
         ]

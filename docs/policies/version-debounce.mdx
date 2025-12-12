@@ -261,12 +261,12 @@ policies:
 
 ### Interval Guidelines
 
-| Use Case                    | Suggested Interval | Notes                         |
-| --------------------------- | ------------------ | ----------------------------- |
-| High-frequency CI/CD        | 15-30 minutes      | Balance freshness vs churn    |
-| Standard services           | 1-2 hours          | Reasonable batching           |
-| Stable/low-priority         | 4-24 hours         | Significant batching          |
-| Development/staging         | 5-15 minutes       | Faster feedback loops         |
+| Use Case             | Suggested Interval | Notes                      |
+| -------------------- | ------------------ | -------------------------- |
+| High-frequency CI/CD | 15-30 minutes      | Balance freshness vs churn |
+| Standard services    | 1-2 hours          | Reasonable batching        |
+| Stable/low-priority  | 4-24 hours         | Significant batching       |
+| Development/staging  | 5-15 minutes       | Faster feedback loops      |
 
 ### Recommendations
 
@@ -282,4 +282,3 @@ policies:
 - [Policies Overview](./overview) - Learn about policy structure
 - [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
 - [Deployment Window](./deployment-window) - Time-based deployment control
-
