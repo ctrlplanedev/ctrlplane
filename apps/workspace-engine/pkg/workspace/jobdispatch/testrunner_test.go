@@ -122,10 +122,11 @@ func TestTestRunnerDispatcher_DispatchJob_WithDelay(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
 	mockStore := store.New("test-workspace", sc)
 
-	var receivedDuration time.Duration
+	// Use a channel to capture the duration safely across goroutines
+	durationChan := make(chan time.Duration, 1)
 	timeChannel := make(chan time.Time, 1)
 	mockTimeFunc := func(d time.Duration) <-chan time.Time {
-		receivedDuration = d
+		durationChan <- d
 		return timeChannel
 	}
 
@@ -150,12 +151,15 @@ func TestTestRunnerDispatcher_DispatchJob_WithDelay(t *testing.T) {
 	err := dispatcher.DispatchJob(context.Background(), job)
 	require.NoError(t, err)
 
-	// Trigger the time delay
-	timeChannel <- time.Now()
-	time.Sleep(50 * time.Millisecond)
+	// Wait for the duration to be captured (this happens before timeFunc blocks)
+	receivedDuration := <-durationChan
 
 	// Verify the correct delay was used
 	require.Equal(t, time.Duration(delaySeconds)*time.Second, receivedDuration)
+
+	// Trigger the time delay to let the goroutine complete
+	timeChannel <- time.Now()
+	time.Sleep(50 * time.Millisecond)
 
 	// Verify event was published
 	require.Len(t, mockProd.GetMessages(), 1)
