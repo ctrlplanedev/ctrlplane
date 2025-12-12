@@ -36,18 +36,23 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 	// Create release manager with trace store (will panic if nil)
 	ws.releasemanager = releasemanager.New(ws.store, ws.traceStore)
 
+	for _, callback := range ws.postInitCallbacks {
+		callback()
+	}
+
 	return ws
 }
 
 type Workspace struct {
 	ID string
 
-	changeset        statechange.ChangeSet[any]
-	store            *store.Store
-	releasemanager   *releasemanager.Manager
-	traceStore       releasemanager.PersistenceStore
-	persistenceStore persistence.Store
-	persister        *persistence.PersistingChangeSet
+	changeset         statechange.ChangeSet[any]
+	store             *store.Store
+	releasemanager    *releasemanager.Manager
+	traceStore        releasemanager.PersistenceStore
+	persistenceStore  persistence.Store
+	persister         *persistence.PersistingChangeSet
+	postInitCallbacks []func()
 }
 
 // Close shuts down the workspace, flushing any pending persistence writes.

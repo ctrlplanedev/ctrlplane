@@ -27,10 +27,12 @@ func WithTraceStore(store releasemanager.PersistenceStore) WorkspaceOption {
 
 func AddDefaultSystem() WorkspaceOption {
 	return func(ws *Workspace) {
-		_ = ws.Systems().Upsert(context.Background(), &oapi.System{
-			Id:          "00000000-0000-0000-0000-000000000000",
-			Name:        "Default",
-			Description: ptr.String("Default system"),
+		ws.postInitCallbacks = append(ws.postInitCallbacks, func() {
+			_ = ws.Systems().Upsert(context.Background(), &oapi.System{
+				Id:          "00000000-0000-0000-0000-000000000000",
+				Name:        "Default",
+				Description: ptr.String("Default system"),
+			})
 		})
 	}
 }
