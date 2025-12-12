@@ -33,7 +33,7 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 type Workspace struct {
 	ID string
 
-	changeset      *statechange.ChangeSet[any]
+	changeset      statechange.BatchChangeSet[any]
 	store          *store.Store
 	releasemanager *releasemanager.Manager
 	traceStore     releasemanager.PersistenceStore
@@ -115,7 +115,7 @@ func (w *Workspace) ResourceProviders() *store.ResourceProviders {
 	return w.store.ResourceProviders
 }
 
-func (w *Workspace) Changeset() *statechange.ChangeSet[any] {
+func (w *Workspace) Changeset() statechange.BatchChangeSet[any] {
 	return w.changeset
 }
 

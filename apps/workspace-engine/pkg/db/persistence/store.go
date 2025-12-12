@@ -61,7 +61,7 @@ func (s *Store) upsertChangelogEntry(ctx context.Context, tx pgx.Tx, change pers
 		change.Namespace,
 		entityType,
 		entityID,
-		entityData,
+		string(entityData), // Convert to string for json/jsonb column
 		change.Timestamp,
 	)
 	if err != nil {

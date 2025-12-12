@@ -15,7 +15,10 @@ local openapi = import '../lib/openapi.libsonnet';
       'metadata',
     ],
     properties: {
-      id: { type: 'string' },
+      id: {
+        type: 'string',
+        'x-oapi-codegen-extra-tags': { bun: 'id,pk' },
+      },
       name: { type: 'string' },
       version: { type: 'string' },
       kind: { type: 'string' },

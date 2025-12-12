@@ -8,17 +8,21 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
 )
 
 var (
-	pool *pgxpool.Pool
-	once sync.Once
+	pool     *pgxpool.Pool
+	poolOnce sync.Once
 )
 
 // GetPool returns the singleton database connection pool
 func GetPool(ctx context.Context) *pgxpool.Pool {
-	once.Do(func() {
+	poolOnce.Do(func() {
 		cfg, err := pgxpool.ParseConfig(config.Global.PostgresURL)
 		if err != nil {
 			log.Fatal("Failed to parse database config:", err)
@@ -28,6 +32,7 @@ func GetPool(ctx context.Context) *pgxpool.Pool {
 		cfg.MinConns = 1
 		cfg.HealthCheckPeriod = 30 * time.Second
 		cfg.ConnConfig.Tracer = otelpgx.NewTracer()
+		cfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 		cfg.ConnConfig.RuntimeParams["application_name"] = config.Global.PostgresApplicationName
 
@@ -45,11 +50,7 @@ func GetDB(ctx context.Context) (*pgxpool.Conn, error) {
 		GetPool(ctx)
 	}
 
-	conn, err := pool.Acquire(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
+	return pool.Acquire(ctx)
 }
 
 // Close closes the connection pool (useful for cleanup)
@@ -57,4 +58,19 @@ func Close() {
 	if pool != nil {
 		pool.Close()
 	}
+}
+
+var (
+	bunDB   *bun.DB
+	bunOnce sync.Once
+)
+
+func GetBunDB(ctx context.Context) *bun.DB {
+	bunOnce.Do(func() {
+		// Ensure pool is initialized first
+		GetPool(ctx)
+		sqldb := stdlib.OpenDBFromPool(pool)
+		bunDB = bun.NewDB(sqldb, pgdialect.New())
+	})
+	return bunDB
 }

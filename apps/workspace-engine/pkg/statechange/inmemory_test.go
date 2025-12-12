@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test entity type
+// TestEntity is a test entity type used across tests
 type TestEntity struct {
 	ID   string
 	Name string
@@ -222,4 +222,75 @@ func TestTimestampOrdering(t *testing.T) {
 		"Expected first change timestamp to be before second")
 	assert.True(t, changes[1].Timestamp.Before(changes[2].Timestamp),
 		"Expected second change timestamp to be before third")
+}
+
+func TestIgnoreUnignore(t *testing.T) {
+	cs := NewChangeSet[TestEntity]()
+
+	// Initially not ignored
+	assert.False(t, cs.IsIgnored())
+
+	// Record first change
+	cs.RecordUpsert(TestEntity{ID: "1", Name: "First"})
+
+	// Ignore and record more
+	cs.Ignore()
+	assert.True(t, cs.IsIgnored())
+
+	cs.RecordUpsert(TestEntity{ID: "2", Name: "Ignored"})
+	cs.RecordDelete(TestEntity{ID: "3", Name: "Ignored"})
+
+	// Unignore and record more
+	cs.Unignore()
+	assert.False(t, cs.IsIgnored())
+
+	cs.RecordUpsert(TestEntity{ID: "4", Name: "Fourth"})
+
+	// Should only have changes 1 and 4
+	changes := cs.Changes()
+	assert.Len(t, changes, 2)
+	assert.Equal(t, "1", changes[0].Entity.ID)
+	assert.Equal(t, "4", changes[1].Entity.ID)
+}
+
+func TestIgnoreMultipleTimes(t *testing.T) {
+	cs := NewChangeSet[TestEntity]()
+
+	// Multiple ignores should be idempotent
+	cs.Ignore()
+	cs.Ignore()
+	assert.True(t, cs.IsIgnored())
+
+	cs.Unignore()
+	assert.False(t, cs.IsIgnored())
+
+	// Multiple unignores should be idempotent
+	cs.Unignore()
+	assert.False(t, cs.IsIgnored())
+}
+
+func TestIgnoreConcurrent(t *testing.T) {
+	cs := NewChangeSet[TestEntity]()
+	var wg sync.WaitGroup
+
+	// Concurrent ignore/unignore with records
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				if j%2 == 0 {
+					cs.Ignore()
+				} else {
+					cs.Unignore()
+				}
+				cs.RecordUpsert(TestEntity{ID: string(rune(id*100 + j)), Name: "Test"})
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Just verify no panics occurred - exact count depends on timing
+	_ = cs.Changes()
 }

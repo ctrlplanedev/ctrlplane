@@ -1371,7 +1371,10 @@
                   "type": "string"
                },
                "id": {
-                  "type": "string"
+                  "type": "string",
+                  "x-oapi-codegen-extra-tags": {
+                     "bun": "id,pk"
+                  }
                },
                "identifier": {
                   "type": "string"

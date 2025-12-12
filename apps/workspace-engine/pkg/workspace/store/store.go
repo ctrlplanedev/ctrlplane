@@ -10,7 +10,7 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
+func New(wsId string, changeset statechange.BatchChangeSet[any]) *Store {
 	repo := repository.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
 
@@ -42,7 +42,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 type Store struct {
 	id        string
 	repo      *repository.InMemoryStore
-	changeset *statechange.ChangeSet[any]
+	changeset statechange.ChangeSet[any]
 
 	Policies                 *Policies
 	PolicySkips              *PolicySkips
@@ -76,6 +76,9 @@ func (s *Store) Repo() *repository.InMemoryStore {
 }
 
 func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setStatus func(status string)) error {
+	s.changeset.Ignore()
+	defer s.changeset.Unignore()
+
 	err := s.repo.Router().Apply(ctx, changes)
 	if err != nil {
 		return err
@@ -146,8 +149,6 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 			_ = s.Relations.Upsert(ctx, relation)
 		}
 	}
-
-	s.changeset.Clear()
 
 	return nil
 }

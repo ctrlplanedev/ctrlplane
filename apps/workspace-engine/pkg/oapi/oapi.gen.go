@@ -724,7 +724,7 @@ type Resource struct {
 	Config      map[string]interface{} `json:"config"`
 	CreatedAt   time.Time              `json:"createdAt"`
 	DeletedAt   *time.Time             `json:"deletedAt,omitempty"`
-	Id          string                 `json:"id"`
+	Id          string                 `bun:"id,pk" json:"id"`
 	Identifier  string                 `json:"identifier"`
 	Kind        string                 `json:"kind"`
 	LockedAt    *time.Time             `json:"lockedAt,omitempty"`
