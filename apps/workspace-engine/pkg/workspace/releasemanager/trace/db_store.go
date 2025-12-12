@@ -121,7 +121,11 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 		// Serialize attributes to JSON
 		attributesJSON, err := json.Marshal(allAttributes)
 		if err != nil {
-			return fmt.Errorf("failed to marshal attributes: %w", err)
+			return fmt.Errorf("failed to marshal attributes for span %s: %w", span.Name(), err)
+		}
+		// Validate JSON is valid UTF-8 (PostgreSQL requires this)
+		if !json.Valid(attributesJSON) {
+			return fmt.Errorf("invalid JSON generated for attributes in span %s", span.Name())
 		}
 
 		// Extract and serialize events
@@ -145,7 +149,7 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 			return fmt.Errorf("failed to marshal events: %w", err)
 		}
 
-		// Add insert to batch
+		// Add insert to batch - convert JSON bytes to string for PostgreSQL jsonb
 		batch.Queue(`
 			INSERT INTO deployment_trace_span (
 				trace_id, span_id, parent_span_id, name,
@@ -160,7 +164,7 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 				$7, $8, $9, $10, $11,
 				$12, $13, $14,
 				$15, $16,
-				$17, $18
+				$17::jsonb, $18::jsonb
 			)
 		`,
 			traceID, spanID, parentSpanID, span.Name(),
@@ -168,7 +172,7 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 			workspaceID, releaseTargetKey, releaseID, jobID, parentTraceID,
 			phase, nodeType, status,
 			depth, sequence,
-			attributesJSON, eventsJSON,
+			string(attributesJSON), string(eventsJSON),
 		)
 	}
 
@@ -176,11 +180,19 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 	results := tx.SendBatch(ctx, batch)
 
 	// Process batch results
-	for range spans {
+	for i, span := range spans {
 		_, err := results.Exec()
 		if err != nil {
 			results.Close()
-			return fmt.Errorf("failed to insert span: %w", err)
+			// Collect attributes for debugging
+			attrs := make(map[string]interface{})
+			for _, attr := range span.Attributes() {
+				attrs[string(attr.Key)] = attributeValueToInterface(attr.Value)
+			}
+			attrsJSON, _ := json.Marshal(attrs)
+			// Include span details in error for debugging
+			return fmt.Errorf("failed to insert span %d (%s, trace_id=%s, attrs=%s): %w",
+				i, span.Name(), span.SpanContext().TraceID().String(), string(attrsJSON), err)
 		}
 	}
 
@@ -205,20 +217,53 @@ func attributeValueToInterface(value attribute.Value) interface{} {
 	case attribute.INT64:
 		return value.AsInt64()
 	case attribute.FLOAT64:
-		return value.AsFloat64()
+		f := value.AsFloat64()
+		// JSON doesn't support NaN or Infinity
+		if f != f { // NaN check
+			return nil
+		}
+		if f > 1e308 || f < -1e308 { // Infinity check
+			return nil
+		}
+		return f
 	case attribute.STRING:
-		return value.AsString()
+		return sanitizeString(value.AsString())
 	case attribute.BOOLSLICE:
 		return value.AsBoolSlice()
 	case attribute.INT64SLICE:
 		return value.AsInt64Slice()
 	case attribute.FLOAT64SLICE:
-		return value.AsFloat64Slice()
+		slice := value.AsFloat64Slice()
+		// Filter out NaN/Infinity values
+		result := make([]float64, 0, len(slice))
+		for _, f := range slice {
+			if f == f && f <= 1e308 && f >= -1e308 {
+				result = append(result, f)
+			}
+		}
+		return result
 	case attribute.STRINGSLICE:
-		return value.AsStringSlice()
+		slice := value.AsStringSlice()
+		result := make([]string, len(slice))
+		for i, s := range slice {
+			result[i] = sanitizeString(s)
+		}
+		return result
 	default:
-		return value.AsString()
+		return sanitizeString(value.AsString())
 	}
+}
+
+// sanitizeString removes invalid UTF-8 sequences and null bytes
+func sanitizeString(s string) string {
+	// Remove null bytes which are invalid in PostgreSQL JSON
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != 0 {
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
 }
 
 // nullableTime converts zero time to nil for database NULL

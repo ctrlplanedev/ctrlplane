@@ -55,7 +55,6 @@ func (u *UnionChangeSet[T]) IsIgnored() bool {
 	return false
 }
 
-
 func (u *UnionChangeSet[T]) Changes() []StateChange[T] {
 	return u.batch.Changes()
 }
