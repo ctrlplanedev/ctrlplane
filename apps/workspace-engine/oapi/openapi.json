@@ -608,6 +608,7 @@
                   "type": "object"
                },
                "releaseId": {
+                  "description": "Set if job is from a release",
                   "type": "string"
                },
                "startedAt": {
@@ -627,9 +628,9 @@
             },
             "required": [
                "id",
-               "releaseId",
                "jobAgentId",
                "jobAgentConfig",
+               "releaseId",
                "status",
                "createdAt",
                "updatedAt",
@@ -1869,6 +1870,358 @@
             },
             "required": [
                "selector"
+            ],
+            "type": "object"
+         },
+         "Workflow": {
+            "properties": {
+               "batchId": {
+                  "description": "Groups workflows from same trigger (for matrix expansion)",
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "templateId": {
+                  "type": "string"
+               },
+               "triggerId": {
+                  "type": "string"
+               },
+               "triggeredBy": {
+                  "enum": [
+                     "manual",
+                     "schedule",
+                     "event"
+                  ],
+                  "type": "string"
+               },
+               "triggeredByUserId": {
+                  "type": "string"
+               },
+               "variables": {
+                  "additionalProperties": true,
+                  "description": "Resolved variable values for this specific workflow",
+                  "type": "object"
+               }
+            },
+            "required": [
+               "id",
+               "templateId",
+               "triggeredBy",
+               "variables",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplate": {
+            "properties": {
+               "concurrency": {
+                  "properties": {
+                     "group": {
+                        "type": "string"
+                     },
+                     "limit": {
+                        "type": "integer"
+                     }
+                  },
+                  "type": "object"
+               },
+               "createdAt": {
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobAgentConfig": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "jobAgentId": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "retryCount": {
+                  "type": "integer"
+               },
+               "slug": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               },
+               "timeout": {
+                  "type": "integer"
+               },
+               "updatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "slug",
+               "systemId",
+               "jobAgentConfig",
+               "createdAt",
+               "updatedAt"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariable": {
+            "properties": {
+               "config": {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfig"
+               },
+               "description": {
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "key": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "required": {
+                  "type": "boolean"
+               },
+               "templateId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "templateId",
+               "key",
+               "name",
+               "required",
+               "config"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariableConfig": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfigString"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfigNumber"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfigBoolean"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfigChoice"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfigResource"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfigEnvironment"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowTemplateVariableConfigDeployment"
+               }
+            ]
+         },
+         "WorkflowTemplateVariableConfigBoolean": {
+            "properties": {
+               "default": {
+                  "type": "boolean"
+               },
+               "type": {
+                  "enum": [
+                     "boolean"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariableConfigChoice": {
+            "properties": {
+               "default": {
+                  "oneOf": [
+                     {
+                        "type": "string"
+                     },
+                     {
+                        "items": {
+                           "type": "string"
+                        },
+                        "type": "array"
+                     }
+                  ]
+               },
+               "forEach": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "multiple": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "options": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
+               },
+               "type": {
+                  "enum": [
+                     "choice"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "options"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariableConfigDeployment": {
+            "properties": {
+               "forEach": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "multiple": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "selector": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "deployment"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "selector"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariableConfigEnvironment": {
+            "properties": {
+               "forEach": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "multiple": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "selector": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "environment"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "selector"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariableConfigNumber": {
+            "properties": {
+               "default": {
+                  "type": "number"
+               },
+               "maximum": {
+                  "type": "number"
+               },
+               "minimum": {
+                  "type": "number"
+               },
+               "type": {
+                  "enum": [
+                     "number"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariableConfigResource": {
+            "properties": {
+               "forEach": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "multiple": {
+                  "default": false,
+                  "type": "boolean"
+               },
+               "selector": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "resource"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "selector"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplateVariableConfigString": {
+            "properties": {
+               "default": {
+                  "type": "string"
+               },
+               "inputType": {
+                  "default": "text",
+                  "enum": [
+                     "text",
+                     "text-area"
+                  ],
+                  "type": "string"
+               },
+               "maxLength": {
+                  "type": "integer"
+               },
+               "minLength": {
+                  "type": "integer"
+               },
+               "type": {
+                  "enum": [
+                     "string"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type"
             ],
             "type": "object"
          }

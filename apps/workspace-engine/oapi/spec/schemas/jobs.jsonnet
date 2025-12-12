@@ -4,9 +4,9 @@ local Job = {
   type: 'object',
   required: [
     'id',
-    'releaseId',
     'jobAgentId',
     'jobAgentConfig',
+    'releaseId',
     'status',
     'createdAt',
     'updatedAt',
@@ -14,7 +14,8 @@ local Job = {
   ],
   properties: {
     id: { type: 'string' },
-    releaseId: { type: 'string' },
+    releaseId: { type: 'string', description: 'Set if job is from a release' },
+    // workflowId: { type: 'string', description: 'Set if job is from a workflow' },
     jobAgentId: { type: 'string' },
     jobAgentConfig: {
       type: 'object',

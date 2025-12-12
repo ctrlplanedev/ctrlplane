@@ -24,7 +24,8 @@
     (import 'paths/resource-providers.jsonnet') +
     (import 'paths/github-entity.jsonnet') +
     (import 'paths/relationship-rules.jsonnet') +
-    (import 'paths/release.jsonnet'), 
+    (import 'paths/release.jsonnet') +
+    (import 'paths/workflows.jsonnet'),
 
   components: {
     parameters: (import 'parameters/core.jsonnet'),
@@ -38,6 +39,7 @@
       (import 'schemas/jobs.jsonnet') +
       (import 'schemas/deployments.jsonnet') +
       (import 'schemas/verification.jsonnet') +
-      (import 'schemas/resourcevariables.jsonnet'),
+      (import 'schemas/resourcevariables.jsonnet') +
+      (import 'schemas/workflows.jsonnet'),
   },
 }

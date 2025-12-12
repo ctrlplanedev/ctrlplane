@@ -1345,7 +1345,7 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: map[string]any{},
 	}
 
 	environment := &oapi.Environment{
