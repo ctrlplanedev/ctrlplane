@@ -338,7 +338,7 @@ func (d *TerraformCloudDispatcher) getKafkaProducer() (messaging.Producer, error
 	})
 }
 
-func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config terraformCloudAgentConfig) error {
+func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config terraformCloudAgentConfig, workspaceName string) error {
 	_, span := terraformTracer.Start(context.Background(), "sendJobUpdateEvent")
 	defer span.End()
 
@@ -349,12 +349,12 @@ func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Ru
 
 	workspaceId := d.store.ID()
 
-	runUrl := fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", config.Address, config.Organization, run.Workspace.Name, run.ID)
+	runUrl := fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", config.Address, config.Organization, workspaceName, run.ID)
 	if !strings.HasPrefix(runUrl, "https://") {
 		runUrl = "https://" + runUrl
 	}
 
-	workspaceUrl := fmt.Sprintf("%s/app/%s/workspaces/%s", config.Address, config.Organization, run.Workspace.Name)
+	workspaceUrl := fmt.Sprintf("%s/app/%s/workspaces/%s", config.Address, config.Organization, workspaceName)
 	if !strings.HasPrefix(workspaceUrl, "https://") {
 		workspaceUrl = "https://" + workspaceUrl
 	}
@@ -469,11 +469,6 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 			return err
 		}
 		span.SetAttributes(attribute.Bool("workspace_created", true))
-		if err := d.sendJobUpdateEvent(job, nil, cfg); err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "failed to send job update event")
-			return err
-		}
 	}
 
 	if existingWorkspace != nil {
@@ -517,7 +512,7 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 		return err
 	}
 
-	if err := d.sendJobUpdateEvent(job, run, cfg); err != nil {
+	if err := d.sendJobUpdateEvent(job, run, cfg, targetWorkspace.Name); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to send job update event")
 		return err
