@@ -283,7 +283,7 @@ func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (t
 		return 0, fmt.Errorf("metric index out of range: %d", metricIndex)
 	}
 
-	return verification.Metrics[metricIndex].GetInterval()
+	return verification.Metrics[metricIndex].GetInterval(), nil
 }
 
 func (s *scheduler) buildSummaryMessage(v *oapi.ReleaseVerification, status oapi.ReleaseVerificationStatus) string {

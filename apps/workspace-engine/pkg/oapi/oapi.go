@@ -123,29 +123,30 @@ func (v *Value) GetType() (string, error) {
 }
 
 // GetInterval parses and returns the interval duration from the metric spec
-func (vms *VerificationMetricSpec) GetInterval() (time.Duration, error) {
-	return time.ParseDuration(vms.Interval)
+func (vms *VerificationMetricSpec) GetInterval() time.Duration {
+	return time.Duration(vms.IntervalSeconds) * time.Second
+
 }
 
 // GetFailureLimit returns the failure limit, defaulting to 0 if not set
 func (vms *VerificationMetricSpec) GetFailureLimit() int {
-	if vms.FailureLimit == nil {
+	if vms.FailureThreshold == nil {
 		return 0
 	}
-	return *vms.FailureLimit
+	return *vms.FailureThreshold
 }
 
 // GetInterval parses and returns the interval duration from the metric status
-func (vms *VerificationMetricStatus) GetInterval() (time.Duration, error) {
-	return time.ParseDuration(vms.Interval)
+func (vms *VerificationMetricStatus) GetInterval() time.Duration {
+	return time.Duration(vms.IntervalSeconds) * time.Second
 }
 
 // GetFailureLimit returns the failure limit, defaulting to 0 if not set
 func (vms *VerificationMetricStatus) GetFailureLimit() int {
-	if vms.FailureLimit == nil {
+	if vms.FailureThreshold == nil {
 		return 0
 	}
-	return *vms.FailureLimit
+	return *vms.FailureThreshold
 }
 
 // Status computes the overall verification status from its metrics

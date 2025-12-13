@@ -205,10 +205,10 @@ func createHTTPMetricStatus(url string) oapi.VerificationMetricStatus {
 
 	return oapi.VerificationMetricStatus{
 		Name:             "test-metric",
-		Interval:         "1m",
+		IntervalSeconds:  60,
 		Count:            5,
 		SuccessCondition: "result.statusCode == 200",
-		FailureLimit:     ptr(2),
+		FailureThreshold: ptr(2),
 		Provider:         provider,
 		Measurements:     []oapi.VerificationMeasurement{},
 	}

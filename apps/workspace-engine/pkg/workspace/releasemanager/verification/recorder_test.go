@@ -27,7 +27,7 @@ func TestRecorder_RecordMeasurement_Success(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 60)
 
 	// Record a measurement
 	measurement := oapi.VerificationMeasurement{
@@ -68,7 +68,7 @@ func TestRecorder_RecordMeasurement_MetricIndexOutOfRange(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 60)
 
 	measurement := oapi.VerificationMeasurement{
 		Status:     oapi.Passed,
@@ -87,7 +87,7 @@ func TestRecorder_RecordMeasurement_MultipleMeasurements(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 60)
 
 	// Record multiple measurements
 	for i := 0; i < 5; i++ {
@@ -116,7 +116,7 @@ func TestRecorder_RecordMeasurement_MultipleMetrics(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 3, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 3, 60)
 
 	// Record measurement for each metric
 	for i := 0; i < 3; i++ {
@@ -143,7 +143,7 @@ func TestRecorder_RecordError_Success(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 60)
 
 	// Record an error
 	testError := errors.New("connection timeout")
@@ -180,7 +180,7 @@ func TestRecorder_UpdateMessage_Success(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 60)
 
 	// Update message
 	testMessage := "Verification completed: 5/5 measurements passed"
@@ -212,7 +212,7 @@ func TestRecorder_ConcurrentRecordMeasurements(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 60)
 
 	// Record measurements concurrently
 	var wg sync.WaitGroup
@@ -246,7 +246,7 @@ func TestRecorder_ConcurrentRecordAndUpdate(t *testing.T) {
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 3, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 3, 60)
 
 	var wg sync.WaitGroup
 
@@ -294,7 +294,7 @@ func TestRecorder_AppendMeasurement_PreservesExistingMeasurements(t *testing.T) 
 	recorder := NewMeasurementRecorder(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 2, "1m")
+	verification := createTestVerification(s, ctx, release.ID(), 2, 60)
 
 	// Record first measurement
 	measurement1 := oapi.VerificationMeasurement{

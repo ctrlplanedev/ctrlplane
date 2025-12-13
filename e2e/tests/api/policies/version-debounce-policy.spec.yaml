@@ -1,0 +1,31 @@
+system:
+  name: "{{ prefix }}-version-debounce"
+  slug: "{{ prefix }}-version-debounce"
+  description: System for testing version debounce policy
+
+environments:
+  - name: "{{ prefix }}-env"
+    description: Test environment
+    resourceSelector:
+      type: identifier
+      operator: contains
+      value: "{{ prefix }}"
+
+resources:
+  - name: "{{ prefix }}-resource"
+    kind: service
+    identifier: "{{ prefix }}-resource"
+    version: "1.0.0"
+    config: {}
+    metadata:
+      env: test
+
+policies:
+  - name: "{{ prefix }}-version-debounce-policy"
+    targets:
+      - environmentSelector:
+          type: name
+          operator: contains
+          value: "{{ prefix }}"
+    versionDebounce:
+      intervalSeconds: 60

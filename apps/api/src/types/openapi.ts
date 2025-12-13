@@ -311,10 +311,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List job agents
+         * @description Returns a list of job agents.
+         */
+        get: operations["listJobAgents"];
         put?: never;
-        /** Create a new job agent */
-        post: operations["createJobAgent"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -330,8 +333,8 @@ export interface paths {
         };
         /** Get a job agent */
         get: operations["getJobAgent"];
-        /** Update a job agent */
-        put: operations["updateJobAgent"];
+        /** Upsert a job agent */
+        put: operations["upsertJobAgent"];
         post?: never;
         /** Delete a job agent */
         delete: operations["deleteJobAgent"];
@@ -428,7 +431,7 @@ export interface paths {
         /** Get a policy by ID */
         get: operations["getPolicy"];
         /** Upsert a policy by ID */
-        put: operations["updatePolicy"];
+        put: operations["upsertPolicy"];
         post?: never;
         /** Delete a policy by ID */
         delete: operations["deletePolicy"];
@@ -796,13 +799,6 @@ export interface components {
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
         };
-        CreateJobAgentRequest: {
-            config: {
-                [key: string]: unknown;
-            };
-            name: string;
-            type: string;
-        };
         CreatePolicyRequest: {
             description?: string;
             enabled?: boolean;
@@ -1031,6 +1027,9 @@ export interface components {
                 [key: string]: unknown;
             };
             id: string;
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             type: string;
         };
@@ -1246,13 +1245,6 @@ export interface components {
             status?: components["schemas"]["DeploymentVersionStatus"];
             tag?: string;
         };
-        UpdateJobAgentRequest: {
-            config?: {
-                [key: string]: unknown;
-            };
-            name?: string;
-            type?: string;
-        };
         UpdateWorkspaceRequest: {
             /** @description Display name of the workspace */
             name?: string;
@@ -1303,6 +1295,16 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
+        };
+        UpsertJobAgentRequest: {
+            config?: {
+                [key: string]: unknown;
+            };
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            type: string;
         };
         UpsertPolicyRequest: {
             description?: string;
@@ -1385,15 +1387,16 @@ export interface components {
              */
             failureCondition?: string;
             /**
-             * @description Stop after this many failures (0 = no limit)
+             * @description Stop after this many consecutive failures (0 = no limit)
              * @default 0
              */
-            failureLimit: number;
+            failureThreshold: number;
             /**
-             * @description Interval between measurements (duration string, e.g., "30s", "5m")
-             * @example 30s
+             * Format: int32
+             * @description Interval between measurements in seconds
+             * @example 30
              */
-            interval: string;
+            intervalSeconds: number;
             /** @description Name of the verification metric */
             name: string;
             provider: components["schemas"]["MetricProvider"];
@@ -1401,7 +1404,12 @@ export interface components {
              * @description CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
              * @example result.statusCode == 200
              */
-            successCondition: string;
+            successCondition?: string;
+            /**
+             * @description Minimum number of consecutive successful measurements required to consider the metric successful
+             * @example 0
+             */
+            successThreshold?: number;
         };
         VerificationMetricStatus: components["schemas"]["VerificationMetricSpec"] & {
             /** @description Individual verification measurements taken for this metric */
@@ -2588,9 +2596,14 @@ export interface operations {
             };
         };
     };
-    createJobAgent: {
+    listJobAgents: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
             header?: never;
             path: {
                 /** @description ID of the workspace */
@@ -2598,19 +2611,32 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateJobAgentRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description Paginated list of items */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobAgent"];
+                    "application/json": {
+                        items: components["schemas"]["JobAgent"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -2640,7 +2666,7 @@ export interface operations {
             };
         };
     };
-    updateJobAgent: {
+    upsertJobAgent: {
         parameters: {
             query?: never;
             header?: never;
@@ -2654,12 +2680,12 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateJobAgentRequest"];
+                "application/json": components["schemas"]["UpsertJobAgentRequest"];
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2967,7 +2993,7 @@ export interface operations {
             };
         };
     };
-    updatePolicy: {
+    upsertPolicy: {
         parameters: {
             query?: never;
             header?: never;

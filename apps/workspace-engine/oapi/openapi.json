@@ -1774,15 +1774,17 @@
                   "example": "result.statusCode == 500",
                   "type": "string"
                },
-               "failureLimit": {
+               "failureThreshold": {
                   "default": 0,
-                  "description": "Stop after this many failures (0 = no limit)",
+                  "description": "Stop after this many consecutive failures (0 = no limit)",
                   "type": "integer"
                },
-               "interval": {
-                  "description": "Interval between measurements (duration string, e.g., \"30s\", \"5m\")",
-                  "example": "30s",
-                  "type": "string"
+               "intervalSeconds": {
+                  "description": "Interval between measurements in seconds",
+                  "example": 30,
+                  "format": "int32",
+                  "minimum": 1,
+                  "type": "integer"
                },
                "name": {
                   "description": "Name of the verification metric",
@@ -1798,16 +1800,16 @@
                },
                "successThreshold": {
                   "description": "Minimum number of consecutive successful measurements required to consider the metric successful",
-                  "example": 3,
+                  "example": 0,
                   "type": "integer"
                }
             },
             "required": [
                "name",
-               "interval",
+               "intervalSeconds",
                "count",
-               "successCondition",
-               "provider"
+               "provider",
+               "successCondition"
             ],
             "type": "object"
          },

@@ -34,7 +34,7 @@ local openapi = import '../lib/openapi.libsonnet';
       },
     },
   },
-    ResourceVariable: {
+  ResourceVariable: {
     type: 'object',
     required: ['resourceId', 'key', 'value'],
     properties: {

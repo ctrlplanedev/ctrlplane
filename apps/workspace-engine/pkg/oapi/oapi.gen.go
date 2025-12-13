@@ -851,11 +851,11 @@ type VerificationMetricSpec struct {
 	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
 	FailureCondition *string `json:"failureCondition,omitempty"`
 
-	// FailureLimit Stop after this many failures (0 = no limit)
-	FailureLimit *int `json:"failureLimit,omitempty"`
+	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
+	FailureThreshold *int `json:"failureThreshold,omitempty"`
 
-	// Interval Interval between measurements (duration string, e.g., "30s", "5m")
-	Interval string `json:"interval"`
+	// IntervalSeconds Interval between measurements in seconds
+	IntervalSeconds int32 `json:"intervalSeconds"`
 
 	// Name Name of the verification metric
 	Name     string         `json:"name"`
@@ -876,11 +876,11 @@ type VerificationMetricStatus struct {
 	// FailureCondition CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition
 	FailureCondition *string `json:"failureCondition,omitempty"`
 
-	// FailureLimit Stop after this many failures (0 = no limit)
-	FailureLimit *int `json:"failureLimit,omitempty"`
+	// FailureThreshold Stop after this many consecutive failures (0 = no limit)
+	FailureThreshold *int `json:"failureThreshold,omitempty"`
 
-	// Interval Interval between measurements (duration string, e.g., "30s", "5m")
-	Interval string `json:"interval"`
+	// IntervalSeconds Interval between measurements in seconds
+	IntervalSeconds int32 `json:"intervalSeconds"`
 
 	// Measurements Individual verification measurements taken for this metric
 	Measurements []VerificationMeasurement `json:"measurements"`

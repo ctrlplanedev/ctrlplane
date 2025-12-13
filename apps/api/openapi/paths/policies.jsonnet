@@ -50,7 +50,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert a policy by ID',
-      operationId: 'updatePolicy',
+      operationId: 'upsertPolicy',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.policyIdParam(),

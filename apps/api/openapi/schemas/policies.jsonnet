@@ -182,7 +182,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   DeploymentWindowRule: {
     type: 'object',
-    required: ['rrule', 'durationMinutes'],
+    required: ['rrule', 'durationMinutes', 'allowWindow'],
     properties: {
       rrule: {
         type: 'string',

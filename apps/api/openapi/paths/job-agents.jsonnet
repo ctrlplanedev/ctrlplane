@@ -2,21 +2,17 @@ local openapi = import '../lib/openapi.libsonnet';
 
 {
   '/v1/workspaces/{workspaceId}/job-agents': {
-    post: {
-      summary: 'Create a new job agent',
-      operationId: 'createJobAgent',
+    get: {
+      summary: 'List job agents',
+      operationId: 'listJobAgents',
+      description: 'Returns a list of job agents.',
       parameters: [
         openapi.workspaceIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
       ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: openapi.schemaRef('CreateJobAgentRequest'),
-          },
-        },
-      },
-      responses: openapi.acceptedResponse(openapi.schemaRef('JobAgent')),
+      responses: openapi.paginatedResponse(openapi.schemaRef('JobAgent'))
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}': {
@@ -30,8 +26,8 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.okResponse(openapi.schemaRef('JobAgent')),
     },
     put: {
-      summary: 'Update a job agent',
-      operationId: 'updateJobAgent',
+      summary: 'Upsert a job agent',
+      operationId: 'upsertJobAgent',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.jobAgentIdParam(),
@@ -40,11 +36,11 @@ local openapi = import '../lib/openapi.libsonnet';
         required: true,
         content: {
           'application/json': {
-            schema: openapi.schemaRef('UpdateJobAgentRequest'),
+            schema: openapi.schemaRef('UpsertJobAgentRequest'),
           },
         },
       },
-      responses: openapi.okResponse(openapi.schemaRef('JobAgent')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('JobAgent')),
     },
     delete: {
       summary: 'Delete a job agent',

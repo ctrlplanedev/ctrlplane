@@ -114,10 +114,10 @@ func (m *Manager) StartVerification(
 	for i, metric := range metrics {
 		metricStatuses[i] = oapi.VerificationMetricStatus{
 			Name:             metric.Name,
-			Interval:         metric.Interval,
+			IntervalSeconds:  metric.IntervalSeconds,
 			Count:            metric.Count,
 			SuccessCondition: metric.SuccessCondition,
-			FailureLimit:     metric.FailureLimit,
+			FailureThreshold: metric.FailureThreshold,
 			SuccessThreshold: metric.SuccessThreshold,
 			Provider:         metric.Provider,
 			Measurements:     []oapi.VerificationMeasurement{},

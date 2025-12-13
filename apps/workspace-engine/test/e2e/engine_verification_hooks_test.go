@@ -63,11 +63,12 @@ func TestEngineVerificationHooks(t *testing.T) {
 		Duration: 3,
 	})
 
+	successCondition := "result.ok == true"
 	metric := oapi.VerificationMetricSpec{
 		Name:             "test-metric",
-		Interval:         "3s",
+		IntervalSeconds:  3,
 		Count:            1,
-		SuccessCondition: "result.ok == true",
+		SuccessCondition: successCondition,
 		Provider:         metricProvider,
 	}
 
@@ -178,11 +179,12 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 		Duration: 0, // instant measurements for fast test
 	})
 
+	successCondition := "result.ok == true"
 	metric := oapi.VerificationMetricSpec{
 		Name:             "test-metric",
-		Interval:         "100ms", // short interval for quick measurements
+		IntervalSeconds:  1, // short interval for quick measurements
 		Count:            5,
-		SuccessCondition: "result.ok == true",
+		SuccessCondition: successCondition,
 		SuccessThreshold: &[]int{2}[0],
 		Provider:         metricProvider,
 	}
@@ -217,7 +219,8 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 	ws.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
 
 	// wait for verification to complete (with successThreshold=2, should exit early after 2 measurements)
-	time.Sleep(300 * time.Millisecond)
+	// Need to wait at least 1 second for the second measurement (IntervalSeconds: 1), plus buffer
+	time.Sleep(2 * time.Second)
 
 	// verify verification exists and completed with early exit
 	verification, exists := ws.Workspace().Store().ReleaseVerifications.GetByReleaseId(release.ID())

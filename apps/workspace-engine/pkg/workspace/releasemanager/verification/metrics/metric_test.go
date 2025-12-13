@@ -20,11 +20,11 @@ func createSleepMetricStatus(successCondition string, failureCondition *string) 
 
 	return oapi.VerificationMetricStatus{
 		Name:             "test-metric",
-		Interval:         "1s",
+		IntervalSeconds:  1,
 		Count:            1,
 		SuccessCondition: successCondition,
 		FailureCondition: failureCondition,
-		FailureLimit:     ptr(1),
+		FailureThreshold: ptr(1),
 		Provider:         providerCfg,
 		Measurements:     []oapi.VerificationMeasurement{},
 	}
@@ -142,10 +142,10 @@ func TestMeasure_InvalidProvider(t *testing.T) {
 	// Create a metric with an invalid/empty provider
 	metric := oapi.VerificationMetricStatus{
 		Name:             "test-metric",
-		Interval:         "1s",
+		IntervalSeconds:  1,
 		Count:            1,
 		SuccessCondition: "result.ok == true",
-		FailureLimit:     ptr(1),
+		FailureThreshold: ptr(1),
 		Provider:         oapi.MetricProvider{}, // Empty provider
 		Measurements:     []oapi.VerificationMeasurement{},
 	}

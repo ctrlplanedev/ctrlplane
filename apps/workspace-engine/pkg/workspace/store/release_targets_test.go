@@ -113,12 +113,13 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 	switch status {
 	case oapi.ReleaseVerificationStatusPassed:
 		// All measurements passed, all complete
+		successCondition := "result.statusCode == 200"
 		metrics = []oapi.VerificationMetricStatus{
 			{
 				Name:             "health-check",
-				Interval:         "30s",
+				IntervalSeconds:  30,
 				Count:            2,
-				SuccessCondition: "result.statusCode == 200",
+				SuccessCondition: successCondition,
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
 					{Status: oapi.Passed, MeasuredAt: createdAt},
@@ -128,12 +129,13 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 		}
 	case oapi.ReleaseVerificationStatusFailed:
 		// Some measurements failed
+		successCondition := "result.statusCode == 200"
 		metrics = []oapi.VerificationMetricStatus{
 			{
 				Name:             "health-check",
-				Interval:         "30s",
+				IntervalSeconds:  30,
 				Count:            2,
-				SuccessCondition: "result.statusCode == 200",
+				SuccessCondition: successCondition,
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
 					{Status: oapi.Failed, MeasuredAt: createdAt},
@@ -143,12 +145,13 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 		}
 	case oapi.ReleaseVerificationStatusRunning:
 		// Not all measurements complete
+		successCondition := "result.statusCode == 200"
 		metrics = []oapi.VerificationMetricStatus{
 			{
 				Name:             "health-check",
-				Interval:         "30s",
+				IntervalSeconds:  30,
 				Count:            3,
-				SuccessCondition: "result.statusCode == 200",
+				SuccessCondition: successCondition,
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
 					{Status: oapi.Passed, MeasuredAt: createdAt},
@@ -159,12 +162,13 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 		// For cancelled, we'll create a failed metric that hit failure limit
 		// Actually, cancelled isn't computed by Status() - let's use empty metrics with a special flag
 		// For now, let's just use failed status with zero measurements as a proxy
+		successCondition := "result.statusCode == 200"
 		metrics = []oapi.VerificationMetricStatus{
 			{
 				Name:             "health-check",
-				Interval:         "30s",
+				IntervalSeconds:  30,
 				Count:            2,
-				SuccessCondition: "result.statusCode == 200",
+				SuccessCondition: successCondition,
 				Provider:         oapi.MetricProvider{},
 				Measurements: []oapi.VerificationMeasurement{
 					{Status: oapi.Failed, MeasuredAt: createdAt},

@@ -27,16 +27,18 @@ local openapi = import '../lib/openapi.libsonnet';
 
   VerificationMetricSpec: {
     type: 'object',
-    required: ['name', 'interval', 'count', 'successCondition', 'provider'],
+    required: ['name', 'intervalSeconds', 'count', 'provider'],
     properties: {
       name: {
         type: 'string',
         description: 'Name of the verification metric',
       },
-      interval: {
-        type: 'string',
-        description: 'Interval between measurements (duration string, e.g., "30s", "5m")',
-        example: '30s',
+      intervalSeconds: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 1,
+        description: 'Interval between measurements in seconds',
+        example: 30,
       },
       count: {
         type: 'integer',
@@ -53,10 +55,15 @@ local openapi = import '../lib/openapi.libsonnet';
         description: 'CEL expression to evaluate measurement failure (e.g., "result.statusCode == 500"), if not provided, a failure is just the opposite of the success condition',
         example: 'result.statusCode == 500',
       },
-      failureLimit: {
+      failureThreshold: {
         type: 'integer',
-        description: 'Stop after this many failures (0 = no limit)',
+        description: 'Stop after this many consecutive failures (0 = no limit)',
         default: 0,
+      },
+      successThreshold: {
+        type: 'integer',
+        description: 'Minimum number of consecutive successful measurements required to consider the metric successful',
+        example: 0,
       },
       provider: openapi.schemaRef('MetricProvider'),
     },

@@ -42,10 +42,10 @@ func TestManager_StartVerification_Success(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			FailureLimit:     ptr(2),
+			FailureThreshold: ptr(2),
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
@@ -60,8 +60,8 @@ func TestManager_StartVerification_Success(t *testing.T) {
 	assert.Equal(t, release.ID(), verification.ReleaseId)
 	assert.Equal(t, 1, len(verification.Metrics))
 	assert.Equal(t, "health-check", verification.Metrics[0].Name)
-	assert.Equal(t, "30s", verification.Metrics[0].Interval)
-	assert.Equal(t, 5, verification.Metrics[0].Count)
+	assert.EqualValues(t, 30, verification.Metrics[0].IntervalSeconds)
+	assert.EqualValues(t, 5, verification.Metrics[0].Count)
 	// Note: scheduler runs first measurement immediately, so we should have at least one
 	assert.LessOrEqual(t, len(verification.Metrics[0].Measurements), verification.Metrics[0].Count)
 
@@ -89,14 +89,14 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL+"/health", oapi.GET),
 		},
 		{
 			Name:             "availability-check",
-			Interval:         "1m",
+			IntervalSeconds:  60,
 			Count:            3,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL+"/status", oapi.GET),
@@ -131,7 +131,7 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -191,10 +191,10 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            10,
 			SuccessCondition: "result.statusCode == 200",
-			FailureLimit:     &failureLimit,
+			FailureThreshold: &failureLimit,
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
@@ -205,8 +205,8 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
 	require.True(t, exists)
-	require.NotNil(t, verification.Metrics[0].FailureLimit)
-	assert.Equal(t, 3, *verification.Metrics[0].FailureLimit)
+	require.NotNil(t, verification.Metrics[0].FailureThreshold)
+	assert.Equal(t, 3, *verification.Metrics[0].FailureThreshold)
 
 	// Clean up
 	manager.scheduler.StopVerification(verification.Id)
@@ -226,7 +226,7 @@ func TestManager_StopVerification_Success(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -293,9 +293,9 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 	release2 := createTestRelease(s, ctx)
 	release3 := createTestRelease(s, ctx)
 
-	verification1 := createTestVerification(s, ctx, release1.ID(), 2, "1h")
-	verification2 := createTestVerification(s, ctx, release2.ID(), 1, "30m")
-	verification3 := createTestVerification(s, ctx, release3.ID(), 3, "45m")
+	verification1 := createTestVerification(s, ctx, release1.ID(), 2, 3600)
+	verification2 := createTestVerification(s, ctx, release2.ID(), 1, 300)
+	verification3 := createTestVerification(s, ctx, release3.ID(), 3, 2700)
 
 	// verification1 is running (no measurements)
 	// verification2 is completed (all measurements passed)
@@ -349,10 +349,10 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 	manager := NewManager(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "30s")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 30)
 
 	// Make verification failed by hitting failure limit
-	for i := 0; i <= *verification.Metrics[0].FailureLimit; i++ {
+	for i := 0; i <= *verification.Metrics[0].FailureThreshold; i++ {
 		msg := "Failed"
 		verification.Metrics[0].Measurements = append(verification.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,
@@ -388,9 +388,9 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 	passedRelease := createTestRelease(s, ctx)
 	failedRelease := createTestRelease(s, ctx)
 
-	runningVerification := createTestVerification(s, ctx, runningRelease.ID(), 1, "1h")
+	runningVerification := createTestVerification(s, ctx, runningRelease.ID(), 1, 3600)
 
-	passedVerification := createTestVerification(s, ctx, passedRelease.ID(), 1, "1h")
+	passedVerification := createTestVerification(s, ctx, passedRelease.ID(), 1, 3600)
 	for i := 0; i < passedVerification.Metrics[0].Count; i++ {
 		msg := "Success"
 		passedVerification.Metrics[0].Measurements = append(passedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
@@ -402,8 +402,8 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 	}
 	s.ReleaseVerifications.Upsert(ctx, passedVerification)
 
-	failedVerification := createTestVerification(s, ctx, failedRelease.ID(), 1, "1h")
-	for i := 0; i <= *failedVerification.Metrics[0].FailureLimit; i++ {
+	failedVerification := createTestVerification(s, ctx, failedRelease.ID(), 1, 3600)
+	for i := 0; i <= *failedVerification.Metrics[0].FailureThreshold; i++ {
 		msg := "Failed"
 		failedVerification.Metrics[0].Measurements = append(failedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
 			Message:    &msg,
@@ -447,7 +447,7 @@ func TestManager_StartAndStopMultiple(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -510,10 +510,10 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "complex-check",
-			Interval:         "2m",
+			IntervalSeconds:  120,
 			Count:            20,
 			SuccessCondition: "result.body.status == 'ok'",
-			FailureLimit:     &failureLimit,
+			FailureThreshold: &failureLimit,
 			Provider:         provider,
 		},
 	}
@@ -527,10 +527,10 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	// Verify all fields are preserved
 	metric := verification.Metrics[0]
 	assert.Equal(t, "complex-check", metric.Name)
-	assert.Equal(t, "2m", metric.Interval)
-	assert.Equal(t, 20, metric.Count)
+	assert.EqualValues(t, 120, metric.IntervalSeconds)
+	assert.EqualValues(t, 20, metric.Count)
 	assert.Equal(t, "result.body.status == 'ok'", metric.SuccessCondition)
-	assert.Equal(t, 5, *metric.FailureLimit)
+	assert.EqualValues(t, 5, *metric.FailureThreshold)
 
 	// Clean up
 	manager.scheduler.StopVerification(verification.Id)
@@ -554,10 +554,10 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "100ms",
+			IntervalSeconds:  1,
 			Count:            3,
 			SuccessCondition: "result.statusCode == 200",
-			FailureLimit:     ptr(2),
+			FailureThreshold: ptr(2),
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
 		},
 	}
@@ -567,7 +567,7 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for some measurements
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 
 	// Check that measurements were taken
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -600,7 +600,7 @@ func BenchmarkManager_StartVerification(b *testing.B) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -638,7 +638,7 @@ func BenchmarkManager_StopVerification(b *testing.B) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -668,7 +668,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 		// Create 10 running verifications per store
 		for j := 0; j < 10; j++ {
 			release := createTestRelease(s, ctx)
-			createTestVerification(s, ctx, release.ID(), 2, "1h")
+			createTestVerification(s, ctx, release.ID(), 2, 3600)
 		}
 		stores[i] = s
 	}
@@ -813,7 +813,7 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -852,7 +852,7 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "30s",
+			IntervalSeconds:  30,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -891,7 +891,7 @@ func TestManager_HooksOnMeasurementTaken(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "100ms",
+			IntervalSeconds:  100,
 			Count:            3,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -938,7 +938,7 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "50ms",
+			IntervalSeconds:  1, // 1 second interval for quick test
 			Count:            2, // Only 2 measurements to complete quickly
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProviderWithTimeout(ts.URL, oapi.GET, "100ms"),
@@ -952,9 +952,10 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 	require.True(t, exists)
 
 	// Wait for metric to complete using Eventually to poll for completion
+	// Need at least 1 second for the second measurement (IntervalSeconds: 1)
 	assert.Eventually(t, func() bool {
 		return hooks.getMetricCompleteCount() >= 1
-	}, 2*time.Second, 50*time.Millisecond, "OnMetricComplete hook should be called")
+	}, 3*time.Second, 50*time.Millisecond, "OnMetricComplete hook should be called")
 
 	// Verify hook was called with correct parameters
 	hooks.mu.Lock()
@@ -984,7 +985,7 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "50ms",
+			IntervalSeconds:  1, // 1 second interval for quick test
 			Count:            2, // Only 2 measurements to complete quickly
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProviderWithTimeout(ts.URL, oapi.GET, "100ms"),
@@ -998,9 +999,10 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 	require.True(t, exists)
 
 	// Wait for verification to complete using Eventually to poll for completion
+	// Need at least 1 second for the second measurement (IntervalSeconds: 1)
 	assert.Eventually(t, func() bool {
 		return hooks.getVerificationCompleteCount() >= 1
-	}, 2*time.Second, 50*time.Millisecond, "OnVerificationComplete hook should be called")
+	}, 3*time.Second, 50*time.Millisecond, "OnVerificationComplete hook should be called")
 
 	// Verify hook was called with correct parameters
 	hooks.mu.Lock()
@@ -1036,7 +1038,7 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check",
-			Interval:         "50ms",
+			IntervalSeconds:  50,
 			Count:            2,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL, oapi.GET),
@@ -1078,14 +1080,14 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             "health-check-1",
-			Interval:         "50ms",
+			IntervalSeconds:  1,
 			Count:            2,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL+"/health", oapi.GET),
 		},
 		{
 			Name:             "health-check-2",
-			Interval:         "50ms",
+			IntervalSeconds:  1,
 			Count:            2,
 			SuccessCondition: "result.statusCode == 200",
 			Provider:         createTestHTTPProvider(ts.URL+"/metrics", oapi.GET),
@@ -1100,6 +1102,7 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 
 	// Wait for both metrics to complete
 	// Poll until both metrics have completed their measurements
+	// IntervalSeconds: 1, Count: 2 means ~1 second for second measurement per metric
 	require.Eventually(t, func() bool {
 		verification, _ = s.ReleaseVerifications.GetByReleaseId(release.ID())
 		completedCount := 0
@@ -1109,12 +1112,12 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 			}
 		}
 		return completedCount >= 2
-	}, 500*time.Millisecond, 10*time.Millisecond, "Both metrics should complete")
+	}, 4*time.Second, 100*time.Millisecond, "Both metrics should complete")
 
 	// Wait for hooks to be called for both metrics
 	require.Eventually(t, func() bool {
 		return hooks.getMetricCompleteCount() >= 2
-	}, 500*time.Millisecond, 10*time.Millisecond, "Both metric complete hooks should be called")
+	}, 4*time.Second, 100*time.Millisecond, "Both metric complete hooks should be called")
 
 	// Verify hooks were called for both metrics
 	assert.Equal(t, 1, hooks.getVerificationStartedCount())

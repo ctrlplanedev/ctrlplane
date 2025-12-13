@@ -339,9 +339,9 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             fmt.Sprintf("%s-argocd-application-health", appName),
-			Interval:         "10s",
+			IntervalSeconds:  10,
 			Count:            5,
-			FailureLimit:     &failureLimit,
+			FailureThreshold: &failureLimit,
 			SuccessCondition: "result.statusCode == 200 && result.json.status.sync.status == 'Synced' && (result.json.status.health.status == 'Healthy' || result.json.status.health.status == 'Progressing')",
 			Provider:         provider,
 		},

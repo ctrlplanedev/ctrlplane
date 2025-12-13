@@ -166,9 +166,9 @@ func createTestMetric(name string) oapi.VerificationMetricSpec {
 	})
 	return oapi.VerificationMetricSpec{
 		Name:             name,
-		Interval:         "30s",
+		IntervalSeconds:  30,
 		Count:            3,
-		SuccessCondition: "result.ok",
+		SuccessCondition: "result.ok == true",
 		Provider:         provider,
 	}
 }
@@ -828,10 +828,10 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 	failureLimit := 2
 	metric := oapi.VerificationMetricSpec{
 		Name:             "detailed-health-check",
-		Interval:         "1m",
+		IntervalSeconds:  60,
 		Count:            10,
 		SuccessCondition: "result.statusCode == 200",
-		FailureLimit:     &failureLimit,
+		FailureThreshold: &failureLimit,
 		Provider:         provider,
 	}
 
@@ -860,11 +860,11 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 	require.Equal(t, 1, len(v.Metrics), "should have one metric")
 	metricStatus := v.Metrics[0]
 	assert.Equal(t, "detailed-health-check", metricStatus.Name)
-	assert.Equal(t, "1m", metricStatus.Interval)
-	assert.Equal(t, 10, metricStatus.Count)
+	assert.EqualValues(t, 60, metricStatus.IntervalSeconds)
+	assert.EqualValues(t, 10, metricStatus.Count)
 	assert.Equal(t, "result.statusCode == 200", metricStatus.SuccessCondition)
-	require.NotNil(t, metricStatus.FailureLimit)
-	assert.Equal(t, 2, *metricStatus.FailureLimit)
+	require.NotNil(t, metricStatus.FailureThreshold)
+	assert.Equal(t, 2, *metricStatus.FailureThreshold)
 
 	// Measurements should be empty initially (verification just started)
 	assert.Empty(t, metricStatus.Measurements, "measurements should be empty initially")

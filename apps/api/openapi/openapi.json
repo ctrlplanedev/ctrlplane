@@ -136,26 +136,6 @@
             ],
             "type": "object"
          },
-         "CreateJobAgentRequest": {
-            "properties": {
-               "config": {
-                  "additionalProperties": true,
-                  "type": "object"
-               },
-               "name": {
-                  "type": "string"
-               },
-               "type": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "name",
-               "type",
-               "config"
-            ],
-            "type": "object"
-         },
          "CreatePolicyRequest": {
             "properties": {
                "description": {
@@ -500,7 +480,8 @@
             },
             "required": [
                "rrule",
-               "durationMinutes"
+               "durationMinutes",
+               "allowWindow"
             ],
             "type": "object"
          },
@@ -775,6 +756,12 @@
                "id": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
                "name": {
                   "type": "string"
                },
@@ -786,7 +773,8 @@
                "id",
                "name",
                "type",
-               "config"
+               "config",
+               "metadata"
             ],
             "type": "object"
          },
@@ -1532,21 +1520,6 @@
             ],
             "type": "object"
          },
-         "UpdateJobAgentRequest": {
-            "properties": {
-               "config": {
-                  "additionalProperties": true,
-                  "type": "object"
-               },
-               "name": {
-                  "type": "string"
-               },
-               "type": {
-                  "type": "string"
-               }
-            },
-            "type": "object"
-         },
          "UpdateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -1690,6 +1663,31 @@
             "required": [
                "systemId",
                "name"
+            ],
+            "type": "object"
+         },
+         "UpsertJobAgentRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type"
             ],
             "type": "object"
          },
@@ -1930,15 +1928,17 @@
                   "example": "result.statusCode == 500",
                   "type": "string"
                },
-               "failureLimit": {
+               "failureThreshold": {
                   "default": 0,
-                  "description": "Stop after this many failures (0 = no limit)",
+                  "description": "Stop after this many consecutive failures (0 = no limit)",
                   "type": "integer"
                },
-               "interval": {
-                  "description": "Interval between measurements (duration string, e.g., \"30s\", \"5m\")",
-                  "example": "30s",
-                  "type": "string"
+               "intervalSeconds": {
+                  "description": "Interval between measurements in seconds",
+                  "example": 30,
+                  "format": "int32",
+                  "minimum": 1,
+                  "type": "integer"
                },
                "name": {
                   "description": "Name of the verification metric",
@@ -1951,13 +1951,17 @@
                   "description": "CEL expression to evaluate measurement success (e.g., \"result.statusCode == 200\")",
                   "example": "result.statusCode == 200",
                   "type": "string"
+               },
+               "successThreshold": {
+                  "description": "Minimum number of consecutive successful measurements required to consider the metric successful",
+                  "example": 0,
+                  "type": "integer"
                }
             },
             "required": [
                "name",
-               "interval",
+               "intervalSeconds",
                "count",
-               "successCondition",
                "provider"
             ],
             "type": "object"
@@ -3851,8 +3855,9 @@
          }
       },
       "/v1/workspaces/{workspaceId}/job-agents": {
-         "post": {
-            "operationId": "createJobAgent",
+         "get": {
+            "description": "Returns a list of job agents.",
+            "operationId": "listJobAgents",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3862,31 +3867,80 @@
                   "schema": {
                      "type": "string"
                   }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "$ref": "#/components/schemas/CreateJobAgentRequest"
-                     }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
                   }
                },
-               "required": true
-            },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
             "responses": {
-               "202": {
+               "200": {
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/JobAgent"
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/JobAgent"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
                         }
                      }
                   },
-                  "description": "Accepted response"
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
                }
             },
-            "summary": "Create a new job agent"
+            "summary": "List job agents"
          }
       },
       "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}": {
@@ -3983,7 +4037,7 @@
             "summary": "Get a job agent"
          },
          "put": {
-            "operationId": "updateJobAgent",
+            "operationId": "upsertJobAgent",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4008,14 +4062,14 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/UpdateJobAgentRequest"
+                        "$ref": "#/components/schemas/UpsertJobAgentRequest"
                      }
                   }
                },
                "required": true
             },
             "responses": {
-               "200": {
+               "202": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -4023,10 +4077,10 @@
                         }
                      }
                   },
-                  "description": "OK response"
+                  "description": "Accepted response"
                }
             },
-            "summary": "Update a job agent"
+            "summary": "Upsert a job agent"
          }
       },
       "/v1/workspaces/{workspaceId}/jobs": {
@@ -4485,7 +4539,7 @@
             "summary": "Get a policy by ID"
          },
          "put": {
-            "operationId": "updatePolicy",
+            "operationId": "upsertPolicy",
             "parameters": [
                {
                   "description": "ID of the workspace",

@@ -177,11 +177,11 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 	return release
 }
 
-func createTestVerification(s *store.Store, ctx context.Context, releaseID string, metricCount int, interval string) *oapi.ReleaseVerification {
-	return createTestVerificationWithURL(s, ctx, releaseID, metricCount, interval, "http://localhost/health")
+func createTestVerification(s *store.Store, ctx context.Context, releaseID string, metricCount int, intervalSeconds int32) *oapi.ReleaseVerification {
+	return createTestVerificationWithURL(s, ctx, releaseID, metricCount, intervalSeconds, "http://localhost/health")
 }
 
-func createTestVerificationWithURL(s *store.Store, ctx context.Context, releaseID string, metricCount int, interval string, url string) *oapi.ReleaseVerification {
+func createTestVerificationWithURL(s *store.Store, ctx context.Context, releaseID string, metricCount int, intervalSeconds int32, url string) *oapi.ReleaseVerification {
 	metrics := make([]oapi.VerificationMetricStatus, metricCount)
 	for i := 0; i < metricCount; i++ {
 		// Create a simple HTTP provider config
@@ -196,10 +196,10 @@ func createTestVerificationWithURL(s *store.Store, ctx context.Context, releaseI
 
 		metrics[i] = oapi.VerificationMetricStatus{
 			Name:             "metric-" + uuid.New().String()[:8],
-			Interval:         interval,
+			IntervalSeconds:  intervalSeconds,
 			Count:            5,
 			SuccessCondition: "result.statusCode == 200",
-			FailureLimit:     ptr(2),
+			FailureThreshold: ptr(2),
 			Provider:         provider,
 			Measurements:     []oapi.VerificationMeasurement{},
 		}
@@ -249,7 +249,7 @@ func TestScheduler_StartVerification_AlreadyRunning(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1h")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 3600)
 
 	// Start verification first time
 	scheduler.StartVerification(ctx, verification.Id)
@@ -280,7 +280,7 @@ func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1h")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 3600)
 
 	// Mark all metrics as complete by adding measurements
 	for i := range verification.Metrics {
@@ -310,7 +310,7 @@ func TestScheduler_StartVerification_Success(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 3, "1h")
+	verification := createTestVerification(s, ctx, release.ID(), 3, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 
@@ -330,7 +330,7 @@ func TestScheduler_StopVerification(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
+	verification := createTestVerification(s, ctx, release.ID(), 2, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 
@@ -365,7 +365,7 @@ func TestScheduler_StopVerification_MultipleTimes(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, "1h")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 	scheduler.StopVerification(verification.Id)
@@ -385,7 +385,7 @@ func TestScheduler_ConcurrentStartStop(t *testing.T) {
 	verificationIDs := make([]string, 10)
 	for i := 0; i < 10; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
+		verification := createTestVerification(s, ctx, release.ID(), 2, 3600)
 		verificationIDs[i] = verification.Id
 	}
 
@@ -432,7 +432,7 @@ func TestScheduler_MultipleMetrics(t *testing.T) {
 	release := createTestRelease(s, ctx)
 
 	// Create verification with 5 metrics
-	verification := createTestVerification(s, ctx, release.ID(), 5, "1h")
+	verification := createTestVerification(s, ctx, release.ID(), 5, 3600)
 
 	scheduler.StartVerification(ctx, verification.Id)
 
@@ -452,7 +452,7 @@ func TestScheduler_RestartAfterStop(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
+	verification := createTestVerification(s, ctx, release.ID(), 2, 3600)
 
 	// Start, stop, start again
 	scheduler.StartVerification(ctx, verification.Id)
@@ -516,14 +516,14 @@ func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 	release := createTestRelease(s, ctx)
 
 	// Create verification with very short interval for testing
-	verification := createTestVerification(s, ctx, release.ID(), 1, "100ms")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 1)
 
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
 	// Wait for measurements to be taken
 	// Poll until we have at least 2 measurements
-	// Interval is 100ms, so 2 measurements should happen within 300ms
+	// Interval is 1 second, so 2 measurements should happen within 2 seconds
 	var updatedVerification *oapi.ReleaseVerification
 	require.Eventually(t, func() bool {
 		var ok bool
@@ -536,7 +536,7 @@ func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 			totalMeasurements += len(metric.Measurements)
 		}
 		return totalMeasurements >= 2
-	}, 1*time.Second, 20*time.Millisecond, "should have taken at least 2 measurements")
+	}, 3*time.Second, 100*time.Millisecond, "should have taken at least 2 measurements")
 
 	// Should have at least 2-3 measurements (initial + 2-3 ticks)
 	totalMeasurements := 0
@@ -564,7 +564,7 @@ func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 	release := createTestRelease(s, ctx)
 
 	// Create verification with 1 measurement count
-	verification := createTestVerification(s, ctx, release.ID(), 1, "50ms")
+	verification := createTestVerification(s, ctx, release.ID(), 1, 1)
 	verification.Metrics[0].Count = 1 // Only take 1 measurement
 	s.ReleaseVerifications.Upsert(ctx, verification)
 
@@ -580,7 +580,7 @@ func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 			return false
 		}
 		return len(updatedVerification.Metrics[0].Measurements) >= 1
-	}, 1*time.Second, 20*time.Millisecond, "should have taken 1 measurement")
+	}, 2*time.Second, 100*time.Millisecond, "should have taken 1 measurement")
 
 	// Should have exactly 1 measurement (goroutine should have stopped)
 	assert.Equal(t, 1, len(updatedVerification.Metrics[0].Measurements))
@@ -602,9 +602,9 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 	release := createTestRelease(s, ctx)
 
 	// Create verification with failure limit of 2
-	verification := createTestVerification(s, ctx, release.ID(), 1, "50ms")
-	verification.Metrics[0].Count = 10            // Allow up to 10 measurements
-	verification.Metrics[0].FailureLimit = ptr(2) // But stop after 2 failures
+	verification := createTestVerification(s, ctx, release.ID(), 1, 1)
+	verification.Metrics[0].Count = 10                // Allow up to 10 measurements
+	verification.Metrics[0].FailureThreshold = ptr(2) // But stop after 2 failures
 	s.ReleaseVerifications.Upsert(ctx, verification)
 
 	// Start the verification
@@ -620,7 +620,7 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 			return false
 		}
 		return len(updatedVerification.Metrics[0].Measurements) >= 2
-	}, 1*time.Second, 20*time.Millisecond, "should have at least 2 measurements")
+	}, 3*time.Second, 100*time.Millisecond, "should have at least 2 measurements")
 
 	// Should have stopped after reaching failure limit
 	measurementCount := len(updatedVerification.Metrics[0].Measurements)
@@ -644,7 +644,7 @@ func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 	release := createTestRelease(s, ctx)
 
 	// Create verification with 3 metrics
-	verification := createTestVerification(s, ctx, release.ID(), 3, "100ms")
+	verification := createTestVerification(s, ctx, release.ID(), 3, 1)
 
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
@@ -665,7 +665,7 @@ func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 			}
 		}
 		return true
-	}, 1*time.Second, 20*time.Millisecond, "all metrics should have at least 2 measurements")
+	}, 3*time.Second, 100*time.Millisecond, "all metrics should have at least 2 measurements")
 
 	// Each metric should have taken measurements
 	for i, metric := range updatedVerification.Metrics {
@@ -687,7 +687,7 @@ func BenchmarkScheduler_StartVerification(b *testing.B) {
 	verificationIDs := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
+		verification := createTestVerification(s, ctx, release.ID(), 2, 3600)
 		verificationIDs[i] = verification.Id
 	}
 
@@ -711,7 +711,7 @@ func BenchmarkScheduler_StopVerification(b *testing.B) {
 	verificationIDs := make([]string, b.N)
 	for i := 0; i < b.N; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
+		verification := createTestVerification(s, ctx, release.ID(), 2, 3600)
 		verificationIDs[i] = verification.Id
 		scheduler.StartVerification(ctx, verification.Id)
 	}
@@ -731,7 +731,7 @@ func BenchmarkScheduler_ConcurrentOperations(b *testing.B) {
 	verificationIDs := make([]string, 100)
 	for i := 0; i < 100; i++ {
 		release := createTestRelease(s, ctx)
-		verification := createTestVerification(s, ctx, release.ID(), 2, "1h")
+		verification := createTestVerification(s, ctx, release.ID(), 2, 3600)
 		verificationIDs[i] = verification.Id
 	}
 
