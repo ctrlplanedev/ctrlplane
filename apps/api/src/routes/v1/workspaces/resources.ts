@@ -117,9 +117,19 @@ const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, resourceIdentifier, deploymentId } = req.params;
 
+  const encodedResourceIdentifier = encodeURIComponent(resourceIdentifier);
+
   const result = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}",
-    { params: { path: { workspaceId, resourceIdentifier, deploymentId } } },
+    {
+      params: {
+        path: {
+          workspaceId,
+          resourceIdentifier: encodedResourceIdentifier,
+          deploymentId,
+        },
+      },
+    },
   );
 
   if (result.error != null) {
