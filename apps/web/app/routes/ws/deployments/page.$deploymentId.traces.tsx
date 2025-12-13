@@ -165,6 +165,7 @@ export default function DeploymentTraces() {
   const tracesQuery = trpc.deploymentTraces.getUniqueTraces.useQuery(
     {
       workspaceId: workspace.id,
+      deploymentId: deployment.id,
       limit: 100,
       offset: 0,
       releaseId: filters.releaseId ?? undefined,

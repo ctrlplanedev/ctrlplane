@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { and, desc, eq, isNull } from "@ctrlplane/db";
+import { and, desc, eq, isNull, like } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -233,6 +233,7 @@ export const deploymentTracesRouter = router({
         workspaceId: z.string().uuid(),
         limit: z.number().min(1).max(1000).default(100),
         offset: z.number().min(0).default(0),
+        deploymentId: z.string().uuid().optional(),
         releaseId: z.string().optional(),
         releaseTargetKey: z.string().optional(),
         jobId: z.string().optional(),
@@ -250,6 +251,16 @@ export const deploymentTracesRouter = router({
         // Only get root spans to represent unique traces
         isNull(schema.deploymentTraceSpan.parentSpanId),
       ];
+
+      // Filter by deploymentId - releaseTargetKey format is "resourceId-environmentId-deploymentId"
+      if (input.deploymentId) {
+        conditions.push(
+          like(
+            schema.deploymentTraceSpan.releaseTargetKey,
+            `%-${input.deploymentId}`,
+          ),
+        );
+      }
 
       if (input.releaseId) {
         conditions.push(
