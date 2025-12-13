@@ -1086,7 +1086,7 @@ export interface components {
             policyId: string;
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
-            versionDebounce?: components["schemas"]["VersionDebounceRule"];
+            versionCooldown?: components["schemas"]["VersionCooldownRule"];
         };
         PolicyTargetSelector: {
             deploymentSelector?: components["schemas"]["Selector"];
@@ -1447,10 +1447,10 @@ export interface components {
              */
             triggerOn: "jobCreated" | "jobStarted" | "jobSuccess" | "jobFailure";
         };
-        VersionDebounceRule: {
+        VersionCooldownRule: {
             /**
              * Format: int32
-             * @description Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.
+             * @description Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.
              */
             intervalSeconds: number;
         };

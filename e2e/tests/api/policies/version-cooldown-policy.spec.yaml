@@ -1,7 +1,7 @@
 system:
-  name: "{{ prefix }}-version-debounce"
-  slug: "{{ prefix }}-version-debounce"
-  description: System for testing version debounce policy
+  name: "{{ prefix }}-version-cooldown"
+  slug: "{{ prefix }}-version-cooldown"
+  description: System for testing version cooldown policy
 
 environments:
   - name: "{{ prefix }}-env"
@@ -21,11 +21,11 @@ resources:
       env: test
 
 policies:
-  - name: "{{ prefix }}-version-debounce-policy"
+  - name: "{{ prefix }}-version-cooldown-policy"
     targets:
       - environmentSelector:
           type: name
           operator: contains
           value: "{{ prefix }}"
-    versionDebounce:
+    versionCooldown:
       intervalSeconds: 60

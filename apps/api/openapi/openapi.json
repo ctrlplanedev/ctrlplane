@@ -905,8 +905,8 @@
           "verification": {
             "$ref": "#/components/schemas/VerificationRule"
           },
-          "versionDebounce": {
-            "$ref": "#/components/schemas/VersionDebounceRule"
+          "versionCooldown": {
+            "$ref": "#/components/schemas/VersionCooldownRule"
           }
         },
         "required": ["id", "policyId", "createdAt"],
@@ -1849,10 +1849,10 @@
         "required": ["metrics"],
         "type": "object"
       },
-      "VersionDebounceRule": {
+      "VersionCooldownRule": {
         "properties": {
           "intervalSeconds": {
-            "description": "Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.",
+            "description": "Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.",
             "format": "int32",
             "minimum": 0,
             "type": "integer"
