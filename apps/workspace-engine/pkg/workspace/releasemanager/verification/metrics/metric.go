@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/datadog"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/http"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/sleep"
-	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/terraformcloud"
 
 	"github.com/charmbracelet/log"
 )
@@ -42,12 +41,12 @@ func CreateProvider(providerCfg oapi.MetricProvider) (provider.Provider, error) 
 		}
 		return datadog.NewFromOAPI(datadogProvider)
 
-	case "terraformCloudRun":
-		terraformCloudRunProvider, err := providerCfg.AsTerraformCloudRunMetricProvider()
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse Terraform Cloud run provider: %w", err)
-		}
-		return terraformcloud.NewFromOAPI(terraformCloudRunProvider)
+	// case "terraformCloudRun":
+	// 	terraformCloudRunProvider, err := providerCfg.AsTerraformCloudRunMetricProvider()
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to parse Terraform Cloud run provider: %w", err)
+	// 	}
+	// 	return terraformcloud.NewFromOAPI(terraformCloudRunProvider)
 
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", discriminator)
