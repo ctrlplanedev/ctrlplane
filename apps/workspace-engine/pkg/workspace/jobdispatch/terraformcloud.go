@@ -493,7 +493,7 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 		span.SetAttributes(attribute.Bool("vcs_connected", true))
 	}
 
-	autoApply := false
+	autoApply := true
 	message := fmt.Sprintf("Triggered by ctrlplane job %s", job.Id)
 	run, err := client.Runs.Create(ctx, tfe.RunCreateOptions{
 		Workspace: &tfe.Workspace{ID: targetWorkspace.ID},
