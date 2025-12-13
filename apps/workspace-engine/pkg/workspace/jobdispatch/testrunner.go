@@ -273,4 +273,3 @@ func (d *TestRunnerDispatcher) sendJobUpdateEvent(job *oapi.Job, status oapi.Job
 	span.SetStatus(codes.Ok, "event published")
 	return nil
 }
-

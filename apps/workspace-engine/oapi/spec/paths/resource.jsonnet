@@ -108,6 +108,22 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}': {
+    get: {
+      summary: 'Get release target for a resource in a deployment',
+      operationId: 'getReleaseTargetsForResourceInDeployment',
+      description: 'Returns a release target for a resource in a deployment.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.resourceIdentifierParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('ReleaseTarget'), 'The requested release target')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/resources/kinds': {
     get: {
       summary: 'Get kinds for a workspace',

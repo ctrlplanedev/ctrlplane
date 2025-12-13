@@ -405,6 +405,37 @@ func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId str
 	})
 }
 
+func (r *Resources) GetReleaseTargetForResourceInDeployment(c *gin.Context, workspaceId string, resourceIdentifier string, deploymentId string) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	resource, ok := ws.Resources().Get(resourceIdentifier)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Resource not found",
+		})
+		return
+	}
+
+	allReleaseTargets := ws.ReleaseTargets().GetForResource(c.Request.Context(), resource.Id)
+
+	for _, releaseTarget := range allReleaseTargets {
+		if releaseTarget.DeploymentId == deploymentId {
+			c.JSON(http.StatusOK, releaseTarget)
+			return
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": "Release target not found",
+	})
+}
+
 func (r *Resources) GetKindsForWorkspace(c *gin.Context, workspaceId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {

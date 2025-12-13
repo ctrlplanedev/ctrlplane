@@ -481,4 +481,3 @@ func TestTestRunnerDispatcher_InProgressStatus(t *testing.T) {
 	jobData := data["job"].(map[string]any)
 	require.Equal(t, "successful", jobData["status"])
 }
-

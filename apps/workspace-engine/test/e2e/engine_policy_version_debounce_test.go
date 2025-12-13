@@ -729,4 +729,3 @@ func TestEngine_VersionDebounce_InProgressDeploymentBlocks(t *testing.T) {
 	// No new pending jobs should be created for v2
 	assert.Equal(t, 0, newPendingCount, "Expected no new pending jobs (v2 blocked by in-progress v1)")
 }
-
