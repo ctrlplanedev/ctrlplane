@@ -232,7 +232,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		assert.Contains(t, result.Message, "Same version as currently deployed")
 	})
 
-	t.Run("denies version created too soon after current version", func(t *testing.T) {
+	t.Run("denies version when not enough time has elapsed since current version", func(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
@@ -240,14 +240,52 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
-		baseTime := time.Now().Add(-2 * time.Hour)
-
-		// v1.0 created at baseTime, deployed
+		// v1.0 created 30 minutes ago, deployed
+		baseTime := time.Now().Add(-30 * time.Minute)
 		v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
 		release := createTestRelease(ctx, s, releaseTarget, v1)
 		createSuccessfulJob(ctx, s, release)
 
-		// v1.1 created only 30 minutes after v1.0
+		// v1.1 created 20 minutes after v1.0 (10 minutes ago)
+		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(20*time.Minute))
+
+		rule := &oapi.PolicyRule{
+			Id: "test-rule",
+			VersionDebounce: &oapi.VersionDebounceRule{
+				IntervalSeconds: 3600, // 1 hour required
+			},
+		}
+
+		eval := NewEvaluator(s, rule)
+		require.NotNil(t, eval)
+
+		scope := evaluator.EvaluatorScope{
+			Version:       v1_1,
+			ReleaseTarget: releaseTarget,
+		}
+
+		result := eval.Evaluate(ctx, scope)
+		assert.False(t, result.Allowed, "Version should be denied when not enough time has elapsed")
+		assert.Contains(t, result.Message, "Version debounce")
+		assert.Contains(t, result.Message, "remaining")
+	})
+
+	t.Run("allows version when enough time has elapsed since current version", func(t *testing.T) {
+		s, ctx := setupTestStore(t)
+
+		deployment := createTestDeployment(ctx, s)
+		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		resource := createTestResource(ctx, s)
+		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
+
+		// v1.0 created 2 hours ago, deployed
+		baseTime := time.Now().Add(-2 * time.Hour)
+		v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
+		release := createTestRelease(ctx, s, releaseTarget, v1)
+		createSuccessfulJob(ctx, s, release)
+
+		// v1.1 created 30 minutes after v1.0 (1.5 hours ago)
+		// Even though v1.1 was created soon after v1.0, enough time has elapsed since v1.0 was created
 		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(30*time.Minute))
 
 		rule := &oapi.PolicyRule{
@@ -266,46 +304,9 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		}
 
 		result := eval.Evaluate(ctx, scope)
-		assert.False(t, result.Allowed, "Version created too soon should be denied")
-		assert.Contains(t, result.Message, "Version debounce")
-	})
-
-	t.Run("allows version created after interval has passed", func(t *testing.T) {
-		s, ctx := setupTestStore(t)
-
-		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
-		resource := createTestResource(ctx, s)
-		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
-
-		baseTime := time.Now().Add(-3 * time.Hour)
-
-		// v1.0 created at baseTime, deployed
-		v1 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
-		release := createTestRelease(ctx, s, releaseTarget, v1)
-		createSuccessfulJob(ctx, s, release)
-
-		// v1.1 created 2 hours after v1.0 (more than 1 hour interval)
-		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(2*time.Hour))
-
-		rule := &oapi.PolicyRule{
-			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
-				IntervalSeconds: 3600, // 1 hour required
-			},
-		}
-
-		eval := NewEvaluator(s, rule)
-		require.NotNil(t, eval)
-
-		scope := evaluator.EvaluatorScope{
-			Version:       v1_1,
-			ReleaseTarget: releaseTarget,
-		}
-
-		result := eval.Evaluate(ctx, scope)
-		assert.True(t, result.Allowed, "Version created after interval should be allowed")
-		assert.Contains(t, result.Message, "after deployed version")
+		assert.True(t, result.Allowed, "Version should be allowed when enough time has elapsed")
+		assert.Contains(t, result.Message, "Version debounce passed")
+		assert.Contains(t, result.Message, "has elapsed")
 	})
 
 	t.Run("allows version created exactly at interval boundary", func(t *testing.T) {
@@ -347,7 +348,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 	t.Run("batches rapid releases correctly", func(t *testing.T) {
 		// Simulates the main use case: external app releases v1.1, v1.2, v1.3 rapidly
-		// Only v1.3 (which is 70 minutes after v1.0) should be allowed
+		// All should be allowed once enough time has elapsed since v1.0 was created
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
@@ -355,14 +356,13 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
+		// v1.0 deployed 2 hours ago
 		baseTime := time.Now().Add(-2 * time.Hour)
-
-		// v1.0 deployed
 		v1_0 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
 		release := createTestRelease(ctx, s, releaseTarget, v1_0)
 		createSuccessfulJob(ctx, s, release)
 
-		// Rapid releases
+		// Rapid releases (all created within 70 minutes of v1.0)
 		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(20*time.Minute)) // +20min
 		v1_2 := createTestVersion(ctx, s, deployment.Id, "v1.2.0", baseTime.Add(40*time.Minute)) // +40min
 		v1_3 := createTestVersion(ctx, s, deployment.Id, "v1.3.0", baseTime.Add(70*time.Minute)) // +70min
@@ -377,17 +377,16 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		eval := NewEvaluator(s, rule)
 		require.NotNil(t, eval)
 
-		// v1.1 should be denied (only 20 min gap)
+		// All versions should be allowed since 2 hours have passed since v1.0 was created
+		// (even though they were created rapidly after v1.0)
 		result := eval.Evaluate(ctx, evaluator.EvaluatorScope{Version: v1_1, ReleaseTarget: releaseTarget})
-		assert.False(t, result.Allowed, "v1.1 should be denied (20 min gap)")
+		assert.True(t, result.Allowed, "v1.1 should be allowed (enough time has elapsed)")
 
-		// v1.2 should be denied (only 40 min gap)
 		result = eval.Evaluate(ctx, evaluator.EvaluatorScope{Version: v1_2, ReleaseTarget: releaseTarget})
-		assert.False(t, result.Allowed, "v1.2 should be denied (40 min gap)")
+		assert.True(t, result.Allowed, "v1.2 should be allowed (enough time has elapsed)")
 
-		// v1.3 should be allowed (70 min gap > 60 min)
 		result = eval.Evaluate(ctx, evaluator.EvaluatorScope{Version: v1_3, ReleaseTarget: releaseTarget})
-		assert.True(t, result.Allowed, "v1.3 should be allowed (70 min gap)")
+		assert.True(t, result.Allowed, "v1.3 should be allowed (enough time has elapsed)")
 	})
 
 	t.Run("uses in-progress deployment version for debounce", func(t *testing.T) {
@@ -398,14 +397,13 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
+		// v1.0 successfully deployed 3 hours ago
 		baseTime := time.Now().Add(-3 * time.Hour)
-
-		// v1.0 successfully deployed
 		v1_0 := createTestVersion(ctx, s, deployment.Id, "v1.0.0", baseTime)
 		release1 := createTestRelease(ctx, s, releaseTarget, v1_0)
 		createSuccessfulJob(ctx, s, release1)
 
-		// v1.1 is in progress (created 30min after v1.0)
+		// v1.1 is in progress (created 30min after v1.0, so 2.5 hours ago)
 		v1_1 := createTestVersion(ctx, s, deployment.Id, "v1.1.0", baseTime.Add(30*time.Minute))
 		release2 := createTestRelease(ctx, s, releaseTarget, v1_1)
 		// Create in-progress job (no completedAt)
@@ -417,7 +415,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		}
 		s.Jobs.Upsert(ctx, inProgressJob)
 
-		// v1.2 created 40min after v1.0 (only 10min after v1.1)
+		// v1.2 created 40min after v1.0 (2h 20min ago, only 10min after v1.1)
 		v1_2 := createTestVersion(ctx, s, deployment.Id, "v1.2.0", baseTime.Add(40*time.Minute))
 
 		rule := &oapi.PolicyRule{
@@ -435,10 +433,10 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 			ReleaseTarget: releaseTarget,
 		}
 
-		// v1.2 should be denied because it's only 10min after v1.1 (in progress)
-		// Even though v1.2 is 40min after v1.0 (successfully deployed)
+		// v1.2 should be allowed because enough time has elapsed since v1.1 (in progress) was created
+		// (2.5 hours > 1 hour)
 		result := eval.Evaluate(ctx, scope)
-		assert.False(t, result.Allowed, "Should compare against in-progress version, not deployed")
+		assert.True(t, result.Allowed, "Should be allowed when enough time has elapsed since in-progress version")
 		assert.Contains(t, result.Message, "in_progress")
 	})
 

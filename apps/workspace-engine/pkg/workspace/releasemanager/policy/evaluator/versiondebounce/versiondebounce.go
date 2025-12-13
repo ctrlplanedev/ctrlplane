@@ -90,14 +90,14 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%dd %dh", days, hours)
 }
 
-// Evaluate checks if the candidate version should be allowed based on the
-// time gap between its creation and the currently deployed (or in-progress) version's creation.
+// Evaluate checks if the candidate version should be allowed based on whether
+// enough time has passed since the currently deployed (or in-progress) version was created.
 //
 // Decision logic:
 //   - No previous or in-progress deployment: Allow (first deployment)
 //   - Same version as current/in-progress: Allow (redeploy of current version)
-//   - Candidate created >= interval after reference version: Allow
-//   - Candidate created < interval after reference version: Deny (try next version)
+//   - Enough time has elapsed since reference version creation: Allow (any version can be deployed)
+//   - Not enough time has elapsed: Deny (try next version)
 func (e *VersionDebounceEvaluator) Evaluate(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
@@ -166,28 +166,28 @@ func (e *VersionDebounceEvaluator) Evaluate(
 			WithDetail("reference_source", referenceSource)
 	}
 
+	now := time.Now()
+	timeSinceReferenceCreated := now.Sub(referenceVersion.CreatedAt)
+	minElapsedTime := referenceVersion.CreatedAt.Add(interval)
+
 	span.SetAttributes(
 		attribute.String("reference_version.id", referenceVersion.Id),
 		attribute.String("reference_version.tag", referenceVersion.Tag),
 		attribute.String("reference_version.created_at", referenceVersion.CreatedAt.Format(time.RFC3339)),
 		attribute.String("reference_source", referenceSource),
 		attribute.String("candidate_version.created_at", candidateVersion.CreatedAt.Format(time.RFC3339)),
-	)
-
-	// Calculate the time gap between version creation times
-	timeSinceReferenceCreated := candidateVersion.CreatedAt.Sub(referenceVersion.CreatedAt)
-	minCreationTime := referenceVersion.CreatedAt.Add(interval)
-
-	span.SetAttributes(
+		attribute.String("current_time", now.Format(time.RFC3339)),
 		attribute.String("time_since_reference_created", timeSinceReferenceCreated.String()),
-		attribute.String("min_creation_time", minCreationTime.Format(time.RFC3339)),
+		attribute.String("min_elapsed_time", minElapsedTime.Format(time.RFC3339)),
 	)
 
-	// Check if candidate version was created far enough after reference version
-	if candidateVersion.CreatedAt.After(minCreationTime) || candidateVersion.CreatedAt.Equal(minCreationTime) {
-		span.AddEvent("Version debounce passed - sufficient time gap")
+	// Check if enough time has passed since the reference version was created
+	// This allows any version to be deployed once the debounce period has elapsed,
+	// regardless of when the candidate version was created
+	if now.After(minElapsedTime) || now.Equal(minElapsedTime) {
+		span.AddEvent("Version debounce passed - sufficient time has elapsed")
 		return results.NewAllowedResult(
-			fmt.Sprintf("Version created %s after %s version (required: %s)",
+			fmt.Sprintf("Version debounce passed — %s has elapsed since %s version (required: %s)",
 				formatDuration(timeSinceReferenceCreated),
 				referenceSource,
 				formatDuration(interval)),
@@ -200,18 +200,19 @@ func (e *VersionDebounceEvaluator) Evaluate(
 			WithDetail("candidate_version_id", candidateVersion.Id).
 			WithDetail("candidate_version_tag", candidateVersion.Tag).
 			WithDetail("candidate_version_created_at", candidateVersion.CreatedAt.Format(time.RFC3339)).
-			WithDetail("time_gap", formatDuration(timeSinceReferenceCreated)).
+			WithDetail("time_elapsed", formatDuration(timeSinceReferenceCreated)).
 			WithDetail("required_interval", formatDuration(interval))
 	}
 
-	// Candidate was created too soon after reference version - deny
+	// Not enough time has passed since reference version was created - deny
 	// This causes the planner to try the next (older) version
-	span.AddEvent("Version debounce failed - insufficient time gap")
+	timeRemaining := minElapsedTime.Sub(now)
+	span.AddEvent("Version debounce failed - insufficient time has elapsed")
 	return results.NewDeniedResult(
-		fmt.Sprintf("Version debounce: version created only %s after %s version (need %s)",
-			formatDuration(timeSinceReferenceCreated),
-			referenceSource,
-			formatDuration(interval)),
+		fmt.Sprintf("Version debounce: %s remaining until deployment allowed (need %s since %s version)",
+			formatDuration(timeRemaining),
+			formatDuration(interval),
+			referenceSource),
 	).
 		WithDetail("reason", "debounce_failed").
 		WithDetail("reference_version_id", referenceVersion.Id).
@@ -221,6 +222,7 @@ func (e *VersionDebounceEvaluator) Evaluate(
 		WithDetail("candidate_version_id", candidateVersion.Id).
 		WithDetail("candidate_version_tag", candidateVersion.Tag).
 		WithDetail("candidate_version_created_at", candidateVersion.CreatedAt.Format(time.RFC3339)).
-		WithDetail("time_gap", formatDuration(timeSinceReferenceCreated)).
+		WithDetail("time_elapsed", formatDuration(timeSinceReferenceCreated)).
+		WithDetail("time_remaining", formatDuration(timeRemaining)).
 		WithDetail("required_interval", formatDuration(interval))
 }

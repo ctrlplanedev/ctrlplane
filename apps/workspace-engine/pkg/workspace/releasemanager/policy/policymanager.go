@@ -63,6 +63,7 @@ func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Eva
 		approval.NewEvaluator(m.store, rule),
 		environmentprogression.NewEvaluator(m.store, rule),
 		gradualrollout.NewSummaryEvaluator(m.store, rule),
+		versiondebounce.NewSummaryEvaluator(m.store, rule),
 	)
 }
 
