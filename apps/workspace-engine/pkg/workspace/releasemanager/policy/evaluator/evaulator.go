@@ -67,7 +67,7 @@ const (
 	RuleTypeRetry                  = "retry"
 	RuleTypeDeployableVersions     = "deployableVersions"
 	RuleTypeDeploymentWindow       = "deploymentWindow"
-	RuleTypeVersionDebounce        = "versionDebounce"
+	RuleTypeVersionCooldown        = "versionCooldown"
 )
 
 // WithMemoization wraps an evaluator with caching based on its declared scope fields.

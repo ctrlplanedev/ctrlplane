@@ -1,4 +1,4 @@
-package versiondebounce
+package versioncooldown
 
 import (
 	"context"
@@ -14,54 +14,54 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versiondebounce")
+var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/versioncooldown")
 
-var _ evaluator.Evaluator = &VersionDebounceEvaluator{}
+var _ evaluator.Evaluator = &VersionCooldownEvaluator{}
 
-// VersionDebounceEvaluator evaluates whether a version should be deployed based on
-// the time gap between version creation times. It only allows versions that were
-// created at least `intervalSeconds` after the currently deployed (or in-progress)
-// version was created. This enables batching of frequent upstream releases into
-// periodic deployments, and prevents rapid sequential deployments.
-type VersionDebounceEvaluator struct {
+// VersionCooldownEvaluator evaluates whether a version should be deployed based on whether
+// enough time has passed since the currently deployed (or in-progress) version was created.
+// It only allows versions to be deployed once the cooldown period has elapsed, enabling
+// batching of frequent upstream releases into periodic deployments, and prevents rapid
+// sequential deployments.
+type VersionCooldownEvaluator struct {
 	store  *store.Store
 	ruleId string
-	rule   *oapi.VersionDebounceRule
+	rule   *oapi.VersionCooldownRule
 }
 
-// NewEvaluator creates a new VersionDebounceEvaluator from a policy rule.
-// Returns nil if the rule doesn't contain a version debounce configuration.
+// NewEvaluator creates a new VersionCooldownEvaluator from a policy rule.
+// Returns nil if the rule doesn't contain a version cooldown configuration.
 func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Evaluator {
-	if policyRule == nil || policyRule.VersionDebounce == nil || store == nil {
+	if policyRule == nil || policyRule.VersionCooldown == nil || store == nil {
 		return nil
 	}
 
-	return evaluator.WithMemoization(&VersionDebounceEvaluator{
+	return evaluator.WithMemoization(&VersionCooldownEvaluator{
 		store:  store,
 		ruleId: policyRule.Id,
-		rule:   policyRule.VersionDebounce,
+		rule:   policyRule.VersionCooldown,
 	})
 }
 
 // ScopeFields declares that this evaluator needs Version and ReleaseTarget.
 // It needs ReleaseTarget to look up the current deployment, and Version to
 // compare creation times.
-func (e *VersionDebounceEvaluator) ScopeFields() evaluator.ScopeFields {
+func (e *VersionCooldownEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeVersion | evaluator.ScopeReleaseTarget
 }
 
 // RuleType returns the rule type identifier for bypass matching.
-func (e *VersionDebounceEvaluator) RuleType() string {
-	return evaluator.RuleTypeVersionDebounce
+func (e *VersionCooldownEvaluator) RuleType() string {
+	return evaluator.RuleTypeVersionCooldown
 }
 
 // RuleId returns the rule ID.
-func (e *VersionDebounceEvaluator) RuleId() string {
+func (e *VersionCooldownEvaluator) RuleId() string {
 	return e.ruleId
 }
 
 // Complexity returns the computational complexity of this evaluator.
-func (e *VersionDebounceEvaluator) Complexity() int {
+func (e *VersionCooldownEvaluator) Complexity() int {
 	return 2 // Requires looking up current release and version
 }
 
@@ -98,11 +98,11 @@ func formatDuration(d time.Duration) string {
 //   - Same version as current/in-progress: Allow (redeploy of current version)
 //   - Enough time has elapsed since reference version creation: Allow (any version can be deployed)
 //   - Not enough time has elapsed: Deny (try next version)
-func (e *VersionDebounceEvaluator) Evaluate(
+func (e *VersionCooldownEvaluator) Evaluate(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
 ) *oapi.RuleEvaluation {
-	ctx, span := tracer.Start(ctx, "VersionDebounceEvaluator.Evaluate",
+	ctx, span := tracer.Start(ctx, "VersionCooldownEvaluator.Evaluate",
 		trace.WithAttributes(
 			attribute.String("version.id", scope.Version.Id),
 			attribute.String("version.tag", scope.Version.Tag),
@@ -147,7 +147,7 @@ func (e *VersionDebounceEvaluator) Evaluate(
 		if err != nil || currentRelease == nil {
 			// No previous deployment - allow first deployment
 			span.AddEvent("No previous deployment found, allowing first deployment")
-			return results.NewAllowedResult("No previous version deployed - debounce not applicable").
+			return results.NewAllowedResult("No previous version deployed - cooldown not applicable").
 				WithDetail("reason", "first_deployment").
 				WithDetail("candidate_version_id", candidateVersion.Id).
 				WithDetail("candidate_version_tag", candidateVersion.Tag)
@@ -182,17 +182,17 @@ func (e *VersionDebounceEvaluator) Evaluate(
 	)
 
 	// Check if enough time has passed since the reference version was created
-	// This allows any version to be deployed once the debounce period has elapsed,
+	// This allows any version to be deployed once the cooldown period has elapsed,
 	// regardless of when the candidate version was created
 	if now.After(minElapsedTime) || now.Equal(minElapsedTime) {
-		span.AddEvent("Version debounce passed - sufficient time has elapsed")
+		span.AddEvent("Version cooldown passed - sufficient time has elapsed")
 		return results.NewAllowedResult(
-			fmt.Sprintf("Version debounce passed — %s has elapsed since %s version (required: %s)",
+			fmt.Sprintf("Version cooldown passed — %s has elapsed since %s version (required: %s)",
 				formatDuration(timeSinceReferenceCreated),
 				referenceSource,
 				formatDuration(interval)),
 		).
-			WithDetail("reason", "debounce_passed").
+			WithDetail("reason", "cooldown_passed").
 			WithDetail("reference_version_id", referenceVersion.Id).
 			WithDetail("reference_version_tag", referenceVersion.Tag).
 			WithDetail("reference_version_created_at", referenceVersion.CreatedAt.Format(time.RFC3339)).
@@ -207,14 +207,14 @@ func (e *VersionDebounceEvaluator) Evaluate(
 	// Not enough time has passed since reference version was created - deny
 	// This causes the planner to try the next (older) version
 	timeRemaining := minElapsedTime.Sub(now)
-	span.AddEvent("Version debounce failed - insufficient time has elapsed")
+	span.AddEvent("Version cooldown failed - insufficient time has elapsed")
 	return results.NewDeniedResult(
-		fmt.Sprintf("Version debounce: %s remaining until deployment allowed (need %s since %s version)",
+		fmt.Sprintf("Version cooldown: %s remaining until deployment allowed (need %s since %s version)",
 			formatDuration(timeRemaining),
 			formatDuration(interval),
 			referenceSource),
 	).
-		WithDetail("reason", "debounce_failed").
+		WithDetail("reason", "cooldown_failed").
 		WithDetail("reference_version_id", referenceVersion.Id).
 		WithDetail("reference_version_tag", referenceVersion.Tag).
 		WithDetail("reference_version_created_at", referenceVersion.CreatedAt.Format(time.RFC3339)).

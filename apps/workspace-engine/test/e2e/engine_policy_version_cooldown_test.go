@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEngine_VersionDebounce_NoDebounceWithoutPolicy tests that without a version debounce
+// TestEngine_VersionCooldown_NoCooldownWithoutPolicy tests that without a version cooldown
 // policy, versions are deployed immediately without any delay
-func TestEngine_VersionDebounce_NoDebounceWithoutPolicy(t *testing.T) {
+func TestEngine_VersionCooldown_NoCooldownWithoutPolicy(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 
@@ -66,14 +66,14 @@ func TestEngine_VersionDebounce_NoDebounceWithoutPolicy(t *testing.T) {
 	v2.Tag = "v1.1.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
-	// Without debounce policy, should create job immediately
+	// Without cooldown policy, should create job immediately
 	pendingJobs = engine.Workspace().Jobs().GetPending()
-	assert.Equal(t, 1, len(pendingJobs), "Expected 1 job for second version without debounce")
+	assert.Equal(t, 1, len(pendingJobs), "Expected 1 job for second version without cooldown")
 }
 
-// TestEngine_VersionDebounce_AllowsFirstVersion tests that the first version deployment
+// TestEngine_VersionCooldown_AllowsFirstVersion tests that the first version deployment
 // is always allowed when no previous deployment exists
-func TestEngine_VersionDebounce_AllowsFirstVersion(t *testing.T) {
+func TestEngine_VersionCooldown_AllowsFirstVersion(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 
@@ -98,14 +98,14 @@ func TestEngine_VersionDebounce_AllowsFirstVersion(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(3600), // 1 hour debounce
+				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
 		),
 	)
@@ -120,12 +120,12 @@ func TestEngine_VersionDebounce_AllowsFirstVersion(t *testing.T) {
 
 	// First version should be allowed (no previous deployment)
 	pendingJobs := engine.Workspace().Jobs().GetPending()
-	assert.Equal(t, 1, len(pendingJobs), "Expected 1 job for first version (debounce allows first deployment)")
+	assert.Equal(t, 1, len(pendingJobs), "Expected 1 job for first version (cooldown allows first deployment)")
 }
 
-// TestEngine_VersionDebounce_BlocksRapidVersions tests that rapid version deployments
-// are blocked when they're created within the debounce interval
-func TestEngine_VersionDebounce_BlocksRapidVersions(t *testing.T) {
+// TestEngine_VersionCooldown_BlocksRapidVersions tests that rapid version deployments
+// are blocked when they're created within the cooldown interval
+func TestEngine_VersionCooldown_BlocksRapidVersions(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 
@@ -150,14 +150,14 @@ func TestEngine_VersionDebounce_BlocksRapidVersions(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(3600), // 1 hour debounce
+				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
 		),
 	)
@@ -186,14 +186,14 @@ func TestEngine_VersionDebounce_BlocksRapidVersions(t *testing.T) {
 	v2.Tag = "v1.1.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
-	// Second version should be blocked by debounce (created within interval)
+	// Second version should be blocked by cooldown (created within interval)
 	pendingJobs = engine.Workspace().Jobs().GetPending()
-	assert.Equal(t, 0, len(pendingJobs), "Expected no jobs for second version (blocked by debounce)")
+	assert.Equal(t, 0, len(pendingJobs), "Expected no jobs for second version (blocked by cooldown)")
 }
 
-// TestEngine_VersionDebounce_AllowsSameVersionRedeploy tests that redeploying the
-// same version bypasses the debounce check
-func TestEngine_VersionDebounce_AllowsSameVersionRedeploy(t *testing.T) {
+// TestEngine_VersionCooldown_AllowsSameVersionRedeploy tests that redeploying the
+// same version bypasses the cooldown check
+func TestEngine_VersionCooldown_AllowsSameVersionRedeploy(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 	environmentID := "env-1"
@@ -222,14 +222,14 @@ func TestEngine_VersionDebounce_AllowsSameVersionRedeploy(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(3600), // 1 hour debounce
+				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
 		),
 	)
@@ -255,18 +255,18 @@ func TestEngine_VersionDebounce_AllowsSameVersionRedeploy(t *testing.T) {
 	resource, _ := engine.Workspace().Resources().Get(resourceID)
 	engine.PushEvent(ctx, handler.ResourceUpdate, resource)
 
-	// The same version redeploy should be allowed (bypasses debounce)
+	// The same version redeploy should be allowed (bypasses cooldown)
 	// Note: In a real scenario, the release manager would handle redeploy triggers
-	// For this test, we verify the debounce doesn't block based on same version
+	// For this test, we verify the cooldown doesn't block based on same version
 	pendingJobs = engine.Workspace().Jobs().GetPending()
 	// Since we're redeploying the same version, it depends on how releases are created
-	// The key assertion is that debounce specifically allows same-version deployments
+	// The key assertion is that cooldown specifically allows same-version deployments
 	t.Log("Pending jobs after same version update:", len(pendingJobs))
 }
 
-// TestEngine_VersionDebounce_ZeroIntervalAllowsAll tests that a zero interval
+// TestEngine_VersionCooldown_ZeroIntervalAllowsAll tests that a zero interval
 // effectively disables debouncing
-func TestEngine_VersionDebounce_ZeroIntervalAllowsAll(t *testing.T) {
+func TestEngine_VersionCooldown_ZeroIntervalAllowsAll(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 
@@ -291,7 +291,7 @@ func TestEngine_VersionDebounce_ZeroIntervalAllowsAll(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
@@ -331,9 +331,9 @@ func TestEngine_VersionDebounce_ZeroIntervalAllowsAll(t *testing.T) {
 	assert.Equal(t, 1, len(pendingJobs), "Expected 1 job for second version (zero interval allows immediately)")
 }
 
-// TestEngine_VersionDebounce_BatchesMultipleVersions tests that multiple rapid versions
-// are batched, and only the latest version within the debounce window gets deployed
-func TestEngine_VersionDebounce_BatchesMultipleVersions(t *testing.T) {
+// TestEngine_VersionCooldown_BatchesMultipleVersions tests that multiple rapid versions
+// are batched, and only the latest version within the cooldown window gets deployed
+func TestEngine_VersionCooldown_BatchesMultipleVersions(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 
@@ -358,14 +358,14 @@ func TestEngine_VersionDebounce_BatchesMultipleVersions(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(3600), // 1 hour debounce
+				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
 		),
 	)
@@ -395,14 +395,14 @@ func TestEngine_VersionDebounce_BatchesMultipleVersions(t *testing.T) {
 		engine.PushEvent(ctx, handler.DeploymentVersionCreate, version)
 	}
 
-	// All rapid versions should be blocked by debounce
+	// All rapid versions should be blocked by cooldown
 	pendingJobs = engine.Workspace().Jobs().GetPending()
-	assert.Equal(t, 0, len(pendingJobs), "Expected no jobs for rapid versions (batched by debounce)")
+	assert.Equal(t, 0, len(pendingJobs), "Expected no jobs for rapid versions (batched by cooldown)")
 }
 
-// TestEngine_VersionDebounce_UsesVersionCreationTime tests that debounce is based
+// TestEngine_VersionCooldown_UsesVersionCreationTime tests that cooldown is based
 // on version creation time, not job completion time
-func TestEngine_VersionDebounce_UsesVersionCreationTime(t *testing.T) {
+func TestEngine_VersionCooldown_UsesVersionCreationTime(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 
@@ -427,14 +427,14 @@ func TestEngine_VersionDebounce_UsesVersionCreationTime(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(60), // 1 minute debounce
+				integration.WithRuleVersionCooldown(60), // 1 minute cooldown
 			),
 		),
 	)
@@ -468,13 +468,13 @@ func TestEngine_VersionDebounce_UsesVersionCreationTime(t *testing.T) {
 	assert.Equal(t, 0, len(pendingJobs), "Expected 0 jobs (v2 created too soon after v1)")
 }
 
-// TestEngine_VersionDebounce_CombinedWithApproval tests that version debounce
+// TestEngine_VersionCooldown_CombinedWithApproval tests that version cooldown
 // works correctly when combined with approval policies
-func TestEngine_VersionDebounce_CombinedWithApproval(t *testing.T) {
+func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 	environmentID := "env-1"
-	debouncePolicyID := "debounce-policy"
+	cooldownPolicyID := "cooldown-policy"
 	approvalPolicyID := "approval-policy"
 
 	engine := integration.NewTestWorkspace(t,
@@ -498,17 +498,17 @@ func TestEngine_VersionDebounce_CombinedWithApproval(t *testing.T) {
 		integration.WithResource(
 			integration.ResourceName("resource-1"),
 		),
-		// Debounce policy
+		// Cooldown policy
 		integration.WithPolicy(
-			integration.PolicyID(debouncePolicyID),
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyID(cooldownPolicyID),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(3600), // 1 hour debounce
+				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
 		),
 		// Approval policy
@@ -534,7 +534,7 @@ func TestEngine_VersionDebounce_CombinedWithApproval(t *testing.T) {
 	v1.Tag = "v1.0.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v1)
 
-	// First version should be waiting for approval (debounce allows it)
+	// First version should be waiting for approval (cooldown allows it)
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	assert.Equal(t, 0, len(pendingJobs), "Expected 0 jobs (waiting for approval)")
 
@@ -564,7 +564,7 @@ func TestEngine_VersionDebounce_CombinedWithApproval(t *testing.T) {
 	v2.Tag = "v1.1.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
-	// Even with approval, debounce should block
+	// Even with approval, cooldown should block
 	approval2 := &oapi.UserApprovalRecord{
 		VersionId:     v2.Id,
 		EnvironmentId: environmentID,
@@ -573,14 +573,14 @@ func TestEngine_VersionDebounce_CombinedWithApproval(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.UserApprovalRecordCreate, approval2)
 
-	// Should still be blocked by debounce
+	// Should still be blocked by cooldown
 	pendingJobs = engine.Workspace().Jobs().GetPending()
-	assert.Equal(t, 0, len(pendingJobs), "Expected 0 jobs (blocked by debounce even with approval)")
+	assert.Equal(t, 0, len(pendingJobs), "Expected 0 jobs (blocked by cooldown even with approval)")
 }
 
-// TestEngine_VersionDebounce_MultipleEnvironments tests that debounce works
+// TestEngine_VersionCooldown_MultipleEnvironments tests that cooldown works
 // independently for each release target (environment)
-func TestEngine_VersionDebounce_MultipleEnvironments(t *testing.T) {
+func TestEngine_VersionCooldown_MultipleEnvironments(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 	stagingEnvID := "staging-env"
@@ -613,14 +613,14 @@ func TestEngine_VersionDebounce_MultipleEnvironments(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(3600), // 1 hour debounce
+				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
 		),
 	)
@@ -651,14 +651,14 @@ func TestEngine_VersionDebounce_MultipleEnvironments(t *testing.T) {
 	v2.Tag = "v1.1.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
-	// Both environments should be blocked by debounce
+	// Both environments should be blocked by cooldown
 	pendingJobs = engine.Workspace().Jobs().GetPending()
 	assert.Equal(t, 0, len(pendingJobs), "Expected 0 jobs for second version (both environments blocked)")
 }
 
-// TestEngine_VersionDebounce_InProgressDeploymentBlocks tests that versions are blocked
+// TestEngine_VersionCooldown_InProgressDeploymentBlocks tests that versions are blocked
 // while there's an in-progress deployment
-func TestEngine_VersionDebounce_InProgressDeploymentBlocks(t *testing.T) {
+func TestEngine_VersionCooldown_InProgressDeploymentBlocks(t *testing.T) {
 	jobAgentID := "job-agent-1"
 	deploymentID := "deployment-1"
 
@@ -683,14 +683,14 @@ func TestEngine_VersionDebounce_InProgressDeploymentBlocks(t *testing.T) {
 			integration.ResourceName("resource-1"),
 		),
 		integration.WithPolicy(
-			integration.PolicyName("version-debounce-policy"),
+			integration.PolicyName("version-cooldown-policy"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelDeploymentSelector("true"),
 				integration.PolicyTargetCelEnvironmentSelector("true"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
-				integration.WithRuleVersionCooldown(3600), // 1 hour debounce
+				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
 		),
 	)
@@ -718,7 +718,7 @@ func TestEngine_VersionDebounce_InProgressDeploymentBlocks(t *testing.T) {
 	v2.Tag = "v1.1.0"
 	engine.PushEvent(ctx, handler.DeploymentVersionCreate, v2)
 
-	// Second version should be blocked (in-progress deployment uses debounce)
+	// Second version should be blocked (in-progress deployment uses cooldown)
 	allJobs := engine.Workspace().Jobs().Items()
 	newPendingCount := 0
 	for _, job := range allJobs {

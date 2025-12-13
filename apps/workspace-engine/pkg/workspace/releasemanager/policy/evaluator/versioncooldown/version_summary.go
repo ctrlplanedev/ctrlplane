@@ -1,4 +1,4 @@
-package versiondebounce
+package versioncooldown
 
 import (
 	"context"
@@ -9,33 +9,33 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-type VersionDebounceVersionSummaryEvaluator struct {
+type VersionCooldownVersionSummaryEvaluator struct {
 	store  *store.Store
 	ruleId string
-	rule   *oapi.VersionDebounceRule
+	rule   *oapi.VersionCooldownRule
 }
 
 func NewSummaryEvaluator(store *store.Store, rule *oapi.PolicyRule) evaluator.Evaluator {
-	if rule == nil || rule.VersionDebounce == nil || store == nil {
+	if rule == nil || rule.VersionCooldown == nil || store == nil {
 		return nil
 	}
-	return &VersionDebounceVersionSummaryEvaluator{store: store, ruleId: rule.Id, rule: rule.VersionDebounce}
+	return &VersionCooldownVersionSummaryEvaluator{store: store, ruleId: rule.Id, rule: rule.VersionCooldown}
 }
 
-func (e *VersionDebounceVersionSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
+func (e *VersionCooldownVersionSummaryEvaluator) ScopeFields() evaluator.ScopeFields {
 	return evaluator.ScopeVersion
 }
 
 // RuleType returns the rule type identifier for bypass matching.
-func (e *VersionDebounceVersionSummaryEvaluator) RuleType() string {
-	return evaluator.RuleTypeVersionDebounce
+func (e *VersionCooldownVersionSummaryEvaluator) RuleType() string {
+	return evaluator.RuleTypeVersionCooldown
 }
 
-func (e *VersionDebounceVersionSummaryEvaluator) RuleId() string {
+func (e *VersionCooldownVersionSummaryEvaluator) RuleId() string {
 	return e.ruleId
 }
 
-func (e *VersionDebounceVersionSummaryEvaluator) Complexity() int {
+func (e *VersionCooldownVersionSummaryEvaluator) Complexity() int {
 	return 2
 }
 
@@ -47,7 +47,7 @@ func pluralize(count int) string {
 	return "s"
 }
 
-func (e *VersionDebounceVersionSummaryEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
+func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
 	version := scope.Version
 
 	allReleaseTargets, err := e.store.ReleaseTargets.Items()
@@ -73,7 +73,7 @@ func (e *VersionDebounceVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 			Version:       version,
 			ReleaseTarget: releaseTarget,
 		}
-		evaluation := NewEvaluator(e.store, &oapi.PolicyRule{Id: "versionDebounceSummary", VersionDebounce: e.rule}).Evaluate(ctx, scope)
+		evaluation := NewEvaluator(e.store, &oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule}).Evaluate(ctx, scope)
 
 		messages = append(messages, evaluation)
 
@@ -96,18 +96,16 @@ func (e *VersionDebounceVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 	}
 
 	if allowedTargets == totalTargets {
-		return result.Allow().WithMessage(fmt.Sprintf("Version debounce passed — All %d target%s allowed",
+		return result.Allow().WithMessage(fmt.Sprintf("Version cooldown passed — All %d target%s allowed",
 			totalTargets, pluralize(totalTargets)))
 	}
 
 	if deniedTargets == totalTargets {
-		return result.Deny().WithMessage(fmt.Sprintf("Version debounce blocked — All %d target%s denied",
+		return result.Deny().WithMessage(fmt.Sprintf("Version cooldown blocked — All %d target%s denied",
 			deniedTargets, pluralize(deniedTargets)))
 	}
 
 	// Mixed results - some allowed, some denied
-	return result.Deny().WithMessage(fmt.Sprintf("Version debounce partially blocked — %d allowed, %d denied of %d total",
+	return result.Deny().WithMessage(fmt.Sprintf("Version cooldown partially blocked — %d allowed, %d denied of %d total",
 		allowedTargets, deniedTargets, totalTargets))
 }
-
-

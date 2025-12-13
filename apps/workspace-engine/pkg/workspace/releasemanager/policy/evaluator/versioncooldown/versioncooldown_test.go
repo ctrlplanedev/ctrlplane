@@ -1,4 +1,4 @@
-package versiondebounce
+package versioncooldown
 
 import (
 	"context"
@@ -106,7 +106,7 @@ func TestNewEvaluator(t *testing.T) {
 		assert.Nil(t, eval)
 	})
 
-	t.Run("returns nil when versionDebounce is nil", func(t *testing.T) {
+	t.Run("returns nil when versionCooldown is nil", func(t *testing.T) {
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
 		}
@@ -117,7 +117,7 @@ func TestNewEvaluator(t *testing.T) {
 	t.Run("returns nil when store is nil", func(t *testing.T) {
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600,
 			},
 		}
@@ -128,7 +128,7 @@ func TestNewEvaluator(t *testing.T) {
 	t.Run("returns evaluator when all parameters are valid", func(t *testing.T) {
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600,
 			},
 		}
@@ -137,11 +137,11 @@ func TestNewEvaluator(t *testing.T) {
 	})
 }
 
-func TestVersionDebounceEvaluator_ScopeFields(t *testing.T) {
+func TestVersionCooldownEvaluator_ScopeFields(t *testing.T) {
 	s, _ := setupTestStore(t)
 	rule := &oapi.PolicyRule{
 		Id: "test-rule",
-		VersionDebounce: &oapi.VersionDebounceRule{
+		VersionCooldown: &oapi.VersionCooldownRule{
 			IntervalSeconds: 3600,
 		},
 	}
@@ -154,21 +154,21 @@ func TestVersionDebounceEvaluator_ScopeFields(t *testing.T) {
 	assert.Equal(t, expectedFields, eval.ScopeFields())
 }
 
-func TestVersionDebounceEvaluator_RuleType(t *testing.T) {
+func TestVersionCooldownEvaluator_RuleType(t *testing.T) {
 	s, _ := setupTestStore(t)
 	rule := &oapi.PolicyRule{
 		Id: "test-rule",
-		VersionDebounce: &oapi.VersionDebounceRule{
+		VersionCooldown: &oapi.VersionCooldownRule{
 			IntervalSeconds: 3600,
 		},
 	}
 
 	eval := NewEvaluator(s, rule)
 	require.NotNil(t, eval)
-	assert.Equal(t, evaluator.RuleTypeVersionDebounce, eval.RuleType())
+	assert.Equal(t, evaluator.RuleTypeVersionCooldown, eval.RuleType())
 }
 
-func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
+func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 	t.Run("allows first deployment when no previous release exists", func(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
@@ -180,7 +180,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600, // 1 hour
 			},
 		}
@@ -213,7 +213,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600, // 1 hour
 			},
 		}
@@ -251,7 +251,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600, // 1 hour required
 			},
 		}
@@ -266,7 +266,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		result := eval.Evaluate(ctx, scope)
 		assert.False(t, result.Allowed, "Version should be denied when not enough time has elapsed")
-		assert.Contains(t, result.Message, "Version debounce")
+		assert.Contains(t, result.Message, "Version cooldown")
 		assert.Contains(t, result.Message, "remaining")
 	})
 
@@ -290,7 +290,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600, // 1 hour required
 			},
 		}
@@ -305,7 +305,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		result := eval.Evaluate(ctx, scope)
 		assert.True(t, result.Allowed, "Version should be allowed when enough time has elapsed")
-		assert.Contains(t, result.Message, "Version debounce passed")
+		assert.Contains(t, result.Message, "Version cooldown passed")
 		assert.Contains(t, result.Message, "has elapsed")
 	})
 
@@ -329,7 +329,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600, // 1 hour required
 			},
 		}
@@ -369,7 +369,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600, // 1 hour
 			},
 		}
@@ -389,7 +389,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 		assert.True(t, result.Allowed, "v1.3 should be allowed (enough time has elapsed)")
 	})
 
-	t.Run("uses in-progress deployment version for debounce", func(t *testing.T) {
+	t.Run("uses in-progress deployment version for cooldown", func(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
@@ -420,7 +420,7 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
+			VersionCooldown: &oapi.VersionCooldownRule{
 				IntervalSeconds: 3600, // 1 hour
 			},
 		}
@@ -460,8 +460,8 @@ func TestVersionDebounceEvaluator_Evaluate(t *testing.T) {
 
 		rule := &oapi.PolicyRule{
 			Id: "test-rule",
-			VersionDebounce: &oapi.VersionDebounceRule{
-				IntervalSeconds: 0, // No debounce
+			VersionCooldown: &oapi.VersionCooldownRule{
+				IntervalSeconds: 0, // No cooldown
 			},
 		}
 
