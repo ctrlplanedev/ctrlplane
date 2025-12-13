@@ -224,5 +224,7 @@ func (e *VersionCooldownEvaluator) Evaluate(
 		WithDetail("candidate_version_created_at", candidateVersion.CreatedAt.Format(time.RFC3339)).
 		WithDetail("time_elapsed", formatDuration(timeSinceReferenceCreated)).
 		WithDetail("time_remaining", formatDuration(timeRemaining)).
-		WithDetail("required_interval", formatDuration(interval))
+		WithDetail("required_interval", formatDuration(interval)).
+		WithDetail("next_deployment_time", minElapsedTime.Format(time.RFC3339)).
+		WithNextEvaluationTime(minElapsedTime)
 }

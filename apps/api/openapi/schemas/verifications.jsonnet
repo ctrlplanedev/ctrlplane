@@ -117,11 +117,36 @@ local openapi = import '../lib/openapi.libsonnet';
   MetricProvider: {
     oneOf: [
       openapi.schemaRef('HTTPMetricProvider'),
+      openapi.schemaRef('SleepMetricProvider'),
+      openapi.schemaRef('DatadogMetricProvider'),
+      openapi.schemaRef('TerraformCloudRunMetricProvider'),
     ],
     discriminator: {
       propertyName: 'type',
       mapping: {
         http: '#/components/schemas/HTTPMetricProvider',
+        sleep: '#/components/schemas/SleepMetricProvider',
+        datadog: '#/components/schemas/DatadogMetricProvider',
+        terraformCloudRun: '#/components/schemas/TerraformCloudRunMetricProvider',
+      },
+    },
+  },
+
+  SleepMetricProvider: {
+    type: 'object',
+    required: ['type', 'durationSeconds'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['sleep'],
+        description: 'Provider type',
+      },
+      durationSeconds: {
+        type: 'integer',
+        format: 'int32',
+        example: 30,
+        minimum: 1,
+        maximum: 3600,
       },
     },
   },
@@ -159,6 +184,70 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'string',
         description: 'Request timeout (duration string, e.g., "30s")',
         default: '30s',
+      },
+    },
+  },
+
+  DatadogMetricProvider: {
+    type: 'object',
+    required: ['type', 'query', 'apiKey', 'appKey'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['datadog'],
+        description: 'Provider type',
+      },
+      query: {
+        type: 'string',
+        description: 'Datadog metrics query (supports Go templates)',
+        example: 'sum:requests.error.rate{service:{{.resource.name}}}',
+      },
+      apiKey: {
+        type: 'string',
+        description: 'Datadog API key (supports Go templates for variable references)',
+        example: '{{.variables.dd_api_key}}',
+      },
+      appKey: {
+        type: 'string',
+        description: 'Datadog Application key (supports Go templates for variable references)',
+        example: '{{.variables.dd_app_key}}',
+      },
+      site: {
+        type: 'string',
+        description: 'Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)',
+        default: 'datadoghq.com',
+      },
+    },
+  },
+
+  TerraformCloudRunMetricProvider: {
+    type: 'object',
+    required: ['type', 'organization', 'address', 'token', 'runId'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['terraformCloudRun'],
+        description: 'Provider type',
+      },
+      organization: {
+        type: 'string',
+        description: 'Terraform Cloud organization name',
+        example: 'my-org',
+      },
+      address: {
+        type: 'string',
+        description: 'Terraform Cloud address',
+        example: 'https://app.terraform.io',
+      },
+      token: {
+        type: 'string',
+        description: 'Terraform Cloud token',
+        example: '{{.variables.terraform_cloud_token}}',
+      },
+      runId: {
+        type: 'string',
+        description: 'Terraform Cloud run ID',
+        example: 'run-1234567890',
       },
     },
   },

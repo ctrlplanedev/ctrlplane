@@ -68,6 +68,7 @@
     "react-use": "^17.6.0",
     "reactflow": "^11.11.4",
     "recharts": "2.15.4",
+    "rrule": "^2.8.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "ts-is-present": "catalog:",

@@ -835,6 +835,33 @@ export interface components {
             /** @description URL-friendly unique identifier (lowercase, no spaces) */
             slug: string;
         };
+        DatadogMetricProvider: {
+            /**
+             * @description Datadog API key (supports Go templates for variable references)
+             * @example {{.variables.dd_api_key}}
+             */
+            apiKey: string;
+            /**
+             * @description Datadog Application key (supports Go templates for variable references)
+             * @example {{.variables.dd_app_key}}
+             */
+            appKey: string;
+            /**
+             * @description Datadog metrics query (supports Go templates)
+             * @example sum:requests.error.rate{service:{{.resource.name}}}
+             */
+            query: string;
+            /**
+             * @description Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
+             * @default datadoghq.com
+             */
+            site: string;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "datadog";
+        };
         Deployment: {
             description?: string;
             id: string;
@@ -1051,7 +1078,7 @@ export interface components {
             };
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
-        MetricProvider: components["schemas"]["HTTPMetricProvider"];
+        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
         /** @enum {boolean} */
         NullValue: true;
         NumberValue: number;
@@ -1243,6 +1270,18 @@ export interface components {
         SensitiveValue: {
             valueHash: string;
         };
+        SleepMetricProvider: {
+            /**
+             * Format: int32
+             * @example 30
+             */
+            durationSeconds: number;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "sleep";
+        };
         StringValue: string;
         System: {
             description?: string;
@@ -1250,6 +1289,33 @@ export interface components {
             name: string;
             slug: string;
             workspaceId: string;
+        };
+        TerraformCloudRunMetricProvider: {
+            /**
+             * @description Terraform Cloud address
+             * @example https://app.terraform.io
+             */
+            address: string;
+            /**
+             * @description Terraform Cloud organization name
+             * @example my-org
+             */
+            organization: string;
+            /**
+             * @description Terraform Cloud run ID
+             * @example run-1234567890
+             */
+            runId: string;
+            /**
+             * @description Terraform Cloud token
+             * @example {{.variables.terraform_cloud_token}}
+             */
+            token: string;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "terraformCloudRun";
         };
         UpdateDeploymentVersionRequest: {
             config?: {

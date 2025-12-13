@@ -11,21 +11,6 @@ version was created before allowing another deployment. This helps batch
 frequent upstream releases into periodic deployments, reducing deployment churn
 and infrastructure load.
 
-## Overview
-
-```mermaid
-flowchart TD
-    A[New Version Created] --> B{Check Cooldown}
-    B --> C{Current deployment exists?}
-    C -->|No| D[Deploy - First deployment]
-    C -->|Yes| E{Time elapsed since current version created?}
-    E -->|>= interval| F[Deploy - Cooldown passed]
-    E -->|< interval| G[Skip - Try next version]
-    G --> H{Older version available?}
-    H -->|Yes| I[Evaluate older version]
-    H -->|No| J[Wait for cooldown period]
-```
-
 ## Why Use Version Cooldown?
 
 Version cooldown helps you:
@@ -49,7 +34,7 @@ policies:
       - environment: environment.name == "production"
     rules:
       - versionCooldown:
-          intervalSeconds: 3600 # 1 hour cooldown period
+          interval: 1h
 ```
 
 ## Properties
@@ -74,22 +59,27 @@ creation times:
 
 ```
 Version Created:  v1.0 ────── v1.1 ── v1.2 ── v1.3 ────── v1.4
-                  12:00       12:15   12:20   12:25       13:30
+                  12:00       12:15   12:20   12:25       13:00
 
 With intervalSeconds: 3600 (1 hour)
 Currently deployed: v1.0 (created 12:00)
 
-At 12:30 (30min elapsed):
+At 12:30 (30min elapsed since v1.0):
   Candidate v1.3 (created 12:25): DENIED - only 30min elapsed (need 60min)
   Candidate v1.2 (created 12:20): DENIED - only 30min elapsed
   Candidate v1.1 (created 12:15): DENIED - only 30min elapsed
 
-At 13:05 (65min elapsed):
+At 13:05 (65min elapsed since v1.0):
   Candidate v1.3 (created 12:25): ALLOWED - 65min elapsed (>= 60min)
   Candidate v1.2 (created 12:20): ALLOWED - 65min elapsed
   Candidate v1.1 (created 12:15): ALLOWED - 65min elapsed
-  Candidate v1.4 (created 13:30): ALLOWED - 65min elapsed
+  Candidate v1.4 (created 13:00): ALLOWED - 65min elapsed
 ```
+
+**Note**: The cooldown checks elapsed time since the reference version (v1.0)
+was created, not the time gap between version creation times. Once 60 minutes
+have passed since v1.0 was created, any version (newer or older) can be
+deployed.
 
 **Key point**: Once the cooldown period has elapsed, any version can be
 deployed, regardless of when it was created. This enables batching rapid
@@ -123,7 +113,7 @@ policies:
       - deployment: deployment.metadata.update_frequency == "daily"
     rules:
       - versionCooldown:
-          intervalSeconds: 86400 # 24 hours
+          interval: 1d
 ```
 
 ### Per-Environment Cooldown
@@ -211,7 +201,19 @@ cooldown settings. This enables:
 
 - Manual re-runs of failed deployments
 - Rollback-and-redeploy workflows
-- Configuration-only changes
+- **Configuration-only changes** - Deploy the same version with updated
+  configuration immediately, bypassing cooldown
+
+### Urgent Deployments
+
+For urgent deployments that need to bypass cooldown (e.g., security patches,
+critical fixes):
+
+- **Same-version redeploy**: If the urgent change uses the same version ID, it
+  automatically bypasses cooldown
+- **Policy Skip**: Create a PolicySkip to bypass cooldown for a specific
+  version. This allows urgent deployments while maintaining cooldown for regular
+  releases
 
 ### In-Progress Deployments
 
@@ -269,6 +271,33 @@ policies:
           intervalSeconds: 14400 # 4 hours
 ```
 
+### Weekly Scheduled Deployments
+
+Deploy updates on a specific day (e.g., every Monday):
+
+```yaml
+policies:
+  - name: monday-deployments
+    selectors:
+      - deployment: deployment.name == "datadog-agent"
+    rules:
+      # Only deploy on Mondays (all day)
+      - deploymentWindow:
+          rrule: "FREQ=WEEKLY;BYDAY=MO;BYHOUR=0;BYMINUTE=0"
+          durationMinutes: 1440 # 24 hours
+          timezone: "America/New_York"
+          allowWindow: true
+
+      # 5-day cooldown ensures weekly cadence
+      - versionCooldown:
+          intervalSeconds: 432000 # 5 days
+
+      # Normalized rollout fits within window
+      - gradualRollout:
+          rolloutType: linear-normalized
+          timeScaleInterval: 82800 # 23 hours
+```
+
 ## Best Practices
 
 ### Interval Guidelines
@@ -286,8 +315,11 @@ policies:
 - ✅ Use longer intervals for production vs staging
 - ✅ Combine with gradual rollouts for safer deployments
 - ✅ Monitor deployment frequency to tune intervals
+- ✅ Use same-version redeploys for urgent configuration changes
+- ✅ Use PolicySkip for urgent deployments that need to bypass cooldown
 - ❌ Don't set intervals so long that critical fixes are delayed
 - ❌ Don't use cooldown on environments that need immediate updates
+- ⚠️ Ensure deployment windows are long enough for gradual rollouts to complete
 
 ## Next Steps
 

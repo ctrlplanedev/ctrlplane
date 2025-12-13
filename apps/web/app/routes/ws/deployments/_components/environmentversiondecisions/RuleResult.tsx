@@ -1,5 +1,7 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import type React from "react";
 import { AlertCircleIcon, Check, X } from "lucide-react";
+import { rrulestr } from "rrule";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -33,7 +35,7 @@ function StatusIcon({
   if (ruleResult.allowed) return <Check className="size-3 text-green-500" />;
   if (ruleResult.actionRequired)
     return <AlertCircleIcon className="size-3 text-red-500" />;
-  return <X className="size-3 text-green-500" />;
+  return <X className="size-3 text-red-500" />;
 }
 
 function ActionButton({
@@ -58,6 +60,40 @@ function ActionButton({
   );
 }
 
+const Rrule: React.FC<{ rrule: string; next_window_start: string }> = ({
+  rrule,
+  next_window_start,
+}) => {
+  let ruleText: string;
+  try {
+    const rule = rrulestr(rrule);
+    ruleText = rule.toText();
+  } catch {
+    ruleText = rrule;
+  }
+
+  const nextWindowStart = new Date(next_window_start);
+
+  return (
+    <div>
+      <div>
+        <span>
+          <strong>Schedule:</strong> {ruleText}
+        </span>
+        , <strong>Next Window:</strong>{" "}
+        {nextWindowStart.toLocaleString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })}
+      </div>
+    </div>
+  );
+};
+
 export function RuleResult(props: {
   ruleResult: WorkspaceEngine["schemas"]["RuleEvaluation"];
   onClickApprove: () => void;
@@ -67,9 +103,14 @@ export function RuleResult(props: {
     <div className="flex items-center gap-2 text-xs">
       <StatusIcon {...props} />
       <RuleDetailHover details={props.ruleResult.details}>
-        <div>{props.ruleResult.message}</div>
+        <div>
+          <div>{String(props.ruleResult.message)}</div>
+          {typeof props.ruleResult.details.rrule === "string" && (
+            <Rrule {...(props.ruleResult.details as any)} />
+          )}
+        </div>
       </RuleDetailHover>
-      <div className="flex-grow" />
+      <div className="grow" />
       <div className="text-xs text-muted-foreground">
         <ActionButton {...props} />
       </div>

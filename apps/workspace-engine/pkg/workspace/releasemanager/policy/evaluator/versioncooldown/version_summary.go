@@ -3,6 +3,7 @@ package versioncooldown
 import (
 	"context"
 	"fmt"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
@@ -66,6 +67,7 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 	totalTargets := len(releaseTargets)
 	allowedTargets := 0
 	deniedTargets := 0
+	var nextDeploymentTime *time.Time
 	messages := make([]*oapi.RuleEvaluation, 0, totalTargets)
 
 	for _, releaseTarget := range releaseTargets {
@@ -81,6 +83,12 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 			allowedTargets++
 		} else {
 			deniedTargets++
+			// Track the earliest next deployment time from denied evaluations
+			if evaluation.NextEvaluationTime != nil {
+				if nextDeploymentTime == nil || evaluation.NextEvaluationTime.Before(*nextDeploymentTime) {
+					nextDeploymentTime = evaluation.NextEvaluationTime
+				}
+			}
 		}
 	}
 
@@ -89,6 +97,13 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 		WithDetail("allowed_targets", allowedTargets).
 		WithDetail("denied_targets", deniedTargets).
 		WithDetail("messages", messages)
+
+	// Add next deployment time to details if available
+	if nextDeploymentTime != nil {
+		result = result.
+			WithDetail("next_deployment_time", nextDeploymentTime.Format(time.RFC3339)).
+			WithNextEvaluationTime(*nextDeploymentTime)
+	}
 
 	// Build the status message
 	if totalTargets == 0 {
@@ -101,11 +116,29 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 	}
 
 	if deniedTargets == totalTargets {
-		return result.Deny().WithMessage(fmt.Sprintf("Version cooldown blocked — All %d target%s denied",
-			deniedTargets, pluralize(deniedTargets)))
+		msg := fmt.Sprintf("Version cooldown blocked — %d target%s denied",
+			deniedTargets, pluralize(deniedTargets))
+		if nextDeploymentTime != nil {
+			timeRemaining := time.Until(*nextDeploymentTime)
+			if timeRemaining > 0 {
+				msg += fmt.Sprintf(" • Next deployment possible in %s", formatDuration(timeRemaining))
+			} else {
+				msg += " • Next deployment possible now"
+			}
+		}
+		return result.Deny().WithMessage(msg)
 	}
 
 	// Mixed results - some allowed, some denied
-	return result.Deny().WithMessage(fmt.Sprintf("Version cooldown partially blocked — %d allowed, %d denied of %d total",
-		allowedTargets, deniedTargets, totalTargets))
+	msg := fmt.Sprintf("Version cooldown partially blocked — %d allowed, %d denied of %d total",
+		allowedTargets, deniedTargets, totalTargets)
+	if nextDeploymentTime != nil {
+		timeRemaining := time.Until(*nextDeploymentTime)
+		if timeRemaining > 0 {
+			msg += fmt.Sprintf(" • Next deployment possible in %s", formatDuration(timeRemaining))
+		} else {
+			msg += " • Next deployment possible now"
+		}
+	}
+	return result.Deny().WithMessage(msg)
 }
