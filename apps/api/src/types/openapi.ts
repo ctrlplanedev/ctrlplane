@@ -689,6 +689,26 @@ export interface paths {
         patch: operations["updateVariablesForResource"];
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get release target for a resource in a deployment
+         * @description Returns a release target for a resource in a deployment.
+         */
+        get: operations["getReleaseTargetForResourceInDeployment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/systems": {
         parameters: {
             query?: never;
@@ -1070,6 +1090,7 @@ export interface components {
             id: string;
             policyId: string;
             verification?: components["schemas"]["VerificationRule"];
+            versionDebounce?: components["schemas"]["VersionDebounceRule"];
         };
         PolicyTargetSelector: {
             deploymentSelector?: components["schemas"]["Selector"];
@@ -1395,6 +1416,13 @@ export interface components {
              * @enum {string}
              */
             triggerOn: "jobCreated" | "jobStarted" | "jobSuccess" | "jobFailure";
+        };
+        VersionDebounceRule: {
+            /**
+             * Format: int32
+             * @description Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.
+             */
+            intervalSeconds: number;
         };
         Workspace: {
             /** @description AWS IAM role ARN for integrations */
@@ -3686,6 +3714,51 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReleaseTargetForResourceInDeployment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Identifier of the resource */
+                resourceIdentifier: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The requested release target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseTarget"];
                 };
             };
             /** @description Invalid request */

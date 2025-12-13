@@ -1033,6 +1033,9 @@
                },
                "verification": {
                   "$ref": "#/components/schemas/VerificationRule"
+               },
+               "versionDebounce": {
+                  "$ref": "#/components/schemas/VersionDebounceRule"
                }
             },
             "required": [
@@ -2005,6 +2008,20 @@
             },
             "required": [
                "metrics"
+            ],
+            "type": "object"
+         },
+         "VersionDebounceRule": {
+            "properties": {
+               "intervalSeconds": {
+                  "description": "Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.",
+                  "format": "int32",
+                  "minimum": 0,
+                  "type": "integer"
+               }
+            },
+            "required": [
+               "intervalSeconds"
             ],
             "type": "object"
          },
@@ -5628,6 +5645,77 @@
                }
             },
             "summary": "Update variables for a resource",
+            "tags": [
+               "Resources"
+            ]
+         }
+      },
+      "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
+         "get": {
+            "description": "Returns a release target for a resource in a deployment.",
+            "operationId": "getReleaseTargetForResourceInDeployment",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Identifier of the resource",
+                  "in": "path",
+                  "name": "resourceIdentifier",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ReleaseTarget"
+                        }
+                     }
+                  },
+                  "description": "The requested release target"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get release target for a resource in a deployment",
             "tags": [
                "Resources"
             ]

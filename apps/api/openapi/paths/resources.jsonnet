@@ -74,5 +74,21 @@ local openapi = import '../lib/openapi.libsonnet';
         'The updated variables'
       ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
     },
-  }
+  },
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}': {
+    get: {
+      tags: ['Resources'],
+      summary: 'Get release target for a resource in a deployment',
+      operationId: 'getReleaseTargetForResourceInDeployment',
+      description: 'Returns a release target for a resource in a deployment.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.resourceIdentifierParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('ReleaseTarget'), 'The requested release target') +
+        openapi.notFoundResponse() +
+        openapi.badRequestResponse(),
+    },
+  },
 }
