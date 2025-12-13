@@ -10,7 +10,7 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('EnvironmentAndSystem')),
+      responses: openapi.paginatedResponse(openapi.schemaRef('Environment')),
     },
     post: {
       summary: 'Create environment',

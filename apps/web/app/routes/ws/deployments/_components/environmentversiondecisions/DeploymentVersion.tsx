@@ -1,5 +1,4 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
-import { AlertCircleIcon, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -87,7 +86,7 @@ export function DeploymentVersion({
         <div key={idx} className="w-full space-y-1 rounded-lg border p-2">
           <div className="mb-2 flex items-center font-semibold">
             {policy == null ? "Global Policies" : policy.name}
-            <div className="flex-grow" />
+            <div className="grow" />
             <PolicySkipDialog
               environmentId={environment.id}
               versionId={version.id}

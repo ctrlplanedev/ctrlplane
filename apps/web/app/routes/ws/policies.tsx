@@ -56,15 +56,17 @@ type Policy = NonNullable<
 function PolicyRow({
   policy,
   onDelete,
+  onView,
 }: {
   policy: Policy;
   onDelete: () => void;
+  onView: () => void;
 }) {
   // Count release targets from computed relationships
   const releaseTargetCount = 0;
 
   return (
-    <TableRow className="hover:bg-muted/50">
+    <TableRow className="cursor-pointer hover:bg-muted/50" onClick={onView}>
       <TableCell className="font-medium">{policy.name}</TableCell>
       <TableCell className="text-muted-foreground">
         {policy.description ?? "—"}
@@ -81,7 +83,7 @@ function PolicyRow({
       <TableCell className="text-muted-foreground">
         {format(new Date(policy.createdAt), "MMM d, yyyy")}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -98,6 +100,41 @@ function PolicyRow({
         </DropdownMenu>
       </TableCell>
     </TableRow>
+  );
+}
+
+function ViewPolicyDialog({
+  policy,
+  open,
+  onOpenChange,
+}: {
+  policy: Policy | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  if (!policy) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>Policy: {policy.name}</DialogTitle>
+          <DialogDescription>
+            View policy details in JSON format
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-auto rounded-md bg-muted p-4">
+          <pre className="wrap-break-word whitespace-pre-wrap font-mono text-xs">
+            {JSON.stringify(policy, null, 2)}
+          </pre>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -173,6 +210,7 @@ function DeletePolicyDialog({
 export default function Policies() {
   const { workspace } = useWorkspace();
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
+  const [policyToView, setPolicyToView] = useState<Policy | null>(null);
 
   const { data, isLoading } = trpc.policies.list.useQuery({
     workspaceId: workspace.id,
@@ -247,6 +285,7 @@ export default function Policies() {
                       key={policy.id}
                       policy={policy}
                       onDelete={() => setPolicyToDelete(policy)}
+                      onView={() => setPolicyToView(policy)}
                     />
                   ))}
               </TableBody>
@@ -255,6 +294,13 @@ export default function Policies() {
         )}
       </main>
 
+      <ViewPolicyDialog
+        policy={policyToView}
+        open={!!policyToView}
+        onOpenChange={(open) => {
+          if (!open) setPolicyToView(null);
+        }}
+      />
       <DeletePolicyDialog
         policy={policyToDelete}
         open={!!policyToDelete}

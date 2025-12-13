@@ -923,10 +923,6 @@ export interface components {
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
         };
-        EnvironmentAndSystem: {
-            environment: components["schemas"]["Environment"];
-            system: components["schemas"]["System"];
-        };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
             /**
@@ -1088,6 +1084,7 @@ export interface components {
             gradualRollout?: components["schemas"]["GradualRolloutRule"];
             id: string;
             policyId: string;
+            retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionDebounce?: components["schemas"]["VersionDebounceRule"];
         };
@@ -1216,6 +1213,31 @@ export interface components {
             key: string;
             resourceId: string;
             value: components["schemas"]["Value"];
+        };
+        RetryRule: {
+            /**
+             * Format: int32
+             * @description Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.
+             */
+            backoffSeconds?: number;
+            /**
+             * @description Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
+             * @default linear
+             * @enum {string}
+             */
+            backoffStrategy: "linear" | "exponential";
+            /**
+             * Format: int32
+             * @description Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.
+             */
+            maxBackoffSeconds?: number;
+            /**
+             * Format: int32
+             * @description Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).
+             */
+            maxRetries: number;
+            /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
+            retryOnStatuses?: components["schemas"]["JobStatus"][];
         };
         Selector: components["schemas"]["JsonSelector"] | components["schemas"]["CelSelector"];
         SensitiveValue: {
@@ -1404,7 +1426,7 @@ export interface components {
              * @description CEL expression to evaluate measurement success (e.g., "result.statusCode == 200")
              * @example result.statusCode == 200
              */
-            successCondition?: string;
+            successCondition: string;
             /**
              * @description Minimum number of consecutive successful measurements required to consider the metric successful
              * @example 0
@@ -2442,7 +2464,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["EnvironmentAndSystem"][];
+                        items: components["schemas"]["Environment"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

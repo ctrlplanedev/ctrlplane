@@ -101,6 +101,7 @@ local openapi = import '../lib/openapi.libsonnet';
       deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
       verification: openapi.schemaRef('VerificationRule'),
       versionDebounce: openapi.schemaRef('VersionDebounceRule'),
+      retry: openapi.schemaRef('RetryRule'),
     },
   },
 
@@ -202,6 +203,42 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'boolean',
         default: true,
         description: 'If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)',
+      },
+    },
+  },
+
+  RetryRule: {
+    type: 'object',
+    required: ['maxRetries'],
+    properties: {
+      maxRetries: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Maximum number of retries allowed. 0 means no retries (1 attempt total), 3 means up to 4 attempts (1 initial + 3 retries).',
+      },
+      retryOnStatuses: {
+        type: 'array',
+        items: openapi.schemaRef('JobStatus'),
+        description: 'Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs.',
+      },
+      backoffSeconds: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Minimum seconds to wait between retry attempts. If null, retries are allowed immediately after job completion.',
+      },
+      backoffStrategy: {
+        type: 'string',
+        enum: ['linear', 'exponential'],
+        default: 'linear',
+        description: 'Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).',
+      },
+      maxBackoffSeconds: {
+        type: 'integer',
+        format: 'int32',
+        minimum: 0,
+        description: 'Maximum backoff time in seconds (cap for exponential backoff). If null, no maximum is enforced.',
       },
     },
   },

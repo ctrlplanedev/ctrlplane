@@ -34,12 +34,4 @@ local openapi = import '../lib/openapi.libsonnet';
       createdAt: { type: 'string', format: 'date-time' },
     },
   },
-  EnvironmentAndSystem: {
-    type: 'object',
-    required: ['environment', 'system'],
-    properties: {
-      environment: openapi.schemaRef('Environment'),
-      system: openapi.schemaRef('System'),
-    },
-  },
 }

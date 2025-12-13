@@ -27,7 +27,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   VerificationMetricSpec: {
     type: 'object',
-    required: ['name', 'intervalSeconds', 'count', 'provider'],
+    required: ['name', 'intervalSeconds', 'count', 'provider', 'successCondition'],
     properties: {
       name: {
         type: 'string',
