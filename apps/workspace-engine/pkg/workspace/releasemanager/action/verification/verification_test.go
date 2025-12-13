@@ -161,7 +161,7 @@ func createPolicyWithVerification(metrics []oapi.VerificationMetricSpec, trigger
 func createTestMetric(name string) oapi.VerificationMetricSpec {
 	provider := oapi.MetricProvider{}
 	_ = provider.FromSleepMetricProvider(oapi.SleepMetricProvider{
-		Type:     oapi.Sleep,
+		Type:            oapi.Sleep,
 		DurationSeconds: 1,
 	})
 	return oapi.VerificationMetricSpec{
@@ -822,7 +822,7 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 	// Create a metric with specific configuration
 	provider := oapi.MetricProvider{}
 	_ = provider.FromSleepMetricProvider(oapi.SleepMetricProvider{
-		Type:     oapi.Sleep,
+		Type:            oapi.Sleep,
 		DurationSeconds: 5,
 	})
 	failureLimit := 2

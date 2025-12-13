@@ -29,7 +29,7 @@ func (p *Provider) Measure(_ context.Context, providerCtx *provider.ProviderCont
 
 func NewFromOAPI(oapiProvider any) (*Provider, error) {
 	type sleepProvider struct {
-		Duration *int `json:"duration"`
+		DurationSeconds *int32 `json:"durationSeconds"`
 	}
 
 	data, err := json.Marshal(oapiProvider)
@@ -43,8 +43,8 @@ func NewFromOAPI(oapiProvider any) (*Provider, error) {
 	}
 
 	duration := 30 * time.Second
-	if sp.Duration != nil {
-		duration = time.Duration(*sp.Duration) * time.Second
+	if sp.DurationSeconds != nil {
+		duration = time.Duration(*sp.DurationSeconds) * time.Second
 	}
 
 	return New(duration), nil
