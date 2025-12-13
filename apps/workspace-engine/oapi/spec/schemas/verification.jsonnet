@@ -134,16 +134,16 @@ local openapi = import '../lib/openapi.libsonnet';
 
   SleepMetricProvider: {
     type: 'object',
-    required: ['type', 'duration'],
+    required: ['type', 'durationSeconds'],
     properties: {
       type: {
         type: 'string',
         enum: ['sleep'],
         description: 'Provider type',
       },
-      duration: {
+      durationSeconds: {
         type: 'integer',
-        format: 'int',
+        format: 'int32',
         example: 30,
         minimum: 1,
         maximum: 3600,

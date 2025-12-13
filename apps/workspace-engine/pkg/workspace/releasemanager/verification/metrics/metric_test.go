@@ -13,7 +13,7 @@ import (
 func createSleepMetricStatus(successCondition string, failureCondition *string) oapi.VerificationMetricStatus {
 	sleepProvider := oapi.SleepMetricProvider{
 		Type:     oapi.Sleep,
-		Duration: 0,
+		DurationSeconds: 0,
 	}
 	providerCfg := oapi.MetricProvider{}
 	_ = providerCfg.FromSleepMetricProvider(sleepProvider)

@@ -60,7 +60,7 @@ func TestEngineVerificationHooks(t *testing.T) {
 	metricProvider := oapi.MetricProvider{}
 	_ = metricProvider.FromSleepMetricProvider(oapi.SleepMetricProvider{
 		Type:     oapi.Sleep,
-		Duration: 3,
+		DurationSeconds: 3,
 	})
 
 	successCondition := "result.ok == true"
@@ -176,7 +176,7 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 	metricProvider := oapi.MetricProvider{}
 	_ = metricProvider.FromSleepMetricProvider(oapi.SleepMetricProvider{
 		Type:     oapi.Sleep,
-		Duration: 0, // instant measurements for fast test
+		DurationSeconds: 0, // instant measurements for fast test
 	})
 
 	successCondition := "result.ok == true"

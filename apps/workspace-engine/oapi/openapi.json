@@ -1604,9 +1604,9 @@
          },
          "SleepMetricProvider": {
             "properties": {
-               "duration": {
+               "durationSeconds": {
                   "example": 30,
-                  "format": "int",
+                  "format": "int32",
                   "maximum": 3600,
                   "minimum": 1,
                   "type": "integer"
@@ -1621,7 +1621,7 @@
             },
             "required": [
                "type",
-               "duration"
+               "durationSeconds"
             ],
             "type": "object"
          },

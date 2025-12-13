@@ -162,7 +162,7 @@ func createTestMetric(name string) oapi.VerificationMetricSpec {
 	provider := oapi.MetricProvider{}
 	_ = provider.FromSleepMetricProvider(oapi.SleepMetricProvider{
 		Type:     oapi.Sleep,
-		Duration: 1,
+		DurationSeconds: 1,
 	})
 	return oapi.VerificationMetricSpec{
 		Name:             name,
@@ -823,7 +823,7 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 	provider := oapi.MetricProvider{}
 	_ = provider.FromSleepMetricProvider(oapi.SleepMetricProvider{
 		Type:     oapi.Sleep,
-		Duration: 5,
+		DurationSeconds: 5,
 	})
 	failureLimit := 2
 	metric := oapi.VerificationMetricSpec{

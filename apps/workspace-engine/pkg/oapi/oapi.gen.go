@@ -772,7 +772,7 @@ type SensitiveValue struct {
 
 // SleepMetricProvider defines model for SleepMetricProvider.
 type SleepMetricProvider struct {
-	Duration int `json:"duration"`
+	DurationSeconds int32 `json:"durationSeconds"`
 
 	// Type Provider type
 	Type SleepMetricProviderType `json:"type"`
