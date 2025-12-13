@@ -2031,7 +2031,7 @@ type ServerInterface interface {
 	GetReleaseTargetsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params GetReleaseTargetsForResourceParams)
 	// Get release target for a resource in a deployment
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId})
-	GetReleaseTargetsForResourceInDeployment(c *gin.Context, workspaceId string, resourceIdentifier string, deploymentId string)
+	GetReleaseTargetForResourceInDeployment(c *gin.Context, workspaceId string, resourceIdentifier string, deploymentId string)
 	// Get variables for a resource
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables)
 	GetVariablesForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
@@ -3812,8 +3812,8 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForResource(c *gin.Context) 
 	siw.Handler.GetReleaseTargetsForResource(c, workspaceId, resourceIdentifier, params)
 }
 
-// GetReleaseTargetsForResourceInDeployment operation middleware
-func (siw *ServerInterfaceWrapper) GetReleaseTargetsForResourceInDeployment(c *gin.Context) {
+// GetReleaseTargetForResourceInDeployment operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseTargetForResourceInDeployment(c *gin.Context) {
 
 	var err error
 
@@ -3851,7 +3851,7 @@ func (siw *ServerInterfaceWrapper) GetReleaseTargetsForResourceInDeployment(c *g
 		}
 	}
 
-	siw.Handler.GetReleaseTargetsForResourceInDeployment(c, workspaceId, resourceIdentifier, deploymentId)
+	siw.Handler.GetReleaseTargetForResourceInDeployment(c, workspaceId, resourceIdentifier, deploymentId)
 }
 
 // GetVariablesForResource operation middleware
@@ -4061,7 +4061,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/relationships", wrapper.GetRelationshipsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets", wrapper.GetReleaseTargetsForResource)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets/deployment/:deploymentId", wrapper.GetReleaseTargetsForResourceInDeployment)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets/deployment/:deploymentId", wrapper.GetReleaseTargetForResourceInDeployment)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/variables", wrapper.GetVariablesForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)

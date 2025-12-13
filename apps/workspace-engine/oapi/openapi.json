@@ -5407,7 +5407,7 @@
       "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
          "get": {
             "description": "Returns a release target for a resource in a deployment.",
-            "operationId": "getReleaseTargetsForResourceInDeployment",
+            "operationId": "getReleaseTargetForResourceInDeployment",
             "parameters": [
                {
                   "description": "ID of the workspace",

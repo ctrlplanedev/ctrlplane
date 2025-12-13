@@ -111,7 +111,7 @@ local openapi = import '../lib/openapi.libsonnet';
   '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}': {
     get: {
       summary: 'Get release target for a resource in a deployment',
-      operationId: 'getReleaseTargetsForResourceInDeployment',
+      operationId: 'getReleaseTargetForResourceInDeployment',
       description: 'Returns a release target for a resource in a deployment.',
       parameters: [
         openapi.workspaceIdParam(),

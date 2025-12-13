@@ -932,6 +932,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get release target for a resource in a deployment
+     * @description Returns a release target for a resource in a deployment.
+     */
+    get: operations["getReleaseTargetsForResourceInDeployment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables": {
     parameters: {
       query?: never;
@@ -1368,6 +1388,7 @@ export interface components {
       policyId: string;
       retry?: components["schemas"]["RetryRule"];
       verification?: components["schemas"]["VerificationRule"];
+      versionDebounce?: components["schemas"]["VersionDebounceRule"];
       versionSelector?: components["schemas"]["VersionSelectorRule"];
     };
     PolicySkip: {
@@ -1719,6 +1740,13 @@ export interface components {
        * @enum {string}
        */
       triggerOn: "jobCreated" | "jobStarted" | "jobSuccess" | "jobFailure";
+    };
+    VersionDebounceRule: {
+      /**
+       * Format: int32
+       * @description Minimum time difference in seconds between the creation times of deployed versions. Only versions created at least this long after the currently deployed version will be allowed. This enables batching of frequent upstream releases into periodic deployments.
+       */
+      intervalSeconds: number;
     };
     VersionSelectorRule: {
       /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
@@ -3820,6 +3848,51 @@ export interface operations {
             /** @description Total number of items available */
             total: number;
           };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getReleaseTargetsForResourceInDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Identifier of the resource */
+        resourceIdentifier: string;
+        /** @description ID of the deployment */
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The requested release target */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTarget"];
         };
       };
       /** @description Invalid request */
