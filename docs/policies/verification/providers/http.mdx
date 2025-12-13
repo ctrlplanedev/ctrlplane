@@ -1,0 +1,166 @@
+---
+title: HTTP Provider
+description: Query any HTTP endpoint for verification metrics
+---
+
+The **HTTP provider** allows you to query any HTTP endpoint that returns JSON
+data for verification metrics.
+
+## Configuration
+
+```yaml
+provider:
+  type: http
+  url: "http://{{.resource.name}}/health"
+  method: GET
+  headers:
+    Authorization: "Bearer {{.variables.health_token}}"
+  timeout: 30s
+```
+
+## Properties
+
+| Property  | Type   | Required | Description                                |
+| --------- | ------ | -------- | ------------------------------------------ |
+| `type`    | string | Yes      | Must be `"http"`                           |
+| `url`     | string | Yes      | HTTP endpoint URL (supports Go templates)  |
+| `method`  | string | No       | HTTP method (default: `GET`)               |
+| `headers` | object | No       | HTTP headers (values support Go templates) |
+| `body`    | string | No       | Request body (supports Go templates)       |
+| `timeout` | string | No       | Request timeout (default: `30s`)           |
+
+### Supported HTTP Methods
+
+- `GET` (default)
+- `POST`
+- `PUT`
+- `PATCH`
+- `DELETE`
+- `HEAD`
+- `OPTIONS`
+
+## Response Data Available in CEL
+
+The HTTP provider makes the following data available in your CEL success
+conditions:
+
+- `result.ok` - `true` if status code is 2xx
+- `result.statusCode` - HTTP status code (e.g., `200`, `404`, `500`)
+- `result.body` - Response body as string
+- `result.json` - Parsed JSON response (if response is valid JSON)
+- `result.headers` - Response headers as an object
+- `result.duration` - Request duration in milliseconds
+
+## Example Success Conditions
+
+```yaml
+# Status code check
+successCondition: result.ok
+
+# JSON field check
+successCondition: result.json.healthy == true
+
+# Numeric threshold
+successCondition: result.json.error_rate < 0.01
+
+# Combined conditions
+successCondition: result.ok && result.json.ready == true
+
+# Check specific status code
+successCondition: result.statusCode == 200
+
+# Check response time
+successCondition: result.duration < 500
+```
+
+## Examples
+
+### Basic Health Check
+
+```yaml
+provider:
+  type: http
+  url: "http://{{.resource.name}}/health"
+  method: GET
+successCondition: result.ok && result.json.status == "healthy"
+```
+
+### POST Request with Body
+
+```yaml
+provider:
+  type: http
+  url: "http://smoke-test-runner/run"
+  method: POST
+  headers:
+    Content-Type: "application/json"
+  body: |
+    {
+      "service": "{{.resource.name}}",
+      "version": "{{.version.tag}}",
+      "environment": "{{.environment.name}}"
+    }
+successCondition: result.json.status == "passed"
+```
+
+### Authenticated Request
+
+```yaml
+provider:
+  type: http
+  url: "http://api.example.com/health"
+  method: GET
+  headers:
+    Authorization: "Bearer {{.variables.health_token}}"
+    X-API-Key: "{{.variables.api_key}}"
+successCondition: result.ok
+```
+
+### Custom Timeout
+
+```yaml
+provider:
+  type: http
+  url: "http://slow-service/health"
+  method: GET
+  timeout: 60s
+successCondition: result.ok
+```
+
+## Template Variables
+
+The HTTP provider supports Go templates in the `url`, `headers`, and `body`
+fields:
+
+```yaml
+# Resource information
+{{.resource.name}}
+{{.resource.identifier}}
+{{.resource.kind}}
+
+# Environment information
+{{.environment.name}}
+{{.environment.id}}
+
+# Deployment information
+{{.deployment.name}}
+{{.deployment.slug}}
+
+# Version information
+{{.version.tag}}
+{{.version.id}}
+
+# Custom variables (from deployment variables)
+{{.variables.my_variable}}
+{{.variables.health_token}}
+```
+
+## Best Practices
+
+- **Use HTTPS** for production endpoints to ensure secure communication
+- **Set appropriate timeouts** based on your service's expected response time
+- **Handle authentication** using deployment variables for sensitive tokens
+- **Validate JSON responses** by checking `result.json` exists before accessing
+  fields
+- **Use meaningful success conditions** that check both status codes and
+  response content

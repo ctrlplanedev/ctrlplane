@@ -1,0 +1,167 @@
+---
+title: Datadog Provider
+description: Query metrics from Datadog's Metrics API for verification
+---
+
+The **Datadog provider** allows you to query metrics from Datadog's Metrics API
+for verification checks.
+
+## Configuration
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  site: datadoghq.com
+  query: |
+    sum:requests.error.rate{service:{{.resource.name}},env:{{.environment.name}}}
+```
+
+## Properties
+
+| Property | Type   | Required | Description                                  |
+| -------- | ------ | -------- | -------------------------------------------- |
+| `type`   | string | Yes      | Must be `"datadog"`                          |
+| `apiKey` | string | Yes      | Datadog API key (supports Go templates)      |
+| `appKey` | string | Yes      | Datadog Application key (supports templates) |
+| `query`  | string | Yes      | Datadog metrics query (supports templates)   |
+| `site`   | string | No       | Datadog site (default: `datadoghq.com`)      |
+
+## Supported Sites
+
+- `datadoghq.com` (US1 - default)
+- `datadoghq.eu` (EU)
+- `us3.datadoghq.com` (US3)
+- `us5.datadoghq.com` (US5)
+- `ap1.datadoghq.com` (AP1)
+
+## Response Data Available in CEL
+
+The Datadog provider makes the following data available in your CEL success
+conditions:
+
+- `result.ok` - `true` if API call succeeded
+- `result.statusCode` - HTTP status code from Datadog API
+- `result.value` - Last metric value from the query
+- `result.json` - Full Datadog API response
+- `result.query` - The resolved query string (after template expansion)
+- `result.duration` - Request duration in milliseconds
+
+## Example Queries
+
+### Error Rate
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  query: sum:requests.error.rate{service:api-service}
+successCondition: result.value < 0.01
+```
+
+### Latency Percentile
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  query: avg:trace.http.request.duration.by.service.99p{service:api-service}
+successCondition: result.value < 200
+```
+
+### With Environment Tags
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  query: sum:requests{service:{{.resource.name}},env:{{.environment.name}}}
+successCondition: result.value > 0
+```
+
+### Rate of 5xx Errors
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  query: sum:http.requests{status_code:5*,service:{{.resource.name}}}.as_rate()
+successCondition: result.value < 0.001
+```
+
+## Example Success Conditions
+
+```yaml
+# Numeric threshold
+successCondition: result.value < 0.01
+
+# Compare against a threshold
+successCondition: result.value < 100
+
+# Check if value exists
+successCondition: result.ok && result.value != null
+
+# Multiple conditions
+successCondition: result.ok && result.value < 0.01 && result.value >= 0
+```
+
+## Template Variables
+
+The Datadog provider supports Go templates in the `apiKey`, `appKey`, and
+`query` fields:
+
+```yaml
+# Resource information
+{{.resource.name}}
+{{.resource.identifier}}
+{{.resource.kind}}
+
+# Environment information
+{{.environment.name}}
+{{.environment.id}}
+
+# Deployment information
+{{.deployment.name}}
+{{.deployment.slug}}
+
+# Version information
+{{.version.tag}}
+{{.version.id}}
+
+# Custom variables (from deployment variables)
+{{.variables.dd_api_key}}
+{{.variables.dd_app_key}}
+```
+
+## Storing Secrets in Variables
+
+For sensitive values like API keys, use deployment variables:
+
+1. **Create deployment variables** for your Datadog credentials
+2. **Reference them in the provider configuration** using template syntax
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  query: sum:errors{service:{{.resource.name}}}
+```
+
+## Best Practices
+
+- **Use deployment variables** for API keys and application keys - never
+  hardcode credentials
+- **Use appropriate time windows** in your queries (e.g., `.as_rate()` for
+  rates)
+- **Tag your metrics** with service, environment, and version information for
+  better filtering
+- **Test queries manually** in Datadog before using them in verification
+- **Handle missing data** by checking `result.ok` and `result.value != null`
+- **Use rate functions** for error rates and request rates to get meaningful
+  values

@@ -228,101 +228,19 @@ policies:
 ## Metric Providers
 
 Ctrlplane supports multiple metric providers for collecting verification data.
+Each provider has its own configuration and capabilities:
 
-### HTTP Provider
+- **[HTTP Provider](./verification/providers/http)** - Query any HTTP endpoint
+  that returns JSON
+- **[Datadog Provider](./verification/providers/datadog)** - Query metrics from
+  Datadog's Metrics API
+- **[Sleep Provider](./verification/providers/sleep)** - Wait for a specified
+  duration before considering verification passed
+- **[Terraform Cloud Run Provider](./verification/providers/terraform-cloud-run)** -
+  Verify Terraform Cloud run status for infrastructure deployments
 
-Query any HTTP endpoint that returns JSON:
-
-```yaml
-provider:
-  type: http
-  url: "http://{{.resource.name}}/health"
-  method: GET
-  headers:
-    Authorization: "Bearer {{.variables.health_token}}"
-  timeout: 30s
-```
-
-**Response Data Available in CEL**:
-
-- `result.ok` - true if status code is 2xx
-- `result.statusCode` - HTTP status code
-- `result.body` - Response body as string
-- `result.json` - Parsed JSON response
-- `result.headers` - Response headers
-- `result.duration` - Request duration in milliseconds
-
-**Example Success Conditions**:
-
-```yaml
-# Status code check
-successCondition: result.ok
-
-# JSON field check
-successCondition: result.json.healthy == true
-
-# Numeric threshold
-successCondition: result.json.error_rate < 0.01
-
-# Combined conditions
-successCondition: result.ok && result.json.ready == true
-```
-
-### Datadog Provider
-
-Query metrics from Datadog's Metrics API:
-
-```yaml
-provider:
-  type: datadog
-  apiKey: "{{.variables.dd_api_key}}"
-  appKey: "{{.variables.dd_app_key}}"
-  site: datadoghq.com
-  query: |
-    sum:requests.error.rate{service:{{.resource.name}},env:{{.environment.name}}}
-```
-
-**Configuration**:
-
-| Property | Required | Description                                  |
-| -------- | -------- | -------------------------------------------- |
-| `apiKey` | Yes      | Datadog API key (supports templates)         |
-| `appKey` | Yes      | Datadog Application key (supports templates) |
-| `query`  | Yes      | Datadog metrics query (supports templates)   |
-| `site`   | No       | Datadog site (default: `datadoghq.com`)      |
-
-**Supported Sites**:
-
-- `datadoghq.com` (US1 - default)
-- `datadoghq.eu` (EU)
-- `us3.datadoghq.com` (US3)
-- `us5.datadoghq.com` (US5)
-- `ap1.datadoghq.com` (AP1)
-
-**Response Data Available in CEL**:
-
-- `result.ok` - true if API call succeeded
-- `result.statusCode` - HTTP status code
-- `result.value` - Last metric value from the query
-- `result.json` - Full Datadog API response
-- `result.query` - The resolved query string
-- `result.duration` - Request duration in milliseconds
-
-**Example Queries**:
-
-```yaml
-# Error rate
-query: sum:requests.error.rate{service:api-service}
-
-# Latency percentile
-query: avg:trace.http.request.duration.by.service.99p{service:api-service}
-
-# With environment tags
-query: sum:requests{service:{{.resource.name}},env:{{.environment.name}}}
-
-# Rate of 5xx errors
-query: sum:http.requests{status_code:5*,service:{{.resource.name}}}.as_rate()
-```
+See the individual provider documentation for detailed configuration options,
+examples, and best practices.
 
 ## Template Variables
 
@@ -504,6 +422,15 @@ Based on the verification result, the policy can:
 - Check policy priority/ordering
 - Verify environment and metadata values
 - Review which policies matched the release
+
+## Provider Documentation
+
+For detailed information about each metric provider, see:
+
+- [HTTP Provider](./verification/providers/http)
+- [Datadog Provider](./verification/providers/datadog)
+- [Sleep Provider](./verification/providers/sleep)
+- [Terraform Cloud Run Provider](./verification/providers/terraform-cloud-run)
 
 ## Next Steps
 

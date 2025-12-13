@@ -1,0 +1,105 @@
+---
+title: Sleep Provider
+description:
+  Wait for a specified duration before considering verification passed
+---
+
+The **Sleep provider** allows you to add a simple time-based delay to your
+verification checks. This is useful for waiting for services to stabilize or for
+scheduled tasks to complete.
+
+## Configuration
+
+```yaml
+provider:
+  type: sleep
+  durationSeconds: 30
+```
+
+## Properties
+
+| Property          | Type    | Required | Description                          |
+| ----------------- | ------- | -------- | ------------------------------------ |
+| `type`            | string  | Yes      | Must be `"sleep"`                    |
+| `durationSeconds` | integer | Yes      | Duration to wait in seconds (1-3600) |
+
+## Response Data Available in CEL
+
+The Sleep provider makes the following data available in your CEL success
+conditions:
+
+- `result.ok` - Always `true` after the sleep duration completes
+- `result.value` - The duration that was waited (in seconds)
+- `result.duration` - The actual duration waited in milliseconds
+
+## Example Success Conditions
+
+```yaml
+# Always passes after sleep completes
+successCondition: result.ok
+
+# Check that the expected duration was waited
+successCondition: result.value == 30
+```
+
+## Examples
+
+### Basic Sleep
+
+```yaml
+provider:
+  type: sleep
+  durationSeconds: 30
+successCondition: result.ok
+```
+
+### Wait for Service Stabilization
+
+```yaml
+# Wait 2 minutes for service to stabilize after deployment
+provider:
+  type: sleep
+  durationSeconds: 120
+successCondition: result.ok
+```
+
+### Combined with Other Metrics
+
+```yaml
+metrics:
+  # First, wait for service to start
+  - name: stabilization-wait
+    intervalSeconds: 1
+    count: 1
+    provider:
+      type: sleep
+      durationSeconds: 60
+    successCondition: result.ok
+
+  # Then check health endpoint
+  - name: health-check
+    intervalSeconds: 10
+    count: 5
+    provider:
+      type: http
+      url: "http://{{.resource.name}}/health"
+    successCondition: result.ok
+```
+
+## Use Cases
+
+- **Service Stabilization**: Wait for services to fully start up before running
+  health checks
+- **Scheduled Tasks**: Wait for scheduled tasks or cron jobs to complete
+- **Warm-up Period**: Allow caches or connections to warm up before verification
+- **Sequential Verification**: Create a delay between different verification
+  steps
+
+## Best Practices
+
+- **Use appropriate durations**: Keep sleep durations reasonable (typically
+  30-300 seconds)
+- **Combine with other metrics**: Use sleep as a first step, then follow with
+  actual health checks
+- **Consider deployment time**: Account for how long your service takes to start
+- **Don't overuse**: Prefer actual health checks over sleep when possible

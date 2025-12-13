@@ -1,0 +1,142 @@
+---
+title: Terraform Cloud Run Provider
+description: Verify Terraform Cloud run status for infrastructure deployments
+---
+
+The **Terraform Cloud Run provider** allows you to verify that a Terraform Cloud
+run has completed successfully. This is useful for infrastructure deployments
+managed through Terraform Cloud.
+
+## Configuration
+
+```yaml
+provider:
+  type: terraformCloudRun
+  organization: "my-org"
+  address: "https://app.terraform.io"
+  token: "{{.variables.terraform_cloud_token}}"
+  runId: "run-1234567890"
+```
+
+## Properties
+
+| Property       | Type   | Required | Description                                                |
+| -------------- | ------ | -------- | ---------------------------------------------------------- |
+| `type`         | string | Yes      | Must be `"terraformCloudRun"`                              |
+| `organization` | string | Yes      | Terraform Cloud organization name                          |
+| `address`      | string | Yes      | Terraform Cloud address (e.g., `https://app.terraform.io`) |
+| `token`        | string | Yes      | Terraform Cloud token (supports Go templates)              |
+| `runId`        | string | Yes      | Terraform Cloud run ID                                     |
+
+## Response Data Available in CEL
+
+The Terraform Cloud Run provider makes the following data available in your CEL
+success conditions:
+
+- `result.ok` - `true` if the run completed successfully
+- `result.statusCode` - HTTP status code from Terraform Cloud API
+- `result.value` - Run status (e.g., `"applied"`, `"errored"`, `"planned"`)
+- `result.json` - Full Terraform Cloud API response
+- `result.duration` - Request duration in milliseconds
+
+## Example Success Conditions
+
+```yaml
+# Check that run was applied successfully
+successCondition: result.ok && result.value == "applied"
+
+# Check that run completed (applied or planned)
+successCondition: result.ok && (result.value == "applied" || result.value == "planned")
+
+# Ensure run didn't error
+successCondition: result.ok && result.value != "errored"
+```
+
+## Examples
+
+### Basic Run Verification
+
+```yaml
+provider:
+  type: terraformCloudRun
+  organization: "my-org"
+  address: "https://app.terraform.io"
+  token: "{{.variables.terraform_cloud_token}}"
+  runId: "{{.variables.terraform_run_id}}"
+successCondition: result.ok && result.value == "applied"
+```
+
+### Using Template Variables
+
+```yaml
+provider:
+  type: terraformCloudRun
+  organization: "{{.variables.tf_org}}"
+  address: "https://app.terraform.io"
+  token: "{{.variables.terraform_cloud_token}}"
+  runId: "{{.variables.terraform_run_id}}"
+successCondition: result.ok && result.value == "applied"
+```
+
+## Run Status Values
+
+The provider returns the following status values:
+
+- `"applied"` - Run was successfully applied
+- `"planned"` - Run was planned but not yet applied
+- `"errored"` - Run encountered an error
+- `"canceled"` - Run was canceled
+- `"pending"` - Run is pending
+- `"planning"` - Run is currently planning
+- `"applying"` - Run is currently applying
+
+## Template Variables
+
+The Terraform Cloud Run provider supports Go templates in the `organization`,
+`address`, `token`, and `runId` fields:
+
+```yaml
+# Resource information
+{{.resource.name}}
+{{.resource.identifier}}
+
+# Environment information
+{{.environment.name}}
+{{.environment.id}}
+
+# Deployment information
+{{.deployment.name}}
+{{.deployment.slug}}
+
+# Version information
+{{.version.tag}}
+{{.version.id}}
+
+# Custom variables (from deployment variables)
+{{.variables.terraform_cloud_token}}
+{{.variables.terraform_run_id}}
+{{.variables.tf_org}}
+```
+
+## Storing Secrets in Variables
+
+For sensitive values like tokens, use deployment variables:
+
+```yaml
+provider:
+  type: terraformCloudRun
+  organization: "my-org"
+  address: "https://app.terraform.io"
+  token: "{{.variables.terraform_cloud_token}}"
+  runId: "{{.variables.terraform_run_id}}"
+```
+
+## Best Practices
+
+- **Use deployment variables** for tokens and run IDs - never hardcode sensitive
+  values
+- **Verify run completion** by checking that the status is `"applied"` or
+  `"planned"`
+- **Handle run failures** by checking for `"errored"` status
+- **Use appropriate intervals** to poll for run status (typically 30-60 seconds)
+- **Set failure limits** to avoid waiting indefinitely for stuck runs

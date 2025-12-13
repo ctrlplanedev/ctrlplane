@@ -39,9 +39,18 @@
               "policies/gradual-rollouts",
               "policies/retry",
               "policies/verification",
+              {
+                "group": "Verification Providers",
+                "pages": [
+                  "policies/verification/providers/http",
+                  "policies/verification/providers/datadog",
+                  "policies/verification/providers/sleep",
+                  "policies/verification/providers/terraform-cloud-run"
+                ]
+              },
               "policies/deployment-dependency",
               "policies/version-selector",
-              "policies/version-debounce",
+              "policies/version-cooldown",
               "policies/deployment-window"
             ]
           }
