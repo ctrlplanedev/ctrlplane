@@ -222,7 +222,7 @@ export default function DeploymentTraces() {
   }));
 
   const releaseTargetOptions = releaseTargets.map((rt) => ({
-    key: `${rt.releaseTarget.deploymentId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.resourceId}`,
+    key: `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`,
     name: `${rt.environment.name}/${rt.resource.name}`,
   }));
 

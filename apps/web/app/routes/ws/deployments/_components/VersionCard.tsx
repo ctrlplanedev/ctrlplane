@@ -92,7 +92,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
     const currentTargetIds = new Set(
       currentReleaseTargets.map(
         (rt) =>
-          `${rt.releaseTarget.deploymentId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.resourceId}`,
+          `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`,
       ),
     );
 
@@ -100,7 +100,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
     const pendingTargets = desiredReleaseTargets.filter(
       (rt) =>
         !currentTargetIds.has(
-          `${rt.releaseTarget.deploymentId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.resourceId}`,
+          `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`,
         ),
     );
 
