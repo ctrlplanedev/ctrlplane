@@ -155,7 +155,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
             <span className="shrink-0">
               {getVersionStatusIcon(version.status)}
             </span>
-            <span className="flex-grow truncate overflow-ellipsis text-left">
+            <span className="grow truncate overflow-ellipsis text-left">
               {displayName}
             </span>
             {/* <span className="ml-1 shrink-0 text-right text-xs text-muted-foreground">
@@ -192,7 +192,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
           </span>
 
           <span className="truncate">{displayName}</span>
-          <div className="flex-grow" />
+          <div className="grow" />
           <VersionDropdown version={version} />
         </div>
       </div>

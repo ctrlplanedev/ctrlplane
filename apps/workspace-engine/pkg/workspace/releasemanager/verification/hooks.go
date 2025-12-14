@@ -51,3 +51,65 @@ func (h *defaultHooks) OnVerificationStopped(ctx context.Context, verification *
 func DefaultHooks() VerificationHooks {
 	return &defaultHooks{}
 }
+
+// CompositeHooks combines multiple VerificationHooks implementations.
+// All hooks are called in order; errors are logged but don't stop subsequent hooks.
+type CompositeHooks struct {
+	hooks []VerificationHooks
+}
+
+// NewCompositeHooks creates a new CompositeHooks that runs all provided hooks.
+func NewCompositeHooks(hooks ...VerificationHooks) *CompositeHooks {
+	return &CompositeHooks{hooks: hooks}
+}
+
+// OnVerificationStarted calls OnVerificationStarted on all hooks.
+func (c *CompositeHooks) OnVerificationStarted(ctx context.Context, verification *oapi.ReleaseVerification) error {
+	for _, h := range c.hooks {
+		if err := h.OnVerificationStarted(ctx, verification); err != nil {
+			// Log but continue with other hooks
+			_ = err
+		}
+	}
+	return nil
+}
+
+// OnMeasurementTaken calls OnMeasurementTaken on all hooks.
+func (c *CompositeHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+	for _, h := range c.hooks {
+		if err := h.OnMeasurementTaken(ctx, verification, metricIndex, measurement); err != nil {
+			_ = err
+		}
+	}
+	return nil
+}
+
+// OnMetricComplete calls OnMetricComplete on all hooks.
+func (c *CompositeHooks) OnMetricComplete(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int) error {
+	for _, h := range c.hooks {
+		if err := h.OnMetricComplete(ctx, verification, metricIndex); err != nil {
+			_ = err
+		}
+	}
+	return nil
+}
+
+// OnVerificationComplete calls OnVerificationComplete on all hooks.
+func (c *CompositeHooks) OnVerificationComplete(ctx context.Context, verification *oapi.ReleaseVerification) error {
+	for _, h := range c.hooks {
+		if err := h.OnVerificationComplete(ctx, verification); err != nil {
+			_ = err
+		}
+	}
+	return nil
+}
+
+// OnVerificationStopped calls OnVerificationStopped on all hooks.
+func (c *CompositeHooks) OnVerificationStopped(ctx context.Context, verification *oapi.ReleaseVerification) error {
+	for _, h := range c.hooks {
+		if err := h.OnVerificationStopped(ctx, verification); err != nil {
+			_ = err
+		}
+	}
+	return nil
+}

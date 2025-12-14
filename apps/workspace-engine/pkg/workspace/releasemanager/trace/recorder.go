@@ -249,11 +249,12 @@ func (r *ReconcileTarget) Complete(status Status) {
 	r.rootSpan.SetAttributes(attribute.String(attrStatus, string(status)))
 
 	var code codes.Code
-	if status == StatusCompleted {
+	switch status {
+	case StatusCompleted:
 		code = codes.Ok
-	} else if status == StatusFailed {
+	case StatusFailed:
 		code = codes.Error
-	} else {
+	default:
 		code = codes.Unset
 	}
 

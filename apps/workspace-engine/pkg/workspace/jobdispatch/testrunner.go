@@ -223,22 +223,25 @@ func (d *TestRunnerDispatcher) sendJobUpdateEvent(job *oapi.Job, status oapi.Job
 
 	workspaceId := d.store.ID()
 
-	// Update job fields for the event
-	job.Status = status
-	job.UpdatedAt = time.Now().UTC()
-	job.Message = &message
+	// Create a copy of the job for the event - don't modify the original in the store
+	// The event handler needs to see the previous status to trigger actions
+	updatedAt := time.Now().UTC()
+	jobCopy := *job
+	jobCopy.Status = status
+	jobCopy.UpdatedAt = updatedAt
+	jobCopy.Message = &message
 	if status == oapi.JobStatusSuccessful || status == oapi.JobStatusFailure {
-		job.CompletedAt = &job.UpdatedAt
+		jobCopy.CompletedAt = &updatedAt
 	}
 
 	fieldsToUpdate := []oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.Message, oapi.UpdatedAt}
-	if job.CompletedAt != nil {
+	if jobCopy.CompletedAt != nil {
 		fieldsToUpdate = append(fieldsToUpdate, oapi.CompletedAt)
 	}
 
 	eventPayload := oapi.JobUpdateEvent{
-		Id:             &job.Id,
-		Job:            *job,
+		Id:             &jobCopy.Id,
+		Job:            jobCopy,
 		FieldsToUpdate: &fieldsToUpdate,
 	}
 

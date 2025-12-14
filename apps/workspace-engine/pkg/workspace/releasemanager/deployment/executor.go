@@ -82,20 +82,13 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		return nil, err
 	}
 
-	span.AddEvent("Persisting job to store")
-	e.store.Jobs.Upsert(ctx, newJob)
-	span.SetAttributes(
-		attribute.Bool("job.created", true),
-		attribute.String("job.id", newJob.Id),
-		attribute.String("job.status", string(newJob.Status)),
-	)
-
 	// Set job ID on trace recorder so all subsequent spans are associated with this job
 	if recorder != nil {
 		recorder.SetJobID(newJob.Id)
 	}
 
-	// Generate trace token for external executors
+	// Generate trace token for external executors BEFORE persisting
+	// This ensures the trace token is stored with the job for verification tracing
 	if recorder != nil && createJobAction != nil {
 		traceToken := trace.GenerateDefaultTraceToken(recorder.RootTraceID(), newJob.Id)
 		createJobAction.AddMetadata("trace_token", traceToken)
@@ -104,6 +97,15 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 
 		newJob.TraceToken = &traceToken
 	}
+
+	// Persist job with trace token
+	span.AddEvent("Persisting job to store")
+	e.store.Jobs.Upsert(ctx, newJob)
+	span.SetAttributes(
+		attribute.Bool("job.created", true),
+		attribute.String("job.id", newJob.Id),
+		attribute.String("job.status", string(newJob.Status)),
+	)
 
 	if createJobAction != nil {
 		createJobAction.AddStep("Persist job", trace.StepResultPass, "Job persisted to store")
