@@ -1572,10 +1572,10 @@ export interface components {
         };
         SleepMetricProvider: {
             /**
-             * Format: int
+             * Format: int32
              * @example 30
              */
-            duration: number;
+            durationSeconds: number;
             /**
              * @description Provider type (enum property replaced by openapi-typescript)
              * @enum {string}

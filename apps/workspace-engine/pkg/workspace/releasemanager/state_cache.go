@@ -140,9 +140,7 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 	// Get latest job (compute if not provided)
 	latestJob := options.latestJob
 	if latestJob == nil {
-		_, latestJobSpan := stateCacheTracer.Start(ctx, "GetLatestJob")
 		latestJob, _ = sc.store.ReleaseTargets.GetLatestJob(ctx, releaseTarget)
-		latestJobSpan.End()
 	}
 
 	rts = &oapi.ReleaseTargetState{
