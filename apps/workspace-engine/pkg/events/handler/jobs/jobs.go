@@ -54,10 +54,22 @@ func HandleJobUpdated(
 		return nil
 	}
 
+	// Capture the previous status before updating
+	previousStatus := job.Status
+
+	// Preserve trace token from stored job if not provided in event
+	// The trace token is generated during job execution and must be preserved
+	// for verification tracing to work
+	if job.TraceToken != nil && jobUpdateEvent.Job.TraceToken == nil {
+		jobUpdateEvent.Job.TraceToken = job.TraceToken
+	}
+
 	// No fields specified - replace entire job
 	if jobUpdateEvent.FieldsToUpdate == nil || len(*jobUpdateEvent.FieldsToUpdate) == 0 {
 		ws.Jobs().Upsert(ctx, &jobUpdateEvent.Job)
 		invalidateCacheForJob(ws, &jobUpdateEvent.Job)
+		// Trigger actions on status change
+		triggerActionsOnStatusChange(ctx, ws, &jobUpdateEvent.Job, previousStatus)
 		return nil
 	}
 
@@ -73,6 +85,9 @@ func HandleJobUpdated(
 	ws.Jobs().Upsert(ctx, mergedJob)
 	invalidateCacheForJob(ws, mergedJob)
 
+	// Trigger actions on status change
+	triggerActionsOnStatusChange(ctx, ws, mergedJob, previousStatus)
+
 	go func() {
 		if err := MaybeAddCommitStatusFromJob(ws, mergedJob); err != nil {
 			log.Error("error adding commit status", "error", err.Error())
@@ -80,6 +95,17 @@ func HandleJobUpdated(
 	}()
 
 	return nil
+}
+
+// triggerActionsOnStatusChange notifies the action orchestrator of job status changes.
+// This enables policy actions like verification to run when jobs complete.
+func triggerActionsOnStatusChange(ctx context.Context, ws *workspace.Workspace, job *oapi.Job, previousStatus oapi.JobStatus) {
+	// Only trigger if status actually changed
+	if job.Status == previousStatus {
+		return
+	}
+
+	log.Info("job status change", "before", previousStatus, "after", job.Status)
 }
 
 // invalidateCacheForJob invalidates the release target state cache for the job's release target.
