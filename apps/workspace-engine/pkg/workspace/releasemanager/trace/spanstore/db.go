@@ -1,4 +1,4 @@
-package trace
+package spanstore
 
 import (
 	"context"
@@ -10,9 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
-// DBStore implements PersistenceStore for PostgreSQL
+// DBStore implements trace.PersistenceStore for PostgreSQL
 type DBStore struct {
 	pool *pgxpool.Pool
 }
@@ -86,33 +88,33 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 
 			// Extract known ctrlplane attributes
 			switch key {
-			case attrPhase:
+			case trace.AttrPhase:
 				v := attr.Value.AsString()
 				phase = &v
-			case attrNodeType:
+			case trace.AttrNodeType:
 				v := attr.Value.AsString()
 				nodeType = &v
-			case attrStatus:
+			case trace.AttrStatus:
 				v := attr.Value.AsString()
 				status = &v
-			case attrWorkspaceID:
+			case trace.AttrWorkspaceID:
 				workspaceID = attr.Value.AsString()
-			case attrReleaseTarget:
+			case trace.AttrReleaseTarget:
 				v := attr.Value.AsString()
 				releaseTargetKey = &v
-			case attrReleaseID:
+			case trace.AttrReleaseID:
 				v := attr.Value.AsString()
 				releaseID = &v
-			case attrJobID:
+			case trace.AttrJobID:
 				v := attr.Value.AsString()
 				jobID = &v
-			case attrParentTraceID:
+			case trace.AttrParentTraceID:
 				v := attr.Value.AsString()
 				parentTraceID = &v
-			case attrDepth:
+			case trace.AttrDepth:
 				v := int(attr.Value.AsInt64())
 				depth = &v
-			case attrSequence:
+			case trace.AttrSequence:
 				v := int(attr.Value.AsInt64())
 				sequence = &v
 			}
@@ -239,7 +241,7 @@ func validateSpan(span sdktrace.ReadOnlySpan) error {
 	workspaceID := ""
 
 	for _, attr := range span.Attributes() {
-		if string(attr.Key) == attrWorkspaceID {
+		if string(attr.Key) == trace.AttrWorkspaceID {
 			hasWorkspaceID = true
 			workspaceID = attr.Value.AsString()
 			break
@@ -248,7 +250,7 @@ func validateSpan(span sdktrace.ReadOnlySpan) error {
 
 	if !hasWorkspaceID || workspaceID == "" {
 		return fmt.Errorf("span %q (trace_id=%s, span_id=%s) is missing required attribute %q",
-			span.Name(), traceID, spanID, attrWorkspaceID)
+			span.Name(), traceID, spanID, trace.AttrWorkspaceID)
 	}
 
 	return nil

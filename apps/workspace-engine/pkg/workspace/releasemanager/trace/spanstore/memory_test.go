@@ -1,4 +1,4 @@
-package trace
+package spanstore
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 func TestNewInMemoryStore(t *testing.T) {
@@ -31,13 +33,16 @@ func TestInMemoryStore_WriteSpans(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a test trace
-	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
+	rt := trace.NewReconcileTarget("workspace-1", "api-service-production", trace.TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
-	rt.Complete(StatusCompleted)
+	rt.Complete(trace.StatusCompleted)
 
 	// Get spans from the recorder
-	spans := rt.exporter.getSpans()
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
+
 	if len(spans) == 0 {
 		t.Fatal("expected spans from recorder")
 	}
@@ -77,9 +82,12 @@ func TestInMemoryStore_GetSpans(t *testing.T) {
 	ctx := context.Background()
 
 	// Write some spans
-	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
-	rt.Complete(StatusCompleted)
-	spans := rt.exporter.getSpans()
+	rt := trace.NewReconcileTarget("workspace-1", "api-service-production", trace.TriggerScheduled)
+	rt.Complete(trace.StatusCompleted)
+
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
@@ -106,9 +114,12 @@ func TestInMemoryStore_GetSpansCopy(t *testing.T) {
 	ctx := context.Background()
 
 	// Write some spans
-	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
-	rt.Complete(StatusCompleted)
-	spans := rt.exporter.getSpans()
+	rt := trace.NewReconcileTarget("workspace-1", "api-service-production", trace.TriggerScheduled)
+	rt.Complete(trace.StatusCompleted)
+
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
@@ -135,11 +146,14 @@ func TestInMemoryStore_Clear(t *testing.T) {
 	ctx := context.Background()
 
 	// Write some spans
-	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
+	rt := trace.NewReconcileTarget("workspace-1", "api-service-production", trace.TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
-	rt.Complete(StatusCompleted)
-	spans := rt.exporter.getSpans()
+	rt.Complete(trace.StatusCompleted)
+
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
@@ -173,11 +187,14 @@ func TestInMemoryStore_ConcurrentWrites(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 
-			rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
+			rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
 			planning := rt.StartPlanning()
 			planning.End()
-			rt.Complete(StatusCompleted)
-			spans := rt.exporter.getSpans()
+			rt.Complete(trace.StatusCompleted)
+
+			memStore := NewInMemoryStore()
+			_ = rt.Persist(memStore)
+			spans := memStore.GetSpans()
 
 			if err := store.WriteSpans(ctx, spans); err != nil {
 				t.Errorf("goroutine %d: WriteSpans failed: %v", id, err)
@@ -202,11 +219,14 @@ func TestInMemoryStore_ConcurrentReads(t *testing.T) {
 	ctx := context.Background()
 
 	// Write initial spans
-	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
+	rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
-	rt.Complete(StatusCompleted)
-	spans := rt.exporter.getSpans()
+	rt.Complete(trace.StatusCompleted)
+
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	if err := store.WriteSpans(ctx, spans); err != nil {
 		t.Fatalf("WriteSpans failed: %v", err)
@@ -245,9 +265,12 @@ func TestInMemoryStore_ConcurrentReadWrite(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 
-			rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
-			rt.Complete(StatusCompleted)
-			spans := rt.exporter.getSpans()
+			rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
+			rt.Complete(trace.StatusCompleted)
+
+			memStore := NewInMemoryStore()
+			_ = rt.Persist(memStore)
+			spans := memStore.GetSpans()
 
 			if err := store.WriteSpans(ctx, spans); err != nil {
 				t.Errorf("writer %d: WriteSpans failed: %v", id, err)
@@ -280,9 +303,12 @@ func TestInMemoryStore_MultipleWrites(t *testing.T) {
 	ctx := context.Background()
 
 	// Write first batch
-	rt1 := NewReconcileTarget("workspace-1", "test-1", TriggerScheduled)
-	rt1.Complete(StatusCompleted)
-	spans1 := rt1.exporter.getSpans()
+	rt1 := trace.NewReconcileTarget("workspace-1", "test-1", trace.TriggerScheduled)
+	rt1.Complete(trace.StatusCompleted)
+
+	memStore1 := NewInMemoryStore()
+	_ = rt1.Persist(memStore1)
+	spans1 := memStore1.GetSpans()
 
 	err := store.WriteSpans(ctx, spans1)
 	if err != nil {
@@ -292,9 +318,12 @@ func TestInMemoryStore_MultipleWrites(t *testing.T) {
 	count1 := len(store.GetSpans())
 
 	// Write second batch
-	rt2 := NewReconcileTarget("workspace-1", "test-2", TriggerScheduled)
-	rt2.Complete(StatusCompleted)
-	spans2 := rt2.exporter.getSpans()
+	rt2 := trace.NewReconcileTarget("workspace-1", "test-2", trace.TriggerScheduled)
+	rt2.Complete(trace.StatusCompleted)
+
+	memStore2 := NewInMemoryStore()
+	_ = rt2.Persist(memStore2)
+	spans2 := memStore2.GetSpans()
 
 	err = store.WriteSpans(ctx, spans2)
 	if err != nil {
@@ -320,20 +349,22 @@ func TestInMemoryStore_LargeBatch(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a trace with many spans
-	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
+	rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
 	planning := rt.StartPlanning()
 
 	// Create many evaluations
 	for i := 0; i < 100; i++ {
 		eval := planning.StartEvaluation("Policy")
-		eval.SetResult(ResultAllowed, "Approved")
+		eval.SetResult(trace.ResultAllowed, "Approved")
 		eval.End()
 	}
 
 	planning.End()
-	rt.Complete(StatusCompleted)
+	rt.Complete(trace.StatusCompleted)
 
-	spans := rt.exporter.getSpans()
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
@@ -357,17 +388,19 @@ func TestInMemoryStore_PreservesSpanData(t *testing.T) {
 	ctx := context.Background()
 
 	// Create trace with metadata
-	rt := NewReconcileTarget("workspace-1", "api-service-production", TriggerScheduled)
+	rt := trace.NewReconcileTarget("workspace-1", "api-service-production", trace.TriggerScheduled)
 	planning := rt.StartPlanning()
 	eval := planning.StartEvaluation("Test Policy")
 	eval.AddMetadata("key1", "value1")
 	eval.AddMetadata("key2", 42)
-	eval.SetResult(ResultAllowed, "Approved")
+	eval.SetResult(trace.ResultAllowed, "Approved")
 	eval.End()
 	planning.End()
-	rt.Complete(StatusCompleted)
+	rt.Complete(trace.StatusCompleted)
 
-	spans := rt.exporter.getSpans()
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	err := store.WriteSpans(ctx, spans)
 	if err != nil {
@@ -422,9 +455,12 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 
 	// Write multiple batches
 	for i := 0; i < 5; i++ {
-		rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
-		rt.Complete(StatusCompleted)
-		spans := rt.exporter.getSpans()
+		rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
+		rt.Complete(trace.StatusCompleted)
+
+		memStore := NewInMemoryStore()
+		_ = rt.Persist(memStore)
+		spans := memStore.GetSpans()
 
 		if err := store.WriteSpans(ctx, spans); err != nil {
 			t.Fatalf("WriteSpans %d failed: %v", i, err)
@@ -445,9 +481,12 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 	}
 
 	// Write again after clear
-	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
-	rt.Complete(StatusCompleted)
-	spans := rt.exporter.getSpans()
+	rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
+	rt.Complete(trace.StatusCompleted)
+
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	if err := store.WriteSpans(ctx, spans); err != nil {
 		t.Fatalf("WriteSpans after clear failed: %v", err)
@@ -463,9 +502,12 @@ func TestInMemoryStore_ClearAfterMultipleWrites(t *testing.T) {
 func TestInMemoryStore_NilContext(t *testing.T) {
 	store := NewInMemoryStore()
 
-	rt := NewReconcileTarget("workspace-1", "test", TriggerScheduled)
-	rt.Complete(StatusCompleted)
-	spans := rt.exporter.getSpans()
+	rt := trace.NewReconcileTarget("workspace-1", "test", trace.TriggerScheduled)
+	rt.Complete(trace.StatusCompleted)
+
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
 
 	// WriteSpans should handle nil context
 	err := store.WriteSpans(context.Background(), spans)

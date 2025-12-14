@@ -1,22 +1,27 @@
-package trace
+package spanstore
 
 import (
 	"context"
 	"testing"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
 // TestDBStore_WriteSpans_MissingWorkspaceID verifies that spans without workspace_id are rejected
 func TestDBStore_WriteSpans_MissingWorkspaceID(t *testing.T) {
 	// Create a span without workspace_id attribute
-	rt := NewReconcileTarget("", "test-target", TriggerScheduled) // Empty workspace ID
+	rt := trace.NewReconcileTarget("", "test-target", trace.TriggerScheduled) // Empty workspace ID
 	planning := rt.StartPlanning()
 	planning.End()
-	rt.Complete(StatusCompleted)
+	rt.Complete(trace.StatusCompleted)
 
-	// Get the spans
-	spans := rt.exporter.getSpans()
+	// Get the spans using Persist with InMemoryStore to capture them
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
+
 	if len(spans) == 0 {
 		t.Fatal("expected at least one span")
 	}
@@ -33,7 +38,7 @@ func TestDBStore_WriteSpans_MissingWorkspaceID(t *testing.T) {
 	// Verify error message contains useful information
 	expectedSubstrings := []string{
 		"missing required attribute",
-		attrWorkspaceID,
+		trace.AttrWorkspaceID,
 	}
 
 	errMsg := err.Error()
@@ -47,13 +52,16 @@ func TestDBStore_WriteSpans_MissingWorkspaceID(t *testing.T) {
 // TestDBStore_WriteSpans_ValidWorkspaceID verifies validation passes with valid workspace_id
 func TestDBStore_WriteSpans_ValidWorkspaceID(t *testing.T) {
 	// Create a span with valid workspace_id
-	rt := NewReconcileTarget("workspace-123", "test-target", TriggerScheduled)
+	rt := trace.NewReconcileTarget("workspace-123", "test-target", trace.TriggerScheduled)
 	planning := rt.StartPlanning()
 	planning.End()
-	rt.Complete(StatusCompleted)
+	rt.Complete(trace.StatusCompleted)
 
 	// Get the spans
-	spans := rt.exporter.getSpans()
+	memStore := NewInMemoryStore()
+	_ = rt.Persist(memStore)
+	spans := memStore.GetSpans()
+
 	if len(spans) == 0 {
 		t.Fatal("expected at least one span")
 	}
@@ -62,7 +70,7 @@ func TestDBStore_WriteSpans_ValidWorkspaceID(t *testing.T) {
 	for _, span := range spans {
 		hasWorkspaceID := false
 		for _, attr := range span.Attributes() {
-			if string(attr.Key) == attrWorkspaceID {
+			if string(attr.Key) == trace.AttrWorkspaceID {
 				hasWorkspaceID = true
 				workspaceID := attr.Value.AsString()
 				if workspaceID == "" {
@@ -92,19 +100,25 @@ func TestDBStore_WriteSpans_EmptySpanList(t *testing.T) {
 // TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID verifies batch fails if any span is invalid
 func TestDBStore_WriteSpans_MultipleSpans_OneMissingWorkspaceID(t *testing.T) {
 	// Create spans with and without workspace_id
-	validRT := NewReconcileTarget("workspace-valid", "test-target", TriggerScheduled)
+	validRT := trace.NewReconcileTarget("workspace-valid", "test-target", trace.TriggerScheduled)
 	validPlanning := validRT.StartPlanning()
 	validPlanning.End()
-	validRT.Complete(StatusCompleted)
+	validRT.Complete(trace.StatusCompleted)
 
-	invalidRT := NewReconcileTarget("", "test-target", TriggerScheduled) // Empty workspace ID
+	invalidRT := trace.NewReconcileTarget("", "test-target", trace.TriggerScheduled) // Empty workspace ID
 	invalidPlanning := invalidRT.StartPlanning()
 	invalidPlanning.End()
-	invalidRT.Complete(StatusCompleted)
+	invalidRT.Complete(trace.StatusCompleted)
 
 	// Combine spans
-	validSpans := validRT.exporter.getSpans()
-	invalidSpans := invalidRT.exporter.getSpans()
+	validStore := NewInMemoryStore()
+	_ = validRT.Persist(validStore)
+	validSpans := validStore.GetSpans()
+
+	invalidStore := NewInMemoryStore()
+	_ = invalidRT.Persist(invalidStore)
+	invalidSpans := invalidStore.GetSpans()
+
 	allSpans := append(validSpans, invalidSpans...)
 
 	store := &DBStore{pool: nil}

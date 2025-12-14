@@ -1,4 +1,4 @@
-package trace
+package spanstore
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-// InMemoryStore implements PersistenceStore for testing
+// InMemoryStore implements trace.PersistenceStore for testing
 type InMemoryStore struct {
 	mu    sync.Mutex
 	spans []sdktrace.ReadOnlySpan

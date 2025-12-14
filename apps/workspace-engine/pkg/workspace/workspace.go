@@ -4,7 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -16,7 +16,7 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		ID:         id,
 		store:      s,
 		changeset:  cs,
-		traceStore: trace.NewInMemoryStore(),
+		traceStore: spanstore.NewInMemoryStore(),
 	}
 
 	// Apply options first to allow setting traceStore

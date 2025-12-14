@@ -9,6 +9,7 @@ import (
     "context"
     "workspace-engine/pkg/db"
     "workspace-engine/pkg/workspace/releasemanager/trace"
+    "workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 )
 
 func ReconcileWithTracing(ctx context.Context, workspaceID, releaseTargetKey string) error {
@@ -16,7 +17,7 @@ func ReconcileWithTracing(ctx context.Context, workspaceID, releaseTargetKey str
     pool := db.GetPool(ctx)
 
     // Create database store
-    store := trace.NewDBStore(pool)
+    store := spanstore.NewDBStore(pool)
 
     // Create trace recorder with store
     rt := trace.NewReconcileTargetWithStore(workspaceID, releaseTargetKey, store)
@@ -122,7 +123,7 @@ ctrlplane.job_id → job_id column
 ```go
 // Create store once, reuse for multiple traces
 pool := db.GetPool(ctx)
-store := trace.NewDBStore(pool)
+store := spanstore.NewDBStore(pool)
 
 // Use with store configured at creation
 rt := trace.NewReconcileTargetWithStore(workspaceID, releaseTargetKey, store)
@@ -143,7 +144,7 @@ defer func() {
     rt.Complete(trace.StatusCompleted)
 
     pool := db.GetPool(ctx)
-    store := trace.NewDBStore(pool)
+    store := spanstore.NewDBStore(pool)
     rt.Persist(store)
 }()
 ```
@@ -341,12 +342,13 @@ import (
     "context"
     "workspace-engine/pkg/db"
     "workspace-engine/pkg/workspace/releasemanager/trace"
+    "workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 )
 
 func ReconcileDeployment(ctx context.Context, workspaceID, releaseTargetKey string) error {
     // Setup trace persistence
     pool := db.GetPool(ctx)
-    store := trace.NewDBStore(pool)
+    store := spanstore.NewDBStore(pool)
 
     rt := trace.NewReconcileTargetWithStore(workspaceID, releaseTargetKey, store)
     defer func() {

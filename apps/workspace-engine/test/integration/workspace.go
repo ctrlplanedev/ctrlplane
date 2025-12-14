@@ -12,10 +12,10 @@ import (
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 )
 
-var globalTraceStore = trace.NewInMemoryStore()
+var globalTraceStore = spanstore.NewInMemoryStore()
 
 func init() {
 	manager.Configure(
@@ -32,7 +32,7 @@ type TestWorkspace struct {
 	t             *testing.T
 	workspace     *workspace.Workspace
 	eventListener *handler.EventListener
-	traceStore    *trace.InMemoryStore
+	traceStore    *spanstore.InMemoryStore
 }
 
 func NewTestWorkspace(
@@ -69,7 +69,7 @@ func (tw *TestWorkspace) Workspace() *workspace.Workspace {
 	return tw.workspace
 }
 
-func (tw *TestWorkspace) TraceStore() *trace.InMemoryStore {
+func (tw *TestWorkspace) TraceStore() *spanstore.InMemoryStore {
 	return tw.traceStore
 }
 

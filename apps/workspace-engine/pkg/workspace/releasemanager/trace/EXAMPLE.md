@@ -51,6 +51,7 @@ package releasemanager
 import (
     "context"
     "github.com/ctrlplane/pkg/workspace/releasemanager/trace"
+    "github.com/ctrlplane/pkg/workspace/releasemanager/trace/token"
 )
 
 func ReconcileRelease(workspaceID, releaseTargetKey string, store trace.PersistenceStore) error {
@@ -130,7 +131,7 @@ func ReconcileRelease(workspaceID, releaseTargetKey string, store trace.Persiste
     // Generate token for GitHub Action to report back
     traceID := trace.GetRootID(ctx)
     jobID := "job-abc-123"
-    token := trace.GenerateDefaultTraceToken(traceID, jobID)
+    traceToken := token.GenerateDefaultTraceToken(traceID, jobID)
 
     ctx, _ = createJob.RecordStep(
         "Generated trace token",
@@ -138,7 +139,7 @@ func ReconcileRelease(workspaceID, releaseTargetKey string, store trace.Persiste
         "Token expires in 24h",
     )
 
-    createJob.AddMetadata("token", token)
+    createJob.AddMetadata("token", traceToken)
     createJob.AddMetadata("github_run_id", "12345")
     createJob.End(trace.StatusCompleted)
 

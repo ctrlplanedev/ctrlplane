@@ -1,4 +1,4 @@
-package trace
+package token
 
 import (
 	"crypto/hmac"
@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"workspace-engine/pkg/config"
 )
 
 // tokenSecret should be loaded from config/environment in production
-var tokenSecret = []byte("ctrlplane-trace-secret-change-in-production")
+var tokenSecret = []byte(config.Global.TraceTokenSecret)
 
 // TraceToken represents an authenticated token for external trace recording
 type TraceToken struct {
@@ -44,9 +45,9 @@ func GenerateDefaultTraceToken(traceID, jobID string) string {
 }
 
 // ValidateTraceToken validates a trace token and returns the trace ID and job ID
-func ValidateTraceToken(token string) (*TraceToken, error) {
+func ValidateTraceToken(tokenStr string) (*TraceToken, error) {
 	// Split token into payload and signature
-	parts := strings.Split(token, ".")
+	parts := strings.Split(tokenStr, ".")
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid token format")
 	}
@@ -100,8 +101,8 @@ func ValidateTraceToken(token string) (*TraceToken, error) {
 }
 
 // ParseTraceToken is a convenience function that validates a token and returns just the traceID and jobID
-func ParseTraceToken(token string) (traceID, jobID string, err error) {
-	tt, err := ValidateTraceToken(token)
+func ParseTraceToken(tokenStr string) (traceID, jobID string, err error) {
+	tt, err := ValidateTraceToken(tokenStr)
 	if err != nil {
 		return "", "", err
 	}

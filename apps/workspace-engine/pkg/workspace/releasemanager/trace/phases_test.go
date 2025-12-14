@@ -2,6 +2,8 @@ package trace
 
 import (
 	"testing"
+
+	"workspace-engine/pkg/workspace/releasemanager/trace/token"
 )
 
 // ====== Planning Phase Tests ======
@@ -509,14 +511,14 @@ func TestJob_Token(t *testing.T) {
 	execution := rt.StartExecution()
 	job := execution.TriggerJob("github-action", map[string]string{})
 
-	token := job.Token()
+	traceToken := job.Token()
 
-	if token == "" {
+	if traceToken == "" {
 		t.Error("expected non-empty token")
 	}
 
 	// Token should be parseable
-	traceID, jobID, err := ParseTraceToken(token)
+	traceID, jobID, err := token.ParseTraceToken(traceToken)
 	if err != nil {
 		t.Fatalf("failed to parse token: %v", err)
 	}

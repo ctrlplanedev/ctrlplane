@@ -6,6 +6,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+
+	"workspace-engine/pkg/workspace/releasemanager/trace/token"
 )
 
 // PlanningPhase represents the planning phase
@@ -302,7 +304,7 @@ func (j *Job) Token() string {
 	jobID := j.jobType // Use job type as identifier
 
 	// Generate token with 24h expiration
-	return GenerateDefaultTraceToken(traceID, jobID)
+	return token.GenerateDefaultTraceToken(traceID, jobID)
 }
 
 // End completes the job

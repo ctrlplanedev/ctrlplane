@@ -20,7 +20,7 @@ import (
 	"workspace-engine/pkg/ticker"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
-	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -211,7 +211,7 @@ func main() {
 
 	// Initialize database pool for trace store
 	pgxPool := db.GetPool(ctx)
-	traceStore := trace.NewDBStore(pgxPool)
+	traceStore := spanstore.NewDBStore(pgxPool)
 	log.Info("Deployment trace store initialized")
 
 	manager.Configure(

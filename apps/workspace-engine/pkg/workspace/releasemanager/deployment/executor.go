@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/releasemanager/trace/token"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
@@ -90,7 +91,7 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	// Generate trace token for external executors BEFORE persisting
 	// This ensures the trace token is stored with the job for verification tracing
 	if recorder != nil && createJobAction != nil {
-		traceToken := trace.GenerateDefaultTraceToken(recorder.RootTraceID(), newJob.Id)
+		traceToken := token.GenerateDefaultTraceToken(recorder.RootTraceID(), newJob.Id)
 		createJobAction.AddMetadata("trace_token", traceToken)
 		createJobAction.AddMetadata("job_id", newJob.Id)
 		createJobAction.AddStep("Generate trace token", trace.StepResultPass, "Token generated for external executor")

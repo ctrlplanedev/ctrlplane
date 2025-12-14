@@ -100,19 +100,34 @@ type PersistenceStore interface {
 	WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan) error
 }
 
-// Internal attribute keys
+// Attribute keys for trace spans (exported for use by spanstore package)
 const (
-	attrPhase         = "ctrlplane.phase"
-	attrNodeType      = "ctrlplane.node_type"
-	attrStatus        = "ctrlplane.status"
-	attrJobID         = "ctrlplane.job_id"
-	attrReleaseID     = "ctrlplane.release_id"
-	attrReleaseTarget = "ctrlplane.release_target_key"
-	attrParentTraceID = "ctrlplane.parent_trace_id"
-	attrDepth         = "ctrlplane.depth"
-	attrSequence      = "ctrlplane.sequence"
-	attrWorkspaceID   = "ctrlplane.workspace_id"
-	attrTrigger       = "ctrlplane.trigger"
+	AttrPhase         = "ctrlplane.phase"
+	AttrNodeType      = "ctrlplane.node_type"
+	AttrStatus        = "ctrlplane.status"
+	AttrJobID         = "ctrlplane.job_id"
+	AttrReleaseID     = "ctrlplane.release_id"
+	AttrReleaseTarget = "ctrlplane.release_target_key"
+	AttrParentTraceID = "ctrlplane.parent_trace_id"
+	AttrDepth         = "ctrlplane.depth"
+	AttrSequence      = "ctrlplane.sequence"
+	AttrWorkspaceID   = "ctrlplane.workspace_id"
+	AttrTrigger       = "ctrlplane.trigger"
+)
+
+// Internal aliases for backward compatibility within the trace package
+const (
+	attrPhase         = AttrPhase
+	attrNodeType      = AttrNodeType
+	attrStatus        = AttrStatus
+	attrJobID         = AttrJobID
+	attrReleaseID     = AttrReleaseID
+	attrReleaseTarget = AttrReleaseTarget
+	attrParentTraceID = AttrParentTraceID
+	attrDepth         = AttrDepth
+	attrSequence      = AttrSequence
+	attrWorkspaceID   = AttrWorkspaceID
+	attrTrigger       = AttrTrigger
 )
 
 // AttributeOptions holds optional parameters for building attributes
