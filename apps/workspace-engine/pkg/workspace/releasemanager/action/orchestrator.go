@@ -28,9 +28,10 @@ func NewOrchestrator(store *store.Store) *Orchestrator {
 }
 
 // RegisterAction registers a policy action with the orchestrator
-func (o *Orchestrator) RegisterAction(action PolicyAction) {
+func (o *Orchestrator) RegisterAction(action PolicyAction) *Orchestrator {
 	o.actions = append(o.actions, action)
 	log.Debug("Registered policy action", "action", action.Name())
+	return o
 }
 
 // OnJobStatusChange is called when a job's status changes

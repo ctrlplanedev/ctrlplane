@@ -164,6 +164,7 @@ func (s *DBStore) WriteSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan)
 				$15, $16,
 				$17, $18
 			)
+			ON CONFLICT (trace_id, span_id) DO NOTHING
 		`,
 			traceID, spanID, parentSpanID, span.Name(),
 			span.StartTime(), nullableTime(span.EndTime()),

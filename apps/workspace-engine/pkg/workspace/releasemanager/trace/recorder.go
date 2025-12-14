@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"sync"
 
+	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/releasemanager/trace/token"
+
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -45,6 +48,33 @@ func NewReconcileTarget(workspaceID, releaseTargetKey string, trigger TriggerRea
 // NewReconcileTargetWithStore creates a new trace recorder with pre-configured store
 func NewReconcileTargetWithStore(workspaceID, releaseTargetKey string, trigger TriggerReason, store PersistenceStore) *ReconcileTarget {
 	return newReconcileTarget(workspaceID, releaseTargetKey, trigger, store)
+}
+
+// NewReconcileTargetFromJob creates a continuation trace linked to a job's original trace.
+// It uses the job's trace token to establish the parent relationship, enabling
+// post-job activities like verification to be traced as continuations.
+func NewReconcileTargetFromJob(workspaceID string, job *oapi.Job, trigger TriggerReason, store PersistenceStore) (*ReconcileTarget, error) {
+	if job.TraceToken == nil || *job.TraceToken == "" {
+		return nil, fmt.Errorf("job %s has no trace token", job.Id)
+	}
+
+	// Validate and extract trace info from token
+	traceToken, err := token.ValidateTraceToken(*job.TraceToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid trace token for job %s: %w", job.Id, err)
+	}
+
+	// Create new recorder with parent trace link
+	rt := newReconcileTarget(workspaceID, "", trigger, store)
+
+	// Set parent trace ID to link traces
+	rt.rootSpan.SetAttributes(
+		attribute.String(AttrParentTraceID, traceToken.TraceID),
+		attribute.String(AttrJobID, job.Id),
+	)
+	rt.jobID = &job.Id
+
+	return rt, nil
 }
 
 func newReconcileTarget(workspaceID, releaseTargetKey string, trigger TriggerReason, store PersistenceStore) *ReconcileTarget {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
+	"workspace-engine/pkg/workspace/releasemanager/action"
+	verificationaction "workspace-engine/pkg/workspace/releasemanager/action/verification"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -26,6 +28,13 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 
 	// Create release manager with trace store (will panic if nil)
 	ws.releasemanager = releasemanager.New(s, ws.traceStore)
+	ws.actionOrchestrator = action.
+		NewOrchestrator(s).
+		RegisterAction(
+			verificationaction.NewVerificationAction(
+				ws.releasemanager.VerificationManager(),
+			),
+		)
 
 	return ws
 }
@@ -33,10 +42,15 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 type Workspace struct {
 	ID string
 
-	changeset      *statechange.ChangeSet[any]
-	store          *store.Store
-	releasemanager *releasemanager.Manager
-	traceStore     releasemanager.PersistenceStore
+	changeset          *statechange.ChangeSet[any]
+	store              *store.Store
+	releasemanager     *releasemanager.Manager
+	traceStore         releasemanager.PersistenceStore
+	actionOrchestrator *action.Orchestrator
+}
+
+func (w *Workspace) ActionOrchestrator() *action.Orchestrator {
+	return w.actionOrchestrator
 }
 
 func (w *Workspace) Store() *store.Store {
