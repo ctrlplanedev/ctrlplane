@@ -90,7 +90,6 @@ export default function ReleaseTargetsPage() {
   const { deployment } = useDeployment();
   const { search, setSearch, searchDebounced } = useResource();
   const { jobStatus } = useJobStatus();
-  console.log("jobStatus", { jobStatus });
 
   const releaseTargetsQuery = trpc.deployment.releaseTargets.useQuery({
     workspaceId: workspace.id,

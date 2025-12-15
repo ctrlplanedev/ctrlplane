@@ -63,8 +63,8 @@ export const PolicyCreateFormContextProvider: React.FC<{
     },
   });
 
-  const onSubmit = form.handleSubmit((data) => {
-    console.log(data);
+  const onSubmit = form.handleSubmit(() => {
+    // todo
   });
 
   return (
