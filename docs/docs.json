@@ -18,16 +18,58 @@
             "pages": ["index", "installation", "quickstart"]
           },
           {
+            "group": "Overview",
+            "pages": ["concepts/introduction"]
+          }
+        ]
+      },
+      {
+        "tab": "Inventory",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["inventory/overview"]
+          },
+          {
             "group": "Core Concepts",
             "pages": [
-              "concepts/introduction",
-              "concepts/systems",
               "concepts/resources",
               "concepts/environments",
+              "concepts/selectors"
+            ]
+          },
+          {
+            "group": "Resource Providers",
+            "pages": ["integrations/resource-providers"]
+          }
+        ]
+      },
+      {
+        "tab": "Deployment",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["deployment/overview"]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/systems",
               "concepts/deployments",
               "concepts/releases-and-jobs",
-              "concepts/release-targets",
-              "concepts/selectors"
+              "concepts/release-targets"
+            ]
+          },
+          {
+            "group": "CI/CD Integration",
+            "pages": ["integrations/cicd"]
+          },
+          {
+            "group": "Job Agents",
+            "pages": [
+              "integrations/job-agents/github",
+              "integrations/job-agents/argocd",
+              "integrations/job-agents/terraform-cloud"
             ]
           },
           {
@@ -37,35 +79,27 @@
               "policies/approval",
               "policies/environment-progression",
               "policies/gradual-rollouts",
-              "policies/retry",
-              {
-                "group": "Verification",
-                "pages": [
-                  "policies/verification/overview",
-                  "policies/verification/providers/http",
-                  "policies/verification/providers/datadog",
-                  "policies/verification/providers/sleep",
-                  "policies/verification/providers/terraform-cloud-run"
-                ]
-              },
               "policies/deployment-dependency",
               "policies/version-selector",
               "policies/version-cooldown",
-              "policies/deployment-window"
+              "policies/deployment-window",
+              "policies/retry"
+            ]
+          },
+          {
+            "group": "Verification",
+            "pages": [
+              "policies/verification/overview",
+              "policies/verification/providers/http",
+              "policies/verification/providers/datadog",
+              "policies/verification/providers/sleep",
+              "policies/verification/providers/terraform-cloud-run"
             ]
           }
         ]
       },
       {
         "tab": "API Reference",
-        "groups": []
-      },
-      {
-        "tab": "Integrations",
-        "groups": []
-      },
-      {
-        "tab": "Operations",
         "groups": []
       }
     ],

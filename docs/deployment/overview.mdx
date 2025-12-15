@@ -1,0 +1,175 @@
+---
+title: "Deployment Overview"
+description: "Progressive delivery with policy-driven orchestration"
+---
+
+Ctrlplane's deployment system orchestrates releases across environments with
+configurable policies, verification, and approval workflows.
+
+## What is Deployment Orchestration?
+
+Deployment orchestration manages how releases flow through your environments —
+from build to production — with:
+
+- **Progressive delivery** — Canary, blue-green, and phased rollouts
+- **Policy-driven gates** — Approvals, verification, and dependencies
+- **Environment promotion** — Automated staging → production progression
+- **Rollback & recovery** — Automatic rollback on verification failure
+
+```mermaid
+flowchart LR
+    Build["Build (CI)"] --> Version["Version"]
+
+    subgraph Staging["Staging"]
+        direction TB
+        S1["Deploy"] --> S2["Verify"]
+    end
+
+    subgraph Production["Production"]
+        direction TB
+        P0["Approval"] --> P1["Deploy"] --> P2["Verify"]
+    end
+
+    Version --> Staging
+    Staging -->|"policy gates"| Production
+```
+
+## Core Concepts
+
+<CardGroup cols={2}>
+  <Card title="Systems" icon="sitemap" href="../concepts/systems">
+    Logical groupings of related deployments
+  </Card>
+  <Card title="Deployments" icon="rocket" href="../concepts/deployments">
+    Services or applications to deploy
+  </Card>
+  <Card
+    title="Releases & Jobs"
+    icon="play"
+    href="../concepts/releases-and-jobs"
+  >
+    Deployment execution units
+  </Card>
+  <Card
+    title="Release Targets"
+    icon="bullseye"
+    href="../concepts/release-targets"
+  >
+    Deployment × Environment × Resource
+  </Card>
+</CardGroup>
+
+## How It Works
+
+### 1. CI Creates Versions
+
+Your CI pipeline creates a version after successful builds:
+
+```yaml
+- name: Create Version
+  run: |
+    curl -X POST ".../deployments/$DEPLOYMENT_ID/versions" \
+      -d '{"tag": "${{ github.sha }}", "status": "ready"}'
+```
+
+### 2. Ctrlplane Creates Releases
+
+For each release target (deployment × environment × resource), Ctrlplane:
+
+1. Evaluates policies (approvals, gates, dependencies)
+2. Creates a release with the new version
+3. Dispatches a job to the job agent
+
+### 3. Job Agents Execute
+
+Job agents perform the actual deployment:
+
+- **GitHub Actions** — Trigger workflows
+- **ArgoCD** — Create/sync Applications
+- **Terraform Cloud** — Create workspaces and runs
+
+### 4. Verification Validates
+
+After deployment, verification checks health:
+
+```yaml
+verification:
+  metrics:
+    - name: error-rate
+      provider:
+        type: datadog
+        queries:
+          errors: "sum:errors{service:api}.as_rate()"
+      successCondition: result.queries.errors < 0.01
+```
+
+## Policies
+
+Policies control how releases flow through environments:
+
+<CardGroup cols={2}>
+  <Card title="Approval" icon="check" href="../policies/approval">
+    Require sign-off before deployment
+  </Card>
+  <Card
+    title="Environment Progression"
+    icon="arrow-right"
+    href="../policies/environment-progression"
+  >
+    Gate production on staging success
+  </Card>
+  <Card
+    title="Gradual Rollouts"
+    icon="chart-line"
+    href="../policies/gradual-rollouts"
+  >
+    Deploy to percentage of targets
+  </Card>
+  <Card
+    title="Verification"
+    icon="shield"
+    href="../policies/verification/overview"
+  >
+    Validate deployment health
+  </Card>
+</CardGroup>
+
+## Job Agents
+
+Execute deployments on your infrastructure:
+
+<CardGroup cols={3}>
+  <Card
+    title="GitHub Actions"
+    icon="github"
+    href="../integrations/job-agents/github"
+  >
+    Trigger workflow dispatch
+  </Card>
+  <Card title="ArgoCD" icon="rotate" href="../integrations/job-agents/argocd">
+    GitOps deployments
+  </Card>
+  <Card
+    title="Terraform Cloud"
+    icon="cloud"
+    href="../integrations/job-agents/terraform-cloud"
+  >
+    Infrastructure as code
+  </Card>
+</CardGroup>
+
+## Key Benefits
+
+| Benefit                | Description                           |
+| ---------------------- | ------------------------------------- |
+| **Consistent process** | Same workflow for all deployments     |
+| **Policy enforcement** | Gates prevent unauthorized releases   |
+| **Visibility**         | Track what's deployed where           |
+| **Automatic rollback** | Failed verification triggers rollback |
+
+## Next Steps
+
+- [Systems](../concepts/systems) — Organize your deployments
+- [CI/CD Integration](../integrations/cicd) — Connect your build pipeline
+- [Policies](../policies/overview) — Configure deployment rules
+- [Job Agents](../integrations/job-agents/github) — Set up execution

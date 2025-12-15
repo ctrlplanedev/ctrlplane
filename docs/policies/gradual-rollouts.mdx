@@ -34,6 +34,19 @@ policies:
           timeScaleInterval: 300 # seconds between batches
 ```
 
+## Properties
+
+<ParamField path="gradualRollout.rolloutType" type="string" required>
+  The rollout strategy to use. Options: - `linear` — Deploy to each target at a
+  fixed interval - `linear-normalized` — Space deployments evenly within the
+  time window
+</ParamField>
+
+<ParamField path="gradualRollout.timeScaleInterval" type="integer" required>
+  For `linear`: seconds between each target deployment. For `linear-normalized`:
+  total seconds to complete the rollout.
+</ParamField>
+
 ## Rollout Types
 
 ### Linear Rollout

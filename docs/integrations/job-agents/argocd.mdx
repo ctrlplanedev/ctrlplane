@@ -1,0 +1,211 @@
+---
+title: "ArgoCD"
+description: "Deploy applications using ArgoCD GitOps"
+---
+
+The ArgoCD job agent creates and syncs ArgoCD Applications, enabling
+GitOps-style deployments with automatic health verification.
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant C as Ctrlplane
+    participant A as ArgoCD
+    participant K as Kubernetes
+
+    C->>A: Create/Update Application
+    A->>K: Sync resources
+    C->>A: Poll health status
+    A-->>C: Healthy + Synced
+    C->>C: Mark job successful
+```
+
+1. Ctrlplane renders an ArgoCD Application from your template
+2. The Application is created or updated via ArgoCD API
+3. ArgoCD syncs the application to Kubernetes
+4. Ctrlplane verifies the application reaches `Healthy` + `Synced` status
+5. Job is marked successful when verification passes
+
+## Prerequisites
+
+- ArgoCD server with API access
+- API token with application create/update permissions
+- Network connectivity from Ctrlplane to ArgoCD
+
+## Configuration
+
+### Job Agent Setup
+
+Create a job agent with type `argo-cd`:
+
+```yaml
+type: JobAgent
+name: argocd
+agentType: argo-cd
+```
+
+### Deployment Configuration
+
+```yaml
+type: Deployment
+name: api-service
+jobAgent: argocd
+jobAgentConfig:
+  serverUrl: argocd.example.com:443
+  apiKey: "{{.variables.argocd_token}}"
+  template: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: Application
+    metadata:
+      name: {{.deployment.slug}}-{{.environment.name}}
+      namespace: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/your-org/your-repo
+        targetRevision: {{.version.tag}}
+        path: k8s/{{.environment.name}}
+      destination:
+        server: {{.resource.config.server}}
+        namespace: {{.resource.config.namespace}}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+```
+
+| Field       | Required | Description                        |
+| ----------- | -------- | ---------------------------------- |
+| `serverUrl` | Yes      | ArgoCD server URL (host:port)      |
+| `apiKey`    | Yes      | ArgoCD API token                   |
+| `template`  | Yes      | Go template for ArgoCD Application |
+
+## Template Context
+
+The template has access to all job context:
+
+| Variable       | Description                                 |
+| -------------- | ------------------------------------------- |
+| `.job`         | Job details (id, status, etc.)              |
+| `.release`     | Release details                             |
+| `.version`     | Version being deployed (.tag, .name, etc.)  |
+| `.deployment`  | Deployment details (.name, .slug)           |
+| `.environment` | Environment details (.name, .id)            |
+| `.resource`    | Target resource (.name, .config, .metadata) |
+| `.variables`   | Merged deployment variables                 |
+
+## Template Functions
+
+The template supports [Sprig](http://masterminds.github.io/sprig/) functions:
+
+```yaml
+template: |
+  apiVersion: argoproj.io/v1alpha1
+  kind: Application
+  metadata:
+    name: {{ .deployment.slug | lower | replace "_" "-" }}
+    labels:
+      version: {{ .version.tag | trunc 63 }}
+      deployed-at: {{ now | date "2006-01-02" }}
+```
+
+## Automatic Verification
+
+When an ArgoCD Application is created, Ctrlplane automatically starts a
+verification that checks:
+
+- Application sync status is `Synced`
+- Application health status is `Healthy` or `Progressing`
+
+The verification polls the ArgoCD API every 10 seconds for 5 iterations.
+
+## Example: Multi-Environment Setup
+
+```yaml
+type: Deployment
+name: frontend
+jobAgent: argocd
+jobAgentConfig:
+  serverUrl: "{{.variables.argocd_server}}"
+  apiKey: "{{.variables.argocd_token}}"
+  template: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: Application
+    metadata:
+      name: frontend-{{.environment.name | lower}}
+      namespace: argocd
+      labels:
+        app: frontend
+        env: {{.environment.name | lower}}
+        version: {{.version.tag}}
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: {{.environment.name | lower}}
+      source:
+        repoURL: https://github.com/your-org/frontend
+        targetRevision: {{.version.tag}}
+        path: deploy/{{.environment.name | lower}}
+        helm:
+          valueFiles:
+            - values.yaml
+            - values-{{.environment.name | lower}}.yaml
+          parameters:
+            - name: image.tag
+              value: {{.version.tag}}
+            - name: replicas
+              value: "{{.resource.config.replicas | default 2}}"
+      destination:
+        server: {{.resource.config.cluster_url}}
+        namespace: frontend
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+```
+
+## Example: Kustomize Overlay
+
+```yaml
+template: |
+  apiVersion: argoproj.io/v1alpha1
+  kind: Application
+  metadata:
+    name: {{.deployment.slug}}-{{.resource.identifier}}
+    namespace: argocd
+  spec:
+    project: default
+    source:
+      repoURL: https://github.com/your-org/{{.deployment.slug}}
+      targetRevision: {{.version.tag}}
+      path: overlays/{{.environment.name}}
+      kustomize:
+        images:
+          - {{.deployment.slug}}={{.variables.registry}}/{{.deployment.slug}}:{{.version.tag}}
+    destination:
+      server: {{.resource.config.server}}
+      namespace: {{.deployment.slug}}
+```
+
+## Troubleshooting
+
+### Application not syncing
+
+- Check ArgoCD server logs
+- Verify the repository is accessible from ArgoCD
+- Check the target revision exists
+
+### Authentication errors
+
+- Verify the API token is valid
+- Check token has correct permissions
+- Ensure `serverUrl` includes the correct port
+
+### Verification failing
+
+- Check ArgoCD Application status in the UI
+- Review sync errors in ArgoCD
+- Verify destination cluster is accessible

@@ -20,14 +20,33 @@ provider:
 
 ## Properties
 
-| Property  | Type   | Required | Description                                |
-| --------- | ------ | -------- | ------------------------------------------ |
-| `type`    | string | Yes      | Must be `"http"`                           |
-| `url`     | string | Yes      | HTTP endpoint URL (supports Go templates)  |
-| `method`  | string | No       | HTTP method (default: `GET`)               |
-| `headers` | object | No       | HTTP headers (values support Go templates) |
-| `body`    | string | No       | Request body (supports Go templates)       |
-| `timeout` | string | No       | Request timeout (default: `30s`)           |
+<ParamField path="provider.type" type="string" required>
+  Must be `"http"`.
+</ParamField>
+
+<ParamField path="provider.url" type="string" required>
+  HTTP endpoint URL. Supports Go templates for dynamic URLs
+  (e.g., `http://{{.resource.name}}/health`).
+</ParamField>
+
+<ParamField path="provider.method" type="string" default="GET">
+  HTTP method. Options: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`,
+  `OPTIONS`.
+</ParamField>
+
+<ParamField path="provider.headers" type="object">
+  HTTP headers to include in the request. Values support Go templates
+  (e.g., `Authorization: "Bearer {{.variables.token}}"`).
+</ParamField>
+
+<ParamField path="provider.body" type="string">
+  Request body for POST/PUT/PATCH requests. Supports Go templates for dynamic
+  content.
+</ParamField>
+
+<ParamField path="provider.timeout" type="string" default="30s">
+  Request timeout duration. Use format like `30s`, `1m`, `500ms`.
+</ParamField>
 
 ### Supported HTTP Methods
 

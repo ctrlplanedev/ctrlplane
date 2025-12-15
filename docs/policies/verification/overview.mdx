@@ -221,14 +221,45 @@ policies:
 
 ### Metric Properties
 
-| Property           | Type    | Required | Description                                   |
-| ------------------ | ------- | -------- | --------------------------------------------- |
-| `name`             | string  | Yes      | Name of the verification metric               |
-| `interval`         | string  | Yes      | Time between measurements (e.g., "30s", "5m") |
-| `count`            | integer | Yes      | Number of measurements to take                |
-| `provider`         | object  | Yes      | Metric provider configuration                 |
-| `successCondition` | string  | Yes      | CEL expression to evaluate success            |
-| `failureLimit`     | integer | No       | Stop after this many failures (0 = no limit)  |
+<ParamField path="metrics[].name" type="string" required>
+  Unique name for this verification metric. Used for identification in logs and
+  UI.
+</ParamField>
+
+<ParamField path="metrics[].intervalSeconds" type="integer" required>
+  Seconds between each measurement. For example, `30` means check every 30
+  seconds.
+</ParamField>
+
+<ParamField path="metrics[].count" type="integer" required>
+  Total number of measurements to take. Combined with `intervalSeconds`, this
+  determines the verification duration.
+</ParamField>
+
+<ParamField path="metrics[].provider" type="object" required>
+  Configuration for the metric provider (HTTP, Datadog, etc.). See
+  provider-specific documentation for available options.
+</ParamField>
+
+<ParamField path="metrics[].successCondition" type="string" required>
+  CEL expression evaluated against the provider response. Returns `true` for
+  success. Example: `result.ok && result.statusCode == 200`
+</ParamField>
+
+<ParamField path="metrics[].failureCondition" type="string">
+  Optional CEL expression for explicit failure. If matched, verification fails
+  immediately without waiting for more measurements.
+</ParamField>
+
+<ParamField path="metrics[].failureThreshold" type="integer" default="0">
+  Number of consecutive failures allowed before the metric is considered failed.
+  Set to `0` for no tolerance (fail on first failure).
+</ParamField>
+
+<ParamField path="metrics[].successThreshold" type="integer" default="1">
+  Number of consecutive successes required before the metric is considered
+  passed.
+</ParamField>
 
 ## Metric Providers
 

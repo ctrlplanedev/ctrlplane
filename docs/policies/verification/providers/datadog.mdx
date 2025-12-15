@@ -24,16 +24,43 @@ provider:
 
 ## Properties
 
-| Property          | Type              | Required | Description                                           |
-| ----------------- | ----------------- | -------- | ----------------------------------------------------- |
-| `type`            | string            | Yes      | Must be `"datadog"`                                   |
-| `apiKey`          | string            | Yes      | Datadog API key (supports Go templates)               |
-| `appKey`          | string            | Yes      | Datadog Application key (supports Go templates)       |
-| `queries`         | map[string]string | Yes      | Named queries map (supports Go templates)             |
-| `formula`         | string            | No       | Formula to combine queries (e.g., `"a / b * 100"`)    |
-| `aggregator`      | string            | No       | Aggregation method (default: `"last"`)                |
-| `intervalSeconds` | integer           | No       | Time window in seconds for the query (default: `300`) |
-| `site`            | string            | No       | Datadog site (default: `"datadoghq.com"`)             |
+<ParamField path="provider.type" type="string" required>
+  Must be `"datadog"`.
+</ParamField>
+
+<ParamField path="provider.apiKey" type="string" required>
+  Datadog API key. Supports Go templates (e.g., `{{.variables.dd_api_key}}`).
+</ParamField>
+
+<ParamField path="provider.appKey" type="string" required>
+  Datadog Application key. Supports Go templates. Use the actual key value, NOT
+  the Key ID.
+</ParamField>
+
+<ParamField path="provider.queries" type="map[string]string" required>
+  Named queries map. Keys become accessible as `result.queries.<name>` in success conditions.
+  Values support Go templates for dynamic filtering.
+</ParamField>
+
+<ParamField path="provider.formula" type="string">
+  Formula to combine query results. Reference queries by their key names (e.g.,
+  `"a / b * 100"`).
+</ParamField>
+
+<ParamField path="provider.aggregator" type="string" default="last">
+  Aggregation method. Options: `last`, `avg`, `min`, `max`, `sum`, `mean`,
+  `percentile`, `l2norm`, `area`.
+</ParamField>
+
+<ParamField path="provider.intervalSeconds" type="integer" default="300">
+  Time window in seconds for the query. Determines how far back to look for
+  metric data.
+</ParamField>
+
+<ParamField path="provider.site" type="string" default="datadoghq.com">
+  Datadog site URL. Options: `datadoghq.com`, `datadoghq.eu`,
+  `us3.datadoghq.com`, `us5.datadoghq.com`, `ap1.datadoghq.com`.
+</ParamField>
 
 ## Aggregator Options
 

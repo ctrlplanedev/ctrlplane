@@ -45,13 +45,41 @@ policies:
 
 ## Properties
 
-| Property                       | Type     | Required | Default | Description                                              |
-| ------------------------------ | -------- | -------- | ------- | -------------------------------------------------------- |
-| `dependsOnEnvironmentSelector` | Selector | Yes      | -       | Selector for the prerequisite environment(s)             |
-| `minimumSuccessPercentage`     | float    | No       | 100     | Percentage of targets that must succeed (0-100)          |
-| `successStatuses`              | array    | No       | -       | Job statuses considered successful                       |
-| `minimumSoakTimeMinutes`       | integer  | No       | 0       | Minutes to wait after dependency succeeds                |
-| `maximumAgeHours`              | integer  | No       | -       | Maximum age of dependency deployment before blocking     |
+<ParamField
+  path="environmentProgression.dependsOnEnvironmentSelector"
+  type="object"
+  required
+>
+  Selector for the prerequisite environment(s). The release must be successfully
+  deployed to environments matching this selector before proceeding.
+</ParamField>
+
+<ParamField
+  path="environmentProgression.minimumSuccessPercentage"
+  type="float"
+  default="100"
+>
+  Percentage of targets in the prerequisite environment that must succeed
+  (0-100). Use a lower value if some targets are expected to be unavailable.
+</ParamField>
+
+<ParamField path="environmentProgression.successStatuses" type="array">
+  Job statuses considered successful. Defaults to standard success statuses.
+</ParamField>
+
+<ParamField
+  path="environmentProgression.minimumSoakTimeMinutes"
+  type="integer"
+  default="0"
+>
+  Minutes to wait after the dependency succeeds before allowing progression. Use
+  this to ensure the release has time to stabilize.
+</ParamField>
+
+<ParamField path="environmentProgression.maximumAgeHours" type="integer">
+  Maximum age (in hours) of the dependency deployment. If the prerequisite
+  deployment is older than this, progression is blocked until redeployed.
+</ParamField>
 
 ## Common Patterns
 
@@ -214,12 +242,12 @@ dependsOnEnvironmentSelector:
 
 ### Timing Guidelines
 
-| Transition           | Soak Time    | Max Age  | Notes                          |
-| -------------------- | ------------ | -------- | ------------------------------ |
-| Dev → QA             | 0            | -        | Fast iteration                 |
-| QA → Staging         | 0-15 min     | 24h      | Quick validation               |
-| Staging → Production | 30-60 min    | 48h      | Thorough soak                  |
-| Critical services    | 2-4 hours    | 24h      | Extended observation           |
+| Transition           | Soak Time | Max Age | Notes                |
+| -------------------- | --------- | ------- | -------------------- |
+| Dev → QA             | 0         | -       | Fast iteration       |
+| QA → Staging         | 0-15 min  | 24h     | Quick validation     |
+| Staging → Production | 30-60 min | 48h     | Thorough soak        |
+| Critical services    | 2-4 hours | 24h     | Extended observation |
 
 ### Recommendations
 
@@ -234,4 +262,3 @@ dependsOnEnvironmentSelector:
 - [Policies Overview](./overview) - Learn about policy structure
 - [Verification](./verification) - Add automated health checks
 - [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
-
