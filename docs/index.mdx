@@ -1,101 +1,172 @@
 ---
 title: "Introduction"
-description: "Introduction"
+description:
+  "Deployment orchestration and infrastructure inventory for platform teams"
 ---
 
 ## What is Ctrlplane?
 
-Ctrlplane is an open-source **deployment orchestration platform** that helps you
-manage multi-stage deployment pipelines across diverse infrastructure
-environments. Whether you're deploying to Kubernetes clusters, cloud functions,
-VMs, or custom infrastructure, Ctrlplane provides a unified control plane for
-orchestrating your deployments.
+Ctrlplane is an open-source platform that solves two critical challenges for
+platform and DevOps teams:
 
-Think of Ctrlplane as the orchestration layer that sits between your CI/CD
-system and your deployment targets, managing the complexity of progressive
-delivery, approval workflows, and environment promotion.
+1. **Deployment Orchestration** — Progressive delivery with policy-driven
+   environment promotion, approval workflows, and automated verification
+2. **Infrastructure Inventory** — Unified visibility into resources across your
+   entire stack with custom relationships and dynamic grouping
 
-## Key Features
+Think of it as the control plane that sits between your CI/CD pipelines and your
+infrastructure, providing the orchestration layer for complex multi-environment
+deployments and the visibility layer for understanding what's running where.
 
-- **Multi-platform deployments** - Deploy to Kubernetes, cloud functions, VMs,
-  or any custom infrastructure
-- **Progressive delivery** - Canary deployments, blue-green deployments, and
-  phased rollouts
-- **Policy-driven workflows** - Define approval gates, environment progression
-  rules, and gradual rollouts
-- **CI/CD integration** - Works with GitHub Actions, GitLab CI, Jenkins, or any
-  CI system via REST API
-- **Flexible job agents** - Execute deployments using Kubernetes jobs, GitHub
-  Actions workflows, ArgoCD, or custom agents
-- **Resource targeting** - Use powerful selectors to dynamically target
-  deployment destinations
-- **Deployment tracing** - Full visibility into execution with detailed traces
+## The Two Systems
 
-## How Ctrlplane Works
+### 1. Deployment Orchestration
 
-At a high level, Ctrlplane orchestrates deployments through these steps:
+Ctrlplane's deployment system handles the complexity of promoting releases
+through environments with configurable policies, gates, and verification.
 
-```txt
-1. Build Phase (Your CI)
-   └─> CI builds artifact
-   └─> CI creates deployment version in Ctrlplane
+**Key Capabilities:**
 
-2. Planning Phase (Ctrlplane)
-   └─> Evaluates policies (approvals, progression, etc.)
-   └─> Determines which resources need the new version
+- **Progressive Delivery** — Canary rollouts, blue-green deployments, and phased
+  environment promotion
+- **Policy-Driven Workflows** — Define approval gates, environment sequencing,
+  and deployment constraints
+- **Automated Verification** — Integrate with Datadog, Prometheus, or custom
+  endpoints to validate deployments before promotion
+- **Environment Promotion** — Automatically promote successful releases from
+  staging → production with configurable gates
+- **Rollback & Recovery** — Automatic rollback when verification fails or manual
+  intervention triggers
 
-3. Job Creation (Ctrlplane)
-   └─> Creates release + job for each target
-   └─> (Deployment × Environment × Resource)
+```mermaid
+flowchart LR
+    Build["Build (CI/CD)"] --> Staging
 
-4. Execution Phase (Job Agents)
-   └─> Agents poll for work
-   └─> Execute deployments
-   └─> Report status back
+    subgraph Staging["Staging"]
+        direction TB
+        S1["Deploy"] --> S2["Verify"]
+    end
 
-5. Observability (Optional)
-   └─> Traces capture detailed execution steps
+    Staging --> Production
+
+    subgraph Production["Production"]
+        direction TB
+        P0["Approval"] --> P1["Deploy"] --> P2["Verify"]
+    end
 ```
 
-## Comparison to Other Tools
+**Common Use Cases:**
+
+- Multi-region deployments with sequential promotion
+- Platform teams managing deployments for 100+ microservices
+- Enforcing deployment policies across engineering organizations
+- Gating production deployments on staging verification
+
+### 2. Infrastructure Inventory
+
+Ctrlplane provides a unified inventory of your resources with powerful
+relationship modeling and dynamic grouping — giving you visibility that spans
+Kubernetes clusters, cloud resources, and custom infrastructure.
+
+**Key Capabilities:**
+
+- **Resource Discovery** — Auto-sync resources from Kubernetes, AWS, GCP, or
+  custom providers
+- **Custom Relationships** — Model dependencies, ownership, and service
+  connections between resources
+- **Dynamic Grouping** — Use selectors to create views based on metadata,
+  labels, or custom attributes
+- **Rich Metadata** — Attach arbitrary metadata for filtering, grouping, and
+  automation
+- **Cross-Stack Visibility** — See Kubernetes deployments, cloud functions, VMs,
+  and databases in one place
+
+```mermaid
+flowchart TB
+    subgraph Inventory["Resource Inventory"]
+        direction TB
+        K8s["K8s Clusters"] --> Unified
+        AWS["AWS Lambda"] --> Unified
+        Custom["Custom Infra"] --> Unified
+
+        subgraph Unified["Unified View"]
+            direction TB
+            R["Relationships"]
+            G["Groupings"]
+            M["Metadata"]
+        end
+    end
+```
+
+**Common Use Cases:**
+
+- Understanding service dependencies across your infrastructure
+- Building dynamic deployment targets based on resource attributes
+- Tracking which version is deployed where across all environments
+- Creating custom views for different teams (backend services, data pipelines,
+  etc.)
 
 ## When to Use Ctrlplane
 
-Ctrlplane is ideal when you need:
+Ctrlplane is designed for platform teams who need:
 
-- **Multi-environment deployments** - Managing dev, staging, and production
-  environments
-- **Approval workflows** - Requiring manual gates before production
-- **Progressive delivery** - Gradual rollouts and canary deployments
-- **Multi-platform deployments** - Deploying to Kubernetes AND cloud functions
-  AND VMs
-- **Deployment orchestration** - Coordinating complex deployment workflows
-- **Policy enforcement** - Ensuring deployment best practices are followed
+| Challenge                               | How Ctrlplane Helps                                                 |
+| --------------------------------------- | ------------------------------------------------------------------- |
+| Multi-environment promotion is manual   | Automated environment progression with policy gates                 |
+| No visibility into what's deployed      | Real-time inventory of resources and their versions                 |
+| Deployments lack verification           | Integrated verification with Datadog, HTTP checks, etc.             |
+| Rollbacks are slow and manual           | Automatic rollback on verification failure                          |
+| Infrastructure spread across providers  | Unified inventory with custom relationships                         |
+| Different teams need different policies | Flexible policy engine with environment/deployment selectors        |
+| Scaling deployment orchestration        | Handle 1000s of release targets with a single deployment definition |
 
-## Core Entities
+## Core Concepts
 
-Ctrlplane models deployments through these key entities:
+| Entity             | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| **System**         | Logical grouping of related deployments (e.g., "Payment Stack") |
+| **Resource**       | A deployment target (K8s cluster, VM, Lambda function)          |
+| **Environment**    | Logical stage that groups resources (dev, staging, prod)        |
+| **Deployment**     | A service or application to deploy                              |
+| **Version**        | A specific build/release of a deployment                        |
+| **Release Target** | The combination of Deployment × Environment × Resource          |
+| **Release**        | A version deployed to a release target                          |
+| **Job**            | The execution unit that performs the deployment                 |
+| **Policy**         | Rules governing approvals, progression, and verification        |
 
-- **System** - Logical grouping of related deployments (e.g., "E-commerce
-  Platform")
-- **Resource** - A deployment target (e.g., a Kubernetes cluster, a VM, a
-  function)
-- **Environment** - A logical environment (dev, staging, prod) that groups
-  resources
-- **Deployment** - A service or application to deploy (e.g., "API Service")
-- **Deployment Version** - A specific version/build of a deployment (e.g.,
-  "v1.2.3")
-- **Release Target** - The combination of (Deployment × Environment × Resource)
-- **Release** - An intended deployment of a version to a release target
-- **Job** - The actual deployment task executed by a job agent
-- **Policy** - Rules governing deployments (approvals, progression, etc.)
+## Integration Points
+
+Ctrlplane integrates with your existing stack:
+
+**CI/CD Systems:**
+
+- GitHub Actions, GitLab CI, Jenkins, CircleCI — create versions after builds
+
+**Job Execution:**
+
+- Kubernetes Jobs, GitHub Actions, ArgoCD — execute deployments
+
+**Verification Providers:**
+
+- Datadog, Prometheus, HTTP endpoints — validate deployment health
+
+**Resource Providers:**
+
+- Kubernetes, AWS, GCP, custom scripts — sync infrastructure inventory
 
 ## Next Steps
 
-Ready to get started? Continue with:
-
-- [Core Concepts](./core-concepts.md) - Deep dive into Ctrlplane's entities and
-  their relationships
-- [Quickstart](./quickstart.md) - Set up your first deployment in 10 minutes
-- [Installation](./installation.md) - Self-host Ctrlplane or use the cloud
-  offering
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="./quickstart">
+    Set up your first deployment pipeline in 10 minutes
+  </Card>
+  <Card title="Installation" icon="server" href="./installation">
+    Self-host Ctrlplane or use the cloud offering
+  </Card>
+  <Card title="Core Concepts" icon="book" href="./core-concepts">
+    Deep dive into Ctrlplane's entity model
+  </Card>
+  <Card title="Policies" icon="shield" href="./policies/overview">
+    Configure approval workflows and verification
+  </Card>
+</CardGroup>

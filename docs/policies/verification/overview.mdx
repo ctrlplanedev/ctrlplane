@@ -1,5 +1,5 @@
 ---
-title: Verification
+title: Overview
 description:
   Learn how to use verification to validate that a deployment is healthy after
   it completes.
@@ -91,8 +91,9 @@ policies:
                 type: datadog
                 apiKey: "{{.variables.dd_api_key}}"
                 appKey: "{{.variables.dd_app_key}}"
-                query: sum:errors{service:{{.resource.name}},env:staging}.as_rate()
-              successCondition: result.value < 0.01
+                queries:
+                  errors: "sum:errors{service:{{.resource.name}},env:staging}.as_rate()"
+              successCondition: result.queries.errors < 0.01
               failureLimit: 2
 
   # Production: Comprehensive health checks
@@ -109,8 +110,9 @@ policies:
                 type: datadog
                 apiKey: "{{.variables.dd_api_key}}"
                 appKey: "{{.variables.dd_app_key}}"
-                query: sum:errors{service:{{.resource.name}},env:prod}.as_rate()
-              successCondition: result.value < 0.005
+                queries:
+                  errors: "sum:errors{service:{{.resource.name}},env:prod}.as_rate()"
+              successCondition: result.queries.errors < 0.005
               failureLimit: 2
             - name: p99-latency
               interval: 1m
@@ -119,8 +121,9 @@ policies:
                 type: datadog
                 apiKey: "{{.variables.dd_api_key}}"
                 appKey: "{{.variables.dd_app_key}}"
-                query: avg:latency.p99{service:{{.resource.name}},env:prod}
-              successCondition: result.value < 200
+                queries:
+                  latency: "avg:latency.p99{service:{{.resource.name}},env:prod}"
+              successCondition: result.queries.latency < 200
               failureLimit: 2
 ```
 
@@ -160,10 +163,12 @@ policies:
                 type: datadog
                 apiKey: "{{.variables.dd_api_key}}"
                 appKey: "{{.variables.dd_app_key}}"
-                query: |
-                  sum:errors{service:{{.resource.name}},version:canary}.as_rate() /
-                  sum:errors{service:{{.resource.name}},version:stable}.as_rate()
-              successCondition: result.value < 1.1
+                queries:
+                  canary: "sum:errors{service:{{.resource.name}},version:canary}.as_rate()"
+                  stable: "sum:errors{service:{{.resource.name}},version:stable}.as_rate()"
+                formula: "canary / stable"
+              successCondition:
+                result.queries.canary < result.queries.stable * 1.1
 ```
 
 ## Progressive Delivery Gates
@@ -297,7 +302,8 @@ provider:
   type: datadog
   apiKey: "{{.variables.dd_api_key}}"
   appKey: "{{.variables.dd_app_key}}"
-  query: sum:errors{service:api}
+  queries:
+    errors: "sum:errors{service:api}"
 ```
 
 ## Success Conditions (CEL)
@@ -307,11 +313,14 @@ Success conditions are written in
 measurement data is available as the `result` variable.
 
 ```yaml
-# Boolean check
+# Boolean check (HTTP provider)
 successCondition: result.ok
 
-# Numeric comparison
-successCondition: result.value < 0.01
+# Numeric comparison (HTTP provider)
+successCondition: result.json.value < 0.01
+
+# Datadog provider - access queries by name
+successCondition: result.queries.errors < 0.01
 
 # String comparison
 successCondition: result.json.status == "healthy"
@@ -322,6 +331,9 @@ successCondition: result.json.status == "healthy" || result.json.status == "degr
 
 # Arithmetic
 successCondition: result.json.success_count / result.json.total_count > 0.99
+
+# Datadog - compare multiple queries
+successCondition: result.queries.canary < result.queries.stable * 1.1
 ```
 
 ## Verification Lifecycle

@@ -4,7 +4,8 @@ description: Query metrics from Datadog's Metrics API for verification
 ---
 
 The **Datadog provider** allows you to query metrics from Datadog's Metrics API
-for verification checks.
+for verification checks. It uses the Datadog v2 Scalar Query API to fetch
+aggregated metric values.
 
 ## Configuration
 
@@ -13,20 +14,40 @@ provider:
   type: datadog
   apiKey: "{{.variables.dd_api_key}}"
   appKey: "{{.variables.dd_app_key}}"
-  site: datadoghq.com
-  query: |
-    sum:requests.error.rate{service:{{.resource.name}},env:{{.environment.name}}}
+  site: us5.datadoghq.com
+  aggregator: last
+  intervalSeconds: 300
+  queries:
+    a: "avg:kubernetes.cpu.usage{cluster:{{.resource.name}}}"
+  formula: "a"
 ```
 
 ## Properties
 
-| Property | Type   | Required | Description                                  |
-| -------- | ------ | -------- | -------------------------------------------- |
-| `type`   | string | Yes      | Must be `"datadog"`                          |
-| `apiKey` | string | Yes      | Datadog API key (supports Go templates)      |
-| `appKey` | string | Yes      | Datadog Application key (supports templates) |
-| `query`  | string | Yes      | Datadog metrics query (supports templates)   |
-| `site`   | string | No       | Datadog site (default: `datadoghq.com`)      |
+| Property          | Type              | Required | Description                                           |
+| ----------------- | ----------------- | -------- | ----------------------------------------------------- |
+| `type`            | string            | Yes      | Must be `"datadog"`                                   |
+| `apiKey`          | string            | Yes      | Datadog API key (supports Go templates)               |
+| `appKey`          | string            | Yes      | Datadog Application key (supports Go templates)       |
+| `queries`         | map[string]string | Yes      | Named queries map (supports Go templates)             |
+| `formula`         | string            | No       | Formula to combine queries (e.g., `"a / b * 100"`)    |
+| `aggregator`      | string            | No       | Aggregation method (default: `"last"`)                |
+| `intervalSeconds` | integer           | No       | Time window in seconds for the query (default: `300`) |
+| `site`            | string            | No       | Datadog site (default: `"datadoghq.com"`)             |
+
+## Aggregator Options
+
+The `aggregator` property specifies how to aggregate metric values:
+
+- `last` (default) - Most recent value
+- `avg` - Average value
+- `min` - Minimum value
+- `max` - Maximum value
+- `sum` - Sum of values
+- `mean` - Mean value
+- `percentile` - Percentile value
+- `l2norm` - L2 norm
+- `area` - Area under the curve
 
 ## Supported Sites
 
@@ -41,24 +62,69 @@ provider:
 The Datadog provider makes the following data available in your CEL success
 conditions:
 
-- `result.ok` - `true` if API call succeeded
-- `result.statusCode` - HTTP status code from Datadog API
-- `result.value` - Last metric value from the query
-- `result.json` - Full Datadog API response
-- `result.query` - The resolved query string (after template expansion)
-- `result.duration` - Request duration in milliseconds
+| Field                   | Type              | Description                               |
+| ----------------------- | ----------------- | ----------------------------------------- |
+| `result.ok`             | boolean           | `true` if API call succeeded (2xx status) |
+| `result.statusCode`     | integer           | HTTP status code from Datadog API         |
+| `result.queries.<name>` | float64 (or null) | Value for each named query                |
+| `result.json`           | object            | Full Datadog API response                 |
+| `result.body`           | string            | Raw response body                         |
+| `result.duration`       | integer           | Request duration in milliseconds          |
 
-## Example Queries
+### Accessing Query Values
 
-### Error Rate
+Since queries are named, you access them by name in your success condition:
+
+```yaml
+queries:
+  cpu: "avg:kubernetes.cpu.usage{cluster:prod}"
+  memory: "avg:kubernetes.memory.usage{cluster:prod}"
+successCondition: result.queries.cpu < 80 && result.queries.memory < 90
+```
+
+## Example Configurations
+
+### Single Query
 
 ```yaml
 provider:
   type: datadog
   apiKey: "{{.variables.dd_api_key}}"
   appKey: "{{.variables.dd_app_key}}"
-  query: sum:requests.error.rate{service:api-service}
-successCondition: result.value < 0.01
+  queries:
+    error_rate: "sum:requests.error.rate{service:api-service}"
+successCondition: result.queries.error_rate < 0.01
+```
+
+### Multiple Queries with Formula
+
+Use multiple queries with a formula to calculate ratios or complex metrics:
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  queries:
+    errors: "sum:requests.errors{service:api}"
+    total: "sum:requests.total{service:api}"
+  formula: "errors / total * 100"
+successCondition: result.queries.errors < 1
+```
+
+### With Environment and Resource Tags
+
+```yaml
+provider:
+  type: datadog
+  apiKey: "{{.variables.dd_api_key}}"
+  appKey: "{{.variables.dd_app_key}}"
+  site: us5.datadoghq.com
+  intervalSeconds: 600
+  queries:
+    cpu: "avg:kubernetes.cpu.usage{cluster:{{.resource.name}},env:{{.environment.name}}}"
+successCondition:
+  result.ok && result.queries.cpu != null && result.queries.cpu < 80
 ```
 
 ### Latency Percentile
@@ -68,52 +134,32 @@ provider:
   type: datadog
   apiKey: "{{.variables.dd_api_key}}"
   appKey: "{{.variables.dd_app_key}}"
-  query: avg:trace.http.request.duration.by.service.99p{service:api-service}
-successCondition: result.value < 200
-```
-
-### With Environment Tags
-
-```yaml
-provider:
-  type: datadog
-  apiKey: "{{.variables.dd_api_key}}"
-  appKey: "{{.variables.dd_app_key}}"
-  query: sum:requests{service:{{.resource.name}},env:{{.environment.name}}}
-successCondition: result.value > 0
-```
-
-### Rate of 5xx Errors
-
-```yaml
-provider:
-  type: datadog
-  apiKey: "{{.variables.dd_api_key}}"
-  appKey: "{{.variables.dd_app_key}}"
-  query: sum:http.requests{status_code:5*,service:{{.resource.name}}}.as_rate()
-successCondition: result.value < 0.001
+  aggregator: percentile
+  queries:
+    p99: "trace.http.request.duration.by.service.99p{service:api-service}"
+successCondition: result.queries.p99 < 200
 ```
 
 ## Example Success Conditions
 
 ```yaml
-# Numeric threshold
-successCondition: result.value < 0.01
+# Simple threshold check
+successCondition: result.queries.value < 0.01
 
-# Compare against a threshold
-successCondition: result.value < 100
+# Check if value exists and is under threshold
+successCondition: result.ok && result.queries.cpu != null && result.queries.cpu < 80
 
-# Check if value exists
-successCondition: result.ok && result.value != null
+# Multiple query conditions
+successCondition: result.queries.errors < 10 && result.queries.latency < 500
 
-# Multiple conditions
-successCondition: result.ok && result.value < 0.01 && result.value >= 0
+# Check API success first
+successCondition: result.ok && result.statusCode == 200 && result.queries.rate < 0.1
 ```
 
 ## Template Variables
 
-The Datadog provider supports Go templates in the `apiKey`, `appKey`, and
-`query` fields:
+The Datadog provider supports Go templates in the `apiKey`, `appKey`, `site`,
+`formula`, and `queries` fields:
 
 ```yaml
 # Resource information
@@ -150,18 +196,33 @@ provider:
   type: datadog
   apiKey: "{{.variables.dd_api_key}}"
   appKey: "{{.variables.dd_app_key}}"
-  query: sum:errors{service:{{.resource.name}}}
+  queries:
+    errors: "sum:errors{service:{{.resource.name}}}"
 ```
+
+## Finding Your Datadog Keys
+
+### API Key
+
+1. Go to Datadog console → **Organization Settings** → **API Keys**
+2. Create or copy an existing API key (40-character hex string)
+
+### Application Key
+
+1. Go to Datadog console → **Organization Settings** → **Application Keys**
+2. Create or copy an existing Application key
+3. **Important**: Use the actual key value, NOT the "Key ID" (which is a UUID)
 
 ## Best Practices
 
 - **Use deployment variables** for API keys and application keys - never
   hardcode credentials
-- **Use appropriate time windows** in your queries (e.g., `.as_rate()` for
-  rates)
+- **Name queries descriptively** to make success conditions readable
+- **Use appropriate intervals** - shorter intervals provide faster feedback but
+  may have less data
 - **Tag your metrics** with service, environment, and version information for
   better filtering
 - **Test queries manually** in Datadog before using them in verification
-- **Handle missing data** by checking `result.ok` and `result.value != null`
-- **Use rate functions** for error rates and request rates to get meaningful
-  values
+- **Handle missing data** by checking `result.ok` and
+  `result.queries.<name> != null`
+- **Use formulas** for calculated metrics like error rates or ratios

@@ -38,10 +38,10 @@
               "policies/environment-progression",
               "policies/gradual-rollouts",
               "policies/retry",
-              "policies/verification",
               {
-                "group": "Verification Providers",
+                "group": "Verification",
                 "pages": [
+                  "policies/verification/overview",
                   "policies/verification/providers/http",
                   "policies/verification/providers/datadog",
                   "policies/verification/providers/sleep",
