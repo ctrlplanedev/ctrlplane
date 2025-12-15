@@ -125,16 +125,16 @@ const createPolicy: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const { body } = req;
 
-  const policy = {
+  const policy: WorkspaceEngine["schemas"]["Policy"] = {
     id: uuidv4(),
     workspaceId,
     enabled: true,
     priority: 0,
     createdAt: new Date().toISOString(),
     metadata: {},
-    rules: [],
     selectors: [],
     ...body,
+    rules: body.rules ?? [],
   };
 
   await sendGoEvent({

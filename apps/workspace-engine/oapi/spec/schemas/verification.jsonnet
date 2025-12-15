@@ -190,7 +190,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   DatadogMetricProvider: {
     type: 'object',
-    required: ['type', 'query', 'apiKey', 'appKey', 'queries'],
+    required: ['type', 'apiKey', 'appKey', 'queries'],
     properties: {
       type: {
         type: 'string',
@@ -242,7 +242,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   TerraformCloudRunMetricProvider: {
     type: 'object',
-    required: ['type', 'organization', 'address', 'token', 'runId'],
+    required: ['type', 'address', 'token', 'runId'],
     properties: {
       type: {
         type: 'string',

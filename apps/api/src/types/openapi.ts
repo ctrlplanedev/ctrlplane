@@ -846,12 +846,12 @@ export interface components {
              * @description Datadog API key (supports Go templates for variable references)
              * @example {{.variables.dd_api_key}}
              */
-            apiKey?: string;
+            apiKey: string;
             /**
              * @description Datadog Application key (supports Go templates for variable references)
              * @example {{.variables.dd_app_key}}
              */
-            appKey?: string;
+            appKey: string;
             /** @description Datadog formula (supports Go templates) */
             formula?: string;
             /**
@@ -1313,11 +1313,6 @@ export interface components {
              * @example https://app.terraform.io
              */
             address: string;
-            /**
-             * @description Terraform Cloud organization name
-             * @example my-org
-             */
-            organization: string;
             /**
              * @description Terraform Cloud run ID
              * @example run-1234567890

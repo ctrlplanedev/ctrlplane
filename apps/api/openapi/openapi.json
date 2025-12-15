@@ -295,7 +295,7 @@
             "type": "string"
           }
         },
-        "required": ["type", "queries"],
+        "required": ["type", "queries", "apiKey", "appKey"],
         "type": "object"
       },
       "Deployment": {
@@ -1463,11 +1463,6 @@
             "example": "https://app.terraform.io",
             "type": "string"
           },
-          "organization": {
-            "description": "Terraform Cloud organization name",
-            "example": "my-org",
-            "type": "string"
-          },
           "runId": {
             "description": "Terraform Cloud run ID",
             "example": "run-1234567890",
@@ -1484,7 +1479,7 @@
             "type": "string"
           }
         },
-        "required": ["type", "organization", "address", "token", "runId"],
+        "required": ["type", "address", "token", "runId"],
         "type": "object"
       },
       "UpdateDeploymentVersionRequest": {

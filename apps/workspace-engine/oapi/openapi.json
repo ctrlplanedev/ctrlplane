@@ -120,7 +120,6 @@
             },
             "required": [
                "type",
-               "query",
                "apiKey",
                "appKey",
                "queries"
@@ -1710,7 +1709,6 @@
             },
             "required": [
                "type",
-               "organization",
                "address",
                "token",
                "runId"
