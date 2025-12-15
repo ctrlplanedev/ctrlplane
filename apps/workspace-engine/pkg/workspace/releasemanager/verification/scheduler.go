@@ -285,8 +285,13 @@ func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (t
 		return 0, fmt.Errorf("metric index out of range: %d", metricIndex)
 	}
 
-	interval := verification.Metrics[metricIndex].GetInterval()
+	metric := &verification.Metrics[metricIndex]
+	interval := metric.GetInterval()
 	if interval <= 0 {
+		log.Info("Using default metric interval",
+			"verification_id", verificationID,
+			"metric_index", metricIndex,
+			"metric_name", metric.Name)
 		return defaultMetricInterval, nil
 	}
 
