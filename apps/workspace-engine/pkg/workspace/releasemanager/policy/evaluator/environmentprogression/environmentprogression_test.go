@@ -59,6 +59,10 @@ func setupTestStore() *store.Store {
 	// Create deployment
 	jobAgentId := "agent-1"
 	description := "Test deployment"
+
+	jobAgentConfig := oapi.DeploymentJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
+
 	deployment := &oapi.Deployment{
 		Id:               "deploy-1",
 		Name:             "my-app",
@@ -66,7 +70,7 @@ func setupTestStore() *store.Store {
 		SystemId:         "system-1",
 		JobAgentId:       &jobAgentId,
 		Description:      &description,
-		JobAgentConfig:   map[string]any{},
+		JobAgentConfig:   jobAgentConfig,
 		ResourceSelector: resourceSelector,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -192,6 +196,8 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 
 	// Create a successful job for the staging release
 	completedAt := time.Now().Add(-10 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      stagingRelease.ID(),
@@ -200,7 +206,7 @@ func TestEnvironmentProgressionEvaluator_VersionSuccessfulInDependency(t *testin
 		CreatedAt:      time.Now().Add(-15 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job)
 
@@ -272,6 +278,8 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 
 	// Create a successful job that completed very recently (2 minutes ago)
 	completedAt := time.Now().Add(-2 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      stagingRelease.ID(),
@@ -280,7 +288,7 @@ func TestEnvironmentProgressionEvaluator_SoakTimeNotMet(t *testing.T) {
 		CreatedAt:      time.Now().Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job)
 
@@ -461,6 +469,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 	// Create successful jobs with specific timestamps
 	// Job 1 completes first (pass rate 33%)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -469,7 +479,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -483,7 +493,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job2)
 
@@ -497,7 +507,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateOnly(t *testing.T) 
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
 		UpdatedAt:      completedAt3,
 		CompletedAt:    &completedAt3,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job3)
 
@@ -574,6 +584,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 	expectedSatisfiedAt := mostRecentSuccess.Add(time.Duration(soakMinutes) * time.Minute) // mostRecentSuccess + soakDuration
 
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      stagingRelease.ID(),
@@ -582,7 +594,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_SoakTimeOnly(t *testing.T) 
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job)
 
@@ -680,6 +692,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 	// Job 1 completes first (pass rate 50% - meets requirement)
 	passRateSatisfiedAt := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	completedAt1 := passRateSatisfiedAt
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -688,7 +702,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -703,7 +717,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_BothPassRateAndSoakTime(t *
 		CreatedAt:      time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job2)
 
@@ -839,6 +853,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 	// Use relative time so soak time calculation works correctly
 	mostRecentSuccess := time.Now().Add(-30 * time.Minute) // 30 minutes ago, satisfies 15-minute soak time
 	completedAt1 := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -847,7 +863,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		CreatedAt:      time.Now().Add(-35 * time.Minute),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -861,7 +877,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		CreatedAt:      time.Now().Add(-20 * time.Minute),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job2)
 
@@ -878,7 +894,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_PassRateBeforeSoakTime(t *t
 		CreatedAt:      time.Now().Add(-22 * time.Minute),
 		UpdatedAt:      completedAt3,
 		CompletedAt:    &completedAt3,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job3)
 
@@ -961,6 +977,8 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 
 	// Create a successful job that completed very recently (soak time not met)
 	completedAt := time.Now().Add(-2 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      stagingRelease.ID(),
@@ -969,7 +987,7 @@ func TestEnvironmentProgressionEvaluator_SatisfiedAt_NotSatisfied(t *testing.T) 
 		CreatedAt:      time.Now().Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job)
 

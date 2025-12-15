@@ -37,6 +37,66 @@ func (m *mockDeployment) CompactionKey() (string, string) {
 	return "mock_deployment", m.ID
 }
 
+func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfig {
+	// Minimal approach for tests: force discriminator, marshal, and rely on generated UnmarshalJSON.
+	payload := map[string]interface{}{}
+	for k, v := range m {
+		payload[k] = v
+	}
+	payload["type"] = "custom"
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg oapi.DeploymentJobAgentConfig
+	if err := cfg.UnmarshalJSON(b); err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
+func customFullJobAgentConfig(m map[string]interface{}) oapi.FullJobAgentConfig {
+	// For Job.jobAgentConfig (resolved/merged config)
+	payload := map[string]interface{}{}
+	for k, v := range m {
+		payload[k] = v
+	}
+	payload["type"] = "custom"
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg oapi.FullJobAgentConfig
+	if err := cfg.UnmarshalJSON(b); err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
+func customJobAgentDefaults(m map[string]interface{}) oapi.JobAgentConfig {
+	// For JobAgent.config (agent default config)
+	payload := map[string]interface{}{}
+	for k, v := range m {
+		payload[k] = v
+	}
+	payload["type"] = "custom"
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg oapi.JobAgentConfig
+	if err := cfg.UnmarshalJSON(b); err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
 // Test setup helpers
 
 const testPostgresURL = "postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane"
@@ -632,7 +692,7 @@ func TestStore_SaveAndLoad_Deployment(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment-slug",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: map[string]interface{}{"version": "v1.2.3"},
+		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"version": "v1.2.3"}),
 	}
 
 	// Save
@@ -704,7 +764,7 @@ func TestStore_SaveAndLoad_MultipleEntities(t *testing.T) {
 		Name:           "deployment-1",
 		Slug:           "deployment-1",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	// Save all
@@ -1076,7 +1136,7 @@ func TestStore_SaveAndLoad_OAPIDeployment(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment-slug",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: map[string]interface{}{"config": "value"},
+		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"config": "value"}),
 	}
 
 	changes := persistence.Changes{
@@ -1199,7 +1259,7 @@ func TestStore_SaveAndLoad_OAPIJob(t *testing.T) {
 		ReleaseId:      uuid.New().String(),
 		JobAgentId:     uuid.New().String(),
 		Status:         oapi.JobStatusPending,
-		JobAgentConfig: map[string]interface{}{"config": "value"},
+		JobAgentConfig: customFullJobAgentConfig(map[string]interface{}{"config": "value"}),
 		Metadata:       map[string]string{"key": "value"},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -1241,9 +1301,9 @@ func TestStore_SaveAndLoad_OAPIJobAgent(t *testing.T) {
 	jobAgent := &oapi.JobAgent{
 		Id:          uuid.New().String(),
 		Name:        "test-agent",
-		Type:        "kubernetes",
+		Type:        "custom",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{"cluster": "prod"},
+		Config:      customJobAgentDefaults(map[string]interface{}{"cluster": "prod"}),
 	}
 
 	changes := persistence.Changes{
@@ -1345,7 +1405,7 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	environment := &oapi.Environment{
@@ -1366,7 +1426,7 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 		ReleaseId:      uuid.New().String(),
 		JobAgentId:     uuid.New().String(),
 		Status:         oapi.JobStatusPending,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customFullJobAgentConfig(nil),
 		Metadata:       map[string]string{},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -1375,9 +1435,9 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 	jobAgent := &oapi.JobAgent{
 		Id:          uuid.New().String(),
 		Name:        "Agent 1",
-		Type:        "kubernetes",
+		Type:        "custom",
 		WorkspaceId: workspaceID,
-		Config:      map[string]interface{}{},
+		Config:      customJobAgentDefaults(nil),
 	}
 
 	githubEntity := &oapi.GithubEntity{

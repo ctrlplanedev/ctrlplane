@@ -3,6 +3,7 @@ package jobs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -27,6 +28,90 @@ func NewFactory(store *store.Store) *Factory {
 	return &Factory{
 		store: store,
 	}
+}
+
+func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (oapi.FullJobAgentConfig, error) {
+	deploymentDiscriminator, err := deployment.JobAgentConfig.Discriminator()
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config discriminator: %w", err)
+	}
+
+	runnerDiscriminator, err := jobAgent.Config.Discriminator()
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config discriminator: %w", err)
+	}
+
+	if deploymentDiscriminator != runnerDiscriminator {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("deployment job agent config type %s does not match job agent config type %s", deploymentDiscriminator, runnerDiscriminator)
+	}
+
+	deploymentConfig, err := deployment.JobAgentConfig.ValueByDiscriminator()
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config: %w", err)
+	}
+
+	runnerConfig, err := jobAgent.Config.ValueByDiscriminator()
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config: %w", err)
+	}
+
+	// ValueByDiscriminator returns a concrete struct type (as interface{}). Convert both to maps so we can deep-merge.
+	toMap := func(v any) (map[string]any, error) {
+		if v == nil {
+			return map[string]any{}, nil
+		}
+		if m, ok := v.(map[string]any); ok {
+			return m, nil
+		}
+		if m, ok := v.(map[string]interface{}); ok {
+			out := make(map[string]any, len(m))
+			for k, vv := range m {
+				out[k] = vv
+			}
+			return out, nil
+		}
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		var out map[string]any
+		if err := json.Unmarshal(b, &out); err != nil {
+			return nil, err
+		}
+		if out == nil {
+			out = map[string]any{}
+		}
+		return out, nil
+	}
+
+	deploymentMap, err := toMap(deploymentConfig)
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to convert deployment job agent config to map: %w", err)
+	}
+	runnerMap, err := toMap(runnerConfig)
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to convert job agent config to map: %w", err)
+	}
+
+	// Merge job agent defaults first, then apply deployment overrides.
+	mergedConfig := make(map[string]any)
+	deepMerge(mergedConfig, runnerMap)
+	deepMerge(mergedConfig, deploymentMap)
+
+	// Ensure discriminator exists so the union can unmarshal.
+	mergedConfig["type"] = deploymentDiscriminator
+
+	mergedJSON, err := json.Marshal(mergedConfig)
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to marshal merged job agent config: %w", err)
+	}
+
+	var out oapi.FullJobAgentConfig
+	if err := out.UnmarshalJSON(mergedJSON); err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to unmarshal merged job agent config: %w", err)
+	}
+
+	return out, nil
 }
 
 // CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
@@ -72,7 +157,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			Id:             uuid.New().String(),
 			ReleaseId:      release.ID(),
 			JobAgentId:     "",
-			JobAgentConfig: make(map[string]any),
+			JobAgentConfig: oapi.FullJobAgentConfig{},
 			Status:         oapi.JobStatusInvalidJobAgent,
 			CreatedAt:      time.Now(),
 			UpdatedAt:      time.Now(),
@@ -96,7 +181,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			Id:             uuid.New().String(),
 			ReleaseId:      release.ID(),
 			JobAgentId:     *jobAgentId,
-			JobAgentConfig: make(map[string]any),
+			JobAgentConfig: oapi.FullJobAgentConfig{},
 			Status:         oapi.JobStatusInvalidJobAgent,
 			CreatedAt:      time.Now(),
 			UpdatedAt:      time.Now(),
@@ -113,27 +198,15 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	// Merge job agent config: deployment config overrides agent defaults
-	mergedConfig := make(map[string]any)
-	hasAgentConfig := len(jobAgent.Config) > 0
-	hasDeploymentConfig := len(deployment.JobAgentConfig) > 0
-
-	deepMerge(mergedConfig, jobAgent.Config)
-	deepMerge(mergedConfig, deployment.JobAgentConfig)
+	mergedConfig, err := f.mergeJobAgentConfig(deployment, jobAgent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge job agent config: %v", err)
+	}
 
 	if action != nil {
 		configMsg := "Applied default job agent configuration"
-		if hasAgentConfig && hasDeploymentConfig {
-			configMsg = fmt.Sprintf("Merged job agent config (%d keys) with deployment overrides (%d keys)",
-				len(jobAgent.Config), len(deployment.JobAgentConfig))
-		} else if hasDeploymentConfig {
-			configMsg = fmt.Sprintf("Applied deployment-specific job config (%d keys)", len(deployment.JobAgentConfig))
-		}
 
-		action.AddStep("Configure job", trace.StepResultPass, configMsg).
-			AddMetadata("job_agent_config_keys", len(jobAgent.Config)).
-			AddMetadata("deployment_config_keys", len(deployment.JobAgentConfig)).
-			AddMetadata("merged_config_keys", len(mergedConfig)).
-			AddMetadata("has_deployment_overrides", hasDeploymentConfig)
+		action.AddStep("Configure job", trace.StepResultPass, configMsg)
 	}
 
 	jobId := uuid.New().String()
@@ -148,11 +221,18 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			AddMetadata("version_tag", release.Version.Tag)
 	}
 
+	mergedJobAgentConfig := oapi.FullJobAgentConfig{}
+	mergedJobAgentConfigJSON, err := json.Marshal(mergedConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal merged job agent config: %v", err)
+	}
+	_ = mergedJobAgentConfig.UnmarshalJSON(mergedJobAgentConfigJSON)
+
 	return &oapi.Job{
 		Id:             jobId,
 		ReleaseId:      release.ID(),
 		JobAgentId:     *jobAgentId,
-		JobAgentConfig: mergedConfig,
+		JobAgentConfig: mergedJobAgentConfig,
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),

@@ -64,6 +64,22 @@ func newMockProducerFactory(producer *mockProducer) func() (messaging.Producer, 
 	}
 }
 
+func createJobAgentConfig(t *testing.T, configPayload map[string]any) oapi.FullJobAgentConfig {
+	if configPayload == nil {
+		configPayload = map[string]any{}
+	}
+	configPayload["type"] = oapi.TestRunner
+	configJSON, err := json.Marshal(configPayload)
+	if err != nil {
+		t.Fatalf("Failed to marshal test runner job agent config: %v", err)
+	}
+	config := oapi.FullJobAgentConfig{}
+	if err := config.UnmarshalJSON(configJSON); err != nil {
+		t.Fatalf("Failed to unmarshal test runner job agent config: %v", err)
+	}
+	return config
+}
+
 func TestTestRunnerDispatcher_DispatchJob_DefaultConfig(t *testing.T) {
 	sc := statechange.NewChangeSet[any]()
 	mockStore := store.New("test-workspace", sc)
@@ -84,9 +100,10 @@ func TestTestRunnerDispatcher_DispatchJob_DefaultConfig(t *testing.T) {
 
 	// Create and store a pending job
 	job := &oapi.Job{
-		Id:        "test-job-123",
-		Status:    oapi.JobStatusPending,
-		UpdatedAt: time.Now(),
+		Id:             "test-job-123",
+		Status:         oapi.JobStatusPending,
+		UpdatedAt:      time.Now(),
+		JobAgentConfig: createJobAgentConfig(t, nil),
 	}
 	mockStore.Jobs.Upsert(context.Background(), job)
 
@@ -138,18 +155,22 @@ func TestTestRunnerDispatcher_DispatchJob_WithDelay(t *testing.T) {
 	})
 
 	delaySeconds := 10
+	configPayload := map[string]any{
+		"delaySeconds": delaySeconds,
+	}
+
+	config := createJobAgentConfig(t, configPayload)
 	job := &oapi.Job{
-		Id:     "test-job-456",
-		Status: oapi.JobStatusPending,
-		JobAgentConfig: map[string]any{
-			"delaySeconds": float64(delaySeconds),
-		},
-		UpdatedAt: time.Now(),
+		Id:             "test-job-456",
+		Status:         oapi.JobStatusPending,
+		JobAgentConfig: config,
+		UpdatedAt:      time.Now(),
 	}
 	mockStore.Jobs.Upsert(context.Background(), job)
 
-	err := dispatcher.DispatchJob(context.Background(), job)
-	require.NoError(t, err)
+	if err := dispatcher.DispatchJob(context.Background(), job); err != nil {
+		t.Fatalf("Failed to dispatch job: %v", err)
+	}
 
 	// Wait for the duration to be captured (this happens before timeFunc blocks)
 	receivedDuration := <-durationChan
@@ -181,13 +202,12 @@ func TestTestRunnerDispatcher_DispatchJob_FailureStatus(t *testing.T) {
 		ProducerFactory: newMockProducerFactory(mockProd),
 	})
 
-	failureStatus := "failure"
 	job := &oapi.Job{
 		Id:     "test-job-789",
 		Status: oapi.JobStatusPending,
-		JobAgentConfig: map[string]any{
-			"status": failureStatus,
-		},
+		JobAgentConfig: createJobAgentConfig(t, map[string]any{
+			"status": oapi.Failure,
+		}),
 		UpdatedAt: time.Now(),
 	}
 	mockStore.Jobs.Upsert(context.Background(), job)
@@ -232,9 +252,9 @@ func TestTestRunnerDispatcher_DispatchJob_WithMessage(t *testing.T) {
 	job := &oapi.Job{
 		Id:     "test-job-msg",
 		Status: oapi.JobStatusPending,
-		JobAgentConfig: map[string]any{
+		JobAgentConfig: createJobAgentConfig(t, map[string]any{
 			"message": customMessage,
-		},
+		}),
 		UpdatedAt: time.Now(),
 	}
 	mockStore.Jobs.Upsert(context.Background(), job)
@@ -286,9 +306,10 @@ func TestTestRunnerDispatcher_SkipsTerminalState(t *testing.T) {
 			})
 
 			job := &oapi.Job{
-				Id:        "test-job-terminal",
-				Status:    terminalStatus,
-				UpdatedAt: time.Now(),
+				Id:             "test-job-terminal",
+				Status:         terminalStatus,
+				UpdatedAt:      time.Now(),
+				JobAgentConfig: createJobAgentConfig(t, nil),
 			}
 			mockStore.Jobs.Upsert(context.Background(), job)
 
@@ -301,104 +322,6 @@ func TestTestRunnerDispatcher_SkipsTerminalState(t *testing.T) {
 
 			// No event should be published for terminal state jobs
 			require.Len(t, mockProd.GetMessages(), 0)
-		})
-	}
-}
-
-func TestTestRunnerDispatcher_ParseConfig(t *testing.T) {
-	tests := []struct {
-		name          string
-		jobConfig     map[string]any
-		expectError   bool
-		errorContains string
-		expectedDelay int
-		expectedFail  bool
-	}{
-		{
-			name:          "empty config uses defaults",
-			jobConfig:     nil,
-			expectError:   false,
-			expectedDelay: 5, // default
-			expectedFail:  false,
-		},
-		{
-			name: "custom delay",
-			jobConfig: map[string]any{
-				"delaySeconds": float64(30),
-			},
-			expectError:   false,
-			expectedDelay: 30,
-			expectedFail:  false,
-		},
-		{
-			name: "failure status",
-			jobConfig: map[string]any{
-				"status": "failure",
-			},
-			expectError:   false,
-			expectedDelay: 5,
-			expectedFail:  true,
-		},
-		{
-			name: "completed status",
-			jobConfig: map[string]any{
-				"status": "completed",
-			},
-			expectError:   false,
-			expectedDelay: 5,
-			expectedFail:  false,
-		},
-		{
-			name: "invalid status",
-			jobConfig: map[string]any{
-				"status": "invalid",
-			},
-			expectError:   true,
-			errorContains: "invalid status",
-		},
-		{
-			name: "all options",
-			jobConfig: map[string]any{
-				"delaySeconds": float64(15),
-				"status":       "failure",
-				"message":      "Test message",
-			},
-			expectError:   false,
-			expectedDelay: 15,
-			expectedFail:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dispatcher := &TestRunnerDispatcher{}
-
-			job := &oapi.Job{
-				Id:             "test-job",
-				JobAgentConfig: tt.jobConfig,
-			}
-
-			result, err := dispatcher.parseConfig(job)
-
-			if tt.expectError {
-				require.Error(t, err)
-				if tt.errorContains != "" {
-					require.Contains(t, err.Error(), tt.errorContains)
-				}
-			} else {
-				require.NoError(t, err)
-
-				expectedDelay := time.Duration(tt.expectedDelay) * time.Second
-				actualDelay := dispatcher.getDelay(result)
-				require.Equal(t, expectedDelay, actualDelay)
-
-				expectedStatus := oapi.JobStatusSuccessful
-				if tt.expectedFail {
-					expectedStatus = oapi.JobStatusFailure
-				}
-				actualStatus := dispatcher.getFinalStatus(result)
-				require.Equal(t, expectedStatus, actualStatus)
-			}
 		})
 	}
 }
@@ -421,9 +344,10 @@ func TestTestRunnerDispatcher_JobNotFound(t *testing.T) {
 
 	// Don't add the job to the store
 	job := &oapi.Job{
-		Id:        "nonexistent-job",
-		Status:    oapi.JobStatusPending,
-		UpdatedAt: time.Now(),
+		Id:             "nonexistent-job",
+		Status:         oapi.JobStatusPending,
+		UpdatedAt:      time.Now(),
+		JobAgentConfig: createJobAgentConfig(t, nil),
 	}
 
 	// Dispatch should succeed (goroutine is spawned)
@@ -456,9 +380,10 @@ func TestTestRunnerDispatcher_InProgressStatus(t *testing.T) {
 
 	// Job starts as in_progress
 	job := &oapi.Job{
-		Id:        "test-job-in-progress",
-		Status:    oapi.JobStatusInProgress,
-		UpdatedAt: time.Now(),
+		Id:             "test-job-in-progress",
+		Status:         oapi.JobStatusInProgress,
+		UpdatedAt:      time.Now(),
+		JobAgentConfig: createJobAgentConfig(t, nil),
 	}
 	mockStore.Jobs.Upsert(context.Background(), job)
 

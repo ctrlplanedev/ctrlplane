@@ -45,6 +45,8 @@ func setupTestStoreForSoakTime() *store.Store {
 	// Create deployment
 	jobAgentId := "agent-1"
 	description := "Test deployment"
+	jobAgentConfig := oapi.DeploymentJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:               "deploy-1",
 		Name:             "my-app",
@@ -52,7 +54,7 @@ func setupTestStoreForSoakTime() *store.Store {
 		SystemId:         "system-1",
 		JobAgentId:       &jobAgentId,
 		Description:      &description,
-		JobAgentConfig:   map[string]any{},
+		JobAgentConfig:   jobAgentConfig,
 		ResourceSelector: resourceSelector,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -95,6 +97,8 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 	soakMinutes := int32(30)
 	mostRecentSuccess := time.Now().Add(-40 * time.Minute)
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -103,7 +107,7 @@ func TestSoakTimeEvaluator_SoakTimeMet(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -160,6 +164,8 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 	soakMinutes := int32(30)
 	mostRecentSuccess := time.Now().Add(-10 * time.Minute)
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -168,7 +174,7 @@ func TestSoakTimeEvaluator_SoakTimeNotMet(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -220,6 +226,8 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 	_ = st.Releases.Upsert(ctx, release1)
 
 	// Create a pending job (not successful)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -227,7 +235,7 @@ func TestSoakTimeEvaluator_NoSuccessfulJobs(t *testing.T) {
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -282,6 +290,8 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 	soakMinutes := int32(15)
 	mostRecentSuccess := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -290,7 +300,7 @@ func TestSoakTimeEvaluator_SatisfiedAt_Calculation(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -348,6 +358,8 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 	// Create an older successful job
 	oldSuccess := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
 	completedAt1 := oldSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -356,7 +368,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 		CreatedAt:      oldSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -372,7 +384,7 @@ func TestSoakTimeEvaluator_MultipleJobs_UseMostRecent(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job2)
 
@@ -443,6 +455,8 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 	soakMinutes := int32(30)
 	mostRecentSuccess := time.Now().Add(-40 * time.Minute)
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -451,7 +465,7 @@ func TestSoakTimeEvaluator_CustomSuccessStatuses(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -508,6 +522,8 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 	// Create a job that completed exactly 30 minutes ago
 	mostRecentSuccess := time.Now().Add(-30 * time.Minute)
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -516,7 +532,7 @@ func TestSoakTimeEvaluator_ExactlyAtThreshold(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -572,6 +588,8 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 	// Job completed 10 minutes ago - soak time of 30 minutes NOT met yet
 	mostRecentSuccess := time.Now().Add(-10 * time.Minute)
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -580,7 +598,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -639,6 +657,8 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 	// Job completed 40 minutes ago - soak time of 30 minutes IS met
 	mostRecentSuccess := time.Now().Add(-40 * time.Minute)
 	completedAt := mostRecentSuccess
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -647,7 +667,7 @@ func TestSoakTimeEvaluator_NextEvaluationTime_WhenSatisfied(t *testing.T) {
 		CreatedAt:      mostRecentSuccess.Add(-5 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 

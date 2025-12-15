@@ -42,6 +42,8 @@ func setupTestStoreForJobTracker() *store.Store {
 	// Create deployment
 	jobAgentId := "agent-1"
 	description := "Test deployment"
+	jobAgentConfig := oapi.DeploymentJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:             "deploy-1",
 		Name:           "my-app",
@@ -49,7 +51,7 @@ func setupTestStoreForJobTracker() *store.Store {
 		SystemId:       "system-1",
 		JobAgentId:     &jobAgentId,
 		Description:    &description,
-		JobAgentConfig: map[string]any{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -182,6 +184,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 
 	// Create successful job for release1
 	completedAt := time.Now().Add(-5 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -190,7 +194,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -202,7 +206,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now().Add(-3 * time.Minute),
 		UpdatedAt:      time.Now().Add(-3 * time.Minute),
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job2)
 
@@ -256,6 +260,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 
 	// Create successful jobs for both
 	completedAt1 := time.Now().Add(-5 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -264,7 +270,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	completedAt2 := time.Now().Add(-3 * time.Minute)
 	job2 := &oapi.Job{
@@ -275,7 +281,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_AllSuccessful(t *testing.T
 		CreatedAt:      time.Now().Add(-8 * time.Minute),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -337,6 +343,8 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 
 	// Create successful job completed 15 minutes ago
 	completedAt := time.Now().Add(-15 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -345,7 +353,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_SoakTimeMet(t *testing
 		CreatedAt:      time.Now().Add(-20 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -399,6 +407,8 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 
 	// Create successful job completed 20 minutes ago
 	completedAt1 := time.Now().Add(-20 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -407,7 +417,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 		CreatedAt:      time.Now().Add(-25 * time.Minute),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 
 	// Create successful job completed 5 minutes ago (more recent)
@@ -420,7 +430,7 @@ func TestReleaseTargetJobTracker_MeetsSoakTimeRequirement_MultipleJobs(t *testin
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -464,6 +474,8 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 
 	// Create successful job completed 5 minutes ago
 	completedAt := time.Now().Add(-5 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -472,7 +484,7 @@ func TestReleaseTargetJobTracker_GetSoakTimeRemaining(t *testing.T) {
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -524,6 +536,8 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 
 	// Create successful job
 	completedAt := time.Now().Add(-5 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -532,7 +546,7 @@ func TestReleaseTargetJobTracker_GetMostRecentSuccess(t *testing.T) {
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -584,6 +598,8 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 
 	// Create successful job completed 5 minutes ago
 	completedAt := time.Now().Add(-5 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -592,7 +608,7 @@ func TestReleaseTargetJobTracker_IsWithinMaxAge_WithinAge(t *testing.T) {
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -647,6 +663,8 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 
 	// Create jobs
 	completedAt := time.Now().Add(-5 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -655,7 +673,7 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	job2 := &oapi.Job{
 		Id:             "job-2",
@@ -664,7 +682,7 @@ func TestReleaseTargetJobTracker_Jobs(t *testing.T) {
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now().Add(-3 * time.Minute),
 		UpdatedAt:      time.Now().Add(-3 * time.Minute),
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -724,6 +742,8 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 
 	// Create jobs for both
 	completedAt1 := time.Now().Add(-5 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -732,7 +752,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	completedAt2 := time.Now().Add(-3 * time.Minute)
 	job2 := &oapi.Job{
@@ -743,7 +763,7 @@ func TestReleaseTargetJobTracker_FiltersByEnvironmentAndDeployment(t *testing.T)
 		CreatedAt:      time.Now().Add(-8 * time.Minute),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -792,6 +812,8 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 	// Create multiple successful jobs for same release target
 	// First success (oldest)
 	completedAt1 := time.Now().Add(-20 * time.Minute)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -800,7 +822,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 		CreatedAt:      time.Now().Add(-25 * time.Minute),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 
 	// Second success (newer)
@@ -813,7 +835,7 @@ func TestReleaseTargetJobTracker_MultipleJobsPerTarget_TracksOldestSuccess(t *te
 		CreatedAt:      time.Now().Add(-15 * time.Minute),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -890,6 +912,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 	// Create successful jobs with specific timestamps
 	// Job 1 completes first (pass rate 33%)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -898,7 +922,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -913,7 +937,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job2)
 
@@ -927,7 +951,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_Basic(t *testin
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
 		UpdatedAt:      completedAt3,
 		CompletedAt:    &completedAt3,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job3)
 
@@ -996,6 +1020,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 
 	// Create successful job for only one release target
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -1004,7 +1030,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_NotEnoughSucces
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -1103,6 +1129,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 
 	// Create successful jobs
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -1111,7 +1139,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	job2 := &oapi.Job{
@@ -1122,7 +1150,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_ZeroMinimumPerc
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -1196,6 +1224,8 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 	// Create successful jobs with out-of-order completion times
 	// Job 2 completes first (10:05)
 	completedAt2 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
+	jobAgentConfig := oapi.FullJobAgentConfig{}
+	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job2 := &oapi.Job{
 		Id:             "job-2",
 		ReleaseId:      release2.ID(),
@@ -1204,7 +1234,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job2)
 
@@ -1218,7 +1248,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -1232,7 +1262,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentageSatisfiedAt_OutOfOrderCompl
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
 		UpdatedAt:      completedAt3,
 		CompletedAt:    &completedAt3,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: jobAgentConfig,
 	}
 	st.Jobs.Upsert(ctx, job3)
 

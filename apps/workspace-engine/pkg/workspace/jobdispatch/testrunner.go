@@ -21,18 +21,6 @@ import (
 
 var trTracer = otel.Tracer("TestRunnerDispatcher")
 
-// testRunnerJobConfig defines the configuration for test-runner jobs.
-type testRunnerJobConfig struct {
-	// DelaySeconds is the number of seconds to wait before resolving the job.
-	// If not specified, defaults to 5 seconds.
-	DelaySeconds *int `json:"delaySeconds,omitempty"`
-	// Status is the final status to set the job to.
-	// Valid values: "completed", "failure". Defaults to "completed".
-	Status *string `json:"status,omitempty"`
-	// Message is an optional message to include in the job output.
-	Message *string `json:"message,omitempty"`
-}
-
 // TestRunnerDispatcher is a test job dispatcher that automatically resolves jobs
 // after a configurable delay. This is useful for testing and development scenarios
 // where you want jobs to complete without actual external execution.
@@ -72,46 +60,15 @@ func NewTestRunnerDispatcherWithOptions(store *store.Store, opts TestRunnerDispa
 	return d
 }
 
-func (d *TestRunnerDispatcher) parseConfig(job *oapi.Job) (testRunnerJobConfig, error) {
-	var parsed testRunnerJobConfig
-
-	if job.JobAgentConfig == nil {
-		// Return default config if no config provided
-		return parsed, nil
-	}
-
-	rawCfg, err := json.Marshal(job.JobAgentConfig)
-	if err != nil {
-		return testRunnerJobConfig{}, fmt.Errorf("failed to marshal job agent config: %w", err)
-	}
-
-	if err := json.Unmarshal(rawCfg, &parsed); err != nil {
-		return testRunnerJobConfig{}, fmt.Errorf("failed to unmarshal job agent config: %w", err)
-	}
-
-	// Validate status if provided
-	if parsed.Status != nil {
-		validStatuses := map[string]bool{
-			"completed": true,
-			"failure":   true,
-		}
-		if !validStatuses[*parsed.Status] {
-			return testRunnerJobConfig{}, fmt.Errorf("invalid status '%s': must be 'completed' or 'failure'", *parsed.Status)
-		}
-	}
-
-	return parsed, nil
-}
-
-func (d *TestRunnerDispatcher) getDelay(cfg testRunnerJobConfig) time.Duration {
+func (d *TestRunnerDispatcher) getDelay(cfg oapi.TestRunnerJobAgentConfig) time.Duration {
 	if cfg.DelaySeconds != nil {
 		return time.Duration(*cfg.DelaySeconds) * time.Second
 	}
 	return 5 * time.Second // default delay
 }
 
-func (d *TestRunnerDispatcher) getFinalStatus(cfg testRunnerJobConfig) oapi.JobStatus {
-	if cfg.Status != nil && *cfg.Status == "failure" {
+func (d *TestRunnerDispatcher) getFinalStatus(cfg oapi.TestRunnerJobAgentConfig) oapi.JobStatus {
+	if cfg.Status != nil && *cfg.Status == oapi.Failure {
 		return oapi.JobStatusFailure
 	}
 	return oapi.JobStatusSuccessful
@@ -125,7 +82,7 @@ func (d *TestRunnerDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) e
 
 	span.SetAttributes(attribute.String("job.id", job.Id))
 
-	cfg, err := d.parseConfig(job)
+	cfg, err := job.JobAgentConfig.AsFullTestRunnerJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
@@ -140,7 +97,7 @@ func (d *TestRunnerDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) e
 	}
 
 	span.SetAttributes(
-		attribute.Int64("delay_seconds", int64(delay.Seconds())),
+		attribute.Int64("delay_seconds", int64(delay)),
 		attribute.String("final_status", string(finalStatus)),
 	)
 
@@ -234,9 +191,13 @@ func (d *TestRunnerDispatcher) sendJobUpdateEvent(job *oapi.Job, status oapi.Job
 		jobCopy.CompletedAt = &updatedAt
 	}
 
-	fieldsToUpdate := []oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.Message, oapi.UpdatedAt}
+	fieldsToUpdate := []oapi.JobUpdateEventFieldsToUpdate{
+		oapi.JobUpdateEventFieldsToUpdateStatus,
+		oapi.JobUpdateEventFieldsToUpdateMessage,
+		oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+	}
 	if jobCopy.CompletedAt != nil {
-		fieldsToUpdate = append(fieldsToUpdate, oapi.CompletedAt)
+		fieldsToUpdate = append(fieldsToUpdate, oapi.JobUpdateEventFieldsToUpdateCompletedAt)
 	}
 
 	eventPayload := oapi.JobUpdateEvent{

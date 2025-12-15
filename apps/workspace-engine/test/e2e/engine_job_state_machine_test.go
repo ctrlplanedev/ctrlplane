@@ -76,8 +76,8 @@ func TestEngine_JobStateTransition_PendingToInProgress(t *testing.T) {
 			StartedAt: &startedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.StartedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateStartedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, updateEvent)
@@ -150,8 +150,8 @@ func TestEngine_JobStateTransition_InProgressToSuccessful(t *testing.T) {
 			StartedAt: &startedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.StartedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateStartedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, updateEvent)
@@ -166,8 +166,8 @@ func TestEngine_JobStateTransition_InProgressToSuccessful(t *testing.T) {
 			CompletedAt: &completedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, completeEvent)
@@ -239,8 +239,8 @@ func TestEngine_JobStateTransition_InProgressToFailure(t *testing.T) {
 			StartedAt: &startedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.StartedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateStartedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, updateEvent)
@@ -255,8 +255,8 @@ func TestEngine_JobStateTransition_InProgressToFailure(t *testing.T) {
 			CompletedAt: &completedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, failEvent)
@@ -326,7 +326,7 @@ func TestEngine_JobStateTransition_PendingToCancelled(t *testing.T) {
 			Status: oapi.JobStatusCancelled,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, cancelEvent)
@@ -395,8 +395,8 @@ func TestEngine_JobStateTransition_InProgressToCancelled(t *testing.T) {
 			StartedAt: &startedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.StartedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateStartedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, startEvent)
@@ -417,8 +417,8 @@ func TestEngine_JobStateTransition_InProgressToCancelled(t *testing.T) {
 			CompletedAt: &completedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, cancelEvent)
@@ -485,7 +485,7 @@ func TestEngine_JobStateTransition_SkippedJob(t *testing.T) {
 			Status: oapi.JobStatusSkipped,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, skipEvent)
@@ -554,8 +554,8 @@ func TestEngine_JobStateTransition_ActionRequired(t *testing.T) {
 			StartedAt: &startedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.StartedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateStartedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, startEvent)
@@ -568,7 +568,7 @@ func TestEngine_JobStateTransition_ActionRequired(t *testing.T) {
 			Status: oapi.JobStatusActionRequired,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, actionEvent)
@@ -593,7 +593,7 @@ func TestEngine_JobStateTransition_ActionRequired(t *testing.T) {
 			Status: oapi.JobStatusInProgress,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, resumeEvent)
@@ -656,7 +656,7 @@ func TestEngine_JobStateTransition_InvalidStates(t *testing.T) {
 			Status: oapi.JobStatusInvalidJobAgent,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, invalidAgentEvent)
@@ -733,7 +733,7 @@ func TestEngine_JobStateTransition_MultipleJobsIndependentStates(t *testing.T) {
 			Status:    oapi.JobStatusInProgress,
 			StartedAt: &startedAt1,
 		},
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.StartedAt},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.JobUpdateEventFieldsToUpdateStatus, oapi.JobUpdateEventFieldsToUpdateStartedAt},
 	})
 
 	// Job 2: Complete successfully
@@ -745,7 +745,7 @@ func TestEngine_JobStateTransition_MultipleJobsIndependentStates(t *testing.T) {
 			Status:      oapi.JobStatusSuccessful,
 			CompletedAt: &completedAt2,
 		},
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.CompletedAt},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.JobUpdateEventFieldsToUpdateStatus, oapi.JobUpdateEventFieldsToUpdateCompletedAt},
 	})
 
 	// Job 3: Cancel
@@ -755,7 +755,7 @@ func TestEngine_JobStateTransition_MultipleJobsIndependentStates(t *testing.T) {
 			Id:     jobIDs[2],
 			Status: oapi.JobStatusCancelled,
 		},
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.JobUpdateEventFieldsToUpdateStatus},
 	})
 
 	// Verify all jobs have different states
@@ -849,7 +849,7 @@ func TestEngine_JobStateTransition_FieldUpdateValidation(t *testing.T) {
 			},
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status, // Only update status
+			oapi.JobUpdateEventFieldsToUpdateStatus, // Only update status
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, updateEvent)
@@ -928,7 +928,7 @@ func TestEngine_JobStateTransition_TimestampProgression(t *testing.T) {
 			Status:    oapi.JobStatusInProgress,
 			StartedAt: &startedAt,
 		},
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.StartedAt},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.JobUpdateEventFieldsToUpdateStatus, oapi.JobUpdateEventFieldsToUpdateStartedAt},
 	})
 
 	// Complete the job (set completedAt)
@@ -941,7 +941,7 @@ func TestEngine_JobStateTransition_TimestampProgression(t *testing.T) {
 			Status:      oapi.JobStatusSuccessful,
 			CompletedAt: &completedAt,
 		},
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.CompletedAt},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.JobUpdateEventFieldsToUpdateStatus, oapi.JobUpdateEventFieldsToUpdateCompletedAt},
 	})
 
 	// Verify timestamp progression

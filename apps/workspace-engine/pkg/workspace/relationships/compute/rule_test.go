@@ -36,14 +36,14 @@ func TestFindRuleRelationships_NoSelectorNoMatcher(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 	deployment2 := &oapi.Deployment{
 		Id:             "deployment-2",
 		Name:           "Deployment 2",
 		Slug:           "deployment-2",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -117,7 +117,7 @@ func TestFindRuleRelationships_WithSelector(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -175,14 +175,14 @@ func TestFindRuleRelationships_WithCELMatcher(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{"workspaceId": "workspace-1"},
+		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"workspaceId": "workspace-1"}),
 	}
 	deployment2 := &oapi.Deployment{
 		Id:             "deployment-2",
 		Name:           "Deployment 2",
 		Slug:           "deployment-2",
 		SystemId:       "system-2",
-		JobAgentConfig: map[string]interface{}{"workspaceId": "workspace-2"},
+		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"workspaceId": "workspace-2"}),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -215,7 +215,11 @@ func TestFindRuleRelationships_WithCELMatcher(t *testing.T) {
 	for _, rel := range result {
 		fromResource := rel.From.Item().(*oapi.Resource)
 		toDeployment := rel.To.Item().(*oapi.Deployment)
-		assert.Equal(t, fromResource.WorkspaceId, toDeployment.JobAgentConfig["workspaceId"])
+		customJobAgentConfig, err := toDeployment.JobAgentConfig.AsDeploymentCustomJobAgentConfig()
+		if err != nil {
+			panic(err)
+		}
+		assert.Equal(t, fromResource.WorkspaceId, customJobAgentConfig.AdditionalProperties["workspaceId"])
 	}
 }
 
@@ -244,7 +248,7 @@ func TestFindRuleRelationships_WithPropertyMatcher(t *testing.T) {
 		Name:           "app-frontend",
 		Slug:           "app-frontend",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -352,7 +356,7 @@ func TestFindRuleRelationships_NoMatchingFromEntities(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -468,14 +472,14 @@ func TestFindRuleRelationships_MultipleMatcherConditions(t *testing.T) {
 		Name:           "prod-deploy",
 		Slug:           "prod-deploy",
 		SystemId:       "workspace-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 	deployment2 := &oapi.Deployment{
 		Id:             "deployment-2",
 		Name:           "dev-deploy",
 		Slug:           "dev-deploy",
 		SystemId:       "workspace-2",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -550,7 +554,7 @@ func TestFilterEntities(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -599,7 +603,7 @@ func TestFindRuleRelationships_RuleIDIsSet(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -645,7 +649,7 @@ func TestFindRuleRelationships_MultipleRules(t *testing.T) {
 		Name:           "app-frontend",
 		Slug:           "app-frontend",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{
@@ -724,7 +728,7 @@ func TestFindRuleRelationships_ParallelProcessing(t *testing.T) {
 			Name:           fmt.Sprintf("Deployment %d", i),
 			Slug:           fmt.Sprintf("deployment-%d", i),
 			SystemId:       "system-1",
-			JobAgentConfig: map[string]interface{}{},
+			JobAgentConfig: customJobAgentConfig(nil),
 		}
 	}
 
@@ -777,7 +781,7 @@ func TestFindRuleRelationships_KeyUniqueness(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	entities := []*oapi.RelatableEntity{

@@ -1,12 +1,28 @@
 package diffcheck
 
 import (
+	"encoding/json"
 	"testing"
 
 	"workspace-engine/pkg/oapi"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func createJobAgentConfig(t *testing.T, config map[string]interface{}) oapi.DeploymentJobAgentConfig {
+	if _, ok := config["type"]; !ok {
+		config["type"] = "custom"
+	}
+	configJSON, err := json.Marshal(config)
+	if err != nil {
+		t.Fatalf("Failed to marshal job agent config: %v", err)
+	}
+	cfg := oapi.DeploymentJobAgentConfig{}
+	if err := cfg.UnmarshalJSON(configJSON); err != nil {
+		t.Fatalf("Failed to unmarshal job agent config: %v", err)
+	}
+	return cfg
+}
 
 func TestHasDeploymentChanges_NoChanges(t *testing.T) {
 	desc := "test deployment"
@@ -18,10 +34,10 @@ func TestHasDeploymentChanges_NoChanges(t *testing.T) {
 		SystemId:    "sys-123",
 		Description: &desc,
 		JobAgentId:  &agentId,
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
 			"image":    "nginx:latest",
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -31,10 +47,10 @@ func TestHasDeploymentChanges_NoChanges(t *testing.T) {
 		SystemId:    "sys-123",
 		Description: &desc,
 		JobAgentId:  &agentId,
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
 			"image":    "nginx:latest",
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -47,7 +63,7 @@ func TestHasDeploymentChanges_NilInputs(t *testing.T) {
 		Name:           "sample",
 		Slug:           "sample",
 		SystemId:       "sys-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 	}
 
 	t.Run("nil-old", func(t *testing.T) {
@@ -96,13 +112,13 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 		SystemId:    "sys-old",
 		Description: &oldDesc,
 		JobAgentId:  &oldAgent,
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"image":    "nginx:v1",
 			"replicas": 1,
 			"nested": map[string]interface{}{
 				"key": "value",
 			},
-		},
+		}),
 		ResourceSelector: oldSelector,
 	}
 
@@ -112,11 +128,11 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 		SystemId:    "sys-new",
 		Description: &newDesc,
 		JobAgentId:  &newAgent,
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"image":    "nginx:v2",
 			"replicas": 2,
 			"extra":    true,
-		},
+		}),
 		ResourceSelector: newSelector,
 	}
 
@@ -138,7 +154,7 @@ func TestHasDeploymentChanges_NameChanged(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -146,7 +162,7 @@ func TestHasDeploymentChanges_NameChanged(t *testing.T) {
 		Name:           "web-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -160,7 +176,7 @@ func TestHasDeploymentChanges_SlugChanged(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -168,7 +184,7 @@ func TestHasDeploymentChanges_SlugChanged(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment-v2",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -182,7 +198,7 @@ func TestHasDeploymentChanges_SystemIdChanged(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -190,7 +206,7 @@ func TestHasDeploymentChanges_SystemIdChanged(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-456",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -208,7 +224,7 @@ func TestHasDeploymentChanges_DescriptionChanged(t *testing.T) {
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
 		Description:    &oldDesc,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -217,7 +233,7 @@ func TestHasDeploymentChanges_DescriptionChanged(t *testing.T) {
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
 		Description:    &newDesc,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -235,7 +251,7 @@ func TestHasDeploymentChanges_JobAgentIdChanged(t *testing.T) {
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
 		JobAgentId:     &oldAgent,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -244,7 +260,7 @@ func TestHasDeploymentChanges_JobAgentIdChanged(t *testing.T) {
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
 		JobAgentId:     &newAgent,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -258,10 +274,10 @@ func TestHasDeploymentChanges_JobAgentConfigValueChanged(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
 			"image":    "nginx:1.0",
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -269,10 +285,10 @@ func TestHasDeploymentChanges_JobAgentConfigValueChanged(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
 			"image":    "nginx:2.0",
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -286,9 +302,9 @@ func TestHasDeploymentChanges_JobAgentConfigKeyAdded(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -296,10 +312,10 @@ func TestHasDeploymentChanges_JobAgentConfigKeyAdded(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
 			"image":    "nginx:latest",
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -313,10 +329,10 @@ func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
 			"image":    "nginx:latest",
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -324,9 +340,9 @@ func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -340,12 +356,12 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"database": map[string]interface{}{
 				"host": "localhost",
 				"port": 5432,
 			},
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -353,12 +369,12 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"database": map[string]interface{}{
 				"host": "prod-db.example.com",
 				"port": 5432,
 			},
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -387,7 +403,7 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 		Slug:             "api-deployment",
 		SystemId:         "sys-123",
 		ResourceSelector: oldSelector,
-		JobAgentConfig:   map[string]interface{}{},
+		JobAgentConfig:   createJobAgentConfig(t, map[string]interface{}{}),
 		Id:               "deploy-123",
 	}
 
@@ -396,7 +412,7 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 		Slug:             "api-deployment",
 		SystemId:         "sys-123",
 		ResourceSelector: newSelector,
-		JobAgentConfig:   map[string]interface{}{},
+		JobAgentConfig:   createJobAgentConfig(t, map[string]interface{}{}),
 		Id:               "deploy-123",
 	}
 
@@ -422,10 +438,10 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 		Slug:        "api-deployment",
 		SystemId:    "sys-123",
 		Description: &oldDesc,
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 3,
 			"image":    "nginx:1.0",
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -434,10 +450,10 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 		Slug:        "web-deployment",
 		SystemId:    "sys-456",
 		Description: &newDesc,
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"replicas": 5,
 			"image":    "nginx:2.0",
-		},
+		}),
 		Id: "deploy-456", // Different ID (should be ignored)
 	}
 
@@ -457,7 +473,7 @@ func TestHasDeploymentChanges_IdIgnored(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-old",
 	}
 
@@ -465,7 +481,7 @@ func TestHasDeploymentChanges_IdIgnored(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-new",
 	}
 
@@ -479,7 +495,7 @@ func TestHasDeploymentChanges_IdIgnoredWithOtherChanges(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-old",
 	}
 
@@ -487,7 +503,7 @@ func TestHasDeploymentChanges_IdIgnoredWithOtherChanges(t *testing.T) {
 		Name:           "web-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-new",
 	}
 
@@ -502,7 +518,7 @@ func TestHasDeploymentChanges_EmptyJobAgentConfig(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -510,7 +526,7 @@ func TestHasDeploymentChanges_EmptyJobAgentConfig(t *testing.T) {
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -526,7 +542,7 @@ func TestHasDeploymentChanges_NilToSetDescription(t *testing.T) {
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
 		Description:    nil,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -535,7 +551,7 @@ func TestHasDeploymentChanges_NilToSetDescription(t *testing.T) {
 		Slug:           "api-deployment",
 		SystemId:       "sys-123",
 		Description:    &newDesc,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{}),
 		Id:             "deploy-123",
 	}
 
@@ -549,7 +565,7 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"services": map[string]interface{}{
 				"database": map[string]interface{}{
 					"credentials": map[string]interface{}{
@@ -558,7 +574,7 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 					},
 				},
 			},
-		},
+		}),
 		Id: "deploy-123",
 	}
 
@@ -566,7 +582,7 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 		Name:     "api-deployment",
 		Slug:     "api-deployment",
 		SystemId: "sys-123",
-		JobAgentConfig: map[string]interface{}{
+		JobAgentConfig: createJobAgentConfig(t, map[string]interface{}{
 			"services": map[string]interface{}{
 				"database": map[string]interface{}{
 					"credentials": map[string]interface{}{
@@ -575,7 +591,7 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 					},
 				},
 			},
-		},
+		}),
 		Id: "deploy-123",
 	}
 

@@ -216,11 +216,15 @@ func TestEngine_ReleaseManager_CompleteFlow(t *testing.T) {
 
 	// Verify job agent config is preserved
 	jobConfig := job.JobAgentConfig
-	if jobConfig["namespace"] != "production" {
-		t.Errorf("job config namespace = %v, want production", jobConfig["namespace"])
+	cfg, err := jobConfig.AsFullCustomJobAgentConfig()
+	if err != nil {
+		t.Fatalf("failed to get job job agent config: %v", err)
 	}
-	if jobConfig["replicas"] != float64(3) {
-		t.Errorf("job config replicas = %v, want 3", jobConfig["replicas"])
+	if cfg.AdditionalProperties["namespace"] != "production" {
+		t.Errorf("job config namespace = %v, want production", cfg.AdditionalProperties["namespace"])
+	}
+	if cfg.AdditionalProperties["replicas"] != float64(3) {
+		t.Errorf("job config replicas = %v, want 3", cfg.AdditionalProperties["replicas"])
 	}
 }
 

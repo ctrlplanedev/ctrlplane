@@ -384,8 +384,8 @@ func TestEngine_ResourceVariablesBulkUpdate_AddVariable(t *testing.T) {
 		Id:  &job.Id,
 		Job: jobWithStatusSuccessful,
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	})
 
@@ -482,8 +482,8 @@ func TestEngine_ResourceVariablesBulkUpdate_UpdateVariable(t *testing.T) {
 		Id:  &job.Id,
 		Job: jobWithStatusSuccessful,
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	})
 

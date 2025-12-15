@@ -1,6 +1,7 @@
 package diffcheck
 
 import (
+	"encoding/json"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/r3labs/diff/v3"
@@ -18,8 +19,34 @@ func HasDeploymentChanges(old, new *oapi.Deployment) map[string]bool {
 
 	changed := make(map[string]bool)
 
+	// Normalize deployments to JSON maps before diffing so union types (e.g. jobAgentConfig)
+	// are compared by their JSON object shape rather than internal union representation.
+	toMap := func(d *oapi.Deployment) (map[string]any, error) {
+		b, err := json.Marshal(d)
+		if err != nil {
+			return nil, err
+		}
+		var m map[string]any
+		if err := json.Unmarshal(b, &m); err != nil {
+			return nil, err
+		}
+		if m == nil {
+			m = map[string]any{}
+		}
+		return m, nil
+	}
+
+	oldMap, err := toMap(old)
+	if err != nil {
+		return hasDeploymentChangesBasic(old, new)
+	}
+	newMap, err := toMap(new)
+	if err != nil {
+		return hasDeploymentChangesBasic(old, new)
+	}
+
 	// Use diff library to detect all changes
-	changelog, err := diff.Diff(old, new)
+	changelog, err := diff.Diff(oldMap, newMap)
 	if err != nil {
 		// Fallback to basic comparison if diff fails
 		return hasDeploymentChangesBasic(old, new)
@@ -85,14 +112,34 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 		changed["jobagentid"] = true
 	}
 
+	oldJobAgentConfigJSON, err := old.JobAgentConfig.MarshalJSON()
+	if err != nil {
+		return changed
+	}
+	newJobAgentConfigJSON, err := new.JobAgentConfig.MarshalJSON()
+	if err != nil {
+		return changed
+	}
+
+	var oldJobAgentConfigMap map[string]any
+	err = json.Unmarshal(oldJobAgentConfigJSON, &oldJobAgentConfigMap)
+	if err != nil {
+		return changed
+	}
+	var newJobAgentConfigMap map[string]any
+	err = json.Unmarshal(newJobAgentConfigJSON, &newJobAgentConfigMap)
+	if err != nil {
+		return changed
+	}
+
 	// Compare JobAgentConfig (map)
-	for key := range old.JobAgentConfig {
-		if newVal, exists := new.JobAgentConfig[key]; !exists || !deepEqual(old.JobAgentConfig[key], newVal) {
+	for key := range oldJobAgentConfigMap {
+		if newVal, exists := newJobAgentConfigMap[key]; !exists || !deepEqual(oldJobAgentConfigMap[key], newVal) {
 			changed["jobagentconfig."+key] = true
 		}
 	}
-	for key := range new.JobAgentConfig {
-		if _, exists := old.JobAgentConfig[key]; !exists {
+	for key := range newJobAgentConfigMap {
+		if _, exists := oldJobAgentConfigMap[key]; !exists {
 			changed["jobagentconfig."+key] = true
 		}
 	}

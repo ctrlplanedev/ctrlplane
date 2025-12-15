@@ -34,7 +34,7 @@ func TestEngine_JobsWithNilReleaseReference(t *testing.T) {
 	deployment := c.NewDeployment(sys.Id)
 	deployment.Name = "test-deployment"
 	deployment.JobAgentId = &jobAgent.Id
-	deployment.JobAgentConfig = map[string]any{"test": "config"}
+	deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(map[string]any{"test": "config"})
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
@@ -130,7 +130,7 @@ func TestEngine_ReleaseTargetStateWithNilRelease(t *testing.T) {
 
 	deployment := c.NewDeployment(sys.Id)
 	deployment.JobAgentId = &jobAgent.Id
-	deployment.JobAgentConfig = map[string]any{}
+	deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(nil)
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
@@ -217,7 +217,7 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 
 	deployment := c.NewDeployment(sys.Id)
 	deployment.JobAgentId = &jobAgent.Id
-	deployment.JobAgentConfig = map[string]any{}
+	deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(nil)
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
@@ -331,7 +331,7 @@ func TestEngine_DeploymentDeletionLeavesOrphanedJobs(t *testing.T) {
 
 	deployment := c.NewDeployment(sys.Id)
 	deployment.JobAgentId = &jobAgent.Id
-	deployment.JobAgentConfig = map[string]any{}
+	deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(nil)
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)

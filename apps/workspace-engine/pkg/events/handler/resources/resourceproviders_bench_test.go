@@ -58,6 +58,25 @@ func createTestEnvironment(systemID, environmentID, name string) *oapi.Environme
 	}
 }
 
+func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfig {
+	payload := map[string]interface{}{}
+	for k, v := range m {
+		payload[k] = v
+	}
+	payload["type"] = "custom"
+	return customJobAgentConfig(payload)
+	b, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg oapi.DeploymentJobAgentConfig
+	if err := cfg.UnmarshalJSON(b); err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
 // createTestDeployment creates a test deployment with the given ID and system
 func createTestDeployment(systemID, deploymentID, name string) *oapi.Deployment {
 	selector := &oapi.Selector{}
@@ -73,7 +92,7 @@ func createTestDeployment(systemID, deploymentID, name string) *oapi.Deployment 
 		SystemId:         systemID,
 		ResourceSelector: selector,
 		JobAgentId:       nil,
-		JobAgentConfig:   map[string]any{},
+		JobAgentConfig:   customJobAgentConfig(nil),
 	}
 }
 

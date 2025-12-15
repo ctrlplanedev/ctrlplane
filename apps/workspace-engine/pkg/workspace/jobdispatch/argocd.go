@@ -31,12 +31,6 @@ import (
 
 var argoCDTracer = otel.Tracer("ArgoCDDispatcher")
 
-type argoCDAgentConfig struct {
-	ServerUrl string `json:"serverUrl"`
-	ApiKey    string `json:"apiKey"`
-	Template  string `json:"template"`
-}
-
 type ArgoCDDispatcher struct {
 	store        *store.Store
 	verification *verification.Manager
@@ -47,27 +41,6 @@ func NewArgoCDDispatcher(store *store.Store, verification *verification.Manager)
 		store:        store,
 		verification: verification,
 	}
-}
-
-func (d *ArgoCDDispatcher) parseConfig(job *oapi.Job) (argoCDAgentConfig, error) {
-	var parsed argoCDAgentConfig
-	rawCfg, err := json.Marshal(job.JobAgentConfig)
-	if err != nil {
-		return argoCDAgentConfig{}, err
-	}
-	if err := json.Unmarshal(rawCfg, &parsed); err != nil {
-		return argoCDAgentConfig{}, err
-	}
-	if parsed.ServerUrl == "" {
-		return argoCDAgentConfig{}, fmt.Errorf("missing required ArgoCD job config: serverUrl")
-	}
-	if parsed.ApiKey == "" {
-		return argoCDAgentConfig{}, fmt.Errorf("missing required ArgoCD job config: apiKey")
-	}
-	if parsed.Template == "" {
-		return argoCDAgentConfig{}, fmt.Errorf("missing required ArgoCD job config: template")
-	}
-	return parsed, nil
 }
 
 func getK8sCompatibleName(name string) string {
@@ -101,6 +74,13 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	ctx, span := argoCDTracer.Start(ctx, "ArgoCDDispatcher.DispatchJob")
 	defer span.End()
 
+	cfg, err := job.JobAgentConfig.AsFullArgoCDJobAgentConfig()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to parse job config")
+		return err
+	}
+
 	span.SetAttributes(
 		attribute.String("job.id", job.Id),
 		attribute.String("release.id", job.ReleaseId),
@@ -120,16 +100,8 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("failed to get templatable job with release: %w", err)
 	}
 
-	cfg, err := d.parseConfig(job)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to parse config")
-		return err
-	}
-
 	span.SetAttributes(attribute.String("cfg", fmt.Sprintf("%+v", cfg)))
 	span.SetAttributes(attribute.String("argocd.server_url", cfg.ServerUrl))
-
 	t, err := template.New("argoCDAgentConfig").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(cfg.Template)
 	if err != nil {
 		span.RecordError(err)
@@ -230,7 +202,7 @@ func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
 	})
 }
 
-func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConfig, app v1alpha1.Application) error {
+func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg oapi.FullArgoCDJobAgentConfig, app v1alpha1.Application) error {
 	_, span := argoCDTracer.Start(context.Background(), "sendJobUpdateEvent")
 	defer span.End()
 
@@ -261,9 +233,14 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConf
 	job.CompletedAt = &job.UpdatedAt
 
 	eventPayload := oapi.JobUpdateEvent{
-		Id:             &job.Id,
-		Job:            *job,
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.Metadata, oapi.CompletedAt, oapi.UpdatedAt},
+		Id:  &job.Id,
+		Job: *job,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateMetadata,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
 	}
 
 	producer, err := d.getKafkaProducer()
@@ -303,7 +280,7 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg argoCDAgentConf
 func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	ctx context.Context,
 	jobWithRelease *oapi.JobWithRelease,
-	cfg argoCDAgentConfig,
+	cfg oapi.FullArgoCDJobAgentConfig,
 	appName string,
 ) error {
 	ctx, span := argoCDTracer.Start(ctx, "startArgoApplicationVerification")

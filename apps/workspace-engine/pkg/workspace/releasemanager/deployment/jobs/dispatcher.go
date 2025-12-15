@@ -29,26 +29,28 @@ var ErrUnsupportedJobAgent = errors.New("job agent not supported")
 
 // DispatchJob sends a job to the configured job agent for execution.
 func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
-	jobAgent, exists := d.store.JobAgents.Get(job.JobAgentId)
+	_, exists := d.store.JobAgents.Get(job.JobAgentId)
 	if !exists {
 		return fmt.Errorf("job agent %s not found", job.JobAgentId)
 	}
 
-	if jobAgent.Type == string(jobdispatch.JobAgentTypeGithub) {
+	config, err := job.JobAgentConfig.Discriminator()
+	if err != nil {
+		return fmt.Errorf("failed to get job agent config discriminator: %w", err)
+	}
+	switch config {
+	case "github-app":
 		return jobdispatch.NewGithubDispatcher(d.store).DispatchJob(ctx, job)
-	}
-
-	if jobAgent.Type == string(jobdispatch.JobAgentTypeArgoCD) {
+	case "argo-cd":
 		return jobdispatch.NewArgoCDDispatcher(d.store, d.verification).DispatchJob(ctx, job)
-	}
-
-	if jobAgent.Type == string(jobdispatch.JobAgentTypeTFCloud) {
+	case "tfe":
 		return jobdispatch.NewTerraformCloudDispatcher(d.store, d.verification).DispatchJob(ctx, job)
-	}
-
-	if jobAgent.Type == string(jobdispatch.JobAgentTypeTestRunner) {
+	case "test-runner":
 		return jobdispatch.NewTestRunnerDispatcher(d.store).DispatchJob(ctx, job)
+	case "custom":
+		// For now custom job agents will handle job processing themselves
+		return nil
+	default:
+		return ErrUnsupportedJobAgent
 	}
-
-	return ErrUnsupportedJobAgent
 }
