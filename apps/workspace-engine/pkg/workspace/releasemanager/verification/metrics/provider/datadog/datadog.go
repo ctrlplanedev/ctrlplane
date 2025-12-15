@@ -24,7 +24,7 @@ type datadogResponseV2 struct {
 	Data struct {
 		Attributes struct {
 			Columns []struct {
-				Name    string
+				Name   string
 				Values []*float64
 			}
 		}
@@ -59,7 +59,6 @@ func New(config *oapi.DatadogMetricProvider) (*Provider, error) {
 	if config.AppKey == "" {
 		return nil, fmt.Errorf("appKey is required")
 	}
-	
 
 	if config.IntervalSeconds == nil || *config.IntervalSeconds == 0 {
 		interval := int64(5 * 60)
@@ -67,7 +66,6 @@ func New(config *oapi.DatadogMetricProvider) (*Provider, error) {
 	}
 
 	fmt.Printf("Datadog provider interval configured as: %d seconds\n", *config.IntervalSeconds)
-
 
 	if config.Aggregator == nil || *config.Aggregator == "" {
 		aggregator := oapi.DatadogMetricProviderAggregator("last")

@@ -273,6 +273,8 @@ func (s *scheduler) isCompleted(v *oapi.ReleaseVerification) bool {
 		status == oapi.ReleaseVerificationStatusFailed
 }
 
+const defaultMetricInterval = 30 * time.Second
+
 func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (time.Duration, error) {
 	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
 	if !ok {
@@ -283,7 +285,12 @@ func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (t
 		return 0, fmt.Errorf("metric index out of range: %d", metricIndex)
 	}
 
-	return verification.Metrics[metricIndex].GetInterval(), nil
+	interval := verification.Metrics[metricIndex].GetInterval()
+	if interval <= 0 {
+		return defaultMetricInterval, nil
+	}
+
+	return interval, nil
 }
 
 func (s *scheduler) buildSummaryMessage(v *oapi.ReleaseVerification, status oapi.ReleaseVerificationStatus) string {
