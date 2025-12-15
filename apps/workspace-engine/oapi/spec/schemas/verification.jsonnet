@@ -190,17 +190,37 @@ local openapi = import '../lib/openapi.libsonnet';
 
   DatadogMetricProvider: {
     type: 'object',
-    required: ['type', 'query', 'apiKey', 'appKey'],
+    required: ['type', 'query', 'apiKey', 'appKey', 'queries'],
     properties: {
       type: {
         type: 'string',
         enum: ['datadog'],
         description: 'Provider type',
       },
-      query: {
+      aggregator: {
         type: 'string',
-        description: 'Datadog metrics query (supports Go templates)',
-        example: 'sum:requests.error.rate{service:{{.resource.name}}}',
+        description: 'Datadog aggregator',
+        default: 'last',
+        enum: ['avg', 'min', 'max', 'sum', 'last', 'percentile', 'mean', 'l2norm', 'area'],
+      },
+      intervalSeconds: {
+        type: 'integer',
+        format: 'int64',
+        example: 30,
+        minimum: 1,
+        maximum: 3600,
+      },
+      formula: {
+        type: 'string',
+        description: 'Datadog formula (supports Go templates)',
+      },
+      queries: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+        description: 'Datadog metrics queries (supports Go templates)',
+        example: {
+          q: 'sum:requests.error.rate{service:{{.resource.name}}}',
+        },
       },
       apiKey: {
         type: 'string',

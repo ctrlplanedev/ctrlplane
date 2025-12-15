@@ -21,6 +21,19 @@ const (
 	ApprovalStatusRejected ApprovalStatus = "rejected"
 )
 
+// Defines values for DatadogMetricProviderAggregator.
+const (
+	Area       DatadogMetricProviderAggregator = "area"
+	Avg        DatadogMetricProviderAggregator = "avg"
+	L2norm     DatadogMetricProviderAggregator = "l2norm"
+	Last       DatadogMetricProviderAggregator = "last"
+	Max        DatadogMetricProviderAggregator = "max"
+	Mean       DatadogMetricProviderAggregator = "mean"
+	Min        DatadogMetricProviderAggregator = "min"
+	Percentile DatadogMetricProviderAggregator = "percentile"
+	Sum        DatadogMetricProviderAggregator = "sum"
+)
+
 // Defines values for DatadogMetricProviderType.
 const (
 	Datadog DatadogMetricProviderType = "datadog"
@@ -185,14 +198,21 @@ type CelSelector struct {
 
 // DatadogMetricProvider defines model for DatadogMetricProvider.
 type DatadogMetricProvider struct {
+	// Aggregator Datadog aggregator
+	Aggregator *DatadogMetricProviderAggregator `json:"aggregator,omitempty"`
+
 	// ApiKey Datadog API key (supports Go templates for variable references)
 	ApiKey string `json:"apiKey"`
 
 	// AppKey Datadog Application key (supports Go templates for variable references)
 	AppKey string `json:"appKey"`
 
-	// Query Datadog metrics query (supports Go templates)
-	Query string `json:"query"`
+	// Formula Datadog formula (supports Go templates)
+	Formula         *string `json:"formula,omitempty"`
+	IntervalSeconds *int64  `json:"intervalSeconds,omitempty"`
+
+	// Queries Datadog metrics queries (supports Go templates)
+	Queries map[string]string `json:"queries"`
 
 	// Site Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
 	Site *string `json:"site,omitempty"`
@@ -200,6 +220,9 @@ type DatadogMetricProvider struct {
 	// Type Provider type
 	Type DatadogMetricProviderType `json:"type"`
 }
+
+// DatadogMetricProviderAggregator Datadog aggregator
+type DatadogMetricProviderAggregator string
 
 // DatadogMetricProviderType Provider type
 type DatadogMetricProviderType string

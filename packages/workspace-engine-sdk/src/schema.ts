@@ -1051,6 +1051,12 @@ export interface components {
         };
         DatadogMetricProvider: {
             /**
+             * @description Datadog aggregator
+             * @default last
+             * @enum {string}
+             */
+            aggregator: "avg" | "min" | "max" | "sum" | "last" | "percentile" | "mean" | "l2norm" | "area";
+            /**
              * @description Datadog API key (supports Go templates for variable references)
              * @example {{.variables.dd_api_key}}
              */
@@ -1060,11 +1066,22 @@ export interface components {
              * @example {{.variables.dd_app_key}}
              */
             appKey: string;
+            /** @description Datadog formula (supports Go templates) */
+            formula?: string;
             /**
-             * @description Datadog metrics query (supports Go templates)
-             * @example sum:requests.error.rate{service:{{.resource.name}}}
+             * Format: int64
+             * @example 30
              */
-            query: string;
+            intervalSeconds?: number;
+            /**
+             * @description Datadog metrics queries (supports Go templates)
+             * @example {
+             *       "q": "sum:requests.error.rate{service:{{.resource.name}}}"
+             *     }
+             */
+            queries: {
+                [key: string]: string;
+            };
             /**
              * @description Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)
              * @default datadoghq.com

@@ -58,6 +58,22 @@
          },
          "DatadogMetricProvider": {
             "properties": {
+               "aggregator": {
+                  "default": "last",
+                  "description": "Datadog aggregator",
+                  "enum": [
+                     "avg",
+                     "min",
+                     "max",
+                     "sum",
+                     "last",
+                     "percentile",
+                     "mean",
+                     "l2norm",
+                     "area"
+                  ],
+                  "type": "string"
+               },
                "apiKey": {
                   "description": "Datadog API key (supports Go templates for variable references)",
                   "example": "{{.variables.dd_api_key}}",
@@ -68,10 +84,26 @@
                   "example": "{{.variables.dd_app_key}}",
                   "type": "string"
                },
-               "query": {
-                  "description": "Datadog metrics query (supports Go templates)",
-                  "example": "sum:requests.error.rate{service:{{.resource.name}}}",
+               "formula": {
+                  "description": "Datadog formula (supports Go templates)",
                   "type": "string"
+               },
+               "intervalSeconds": {
+                  "example": 30,
+                  "format": "int64",
+                  "maximum": 3600,
+                  "minimum": 1,
+                  "type": "integer"
+               },
+               "queries": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "Datadog metrics queries (supports Go templates)",
+                  "example": {
+                     "q": "sum:requests.error.rate{service:{{.resource.name}}}"
+                  },
+                  "type": "object"
                },
                "site": {
                   "default": "datadoghq.com",
@@ -90,7 +122,8 @@
                "type",
                "query",
                "apiKey",
-               "appKey"
+               "appKey",
+               "queries"
             ],
             "type": "object"
          },
