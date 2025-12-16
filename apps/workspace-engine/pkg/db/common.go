@@ -55,3 +55,23 @@ func unwrapSelectorForDB(selector *oapi.Selector) (map[string]interface{}, error
 	// TODO: Add support for CEL selectors in the future
 	return nil, nil
 }
+
+func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfig {
+	// Minimal approach for tests: force discriminator, marshal, and rely on generated UnmarshalJSON.
+	payload := map[string]interface{}{}
+	for k, v := range m {
+		payload[k] = v
+	}
+	payload["type"] = "custom"
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg oapi.DeploymentJobAgentConfig
+	if err := cfg.UnmarshalJSON(b); err != nil {
+		panic(err)
+	}
+	return cfg
+}

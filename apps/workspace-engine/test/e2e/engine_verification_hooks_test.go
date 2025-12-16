@@ -100,8 +100,8 @@ func TestEngineVerificationHooks(t *testing.T) {
 			CompletedAt: &completedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	}
 
@@ -211,8 +211,8 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 			CompletedAt: &completedAt,
 		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	}
 

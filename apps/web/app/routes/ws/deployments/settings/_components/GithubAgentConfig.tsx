@@ -18,19 +18,30 @@ import {
 } from "~/components/ui/select";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useSelectedJobAgent } from "../_hooks/job-agents";
+import {
+  deploymentJobAgentConfig,
+  githubAppJobAgentConfig,
+} from "../deploymentJobAgentConfig";
 
 const formSchema = z.object({
   jobAgentId: z.string(),
-  jobAgentConfig: z.record(z.any()),
+  jobAgentConfig: deploymentJobAgentConfig,
 });
 
 type Form = UseFormReturn<z.infer<typeof formSchema>>;
+
+const githubFormSchema = z.object({
+  jobAgentId: z.string(),
+  jobAgentConfig: githubAppJobAgentConfig,
+});
+
+type GithubForm = UseFormReturn<z.infer<typeof githubFormSchema>>;
 
 type GithubAgentConfigProps = {
   form: Form;
 };
 
-const useGithubRepos = (form: Form) => {
+const useGithubRepos = (form: GithubForm) => {
   const { workspace } = useWorkspace();
   const selectedJobAgent = useSelectedJobAgent(form);
   const githubReposQuery = trpc.github.reposForAgent.useQuery(
@@ -42,7 +53,7 @@ const useGithubRepos = (form: Form) => {
   );
 };
 
-function RepoSelector({ form }: { form: Form }) {
+function RepoSelector({ form }: { form: GithubForm }) {
   const githubRepos = useGithubRepos(form);
 
   return (
@@ -73,18 +84,18 @@ function RepoSelector({ form }: { form: Form }) {
   );
 }
 
-const useRepoWorkflows = (form: Form) => {
+const useRepoWorkflows = (form: GithubForm) => {
   const githubRepos = useGithubRepos(form);
   const selectedRepoName = form.watch("jobAgentConfig.repo");
   const selectedRepo = githubRepos.find(
-    (repo) => repo.name === String(selectedRepoName),
+    (repo) => repo.name === selectedRepoName,
   );
   return (selectedRepo?.workflows ?? []).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
 };
 
-function WorkflowSelector({ form }: { form: Form }) {
+function WorkflowSelector({ form }: { form: GithubForm }) {
   const repoWorkflows = useRepoWorkflows(form);
   return (
     <FormField
@@ -115,10 +126,11 @@ function WorkflowSelector({ form }: { form: Form }) {
 }
 
 export function GithubAgentConfig({ form }: GithubAgentConfigProps) {
+  const githubForm = form as unknown as GithubForm;
   return (
     <div className="mt-2 flex flex-col gap-6">
-      <RepoSelector form={form} />
-      <WorkflowSelector form={form} />
+      <RepoSelector form={githubForm} />
+      <WorkflowSelector form={githubForm} />
     </div>
   );
 }

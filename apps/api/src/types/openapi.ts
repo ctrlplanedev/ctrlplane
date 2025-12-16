@@ -759,6 +759,17 @@ export interface components {
         };
         /** @enum {string} */
         ApprovalStatus: "approved" | "rejected";
+        ArgoCDJobAgentConfig: {
+            /** @description ArgoCD API token. */
+            apiKey: string;
+            /** @description ArgoCD server address (host[:port] or URL). */
+            serverUrl: string;
+            /**
+             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "argo-cd";
+        };
         BooleanValue: boolean;
         CelMatcher: {
             cel: string;
@@ -768,9 +779,7 @@ export interface components {
         };
         CreateDeploymentRequest: {
             description?: string;
-            jobAgentConfig?: {
-                [key: string]: unknown;
-            };
+            jobAgentConfig?: components["schemas"]["DeploymentJobAgentConfig"];
             jobAgentId?: string;
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
@@ -835,6 +844,15 @@ export interface components {
             /** @description URL-friendly unique identifier (lowercase, no spaces) */
             slug: string;
         };
+        CustomJobAgentConfig: {
+            /**
+             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "custom";
+        } & {
+            [key: string]: unknown;
+        };
         DatadogMetricProvider: {
             /**
              * @description Datadog aggregator
@@ -882,9 +900,7 @@ export interface components {
         Deployment: {
             description?: string;
             id: string;
-            jobAgentConfig: {
-                [key: string]: unknown;
-            };
+            jobAgentConfig: components["schemas"]["DeploymentJobAgentConfig"];
             jobAgentId?: string;
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
@@ -895,8 +911,52 @@ export interface components {
             deployment: components["schemas"]["Deployment"];
             system: components["schemas"]["System"];
         };
+        DeploymentArgoCDJobAgentConfig: {
+            /** @description ArgoCD Application YAML/JSON template (supports Go templates). */
+            template: string;
+            /**
+             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "argo-cd";
+        };
+        DeploymentCustomJobAgentConfig: {
+            /**
+             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "custom";
+        } & {
+            [key: string]: unknown;
+        };
         DeploymentDependencyRule: {
             dependsOnDeploymentSelector: components["schemas"]["Selector"];
+        };
+        DeploymentGithubJobAgentConfig: {
+            /** @description Git ref to run the workflow on (defaults to "main" if omitted). */
+            ref?: string;
+            /** @description GitHub repository name. */
+            repo: string;
+            /**
+             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "github-app";
+            /**
+             * Format: int64
+             * @description GitHub Actions workflow ID.
+             */
+            workflowId: number;
+        };
+        DeploymentJobAgentConfig: components["schemas"]["DeploymentGithubJobAgentConfig"] | components["schemas"]["DeploymentArgoCDJobAgentConfig"] | components["schemas"]["DeploymentTerraformCloudJobAgentConfig"] | components["schemas"]["DeploymentCustomJobAgentConfig"];
+        DeploymentTerraformCloudJobAgentConfig: {
+            /** @description Terraform Cloud workspace template (YAML/JSON; supports Go templates). */
+            template: string;
+            /**
+             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "tfe";
         };
         DeploymentVariable: {
             defaultValue?: components["schemas"]["LiteralValue"];
@@ -999,6 +1059,52 @@ export interface components {
             /** @example Workspace not found */
             error?: string;
         };
+        FullArgoCDJobAgentConfig: components["schemas"]["ArgoCDJobAgentConfig"] & components["schemas"]["DeploymentArgoCDJobAgentConfig"] & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "argo-cd";
+        };
+        FullCustomJobAgentConfig: components["schemas"]["CustomJobAgentConfig"] & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "custom";
+        };
+        FullGithubJobAgentConfig: components["schemas"]["GithubJobAgentConfig"] & components["schemas"]["DeploymentGithubJobAgentConfig"] & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "github-app";
+        };
+        FullJobAgentConfig: components["schemas"]["FullGithubJobAgentConfig"] | components["schemas"]["FullArgoCDJobAgentConfig"] | components["schemas"]["FullTerraformCloudJobAgentConfig"] | components["schemas"]["FullTestRunnerJobAgentConfig"] | components["schemas"]["FullCustomJobAgentConfig"];
+        FullTerraformCloudJobAgentConfig: components["schemas"]["TerraformCloudJobAgentConfig"] & components["schemas"]["DeploymentTerraformCloudJobAgentConfig"] & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "tfe";
+        };
+        FullTestRunnerJobAgentConfig: components["schemas"]["TestRunnerJobAgentConfig"] & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "test-runner";
+        };
+        GithubJobAgentConfig: {
+            /** Format: int */
+            installationId: number;
+            owner: string;
+            /**
+             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "github-app";
+        };
         GradualRolloutRule: {
             /**
              * @description Strategy for scheduling deployments to release targets. "linear": Each target is deployed at a fixed interval of timeScaleInterval seconds. "linear-normalized": Deployments are spaced evenly so that the last target is scheduled at or before timeScaleInterval seconds. See rolloutType algorithm documentation for details.
@@ -1048,9 +1154,7 @@ export interface components {
             createdAt: string;
             externalId?: string;
             id: string;
-            jobAgentConfig: {
-                [key: string]: unknown;
-            };
+            jobAgentConfig: components["schemas"]["FullJobAgentConfig"];
             jobAgentId: string;
             metadata: {
                 [key: string]: string;
@@ -1063,9 +1167,7 @@ export interface components {
             updatedAt: string;
         };
         JobAgent: {
-            config: {
-                [key: string]: unknown;
-            };
+            config: components["schemas"]["JobAgentConfig"];
             id: string;
             metadata: {
                 [key: string]: string;
@@ -1073,6 +1175,7 @@ export interface components {
             name: string;
             type: string;
         };
+        JobAgentConfig: components["schemas"]["GithubJobAgentConfig"] | components["schemas"]["ArgoCDJobAgentConfig"] | components["schemas"]["TerraformCloudJobAgentConfig"] | components["schemas"]["TestRunnerJobAgentConfig"] | components["schemas"]["CustomJobAgentConfig"];
         /** @enum {string} */
         JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
         JobUpdateEvent: {
@@ -1307,6 +1410,23 @@ export interface components {
             slug: string;
             workspaceId: string;
         };
+        TerraformCloudJobAgentConfig: {
+            /** @description Terraform Cloud address (e.g. https://app.terraform.io). */
+            address: string;
+            /** @description Terraform Cloud organization name. */
+            organization: string;
+            /** @description Terraform Cloud workspace template (YAML/JSON; supports Go templates). */
+            template?: string;
+            /** @description Terraform Cloud API token. */
+            token: string;
+            /**
+             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "tfe";
+        } & {
+            [key: string]: unknown;
+        };
         TerraformCloudRunMetricProvider: {
             /**
              * @description Terraform Cloud address
@@ -1328,6 +1448,25 @@ export interface components {
              * @enum {string}
              */
             type: "terraformCloudRun";
+        };
+        TestRunnerJobAgentConfig: {
+            /**
+             * Format: int
+             * @description Delay before resolving the job.
+             */
+            delaySeconds?: number;
+            /** @description Optional message to include in the job output. */
+            message?: string;
+            /**
+             * @description Final status to set.
+             * @enum {string}
+             */
+            status?: "completed" | "failure";
+            /**
+             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "test-runner";
         };
         UpdateDeploymentVersionRequest: {
             config?: {
@@ -1353,9 +1492,7 @@ export interface components {
         };
         UpsertDeploymentRequest: {
             description?: string;
-            jobAgentConfig?: {
-                [key: string]: unknown;
-            };
+            jobAgentConfig?: components["schemas"]["DeploymentJobAgentConfig"];
             jobAgentId?: string;
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
@@ -1397,9 +1534,7 @@ export interface components {
             systemId: string;
         };
         UpsertJobAgentRequest: {
-            config?: {
-                [key: string]: unknown;
-            };
+            config: components["schemas"]["JobAgentConfig"];
             metadata?: {
                 [key: string]: string;
             };

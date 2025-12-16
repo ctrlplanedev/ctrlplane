@@ -1,7 +1,9 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"workspace-engine/pkg/oapi"
@@ -41,17 +43,24 @@ func validateRetrievedJobAgents(t *testing.T, actualJobAgents []*oapi.JobAgent, 
 		}
 
 		// Validate config
-		if len(actual.Config) != len(expected.Config) {
-			t.Fatalf("expected %d config entries, got %d", len(expected.Config), len(actual.Config))
+		expectedConfigJson, err := expected.Config.MarshalJSON()
+		if err != nil {
+			t.Fatalf("failed to marshal expected config: %v", err)
 		}
-		for key, expectedValue := range expected.Config {
-			actualValue, ok := actual.Config[key]
-			if !ok {
-				t.Fatalf("expected config key %s not found", key)
-			}
-			if fmt.Sprintf("%v", actualValue) != fmt.Sprintf("%v", expectedValue) {
-				t.Fatalf("expected config[%s] = %v, got %v", key, expectedValue, actualValue)
-			}
+		var expectedConfig map[string]interface{}
+		if err := json.Unmarshal(expectedConfigJson, &expectedConfig); err != nil {
+			t.Fatalf("failed to unmarshal expected config: %v", err)
+		}
+		actualConfigJson, err := actual.Config.MarshalJSON()
+		if err != nil {
+			t.Fatalf("failed to marshal actual config: %v", err)
+		}
+		var actualConfig map[string]interface{}
+		if err := json.Unmarshal(actualConfigJson, &actualConfig); err != nil {
+			t.Fatalf("failed to unmarshal actual config: %v", err)
+		}
+		if !reflect.DeepEqual(expectedConfig, actualConfig) {
+			t.Fatalf("expected config %v, got %v", expectedConfig, actualConfig)
 		}
 	}
 }
@@ -67,15 +76,16 @@ func TestDBJobAgents_BasicWrite(t *testing.T) {
 
 	id := uuid.New().String()
 	name := fmt.Sprintf("test-job-agent-%s", id[:8])
+	config := runnerJobAgentConfig(map[string]interface{}{
+		"namespace": "default",
+		"timeout":   300.0,
+	})
 	jobAgent := &oapi.JobAgent{
 		Id:          id,
 		WorkspaceId: workspaceID,
 		Name:        name,
 		Type:        "kubernetes",
-		Config: map[string]interface{}{
-			"namespace": "default",
-			"timeout":   300.0,
-		},
+		Config:      config,
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent, tx)
@@ -113,7 +123,7 @@ func TestDBJobAgents_BasicWriteAndDelete(t *testing.T) {
 		WorkspaceId: workspaceID,
 		Name:        name,
 		Type:        "kubernetes",
-		Config:      map[string]interface{}{},
+		Config:      runnerJobAgentConfig(nil),
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent, tx)
@@ -174,9 +184,9 @@ func TestDBJobAgents_BasicWriteAndUpdate(t *testing.T) {
 		WorkspaceId: workspaceID,
 		Name:        name,
 		Type:        "kubernetes",
-		Config: map[string]interface{}{
+		Config: runnerJobAgentConfig(map[string]interface{}{
 			"key": "value",
-		},
+		}),
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent, tx)
@@ -198,11 +208,11 @@ func TestDBJobAgents_BasicWriteAndUpdate(t *testing.T) {
 
 	jobAgent.Name = name + "-updated"
 	jobAgent.Type = "docker"
-	jobAgent.Config = map[string]interface{}{
+	jobAgent.Config = runnerJobAgentConfig(map[string]interface{}{
 		"key":  "value-updated",
 		"new":  "config",
 		"port": 8080.0,
-	}
+	})
 
 	err = writeJobAgent(t.Context(), jobAgent, tx)
 	if err != nil {
@@ -238,7 +248,7 @@ func TestDBJobAgents_ComplexConfig(t *testing.T) {
 		WorkspaceId: workspaceID,
 		Name:        name,
 		Type:        "custom",
-		Config: map[string]interface{}{
+		Config: runnerJobAgentConfig(map[string]interface{}{
 			"string": "value",
 			"number": 42.0,
 			"bool":   true,
@@ -246,7 +256,7 @@ func TestDBJobAgents_ComplexConfig(t *testing.T) {
 				"key": "value",
 			},
 			"array": []interface{}{"item1", "item2"},
-		},
+		}),
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent, tx)
@@ -281,7 +291,7 @@ func TestDBJobAgents_NonexistentWorkspaceThrowsError(t *testing.T) {
 		WorkspaceId: uuid.New().String(), // Non-existent workspace
 		Name:        "test-job-agent",
 		Type:        "kubernetes",
-		Config:      map[string]interface{}{},
+		Config:      runnerJobAgentConfig(nil),
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent, tx)
@@ -312,7 +322,7 @@ func TestDBJobAgents_WorkspaceIsolation(t *testing.T) {
 		WorkspaceId: workspaceID1,
 		Name:        "workspace1-job-agent",
 		Type:        "kubernetes",
-		Config:      map[string]interface{}{"workspace": "1"},
+		Config:      runnerJobAgentConfig(map[string]interface{}{"workspace": "1"}),
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent1, tx1)
@@ -337,7 +347,7 @@ func TestDBJobAgents_WorkspaceIsolation(t *testing.T) {
 		WorkspaceId: workspaceID2,
 		Name:        "workspace2-job-agent",
 		Type:        "docker",
-		Config:      map[string]interface{}{"workspace": "2"},
+		Config:      runnerJobAgentConfig(map[string]interface{}{"workspace": "2"}),
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent2, tx2)

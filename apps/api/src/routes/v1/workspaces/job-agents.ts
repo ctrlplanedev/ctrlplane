@@ -33,7 +33,7 @@ const upsertJobAgent: AsyncTypedHandler<
     name: body.name,
     type: body.type,
     workspaceId,
-    config: body.config ?? {},
+    config: body.config,
     metadata: body.metadata ?? {},
   };
 

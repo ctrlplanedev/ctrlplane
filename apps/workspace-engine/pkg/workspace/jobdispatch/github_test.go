@@ -2,6 +2,7 @@ package jobdispatch
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -53,20 +54,31 @@ func TestGithubDispatcher_DispatchJob_Success(t *testing.T) {
 		return mockClient, nil
 	})
 
+	configPayload := oapi.FullGithubJobAgentConfig{
+		Type:           "github-app",
+		InstallationId: 12345,
+		Owner:          "test-owner",
+		Repo:           "test-repo",
+		WorkflowId:     456,
+	}
+
+	configJSON, err := json.Marshal(configPayload)
+	if err != nil {
+		t.Fatalf("Failed to marshal github job agent config: %v", err)
+	}
+	config := oapi.FullJobAgentConfig{}
+	if err := config.UnmarshalJSON(configJSON); err != nil {
+		t.Fatalf("Failed to unmarshal github job agent config: %v", err)
+	}
+
 	// Create test job
 	job := &oapi.Job{
-		Id: "test-job-123",
-		JobAgentConfig: map[string]any{
-			"installationId": float64(12345),
-			"owner":          "test-owner",
-			"repo":           "test-repo",
-			"workflowId":     float64(456),
-		},
+		Id:             "test-job-123",
+		JobAgentConfig: config,
 	}
 
 	// Dispatch the job
-	err := dispatcher.DispatchJob(context.Background(), job)
-	if err != nil {
+	if err = dispatcher.DispatchJob(context.Background(), job); err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
@@ -108,19 +120,28 @@ func TestGithubDispatcher_DispatchJob_WithCustomRef(t *testing.T) {
 	})
 
 	customRef := "develop"
+	configPayload := oapi.FullGithubJobAgentConfig{
+		Type:           "github-app",
+		InstallationId: 12345,
+		Owner:          "test-owner",
+		Repo:           "test-repo",
+		WorkflowId:     789,
+		Ref:            &customRef,
+	}
+	configJSON, err := json.Marshal(configPayload)
+	if err != nil {
+		t.Fatalf("Failed to marshal github job agent config: %v", err)
+	}
+	config := oapi.FullJobAgentConfig{}
+	if err := config.UnmarshalJSON(configJSON); err != nil {
+		t.Fatalf("Failed to unmarshal github job agent config: %v", err)
+	}
 	job := &oapi.Job{
-		Id: "test-job-456",
-		JobAgentConfig: map[string]any{
-			"installationId": float64(12345),
-			"owner":          "test-owner",
-			"repo":           "test-repo",
-			"workflowId":     float64(789),
-			"ref":            customRef,
-		},
+		Id:             "test-job-456",
+		JobAgentConfig: config,
 	}
 
-	err := dispatcher.DispatchJob(context.Background(), job)
-	if err != nil {
+	if err = dispatcher.DispatchJob(context.Background(), job); err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
@@ -144,17 +165,27 @@ func TestGithubDispatcher_DispatchJob_EntityNotFound(t *testing.T) {
 		return mockClient, nil
 	})
 
+	configPayload := oapi.FullGithubJobAgentConfig{
+		Type:           "github-app",
+		InstallationId: 99999,
+		Owner:          "nonexistent-owner",
+		Repo:           "test-repo",
+		WorkflowId:     123,
+	}
+	configJSON, err := json.Marshal(configPayload)
+	if err != nil {
+		t.Fatalf("Failed to marshal github job agent config: %v", err)
+	}
+	config := oapi.FullJobAgentConfig{}
+	if err := config.UnmarshalJSON(configJSON); err != nil {
+		t.Fatalf("Failed to unmarshal github job agent config: %v", err)
+	}
 	job := &oapi.Job{
-		Id: "test-job-789",
-		JobAgentConfig: map[string]any{
-			"installationId": float64(99999),
-			"owner":          "nonexistent-owner",
-			"repo":           "test-repo",
-			"workflowId":     float64(123),
-		},
+		Id:             "test-job-789",
+		JobAgentConfig: config,
 	}
 
-	err := dispatcher.DispatchJob(context.Background(), job)
+	err = dispatcher.DispatchJob(context.Background(), job)
 	if err == nil {
 		t.Fatal("Expected error for missing GitHub entity, got nil")
 	}
@@ -170,183 +201,6 @@ func TestGithubDispatcher_DispatchJob_EntityNotFound(t *testing.T) {
 	}
 }
 
-func TestGithubDispatcher_ParseConfig(t *testing.T) {
-	tests := []struct {
-		name          string
-		jobConfig     map[string]any
-		expected      githubJobConfig
-		expectError   bool
-		errorContains string
-	}{
-		{
-			name: "valid config with all fields",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"owner":          "test-owner",
-				"repo":           "test-repo",
-				"workflowId":     float64(123),
-				"ref":            "develop",
-			},
-			expected: githubJobConfig{
-				InstallationId: 12345,
-				Owner:          "test-owner",
-				Repo:           "test-repo",
-				WorkflowId:     123,
-				Ref:            strPtr("develop"),
-			},
-			expectError: false,
-		},
-		{
-			name: "valid config without optional ref",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"owner":          "test-owner",
-				"repo":           "test-repo",
-				"workflowId":     float64(123),
-			},
-			expected: githubJobConfig{
-				InstallationId: 12345,
-				Owner:          "test-owner",
-				Repo:           "test-repo",
-				WorkflowId:     123,
-				Ref:            nil,
-			},
-			expectError: false,
-		},
-		{
-			name: "missing installationId",
-			jobConfig: map[string]any{
-				"owner":      "test-owner",
-				"repo":       "test-repo",
-				"workflowId": float64(123),
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: installationId",
-		},
-		{
-			name: "missing owner",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"repo":           "test-repo",
-				"workflowId":     float64(123),
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: owner",
-		},
-		{
-			name: "missing repo",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"owner":          "test-owner",
-				"workflowId":     float64(123),
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: repo",
-		},
-		{
-			name: "missing workflowId",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"owner":          "test-owner",
-				"repo":           "test-repo",
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: workflowId",
-		},
-		{
-			name: "empty owner string",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"owner":          "",
-				"repo":           "test-repo",
-				"workflowId":     float64(123),
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: owner",
-		},
-		{
-			name: "empty repo string",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"owner":          "test-owner",
-				"repo":           "",
-				"workflowId":     float64(123),
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: repo",
-		},
-		{
-			name: "zero installationId",
-			jobConfig: map[string]any{
-				"installationId": float64(0),
-				"owner":          "test-owner",
-				"repo":           "test-repo",
-				"workflowId":     float64(123),
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: installationId",
-		},
-		{
-			name: "zero workflowId",
-			jobConfig: map[string]any{
-				"installationId": float64(12345),
-				"owner":          "test-owner",
-				"repo":           "test-repo",
-				"workflowId":     float64(0),
-			},
-			expectError:   true,
-			errorContains: "missing required GitHub job config: workflowId",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dispatcher := &GithubDispatcher{}
-
-			job := &oapi.Job{
-				Id:             "test-job",
-				JobAgentConfig: tt.jobConfig,
-			}
-
-			result, err := dispatcher.parseConfig(job)
-
-			if tt.expectError && err == nil {
-				t.Error("Expected error but got none")
-			}
-			if !tt.expectError && err != nil {
-				t.Errorf("Unexpected error: %v", err)
-			}
-
-			if tt.expectError && err != nil && tt.errorContains != "" {
-				if len(err.Error()) < len(tt.errorContains) || err.Error()[:len(tt.errorContains)] != tt.errorContains {
-					t.Errorf("Expected error containing '%s', got: %v", tt.errorContains, err)
-				}
-			}
-
-			if !tt.expectError {
-				if result.InstallationId != tt.expected.InstallationId {
-					t.Errorf("Expected InstallationId %d, got %d", tt.expected.InstallationId, result.InstallationId)
-				}
-				if result.Owner != tt.expected.Owner {
-					t.Errorf("Expected Owner %s, got %s", tt.expected.Owner, result.Owner)
-				}
-				if result.Repo != tt.expected.Repo {
-					t.Errorf("Expected Repo %s, got %s", tt.expected.Repo, result.Repo)
-				}
-				if result.WorkflowId != tt.expected.WorkflowId {
-					t.Errorf("Expected WorkflowId %d, got %d", tt.expected.WorkflowId, result.WorkflowId)
-				}
-				if (result.Ref == nil) != (tt.expected.Ref == nil) {
-					t.Errorf("Ref presence mismatch: expected %v, got %v", tt.expected.Ref, result.Ref)
-				}
-				if result.Ref != nil && tt.expected.Ref != nil && *result.Ref != *tt.expected.Ref {
-					t.Errorf("Expected Ref %s, got %s", *tt.expected.Ref, *result.Ref)
-				}
-			}
-		})
-	}
-}
-
 func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -354,7 +208,7 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 			installationID int
 			slug           string
 		}
-		searchCfg   githubJobConfig
+		searchCfg   oapi.FullGithubJobAgentConfig
 		expectFound bool
 	}{
 		{
@@ -366,7 +220,7 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 				{12345, "owner1"},
 				{67890, "owner2"},
 			},
-			searchCfg: githubJobConfig{
+			searchCfg: oapi.FullGithubJobAgentConfig{
 				InstallationId: 12345,
 				Owner:          "owner1",
 			},
@@ -380,7 +234,7 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 			}{
 				{12345, "owner1"},
 			},
-			searchCfg: githubJobConfig{
+			searchCfg: oapi.FullGithubJobAgentConfig{
 				InstallationId: 99999,
 				Owner:          "owner1",
 			},
@@ -394,7 +248,7 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 			}{
 				{12345, "owner1"},
 			},
-			searchCfg: githubJobConfig{
+			searchCfg: oapi.FullGithubJobAgentConfig{
 				InstallationId: 12345,
 				Owner:          "wrong-owner",
 			},

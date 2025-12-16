@@ -71,7 +71,7 @@ func TestDBDeploymentVariables_BasicWrite(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {
@@ -138,7 +138,7 @@ func TestDBDeploymentVariables_BasicWriteAndDelete(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {
@@ -228,7 +228,7 @@ func TestDBDeploymentVariables_BasicWriteAndUpdate(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {
@@ -347,7 +347,7 @@ func TestDBDeploymentVariables_MultipleVariables(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {

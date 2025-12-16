@@ -27,12 +27,14 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 	ctx := context.Background()
 
 	// Create deployment, environment for policy matching
+	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
+	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -140,12 +142,15 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 	ctx := context.Background()
 
 	// Create deployment, environment
+	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
+	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig,
+		JobAgentId:     nil,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -267,12 +272,14 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 	ctx := context.Background()
 
 	// Create deployment, environment
+	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
+	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -358,12 +365,14 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 	ctx := context.Background()
 
 	// Create deployment, environment
+	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
+	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 

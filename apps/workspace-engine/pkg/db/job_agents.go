@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"encoding/json"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/jackc/pgx/v5"
@@ -42,9 +43,29 @@ func getJobAgents(ctx context.Context, workspaceID string) ([]*oapi.JobAgent, er
 	return jobAgents, nil
 }
 
+func runnerJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
+	payload := map[string]interface{}{}
+	for k, v := range m {
+		payload[k] = v
+	}
+	payload["type"] = "custom"
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg oapi.JobAgentConfig
+	if err := cfg.UnmarshalJSON(b); err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
 func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	jobAgent := &oapi.JobAgent{}
 	var config *map[string]interface{}
+
 	err := rows.Scan(
 		&jobAgent.Id,
 		&jobAgent.WorkspaceId,
@@ -55,7 +76,45 @@ func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	if err != nil {
 		return nil, err
 	}
-	jobAgent.Config = *config
+
+	// Convert DB JSON (map) into the generated union type (JobAgentConfig).
+	payload := map[string]interface{}{}
+	if config != nil {
+		for k, v := range *config {
+			payload[k] = v
+		}
+	}
+
+	// Prefer the discriminator stored inside the JSON config.
+	// If missing (older rows), infer it from jobAgent.Type when possible; otherwise fall back to "custom".
+	if t, ok := payload["type"].(string); !ok || t == "" {
+		switch jobAgent.Type {
+		case "github-app", "argo-cd", "tfe", "test-runner", "custom":
+			payload["type"] = jobAgent.Type
+		default:
+			payload["type"] = "custom"
+		}
+	}
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg oapi.JobAgentConfig
+	if err := cfg.UnmarshalJSON(b); err != nil {
+		// Backwards-compatible fallback for unknown discriminators: treat as "custom".
+		payload["type"] = "custom"
+		b2, mErr := json.Marshal(payload)
+		if mErr != nil {
+			return nil, mErr
+		}
+		if err2 := cfg.UnmarshalJSON(b2); err2 != nil {
+			return nil, err
+		}
+	}
+
+	jobAgent.Config = cfg
 	return jobAgent, nil
 }
 

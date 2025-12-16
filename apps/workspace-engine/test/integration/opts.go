@@ -402,7 +402,11 @@ func DeploymentJsonResourceSelector(selector map[string]any) DeploymentOption {
 
 func DeploymentJobAgentConfig(config map[string]any) DeploymentOption {
 	return func(_ *TestWorkspace, d *oapi.Deployment, _ *eventsBuilder) {
-		d.JobAgentConfig = config
+		if config == nil {
+			config = map[string]any{}
+		}
+		cfg := c.CustomDeploymentJobAgentConfig(config)
+		d.JobAgentConfig = cfg
 	}
 }
 
@@ -697,7 +701,8 @@ func JobAgentType(agentType string) JobAgentOption {
 
 func JobAgentConfig(config map[string]any) JobAgentOption {
 	return func(_ *TestWorkspace, ja *oapi.JobAgent) {
-		ja.Config = config
+		cfg := c.CustomJobAgentConfig(config)
+		ja.Config = cfg
 	}
 }
 

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
@@ -32,7 +33,7 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
-	d1.JobAgentConfig = jobAgentConfig
+	d1.JobAgentConfig = c.CustomDeploymentJobAgentConfig(jobAgentConfig)
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
@@ -105,9 +106,12 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 		t.Fatalf("expected job job_agent_id %s, got %s", jobAgent.Id, job.JobAgentId)
 	}
 
-	cfg := job.JobAgentConfig
-	if cfg["deploymentConfig"] != jobAgentConfig["deploymentConfig"] {
-		t.Fatalf("expected job job_agent_config deploymentConfig %s, got %s", jobAgentConfig["deploymentConfig"], cfg["deploymentConfig"])
+	cfg, err := job.JobAgentConfig.AsFullCustomJobAgentConfig()
+	if err != nil {
+		t.Fatalf("failed to get job job agent config: %v", err)
+	}
+	if cfg.AdditionalProperties["deploymentConfig"] != jobAgentConfig["deploymentConfig"] {
+		t.Fatalf("expected job job_agent_config deploymentConfig %s, got %s", jobAgentConfig["deploymentConfig"], cfg.AdditionalProperties["deploymentConfig"])
 	}
 }
 
@@ -555,10 +559,17 @@ func TestEngine_JobCreatedWithInvalidJobAgent(t *testing.T) {
 	}
 
 	// Verify job has empty config
-	if len(job.JobAgentConfig) != 0 {
-		t.Errorf("expected empty job agent config, got %v", job.JobAgentConfig)
+	cfg, err := job.JobAgentConfig.MarshalJSON()
+	if err != nil {
+		t.Fatalf("failed to marshal job agent config: %v", err)
 	}
-
+	var cfgMap map[string]any
+	if err := json.Unmarshal(cfg, &cfgMap); err != nil {
+		t.Fatalf("failed to unmarshal job agent config: %v", err)
+	}
+	if len(cfgMap) != 0 {
+		t.Errorf("expected empty job agent config, got %v", cfgMap)
+	}
 	// Verify job is NOT in pending state
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 0 {

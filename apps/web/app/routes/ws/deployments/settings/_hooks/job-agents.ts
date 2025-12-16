@@ -1,5 +1,4 @@
-import type { UseFormReturn } from "react-hook-form";
-import { z } from "zod";
+import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 import { trpc } from "~/api/trpc";
 import { useWorkspace } from "~/components/WorkspaceProvider";
@@ -24,16 +23,13 @@ export const useAllJobAgents = () => {
   return jobAgentsQuery.data?.items ?? [];
 };
 
-const _formSchema = z.object({
-  jobAgentId: z.string(),
-  jobAgentConfig: z.record(z.any()),
-});
-
-type Form = UseFormReturn<z.infer<typeof _formSchema>>;
-
-export const useSelectedJobAgent = (form: Form) => {
+export const useSelectedJobAgent = <
+  T extends FieldValues & { jobAgentId: string },
+>(
+  form: UseFormReturn<T>,
+) => {
   const allJobAgents = useAllJobAgents();
-  const selectedJobAgentId = form.watch("jobAgentId");
+  const selectedJobAgentId = form.watch("jobAgentId" as Path<T>) as string;
   const selectedJobAgent = allJobAgents.find(
     ({ id }) => id === selectedJobAgentId,
   );

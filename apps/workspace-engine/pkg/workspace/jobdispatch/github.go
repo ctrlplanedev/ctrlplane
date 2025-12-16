@@ -22,14 +22,6 @@ import (
 
 var ghTracer = otel.Tracer("GithubDispatcher")
 
-type githubJobConfig struct {
-	InstallationId int     `json:"installationId"`
-	Owner          string  `json:"owner"`
-	Repo           string  `json:"repo"`
-	WorkflowId     int     `json:"workflowId"`
-	Ref            *string `json:"ref,omitempty"`
-}
-
 // GithubClient interface for dispatching workflows
 type GithubClient interface {
 	DispatchWorkflow(ctx context.Context, owner, repo string, workflowID int64, ref string, inputs map[string]any) error
@@ -72,30 +64,6 @@ func NewGithubDispatcherWithClientFactory(store *store.Store, clientFactory func
 		store:         store,
 		clientFactory: clientFactory,
 	}
-}
-
-func (d *GithubDispatcher) parseConfig(job *oapi.Job) (githubJobConfig, error) {
-	var parsed githubJobConfig
-	rawCfg, err := json.Marshal(job.JobAgentConfig)
-	if err != nil {
-		return githubJobConfig{}, err
-	}
-	if err := json.Unmarshal(rawCfg, &parsed); err != nil {
-		return githubJobConfig{}, err
-	}
-	if parsed.InstallationId == 0 {
-		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: installationId")
-	}
-	if parsed.Owner == "" {
-		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: owner")
-	}
-	if parsed.Repo == "" {
-		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: repo")
-	}
-	if parsed.WorkflowId == 0 {
-		return githubJobConfig{}, fmt.Errorf("missing required GitHub job config: workflowId")
-	}
-	return parsed, nil
 }
 
 // generateJWT creates a JWT token for GitHub App authentication
@@ -196,7 +164,7 @@ func (d *GithubDispatcher) createGithubClient(installationID int) (GithubClient,
 	}, nil
 }
 
-func (d *GithubDispatcher) sendToGithub(ctx context.Context, job *oapi.Job, cfg githubJobConfig, ghEntity *oapi.GithubEntity) error {
+func (d *GithubDispatcher) sendToGithub(ctx context.Context, job *oapi.Job, cfg oapi.FullGithubJobAgentConfig, ghEntity *oapi.GithubEntity) error {
 	var client GithubClient
 	var err error
 
@@ -238,14 +206,14 @@ func (d *GithubDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	ctx, span := ghTracer.Start(ctx, "GithubDispatcher.DispatchJob")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("job.id", job.Id))
-
-	cfg, err := d.parseConfig(job)
+	cfg, err := job.JobAgentConfig.AsFullGithubJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
 		return err
 	}
+
+	span.SetAttributes(attribute.String("job.id", job.Id))
 
 	ghEntity, exists := d.store.GithubEntities.Get(cfg.Owner, cfg.InstallationId)
 	if !exists {
@@ -254,11 +222,10 @@ func (d *GithubDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("github entity not found for job %s", job.Id)
 	}
 
-	err = d.sendToGithub(ctx, job, cfg, ghEntity)
-	if err != nil {
+	if err = d.sendToGithub(ctx, job, cfg, ghEntity); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to send to github")
-		return err
+		return fmt.Errorf("failed to send to github: %w", err)
 	}
 
 	return nil

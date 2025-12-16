@@ -177,20 +177,20 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	jobAgent.Name = "Test Agent"
 	jobAgent.Type = "kubernetes"
 	jobAgent.WorkspaceId = engine.Workspace().ID
-	jobAgent.Config = map[string]any{
+	jobAgent.Config = c.CustomJobAgentConfig(map[string]any{
 		"namespace": "default",
 		"timeout":   300,
-	}
+	})
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
 	// Update deployment with both job agent ID and custom config
 	deployment, exists := engine.Workspace().Deployments().Get(deploymentID)
 	require.True(t, exists, "deployment not found")
 	deployment.JobAgentId = &jobAgentID
-	deployment.JobAgentConfig = map[string]any{
+	deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(map[string]any{
 		"timeout":  600, // Override agent default
 		"replicas": 3,   // Add deployment-specific config
-	}
+	})
 	engine.PushEvent(ctx, handler.DeploymentUpdate, deployment)
 
 	// Step 4: Verify new Pending job created with merged config
@@ -214,16 +214,19 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	assert.Equal(t, jobAgentID, newPendingJob.JobAgentId, "expected new job to use configured job agent")
 
 	// Verify job agent config was merged correctly (deployment config overrides agent defaults)
-	config := newPendingJob.JobAgentConfig
-	timeout, ok := config["timeout"].(float64)
+	config, err := newPendingJob.JobAgentConfig.AsFullCustomJobAgentConfig()
+	if err != nil {
+		t.Fatalf("failed to get job job agent config: %v", err)
+	}
+	timeout, ok := config.AdditionalProperties["timeout"].(float64)
 	assert.True(t, ok, "expected timeout to be a float64")
 	assert.Equal(t, float64(600), timeout, "expected merged config timeout to be 600 (deployment override)")
 
-	namespace, ok := config["namespace"].(string)
+	namespace, ok := config.AdditionalProperties["namespace"].(string)
 	assert.True(t, ok, "expected namespace to be a string")
 	assert.Equal(t, "default", namespace, "expected merged config namespace to be 'default' (from agent)")
 
-	replicas, ok := config["replicas"].(float64)
+	replicas, ok := config.AdditionalProperties["replicas"].(float64)
 	assert.True(t, ok, "expected replicas to be a float64")
 	assert.Equal(t, float64(3), replicas, "expected merged config replicas to be 3 (from deployment)")
 

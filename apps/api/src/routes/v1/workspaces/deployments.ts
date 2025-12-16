@@ -80,7 +80,7 @@ const deleteDeployment: AsyncTypedHandler<
       name: "",
       systemId: "",
       slug: "",
-      jobAgentConfig: {},
+      jobAgentConfig: { type: "custom" },
     },
   });
 
@@ -98,7 +98,7 @@ const postDeployment: AsyncTypedHandler<
   const deployment: WorkspaceEngine["schemas"]["Deployment"] = {
     id: uuidv4(),
     ...body,
-    jobAgentConfig: body.jobAgentConfig ?? {},
+    jobAgentConfig: body.jobAgentConfig ?? { type: "custom" },
   };
 
   const isValid = await validResourceSelector(body.resourceSelector);

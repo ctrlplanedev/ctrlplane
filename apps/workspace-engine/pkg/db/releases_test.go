@@ -125,7 +125,7 @@ func createReleasePrerequisites(t *testing.T, workspaceID string, conn *pgxpool.
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: map[string]interface{}{},
+		JobAgentConfig: customJobAgentConfig(nil),
 	}
 	if err := writeDeployment(ctx, deployment, tx); err != nil {
 		t.Fatalf("failed to create deployment: %v", err)

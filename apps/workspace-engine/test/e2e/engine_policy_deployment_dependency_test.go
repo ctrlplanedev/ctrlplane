@@ -106,8 +106,8 @@ func TestEngine_PolicyDeploymentDependency(t *testing.T) {
 		Id:  &vpcJob.Id,
 		Job: *vpcJob,
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
-			oapi.Status,
-			oapi.CompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)

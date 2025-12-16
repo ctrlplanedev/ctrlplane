@@ -32,13 +32,6 @@ type TerraformCloudDispatcher struct {
 	verification *verification.Manager
 }
 
-type terraformCloudAgentConfig struct {
-	Organization string `json:"organization"`
-	Address      string `json:"address"`
-	Token        string `json:"token"`
-	Template     string `json:"template"`
-}
-
 // VCSRepoTemplate represents VCS repository settings for a workspace
 type VCSRepoTemplate struct {
 	Identifier        string `json:"identifier" yaml:"identifier"`                                     // e.g., "org/repo"
@@ -192,29 +185,6 @@ func NewTerraformCloudDispatcher(store *store.Store, verification *verification.
 	return &TerraformCloudDispatcher{store: store, verification: verification}
 }
 
-func (d *TerraformCloudDispatcher) parseConfig(job *oapi.Job) (terraformCloudAgentConfig, error) {
-	var parsed terraformCloudAgentConfig
-	rawCfg, err := json.Marshal(job.JobAgentConfig)
-	if err != nil {
-		return terraformCloudAgentConfig{}, err
-	}
-
-	if err := json.Unmarshal(rawCfg, &parsed); err != nil {
-		return terraformCloudAgentConfig{}, err
-	}
-
-	if parsed.Address == "" {
-		return terraformCloudAgentConfig{}, fmt.Errorf("missing required Terraform job config: address")
-	}
-	if parsed.Token == "" {
-		return terraformCloudAgentConfig{}, fmt.Errorf("missing required Terraform job config: token")
-	}
-	if parsed.Template == "" {
-		return terraformCloudAgentConfig{}, fmt.Errorf("missing required Terraform job config: template")
-	}
-	return parsed, nil
-}
-
 func (d *TerraformCloudDispatcher) getTemplatableJob(job *oapi.Job) (*oapi.TemplatableJob, error) {
 	fullJob, err := d.store.Jobs.GetWithRelease(job.Id)
 	if err != nil {
@@ -302,7 +272,7 @@ func (d *TerraformCloudDispatcher) syncVariables(ctx context.Context, client *tf
 	return nil
 }
 
-func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, release *oapi.Release, config terraformCloudAgentConfig, runId string) error {
+func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, release *oapi.Release, config oapi.FullTerraformCloudJobAgentConfig, runId string) error {
 	provider := oapi.MetricProvider{}
 	err := provider.FromTerraformCloudRunMetricProvider(oapi.TerraformCloudRunMetricProvider{
 		Address: config.Address,
@@ -338,7 +308,7 @@ func (d *TerraformCloudDispatcher) getKafkaProducer() (messaging.Producer, error
 	})
 }
 
-func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config terraformCloudAgentConfig, workspaceName string) error {
+func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config oapi.FullTerraformCloudJobAgentConfig, workspaceName string) error {
 	_, span := terraformTracer.Start(context.Background(), "sendJobUpdateEvent")
 	defer span.End()
 
@@ -381,9 +351,14 @@ func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Ru
 	}
 
 	eventPayload := oapi.JobUpdateEvent{
-		Id:             &job.Id,
-		Job:            jobWithUpdates,
-		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{oapi.Status, oapi.Metadata, oapi.CompletedAt, oapi.UpdatedAt},
+		Id:  &job.Id,
+		Job: jobWithUpdates,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateMetadata,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
 	}
 
 	producer, err := d.getKafkaProducer()
@@ -422,7 +397,7 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 
 	span.SetAttributes(attribute.String("job.id", job.Id))
 
-	cfg, err := d.parseConfig(job)
+	cfg, err := job.JobAgentConfig.AsFullTerraformCloudJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
