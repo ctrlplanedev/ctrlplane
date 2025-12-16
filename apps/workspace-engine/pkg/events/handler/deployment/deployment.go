@@ -238,8 +238,7 @@ func HandleDeploymentUpdated(
 
 	isJobAgentConfigChanged := getIsJobAgentConfigChanged(oldDeployment, deployment)
 	if isJobAgentConfigChanged {
-		log.Info("job agent config changed, redeploying targets", "deploymentId", deployment.Id)
-		// return redeployTargets(ctx, ws, deployment, releaseTargets)
+		return redeployTargets(ctx, ws, deployment, releaseTargets)
 	}
 
 	err = reconcileTargets(ctx, ws, deployment, addedReleaseTargets)
