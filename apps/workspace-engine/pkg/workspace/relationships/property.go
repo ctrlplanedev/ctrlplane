@@ -121,6 +121,9 @@ func getDeploymentProperty(deployment *oapi.Deployment, propertyPath []string) (
 			return nil, fmt.Errorf("failed to unmarshal deployment job agent config: %v", err)
 		}
 		value, err := getMapValue(jobAgentConfigMap, propertyPath[1:])
+		if err != nil {
+			return nil, err
+		}
 		return convertValue(value)
 	default:
 		return getPropertyReflection(deployment, propertyPath)

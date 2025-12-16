@@ -64,7 +64,6 @@ func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfi
 		payload[k] = v
 	}
 	payload["type"] = "custom"
-	return customJobAgentConfig(payload)
 	b, err := json.Marshal(payload)
 	if err != nil {
 		panic(err)

@@ -97,7 +97,7 @@ func (d *TestRunnerDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) e
 	}
 
 	span.SetAttributes(
-		attribute.Int64("delay_seconds", int64(delay)),
+		attribute.Int64("delay_seconds", int64(delay.Seconds())),
 		attribute.String("final_status", string(finalStatus)),
 	)
 

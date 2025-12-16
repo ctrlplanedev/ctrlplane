@@ -216,9 +216,7 @@ func TestFindRuleRelationships_WithCELMatcher(t *testing.T) {
 		fromResource := rel.From.Item().(*oapi.Resource)
 		toDeployment := rel.To.Item().(*oapi.Deployment)
 		customJobAgentConfig, err := toDeployment.JobAgentConfig.AsDeploymentCustomJobAgentConfig()
-		if err != nil {
-			panic(err)
-		}
+		require.NoError(t, err)
 		assert.Equal(t, fromResource.WorkspaceId, customJobAgentConfig.AdditionalProperties["workspaceId"])
 	}
 }

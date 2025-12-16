@@ -226,18 +226,11 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			AddMetadata("version_tag", release.Version.Tag)
 	}
 
-	mergedJobAgentConfig := oapi.FullJobAgentConfig{}
-	mergedJobAgentConfigJSON, err := json.Marshal(mergedConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal merged job agent config: %v", err)
-	}
-	_ = mergedJobAgentConfig.UnmarshalJSON(mergedJobAgentConfigJSON)
-
 	return &oapi.Job{
 		Id:             jobId,
 		ReleaseId:      release.ID(),
 		JobAgentId:     *jobAgentId,
-		JobAgentConfig: mergedJobAgentConfig,
+		JobAgentConfig: mergedConfig,
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),

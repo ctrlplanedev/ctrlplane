@@ -634,7 +634,7 @@ func TestFactory_MergeJobAgentConfig_TestRunner_PassthroughConfig(t *testing.T) 
 	jobAgentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "test-runner",
 		"delaySeconds": 5,
-		"status": "successful",
+		"status": "completed",
 		"message": "Deployment completed"
 	}`)
 
@@ -669,7 +669,7 @@ func TestFactory_MergeJobAgentConfig_TestRunner_PassthroughConfig(t *testing.T) 
 	require.NotNil(t, fullConfig.DelaySeconds)
 	require.Equal(t, 5, *fullConfig.DelaySeconds)
 	require.NotNil(t, fullConfig.Status)
-	require.Equal(t, oapi.TestRunnerJobAgentConfigStatus("successful"), *fullConfig.Status)
+	require.Equal(t, oapi.TestRunnerJobAgentConfigStatus("completed"), *fullConfig.Status)
 	require.NotNil(t, fullConfig.Message)
 	require.Equal(t, "Deployment completed", *fullConfig.Message)
 }
@@ -800,4 +800,3 @@ func TestFactory_CreateJobForRelease_EmptyJobAgentId(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
 }
-

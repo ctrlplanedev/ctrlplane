@@ -253,11 +253,11 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 	}
 
 	if updatedConfig.AdditionalProperties["timeout"] != float64(600) {
-		t.Fatalf("job agent config timeout mismatch: got %d, want 600", updatedConfig.AdditionalProperties["timeout"])
+		t.Fatalf("job agent config timeout mismatch: got %v, want 600", updatedConfig.AdditionalProperties["timeout"])
 	}
 
 	if updatedConfig.AdditionalProperties["retries"] != float64(5) {
-		t.Fatalf("job agent config retries mismatch: got %d, want 5", updatedConfig.AdditionalProperties["retries"])
+		t.Fatalf("job agent config retries mismatch: got %v, want 5", updatedConfig.AdditionalProperties["retries"])
 	}
 }
 

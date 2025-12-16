@@ -164,12 +164,8 @@ func getIsJobAgentConfigChanged(oldDeployment *oapi.Deployment, newDeployment *o
 		return false
 	}
 
-	if oldDeployment == nil && newDeployment != nil {
+	if oldDeployment == nil {
 		return true
-	}
-
-	if oldDeployment == nil && newDeployment == nil {
-		return false
 	}
 
 	return !reflect.DeepEqual(oldDeployment.JobAgentConfig, newDeployment.JobAgentConfig)
