@@ -56,7 +56,7 @@ const getInstallationId = async (
   if (jobAgent?.type !== "github-app")
     throw new Error("Job agent is not a GitHub app");
 
-  const { config } = jobAgent;
+  const config = jobAgent.config as { installationId: number };
   const { installationId } = config;
 
   const { data: installation } = await getOctokit().apps.getInstallation({

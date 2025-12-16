@@ -28,10 +28,11 @@ import { useDeployment } from "../_components/DeploymentProvider";
 import { ArgoCDConfig } from "./_components/ArgoCD";
 import { GithubAgentConfig } from "./_components/GithubAgentConfig";
 import { useAllJobAgents, useSelectedJobAgent } from "./_hooks/job-agents";
+import { deploymentJobAgentConfig } from "./deploymentJobAgentConfig";
 
 const formSchema = z.object({
   jobAgentId: z.string(),
-  jobAgentConfig: z.record(z.any()),
+  jobAgentConfig: deploymentJobAgentConfig,
 });
 
 type JobAgentSelectorProps = {
@@ -78,7 +79,7 @@ function JobAgentConfigSection({
     <FormField
       {...form}
       name="jobAgentConfig"
-      render={({ field: { value, onChange } }) => (
+      render={() => (
         <FormItem>
           <FormLabel>Config</FormLabel>
           <FormControl>

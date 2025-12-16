@@ -5,6 +5,10 @@ import { z } from "zod";
 
 import { useTheme } from "~/components/ThemeProvider";
 import { FormField } from "~/components/ui/form";
+import {
+  argoCdJobAgentConfig,
+  deploymentJobAgentConfig,
+} from "../deploymentJobAgentConfig";
 
 // Example default ArgoCD Application YAML config shown if the config is empty
 const DEFAULT_CONFIG = {
@@ -46,21 +50,28 @@ const DEFAULT_CONFIG = {
 
 const formSchema = z.object({
   jobAgentId: z.string(),
-  jobAgentConfig: z.record(z.any()),
+  jobAgentConfig: deploymentJobAgentConfig,
 });
 
-function getConfigString(config: Record<string, any>): string {
+const argoFormSchema = z.object({
+  jobAgentId: z.string(),
+  jobAgentConfig: argoCdJobAgentConfig,
+});
+
+function getConfigString(config: { template?: string }): string {
   const template = config.template ?? "";
   if (template && template.trim()) return template;
   return yaml.dump(DEFAULT_CONFIG);
 }
 
 type Form = UseFormReturn<z.infer<typeof formSchema>>;
+type ArgoForm = UseFormReturn<z.infer<typeof argoFormSchema>>;
 
 type ArgoCDConfigProps = { form: Form };
 
 export function ArgoCDConfig({ form }: ArgoCDConfigProps) {
   const { theme } = useTheme();
+  const argoForm = form as unknown as ArgoForm;
 
   const handleEditorWillMount = (monaco: any) => {
     monaco.languages.register({ id: "helm" });
@@ -155,13 +166,13 @@ export function ArgoCDConfig({ form }: ArgoCDConfigProps) {
 
   return (
     <FormField
-      control={form.control}
+      control={argoForm.control}
       name="jobAgentConfig"
       render={({ field: { value, onChange } }) => {
         const configString = getConfigString(value);
 
         const handleChange = (newValue: string) =>
-          onChange({ template: newValue });
+          onChange({ type: "argo-cd", template: newValue });
 
         return (
           <div className="border">

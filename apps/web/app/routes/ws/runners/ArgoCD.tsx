@@ -44,7 +44,11 @@ export function ArgoCDDialog({ children }: { children: React.ReactNode }) {
       workspaceId: workspace.id,
       name: data.name,
       type: "argo-cd",
-      config: { serverUrl: data.serverUrl, apiKey: data.apiKey },
+      config: {
+        type: "argo-cd",
+        serverUrl: data.serverUrl,
+        apiKey: data.apiKey,
+      },
     }).then(() => toast.success("Job agent creation queued successfully")),
   );
 

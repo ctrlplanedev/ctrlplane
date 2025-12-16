@@ -9,6 +9,24 @@ import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
+const deploymentJobAgentConfig = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("github-app"),
+    repo: z.string(),
+    workflowId: z.number(),
+    ref: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("argo-cd"),
+    template: z.string(),
+  }),
+  z.object({
+    type: z.literal("tfe"),
+    template: z.string(),
+  }),
+  z.object({ type: z.literal("custom") }).passthrough(),
+]);
+
 export const deploymentsRouter = router({
   get: protectedProcedure
     .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
@@ -131,7 +149,7 @@ export const deploymentsRouter = router({
         workspaceId: input.workspaceId,
         eventType: Event.DeploymentCreated,
         timestamp: Date.now(),
-        data: { ...deployment, jobAgentConfig: {} },
+        data: { ...deployment, jobAgentConfig: { type: "custom" } },
       });
 
       return deployment;
@@ -199,7 +217,7 @@ export const deploymentsRouter = router({
         workspaceId: z.uuid(),
         deploymentId: z.string(),
         jobAgentId: z.string(),
-        jobAgentConfig: z.record(z.string(), z.any()),
+        jobAgentConfig: deploymentJobAgentConfig,
       }),
     )
     .mutation(async ({ input }) => {
@@ -211,16 +229,10 @@ export const deploymentsRouter = router({
 
       if (!deployment.data) throw new Error("Deployment not found");
 
-      const maybeCleanGhConfig = (config: Record<string, unknown>) => {
-        if (config.workflowId == null) return config;
-        return { ...config, workflowId: Number(config.workflowId) };
-      };
-
-      const cleanConfig = maybeCleanGhConfig(jobAgentConfig);
       const updateData: WorkspaceEngine["schemas"]["Deployment"] = {
         ...deployment.data.deployment,
         jobAgentId,
-        jobAgentConfig: cleanConfig,
+        jobAgentConfig,
       };
 
       await sendGoEvent({
