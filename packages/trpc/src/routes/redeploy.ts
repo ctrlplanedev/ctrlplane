@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { eventDispatcher } from "@ctrlplane/events";
+import { Event, sendGoEvent } from "@ctrlplane/events";
 
 import { protectedProcedure, router } from "../trpc.js";
 
@@ -17,7 +17,12 @@ export const redeployRouter = router({
       }),
     )
     .mutation(({ input: { workspaceId, releaseTarget } }) =>
-      eventDispatcher.dispatchRedeploy(workspaceId, releaseTarget),
+      sendGoEvent({
+        workspaceId,
+        eventType: Event.Redeploy,
+        data: releaseTarget,
+        timestamp: Date.now(),
+      }),
     ),
 
   releaseTargets: protectedProcedure
@@ -35,6 +40,11 @@ export const redeployRouter = router({
     )
     .mutation(async ({ input: { workspaceId, releaseTargets } }) => {
       for (const releaseTarget of releaseTargets)
-        await eventDispatcher.dispatchRedeploy(workspaceId, releaseTarget);
+        await sendGoEvent({
+          workspaceId,
+          eventType: Event.Redeploy,
+          data: releaseTarget,
+          timestamp: Date.now(),
+        });
     }),
 });
