@@ -31,23 +31,28 @@ func NewFactory(store *store.Store) *Factory {
 }
 
 func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (oapi.FullJobAgentConfig, error) {
-	deploymentDiscriminator, err := deployment.JobAgentConfig.Discriminator()
-	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config discriminator: %w", err)
-	}
-
 	runnerDiscriminator, err := jobAgent.Config.Discriminator()
 	if err != nil {
 		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config discriminator: %w", err)
 	}
 
-	if deploymentDiscriminator != runnerDiscriminator {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("deployment job agent config type %s does not match job agent config type %s", deploymentDiscriminator, runnerDiscriminator)
-	}
+	var deploymentConfig interface{}
+	switch runnerDiscriminator {
+	case string(oapi.TestRunner):
+	default:
+		deploymentDiscriminator, err := deployment.JobAgentConfig.Discriminator()
+		if err != nil {
+			return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config discriminator: %w", err)
+		}
 
-	deploymentConfig, err := deployment.JobAgentConfig.ValueByDiscriminator()
-	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config: %w", err)
+		if deploymentDiscriminator != runnerDiscriminator {
+			return oapi.FullJobAgentConfig{}, fmt.Errorf("deployment job agent config type %s does not match job agent config type %s", deploymentDiscriminator, runnerDiscriminator)
+		}
+
+		deploymentConfig, err = deployment.JobAgentConfig.ValueByDiscriminator()
+		if err != nil {
+			return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config: %w", err)
+		}
 	}
 
 	runnerConfig, err := jobAgent.Config.ValueByDiscriminator()
@@ -99,7 +104,7 @@ func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oap
 	deepMerge(mergedConfig, deploymentMap)
 
 	// Ensure discriminator exists so the union can unmarshal.
-	mergedConfig["type"] = deploymentDiscriminator
+	mergedConfig["type"] = runnerDiscriminator
 
 	mergedJSON, err := json.Marshal(mergedConfig)
 	if err != nil {
