@@ -91,6 +91,7 @@ const (
 	TriggerPolicyUpdated      TriggerReason = "policy.updated"      // Policy configuration changed
 	TriggerVariablesUpdated   TriggerReason = "variables.updated"   // Deployment or resource variables changed
 	TriggerJobAgentUpdated    TriggerReason = "jobagent.updated"    // Job agent configuration changed
+	TriggerJobSuccess         TriggerReason = "job.success"         // Job was successful
 	TriggerManual             TriggerReason = "manual"              // Manually triggered (e.g., force redeploy)
 	TriggerFirstBoot          TriggerReason = "first_boot"          // Initial workspace startup
 )
