@@ -47,12 +47,18 @@ func (d *DeploymentDependencyAction) Execute(ctx context.Context, trigger action
 			return fmt.Errorf("failed to get policies for release target: %s", target.Key())
 		}
 
+		var hasDeploymentDependencyRule bool
 		for _, policy := range policies {
 			for _, rule := range policy.Rules {
 				if rule.DeploymentDependency != nil {
 					targetsToReconcile = append(targetsToReconcile, target)
+					hasDeploymentDependencyRule = true
 					break
 				}
+			}
+
+			if hasDeploymentDependencyRule {
+				break
 			}
 		}
 	}
