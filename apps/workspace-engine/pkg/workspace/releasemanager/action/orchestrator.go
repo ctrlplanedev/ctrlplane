@@ -76,11 +76,6 @@ func (o *Orchestrator) OnJobStatusChange(
 		return nil // Don't fail job update on policy lookup failure
 	}
 
-	if len(policies) == 0 {
-		span.SetAttributes(attribute.Int("policy_count", 0))
-		return nil // No policies apply
-	}
-
 	span.SetAttributes(attribute.Int("policy_count", len(policies)))
 
 	// Build action context with pre-fetched policies for efficiency and consistency
