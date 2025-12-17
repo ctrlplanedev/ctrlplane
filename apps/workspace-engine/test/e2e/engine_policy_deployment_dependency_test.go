@@ -99,20 +99,19 @@ func TestEngine_PolicyDeploymentDependency(t *testing.T) {
 	assert.Equal(t, 1, len(vpcJobs), "expected 1 vpc job")
 
 	vpcJob := vpcJobs[0]
-	vpcJob.Status = oapi.JobStatusSuccessful
+	vpcJobCopy := *vpcJob
+	vpcJobCopy.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
-	vpcJob.CompletedAt = &completedAt
+	vpcJobCopy.CompletedAt = &completedAt
 	jobUpdateEvent := &oapi.JobUpdateEvent{
-		Id:  &vpcJob.Id,
-		Job: *vpcJob,
+		Id:  &vpcJobCopy.Id,
+		Job: vpcJobCopy,
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
 			oapi.JobUpdateEventFieldsToUpdateStatus,
 			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
-
-	engine.PushEvent(ctx, handler.WorkspaceTick, nil)
 
 	clusterJobs = getAgentJobsSortedByNewest(engine, jobAgentClusterID)
 	assert.Equal(t, 1, len(clusterJobs), "expected 1 cluster job")

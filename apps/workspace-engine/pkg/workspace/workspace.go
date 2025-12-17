@@ -2,10 +2,13 @@ package workspace
 
 import (
 	"context"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	verificationaction "workspace-engine/pkg/workspace/releasemanager/action/verification"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
+	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -34,7 +37,14 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 			verificationaction.NewVerificationAction(
 				ws.releasemanager.VerificationManager(),
 			),
-		)
+		).RegisterAction(
+		deploymentdependency.NewDeploymentDependencyAction(
+			s,
+			func(ctx context.Context, target *oapi.ReleaseTarget) error {
+				return ws.releasemanager.ReconcileTarget(ctx, target, releasemanager.WithTrigger(trace.TriggerJobSuccess))
+			},
+		),
+	)
 
 	return ws
 }
