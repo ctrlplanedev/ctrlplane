@@ -87,3 +87,14 @@ func (r *ReleaseVerifications) GetMostRecentVerificationForRelease(releaseId str
 
 	return mostRecent
 }
+
+func (r *ReleaseVerifications) GetByJobId(jobId string) []*oapi.ReleaseVerification {
+	verifications := make([]*oapi.ReleaseVerification, 0)
+	for _, verification := range r.repo.ReleaseVerifications.Items() {
+		if verification.JobId != nil && *verification.JobId == jobId {
+			verifications = append(verifications, verification)
+		}
+	}
+
+	return verifications
+}

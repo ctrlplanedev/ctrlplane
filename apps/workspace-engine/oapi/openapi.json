@@ -1067,6 +1067,27 @@
             ],
             "type": "object"
          },
+         "JobWithVerifications": {
+            "additionalProperties": false,
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/Job"
+               },
+               {
+                  "properties": {
+                     "verifications": {
+                        "items": {
+                           "$ref": "#/components/schemas/ReleaseVerification"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "verifications"
+                  ]
+               }
+            ]
+         },
          "JsonSelector": {
             "properties": {
                "json": {
@@ -1565,7 +1586,7 @@
                   "$ref": "#/components/schemas/Release"
                },
                "latestJob": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/JobWithVerifications"
                }
             },
             "type": "object"

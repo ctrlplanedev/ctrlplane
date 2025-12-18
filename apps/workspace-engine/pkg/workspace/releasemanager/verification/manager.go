@@ -92,6 +92,7 @@ func (m *Manager) Restore(ctx context.Context) error {
 func (m *Manager) StartVerification(
 	ctx context.Context,
 	release *oapi.Release,
+	job *oapi.Job,
 	metrics []oapi.VerificationMetricSpec,
 ) error {
 	ctx, span := tracer.Start(ctx, "StartVerification",
@@ -129,6 +130,10 @@ func (m *Manager) StartVerification(
 		ReleaseId: releaseID,
 		Metrics:   metricStatuses,
 		CreatedAt: time.Now(),
+	}
+
+	if job != nil {
+		verificationRecord.JobId = &job.Id
 	}
 
 	// Store the verification

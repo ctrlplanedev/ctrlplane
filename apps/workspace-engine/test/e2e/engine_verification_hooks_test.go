@@ -72,7 +72,7 @@ func TestEngineVerificationHooks(t *testing.T) {
 		Provider:         metricProvider,
 	}
 
-	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, []oapi.VerificationMetricSpec{metric})
+	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, nil, []oapi.VerificationMetricSpec{metric})
 	assert.NoError(t, err)
 
 	time.Sleep(500 * time.Millisecond)
@@ -189,7 +189,7 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 		Provider:         metricProvider,
 	}
 
-	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, []oapi.VerificationMetricSpec{metric})
+	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, nil, []oapi.VerificationMetricSpec{metric})
 	assert.NoError(t, err)
 
 	// mark job as successful

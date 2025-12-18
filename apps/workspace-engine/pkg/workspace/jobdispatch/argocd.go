@@ -324,7 +324,7 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		},
 	}
 
-	if err := d.verification.StartVerification(ctx, &jobWithRelease.Release, metrics); err != nil {
+	if err := d.verification.StartVerification(ctx, &jobWithRelease.Release, &jobWithRelease.Job, metrics); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to start verification")
 		return err

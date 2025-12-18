@@ -50,7 +50,7 @@ func TestManager_StartVerification_Success(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 
 	require.NoError(t, err)
 
@@ -103,7 +103,7 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 
 	require.NoError(t, err)
 
@@ -139,14 +139,14 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 	}
 
 	// Start verification first time
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, _ := s.ReleaseVerifications.GetByReleaseId(release.ID())
 	firstVerificationID := verification.Id
 
 	// Try to start again - should return without error
-	err = manager.StartVerification(ctx, release, metrics)
+	err = manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	// Verify new verification was created
@@ -166,7 +166,7 @@ func TestManager_StartVerification_NoMetrics(t *testing.T) {
 	release := createTestRelease(s, ctx)
 
 	// Try to start with empty metrics
-	err := manager.StartVerification(ctx, release, []oapi.VerificationMetricSpec{})
+	err := manager.StartVerification(ctx, release, nil, []oapi.VerificationMetricSpec{})
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "at least one metric configuration is required")
@@ -199,7 +199,7 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 
 	require.NoError(t, err)
 
@@ -233,7 +233,7 @@ func TestManager_StopVerification_Success(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, _ := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -458,7 +458,7 @@ func TestManager_StartAndStopMultiple(t *testing.T) {
 	releases := make([]*oapi.Release, 5)
 	for i := 0; i < 5; i++ {
 		releases[i] = createTestRelease(s, ctx)
-		err := manager.StartVerification(ctx, releases[i], metrics)
+		err := manager.StartVerification(ctx, releases[i], nil, metrics)
 		require.NoError(t, err)
 	}
 
@@ -518,7 +518,7 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -563,7 +563,7 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	}
 
 	// Start verification
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	// Wait for some measurements
@@ -615,7 +615,7 @@ func BenchmarkManager_StartVerification(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = manager.StartVerification(ctx, releases[i], metrics)
+		_ = manager.StartVerification(ctx, releases[i], nil, metrics)
 	}
 
 	// Clean up
@@ -649,7 +649,7 @@ func BenchmarkManager_StopVerification(b *testing.B) {
 	releases := make([]*oapi.Release, b.N)
 	for i := 0; i < b.N; i++ {
 		releases[i] = createTestRelease(s, ctx)
-		_ = manager.StartVerification(ctx, releases[i], metrics)
+		_ = manager.StartVerification(ctx, releases[i], nil, metrics)
 	}
 
 	b.ResetTimer()
@@ -820,7 +820,7 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	// Verify hook was called
@@ -859,7 +859,7 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -898,7 +898,7 @@ func TestManager_HooksOnMeasurementTaken(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -945,7 +945,7 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -992,7 +992,7 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -1046,7 +1046,7 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 	}
 
 	// StartVerification should succeed despite hook error
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
@@ -1094,7 +1094,7 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, metrics)
+	err := manager.StartVerification(ctx, release, nil, metrics)
 	require.NoError(t, err)
 
 	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())

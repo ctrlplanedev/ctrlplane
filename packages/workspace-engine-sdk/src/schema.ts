@@ -1482,6 +1482,9 @@ export interface components {
       release: components["schemas"]["Release"];
       resource?: components["schemas"]["Resource"];
     };
+    JobWithVerifications: components["schemas"]["Job"] & {
+      verifications: components["schemas"]["ReleaseVerification"][];
+    };
     JsonSelector: {
       json: {
         [key: string]: unknown;
@@ -1638,7 +1641,7 @@ export interface components {
     ReleaseTargetState: {
       currentRelease?: components["schemas"]["Release"];
       desiredRelease?: components["schemas"]["Release"];
-      latestJob?: components["schemas"]["Job"];
+      latestJob?: components["schemas"]["JobWithVerifications"];
     };
     ReleaseTargetWithState: {
       deployment: components["schemas"]["Deployment"];

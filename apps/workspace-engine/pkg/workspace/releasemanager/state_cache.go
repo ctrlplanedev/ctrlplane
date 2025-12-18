@@ -80,6 +80,35 @@ func (sc *StateCache) Invalidate(releaseTarget *oapi.ReleaseTarget) {
 	sc.cache.Del(releaseTarget.Key())
 }
 
+func (sc *StateCache) getJobWithVerifications(job *oapi.Job) *oapi.JobWithVerifications {
+	if job == nil {
+		return nil
+	}
+	verifications := sc.store.ReleaseVerifications.GetByJobId(job.Id)
+	verificationsSlice := make([]oapi.ReleaseVerification, 0, len(verifications))
+	for _, verification := range verifications {
+		if verification == nil {
+			continue
+		}
+		verificationsSlice = append(verificationsSlice, *verification)
+	}
+	return &oapi.JobWithVerifications{
+		CreatedAt:      job.CreatedAt,
+		ExternalId:     job.ExternalId,
+		Id:             job.Id,
+		JobAgentConfig: job.JobAgentConfig,
+		JobAgentId:     job.JobAgentId,
+		Message:        job.Message,
+		Metadata:       job.Metadata,
+		ReleaseId:      job.ReleaseId,
+		StartedAt:      job.StartedAt,
+		Status:         job.Status,
+		TraceToken:     job.TraceToken,
+		UpdatedAt:      job.UpdatedAt,
+		Verifications:  verificationsSlice,
+	}
+}
+
 // compute computes the release target state from scratch and caches it.
 // This involves gathering current release and job information.
 // Callers can provide already-known information via options to avoid redundant queries.
@@ -143,10 +172,11 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 		latestJob, _ = sc.store.ReleaseTargets.GetLatestJob(ctx, releaseTarget)
 	}
 
+	latestJobWithVerifications := sc.getJobWithVerifications(latestJob)
 	rts = &oapi.ReleaseTargetState{
 		DesiredRelease: desiredRelease,
 		CurrentRelease: currentRelease,
-		LatestJob:      latestJob,
+		LatestJob:      latestJobWithVerifications,
 	}
 
 	sc.Set(releaseTarget, rts)

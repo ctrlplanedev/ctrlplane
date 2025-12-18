@@ -272,7 +272,7 @@ func (d *TerraformCloudDispatcher) syncVariables(ctx context.Context, client *tf
 	return nil
 }
 
-func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, release *oapi.Release, config oapi.FullTerraformCloudJobAgentConfig, runId string) error {
+func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, release *oapi.Release, job *oapi.Job, config oapi.FullTerraformCloudJobAgentConfig, runId string) error {
 	provider := oapi.MetricProvider{}
 	err := provider.FromTerraformCloudRunMetricProvider(oapi.TerraformCloudRunMetricProvider{
 		Address: config.Address,
@@ -295,7 +295,7 @@ func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, re
 		},
 	}
 
-	return d.verification.StartVerification(ctx, release, metrics)
+	return d.verification.StartVerification(ctx, release, job, metrics)
 }
 
 func (d *TerraformCloudDispatcher) getKafkaProducer() (messaging.Producer, error) {
@@ -481,7 +481,7 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 		return err
 	}
 
-	if err := d.createRunVerification(ctx, &templatableJob.Release.Release, cfg, run.ID); err != nil {
+	if err := d.createRunVerification(ctx, &templatableJob.Release.Release, job, cfg, run.ID); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create run verification")
 		return err

@@ -290,13 +290,13 @@ const VerificationStatusConfig: Record<
 
 function VerificationStatusBadge({
   summaries,
-  verification,
+  verifications,
 }: {
   summaries: MetricSummary[];
-  verification?: ReleaseVerification;
+  verifications: ReleaseVerification[];
 }) {
   const status = getOverallVerificationStatus(summaries);
-  if (status === "none" || verification == null) return null;
+  if (status === "none" || verifications.length === 0) return null;
 
   const config = VerificationStatusConfig[status];
   return (
@@ -312,9 +312,13 @@ function VerificationStatusBadge({
         <DialogHeader>
           <DialogTitle>Verifications</DialogTitle>
         </DialogHeader>
-
-        {verification.metrics.map((metric) => (
-          <MetricDisplay key={metric.name} metric={metric} />
+        {verifications.map((verification) => (
+          <Fragment key={verification.id}>
+            <div className="text-sm font-medium">{verification.message}</div>
+            {verification.metrics.map((metric) => (
+              <MetricDisplay key={metric.name} metric={metric} />
+            ))}
+          </Fragment>
         ))}
       </DialogContent>
     </Dialog>
@@ -326,9 +330,8 @@ function ReleaseTargetRow({
   state,
   resource,
 }: ReleaseTargetRowProps) {
-  const desiredState = state.desiredRelease;
-  const verification = desiredState?.verification;
-  const summaries = verification ? verificationSummary(verification) : [];
+  const verifications = state.latestJob?.verifications ?? [];
+  const summaries = verifications.map(verificationSummary).flat();
 
   return (
     <TableRow key={releaseTarget.resourceId}>
@@ -349,7 +352,7 @@ function ReleaseTargetRow({
           />
           <VerificationStatusBadge
             summaries={summaries}
-            verification={verification}
+            verifications={verifications}
           />
         </div>
       </TableCell>

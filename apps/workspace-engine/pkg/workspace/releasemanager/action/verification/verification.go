@@ -57,7 +57,7 @@ func (v *VerificationAction) Execute(
 	span.SetAttributes(attribute.Int("metric_count", len(metrics)))
 
 	// Create verification synchronously
-	if err := v.verificationManager.StartVerification(ctx, actx.Release, metrics); err != nil {
+	if err := v.verificationManager.StartVerification(ctx, actx.Release, actx.Job, metrics); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create verification")
 		log.Error("Failed to create verification",

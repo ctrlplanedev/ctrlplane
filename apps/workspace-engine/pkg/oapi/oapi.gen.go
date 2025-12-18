@@ -715,6 +715,24 @@ type JobWithRelease struct {
 	Resource    *Resource    `json:"resource,omitempty"`
 }
 
+// JobWithVerifications defines model for JobWithVerifications.
+type JobWithVerifications struct {
+	CompletedAt    *time.Time            `json:"completedAt,omitempty"`
+	CreatedAt      time.Time             `json:"createdAt"`
+	ExternalId     *string               `json:"externalId,omitempty"`
+	Id             string                `json:"id"`
+	JobAgentConfig FullJobAgentConfig    `json:"jobAgentConfig"`
+	JobAgentId     string                `json:"jobAgentId"`
+	Message        *string               `json:"message,omitempty"`
+	Metadata       map[string]string     `json:"metadata"`
+	ReleaseId      string                `json:"releaseId"`
+	StartedAt      *time.Time            `json:"startedAt,omitempty"`
+	Status         JobStatus             `json:"status"`
+	TraceToken     *string               `json:"traceToken,omitempty"`
+	UpdatedAt      time.Time             `json:"updatedAt"`
+	Verifications  []ReleaseVerification `json:"verifications"`
+}
+
 // JsonSelector defines model for JsonSelector.
 type JsonSelector struct {
 	Json map[string]interface{} `json:"json"`
@@ -893,9 +911,9 @@ type ReleaseTarget struct {
 
 // ReleaseTargetState defines model for ReleaseTargetState.
 type ReleaseTargetState struct {
-	CurrentRelease *Release `json:"currentRelease,omitempty"`
-	DesiredRelease *Release `json:"desiredRelease,omitempty"`
-	LatestJob      *Job     `json:"latestJob,omitempty"`
+	CurrentRelease *Release              `json:"currentRelease,omitempty"`
+	DesiredRelease *Release              `json:"desiredRelease,omitempty"`
+	LatestJob      *JobWithVerifications `json:"latestJob,omitempty"`
 }
 
 // ReleaseTargetWithState defines model for ReleaseTargetWithState.
