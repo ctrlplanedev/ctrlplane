@@ -1268,6 +1268,7 @@ export interface components {
       rule: components["schemas"]["RelationshipRule"];
     };
     Environment: {
+      /** Format: date-time */
       createdAt: string;
       description?: string;
       id: string;
