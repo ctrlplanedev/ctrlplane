@@ -1,5 +1,5 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
-import { asyncHandler } from "@/types/api.js";
+import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 
@@ -91,6 +91,12 @@ export const getSystems: AsyncTypedHandler<
       },
     },
   );
+
+  if (systems.error != null)
+    throw new ApiError(
+      systems.error.error ?? "Internal server error",
+      systems.response.status,
+    );
 
   res.status(200).json(systems.data);
 };
