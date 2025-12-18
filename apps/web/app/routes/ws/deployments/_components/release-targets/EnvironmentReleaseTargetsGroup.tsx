@@ -312,14 +312,16 @@ function VerificationStatusBadge({
         <DialogHeader>
           <DialogTitle>Verifications</DialogTitle>
         </DialogHeader>
-        {verifications.map((verification) => (
-          <Fragment key={verification.id}>
-            <div className="text-sm font-medium">{verification.message}</div>
-            {verification.metrics.map((metric) => (
-              <MetricDisplay key={metric.name} metric={metric} />
-            ))}
-          </Fragment>
-        ))}
+        <div className="space-y-2">
+          {verifications.map((verification) => (
+            <Fragment key={verification.id}>
+              <div className="text-sm font-medium">{verification.message}</div>
+              {verification.metrics.map((metric) => (
+                <MetricDisplay key={metric.name} metric={metric} />
+              ))}
+            </Fragment>
+          ))}
+        </div>
       </DialogContent>
     </Dialog>
   );
