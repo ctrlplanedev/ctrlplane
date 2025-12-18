@@ -226,15 +226,23 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg oapi.FullArgoCD
 		span.SetStatus(codes.Error, "failed to marshal links")
 		return fmt.Errorf("failed to marshal links: %w", err)
 	}
-	job.Metadata[string("ctrlplane/links")] = string(linksJSON)
 
-	job.Status = oapi.JobStatusSuccessful
-	job.UpdatedAt = time.Now().UTC()
-	job.CompletedAt = &job.UpdatedAt
+	newJobMetadata := make(map[string]string)
+	for key, value := range job.Metadata {
+		newJobMetadata[key] = value
+	}
+	newJobMetadata[string("ctrlplane/links")] = string(linksJSON)
 
+	now := time.Now().UTC()
 	eventPayload := oapi.JobUpdateEvent{
-		Id:  &job.Id,
-		Job: *job,
+		Id: &job.Id,
+		Job: oapi.Job{
+			Id:          job.Id,
+			Metadata:    newJobMetadata,
+			Status:      oapi.JobStatusSuccessful,
+			UpdatedAt:   now,
+			CompletedAt: &now,
+		},
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
 			oapi.JobUpdateEventFieldsToUpdateStatus,
 			oapi.JobUpdateEventFieldsToUpdateMetadata,
