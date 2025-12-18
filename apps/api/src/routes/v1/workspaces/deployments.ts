@@ -42,7 +42,8 @@ const existingDeploymentById = async (
     { params: { path: { workspaceId, deploymentId } } },
   );
   if (response.error?.error != null)
-    throw new ApiError(response.error.error, 404);
+    if (response.response.status !== 404)
+      throw new ApiError(response.error.error, response.response.status);
 
   if (response.data == null) return null;
 
@@ -123,13 +124,29 @@ const upsertDeployment: AsyncTypedHandler<
   const { workspaceId, deploymentId } = req.params;
   const { body } = req;
 
+  console.log(body);
+
   const existingDeploymentResponse = await existingDeploymentById(
     workspaceId,
     deploymentId,
   );
   const { deployment } = existingDeploymentResponse ?? {};
 
-  if (deployment == null) throw new ApiError("Deployment not found", 404);
+  if (deployment == null) {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.DeploymentCreated,
+      timestamp: Date.now(),
+      data: {
+        ...body,
+        id: deploymentId,
+        jobAgentConfig: body.jobAgentConfig ?? { type: "custom" },
+      },
+    });
+
+    res.status(202).json({ id: deploymentId, ...body });
+    return;
+  }
 
   const isValid = await validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
