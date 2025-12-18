@@ -483,7 +483,7 @@ type EntityRelation struct {
 
 // Environment defines model for Environment.
 type Environment struct {
-	CreatedAt        string    `json:"createdAt"`
+	CreatedAt        time.Time `json:"createdAt"`
 	Description      *string   `json:"description,omitempty"`
 	Id               string    `json:"id"`
 	Name             string    `json:"name"`

@@ -2,6 +2,7 @@ package diffcheck
 
 import (
 	"testing"
+	"time"
 
 	"workspace-engine/pkg/oapi"
 
@@ -14,7 +15,7 @@ func TestHasEnvironmentChanges_NoChanges(t *testing.T) {
 		Name:        "production",
 		SystemId:    "sys-123",
 		Description: &desc,
-		CreatedAt:   "2023-01-01T00:00:00Z",
+		CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		Id:          "env-123",
 	}
 
@@ -22,7 +23,7 @@ func TestHasEnvironmentChanges_NoChanges(t *testing.T) {
 		Name:        "production",
 		SystemId:    "sys-123",
 		Description: &desc,
-		CreatedAt:   "2023-01-01T00:00:00Z",
+		CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 		Id:          "env-123",
 	}
 
@@ -277,15 +278,15 @@ func TestHasEnvironmentChanges_MultipleChanges(t *testing.T) {
 		SystemId:    "sys-123",
 		Description: &oldDesc,
 		Id:          "env-123",
-		CreatedAt:   "2023-01-01T00:00:00Z",
+		CreatedAt:   time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	new := &oapi.Environment{
 		Name:        "production",
 		SystemId:    "sys-456",
 		Description: &newDesc,
-		Id:          "env-123",              // Same ID (should be ignored)
-		CreatedAt:   "2024-01-01T00:00:00Z", // Different CreatedAt (should be ignored)
+		Id:          "env-123",                                   // Same ID (should be ignored)
+		CreatedAt:   time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), // Different CreatedAt (should be ignored)
 	}
 
 	changes := HasEnvironmentChanges(old, new)
@@ -320,14 +321,14 @@ func TestHasEnvironmentChanges_CreatedAtIgnored(t *testing.T) {
 		Name:      "production",
 		SystemId:  "sys-123",
 		Id:        "env-123",
-		CreatedAt: "2023-01-01T00:00:00Z",
+		CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	new := &oapi.Environment{
 		Name:      "production",
 		SystemId:  "sys-123",
 		Id:        "env-123",
-		CreatedAt: "2024-01-01T00:00:00Z",
+		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	changes := HasEnvironmentChanges(old, new)
@@ -340,14 +341,14 @@ func TestHasEnvironmentChanges_SystemFieldsIgnoredWithOtherChanges(t *testing.T)
 		Name:      "staging",
 		SystemId:  "sys-123",
 		Id:        "env-old",
-		CreatedAt: "2023-01-01T00:00:00Z",
+		CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	new := &oapi.Environment{
 		Name:      "production",
 		SystemId:  "sys-123",
 		Id:        "env-new",
-		CreatedAt: "2024-01-01T00:00:00Z",
+		CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
 
 	changes := HasEnvironmentChanges(old, new)

@@ -569,6 +569,7 @@
          "Environment": {
             "properties": {
                "createdAt": {
+                  "format": "date-time",
                   "type": "string"
                },
                "description": {

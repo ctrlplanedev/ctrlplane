@@ -1179,7 +1179,7 @@ func TestStore_SaveAndLoad_OAPIEnvironment(t *testing.T) {
 		Id:        uuid.New().String(),
 		Name:      "production",
 		SystemId:  uuid.New().String(),
-		CreatedAt: time.Now().Format(time.RFC3339),
+		CreatedAt: time.Now(),
 	}
 
 	changes := persistence.Changes{
@@ -1412,7 +1412,7 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 		Id:        uuid.New().String(),
 		Name:      "Environment 1",
 		SystemId:  uuid.New().String(),
-		CreatedAt: time.Now().Format(time.RFC3339),
+		CreatedAt: time.Now(),
 	}
 
 	system := &oapi.System{

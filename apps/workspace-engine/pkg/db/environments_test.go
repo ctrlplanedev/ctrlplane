@@ -41,7 +41,7 @@ func validateRetrievedEnvironments(t *testing.T, actualEnvironments []*oapi.Envi
 		if (actualEnv.ResourceSelector == nil) != (expectedEnv.ResourceSelector == nil) {
 			t.Fatalf("resource_selector nil mismatch: expected %v, got %v", expectedEnv.ResourceSelector == nil, actualEnv.ResourceSelector == nil)
 		}
-		if actualEnv.CreatedAt == "" {
+		if actualEnv.CreatedAt.IsZero() {
 			t.Fatalf("expected environment created_at to be set")
 		}
 	}

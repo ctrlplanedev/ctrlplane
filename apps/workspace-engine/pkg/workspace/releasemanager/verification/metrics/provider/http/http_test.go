@@ -387,7 +387,7 @@ func TestResolve(t *testing.T) {
 				Environment: &oapi.Environment{
 					Id:        "env-456",
 					Name:      "staging",
-					CreatedAt: "2024-01-01T00:00:00Z",
+					CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 					SystemId:  "sys-123",
 				},
 			},
@@ -408,7 +408,7 @@ func TestResolve(t *testing.T) {
 				Environment: &oapi.Environment{
 					Id:        "env-456",
 					Name:      "prod",
-					CreatedAt: "2024-01-01T00:00:00Z",
+					CreatedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 					SystemId:  "sys-123",
 				},
 				Deployment: &oapi.Deployment{

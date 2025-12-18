@@ -36,7 +36,6 @@ func createTestResource(workspaceID, resourceID, identifier, name string) *oapi.
 
 // createTestEnvironment creates a test environment with the given ID and system
 func createTestEnvironment(systemID, environmentID, name string) *oapi.Environment {
-	now := time.Now().Format(time.RFC3339)
 	selector := &oapi.Selector{}
 	// Create a selector that matches all resources (name starts with empty string)
 	_ = selector.FromJsonSelector(oapi.JsonSelector{
@@ -54,7 +53,7 @@ func createTestEnvironment(systemID, environmentID, name string) *oapi.Environme
 		Description:      &description,
 		SystemId:         systemID,
 		ResourceSelector: selector,
-		CreatedAt:        now,
+		CreatedAt:        time.Now(),
 	}
 }
 

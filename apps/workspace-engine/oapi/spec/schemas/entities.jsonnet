@@ -71,7 +71,7 @@ local openapi = import '../lib/openapi.libsonnet';
       description: { type: 'string' },
       systemId: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
-      createdAt: { type: 'string' },
+      createdAt: { type: 'string', format: 'date-time' },
     },
   },
 

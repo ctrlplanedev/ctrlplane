@@ -52,7 +52,7 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 		if err != nil {
 			return nil, err
 		}
-		environment.CreatedAt = createdAt.Format(time.RFC3339)
+		environment.CreatedAt = createdAt
 
 		// Wrap selector from unwrapped database format to JsonSelector format
 		environment.ResourceSelector, err = wrapSelectorFromDB(rawSelector)

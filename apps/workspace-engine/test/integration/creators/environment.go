@@ -40,7 +40,7 @@ func NewEnvironment(systemID string) *oapi.Environment {
 		Description:      &description,
 		SystemId:         systemID,
 		ResourceSelector: selector,
-		CreatedAt:        time.Now().Format(time.RFC3339),
+		CreatedAt:        time.Now(),
 	}
 
 	return e

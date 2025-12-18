@@ -27,7 +27,6 @@ func createTestSystem(workspaceID, id, name string) *oapi.System {
 }
 
 func createTestEnvironment(systemID, id, name string) *oapi.Environment {
-	now := time.Now().Format(time.RFC3339)
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
@@ -38,7 +37,7 @@ func createTestEnvironment(systemID, id, name string) *oapi.Environment {
 		Description:      &description,
 		SystemId:         systemID,
 		ResourceSelector: selector,
-		CreatedAt:        now,
+		CreatedAt:        time.Now(),
 	}
 }
 
