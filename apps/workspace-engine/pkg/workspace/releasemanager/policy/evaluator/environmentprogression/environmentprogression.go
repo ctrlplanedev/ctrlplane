@@ -197,12 +197,23 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	if e.rule.MinimumSuccessPercentage != nil {
 		minSuccessPercentage = *e.rule.MinimumSuccessPercentage
 	}
-	passRateEvaluator := NewPassRateEvaluator(e.store, minSuccessPercentage, successStatuses)
+
+	// Create evaluators without memoization wrapper for internal use with shared tracker
+	passRateEvaluator := &PassRateEvaluator{
+		store:                    e.store,
+		minimumSuccessPercentage: minSuccessPercentage,
+		successStatuses:          successStatuses,
+	}
 
 	// Set up soak time evaluator
-	var soakTimeEvaluator evaluator.Evaluator
+	var soakTimeEvaluator *SoakTimeEvaluator
 	if e.rule.MinimumSockTimeMinutes != nil && *e.rule.MinimumSockTimeMinutes > 0 {
-		soakTimeEvaluator = NewSoakTimeEvaluator(e.store, *e.rule.MinimumSockTimeMinutes, successStatuses)
+		soakTimeEvaluator = &SoakTimeEvaluator{
+			store:           e.store,
+			soakMinutes:     *e.rule.MinimumSockTimeMinutes,
+			successStatuses: successStatuses,
+			timeGetter:      func() time.Time { return time.Now() },
+		}
 	}
 
 	for _, depEnv := range dependencyEnvs {
@@ -210,6 +221,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			ctx,
 			version,
 			depEnv,
+			successStatuses,
 			passRateEvaluator,
 			soakTimeEvaluator,
 		)
@@ -261,24 +273,20 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 }
 
 // evaluateJobSuccessCriteria evaluates if jobs meet the success criteria by combining
-// pass rate and soak time evaluators.
+// pass rate and soak time evaluators. Uses a shared tracker to avoid duplicate data fetching.
 func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
 	environment *oapi.Environment,
-	passRateEvaluator evaluator.Evaluator,
-	soakTimeEvaluator evaluator.Evaluator,
+	successStatuses map[oapi.JobStatus]bool,
+	passRateEvaluator *PassRateEvaluator,
+	soakTimeEvaluator *SoakTimeEvaluator,
 ) *oapi.RuleEvaluation {
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
 	defer span.End()
 
-	scope := evaluator.EvaluatorScope{
-		Environment: environment,
-		Version:     version,
-	}
-
-	// Check if there are jobs and release targets
-	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, nil)
+	// Create a single shared tracker for all evaluations in this dependency environment
+	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses)
 	if len(tracker.ReleaseTargets) == 0 {
 		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed").WithSatisfiedAt(version.CreatedAt)
 	}
@@ -289,16 +297,17 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		return results.NewDeniedResult("No jobs found")
 	}
 
-	passRateResult := passRateEvaluator.Evaluate(ctx, scope)
+	// Use the shared tracker for pass rate evaluation
+	passRateResult := passRateEvaluator.EvaluateWithTracker(tracker)
 	span.SetAttributes(attribute.Bool("pass_rate.allowed", passRateResult.Allowed))
 	if !passRateResult.Allowed {
 		return passRateResult
 	}
 
-	// Evaluate soak time requirement
+	// Use the shared tracker for soak time evaluation
 	var soakTimeResult *oapi.RuleEvaluation
 	if soakTimeEvaluator != nil {
-		soakTimeResult = soakTimeEvaluator.Evaluate(ctx, scope)
+		soakTimeResult = soakTimeEvaluator.EvaluateWithTracker(tracker)
 		span.SetAttributes(attribute.Bool("soak_time.allowed", soakTimeResult.Allowed))
 		if !soakTimeResult.Allowed {
 			return soakTimeResult

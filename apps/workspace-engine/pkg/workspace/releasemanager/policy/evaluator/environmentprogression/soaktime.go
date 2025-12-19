@@ -69,7 +69,11 @@ func (e *SoakTimeEvaluator) Evaluate(
 	version := scope.Version
 
 	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, e.successStatuses)
+	return e.EvaluateWithTracker(tracker)
+}
 
+// EvaluateWithTracker evaluates soak time using a pre-built tracker to avoid duplicate data fetching.
+func (e *SoakTimeEvaluator) EvaluateWithTracker(tracker *ReleaseTargetJobTracker) *oapi.RuleEvaluation {
 	// Check if there are successful jobs
 	mostRecentSuccess := tracker.GetMostRecentSuccess()
 	if mostRecentSuccess.IsZero() {

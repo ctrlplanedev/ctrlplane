@@ -15,13 +15,15 @@ import (
 var jobTrackerTracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression/jobtracker")
 
 func getReleaseTargets(ctx context.Context, store *store.Store, version *oapi.DeploymentVersion, environment *oapi.Environment) []*oapi.ReleaseTarget {
-	releaseTargets, err := store.ReleaseTargets.Items()
+	// Use indexed lookup by environment instead of scanning all release targets
+	envTargets, err := store.ReleaseTargets.GetForEnvironment(ctx, environment.Id)
 	if err != nil {
 		return nil
 	}
-	releaseTargetsList := make([]*oapi.ReleaseTarget, 0)
-	for _, releaseTarget := range releaseTargets {
-		if releaseTarget.EnvironmentId == environment.Id && releaseTarget.DeploymentId == version.DeploymentId {
+	// Filter by deployment ID (smaller set after index lookup)
+	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(envTargets))
+	for _, releaseTarget := range envTargets {
+		if releaseTarget.DeploymentId == version.DeploymentId {
 			releaseTargetsList = append(releaseTargetsList, releaseTarget)
 		}
 	}
@@ -101,37 +103,35 @@ func (t *ReleaseTargetJobTracker) compute(ctx context.Context) []*oapi.Job {
 	_, span := jobTrackerTracer.Start(ctx, "compute")
 	defer span.End()
 
-	for _, job := range t.store.Jobs.Items() {
-		release, ok := t.store.Releases.Get(job.ReleaseId)
-		if !ok {
-			continue
-		}
-		if release == nil {
-			continue
-		}
-		if release.ReleaseTarget.EnvironmentId != t.Environment.Id {
-			continue
-		}
-		if release.ReleaseTarget.DeploymentId != t.Version.DeploymentId {
-			continue
-		}
-		if release.Version.Id != t.Version.Id {
-			continue
-		}
-
-		if t.SuccessStatuses[job.Status] && job.CompletedAt != nil {
-			targetKey := release.ReleaseTarget.Key()
-			// Store the oldest successful completion time for this release target
-			if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || job.CompletedAt.Before(existingTime) {
-				t.successfulReleaseTargets[targetKey] = *job.CompletedAt
+	// Use indexed lookup through release targets instead of scanning all jobs
+	for _, rt := range t.ReleaseTargets {
+		// GetJobsForReleaseTarget uses the indexed release_target_key lookup
+		rtJobs := t.store.Jobs.GetJobsForReleaseTarget(rt)
+		for _, job := range rtJobs {
+			// Get the release to check version
+			release, ok := t.store.Releases.Get(job.ReleaseId)
+			if !ok || release == nil {
+				continue
 			}
-			if t.mostRecentSuccess.Before(*job.CompletedAt) {
-				t.mostRecentSuccess = *job.CompletedAt
+			// Filter by version ID
+			if release.Version.Id != t.Version.Id {
+				continue
 			}
-		}
 
-		t.jobsByStatus[job.Status]++
-		t.jobs = append(t.jobs, job)
+			if t.SuccessStatuses[job.Status] && job.CompletedAt != nil {
+				targetKey := rt.Key()
+				// Store the oldest successful completion time for this release target
+				if existingTime, exists := t.successfulReleaseTargets[targetKey]; !exists || job.CompletedAt.Before(existingTime) {
+					t.successfulReleaseTargets[targetKey] = *job.CompletedAt
+				}
+				if t.mostRecentSuccess.Before(*job.CompletedAt) {
+					t.mostRecentSuccess = *job.CompletedAt
+				}
+			}
+
+			t.jobsByStatus[job.Status]++
+			t.jobs = append(t.jobs, job)
+		}
 	}
 
 	span.SetAttributes(

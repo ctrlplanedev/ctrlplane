@@ -49,6 +49,11 @@ func (e *PassRateEvaluator) Complexity() int {
 
 func (e *PassRateEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
 	tracker := NewReleaseTargetJobTracker(ctx, e.store, scope.Environment, scope.Version, e.successStatuses)
+	return e.EvaluateWithTracker(tracker)
+}
+
+// EvaluateWithTracker evaluates pass rate using a pre-built tracker to avoid duplicate data fetching.
+func (e *PassRateEvaluator) EvaluateWithTracker(tracker *ReleaseTargetJobTracker) *oapi.RuleEvaluation {
 	successPercentage := tracker.GetSuccessPercentage()
 
 	// Handle default case: when minimumSuccessPercentage is 0, require at least one successful job (> 0%)
