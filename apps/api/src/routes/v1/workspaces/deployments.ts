@@ -52,7 +52,7 @@ const existingDeploymentById = async (
 };
 
 const ghSchema = z.object({
-  workflowId: z.number(),
+  workflowId: z.coerce.number(),
   ref: z.string().optional(),
   repo: z.string(),
 });

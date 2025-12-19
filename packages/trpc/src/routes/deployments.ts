@@ -9,22 +9,27 @@ import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
 
-const deploymentJobAgentConfig = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("github-app"),
-    repo: z.string(),
-    workflowId: z.number(),
-    ref: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal("argo-cd"),
-    template: z.string(),
-  }),
-  z.object({
-    type: z.literal("tfe"),
-    template: z.string(),
-  }),
-  z.object({ type: z.literal("custom") }).passthrough(),
+const deploymentGhConfig = z.object({
+  repo: z.string(),
+  workflowId: z.coerce.number(),
+  ref: z.string().optional(),
+});
+
+const deploymentArgoCdConfig = z.object({
+  template: z.string(),
+});
+
+const deploymentTfeConfig = z.object({
+  template: z.string(),
+});
+
+const deploymentCustomConfig = z.object({}).passthrough();
+
+const deploymentJobAgentConfig = z.union([
+  deploymentGhConfig,
+  deploymentArgoCdConfig,
+  deploymentTfeConfig,
+  deploymentCustomConfig,
 ]);
 
 export const deploymentsRouter = router({
@@ -229,10 +234,28 @@ export const deploymentsRouter = router({
 
       if (!deployment.data) throw new Error("Deployment not found");
 
+      const getTypedJobAgentConfig = (
+        config: z.infer<typeof deploymentJobAgentConfig>,
+      ) => {
+        const ghResult = deploymentGhConfig.safeParse(config);
+        if (ghResult.success) {
+          return { ...ghResult.data, type: "github-app" as const };
+        }
+        const argoCdResult = deploymentArgoCdConfig.safeParse(config);
+        if (argoCdResult.success) {
+          return { ...argoCdResult.data, type: "argo-cd" as const };
+        }
+        const tfeResult = deploymentTfeConfig.safeParse(config);
+        if (tfeResult.success) {
+          return { ...tfeResult.data, type: "tfe" as const };
+        }
+        return { ...config, type: "custom" as const };
+      };
+
       const updateData: WorkspaceEngine["schemas"]["Deployment"] = {
         ...deployment.data.deployment,
         jobAgentId,
-        jobAgentConfig,
+        jobAgentConfig: getTypedJobAgentConfig(jobAgentConfig),
       };
 
       await sendGoEvent({
