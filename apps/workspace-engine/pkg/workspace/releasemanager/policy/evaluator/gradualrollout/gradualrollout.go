@@ -310,15 +310,11 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 	environment := scope.Environment
 	version := scope.Version
 	releaseTarget := scope.ReleaseTarget
-
-	for _, release := range e.store.Releases.Items() {
-		if release.Version.Id == version.Id && release.ReleaseTarget.Key() == releaseTarget.Key() {
-			return results.NewAllowedResult("Version has already been deployed to this release target.").
-				WithDetail("release_id", release.ID()).
-				WithDetail("version_id", version.Id).
-				WithDetail("environment_id", environment.Id).
-				WithDetail("release_target", releaseTarget.Key())
-		}
+	resource, ok := e.store.Resources.Get(releaseTarget.ResourceId)
+	if !ok {
+		return results.
+			NewDeniedResult(fmt.Sprintf("Resource not found: %s", releaseTarget.ResourceId)).
+			WithDetail("error", fmt.Sprintf("Resource not found: %s", releaseTarget.ResourceId))
 	}
 
 	releaseTargets, err := e.getReleaseTargets(environment, version)
@@ -334,7 +330,8 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 		return results.
 			NewPendingResult(results.ActionTypeWait, "Rollout has not started yet").
 			WithDetail("rollout_start_time", nil).
-			WithDetail("target_rollout_time", nil)
+			WithDetail("target_rollout_time", nil).
+			WithDetail("resource", resource)
 	}
 
 	rolloutPosition, err := newRolloutPositionBuilder(releaseTargets, e.hashingFn).
@@ -350,6 +347,7 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 			WithDetail("version", version).
 			WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 			WithDetail("target_rollout_position", rolloutPosition).
+			WithDetail("resource", resource).
 			WithDetail("error", err.Error())
 	}
 
@@ -367,13 +365,15 @@ func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.
 			WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 			WithDetail("target_rollout_position", rolloutPosition).
 			WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339)).
+			WithDetail("resource", resource).
 			WithNextEvaluationTime(deploymentTime)
 	}
 
 	return results.NewAllowedResult("Rollout has progressed to this release target").
 		WithDetail("rollout_start_time", rolloutStartTime.Format(time.RFC3339)).
 		WithDetail("target_rollout_position", rolloutPosition).
-		WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339))
+		WithDetail("target_rollout_time", deploymentTime.Format(time.RFC3339)).
+		WithDetail("resource", resource)
 }
 
 func (e *GradualRolloutEvaluator) getReleaseTargets(

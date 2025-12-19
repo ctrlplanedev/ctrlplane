@@ -9,17 +9,33 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "~/components/ui/hover-card";
+import {
+  GradualRolloutDetail,
+  gradualRolloutDetailSchema,
+} from "./rule-results/GradualRolloutDetail";
 
-function RuleDetailHover({
-  details,
-  children,
-}: {
-  details: Record<string, unknown>;
-  children: React.ReactNode;
-}) {
+type RuleEvaluation = WorkspaceEngine["schemas"]["RuleEvaluation"];
+function Message({ ruleResult }: { ruleResult: RuleEvaluation }) {
+  return (
+    <div>
+      <div>{String(ruleResult.message)}</div>
+      {typeof ruleResult.details.rrule === "string" && (
+        <Rrule {...(ruleResult.details as any)} />
+      )}
+    </div>
+  );
+}
+
+function RuleDetail(props: { ruleResult: RuleEvaluation }) {
+  const { details } = props.ruleResult;
+  const gradualRolloutResult = gradualRolloutDetailSchema.safeParse(details);
+  if (gradualRolloutResult.success) return <GradualRolloutDetail {...props} />;
+
   return (
     <HoverCard>
-      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+      <HoverCardTrigger asChild>
+        <Message {...props} />
+      </HoverCardTrigger>
       <HoverCardContent className="max-h-96 w-96 overflow-auto">
         <pre className="text-xs">{JSON.stringify(details, null, 2)}</pre>
       </HoverCardContent>
@@ -27,11 +43,7 @@ function RuleDetailHover({
   );
 }
 
-function StatusIcon({
-  ruleResult,
-}: {
-  ruleResult: WorkspaceEngine["schemas"]["RuleEvaluation"];
-}) {
+function StatusIcon({ ruleResult }: { ruleResult: RuleEvaluation }) {
   if (ruleResult.allowed) return <Check className="size-3 text-green-500" />;
   if (ruleResult.actionRequired)
     return <AlertCircleIcon className="size-3 text-red-500" />;
@@ -43,12 +55,11 @@ function ActionButton({
   onClickApprove,
   isPending,
 }: {
-  ruleResult: WorkspaceEngine["schemas"]["RuleEvaluation"];
+  ruleResult: RuleEvaluation;
   onClickApprove: () => void;
   isPending: boolean;
 }) {
   if (ruleResult.actionType !== "approval") return null;
-
   return (
     <Button
       className="h-5 bg-green-500/10 px-1.5 text-xs text-green-600 hover:bg-green-500/20 dark:text-green-400"
@@ -95,21 +106,14 @@ const Rrule: React.FC<{ rrule: string; next_window_start: string }> = ({
 };
 
 export function RuleResult(props: {
-  ruleResult: WorkspaceEngine["schemas"]["RuleEvaluation"];
+  ruleResult: RuleEvaluation;
   onClickApprove: () => void;
   isPending: boolean;
 }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       <StatusIcon {...props} />
-      <RuleDetailHover details={props.ruleResult.details}>
-        <div>
-          <div>{String(props.ruleResult.message)}</div>
-          {typeof props.ruleResult.details.rrule === "string" && (
-            <Rrule {...(props.ruleResult.details as any)} />
-          )}
-        </div>
-      </RuleDetailHover>
+      <RuleDetail {...props} />
       <div className="grow" />
       <div className="text-xs text-muted-foreground">
         <ActionButton {...props} />
