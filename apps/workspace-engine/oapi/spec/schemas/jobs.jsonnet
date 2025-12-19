@@ -54,19 +54,15 @@ local JobPropertyKeys = std.objectFields(Job.properties);
   },
 
   JobWithVerifications: {
-    allOf: [
-      openapi.schemaRef('Job'),
-      {
-        required: ['verifications'],
-        properties: {
-          verifications: {
-            type: 'array',
-            items: openapi.schemaRef('ReleaseVerification'),
-          },
-        },
+    type: 'object',
+    required: ['job', 'verifications'],
+    properties: {
+      job: openapi.schemaRef('Job'),
+      verifications: {
+        type: 'array',
+        items: openapi.schemaRef('JobVerification'),
       },
-    ],
-    additionalProperties: false,
+    },
   },
 
   JobWithRelease: {

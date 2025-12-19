@@ -114,7 +114,7 @@ export const VersionCard: React.FC<VersionCardProps> = ({
     const failedTargets = desiredReleaseTargets.filter((rt) => {
       // Check if state has latestJob with a failure status
       const latestJob = (rt.state as any).latestJob;
-      return latestJob && failureStatuses.includes(latestJob.status);
+      return latestJob && failureStatuses.includes(latestJob.job?.status);
     });
 
     // Get unique environment IDs

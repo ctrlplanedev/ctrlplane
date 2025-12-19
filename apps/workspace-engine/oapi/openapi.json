@@ -1043,6 +1043,48 @@
             ],
             "type": "object"
          },
+         "JobVerification": {
+            "properties": {
+               "createdAt": {
+                  "description": "When verification was created",
+                  "format": "date-time",
+                  "type": "string"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "jobId": {
+                  "type": "string"
+               },
+               "message": {
+                  "description": "Summary message of verification result",
+                  "type": "string"
+               },
+               "metrics": {
+                  "description": "Metrics associated with this verification",
+                  "items": {
+                     "$ref": "#/components/schemas/VerificationMetricStatus"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "id",
+               "jobId",
+               "metrics",
+               "createdAt"
+            ],
+            "type": "object"
+         },
+         "JobVerificationStatus": {
+            "enum": [
+               "running",
+               "passed",
+               "failed",
+               "cancelled"
+            ],
+            "type": "string"
+         },
          "JobWithRelease": {
             "properties": {
                "deployment": {
@@ -1068,25 +1110,22 @@
             "type": "object"
          },
          "JobWithVerifications": {
-            "additionalProperties": false,
-            "allOf": [
-               {
+            "properties": {
+               "job": {
                   "$ref": "#/components/schemas/Job"
                },
-               {
-                  "properties": {
-                     "verifications": {
-                        "items": {
-                           "$ref": "#/components/schemas/ReleaseVerification"
-                        },
-                        "type": "array"
-                     }
+               "verifications": {
+                  "items": {
+                     "$ref": "#/components/schemas/JobVerification"
                   },
-                  "required": [
-                     "verifications"
-                  ]
+                  "type": "array"
                }
-            ]
+            },
+            "required": [
+               "job",
+               "verifications"
+            ],
+            "type": "object"
          },
          "JsonSelector": {
             "properties": {
@@ -1542,9 +1581,6 @@
                   },
                   "type": "object"
                },
-               "verification": {
-                  "$ref": "#/components/schemas/ReleaseVerification"
-               },
                "version": {
                   "$ref": "#/components/schemas/DeploymentVersion"
                }
@@ -1617,51 +1653,6 @@
                "deployment"
             ],
             "type": "object"
-         },
-         "ReleaseVerification": {
-            "properties": {
-               "createdAt": {
-                  "description": "When verification was created",
-                  "format": "date-time",
-                  "type": "string"
-               },
-               "id": {
-                  "type": "string"
-               },
-               "jobId": {
-                  "type": "string"
-               },
-               "message": {
-                  "description": "Summary message of verification result",
-                  "type": "string"
-               },
-               "metrics": {
-                  "description": "Metrics associated with this verification",
-                  "items": {
-                     "$ref": "#/components/schemas/VerificationMetricStatus"
-                  },
-                  "type": "array"
-               },
-               "releaseId": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "releaseId",
-               "metrics",
-               "createdAt"
-            ],
-            "type": "object"
-         },
-         "ReleaseVerificationStatus": {
-            "enum": [
-               "running",
-               "passed",
-               "failed",
-               "cancelled"
-            ],
-            "type": "string"
          },
          "ResolvedPolicy": {
             "properties": {
@@ -5150,7 +5141,7 @@
       },
       "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications": {
          "get": {
-            "description": "Returns all verifications for a specific release with their results.",
+            "description": "Returns all verifications for jobs belonging to this release.",
             "operationId": "getReleaseVerifications",
             "parameters": [
                {
@@ -5178,7 +5169,7 @@
                      "application/json": {
                         "schema": {
                            "items": {
-                              "$ref": "#/components/schemas/ReleaseVerification"
+                              "$ref": "#/components/schemas/JobVerification"
                            },
                            "type": "array"
                         }

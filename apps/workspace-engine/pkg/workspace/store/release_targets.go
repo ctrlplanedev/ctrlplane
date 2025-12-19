@@ -79,30 +79,26 @@ func (r *ReleaseTargets) GetCurrentRelease(ctx context.Context, releaseTarget *o
 	})
 
 	// Iterate through jobs and find the first valid release
+	// A job is valid if it has no verifications, or ALL its verifications have passed
 	for _, job := range successfulJobs {
 		release, ok := r.store.Releases.Get(job.ReleaseId)
 		if !ok || release == nil {
 			continue
 		}
 
-		// Check verification status
-		verification := r.store.ReleaseVerifications.GetMostRecentVerificationForRelease(job.ReleaseId)
+		// Check verification status for this job
+		// GetJobVerificationStatus returns empty string if no verifications
+		status := r.store.JobVerifications.GetJobVerificationStatus(job.Id)
 
-		// If no verification exists, release is valid
-		if verification == nil {
+		// If no verifications exist or all passed, job is valid
+		if status == "" || status == oapi.JobVerificationStatusPassed {
 			return release, job, nil
 		}
 
-		// If verification exists, check if it passed
-		status := verification.Status()
-		if status == oapi.ReleaseVerificationStatusPassed {
-			return release, job, nil
-		}
-
-		// Otherwise, skip this release and check the next one
+		// Otherwise, skip this job and check the next one
 	}
 
-	return nil, nil, fmt.Errorf("no valid release found (all releases have failed/running/cancelled verifications)")
+	return nil, nil, fmt.Errorf("no valid release found (all jobs have failed/running/cancelled verifications)")
 }
 
 func (r *ReleaseTargets) GetLatestJob(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (*oapi.Job, error) {

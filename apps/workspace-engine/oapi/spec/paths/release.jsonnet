@@ -20,7 +20,7 @@ local openapi = import '../lib/openapi.libsonnet';
     get: {
       summary: 'Get release verifications',
       operationId: 'getReleaseVerifications',
-      description: 'Returns all verifications for a specific release with their results.',
+      description: 'Returns all verifications for jobs belonging to this release.',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.releaseIdParam(),
@@ -28,7 +28,7 @@ local openapi = import '../lib/openapi.libsonnet';
       responses: openapi.okResponse(
                    {
                      type: 'array',
-                     items: openapi.schemaRef('ReleaseVerification'),
+                     items: openapi.schemaRef('JobVerification'),
                    },
                    'List of verifications for the release'
                  )

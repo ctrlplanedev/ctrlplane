@@ -28,12 +28,12 @@ func (r *MeasurementRecorder) RecordMeasurement(
 	verificationID string,
 	metricIndex int,
 	measurement oapi.VerificationMeasurement,
-) (*oapi.ReleaseVerification, error) {
+) (*oapi.JobVerification, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Verify the verification exists and metric index is valid
-	verification, ok := r.store.ReleaseVerifications.Get(verificationID)
+	verification, ok := r.store.JobVerifications.Get(verificationID)
 	if !ok {
 		return nil, fmt.Errorf("verification not found: %s", verificationID)
 	}
@@ -43,8 +43,8 @@ func (r *MeasurementRecorder) RecordMeasurement(
 	}
 
 	// Update the verification with the new measurement
-	updated, _ := r.store.ReleaseVerifications.Update(
-		ctx, verificationID, func(v *oapi.ReleaseVerification) *oapi.ReleaseVerification {
+	updated, _ := r.store.JobVerifications.Update(
+		ctx, verificationID, func(v *oapi.JobVerification) *oapi.JobVerification {
 			return r.appendMeasurement(v, metricIndex, measurement)
 		},
 	)
@@ -59,7 +59,7 @@ func (r *MeasurementRecorder) RecordError(
 	verificationID string,
 	metricIndex int,
 	err error,
-) (*oapi.ReleaseVerification, error) {
+) (*oapi.JobVerification, error) {
 	errorMsg := fmt.Sprintf("Measurement error: %s", err.Error())
 	errorData := map[string]any{"error": err.Error()}
 
@@ -82,13 +82,13 @@ func (r *MeasurementRecorder) UpdateMessage(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	verification, ok := r.store.ReleaseVerifications.Get(verificationID)
+	verification, ok := r.store.JobVerifications.Get(verificationID)
 	if !ok {
 		return fmt.Errorf("verification not found: %s", verificationID)
 	}
 
 	verification.Message = &message
-	r.store.ReleaseVerifications.Upsert(ctx, verification)
+	r.store.JobVerifications.Upsert(ctx, verification)
 
 	return nil
 }
@@ -96,10 +96,10 @@ func (r *MeasurementRecorder) UpdateMessage(
 // appendMeasurement creates a deep copy of the verification and appends the measurement.
 // This avoids race conditions when multiple goroutines update the same verification.
 func (r *MeasurementRecorder) appendMeasurement(
-	v *oapi.ReleaseVerification,
+	v *oapi.JobVerification,
 	metricIndex int,
 	measurement oapi.VerificationMeasurement,
-) *oapi.ReleaseVerification {
+) *oapi.JobVerification {
 	// Make a deep copy to avoid race conditions
 	updated := *v
 	updated.Metrics = make([]oapi.VerificationMetricStatus, len(v.Metrics))

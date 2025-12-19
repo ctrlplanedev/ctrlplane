@@ -69,6 +69,6 @@ func (dvv *DeploymentVariableValue) CompactionKey() (string, string) {
 	return "deployment_variable_value", dvv.Id
 }
 
-func (rv *ReleaseVerification) CompactionKey() (string, string) {
-	return "release_verification", rv.Id
+func (jv *JobVerification) CompactionKey() (string, string) {
+	return "job_verification", jv.Id
 }

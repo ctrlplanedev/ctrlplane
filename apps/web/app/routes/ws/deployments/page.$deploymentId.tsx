@@ -207,7 +207,7 @@ export default function DeploymentDetail() {
 
         // Collect jobs from latest job in each release target
         const jobs = envReleaseTargets
-          .map((rt) => rt.state.latestJob)
+          .map((rt) => rt.state.latestJob?.job)
           .filter((job): job is NonNullable<typeof job> => job != null);
 
         return {

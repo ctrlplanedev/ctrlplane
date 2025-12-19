@@ -152,6 +152,14 @@ const (
 	JobUpdateEventFieldsToUpdateUpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
 )
 
+// Defines values for JobVerificationStatus.
+const (
+	JobVerificationStatusCancelled JobVerificationStatus = "cancelled"
+	JobVerificationStatusFailed    JobVerificationStatus = "failed"
+	JobVerificationStatusPassed    JobVerificationStatus = "passed"
+	JobVerificationStatusRunning   JobVerificationStatus = "running"
+)
+
 // Defines values for NullValue.
 const (
 	True NullValue = true
@@ -178,14 +186,6 @@ const (
 const (
 	From RelationDirection = "from"
 	To   RelationDirection = "to"
-)
-
-// Defines values for ReleaseVerificationStatus.
-const (
-	ReleaseVerificationStatusCancelled ReleaseVerificationStatus = "cancelled"
-	ReleaseVerificationStatusFailed    ReleaseVerificationStatus = "failed"
-	ReleaseVerificationStatusPassed    ReleaseVerificationStatus = "passed"
-	ReleaseVerificationStatusRunning   ReleaseVerificationStatus = "running"
 )
 
 // Defines values for RetryRuleBackoffStrategy.
@@ -706,6 +706,23 @@ type JobUpdateEvent0 = interface{}
 // JobUpdateEvent1 defines model for .
 type JobUpdateEvent1 = interface{}
 
+// JobVerification defines model for JobVerification.
+type JobVerification struct {
+	// CreatedAt When verification was created
+	CreatedAt time.Time `json:"createdAt"`
+	Id        string    `json:"id"`
+	JobId     string    `json:"jobId"`
+
+	// Message Summary message of verification result
+	Message *string `json:"message,omitempty"`
+
+	// Metrics Metrics associated with this verification
+	Metrics []VerificationMetricStatus `json:"metrics"`
+}
+
+// JobVerificationStatus defines model for JobVerificationStatus.
+type JobVerificationStatus string
+
 // JobWithRelease defines model for JobWithRelease.
 type JobWithRelease struct {
 	Deployment  *Deployment  `json:"deployment,omitempty"`
@@ -717,20 +734,8 @@ type JobWithRelease struct {
 
 // JobWithVerifications defines model for JobWithVerifications.
 type JobWithVerifications struct {
-	CompletedAt    *time.Time            `json:"completedAt,omitempty"`
-	CreatedAt      time.Time             `json:"createdAt"`
-	ExternalId     *string               `json:"externalId,omitempty"`
-	Id             string                `json:"id"`
-	JobAgentConfig FullJobAgentConfig    `json:"jobAgentConfig"`
-	JobAgentId     string                `json:"jobAgentId"`
-	Message        *string               `json:"message,omitempty"`
-	Metadata       map[string]string     `json:"metadata"`
-	ReleaseId      string                `json:"releaseId"`
-	StartedAt      *time.Time            `json:"startedAt,omitempty"`
-	Status         JobStatus             `json:"status"`
-	TraceToken     *string               `json:"traceToken,omitempty"`
-	UpdatedAt      time.Time             `json:"updatedAt"`
-	Verifications  []ReleaseVerification `json:"verifications"`
+	Job           Job               `json:"job"`
+	Verifications []JobVerification `json:"verifications"`
 }
 
 // JsonSelector defines model for JsonSelector.
@@ -898,7 +903,6 @@ type Release struct {
 	EncryptedVariables []string                `json:"encryptedVariables"`
 	ReleaseTarget      ReleaseTarget           `json:"releaseTarget"`
 	Variables          map[string]LiteralValue `json:"variables"`
-	Verification       *ReleaseVerification    `json:"verification,omitempty"`
 	Version            DeploymentVersion       `json:"version"`
 }
 
@@ -924,24 +928,6 @@ type ReleaseTargetWithState struct {
 	Resource      Resource           `json:"resource"`
 	State         ReleaseTargetState `json:"state"`
 }
-
-// ReleaseVerification defines model for ReleaseVerification.
-type ReleaseVerification struct {
-	// CreatedAt When verification was created
-	CreatedAt time.Time `json:"createdAt"`
-	Id        string    `json:"id"`
-	JobId     *string   `json:"jobId,omitempty"`
-
-	// Message Summary message of verification result
-	Message *string `json:"message,omitempty"`
-
-	// Metrics Metrics associated with this verification
-	Metrics   []VerificationMetricStatus `json:"metrics"`
-	ReleaseId string                     `json:"releaseId"`
-}
-
-// ReleaseVerificationStatus defines model for ReleaseVerificationStatus.
-type ReleaseVerificationStatus string
 
 // ResolvedPolicy defines model for ResolvedPolicy.
 type ResolvedPolicy struct {

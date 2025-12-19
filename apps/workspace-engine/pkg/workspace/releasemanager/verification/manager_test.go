@@ -37,6 +37,7 @@ func TestManager_StartVerification_Success(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	// Create metric specs using test server
 	metrics := []oapi.VerificationMetricSpec{
@@ -50,14 +51,15 @@ func TestManager_StartVerification_Success(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 
 	require.NoError(t, err)
 
 	// Verify verification was created
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
-	assert.Equal(t, release.ID(), verification.ReleaseId)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
+	assert.Equal(t, job.Id, verification.JobId)
 	assert.Equal(t, 1, len(verification.Metrics))
 	assert.Equal(t, "health-check", verification.Metrics[0].Name)
 	assert.EqualValues(t, 30, verification.Metrics[0].IntervalSeconds)
@@ -85,6 +87,7 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -103,12 +106,13 @@ func TestManager_StartVerification_MultipleMetrics(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 	assert.Equal(t, 2, len(verification.Metrics))
 	assert.Equal(t, "health-check", verification.Metrics[0].Name)
 	assert.Equal(t, "availability-check", verification.Metrics[1].Name)
@@ -127,6 +131,7 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -139,23 +144,27 @@ func TestManager_StartVerification_AlreadyExists(t *testing.T) {
 	}
 
 	// Start verification first time
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, _ := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	firstVerificationID := verification.Id
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	firstVerificationID := verifications[0].Id
 
-	// Try to start again - should return without error
-	err = manager.StartVerification(ctx, release, nil, metrics)
+	// Try to start again - should create a new verification
+	err = manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
 	// Verify new verification was created
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
-	assert.NotEqual(t, firstVerificationID, verification.Id, "should be a new verification")
+	verifications = s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 2)
+	// Most recent first
+	assert.NotEqual(t, firstVerificationID, verifications[0].Id, "should be a new verification")
 
 	// Clean up
-	manager.scheduler.StopVerification(verification.Id)
+	for _, v := range verifications {
+		manager.scheduler.StopVerification(v.Id)
+	}
 }
 
 func TestManager_StartVerification_NoMetrics(t *testing.T) {
@@ -164,16 +173,17 @@ func TestManager_StartVerification_NoMetrics(t *testing.T) {
 	manager := NewManager(s)
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	// Try to start with empty metrics
-	err := manager.StartVerification(ctx, release, nil, []oapi.VerificationMetricSpec{})
+	err := manager.StartVerification(ctx, job, []oapi.VerificationMetricSpec{})
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "at least one metric configuration is required")
 
 	// Verify no verification was created
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
@@ -186,6 +196,7 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	failureLimit := 3
 	metrics := []oapi.VerificationMetricSpec{
@@ -199,12 +210,13 @@ func TestManager_StartVerification_WithFailureLimit(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 	require.NotNil(t, verification.Metrics[0].FailureThreshold)
 	assert.Equal(t, 3, *verification.Metrics[0].FailureThreshold)
 
@@ -222,6 +234,7 @@ func TestManager_StopVerification_Success(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -233,10 +246,12 @@ func TestManager_StopVerification_Success(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, _ := s.ReleaseVerifications.GetByReleaseId(release.ID())
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	// Verify it's running
 	manager.scheduler.mu.Lock()
@@ -245,7 +260,7 @@ func TestManager_StopVerification_Success(t *testing.T) {
 	assert.True(t, running)
 
 	// Stop the verification
-	manager.StopVerification(ctx, release.ID())
+	manager.StopVerificationsForJob(ctx, job.Id)
 
 	// Verify it's stopped
 	manager.scheduler.mu.Lock()
@@ -259,11 +274,11 @@ func TestManager_StopVerification_NotFound(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
-	nonExistentReleaseID := uuid.New().String()
+	nonExistentJobID := uuid.New().String()
 
 	// Should not panic
 	assert.NotPanics(t, func() {
-		manager.StopVerification(ctx, nonExistentReleaseID)
+		manager.StopVerificationsForJob(ctx, nonExistentJobID)
 	})
 }
 
@@ -288,14 +303,17 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 	s := newTestStore()
 	manager := NewManager(s)
 
-	// Create some releases and verifications in running state
+	// Create some releases, jobs, and verifications in running state
 	release1 := createTestRelease(s, ctx)
+	job1 := createTestJob(s, ctx, release1.ID())
 	release2 := createTestRelease(s, ctx)
+	job2 := createTestJob(s, ctx, release2.ID())
 	release3 := createTestRelease(s, ctx)
+	job3 := createTestJob(s, ctx, release3.ID())
 
-	verification1 := createTestVerification(s, ctx, release1.ID(), 2, 3600)
-	verification2 := createTestVerification(s, ctx, release2.ID(), 1, 300)
-	verification3 := createTestVerification(s, ctx, release3.ID(), 3, 2700)
+	verification1 := createTestVerification(s, ctx, job1.Id, 2, 3600)
+	verification2 := createTestVerification(s, ctx, job2.Id, 1, 300)
+	verification3 := createTestVerification(s, ctx, job3.Id, 3, 2700)
 
 	// verification1 is running (no measurements)
 	// verification2 is completed (all measurements passed)
@@ -308,7 +326,7 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 			Data:       &map[string]any{"statusCode": 200},
 		})
 	}
-	s.ReleaseVerifications.Upsert(ctx, verification2)
+	s.JobVerifications.Upsert(ctx, verification2)
 
 	// verification3 has some measurements but not complete
 	msg := "Success"
@@ -318,7 +336,7 @@ func TestManager_Restore_RunningVerifications(t *testing.T) {
 		MeasuredAt: time.Now(),
 		Data:       &map[string]any{"statusCode": 200},
 	})
-	s.ReleaseVerifications.Upsert(ctx, verification3)
+	s.JobVerifications.Upsert(ctx, verification3)
 
 	// Restore should restart verification1 and verification3, but not verification2
 	err := manager.Restore(ctx)
@@ -349,7 +367,8 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 	manager := NewManager(s)
 
 	release := createTestRelease(s, ctx)
-	verification := createTestVerification(s, ctx, release.ID(), 1, 30)
+	job := createTestJob(s, ctx, release.ID())
+	verification := createTestVerification(s, ctx, job.Id, 1, 30)
 
 	// Make verification failed by hitting failure limit
 	for i := 0; i <= *verification.Metrics[0].FailureThreshold; i++ {
@@ -361,10 +380,10 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 			Data:       &map[string]any{"statusCode": 500},
 		})
 	}
-	s.ReleaseVerifications.Upsert(ctx, verification)
+	s.JobVerifications.Upsert(ctx, verification)
 
 	// Verify it's in failed state
-	assert.Equal(t, oapi.ReleaseVerificationStatusFailed, verification.Status())
+	assert.Equal(t, oapi.JobVerificationStatusFailed, verification.Status())
 
 	// Restore should not restart failed verifications
 	err := manager.Restore(ctx)
@@ -385,12 +404,15 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 
 	// Create verifications in different states
 	runningRelease := createTestRelease(s, ctx)
+	runningJob := createTestJob(s, ctx, runningRelease.ID())
 	passedRelease := createTestRelease(s, ctx)
+	passedJob := createTestJob(s, ctx, passedRelease.ID())
 	failedRelease := createTestRelease(s, ctx)
+	failedJob := createTestJob(s, ctx, failedRelease.ID())
 
-	runningVerification := createTestVerification(s, ctx, runningRelease.ID(), 1, 3600)
+	runningVerification := createTestVerification(s, ctx, runningJob.Id, 1, 3600)
 
-	passedVerification := createTestVerification(s, ctx, passedRelease.ID(), 1, 3600)
+	passedVerification := createTestVerification(s, ctx, passedJob.Id, 1, 3600)
 	for i := 0; i < passedVerification.Metrics[0].Count; i++ {
 		msg := "Success"
 		passedVerification.Metrics[0].Measurements = append(passedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
@@ -400,9 +422,9 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 			Data:       &map[string]any{"statusCode": 200},
 		})
 	}
-	s.ReleaseVerifications.Upsert(ctx, passedVerification)
+	s.JobVerifications.Upsert(ctx, passedVerification)
 
-	failedVerification := createTestVerification(s, ctx, failedRelease.ID(), 1, 3600)
+	failedVerification := createTestVerification(s, ctx, failedJob.Id, 1, 3600)
 	for i := 0; i <= *failedVerification.Metrics[0].FailureThreshold; i++ {
 		msg := "Failed"
 		failedVerification.Metrics[0].Measurements = append(failedVerification.Metrics[0].Measurements, oapi.VerificationMeasurement{
@@ -412,7 +434,7 @@ func TestManager_Restore_MixedStates(t *testing.T) {
 			Data:       &map[string]any{"statusCode": 500},
 		})
 	}
-	s.ReleaseVerifications.Upsert(ctx, failedVerification)
+	s.JobVerifications.Upsert(ctx, failedVerification)
 
 	// Restore
 	err := manager.Restore(ctx)
@@ -455,10 +477,11 @@ func TestManager_StartAndStopMultiple(t *testing.T) {
 	}
 
 	// Start multiple verifications
-	releases := make([]*oapi.Release, 5)
+	jobs := make([]*oapi.Job, 5)
 	for i := 0; i < 5; i++ {
-		releases[i] = createTestRelease(s, ctx)
-		err := manager.StartVerification(ctx, releases[i], nil, metrics)
+		release := createTestRelease(s, ctx)
+		jobs[i] = createTestJob(s, ctx, release.ID())
+		err := manager.StartVerification(ctx, jobs[i], metrics)
 		require.NoError(t, err)
 	}
 
@@ -469,8 +492,8 @@ func TestManager_StartAndStopMultiple(t *testing.T) {
 	assert.Equal(t, 5, runningCount)
 
 	// Stop all
-	for _, release := range releases {
-		manager.StopVerification(ctx, release.ID())
+	for _, job := range jobs {
+		manager.StopVerificationsForJob(ctx, job.Id)
 	}
 
 	// Verify all are stopped
@@ -490,6 +513,7 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	method := oapi.POST
 	timeout := "10s"
@@ -518,11 +542,12 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	// Verify all fields are preserved
 	metric := verification.Metrics[0]
@@ -550,6 +575,7 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -563,22 +589,23 @@ func TestManager_Integration_FullLifecycle(t *testing.T) {
 	}
 
 	// Start verification
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
 	// Wait for some measurements
 	time.Sleep(2 * time.Second)
 
 	// Check that measurements were taken
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 	assert.GreaterOrEqual(t, len(verification.Metrics[0].Measurements), 1)
 
 	// Verify test server received requests
 	assert.GreaterOrEqual(t, ts.RequestCount(), 1)
 
 	// Stop verification
-	manager.StopVerification(ctx, release.ID())
+	manager.StopVerificationsForJob(ctx, job.Id)
 
 	// Verify it's stopped
 	manager.scheduler.mu.Lock()
@@ -607,20 +634,22 @@ func BenchmarkManager_StartVerification(b *testing.B) {
 		},
 	}
 
-	// Pre-create releases
-	releases := make([]*oapi.Release, b.N)
+	// Pre-create jobs
+	jobs := make([]*oapi.Job, b.N)
 	for i := 0; i < b.N; i++ {
-		releases[i] = createTestRelease(s, ctx)
+		release := createTestRelease(s, ctx)
+		jobs[i] = createTestJob(s, ctx, release.ID())
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = manager.StartVerification(ctx, releases[i], nil, metrics)
+		_ = manager.StartVerification(ctx, jobs[i], metrics)
 	}
 
 	// Clean up
-	for _, release := range releases {
-		if verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID()); exists {
+	for _, job := range jobs {
+		verifications := s.JobVerifications.GetByJobId(job.Id)
+		for _, verification := range verifications {
 			manager.scheduler.StopVerification(verification.Id)
 		}
 	}
@@ -646,15 +675,16 @@ func BenchmarkManager_StopVerification(b *testing.B) {
 	}
 
 	// Pre-create and start verifications
-	releases := make([]*oapi.Release, b.N)
+	jobs := make([]*oapi.Job, b.N)
 	for i := 0; i < b.N; i++ {
-		releases[i] = createTestRelease(s, ctx)
-		_ = manager.StartVerification(ctx, releases[i], nil, metrics)
+		release := createTestRelease(s, ctx)
+		jobs[i] = createTestJob(s, ctx, release.ID())
+		_ = manager.StartVerification(ctx, jobs[i], metrics)
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.StopVerification(ctx, releases[i].ID())
+		manager.StopVerificationsForJob(ctx, jobs[i].Id)
 	}
 }
 
@@ -668,7 +698,8 @@ func BenchmarkManager_Restore(b *testing.B) {
 		// Create 10 running verifications per store
 		for j := 0; j < 10; j++ {
 			release := createTestRelease(s, ctx)
-			createTestVerification(s, ctx, release.ID(), 2, 3600)
+			job := createTestJob(s, ctx, release.ID())
+			createTestVerification(s, ctx, job.Id, 2, 3600)
 		}
 		stores[i] = s
 	}
@@ -679,7 +710,7 @@ func BenchmarkManager_Restore(b *testing.B) {
 		_ = manager.Restore(ctx)
 
 		// Clean up
-		for _, verification := range stores[i].ReleaseVerifications.Items() {
+		for _, verification := range stores[i].JobVerifications.Items() {
 			manager.scheduler.StopVerification(verification.Id)
 		}
 	}
@@ -724,14 +755,14 @@ func newMockHooks() *mockHooks {
 	}
 }
 
-func (m *mockHooks) OnVerificationStarted(ctx context.Context, verification *oapi.ReleaseVerification) error {
+func (m *mockHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.verificationStartedCalls = append(m.verificationStartedCalls, verification.Id)
 	return m.errorOnVerificationStarted
 }
 
-func (m *mockHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+func (m *mockHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.measurementTakenCalls = append(m.measurementTakenCalls, measurementCall{
@@ -742,7 +773,7 @@ func (m *mockHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.R
 	return m.errorOnMeasurementTaken
 }
 
-func (m *mockHooks) OnMetricComplete(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int) error {
+func (m *mockHooks) OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.metricCompleteCalls = append(m.metricCompleteCalls, metricCall{
@@ -752,14 +783,14 @@ func (m *mockHooks) OnMetricComplete(ctx context.Context, verification *oapi.Rel
 	return m.errorOnMetricComplete
 }
 
-func (m *mockHooks) OnVerificationComplete(ctx context.Context, verification *oapi.ReleaseVerification) error {
+func (m *mockHooks) OnVerificationComplete(ctx context.Context, verification *oapi.JobVerification) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.verificationCompleteCalls = append(m.verificationCompleteCalls, verification.Id)
 	return m.errorOnVerificationComplete
 }
 
-func (m *mockHooks) OnVerificationStopped(ctx context.Context, verification *oapi.ReleaseVerification) error {
+func (m *mockHooks) OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.verificationStoppedCalls = append(m.verificationStoppedCalls, verification.Id)
@@ -809,6 +840,7 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -820,14 +852,15 @@ func TestManager_HooksOnVerificationStarted(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
 	// Verify hook was called
 	assert.Equal(t, 1, hooks.getVerificationStartedCount())
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	hooks.mu.Lock()
 	assert.Equal(t, verification.Id, hooks.verificationStartedCalls[0])
@@ -848,6 +881,7 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -859,14 +893,15 @@ func TestManager_HooksOnVerificationStopped(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	// Stop the verification
-	manager.StopVerification(ctx, release.ID())
+	manager.StopVerificationsForJob(ctx, job.Id)
 
 	// Verify hook was called
 	assert.Equal(t, 1, hooks.getVerificationStoppedCount())
@@ -887,6 +922,7 @@ func TestManager_HooksOnMeasurementTaken(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -898,11 +934,12 @@ func TestManager_HooksOnMeasurementTaken(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	// Wait for at least one measurement to be taken
 	time.Sleep(200 * time.Millisecond)
@@ -933,6 +970,7 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	// Use a very short interval, low count, and short timeout to complete quickly
 	metrics := []oapi.VerificationMetricSpec{
@@ -945,11 +983,12 @@ func TestManager_HooksOnMetricComplete(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	// Wait for metric to complete using Eventually to poll for completion
 	// Need at least 1 second for the second measurement (IntervalSeconds: 1)
@@ -980,6 +1019,7 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	// Use a very short interval, low count, and short timeout to complete quickly
 	metrics := []oapi.VerificationMetricSpec{
@@ -992,11 +1032,12 @@ func TestManager_HooksOnVerificationComplete(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	// Wait for verification to complete using Eventually to poll for completion
 	// Need at least 1 second for the second measurement (IntervalSeconds: 1)
@@ -1034,6 +1075,7 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 	manager := NewManager(s, WithHooks(hooks))
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	metrics := []oapi.VerificationMetricSpec{
 		{
@@ -1046,17 +1088,17 @@ func TestManager_HooksErrorsDontFailVerification(t *testing.T) {
 	}
 
 	// StartVerification should succeed despite hook error
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
 
 	// Wait for some measurements
 	time.Sleep(200 * time.Millisecond)
 
 	// StopVerification should succeed despite hook error
-	manager.StopVerification(ctx, release.ID())
+	manager.StopVerificationsForJob(ctx, job.Id)
 
 	// Verify hooks were still called despite errors
 	assert.Equal(t, 1, hooks.getVerificationStartedCount())
@@ -1075,6 +1117,7 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 	defer ts.Close()
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
 	// Create multiple metrics
 	metrics := []oapi.VerificationMetricSpec{
@@ -1094,17 +1137,22 @@ func TestManager_HooksWithMultipleMetrics(t *testing.T) {
 		},
 	}
 
-	err := manager.StartVerification(ctx, release, nil, metrics)
+	err := manager.StartVerification(ctx, job, metrics)
 	require.NoError(t, err)
 
-	verification, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	verification := verifications[0]
 
 	// Wait for both metrics to complete
 	// Poll until both metrics have completed their measurements
 	// IntervalSeconds: 1, Count: 2 means ~1 second for second measurement per metric
 	require.Eventually(t, func() bool {
-		verification, _ = s.ReleaseVerifications.GetByReleaseId(release.ID())
+		verifications = s.JobVerifications.GetByJobId(job.Id)
+		if len(verifications) == 0 {
+			return false
+		}
+		verification = verifications[0]
 		completedCount := 0
 		for _, metric := range verification.Metrics {
 			if len(metric.Measurements) >= metric.Count {

@@ -17,7 +17,7 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager/verification")
 
-// Manager handles post-deployment verification of releases
+// Manager handles post-deployment verification of jobs
 // It uses a scheduler to run verifications from the store
 type Manager struct {
 	store     *store.Store
@@ -58,21 +58,21 @@ func (m *Manager) Restore(ctx context.Context) error {
 	defer span.End()
 
 	// Get all verifications from the store
-	allVerifications := m.store.ReleaseVerifications.Items()
+	allVerifications := m.store.JobVerifications.Items()
 
 	restarted := 0
 	for _, verification := range allVerifications {
 		// Check if verification is not finished
 		status := verification.Status()
-		if status != oapi.ReleaseVerificationStatusPassed &&
-			status != oapi.ReleaseVerificationStatusFailed &&
-			status != oapi.ReleaseVerificationStatusCancelled {
+		if status != oapi.JobVerificationStatusPassed &&
+			status != oapi.JobVerificationStatusFailed &&
+			status != oapi.JobVerificationStatusCancelled {
 			// Restart the verification goroutines
 			m.scheduler.StartVerification(ctx, verification.Id)
 			restarted++
 			log.Info("Restarted verification on load",
 				"verification_id", verification.Id,
-				"release_id", verification.ReleaseId,
+				"job_id", verification.JobId,
 				"status", status,
 				"metric_count", len(verification.Metrics))
 		}
@@ -91,19 +91,15 @@ func (m *Manager) Restore(ctx context.Context) error {
 // StartVerification creates a new verification and starts goroutines to run measurements
 func (m *Manager) StartVerification(
 	ctx context.Context,
-	release *oapi.Release,
 	job *oapi.Job,
 	metrics []oapi.VerificationMetricSpec,
 ) error {
 	ctx, span := tracer.Start(ctx, "StartVerification",
 		trace.WithAttributes(
-			attribute.String("release.id", release.ID()),
-			attribute.String("version.id", release.Version.Id),
-			attribute.String("version.tag", release.Version.Tag),
+			attribute.String("job.id", job.Id),
+			attribute.String("release.id", job.ReleaseId),
 		))
 	defer span.End()
-
-	releaseID := release.ID()
 
 	// Require metric configuration
 	if len(metrics) == 0 {
@@ -125,19 +121,15 @@ func (m *Manager) StartVerification(
 		}
 	}
 
-	verificationRecord := &oapi.ReleaseVerification{
+	verificationRecord := &oapi.JobVerification{
 		Id:        uuid.New().String(),
-		ReleaseId: releaseID,
+		JobId:     job.Id,
 		Metrics:   metricStatuses,
 		CreatedAt: time.Now(),
 	}
 
-	if job != nil {
-		verificationRecord.JobId = &job.Id
-	}
-
 	// Store the verification
-	m.store.ReleaseVerifications.Upsert(ctx, verificationRecord)
+	m.store.JobVerifications.Upsert(ctx, verificationRecord)
 
 	// Start goroutine for this verification
 	m.scheduler.StartVerification(ctx, verificationRecord.Id)
@@ -153,25 +145,25 @@ func (m *Manager) StartVerification(
 	span.SetAttributes(attribute.String("verification.status", "created"))
 	span.SetStatus(codes.Ok, "verification created")
 
-	log.Info("Created verification for release",
-		"release_id", releaseID,
+	log.Info("Created verification for job",
+		"job_id", job.Id,
+		"release_id", job.ReleaseId,
 		"verification_id", verificationRecord.Id,
-		"version", release.Version.Tag,
-		"environment", release.ReleaseTarget.EnvironmentId,
 		"metric_count", len(metrics))
 
 	return nil
 }
 
-// StopVerification cancels a verification and stops its goroutines
-func (m *Manager) StopVerification(ctx context.Context, releaseID string) {
-	ctx, span := tracer.Start(ctx, "StopVerification",
+// StopVerificationsForJob cancels all verifications for a job and stops their goroutines
+func (m *Manager) StopVerificationsForJob(ctx context.Context, jobID string) {
+	ctx, span := tracer.Start(ctx, "StopVerificationsForJob",
 		trace.WithAttributes(
-			attribute.String("release.id", releaseID),
+			attribute.String("job.id", jobID),
 		))
 	defer span.End()
 
-	if verification, exists := m.store.ReleaseVerifications.GetByReleaseId(releaseID); exists {
+	verifications := m.store.JobVerifications.GetByJobId(jobID)
+	for _, verification := range verifications {
 		// Stop the goroutines
 		m.scheduler.StopVerification(verification.Id)
 
@@ -183,11 +175,10 @@ func (m *Manager) StopVerification(ctx context.Context, releaseID string) {
 			// Don't fail the stop operation due to hook errors
 		}
 
-		span.SetStatus(codes.Ok, "verification stopped")
-		log.Info("Stopped verification for release",
-			"release_id", releaseID,
+		log.Info("Stopped verification for job",
+			"job_id", jobID,
 			"verification_id", verification.Id)
-	} else {
-		span.SetStatus(codes.Error, "verification not found")
 	}
+
+	span.SetStatus(codes.Ok, "verifications stopped")
 }

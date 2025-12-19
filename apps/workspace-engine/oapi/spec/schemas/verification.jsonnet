@@ -1,12 +1,11 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  ReleaseVerification: {
+  JobVerification: {
     type: 'object',
-    required: ['id', 'releaseId', 'metrics', 'createdAt'],
+    required: ['id', 'jobId', 'metrics', 'createdAt'],
     properties: {
       id: { type: 'string' },
-      releaseId: { type: 'string' },
       jobId: { type: 'string' },
       metrics: {
         type: 'array',

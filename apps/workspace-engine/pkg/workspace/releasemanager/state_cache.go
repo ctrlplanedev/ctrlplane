@@ -84,8 +84,8 @@ func (sc *StateCache) getJobWithVerifications(job *oapi.Job) *oapi.JobWithVerifi
 	if job == nil {
 		return nil
 	}
-	verifications := sc.store.ReleaseVerifications.GetByJobId(job.Id)
-	verificationsSlice := make([]oapi.ReleaseVerification, 0, len(verifications))
+	verifications := sc.store.JobVerifications.GetByJobId(job.Id)
+	verificationsSlice := make([]oapi.JobVerification, 0, len(verifications))
 	for _, verification := range verifications {
 		if verification == nil {
 			continue
@@ -93,19 +93,8 @@ func (sc *StateCache) getJobWithVerifications(job *oapi.Job) *oapi.JobWithVerifi
 		verificationsSlice = append(verificationsSlice, *verification)
 	}
 	return &oapi.JobWithVerifications{
-		CreatedAt:      job.CreatedAt,
-		ExternalId:     job.ExternalId,
-		Id:             job.Id,
-		JobAgentConfig: job.JobAgentConfig,
-		JobAgentId:     job.JobAgentId,
-		Message:        job.Message,
-		Metadata:       job.Metadata,
-		ReleaseId:      job.ReleaseId,
-		StartedAt:      job.StartedAt,
-		Status:         job.Status,
-		TraceToken:     job.TraceToken,
-		UpdatedAt:      job.UpdatedAt,
-		Verifications:  verificationsSlice,
+		Job:           *job,
+		Verifications: verificationsSlice,
 	}
 }
 
@@ -139,12 +128,6 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 		}
 	}
 
-	if desiredRelease != nil {
-		_, verificationSpan := stateCacheTracer.Start(ctx, "GetMostRecentVerificationForDesiredRelease")
-		desiredRelease.Verification = sc.store.ReleaseVerifications.GetMostRecentVerificationForRelease(desiredRelease.ID())
-		verificationSpan.End()
-	}
-
 	// Get current release (compute if not provided)
 	currentRelease := options.currentRelease
 	if currentRelease == nil {
@@ -158,12 +141,6 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 			currentRelease = cr
 		}
 		currentReleaseSpan.End()
-	}
-
-	if currentRelease != nil {
-		_, verificationSpan := stateCacheTracer.Start(ctx, "GetMostRecentVerificationForCurrentRelease")
-		currentRelease.Verification = sc.store.ReleaseVerifications.GetMostRecentVerificationForRelease(currentRelease.ID())
-		verificationSpan.End()
 	}
 
 	// Get latest job (compute if not provided)

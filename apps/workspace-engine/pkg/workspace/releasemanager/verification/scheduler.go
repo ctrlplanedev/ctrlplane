@@ -52,7 +52,7 @@ func (s *scheduler) StartVerification(ctx context.Context, verificationID string
 	}
 
 	// Check if verification exists and is not already completed
-	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
+	verification, ok := s.store.JobVerifications.Get(verificationID)
 	if !ok {
 		log.Error("Verification not found", "verification_id", verificationID)
 		return
@@ -131,8 +131,8 @@ func (s *scheduler) runMetricLoop(ctx context.Context, verificationID string, me
 
 // runMeasurementCycle executes one measurement and handles all related side effects.
 func (s *scheduler) runMeasurementCycle(ctx context.Context, verificationID string, metricIndex int) {
-	// Fetch verification once to get metric and releaseID
-	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
+	// Fetch verification once to get metric and jobID
+	verification, ok := s.store.JobVerifications.Get(verificationID)
 	if !ok {
 		log.Error("Verification not found", "verification_id", verificationID)
 		return
@@ -147,8 +147,15 @@ func (s *scheduler) runMeasurementCycle(ctx context.Context, verificationID stri
 
 	metric := &verification.Metrics[metricIndex]
 
+	// Get the job to derive releaseId for measurement executor
+	job, jobOk := s.store.Jobs.Get(verification.JobId)
+	if !jobOk {
+		log.Error("Job not found for verification", "job_id", verification.JobId)
+		return
+	}
+
 	// Execute measurement with direct objects
-	measurement, err := s.executor.Execute(ctx, metric, verification.ReleaseId)
+	measurement, err := s.executor.Execute(ctx, metric, job.ReleaseId)
 
 	// Record result (measurement or error)
 	if err != nil {
@@ -172,7 +179,7 @@ func (s *scheduler) runMeasurementCycle(ctx context.Context, verificationID stri
 // handlePostMeasurement fires hooks and updates verification status after a measurement.
 func (s *scheduler) handlePostMeasurement(
 	ctx context.Context,
-	verification *oapi.ReleaseVerification,
+	verification *oapi.JobVerification,
 	metricIndex int,
 ) {
 	// Fire measurement taken hook
@@ -189,7 +196,7 @@ func (s *scheduler) handlePostMeasurement(
 
 	// Check if verification is complete and fire completion hook
 	status := verification.Status()
-	if status == oapi.ReleaseVerificationStatusRunning {
+	if status == oapi.JobVerificationStatusRunning {
 		return
 	}
 
@@ -221,14 +228,14 @@ func (s *scheduler) handlePostMeasurement(
 		"verification_id", verification.Id,
 		"metric_index", metricIndex,
 		"metric_name", verification.Metrics[metricIndex].Name,
-		"release_id", verification.ReleaseId,
+		"job_id", verification.JobId,
 		"verification_status", status,
 		"metric_measurement_count", len(verification.Metrics[metricIndex].Measurements))
 }
 
 // shouldStopMetric checks if a metric loop should stop and fires the metric complete hook.
 func (s *scheduler) shouldStopMetric(ctx context.Context, verificationID string, metricIndex int) bool {
-	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
+	verification, ok := s.store.JobVerifications.Get(verificationID)
 	if !ok {
 		log.Warn("Verification not found in store, stopping",
 			"verification_id", verificationID)
@@ -267,16 +274,16 @@ func (s *scheduler) shouldStopMetric(ctx context.Context, verificationID string,
 
 // Helper methods
 
-func (s *scheduler) isCompleted(v *oapi.ReleaseVerification) bool {
+func (s *scheduler) isCompleted(v *oapi.JobVerification) bool {
 	status := v.Status()
-	return status == oapi.ReleaseVerificationStatusPassed ||
-		status == oapi.ReleaseVerificationStatusFailed
+	return status == oapi.JobVerificationStatusPassed ||
+		status == oapi.JobVerificationStatusFailed
 }
 
 const defaultMetricInterval = 30 * time.Second
 
 func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (time.Duration, error) {
-	verification, ok := s.store.ReleaseVerifications.Get(verificationID)
+	verification, ok := s.store.JobVerifications.Get(verificationID)
 	if !ok {
 		return 0, fmt.Errorf("verification not found: %s", verificationID)
 	}
@@ -298,7 +305,7 @@ func (s *scheduler) getMetricInterval(verificationID string, metricIndex int) (t
 	return interval, nil
 }
 
-func (s *scheduler) buildSummaryMessage(v *oapi.ReleaseVerification, status oapi.ReleaseVerificationStatus) string {
+func (s *scheduler) buildSummaryMessage(v *oapi.JobVerification, status oapi.JobVerificationStatus) string {
 	totalMeasurements := 0
 	passedMeasurements := 0
 	failedMeasurements := 0

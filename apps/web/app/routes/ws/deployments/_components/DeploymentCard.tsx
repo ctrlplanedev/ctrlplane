@@ -425,7 +425,7 @@ export function LazyLoadDeploymentCard({
   ).length;
 
   const jobStatusSummary = _.chain(releaseTargets)
-    .groupBy(({ state }) => state.latestJob?.status ?? "unknown")
+    .groupBy(({ state }) => state.latestJob?.job.status ?? "unknown")
     .entries()
     .map(([status, releaseTargets]) => [status, releaseTargets.length])
     .fromPairs()

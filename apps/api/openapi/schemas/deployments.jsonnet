@@ -43,21 +43,9 @@ local openapi = import '../lib/openapi.libsonnet';
   },
 
   DeploymentJobAgentConfig: {
-    oneOf: [
-      openapi.schemaRef('DeploymentGithubJobAgentConfig'),
-      openapi.schemaRef('DeploymentArgoCDJobAgentConfig'),
-      openapi.schemaRef('DeploymentTerraformCloudJobAgentConfig'),
-      openapi.schemaRef('DeploymentCustomJobAgentConfig'),
-    ],
-    discriminator: {
-      propertyName: 'type',
-      mapping: {
-        'github-app': '#/components/schemas/DeploymentGithubJobAgentConfig',
-        'argo-cd': '#/components/schemas/DeploymentArgoCDJobAgentConfig',
-        tfe: '#/components/schemas/DeploymentTerraformCloudJobAgentConfig',
-        custom: '#/components/schemas/DeploymentCustomJobAgentConfig',
-      },
-    },
+    type: 'object',
+    additionalProperties: true,
+    description: 'Arbitrary object (record<string, any>) for the deployment job agent config.'
   },
 
   DeploymentGithubJobAgentConfig: {

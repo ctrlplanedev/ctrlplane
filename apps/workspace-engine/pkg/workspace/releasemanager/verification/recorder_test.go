@@ -105,7 +105,7 @@ func TestRecorder_RecordMeasurement_MultipleMeasurements(t *testing.T) {
 	}
 
 	// Verify all measurements were recorded
-	updated, ok := s.ReleaseVerifications.Get(verification.Id)
+	updated, ok := s.JobVerifications.Get(verification.Id)
 	require.True(t, ok)
 	assert.Len(t, updated.Metrics[0].Measurements, 5)
 }
@@ -130,7 +130,7 @@ func TestRecorder_RecordMeasurement_MultipleMetrics(t *testing.T) {
 	}
 
 	// Verify each metric has one measurement
-	updated, ok := s.ReleaseVerifications.Get(verification.Id)
+	updated, ok := s.JobVerifications.Get(verification.Id)
 	require.True(t, ok)
 	for i := 0; i < 3; i++ {
 		assert.Len(t, updated.Metrics[i].Measurements, 1)
@@ -189,7 +189,7 @@ func TestRecorder_UpdateMessage_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify message was updated
-	updated, ok := s.ReleaseVerifications.Get(verification.Id)
+	updated, ok := s.JobVerifications.Get(verification.Id)
 	require.True(t, ok)
 	assert.Equal(t, testMessage, *updated.Message)
 }
@@ -235,7 +235,7 @@ func TestRecorder_ConcurrentRecordMeasurements(t *testing.T) {
 	wg.Wait()
 
 	// Verify all measurements were recorded
-	updated, ok := s.ReleaseVerifications.Get(verification.Id)
+	updated, ok := s.JobVerifications.Get(verification.Id)
 	require.True(t, ok)
 	assert.Len(t, updated.Metrics[0].Measurements, numGoroutines)
 }
@@ -280,7 +280,7 @@ func TestRecorder_ConcurrentRecordAndUpdate(t *testing.T) {
 	wg.Wait()
 
 	// Verify measurements were recorded (order may vary due to concurrency)
-	updated, ok := s.ReleaseVerifications.Get(verification.Id)
+	updated, ok := s.JobVerifications.Get(verification.Id)
 	require.True(t, ok)
 	for i := 0; i < 3; i++ {
 		assert.Len(t, updated.Metrics[i].Measurements, 5)

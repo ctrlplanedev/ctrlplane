@@ -49,17 +49,12 @@ func (s *Releases) GetReleaseVerifications(c *gin.Context, workspaceId string, r
 		return
 	}
 
-	// Get all verifications for this release
-	var verifications []*oapi.ReleaseVerification
-	for _, verification := range ws.Store().ReleaseVerifications.Items() {
-		if verification.ReleaseId == releaseId {
-			verifications = append(verifications, verification)
-		}
-	}
+	// Get all verifications for jobs belonging to this release
+	verifications := ws.Store().JobVerifications.GetByReleaseId(releaseId)
 
 	// Return empty array if no verifications found (not an error)
 	if verifications == nil {
-		verifications = []*oapi.ReleaseVerification{}
+		verifications = []*oapi.JobVerification{}
 	}
 
 	c.JSON(http.StatusOK, verifications)

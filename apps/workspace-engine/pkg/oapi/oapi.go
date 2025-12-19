@@ -150,12 +150,12 @@ func (vms *VerificationMetricStatus) GetFailureLimit() int {
 }
 
 // Status computes the overall verification status from its metrics
-func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
-	if len(rv.Metrics) == 0 {
-		return ReleaseVerificationStatusRunning
+func (jv *JobVerification) Status() JobVerificationStatus {
+	if len(jv.Metrics) == 0 {
+		return JobVerificationStatusRunning
 	}
 
-	for _, metric := range rv.Metrics {
+	for _, metric := range jv.Metrics {
 		// Check if this metric has hit its failure limit
 		failureLimit := metric.GetFailureLimit()
 		successThreshold := metric.SuccessThreshold
@@ -175,7 +175,7 @@ func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
 		}
 
 		if failedCount > failureLimit {
-			return ReleaseVerificationStatusFailed
+			return JobVerificationStatusFailed
 		}
 
 		if successThreshold != nil && consecutiveSuccessCount >= *successThreshold {
@@ -184,18 +184,18 @@ func (rv *ReleaseVerification) Status() ReleaseVerificationStatus {
 
 		// Check if metric is complete
 		if len(metric.Measurements) < metric.Count {
-			return ReleaseVerificationStatusRunning
+			return JobVerificationStatusRunning
 		}
 	}
 
-	return ReleaseVerificationStatusPassed
+	return JobVerificationStatusPassed
 }
 
 // StartedAt returns the earliest measurement time across all metrics
-func (rv *ReleaseVerification) StartedAt() *time.Time {
+func (jv *JobVerification) StartedAt() *time.Time {
 	var earliest *time.Time
 
-	for _, metric := range rv.Metrics {
+	for _, metric := range jv.Metrics {
 		if len(metric.Measurements) > 0 {
 			firstMeasurement := metric.Measurements[0].MeasuredAt
 			if earliest == nil || firstMeasurement.Before(*earliest) {
@@ -208,14 +208,14 @@ func (rv *ReleaseVerification) StartedAt() *time.Time {
 }
 
 // CompletedAt returns the latest measurement time if all metrics are complete, nil otherwise
-func (rv *ReleaseVerification) CompletedAt() *time.Time {
-	if rv.Status() == ReleaseVerificationStatusRunning {
+func (jv *JobVerification) CompletedAt() *time.Time {
+	if jv.Status() == JobVerificationStatusRunning {
 		return nil
 	}
 
 	var latest *time.Time
 
-	for _, metric := range rv.Metrics {
+	for _, metric := range jv.Metrics {
 		if len(metric.Measurements) > 0 {
 			lastMeasurement := metric.Measurements[len(metric.Measurements)-1].MeasuredAt
 			if latest == nil || lastMeasurement.After(*latest) {

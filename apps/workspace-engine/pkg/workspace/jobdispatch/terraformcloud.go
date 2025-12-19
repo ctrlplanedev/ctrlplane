@@ -295,7 +295,7 @@ func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, re
 		},
 	}
 
-	return d.verification.StartVerification(ctx, release, job, metrics)
+	return d.verification.StartVerification(ctx, job, metrics)
 }
 
 func (d *TerraformCloudDispatcher) getKafkaProducer() (messaging.Producer, error) {

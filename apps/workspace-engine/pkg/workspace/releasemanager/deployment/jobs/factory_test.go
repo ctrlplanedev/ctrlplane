@@ -554,10 +554,51 @@ func TestFactory_CreateJobForRelease_MismatchedDiscriminator(t *testing.T) {
 	factory := NewFactory(st)
 	job, err := factory.CreateJobForRelease(ctx, release, nil)
 
-	// Should return an error due to type mismatch
-	require.Error(t, err)
-	require.Nil(t, job)
-	require.Contains(t, err.Error(), "does not match")
+	// Should create a job with InvalidJobAgent status due to type mismatch
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
+	require.Equal(t, jobAgentId, job.JobAgentId)
+	require.NotNil(t, job.Message)
+	require.Contains(t, *job.Message, "does not match")
+}
+
+func TestFactory_CreateJobForRelease_InvalidDeploymentDiscriminator(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	// JobAgent with valid github-app config
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "github-app",
+		"installationId": 12345,
+		"owner": "my-org"
+	}`)
+
+	// Deployment has empty/invalid discriminator value
+	var deploymentConfig oapi.DeploymentJobAgentConfig
+	// Force an empty discriminator by creating an empty union
+	_ = deploymentConfig.UnmarshalJSON([]byte(`{}`))
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "github-app", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	// Should create a job with InvalidJobAgent status due to invalid config
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
+	require.Equal(t, jobAgentId, job.JobAgentId)
+	require.NotNil(t, job.Message)
+	require.Contains(t, *job.Message, "Failed to merge job agent config")
 }
 
 func TestFactory_CreateJobForRelease_NoJobAgentConfigured(t *testing.T) {
@@ -579,6 +620,8 @@ func TestFactory_CreateJobForRelease_NoJobAgentConfigured(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
+	require.NotNil(t, job.Message)
+	require.Contains(t, *job.Message, "No job agent configured")
 }
 
 func TestFactory_CreateJobForRelease_JobAgentNotFound(t *testing.T) {
@@ -602,6 +645,8 @@ func TestFactory_CreateJobForRelease_JobAgentNotFound(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
 	require.Equal(t, nonExistentAgentId, job.JobAgentId)
+	require.NotNil(t, job.Message)
+	require.Contains(t, *job.Message, "not found")
 }
 
 func TestFactory_CreateJobForRelease_DeploymentNotFound(t *testing.T) {
@@ -799,4 +844,6 @@ func TestFactory_CreateJobForRelease_EmptyJobAgentId(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
+	require.NotNil(t, job.Message)
+	require.Contains(t, *job.Message, "No job agent configured")
 }

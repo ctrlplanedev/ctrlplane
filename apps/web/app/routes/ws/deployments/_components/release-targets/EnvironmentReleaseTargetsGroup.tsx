@@ -46,7 +46,7 @@ type ReleaseTargetRowProps = {
   resource: Resource;
 };
 
-type ReleaseVerification = WorkspaceEngine["schemas"]["ReleaseVerification"];
+type JobVerification = WorkspaceEngine["schemas"]["JobVerification"];
 type VerificationMetricStatus =
   WorkspaceEngine["schemas"]["VerificationMetricStatus"];
 type MetricMeasurement = VerificationMetricStatus["measurements"][number];
@@ -250,9 +250,7 @@ const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
   return { name: metric.name, status: "failing" };
 };
 
-function verificationSummary(
-  verification: ReleaseVerification,
-): MetricSummary[] {
+function verificationSummary(verification: JobVerification): MetricSummary[] {
   return verification.metrics.map(metricStatus);
 }
 
@@ -293,10 +291,10 @@ function VerificationStatusBadge({
   verifications,
 }: {
   summaries: MetricSummary[];
-  verifications: ReleaseVerification[];
+  verifications?: JobVerification[];
 }) {
   const status = getOverallVerificationStatus(summaries);
-  if (status === "none" || verifications.length === 0) return null;
+  if (status === "none" || verifications?.length === 0) return null;
 
   const config = VerificationStatusConfig[status];
   return (
@@ -313,7 +311,7 @@ function VerificationStatusBadge({
           <DialogTitle>Verifications</DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
-          {verifications.map((verification) => (
+          {verifications?.map((verification) => (
             <Fragment key={verification.id}>
               <div className="text-sm font-medium">{verification.message}</div>
               {verification.metrics.map((metric) => (
@@ -346,9 +344,9 @@ function ReleaseTargetRow({
       <TableCell>
         <div className="flex items-center gap-2">
           <JobStatusBadge
-            message={state.latestJob?.message}
+            message={state.latestJob?.job.message}
             status={
-              (state.latestJob?.status ??
+              (state.latestJob?.job.status ??
                 "unknown") as keyof typeof JobStatusDisplayName
             }
           />

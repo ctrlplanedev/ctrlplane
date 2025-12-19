@@ -113,7 +113,7 @@ export function RedeployAllDialog({
   const environmentName = releaseTargets[0]?.environment.name ?? "";
   const [status, setStatus] = useState<JobStatus | "all">("all");
   const selectedTargets = releaseTargets.filter(
-    (rt) => status === "all" || rt.state.latestJob?.status === status,
+    (rt) => status === "all" || rt.state.latestJob?.job.status === status,
   );
   const { handleRedeployAll, isPending } = useRedeployAll(selectedTargets);
 

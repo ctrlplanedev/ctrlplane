@@ -237,7 +237,6 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       releaseTarget: openapi.schemaRef('ReleaseTarget'),
       createdAt: { type: 'string' },
-      verification: openapi.schemaRef('ReleaseVerification'),
     },
   },
 

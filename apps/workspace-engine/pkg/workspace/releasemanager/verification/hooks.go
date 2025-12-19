@@ -7,44 +7,44 @@ import (
 
 type VerificationHooks interface {
 	// OnVerificationStarted is called when a verification is created and started
-	OnVerificationStarted(ctx context.Context, verification *oapi.ReleaseVerification) error
+	OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error
 
 	// OnMeasurementTaken is called after each metric measurement
-	OnMeasurementTaken(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error
+	OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error
 
 	// OnMetricComplete is called when a metric finishes (reached count or failure limit)
-	OnMetricComplete(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int) error
+	OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) error
 
 	// OnVerificationComplete is called when all metrics complete (passed/failed/cancelled)
-	OnVerificationComplete(ctx context.Context, verification *oapi.ReleaseVerification) error
+	OnVerificationComplete(ctx context.Context, verification *oapi.JobVerification) error
 
 	// OnVerificationStopped is called when a verification is manually stopped
-	OnVerificationStopped(ctx context.Context, verification *oapi.ReleaseVerification) error
+	OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) error
 }
 
 type defaultHooks struct {
 }
 
 // OnMeasurementTaken implements VerificationHooks.
-func (h *defaultHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+func (h *defaultHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
 	return nil
 }
 
 // OnMetricComplete implements VerificationHooks.
-func (h *defaultHooks) OnMetricComplete(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int) error {
+func (h *defaultHooks) OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) error {
 	return nil
 }
 
 // OnVerificationStarted implements VerificationHooks.
-func (h *defaultHooks) OnVerificationStarted(ctx context.Context, verification *oapi.ReleaseVerification) error {
+func (h *defaultHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error {
 	return nil
 }
 
-func (h *defaultHooks) OnVerificationComplete(ctx context.Context, verification *oapi.ReleaseVerification) error {
+func (h *defaultHooks) OnVerificationComplete(ctx context.Context, verification *oapi.JobVerification) error {
 	return nil
 }
 
-func (h *defaultHooks) OnVerificationStopped(ctx context.Context, verification *oapi.ReleaseVerification) error {
+func (h *defaultHooks) OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) error {
 	return nil
 }
 
@@ -64,7 +64,7 @@ func NewCompositeHooks(hooks ...VerificationHooks) *CompositeHooks {
 }
 
 // OnVerificationStarted calls OnVerificationStarted on all hooks.
-func (c *CompositeHooks) OnVerificationStarted(ctx context.Context, verification *oapi.ReleaseVerification) (e error) {
+func (c *CompositeHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) (e error) {
 	for _, h := range c.hooks {
 		if err := h.OnVerificationStarted(ctx, verification); err != nil {
 			e = err
@@ -74,7 +74,7 @@ func (c *CompositeHooks) OnVerificationStarted(ctx context.Context, verification
 }
 
 // OnMeasurementTaken calls OnMeasurementTaken on all hooks.
-func (c *CompositeHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int, measurement *oapi.VerificationMeasurement) (e error) {
+func (c *CompositeHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) (e error) {
 	for _, h := range c.hooks {
 		if err := h.OnMeasurementTaken(ctx, verification, metricIndex, measurement); err != nil {
 			e = err
@@ -84,7 +84,7 @@ func (c *CompositeHooks) OnMeasurementTaken(ctx context.Context, verification *o
 }
 
 // OnMetricComplete calls OnMetricComplete on all hooks.
-func (c *CompositeHooks) OnMetricComplete(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int) (e error) {
+func (c *CompositeHooks) OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) (e error) {
 	for _, h := range c.hooks {
 		if err := h.OnMetricComplete(ctx, verification, metricIndex); err != nil {
 			e = err
@@ -94,7 +94,7 @@ func (c *CompositeHooks) OnMetricComplete(ctx context.Context, verification *oap
 }
 
 // OnVerificationComplete calls OnVerificationComplete on all hooks.
-func (c *CompositeHooks) OnVerificationComplete(ctx context.Context, verification *oapi.ReleaseVerification) (e error) {
+func (c *CompositeHooks) OnVerificationComplete(ctx context.Context, verification *oapi.JobVerification) (e error) {
 	for _, h := range c.hooks {
 		if err := h.OnVerificationComplete(ctx, verification); err != nil {
 			e = err
@@ -104,7 +104,7 @@ func (c *CompositeHooks) OnVerificationComplete(ctx context.Context, verificatio
 }
 
 // OnVerificationStopped calls OnVerificationStopped on all hooks.
-func (c *CompositeHooks) OnVerificationStopped(ctx context.Context, verification *oapi.ReleaseVerification) (e error) {
+func (c *CompositeHooks) OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) (e error) {
 	for _, h := range c.hooks {
 		if err := h.OnVerificationStopped(ctx, verification); err != nil {
 			e = err

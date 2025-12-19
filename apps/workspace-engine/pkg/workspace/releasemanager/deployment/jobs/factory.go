@@ -158,12 +158,14 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 				AddMetadata("issue", "missing_job_agent_configuration")
 		}
 		// Create job with InvalidJobAgent status when no job agent configured
+		msg := fmt.Sprintf("No job agent configured for deployment '%s'", deployment.Name)
 		return &oapi.Job{
 			Id:             uuid.New().String(),
 			ReleaseId:      release.ID(),
 			JobAgentId:     "",
 			JobAgentConfig: oapi.FullJobAgentConfig{},
 			Status:         oapi.JobStatusInvalidJobAgent,
+			Message:        &msg,
 			CreatedAt:      time.Now(),
 			UpdatedAt:      time.Now(),
 			Metadata:       make(map[string]string),
@@ -182,12 +184,14 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 				AddMetadata("issue", "job_agent_not_found")
 		}
 		// Create job with InvalidJobAgent status when job agent not found
+		msg := fmt.Sprintf("Job agent '%s' not found for deployment '%s'", *jobAgentId, deployment.Name)
 		return &oapi.Job{
 			Id:             uuid.New().String(),
 			ReleaseId:      release.ID(),
 			JobAgentId:     *jobAgentId,
 			JobAgentConfig: oapi.FullJobAgentConfig{},
 			Status:         oapi.JobStatusInvalidJobAgent,
+			Message:        &msg,
 			CreatedAt:      time.Now(),
 			UpdatedAt:      time.Now(),
 			Metadata:       make(map[string]string),
@@ -205,7 +209,27 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	// Merge job agent config: deployment config overrides agent defaults
 	mergedConfig, err := f.mergeJobAgentConfig(deployment, jobAgent)
 	if err != nil {
-		return nil, fmt.Errorf("failed to merge job agent config: %v", err)
+		if action != nil {
+			action.AddStep("Configure job", trace.StepResultFail,
+				fmt.Sprintf("Failed to merge job agent config: %v", err)).
+				AddMetadata("job_agent_id", *jobAgentId).
+				AddMetadata("deployment_id", deployment.Id).
+				AddMetadata("deployment_name", deployment.Name).
+				AddMetadata("issue", "invalid_job_agent_config")
+		}
+		// Create job with InvalidJobAgent status when config merge fails
+		msg := fmt.Sprintf("Failed to merge job agent config: %v", err)
+		return &oapi.Job{
+			Id:             uuid.New().String(),
+			ReleaseId:      release.ID(),
+			JobAgentId:     *jobAgentId,
+			JobAgentConfig: oapi.FullJobAgentConfig{},
+			Status:         oapi.JobStatusInvalidJobAgent,
+			Message:        &msg,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+			Metadata:       make(map[string]string),
+		}, nil
 	}
 
 	if action != nil {

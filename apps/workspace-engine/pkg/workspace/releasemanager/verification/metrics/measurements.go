@@ -60,9 +60,9 @@ func (m Measurements) ConsecutiveSuccessCount() int {
 }
 
 // Phase computes the current phase based on measurements
-func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.ReleaseVerificationStatus {
+func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.JobVerificationStatus {
 	if len(m) == 0 {
-		return oapi.ReleaseVerificationStatusRunning
+		return oapi.JobVerificationStatusRunning
 	}
 
 	failedCount := m.FailedCount()
@@ -70,21 +70,21 @@ func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.ReleaseV
 
 	// Check failure limit
 	if failureLimit > 0 && failedCount >= failureLimit {
-		return oapi.ReleaseVerificationStatusFailed
+		return oapi.JobVerificationStatusFailed
 	}
 
 	// Check if all measurements completed
 	if len(m) >= metric.Count {
 		if failedCount > 0 && failureLimit > 0 && failedCount < failureLimit {
-			return oapi.ReleaseVerificationStatusRunning // Below failure threshold
+			return oapi.JobVerificationStatusRunning // Below failure threshold
 		}
 		if failedCount == 0 {
-			return oapi.ReleaseVerificationStatusPassed // All passed
+			return oapi.JobVerificationStatusPassed // All passed
 		}
-		return oapi.ReleaseVerificationStatusFailed
+		return oapi.JobVerificationStatusFailed
 	}
 
-	return oapi.ReleaseVerificationStatusRunning
+	return oapi.JobVerificationStatusRunning
 }
 
 // ShouldContinue checks if more measurements are needed

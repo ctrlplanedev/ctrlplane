@@ -177,11 +177,33 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 	return release
 }
 
-func createTestVerification(s *store.Store, ctx context.Context, releaseID string, metricCount int, intervalSeconds int32) *oapi.ReleaseVerification {
-	return createTestVerificationWithURL(s, ctx, releaseID, metricCount, intervalSeconds, "http://localhost/health")
+func createTestReleaseAndJob(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.Job) {
+	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
+	return release, job
 }
 
-func createTestVerificationWithURL(s *store.Store, ctx context.Context, releaseID string, metricCount int, intervalSeconds int32, url string) *oapi.ReleaseVerification {
+func createTestJob(s *store.Store, ctx context.Context, releaseId string) *oapi.Job {
+	completedAt := time.Now()
+	job := &oapi.Job{
+		Id:          uuid.New().String(),
+		ReleaseId:   releaseId,
+		Status:      oapi.JobStatusSuccessful,
+		CreatedAt:   completedAt.Add(-1 * time.Minute),
+		CompletedAt: &completedAt,
+		JobAgentId:  uuid.New().String(),
+		Metadata:    map[string]string{},
+		UpdatedAt:   time.Now(),
+	}
+	s.Jobs.Upsert(ctx, job)
+	return job
+}
+
+func createTestVerification(s *store.Store, ctx context.Context, jobId string, metricCount int, intervalSeconds int32) *oapi.JobVerification {
+	return createTestVerificationWithURL(s, ctx, jobId, metricCount, intervalSeconds, "http://localhost/health")
+}
+
+func createTestVerificationWithURL(s *store.Store, ctx context.Context, jobId string, metricCount int, intervalSeconds int32, url string) *oapi.JobVerification {
 	metrics := make([]oapi.VerificationMetricStatus, metricCount)
 	for i := 0; i < metricCount; i++ {
 		// Create a simple HTTP provider config
@@ -205,14 +227,14 @@ func createTestVerificationWithURL(s *store.Store, ctx context.Context, releaseI
 		}
 	}
 
-	verification := &oapi.ReleaseVerification{
+	verification := &oapi.JobVerification{
 		Id:        uuid.New().String(),
-		ReleaseId: releaseID,
+		JobId:     jobId,
 		Metrics:   metrics,
 		CreatedAt: time.Now(),
 	}
 
-	s.ReleaseVerifications.Upsert(ctx, verification)
+	s.JobVerifications.Upsert(ctx, verification)
 	return verification
 }
 
@@ -294,7 +316,7 @@ func TestScheduler_StartVerification_AlreadyCompleted(t *testing.T) {
 			})
 		}
 	}
-	s.ReleaseVerifications.Upsert(ctx, verification)
+	s.JobVerifications.Upsert(ctx, verification)
 
 	// Try to start - should not start any goroutines
 	scheduler.StartVerification(ctx, verification.Id)
@@ -484,14 +506,15 @@ func TestScheduler_VerificationWithNoMetrics(t *testing.T) {
 	scheduler := newScheduler(s, DefaultHooks())
 
 	release := createTestRelease(s, ctx)
+	job := createTestJob(s, ctx, release.ID())
 
-	verification := &oapi.ReleaseVerification{
+	verification := &oapi.JobVerification{
 		Id:        uuid.New().String(),
-		ReleaseId: release.ID(),
+		JobId:     job.Id,
 		Metrics:   []oapi.VerificationMetricStatus{},
 		CreatedAt: time.Now(),
 	}
-	s.ReleaseVerifications.Upsert(ctx, verification)
+	s.JobVerifications.Upsert(ctx, verification)
 
 	// Should handle empty metrics gracefully
 	scheduler.StartVerification(ctx, verification.Id)
@@ -513,10 +536,10 @@ func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 	s := newTestStore()
 	scheduler := newScheduler(s, DefaultHooks())
 
-	release := createTestRelease(s, ctx)
+	_, job := createTestReleaseAndJob(s, ctx)
 
 	// Create verification with very short interval for testing
-	verification := createTestVerification(s, ctx, release.ID(), 1, 1)
+	verification := createTestVerification(s, ctx, job.Id, 1, 1)
 
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
@@ -524,10 +547,10 @@ func TestScheduler_Integration_MeasurementsTaken(t *testing.T) {
 	// Wait for measurements to be taken
 	// Poll until we have at least 2 measurements
 	// Interval is 1 second, so 2 measurements should happen within 2 seconds
-	var updatedVerification *oapi.ReleaseVerification
+	var updatedVerification *oapi.JobVerification
 	require.Eventually(t, func() bool {
 		var ok bool
-		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		updatedVerification, ok = s.JobVerifications.Get(verification.Id)
 		if !ok {
 			return false
 		}
@@ -561,21 +584,21 @@ func TestScheduler_Integration_StopsWhenMetricsComplete(t *testing.T) {
 	s := newTestStore()
 	scheduler := newScheduler(s, DefaultHooks())
 
-	release := createTestRelease(s, ctx)
+	_, job := createTestReleaseAndJob(s, ctx)
 
 	// Create verification with 1 measurement count
-	verification := createTestVerification(s, ctx, release.ID(), 1, 1)
+	verification := createTestVerification(s, ctx, job.Id, 1, 1)
 	verification.Metrics[0].Count = 1 // Only take 1 measurement
-	s.ReleaseVerifications.Upsert(ctx, verification)
+	s.JobVerifications.Upsert(ctx, verification)
 
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
 	// Wait for the metric to complete (1 measurement)
-	var updatedVerification *oapi.ReleaseVerification
+	var updatedVerification *oapi.JobVerification
 	require.Eventually(t, func() bool {
 		var ok bool
-		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		updatedVerification, ok = s.JobVerifications.Get(verification.Id)
 		if !ok {
 			return false
 		}
@@ -599,23 +622,23 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 	s := newTestStore()
 	scheduler := newScheduler(s, DefaultHooks())
 
-	release := createTestRelease(s, ctx)
+	_, job := createTestReleaseAndJob(s, ctx)
 
 	// Create verification with failure limit of 2
-	verification := createTestVerification(s, ctx, release.ID(), 1, 1)
+	verification := createTestVerification(s, ctx, job.Id, 1, 1)
 	verification.Metrics[0].Count = 10                // Allow up to 10 measurements
 	verification.Metrics[0].FailureThreshold = ptr(2) // But stop after 2 failures
-	s.ReleaseVerifications.Upsert(ctx, verification)
+	s.JobVerifications.Upsert(ctx, verification)
 
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
 	// Wait for measurements to reach failure limit
 	// Poll until we have at least 2 failed measurements (the failure limit)
-	var updatedVerification *oapi.ReleaseVerification
+	var updatedVerification *oapi.JobVerification
 	require.Eventually(t, func() bool {
 		var ok bool
-		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		updatedVerification, ok = s.JobVerifications.Get(verification.Id)
 		if !ok {
 			return false
 		}
@@ -641,20 +664,20 @@ func TestScheduler_Integration_ConcurrentMetrics(t *testing.T) {
 	s := newTestStore()
 	scheduler := newScheduler(s, DefaultHooks())
 
-	release := createTestRelease(s, ctx)
+	_, job := createTestReleaseAndJob(s, ctx)
 
 	// Create verification with 3 metrics
-	verification := createTestVerification(s, ctx, release.ID(), 3, 1)
+	verification := createTestVerification(s, ctx, job.Id, 3, 1)
 
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
 	// Wait for all metrics to take measurements
 	// Poll until all 3 metrics have at least 2 measurements each
-	var updatedVerification *oapi.ReleaseVerification
+	var updatedVerification *oapi.JobVerification
 	require.Eventually(t, func() bool {
 		var ok bool
-		updatedVerification, ok = s.ReleaseVerifications.Get(verification.Id)
+		updatedVerification, ok = s.JobVerifications.Get(verification.Id)
 		if !ok {
 			return false
 		}

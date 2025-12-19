@@ -72,16 +72,7 @@ func TestEngineVerificationHooks(t *testing.T) {
 		Provider:         metricProvider,
 	}
 
-	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, nil, []oapi.VerificationMetricSpec{metric})
-	assert.NoError(t, err)
-
-	time.Sleep(500 * time.Millisecond)
-
-	verification, exists := ws.Workspace().Store().ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
-	assert.Equal(t, release.ID(), verification.ReleaseId)
-
-	// mark job as successful
+	// Get the job that was created for the release
 	agentJobs := ws.Workspace().Store().Jobs.GetJobsForAgent(jobAgentID)
 	agentJobsSlice := make([]*oapi.Job, 0, len(agentJobs))
 	for _, job := range agentJobs {
@@ -90,6 +81,17 @@ func TestEngineVerificationHooks(t *testing.T) {
 	assert.Len(t, agentJobsSlice, 1)
 	agentJob := agentJobsSlice[0]
 
+	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, agentJob, []oapi.VerificationMetricSpec{metric})
+	assert.NoError(t, err)
+
+	time.Sleep(500 * time.Millisecond)
+
+	verifications := ws.Workspace().Store().JobVerifications.GetByJobId(agentJob.Id)
+	assert.Len(t, verifications, 1)
+	verification := verifications[0]
+	assert.Equal(t, agentJob.Id, verification.JobId)
+
+	// mark job as successful
 	completedAt := time.Now()
 	jobUpdateEvent := oapi.JobUpdateEvent{
 		Id:      &agentJob.Id,
@@ -189,10 +191,7 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 		Provider:         metricProvider,
 	}
 
-	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, release, nil, []oapi.VerificationMetricSpec{metric})
-	assert.NoError(t, err)
-
-	// mark job as successful
+	// Get the job for the release
 	agentJobs := ws.Workspace().Store().Jobs.GetJobsForAgent(jobAgentID)
 	agentJobsSlice := make([]*oapi.Job, 0, len(agentJobs))
 	for _, job := range agentJobs {
@@ -201,6 +200,10 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 	assert.Len(t, agentJobsSlice, 1)
 	agentJob := agentJobsSlice[0]
 
+	err := ws.Workspace().ReleaseManager().VerificationManager().StartVerification(ctx, agentJob, []oapi.VerificationMetricSpec{metric})
+	assert.NoError(t, err)
+
+	// mark job as successful
 	completedAt := time.Now()
 	jobUpdateEvent := oapi.JobUpdateEvent{
 		Id:      &agentJob.Id,
@@ -223,9 +226,10 @@ func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// verify verification exists and completed with early exit
-	verification, exists := ws.Workspace().Store().ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
-	assert.Equal(t, release.ID(), verification.ReleaseId)
+	verifications := ws.Workspace().Store().JobVerifications.GetByJobId(agentJob.Id)
+	assert.Len(t, verifications, 1)
+	verification := verifications[0]
+	assert.Equal(t, agentJob.Id, verification.JobId)
 	// verify early exit: should have only 2 measurements (successThreshold), not all 5 (count)
 	assert.Len(t, verification.Metrics[0].Measurements, 2, "expected early exit after 2 consecutive successes")
 

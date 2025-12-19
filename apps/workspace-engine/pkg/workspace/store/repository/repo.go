@@ -43,7 +43,7 @@ func New(wsId string) *InMemoryStore {
 		router: router,
 		db:     memdb,
 
-		ReleaseVerifications:     createTypedStore[*oapi.ReleaseVerification](router, "release_verification"),
+		JobVerifications:         createTypedStore[*oapi.JobVerification](router, "job_verification"),
 		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
 		ResourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
 		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
@@ -80,12 +80,12 @@ type InMemoryStore struct {
 	DeploymentVersions       cmap.ConcurrentMap[string, *oapi.DeploymentVersion]
 	DeploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
 
-	Environments         cmap.ConcurrentMap[string, *oapi.Environment]
-	Policies             cmap.ConcurrentMap[string, *oapi.Policy]
-	PolicySkips          cmap.ConcurrentMap[string, *oapi.PolicySkip]
-	Systems              cmap.ConcurrentMap[string, *oapi.System]
-	Releases             *indexstore.Store[*oapi.Release]
-	ReleaseVerifications cmap.ConcurrentMap[string, *oapi.ReleaseVerification]
+	Environments     cmap.ConcurrentMap[string, *oapi.Environment]
+	Policies         cmap.ConcurrentMap[string, *oapi.Policy]
+	PolicySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
+	Systems          cmap.ConcurrentMap[string, *oapi.System]
+	Releases         *indexstore.Store[*oapi.Release]
+	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
 	Jobs      *indexstore.Store[*oapi.Job]
 	JobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]

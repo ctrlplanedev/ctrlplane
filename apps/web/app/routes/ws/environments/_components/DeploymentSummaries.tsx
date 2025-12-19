@@ -49,7 +49,7 @@ function HealthSummary({
       state.desiredRelease?.version.tag === state.currentRelease?.version.tag,
   ).length;
   const jobStatusSummary = _.chain(releaseTargets)
-    .groupBy(({ state }) => state.latestJob?.status ?? "unknown")
+    .groupBy(({ state }) => state.latestJob?.job.status ?? "unknown")
     .entries()
     .map(([status, releaseTargets]) => [status, releaseTargets.length])
     .fromPairs()
@@ -101,8 +101,8 @@ function DeploymentSummaryMetrics({
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const last24hCount = releaseTargets.filter(
     ({ state }) =>
-      state.latestJob?.completedAt &&
-      isAfter(new Date(state.latestJob.completedAt), twentyFourHoursAgo),
+      state.latestJob?.job.completedAt &&
+      isAfter(new Date(state.latestJob.job.completedAt), twentyFourHoursAgo),
   ).length;
 
   return (
@@ -134,7 +134,7 @@ function DeploymentJobStatusSummary({
   isLoading: boolean;
 }) {
   const jobStatusSummary = _.chain(releaseTargets)
-    .groupBy(({ state }) => state.latestJob?.status ?? "unknown")
+    .groupBy(({ state }) => state.latestJob?.job.status ?? "unknown")
     .entries()
     .map(([status, releaseTargets]) => [status, releaseTargets.length])
     .fromPairs()

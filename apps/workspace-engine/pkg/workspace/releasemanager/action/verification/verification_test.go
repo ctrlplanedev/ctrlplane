@@ -131,8 +131,8 @@ func TestVerificationAction_Execute_NoMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	// No verification should be created
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 func createPolicyWithVerification(metrics []oapi.VerificationMetricSpec, triggerOn *oapi.VerificationRuleTriggerOn) *oapi.Policy {
@@ -206,16 +206,17 @@ func TestVerificationAction_Execute_CreatesVerification(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be created
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 1, len(v.Metrics))
 	assert.Equal(t, "health-check", v.Metrics[0].Name)
 
 	// Verification should be in running status (scheduler started)
-	assert.Equal(t, oapi.ReleaseVerificationStatusRunning, v.Status(), "verification should be in running status")
+	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be in running status")
 
-	// Verification should be linked to the release
-	assert.Equal(t, release.ID(), v.ReleaseId)
+	// Verification should be linked to the job
+	assert.Equal(t, job.Id, v.JobId)
 
 	// Verification ID should be set
 	assert.NotEmpty(t, v.Id)
@@ -258,8 +259,8 @@ func TestVerificationAction_Execute_SkipsDisabledPolicy(t *testing.T) {
 	require.NoError(t, err)
 
 	// No verification should be created
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 func TestVerificationAction_Execute_SkipsWrongTrigger(t *testing.T) {
@@ -295,8 +296,8 @@ func TestVerificationAction_Execute_SkipsWrongTrigger(t *testing.T) {
 	require.NoError(t, err)
 
 	// No verification should be created due to trigger mismatch
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 func TestVerificationAction_Execute_DefaultsTriggerToJobSuccess(t *testing.T) {
@@ -331,8 +332,9 @@ func TestVerificationAction_Execute_DefaultsTriggerToJobSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be created (default trigger matches)
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 1, len(v.Metrics))
 }
 
@@ -379,8 +381,9 @@ func TestVerificationAction_Execute_DeduplicatesMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be created with deduplicated metrics
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 3, len(v.Metrics)) // health-check, latency-check, error-rate (deduplicated)
 
 	// Check names are unique
@@ -428,11 +431,12 @@ func TestVerificationAction_Execute_TriggerJobCreated(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be created and running
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 1, len(v.Metrics))
 	assert.Equal(t, "startup-check", v.Metrics[0].Name)
-	assert.Equal(t, oapi.ReleaseVerificationStatusRunning, v.Status(), "verification should be running")
+	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be running")
 }
 
 func TestVerificationAction_Execute_TriggerJobStarted(t *testing.T) {
@@ -468,11 +472,12 @@ func TestVerificationAction_Execute_TriggerJobStarted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be created and running
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 1, len(v.Metrics))
 	assert.Equal(t, "progress-check", v.Metrics[0].Name)
-	assert.Equal(t, oapi.ReleaseVerificationStatusRunning, v.Status(), "verification should be running")
+	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be running")
 }
 
 func TestVerificationAction_Execute_TriggerJobFailure(t *testing.T) {
@@ -508,11 +513,12 @@ func TestVerificationAction_Execute_TriggerJobFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be created and running
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 1, len(v.Metrics))
 	assert.Equal(t, "failure-analysis", v.Metrics[0].Name)
-	assert.Equal(t, oapi.ReleaseVerificationStatusRunning, v.Status(), "verification should be running")
+	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be running")
 }
 
 // Helper function for creating policies with custom rules
@@ -579,8 +585,9 @@ func TestVerificationAction_Execute_PolicyWithMixedRules(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be created (approval rule should be ignored by verification action)
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 1, len(v.Metrics))
 	assert.Equal(t, "health-check", v.Metrics[0].Name)
 }
@@ -639,8 +646,9 @@ func TestVerificationAction_Execute_MultipleVerificationRulesInPolicy(t *testing
 	require.NoError(t, err)
 
 	// Verification should be created with metrics from all rules
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.True(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 	assert.Equal(t, 3, len(v.Metrics))
 
 	// Check all metrics are present
@@ -691,8 +699,8 @@ func TestVerificationAction_Execute_NilVerificationRule(t *testing.T) {
 	require.NoError(t, err)
 
 	// No verification should be created
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 func TestVerificationAction_Execute_EmptyMetricsArray(t *testing.T) {
@@ -735,8 +743,8 @@ func TestVerificationAction_Execute_EmptyMetricsArray(t *testing.T) {
 	require.NoError(t, err)
 
 	// No verification should be created (no metrics)
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 func TestVerificationAction_Execute_NilPoliciesSlice(t *testing.T) {
@@ -765,8 +773,8 @@ func TestVerificationAction_Execute_NilPoliciesSlice(t *testing.T) {
 	require.NoError(t, err)
 
 	// No verification should be created
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 func TestVerificationAction_Execute_PolicyWithNoRules(t *testing.T) {
@@ -798,8 +806,8 @@ func TestVerificationAction_Execute_PolicyWithNoRules(t *testing.T) {
 	require.NoError(t, err)
 
 	// No verification should be created
-	_, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	assert.False(t, exists)
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	assert.Empty(t, verifications)
 }
 
 // Verification lifecycle and metric spec tests
@@ -852,9 +860,10 @@ func TestVerificationAction_Execute_VerificationIsRunningWithCorrectMetricSpecs(
 	require.NoError(t, err)
 
 	// Verification should exist and be running
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists, "verification should exist")
-	assert.Equal(t, oapi.ReleaseVerificationStatusRunning, v.Status(), "verification should be in running status")
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1, "verification should exist")
+	v := verifications[0]
+	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status(), "verification should be in running status")
 
 	// Verify metric specifications are correctly transferred
 	require.Equal(t, 1, len(v.Metrics), "should have one metric")
@@ -901,18 +910,19 @@ func TestVerificationAction_Execute_VerificationRecordHasCorrectReleaseLink(t *t
 	err := vAction.Execute(ctx, action.TriggerJobSuccess, actx)
 	require.NoError(t, err)
 
-	// Verification should be correctly linked to the release
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
+	// Verification should be correctly linked to the job
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
 
-	// Verify the release link is correct
-	assert.Equal(t, release.ID(), v.ReleaseId, "verification should be linked to correct release")
+	// Verify the job link is correct
+	assert.Equal(t, job.Id, v.JobId, "verification should be linked to correct job")
 
 	// Verification should also be retrievable by its own ID
-	vById, existsById := s.ReleaseVerifications.Get(v.Id)
+	vById, existsById := s.JobVerifications.Get(v.Id)
 	require.True(t, existsById, "verification should be retrievable by ID")
 	assert.Equal(t, v.Id, vById.Id)
-	assert.Equal(t, release.ID(), vById.ReleaseId)
+	assert.Equal(t, job.Id, vById.JobId)
 }
 
 func TestVerificationAction_Execute_MultipleMetricsAllRunning(t *testing.T) {
@@ -952,9 +962,10 @@ func TestVerificationAction_Execute_MultipleMetricsAllRunning(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verification should be running
-	v, exists := s.ReleaseVerifications.GetByReleaseId(release.ID())
-	require.True(t, exists)
-	assert.Equal(t, oapi.ReleaseVerificationStatusRunning, v.Status())
+	verifications := s.JobVerifications.GetByJobId(job.Id)
+	require.Len(t, verifications, 1)
+	v := verifications[0]
+	assert.Equal(t, oapi.JobVerificationStatusRunning, v.Status())
 
 	// All metrics should be present
 	require.Equal(t, 3, len(v.Metrics))

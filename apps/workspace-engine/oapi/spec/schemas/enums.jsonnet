@@ -19,7 +19,7 @@
     enum: ['deployment', 'environment', 'resource'],
   },
 
-  ReleaseVerificationStatus: {
+  JobVerificationStatus: {
     type: 'string',
     enum: ['running', 'passed', 'failed', 'cancelled'],
   },

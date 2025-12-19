@@ -5,7 +5,7 @@ import { TableCell } from "~/components/ui/table";
 import { cn } from "~/lib/utils";
 
 type Release = WorkspaceEngine["schemas"]["Release"];
-type Job = WorkspaceEngine["schemas"]["Job"];
+type JobWithVerifications = WorkspaceEngine["schemas"]["JobWithVerifications"];
 
 export function VersionDisplay({
   desiredRelease,
@@ -14,24 +14,25 @@ export function VersionDisplay({
 }: {
   desiredRelease?: Release;
   currentRelease?: Release;
-  latestJob?: Job;
+  latestJob?: JobWithVerifications;
 }) {
+  const job = latestJob?.job;
   const fromVersion =
     currentRelease?.version.name ||
     currentRelease?.version.tag ||
     "Not yet deployed";
   const toVersion =
     desiredRelease?.version.name || desiredRelease?.version.tag || "unknown";
-  const isInSync = fromVersion === toVersion;
+  const isInSync = fromVersion === toVersion || desiredRelease == null;
   const isProgressing =
-    latestJob?.status === "inProgress" || latestJob?.status === "pending";
+    job?.status === "inProgress" || job?.status === "pending";
   const isUnhealthy =
-    latestJob?.status === "failure" ||
-    latestJob?.status === "invalidJobAgent" ||
-    latestJob?.status === "invalidIntegration" ||
-    latestJob?.status === "externalRunNotFound";
+    job?.status === "failure" ||
+    job?.status === "invalidJobAgent" ||
+    job?.status === "invalidIntegration" ||
+    job?.status === "externalRunNotFound";
 
-  const tag = isInSync ? toVersion : `${fromVersion} → ${toVersion}`;
+  const tag = isInSync ? fromVersion : `${fromVersion} → ${toVersion}`;
 
   return (
     <TableCell

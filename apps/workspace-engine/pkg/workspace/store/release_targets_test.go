@@ -106,12 +106,12 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 	return release, job
 }
 
-func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId string, status oapi.ReleaseVerificationStatus, createdAt time.Time) *oapi.ReleaseVerification {
+func createVerificationWithStatus(s *store.Store, ctx context.Context, jobId string, status oapi.JobVerificationStatus, createdAt time.Time) *oapi.JobVerification {
 	// Create metrics that result in the desired status
 	var metrics []oapi.VerificationMetricStatus
 
 	switch status {
-	case oapi.ReleaseVerificationStatusPassed:
+	case oapi.JobVerificationStatusPassed:
 		// All measurements passed, all complete
 		successCondition := "result.statusCode == 200"
 		metrics = []oapi.VerificationMetricStatus{
@@ -127,7 +127,7 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				},
 			},
 		}
-	case oapi.ReleaseVerificationStatusFailed:
+	case oapi.JobVerificationStatusFailed:
 		// Some measurements failed
 		successCondition := "result.statusCode == 200"
 		metrics = []oapi.VerificationMetricStatus{
@@ -143,7 +143,7 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				},
 			},
 		}
-	case oapi.ReleaseVerificationStatusRunning:
+	case oapi.JobVerificationStatusRunning:
 		// Not all measurements complete
 		successCondition := "result.statusCode == 200"
 		metrics = []oapi.VerificationMetricStatus{
@@ -158,7 +158,7 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 				},
 			},
 		}
-	case oapi.ReleaseVerificationStatusCancelled:
+	case oapi.JobVerificationStatusCancelled:
 		// For cancelled, we'll create a failed metric that hit failure limit
 		// Actually, cancelled isn't computed by Status() - let's use empty metrics with a special flag
 		// For now, let's just use failed status with zero measurements as a proxy
@@ -177,14 +177,14 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, releaseId
 		}
 	}
 
-	verification := &oapi.ReleaseVerification{
+	verification := &oapi.JobVerification{
 		Id:        uuid.New().String(),
-		ReleaseId: releaseId,
+		JobId:     jobId,
 		CreatedAt: createdAt,
 		Metrics:   metrics,
 	}
 
-	s.ReleaseVerifications.Upsert(ctx, verification)
+	s.JobVerifications.Upsert(ctx, verification)
 	return verification
 }
 
@@ -218,11 +218,11 @@ func TestGetCurrentRelease_PassedVerification(t *testing.T) {
 
 	// Create a successful job and passed verification
 	completedAt := time.Now()
-	release, _ := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
+	release, job := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
 
 	// Create passed verification
-	verification := createVerificationWithStatus(s, ctx, release.ID(), oapi.ReleaseVerificationStatusPassed, time.Now())
-	require.Equal(t, oapi.ReleaseVerificationStatusPassed, verification.Status())
+	verification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusPassed, time.Now())
+	require.Equal(t, oapi.JobVerificationStatusPassed, verification.Status())
 
 	// Get current release
 	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
@@ -304,8 +304,8 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	}
 	s.Jobs.Upsert(ctx, olderJob)
 
-	olderVerification := createVerificationWithStatus(s, ctx, olderRelease.ID(), oapi.ReleaseVerificationStatusPassed, time.Now().Add(-1*time.Hour))
-	require.Equal(t, oapi.ReleaseVerificationStatusPassed, olderVerification.Status())
+	olderVerification := createVerificationWithStatus(s, ctx, olderJob.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
+	require.Equal(t, oapi.JobVerificationStatusPassed, olderVerification.Status())
 
 	// Create newer release with failed verification
 	newerVersionId := uuid.New().String()
@@ -335,8 +335,8 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	}
 	s.Jobs.Upsert(ctx, newerJob)
 
-	newerVerification := createVerificationWithStatus(s, ctx, newerRelease.ID(), oapi.ReleaseVerificationStatusFailed, time.Now())
-	require.Equal(t, oapi.ReleaseVerificationStatusFailed, newerVerification.Status())
+	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusFailed, time.Now())
+	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
 
 	// Get current release - should return older release
 	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
@@ -419,8 +419,8 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	}
 	s.Jobs.Upsert(ctx, olderJob)
 
-	olderVerification := createVerificationWithStatus(s, ctx, olderRelease.ID(), oapi.ReleaseVerificationStatusPassed, time.Now().Add(-1*time.Hour))
-	require.Equal(t, oapi.ReleaseVerificationStatusPassed, olderVerification.Status())
+	olderVerification := createVerificationWithStatus(s, ctx, olderJob.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
+	require.Equal(t, oapi.JobVerificationStatusPassed, olderVerification.Status())
 
 	// Create newer release with running verification
 	newerVersionId := uuid.New().String()
@@ -450,8 +450,8 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	}
 	s.Jobs.Upsert(ctx, newerJob)
 
-	newerVerification := createVerificationWithStatus(s, ctx, newerRelease.ID(), oapi.ReleaseVerificationStatusRunning, time.Now())
-	require.Equal(t, oapi.ReleaseVerificationStatusRunning, newerVerification.Status())
+	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusRunning, time.Now())
+	require.Equal(t, oapi.JobVerificationStatusRunning, newerVerification.Status())
 
 	// Get current release - should return older release
 	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
@@ -471,15 +471,15 @@ func TestGetCurrentRelease_MultipleVerifications_UseMostRecent(t *testing.T) {
 
 	// Create a successful job
 	completedAt := time.Now()
-	release, _ := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
+	release, job := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
 
 	// Create old passed verification
-	oldVerification := createVerificationWithStatus(s, ctx, release.ID(), oapi.ReleaseVerificationStatusPassed, time.Now().Add(-1*time.Hour))
-	require.Equal(t, oapi.ReleaseVerificationStatusPassed, oldVerification.Status())
+	oldVerification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusPassed, time.Now().Add(-1*time.Hour))
+	require.Equal(t, oapi.JobVerificationStatusPassed, oldVerification.Status())
 
 	// Create newer failed verification
-	newerVerification := createVerificationWithStatus(s, ctx, release.ID(), oapi.ReleaseVerificationStatusFailed, time.Now())
-	require.Equal(t, oapi.ReleaseVerificationStatusFailed, newerVerification.Status())
+	newerVerification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusFailed, time.Now())
+	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
 
 	// Get current release - should fail because most recent verification failed
 	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
@@ -589,9 +589,9 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	}
 	s.Jobs.Upsert(ctx, newerJob)
 
-	newerVerification := createVerificationWithStatus(s, ctx, newerRelease.ID(), oapi.ReleaseVerificationStatusCancelled, time.Now())
+	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusCancelled, time.Now())
 	// Cancelled verification will show as failed when hitting failure limit
-	require.Equal(t, oapi.ReleaseVerificationStatusFailed, newerVerification.Status())
+	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
 
 	// Get current release - should return older release
 	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
@@ -611,11 +611,11 @@ func TestGetCurrentRelease_NoValidRelease(t *testing.T) {
 
 	// Create a successful job with failed verification
 	completedAt := time.Now()
-	release, _ := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
+	release, job := createTestReleaseAndJob(s, ctx, "v1.0.0", completedAt)
 
 	// Create failed verification
-	verification := createVerificationWithStatus(s, ctx, release.ID(), oapi.ReleaseVerificationStatusFailed, time.Now())
-	require.Equal(t, oapi.ReleaseVerificationStatusFailed, verification.Status())
+	verification := createVerificationWithStatus(s, ctx, job.Id, oapi.JobVerificationStatusFailed, time.Now())
+	require.Equal(t, oapi.JobVerificationStatusFailed, verification.Status())
 
 	// Get current release - should return error
 	currentRelease, currentJob, err := s.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)

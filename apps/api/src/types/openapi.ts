@@ -565,7 +565,7 @@ export interface paths {
         };
         /**
          * Get release verifications
-         * @description Returns all verifications for a specific release with their results.
+         * @description Returns all verifications for jobs belonging to this release.
          */
         get: operations["getReleaseVerifications"];
         put?: never;
@@ -915,14 +915,14 @@ export interface components {
             /** @description ArgoCD Application YAML/JSON template (supports Go templates). */
             template: string;
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "argo-cd";
         };
         DeploymentCustomJobAgentConfig: {
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "custom";
@@ -938,7 +938,7 @@ export interface components {
             /** @description GitHub repository name. */
             repo: string;
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "github-app";
@@ -948,12 +948,15 @@ export interface components {
              */
             workflowId: number;
         };
-        DeploymentJobAgentConfig: components["schemas"]["DeploymentGithubJobAgentConfig"] | components["schemas"]["DeploymentArgoCDJobAgentConfig"] | components["schemas"]["DeploymentTerraformCloudJobAgentConfig"] | components["schemas"]["DeploymentCustomJobAgentConfig"];
+        /** @description Arbitrary object (record<string, any>) for the deployment job agent config. */
+        DeploymentJobAgentConfig: {
+            [key: string]: unknown;
+        };
         DeploymentTerraformCloudJobAgentConfig: {
             /** @description Terraform Cloud workspace template (YAML/JSON; supports Go templates). */
             template: string;
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "tfe";
@@ -1185,6 +1188,19 @@ export interface components {
             id?: string;
             job: components["schemas"]["Job"];
         } & (unknown | unknown);
+        JobVerification: {
+            /**
+             * Format: date-time
+             * @description When verification was created
+             */
+            createdAt: string;
+            id: string;
+            jobId: string;
+            /** @description Summary message of verification result */
+            message?: string;
+            /** @description Metrics associated with this verification */
+            metrics: components["schemas"]["VerificationMetricStatus"][];
+        };
         JobWithRelease: {
             deployment?: components["schemas"]["Deployment"];
             environment?: components["schemas"]["Environment"];
@@ -1287,20 +1303,6 @@ export interface components {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
             latestJob?: components["schemas"]["Job"];
-        };
-        ReleaseVerification: {
-            /**
-             * Format: date-time
-             * @description When verification was created
-             */
-            createdAt: string;
-            id: string;
-            jobId?: string;
-            /** @description Summary message of verification result */
-            message?: string;
-            /** @description Metrics associated with this verification */
-            metrics: components["schemas"]["VerificationMetricStatus"][];
-            releaseId: string;
         };
         Resource: {
             config: {
@@ -3690,7 +3692,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ReleaseVerification"][];
+                    "application/json": components["schemas"]["JobVerification"][];
                 };
             };
             /** @description Invalid request */

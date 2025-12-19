@@ -22,20 +22,13 @@ func newReleaseManagerVerificationHooks(store *store.Store, statecache *StateCac
 	}
 }
 
-func (h *releasemanagerVerificationHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
-	return nil
-}
+func (h *releasemanagerVerificationHooks) invalidateCacheForVerification(verification *oapi.JobVerification) error {
+	job, ok := h.store.Jobs.Get(verification.JobId)
+	if !ok {
+		return fmt.Errorf("job not found")
+	}
 
-func (h *releasemanagerVerificationHooks) OnMetricComplete(ctx context.Context, verification *oapi.ReleaseVerification, metricIndex int) error {
-	return nil
-}
-
-func (h *releasemanagerVerificationHooks) OnVerificationStarted(ctx context.Context, verification *oapi.ReleaseVerification) error {
-	return nil
-}
-
-func (h *releasemanagerVerificationHooks) OnVerificationComplete(ctx context.Context, verification *oapi.ReleaseVerification) error {
-	release, ok := h.store.Releases.Get(verification.ReleaseId)
+	release, ok := h.store.Releases.Get(job.ReleaseId)
 	if !ok {
 		return fmt.Errorf("release not found")
 	}
@@ -44,6 +37,22 @@ func (h *releasemanagerVerificationHooks) OnVerificationComplete(ctx context.Con
 	return nil
 }
 
-func (h *releasemanagerVerificationHooks) OnVerificationStopped(ctx context.Context, verification *oapi.ReleaseVerification) error {
-	return nil
+func (h *releasemanagerVerificationHooks) OnMeasurementTaken(ctx context.Context, verification *oapi.JobVerification, metricIndex int, measurement *oapi.VerificationMeasurement) error {
+	return h.invalidateCacheForVerification(verification)
+}
+
+func (h *releasemanagerVerificationHooks) OnMetricComplete(ctx context.Context, verification *oapi.JobVerification, metricIndex int) error {
+	return h.invalidateCacheForVerification(verification)
+}
+
+func (h *releasemanagerVerificationHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error {
+	return h.invalidateCacheForVerification(verification)
+}
+
+func (h *releasemanagerVerificationHooks) OnVerificationComplete(ctx context.Context, verification *oapi.JobVerification) error {
+	return h.invalidateCacheForVerification(verification)
+}
+
+func (h *releasemanagerVerificationHooks) OnVerificationStopped(ctx context.Context, verification *oapi.JobVerification) error {
+	return h.invalidateCacheForVerification(verification)
 }
