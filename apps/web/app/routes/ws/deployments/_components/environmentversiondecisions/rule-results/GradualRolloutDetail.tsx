@@ -94,7 +94,7 @@ function Target({ message }: { message: z.infer<typeof messageSchema> }) {
   const { resource } = details;
 
   return (
-    <div className="text-x flex items-center gap-2 rounded-sm border p-2">
+    <div className="text-x flex items-center gap-2 rounded-sm border p-2 text-xs">
       {hasBeenRolledOut && (
         <CircleCheckIcon className="size-4 text-green-500" />
       )}
@@ -122,7 +122,7 @@ function Targets({ messages }: { messages: z.infer<typeof messageSchema>[] }) {
   });
 
   return (
-    <div className="max-h-80 space-y-2 overflow-auto text-sm">
+    <div className="max-h-80 space-y-2 overflow-auto">
       {sortedMessages.map((message) => (
         <Target key={message.details.resource.id} message={message} />
       ))}
