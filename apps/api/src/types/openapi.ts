@@ -765,7 +765,7 @@ export interface components {
             /** @description ArgoCD server address (host[:port] or URL). */
             serverUrl: string;
             /**
-             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Job agent type discriminator.
              * @enum {string}
              */
             type: "argo-cd";
@@ -846,7 +846,7 @@ export interface components {
         };
         CustomJobAgentConfig: {
             /**
-             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Job agent type discriminator.
              * @enum {string}
              */
             type: "custom";
@@ -915,14 +915,14 @@ export interface components {
             /** @description ArgoCD Application YAML/JSON template (supports Go templates). */
             template: string;
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "argo-cd";
         };
         DeploymentCustomJobAgentConfig: {
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "custom";
@@ -938,7 +938,7 @@ export interface components {
             /** @description GitHub repository name. */
             repo: string;
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "github-app";
@@ -953,7 +953,7 @@ export interface components {
             /** @description Terraform Cloud workspace template (YAML/JSON; supports Go templates). */
             template: string;
             /**
-             * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Deployment job agent type discriminator.
              * @enum {string}
              */
             type: "tfe";
@@ -1100,7 +1100,7 @@ export interface components {
             installationId: number;
             owner: string;
             /**
-             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Job agent type discriminator.
              * @enum {string}
              */
             type: "github-app";
@@ -1420,7 +1420,7 @@ export interface components {
             /** @description Terraform Cloud API token. */
             token: string;
             /**
-             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Job agent type discriminator.
              * @enum {string}
              */
             type: "tfe";
@@ -1463,7 +1463,7 @@ export interface components {
              */
             status?: "completed" | "failure";
             /**
-             * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
+             * @description Job agent type discriminator.
              * @enum {string}
              */
             type: "test-runner";

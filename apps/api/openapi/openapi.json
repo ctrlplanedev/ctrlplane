@@ -501,15 +501,6 @@
             "type": "object"
          },
          "DeploymentJobAgentConfig": {
-            "discriminator": {
-               "mapping": {
-                  "argo-cd": "#/components/schemas/DeploymentArgoCDJobAgentConfig",
-                  "custom": "#/components/schemas/DeploymentCustomJobAgentConfig",
-                  "github-app": "#/components/schemas/DeploymentGithubJobAgentConfig",
-                  "tfe": "#/components/schemas/DeploymentTerraformCloudJobAgentConfig"
-               },
-               "propertyName": "type"
-            },
             "oneOf": [
                {
                   "$ref": "#/components/schemas/DeploymentGithubJobAgentConfig"
@@ -1079,16 +1070,6 @@
             "type": "object"
          },
          "JobAgentConfig": {
-            "discriminator": {
-               "mapping": {
-                  "argo-cd": "#/components/schemas/ArgoCDJobAgentConfig",
-                  "custom": "#/components/schemas/CustomJobAgentConfig",
-                  "github-app": "#/components/schemas/GithubJobAgentConfig",
-                  "test-runner": "#/components/schemas/TestRunnerJobAgentConfig",
-                  "tfe": "#/components/schemas/TerraformCloudJobAgentConfig"
-               },
-               "propertyName": "type"
-            },
             "oneOf": [
                {
                   "$ref": "#/components/schemas/GithubJobAgentConfig"

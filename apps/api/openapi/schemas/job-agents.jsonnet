@@ -37,16 +37,6 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('TestRunnerJobAgentConfig'),
       openapi.schemaRef('CustomJobAgentConfig'),
     ],
-    discriminator: {
-      propertyName: 'type',
-      mapping: {
-        'github-app': '#/components/schemas/GithubJobAgentConfig',
-        'argo-cd': '#/components/schemas/ArgoCDJobAgentConfig',
-        tfe: '#/components/schemas/TerraformCloudJobAgentConfig',
-        'test-runner': '#/components/schemas/TestRunnerJobAgentConfig',
-        custom: '#/components/schemas/CustomJobAgentConfig',
-      },
-    },
   },
 
   GithubJobAgentConfig: {
