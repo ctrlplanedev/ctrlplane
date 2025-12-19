@@ -217,10 +217,8 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 	for _, deployment := range deploymentsList[start:end] {
 		system, ok := ws.Systems().Get(deployment.SystemId)
 		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "System not found for deployment",
-			})
-			return
+			log.Error("System not found for deployment", "deploymentId", deployment.Id, "systemId", deployment.SystemId)
+			continue
 		}
 		// Use struct literal yielding + anonymous struct literal for "System"
 		dws := &oapi.DeploymentAndSystem{
