@@ -99,11 +99,12 @@ function MetricSummaryDisplay({
   const successThreshold = metric.successThreshold;
 
   const isComplete = totalMeasurements >= expectedCount;
-  const hasFailed = failedCount > failureThreshold;
+  // failureThreshold of 0 means no limit, only check if > 0
+  const hasFailed = failureThreshold > 0 && failedCount >= failureThreshold;
 
   let statusMessage: string;
   if (hasFailed) {
-    statusMessage = `Failed: ${failedCount} failure${failedCount !== 1 ? "s" : ""} exceeded threshold of ${failureThreshold}`;
+    statusMessage = `Failed: ${failedCount} failure${failedCount !== 1 ? "s" : ""} reached threshold of ${failureThreshold}`;
   } else if (
     successThreshold != null &&
     passedCount >= successThreshold &&
@@ -185,7 +186,7 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
 
 type MetricSummary = {
   name: string;
-  status: "passing" | "failing" | "inconclusive";
+  status: "passed" | "failed" | "inconclusive";
 };
 const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
   // If no measurements, treat as inconclusive
@@ -193,7 +194,7 @@ const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
     return { name: metric.name, status: "inconclusive" };
   }
 
-  // failureLimit: threshold for failure
+  // failureLimit: threshold for failure (0 means no limit)
   const failureLimit = metric.failureThreshold;
   const successThreshold = metric.successThreshold;
 
@@ -218,8 +219,9 @@ const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
         consecutiveSuccessCount = 0;
         break;
     }
-    // If, at this point, we have exceeded the failureLimit: it's failing
-    if (failedCount > failureLimit) {
+    // If, at this point, we have hit the failureLimit: it's failing
+    // (0 means no limit, so only check if failureLimit > 0)
+    if (failureLimit > 0 && failedCount >= failureLimit) {
       hasFailed = true;
       break;
     }
@@ -234,8 +236,8 @@ const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
     }
   }
 
-  if (hasFailed) return { name: metric.name, status: "failing" };
-  if (hasPassed) return { name: metric.name, status: "passing" };
+  if (hasFailed) return { name: metric.name, status: "failed" };
+  if (hasPassed) return { name: metric.name, status: "passed" };
 
   // If not failed or passed (may still be in progress), mark inconclusive
   if (metric.measurements.length < metric.count)
@@ -245,41 +247,41 @@ const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
   // treat as passing if all are passed, otherwise failing (fallback logic).
   const allPassed = metric.measurements.every((m) => m.status === "passed");
   if (allPassed) {
-    return { name: metric.name, status: "passing" };
+    return { name: metric.name, status: "passed" };
   }
-  return { name: metric.name, status: "failing" };
+  return { name: metric.name, status: "failed" };
 };
 
 function verificationSummary(verification: JobVerification): MetricSummary[] {
   return verification.metrics.map(metricStatus);
 }
 
-type OverallVerificationStatus = "passing" | "failing" | "in_progress" | "none";
+type OverallVerificationStatus = "passed" | "failed" | "inconclusive" | "none";
 
 function getOverallVerificationStatus(
   summaries: MetricSummary[],
 ): OverallVerificationStatus {
   if (summaries.length === 0) return "none";
-  if (summaries.some((s) => s.status === "failing")) return "failing";
-  if (summaries.some((s) => s.status === "inconclusive")) return "in_progress";
-  return "passing";
+  if (summaries.some((s) => s.status === "failed")) return "failed";
+  if (summaries.some((s) => s.status === "inconclusive")) return "inconclusive";
+  return "passed";
 }
 
 const VerificationStatusConfig: Record<
   Exclude<OverallVerificationStatus, "none">,
   { label: string; className: string }
 > = {
-  passing: {
+  passed: {
     label: "Verified",
     className:
       "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800",
   },
-  failing: {
+  failed: {
     label: "Verification Failed",
     className:
       "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800",
   },
-  in_progress: {
+  inconclusive: {
     label: "Verifying",
     className:
       "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800",
