@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/environmentprogression")
@@ -224,7 +225,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			successStatuses,
 			passRateEvaluator,
 			soakTimeEvaluator,
-		)
+		).WithDetail("environment", depEnv)
 
 		if result.Allowed {
 			allowedResults[depEnv.Id] = result
@@ -272,8 +273,6 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	return results.NewDeniedResult("No dependency environments found")
 }
 
-// evaluateJobSuccessCriteria evaluates if jobs meet the success criteria by combining
-// pass rate and soak time evaluators. Uses a shared tracker to avoid duplicate data fetching.
 func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	ctx context.Context,
 	version *oapi.DeploymentVersion,
@@ -285,7 +284,6 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
 	defer span.End()
 
-	// Create a single shared tracker for all evaluations in this dependency environment
 	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses)
 	if len(tracker.ReleaseTargets) == 0 {
 		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed").WithSatisfiedAt(version.CreatedAt)
@@ -297,47 +295,68 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		return results.NewDeniedResult("No jobs found")
 	}
 
-	// Use the shared tracker for pass rate evaluation
 	passRateResult := passRateEvaluator.EvaluateWithTracker(tracker)
 	span.SetAttributes(attribute.Bool("pass_rate.allowed", passRateResult.Allowed))
-	if !passRateResult.Allowed {
-		return passRateResult
-	}
 
-	// Use the shared tracker for soak time evaluation
 	var soakTimeResult *oapi.RuleEvaluation
 	if soakTimeEvaluator != nil {
 		soakTimeResult = soakTimeEvaluator.EvaluateWithTracker(tracker)
 		span.SetAttributes(attribute.Bool("soak_time.allowed", soakTimeResult.Allowed))
-		if !soakTimeResult.Allowed {
-			return soakTimeResult
-		}
 	}
 
-	// Check maximum age requirement if specified
-	if e.rule.MaximumAgeHours != nil && *e.rule.MaximumAgeHours > 0 {
-		maxAge := time.Duration(*e.rule.MaximumAgeHours) * time.Hour
-		if !tracker.IsWithinMaxAge(maxAge) {
-			span.SetAttributes(attribute.Bool("max_age.allowed", false))
-			return results.NewDeniedResult(
-				fmt.Sprintf("Most recent successful deployment exceeds maximum age of %d hours", *e.rule.MaximumAgeHours),
-			).
-				WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours).
-				WithDetail("most_recent_success", tracker.GetMostRecentSuccess().Format(time.RFC3339))
-		}
-		span.SetAttributes(attribute.Bool("max_age.allowed", true))
+	maxAgeAllowed, maxAgeMessage := e.checkMaximumAge(tracker, span)
+
+	result := e.buildResultFromEvaluations(passRateResult, soakTimeResult, maxAgeAllowed, maxAgeMessage)
+	result = e.mergeAllDetails(result, tracker, passRateResult, soakTimeResult)
+
+	return result
+}
+
+func (e *EnvironmentProgressionEvaluator) checkMaximumAge(tracker *ReleaseTargetJobTracker, span trace.Span) (bool, string) {
+	if e.rule.MaximumAgeHours == nil || *e.rule.MaximumAgeHours <= 0 {
+		return true, ""
 	}
 
-	// Both requirements met (or only one was required)
-	// Combine results and determine the satisfiedAt time
-	var satisfiedAt *time.Time
-	if passRateResult != nil && passRateResult.SatisfiedAt != nil {
-		satisfiedAt = passRateResult.SatisfiedAt
+	maxAge := time.Duration(*e.rule.MaximumAgeHours) * time.Hour
+	allowed := tracker.IsWithinMaxAge(maxAge)
+	span.SetAttributes(attribute.Bool("max_age.allowed", allowed))
+
+	if allowed {
+		return true, ""
 	}
+
+	return false, fmt.Sprintf("Most recent successful deployment exceeds maximum age of %d hours", *e.rule.MaximumAgeHours)
+}
+
+func (e *EnvironmentProgressionEvaluator) buildResultFromEvaluations(
+	passRateResult *oapi.RuleEvaluation,
+	soakTimeResult *oapi.RuleEvaluation,
+	maxAgeAllowed bool,
+	maxAgeMessage string,
+) *oapi.RuleEvaluation {
+	if !passRateResult.Allowed {
+		return results.NewDeniedResult(passRateResult.Message)
+	}
+
+	if soakTimeResult != nil && !soakTimeResult.Allowed {
+		return results.NewPendingResult(results.ActionTypeWait, soakTimeResult.Message)
+	}
+
+	if !maxAgeAllowed {
+		return results.NewDeniedResult(maxAgeMessage)
+	}
+
+	return e.buildAllowedResult(passRateResult, soakTimeResult)
+}
+
+func (e *EnvironmentProgressionEvaluator) buildAllowedResult(
+	passRateResult *oapi.RuleEvaluation,
+	soakTimeResult *oapi.RuleEvaluation,
+) *oapi.RuleEvaluation {
+	satisfiedAt := passRateResult.SatisfiedAt
 
 	if soakTimeResult != nil && soakTimeResult.SatisfiedAt != nil {
 		if satisfiedAt == nil || soakTimeResult.SatisfiedAt.After(*satisfiedAt) {
-			// Use the later of the two times (both must be satisfied)
 			satisfiedAt = soakTimeResult.SatisfiedAt
 		}
 	}
@@ -347,16 +366,29 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 		result = result.WithSatisfiedAt(*satisfiedAt)
 	}
 
-	// Merge details from both evaluators
-	if passRateResult != nil {
-		for key, value := range passRateResult.Details {
-			result = result.WithDetail(key, value)
-		}
+	return result
+}
+
+func (e *EnvironmentProgressionEvaluator) mergeAllDetails(
+	result *oapi.RuleEvaluation,
+	tracker *ReleaseTargetJobTracker,
+	passRateResult *oapi.RuleEvaluation,
+	soakTimeResult *oapi.RuleEvaluation,
+) *oapi.RuleEvaluation {
+	for key, value := range passRateResult.Details {
+		result = result.WithDetail(key, value)
 	}
 
 	if soakTimeResult != nil {
 		for key, value := range soakTimeResult.Details {
 			result = result.WithDetail(key, value)
+		}
+	}
+
+	if e.rule.MaximumAgeHours != nil && *e.rule.MaximumAgeHours > 0 {
+		result = result.WithDetail("maximum_age_hours", *e.rule.MaximumAgeHours)
+		if !tracker.GetMostRecentSuccess().IsZero() {
+			result = result.WithDetail("most_recent_success", tracker.GetMostRecentSuccess().Format(time.RFC3339))
 		}
 	}
 

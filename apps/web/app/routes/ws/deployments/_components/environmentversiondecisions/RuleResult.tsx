@@ -10,6 +10,10 @@ import {
   HoverCardTrigger,
 } from "~/components/ui/hover-card";
 import {
+  EnvProgressionDetail,
+  envProgressionDetailSchema,
+} from "./rule-results/EnvProgressionDetail";
+import {
   GradualRolloutDetail,
   gradualRolloutDetailSchema,
 } from "./rule-results/GradualRolloutDetail";
@@ -30,6 +34,10 @@ function RuleDetail(props: { ruleResult: RuleEvaluation }) {
   const { details } = props.ruleResult;
   const gradualRolloutResult = gradualRolloutDetailSchema.safeParse(details);
   if (gradualRolloutResult.success) return <GradualRolloutDetail {...props} />;
+
+  const envProgressionResult = envProgressionDetailSchema.safeParse(details);
+  if (envProgressionResult.success)
+    return <EnvProgressionDetail ruleResult={props.ruleResult} />;
 
   return (
     <HoverCard>
