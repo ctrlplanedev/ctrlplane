@@ -35,10 +35,10 @@ const messageSchema = z.object({
 export const gradualRolloutDetailSchema = z.object({
   denied_targets: z.number(),
   deployed_targets: z.number(),
-  estimated_completion_time: z.string().datetime(),
-  next_deployment_time: z.string().datetime(),
+  estimated_completion_time: z.string().datetime().nullable().optional(),
+  next_deployment_time: z.string().datetime().nullable().optional(),
   pending_targets: z.number(),
-  rollout_start_time: z.string().datetime(),
+  rollout_start_time: z.string().datetime().nullable().optional(),
   total_targets: z.number(),
   messages: z.array(messageSchema),
 });
