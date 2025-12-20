@@ -26,8 +26,8 @@ const listEnvironments: AsyncTypedHandler<
     },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Failed to list environments", response.response.status);
 
   res.json(response.data);
 };
@@ -42,10 +42,8 @@ const getEnvironment: AsyncTypedHandler<
     { params: { path: { workspaceId, environmentId } } },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
-
-  if (response.data == null) throw new ApiError("Environment not found", 404);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Environment not found", response.response.status);
 
   res.json(response.data);
   return;

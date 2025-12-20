@@ -28,10 +28,11 @@ const listResources: AsyncTypedHandler<
     },
   );
 
-  if (result.error?.error) {
-    res.status(500).json({ error: result.error.error });
-    return;
-  }
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Failed to list resources",
+      result.response.status,
+    );
 
   res.status(200).json(result.data);
 };
@@ -48,10 +49,11 @@ const getResourceByIdentifier: AsyncTypedHandler<
     { params: { path: { workspaceId, resourceIdentifier } } },
   );
 
-  if (result.data == null) {
-    res.status(404).json({ error: "Resource not found" });
-    return;
-  }
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Resource not found",
+      result.response.status,
+    );
 
   res.status(200).json(result.data);
 };
@@ -75,7 +77,7 @@ const getVariablesForResource: AsyncTypedHandler<
   if (result.error != null)
     throw new ApiError(
       result.error.error ?? "Failed to get variables for resource",
-      500,
+      result.response.status,
     );
 
   res.status(200).json(result.data);
@@ -97,7 +99,7 @@ const updateVariablesForResource: AsyncTypedHandler<
   if (resourceResponse.error != null) {
     throw new ApiError(
       resourceResponse.error.error ?? "Failed to get resource",
-      500,
+      resourceResponse.response.status,
     );
   }
 
@@ -132,13 +134,12 @@ const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
     },
   );
 
-  if (result.error != null) {
+  if (result.error != null)
     throw new ApiError(
       result.error.error ??
         "Failed to get release target for resource in deployment",
-      500,
+      result.response.status,
     );
-  }
 
   res.status(200).json(result.data);
 };

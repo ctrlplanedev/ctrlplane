@@ -16,7 +16,7 @@ const getJobAgent: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Unknown error", 500);
+    throw new ApiError(response.error.error ?? "Job agent not found", response.response.status);
 
   res.status(200).json(response.data);
 };
@@ -58,7 +58,7 @@ const deleteJobAgent: AsyncTypedHandler<
   );
 
   if (jobAgentResponse.error != null)
-    throw new ApiError(jobAgentResponse.error.error ?? "Unknown error", 500);
+    throw new ApiError(jobAgentResponse.error.error ?? "Job agent not found", jobAgentResponse.response.status);
 
   await sendGoEvent({
     workspaceId,
@@ -92,7 +92,7 @@ const listJobAgents: AsyncTypedHandler<
   );
 
   if (result.error != null)
-    throw new ApiError(result.error.error ?? "Unknown error", 500);
+    throw new ApiError(result.error.error ?? "Failed to list job agents", result.response.status);
 
   res.status(200).json(result.data);
 };

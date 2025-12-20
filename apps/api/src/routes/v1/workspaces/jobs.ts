@@ -21,8 +21,8 @@ const getJobs: AsyncTypedHandler<
     },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Failed to list jobs", response.response.status);
 
   res.status(200).json(response.data);
 };
@@ -37,8 +37,8 @@ const getJob: AsyncTypedHandler<
     { params: { path: { workspaceId, jobId } } },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Job not found", response.response.status);
 
   res.status(200).json(response.data);
 };
@@ -53,8 +53,8 @@ const getJobWithRelease: AsyncTypedHandler<
     { params: { path: { workspaceId, jobId } } },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Job not found", response.response.status);
 
   res.status(200).json(response.data);
 };

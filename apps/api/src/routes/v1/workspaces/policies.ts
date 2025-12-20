@@ -18,10 +18,10 @@ const listPolicies: AsyncTypedHandler<
     { params: { path: { workspaceId } } },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Failed to list policies", response.response.status);
 
-  res.status(200).json({ items: response.data?.policies ?? [] });
+  res.status(200).json({ items: response.data.policies ?? [] });
   return;
 };
 
@@ -36,8 +36,8 @@ const deletePolicy: AsyncTypedHandler<
     { params: { path: { workspaceId, policyId } } },
   );
 
-  if (policy.error?.error != null) throw new ApiError(policy.error.error, 500);
-  if (policy.data == null) throw new ApiError("Policy not found", 404);
+  if (policy.error != null)
+    throw new ApiError(policy.error.error ?? "Policy not found", policy.response.status);
 
   await sendGoEvent({
     workspaceId,
@@ -109,10 +109,8 @@ const getPolicy: AsyncTypedHandler<
     { params: { path: { workspaceId, policyId } } },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
-
-  if (response.data == null) throw new ApiError("Policy not found", 404);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Policy not found", response.response.status);
 
   res.status(200).json(response.data);
   return;

@@ -41,8 +41,8 @@ const getRelationshipRule: AsyncTypedHandler<
     { params: { path: { workspaceId, relationshipRuleId } } },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Relationship rule not found", response.response.status);
 
   res.status(200).json(response.data);
 };

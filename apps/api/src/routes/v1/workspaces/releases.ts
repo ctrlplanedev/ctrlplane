@@ -15,7 +15,7 @@ const getRelease: AsyncTypedHandler<
     { params: { path: { workspaceId, releaseId } } },
   );
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Unknown error", 500);
+    throw new ApiError(response.error.error ?? "Release not found", response.response.status);
 
   res.json(response.data);
   return;
@@ -31,7 +31,7 @@ const getReleaseVerifications: AsyncTypedHandler<
     { params: { path: { workspaceId, releaseId } } },
   );
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Unknown error", 500);
+    throw new ApiError(response.error.error ?? "Failed to get release verifications", response.response.status);
 
   res.json(response.data);
 };

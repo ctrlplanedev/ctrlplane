@@ -23,7 +23,7 @@ const getReleaseTargetJobs: AsyncTypedHandler<
   );
 
   if (jobsResponse.error != null)
-    throw new ApiError(jobsResponse.error.error ?? "Unknown error", 500);
+    throw new ApiError(jobsResponse.error.error ?? "Failed to get release target jobs", jobsResponse.response.status);
 
   res.status(200).json(jobsResponse.data);
 };
@@ -41,8 +41,8 @@ const getReleaseTargetDesiredRelease: AsyncTypedHandler<
 
   if (desiredReleaseResponse.error != null)
     throw new ApiError(
-      desiredReleaseResponse.error.error ?? "Unknown error",
-      500,
+      desiredReleaseResponse.error.error ?? "Failed to get desired release",
+      desiredReleaseResponse.response.status,
     );
 
   res.status(200).json(desiredReleaseResponse.data);
@@ -66,7 +66,7 @@ const getReleaseTargetState: AsyncTypedHandler<
   );
 
   if (stateResponse.error != null)
-    throw new ApiError(stateResponse.error.error ?? "Unknown error", 500);
+    throw new ApiError(stateResponse.error.error ?? "Failed to get release target state", stateResponse.response.status);
 
   res.status(200).json(stateResponse.data);
 };

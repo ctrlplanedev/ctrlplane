@@ -28,8 +28,8 @@ const listDeployments: AsyncTypedHandler<
     },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Failed to list deployments", response.response.status);
 
   res.json(response.data);
 };
@@ -42,11 +42,10 @@ const existingDeploymentById = async (
     "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
     { params: { path: { workspaceId, deploymentId } } },
   );
-  if (response.error?.error != null)
-    if (response.response.status !== 404)
-      throw new ApiError(response.error.error, response.response.status);
-
-  if (response.data == null) return null;
+  if (response.error != null) {
+    if (response.response.status === 404) return null;
+    throw new ApiError(response.error.error ?? "Failed to get deployment", response.response.status);
+  }
 
   return response.data;
 };
@@ -99,7 +98,7 @@ const getDeployment: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Unknown error", 500);
+    throw new ApiError(response.error.error ?? "Deployment not found", response.response.status);
 
   res.json(response.data);
 };
@@ -219,10 +218,10 @@ const listDeploymentVersions: AsyncTypedHandler<
     },
   );
 
-  if (response.error?.error != null)
-    throw new ApiError(response.error.error, 500);
+  if (response.error != null)
+    throw new ApiError(response.error.error ?? "Failed to list deployment versions", response.response.status);
 
-  res.json(response.data ?? []);
+  res.json(response.data);
 };
 
 const createDeploymentVersion: AsyncTypedHandler<
