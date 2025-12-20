@@ -18,12 +18,11 @@ const verifyDeploymentExists = async (
     { params: { path: { workspaceId, deploymentId } } },
   );
 
-  if (response.error?.error != null) {
-    throw new ApiError(response.error.error, 404);
-  }
-
-  if (response.data == null) {
-    throw new ApiError("Deployment not found", 404);
+  if (response.error != null) {
+    throw new ApiError(
+      response.error.error ?? "Internal server error",
+      response.response.status,
+    );
   }
 
   return response.data;
