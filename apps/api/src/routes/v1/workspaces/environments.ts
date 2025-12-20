@@ -27,7 +27,10 @@ const listEnvironments: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Failed to list environments", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Failed to list environments",
+      response.response.status,
+    );
 
   res.json(response.data);
 };
@@ -43,7 +46,10 @@ const getEnvironment: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Environment not found", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Environment not found",
+      response.response.status,
+    );
 
   res.json(response.data);
   return;

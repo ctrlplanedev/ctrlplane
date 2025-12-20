@@ -16,7 +16,10 @@ const getEnvironmentIds = async (
   );
 
   if (deploymentVersionResponse.error != null)
-    throw new ApiError(deploymentVersionResponse.error.error ?? "Deployment version not found", deploymentVersionResponse.response.status);
+    throw new ApiError(
+      deploymentVersionResponse.error.error ?? "Deployment version not found",
+      deploymentVersionResponse.response.status,
+    );
   const { deploymentId } = deploymentVersionResponse.data;
 
   const deploymentResponse = await getClientFor(workspaceId).GET(
@@ -24,7 +27,10 @@ const getEnvironmentIds = async (
     { params: { path: { workspaceId, deploymentId } } },
   );
   if (deploymentResponse.error != null)
-    throw new ApiError(deploymentResponse.error.error ?? "Deployment not found", deploymentResponse.response.status);
+    throw new ApiError(
+      deploymentResponse.error.error ?? "Deployment not found",
+      deploymentResponse.response.status,
+    );
 
   const { deployment } = deploymentResponse.data;
   const { systemId } = deployment;
@@ -35,7 +41,10 @@ const getEnvironmentIds = async (
   );
 
   if (systemResponse.error != null)
-    throw new ApiError(systemResponse.error.error ?? "System not found", systemResponse.response.status);
+    throw new ApiError(
+      systemResponse.error.error ?? "System not found",
+      systemResponse.response.status,
+    );
   const { environments } = systemResponse.data;
 
   return environments.map((environment) => environment.id);

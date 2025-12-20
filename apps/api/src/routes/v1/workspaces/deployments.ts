@@ -29,7 +29,10 @@ const listDeployments: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Failed to list deployments", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Failed to list deployments",
+      response.response.status,
+    );
 
   res.json(response.data);
 };
@@ -44,7 +47,10 @@ const existingDeploymentById = async (
   );
   if (response.error != null) {
     if (response.response.status === 404) return null;
-    throw new ApiError(response.error.error ?? "Failed to get deployment", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Failed to get deployment",
+      response.response.status,
+    );
   }
 
   return response.data;
@@ -98,7 +104,10 @@ const getDeployment: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Deployment not found", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Deployment not found",
+      response.response.status,
+    );
 
   res.json(response.data);
 };
@@ -219,7 +228,10 @@ const listDeploymentVersions: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Failed to list deployment versions", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Failed to list deployment versions",
+      response.response.status,
+    );
 
   res.json(response.data);
 };
