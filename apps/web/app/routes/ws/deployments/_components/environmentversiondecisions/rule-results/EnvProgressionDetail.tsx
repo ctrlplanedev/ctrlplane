@@ -134,6 +134,9 @@ function SoakTimeStatus({ detail }: { detail: PerEnvironmentDetail }) {
 }
 
 function EnvironmentResult({ detail }: { detail: PerEnvironmentDetail }) {
+  const hasDetails =
+    detail.success_percentage != null || detail.soak_minutes != null;
+
   const minRequired = detail.minimum_success_percentage ?? 100;
   const passRatePassed =
     detail.success_percentage != null &&
@@ -146,7 +149,7 @@ function EnvironmentResult({ detail }: { detail: PerEnvironmentDetail }) {
     soakTimePassed = elapsedMinutes >= detail.soak_minutes;
   }
 
-  const isSuccess = passRatePassed && soakTimePassed;
+  const isSuccess = hasDetails && passRatePassed && soakTimePassed;
 
   return (
     <div className="space-y-2 rounded-md border p-3">
@@ -161,6 +164,12 @@ function EnvironmentResult({ detail }: { detail: PerEnvironmentDetail }) {
 
       <SuccessRateStatus detail={detail} />
       <SoakTimeStatus detail={detail} />
+
+      {!hasDetails && (
+        <div className="text-xs text-muted-foreground">
+          No deployments found for this version
+        </div>
+      )}
 
       {detail.most_recent_success && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
