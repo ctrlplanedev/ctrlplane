@@ -320,14 +320,14 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 		Type:    oapi.Http,
 	})
 
-	failureLimit := 5
+	successThreshold := 1
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             fmt.Sprintf("%s-argocd-application-health", appName),
-			IntervalSeconds:  10,
-			Count:            5,
-			FailureThreshold: &failureLimit,
-			SuccessCondition: "result.statusCode == 200 && result.json.status.sync.status == 'Synced' && (result.json.status.health.status == 'Healthy' || result.json.status.health.status == 'Progressing')",
+			IntervalSeconds:  30,
+			Count:            10,
+			SuccessThreshold: &successThreshold,
+			SuccessCondition: "result.statusCode == 200 && result.json.status.sync.status == 'Synced' && result.json.status.health.status == 'Healthy'",
 			Provider:         provider,
 		},
 	}
