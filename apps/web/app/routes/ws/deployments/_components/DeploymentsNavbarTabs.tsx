@@ -16,7 +16,7 @@ const useDeploymentTab = (baseUrl: string): DeploymentTab => {
   const { pathname } = useLocation();
   if (pathname === baseUrl) return "environments";
   if (pathname.startsWith(`${baseUrl}/resources`)) return "resources";
-  if (pathname.startsWith(`${baseUrl}/settings`)) return "settings";
+  if (pathname.startsWith(`${baseUrl}/settings/general`)) return "settings";
   if (pathname.startsWith(`${baseUrl}/traces`)) return "traces";
   if (pathname.startsWith(`${baseUrl}/variables`)) return "variables";
   if (pathname.startsWith(`${baseUrl}/release-targets`))
@@ -49,7 +49,7 @@ export const DeploymentsNavbarTabs = () => {
           <Link to={`${baseUrl}/release-targets`}>Targets</Link>
         </TabsTrigger>
         <TabsTrigger value="settings" asChild>
-          <Link to={`${baseUrl}/settings`}>Settings</Link>
+          <Link to={`${baseUrl}/settings/general`}>Settings</Link>
         </TabsTrigger>
       </TabsList>
     </Tabs>
