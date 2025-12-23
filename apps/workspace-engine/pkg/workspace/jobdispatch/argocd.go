@@ -321,6 +321,7 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	})
 
 	successThreshold := 1
+	failureCondition := "result.statusCode != 200 || result.json.status.health.status == 'Degraded' || result.json.status.health.status == 'Missing'"
 	metrics := []oapi.VerificationMetricSpec{
 		{
 			Name:             fmt.Sprintf("%s-argocd-application-health", appName),
@@ -328,6 +329,7 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 			Count:            10,
 			SuccessThreshold: &successThreshold,
 			SuccessCondition: "result.statusCode == 200 && result.json.status.sync.status == 'Synced' && result.json.status.health.status == 'Healthy'",
+			FailureCondition: &failureCondition,
 			Provider:         provider,
 		},
 	}
