@@ -2,6 +2,7 @@ package rollback
 
 import (
 	"context"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
@@ -107,23 +108,20 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 		attribute.String("rollback_to_version.tag", currentRelease.Version.Tag),
 	)
 
-	lastSuccessfulJobCopy := oapi.Job{
+	now := time.Now()
+	newJob := oapi.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      lastSuccessfulJob.ReleaseId,
 		JobAgentId:     lastSuccessfulJob.JobAgentId,
 		JobAgentConfig: lastSuccessfulJob.JobAgentConfig,
-		Status:         lastSuccessfulJob.Status,
-		CreatedAt:      lastSuccessfulJob.CreatedAt,
-		UpdatedAt:      lastSuccessfulJob.UpdatedAt,
-		StartedAt:      lastSuccessfulJob.StartedAt,
-		CompletedAt:    lastSuccessfulJob.CompletedAt,
-		Metadata:       lastSuccessfulJob.Metadata,
-		TraceToken:     lastSuccessfulJob.TraceToken,
-		ExternalId:     lastSuccessfulJob.ExternalId,
-		Message:        lastSuccessfulJob.Message,
+		Status:         oapi.JobStatusPending,
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 
-	if err := h.dispatcher.DispatchJob(ctx, &lastSuccessfulJobCopy); err != nil {
+	h.store.Jobs.Upsert(ctx, &newJob)
+
+	if err := h.dispatcher.DispatchJob(ctx, &newJob); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "rollback execution failed")
 		return err

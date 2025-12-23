@@ -898,6 +898,46 @@ func WithRuleVersionCooldown(intervalSeconds int32) PolicyRuleOption {
 	}
 }
 
+// ===== RollbackRule Options =====
+
+// WithRuleRollback configures a rollback rule that triggers rollback to the previous
+// release when specified conditions are met.
+func WithRuleRollback(rollBackJobStatuses []oapi.JobStatus, onVerificationFailure bool) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.Rollback = &oapi.RollbackRule{}
+		if len(rollBackJobStatuses) > 0 {
+			r.Rollback.RollBackJobStatuses = &rollBackJobStatuses
+		}
+		if onVerificationFailure {
+			r.Rollback.OnVerificationFailure = &onVerificationFailure
+		}
+		return nil
+	}
+}
+
+// WithRuleRollbackOnJobStatuses configures a rollback rule that triggers rollback
+// when a job completes with one of the specified statuses.
+func WithRuleRollbackOnJobStatuses(statuses ...oapi.JobStatus) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.Rollback = &oapi.RollbackRule{
+			RollBackJobStatuses: &statuses,
+		}
+		return nil
+	}
+}
+
+// WithRuleRollbackOnVerificationFailure configures a rollback rule that triggers
+// rollback when verification fails.
+func WithRuleRollbackOnVerificationFailure() PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		onVerificationFailure := true
+		r.Rollback = &oapi.RollbackRule{
+			OnVerificationFailure: &onVerificationFailure,
+		}
+		return nil
+	}
+}
+
 // ===== DeploymentDependencyRule Options =====
 
 type DeploymentDependencyRuleOption func(*TestWorkspace, *oapi.DeploymentDependencyRule) error

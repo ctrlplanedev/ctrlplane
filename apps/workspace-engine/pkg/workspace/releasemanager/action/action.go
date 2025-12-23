@@ -9,10 +9,11 @@ import (
 type ActionTrigger string
 
 const (
-	TriggerJobCreated ActionTrigger = "job.created"
-	TriggerJobStarted ActionTrigger = "job.started"
-	TriggerJobSuccess ActionTrigger = "job.success"
-	TriggerJobFailure ActionTrigger = "job.failure"
+	TriggerJobCreated      ActionTrigger = "job.created"
+	TriggerJobStarted      ActionTrigger = "job.started"
+	TriggerJobSuccess      ActionTrigger = "job.success"
+	TriggerJobFailure      ActionTrigger = "job.failure"
+	TriggerJobStatusChange ActionTrigger = "job.statuschange"
 )
 
 // ActionContext provides context for action execution

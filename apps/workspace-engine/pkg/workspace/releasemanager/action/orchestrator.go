@@ -132,5 +132,9 @@ func determineTrigger(
 		return TriggerJobFailure
 	}
 
+	if currentStatus != previousStatus {
+		return TriggerJobStatusChange
+	}
+
 	return ""
 }

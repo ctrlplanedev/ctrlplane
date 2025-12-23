@@ -3,6 +3,7 @@ package rollback
 import (
 	"context"
 	"slices"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
@@ -47,12 +48,6 @@ func (r *RollbackAction) Execute(
 		attribute.String("job.status", string(actx.Job.Status)),
 	)
 
-	// Only react to job failure
-	if trigger != action.TriggerJobFailure {
-		span.SetStatus(codes.Ok, "trigger not applicable")
-		return nil
-	}
-
 	if !r.shouldRollback(actx.Policies, actx.Job.Status) {
 		span.SetAttributes(attribute.Bool("rollback_applicable", false))
 		span.SetStatus(codes.Ok, "no applicable rollback policy")
@@ -80,23 +75,20 @@ func (r *RollbackAction) Execute(
 		attribute.String("rollback_to_version.tag", currentRelease.Version.Tag),
 	)
 
-	lastSuccessfulJobCopy := oapi.Job{
+	now := time.Now()
+	newJob := oapi.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      lastSuccessfulJob.ReleaseId,
 		JobAgentId:     lastSuccessfulJob.JobAgentId,
 		JobAgentConfig: lastSuccessfulJob.JobAgentConfig,
-		Status:         lastSuccessfulJob.Status,
-		CreatedAt:      lastSuccessfulJob.CreatedAt,
-		UpdatedAt:      lastSuccessfulJob.UpdatedAt,
-		StartedAt:      lastSuccessfulJob.StartedAt,
-		CompletedAt:    lastSuccessfulJob.CompletedAt,
-		Metadata:       lastSuccessfulJob.Metadata,
-		TraceToken:     lastSuccessfulJob.TraceToken,
-		ExternalId:     lastSuccessfulJob.ExternalId,
-		Message:        lastSuccessfulJob.Message,
+		Status:         oapi.JobStatusPending,
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 
-	if err := r.dispatcher.DispatchJob(ctx, &lastSuccessfulJobCopy); err != nil {
+	r.store.Jobs.Upsert(ctx, &newJob)
+
+	if err := r.dispatcher.DispatchJob(ctx, &newJob); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "rollback execution failed")
 		return err
