@@ -65,6 +65,7 @@ local openapi = import '../lib/openapi.libsonnet';
       deploymentWindow: openapi.schemaRef('DeploymentWindowRule'),
       verification: openapi.schemaRef('VerificationRule'),
       versionCooldown: openapi.schemaRef('VersionCooldownRule'),
+      rollback: openapi.schemaRef('RollbackRule'),
     },
   },
 
@@ -232,6 +233,22 @@ local openapi = import '../lib/openapi.libsonnet';
       status: openapi.schemaRef('ApprovalStatus'),
       reason: { type: 'string' },
       createdAt: { type: 'string' },
+    },
+  },
+
+  RollbackRule: {
+    type: 'object',
+    properties: {
+      rollBackJobStatuses: {
+        type: 'array',
+        items: openapi.schemaRef('JobStatus'),
+        description: 'Job statuses that will trigger a rollback',
+      },
+      onVerificationFailure: {
+        type: 'boolean',
+        default: false,
+        description: 'If true, a release target will be rolled back if the verification fails',
+      },
     },
   },
 

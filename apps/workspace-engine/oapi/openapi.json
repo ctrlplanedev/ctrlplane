@@ -1313,6 +1313,9 @@
                "retry": {
                   "$ref": "#/components/schemas/RetryRule"
                },
+               "rollback": {
+                  "$ref": "#/components/schemas/RollbackRule"
+               },
                "verification": {
                   "$ref": "#/components/schemas/VerificationRule"
                },
@@ -1849,6 +1852,23 @@
             "required": [
                "maxRetries"
             ],
+            "type": "object"
+         },
+         "RollbackRule": {
+            "properties": {
+               "onVerificationFailure": {
+                  "default": false,
+                  "description": "If true, a release target will be rolled back if the verification fails",
+                  "type": "boolean"
+               },
+               "rollBackJobStatuses": {
+                  "description": "Job statuses that will trigger a rollback",
+                  "items": {
+                     "$ref": "#/components/schemas/JobStatus"
+                  },
+                  "type": "array"
+               }
+            },
             "type": "object"
          },
          "RuleEvaluation": {

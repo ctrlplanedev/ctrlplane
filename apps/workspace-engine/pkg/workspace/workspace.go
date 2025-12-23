@@ -6,7 +6,9 @@ import (
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/action"
+	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
 	verificationaction "workspace-engine/pkg/workspace/releasemanager/action/verification"
+	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
@@ -43,6 +45,11 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 			func(ctx context.Context, target *oapi.ReleaseTarget) error {
 				return ws.releasemanager.ReconcileTarget(ctx, target, releasemanager.WithTrigger(trace.TriggerJobSuccess))
 			},
+		),
+	).RegisterAction(
+		rollback.NewRollbackAction(
+			s,
+			jobs.NewDispatcher(s, ws.releasemanager.VerificationManager()),
 		),
 	)
 
