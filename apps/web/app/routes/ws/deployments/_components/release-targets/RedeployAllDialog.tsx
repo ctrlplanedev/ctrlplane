@@ -124,7 +124,7 @@ export function RedeployAllDialog({
         <Button
           size="sm"
           variant="secondary"
-          className="h-6 w-fit rounded-sm py-3"
+          className="h-6 w-fit rounded-sm border border-neutral-200 px-2 py-3 text-xs dark:border-neutral-700"
         >
           Redeploy {environmentName}
         </Button>
