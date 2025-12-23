@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import type { JobStatus } from "../types";
 import { trpc } from "~/api/trpc";
@@ -26,7 +27,6 @@ import {
   SelectTrigger,
 } from "~/components/ui/select";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { cn } from "~/lib/utils";
 import { JobStatusDisplayName } from "../../../_components/JobStatusBadge";
 
 type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
@@ -35,14 +35,15 @@ function useRedeployAll(releaseTargets: ReleaseTarget[]) {
   const { workspace } = useWorkspace();
   const redeployAll = trpc.redeploy.releaseTargets.useMutation();
 
-  const handleRedeployAll = () => {
-    redeployAll.mutateAsync({
-      workspaceId: workspace.id,
-      releaseTargets: releaseTargets.map((rt) => ({
-        ...rt.releaseTarget,
-      })),
-    });
-  };
+  const handleRedeployAll = () =>
+    redeployAll
+      .mutateAsync({
+        workspaceId: workspace.id,
+        releaseTargets: releaseTargets.map((rt) => ({
+          ...rt.releaseTarget,
+        })),
+      })
+      .then(() => toast.success("Successfully queued redeploy"));
 
   return { handleRedeployAll, isPending: redeployAll.isPending };
 }
