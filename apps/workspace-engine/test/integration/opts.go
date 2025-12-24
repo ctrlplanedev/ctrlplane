@@ -906,7 +906,7 @@ func WithRuleRollback(rollBackJobStatuses []oapi.JobStatus, onVerificationFailur
 	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
 		r.Rollback = &oapi.RollbackRule{}
 		if len(rollBackJobStatuses) > 0 {
-			r.Rollback.RollBackJobStatuses = &rollBackJobStatuses
+			r.Rollback.OnJobStatuses = &rollBackJobStatuses
 		}
 		if onVerificationFailure {
 			r.Rollback.OnVerificationFailure = &onVerificationFailure
@@ -920,7 +920,7 @@ func WithRuleRollback(rollBackJobStatuses []oapi.JobStatus, onVerificationFailur
 func WithRuleRollbackOnJobStatuses(statuses ...oapi.JobStatus) PolicyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
 		r.Rollback = &oapi.RollbackRule{
-			RollBackJobStatuses: &statuses,
+			OnJobStatuses: &statuses,
 		}
 		return nil
 	}

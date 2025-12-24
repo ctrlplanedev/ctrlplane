@@ -239,7 +239,7 @@ local openapi = import '../lib/openapi.libsonnet';
   RollbackRule: {
     type: 'object',
     properties: {
-      rollBackJobStatuses: {
+      onJobStatuses: {
         type: 'array',
         items: openapi.schemaRef('JobStatus'),
         description: 'Job statuses that will trigger a rollback',

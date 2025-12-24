@@ -452,7 +452,7 @@ func TestEngine_Rollback_OnJobFailure_DisabledPolicy(t *testing.T) {
 		Id:       uuid.New().String(),
 		PolicyId: policy.Id,
 		Rollback: &oapi.RollbackRule{
-			RollBackJobStatuses: &rollBackStatuses,
+			OnJobStatuses: &rollBackStatuses,
 		},
 	}}
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)

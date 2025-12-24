@@ -62,7 +62,7 @@ func (e *RollbackEvaluator) Evaluate(ctx context.Context, scope evaluator.Evalua
 	}
 
 	jobStatus := latestJob.Status
-	if e.rule.RollBackJobStatuses != nil && slices.Contains(*e.rule.RollBackJobStatuses, jobStatus) {
+	if e.rule.OnJobStatuses != nil && slices.Contains(*e.rule.OnJobStatuses, jobStatus) {
 		return results.NewDeniedResult("Job status is in rollback statuses").
 			WithDetail("job", latestJob)
 	}

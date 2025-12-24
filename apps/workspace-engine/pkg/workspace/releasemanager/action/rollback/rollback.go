@@ -109,8 +109,8 @@ func (r *RollbackAction) shouldRollback(policies []*oapi.Policy, jobStatus oapi.
 				continue
 			}
 
-			if rule.Rollback.RollBackJobStatuses != nil &&
-				slices.Contains(*rule.Rollback.RollBackJobStatuses, jobStatus) {
+			if rule.Rollback.OnJobStatuses != nil &&
+				slices.Contains(*rule.Rollback.OnJobStatuses, jobStatus) {
 				return true
 			}
 		}

@@ -999,11 +999,11 @@ type RetryRuleBackoffStrategy string
 
 // RollbackRule defines model for RollbackRule.
 type RollbackRule struct {
+	// OnJobStatuses Job statuses that will trigger a rollback
+	OnJobStatuses *[]JobStatus `json:"onJobStatuses,omitempty"`
+
 	// OnVerificationFailure If true, a release target will be rolled back if the verification fails
 	OnVerificationFailure *bool `json:"onVerificationFailure,omitempty"`
-
-	// RollBackJobStatuses Job statuses that will trigger a rollback
-	RollBackJobStatuses *[]JobStatus `json:"rollBackJobStatuses,omitempty"`
 }
 
 // RuleEvaluation defines model for RuleEvaluation.
