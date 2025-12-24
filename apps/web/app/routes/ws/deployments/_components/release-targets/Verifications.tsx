@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { Fragment, useState } from "react";
+import { capitalCase } from "change-case";
 import { formatDistanceToNowStrict } from "date-fns";
 import { ChevronRight } from "lucide-react";
 
@@ -119,7 +120,8 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
   const latestMeasurement = sortedMeasurements.at(0);
-  const passed = latestMeasurement?.status === "passed";
+  const status = latestMeasurement?.status?.toLowerCase() ?? "inconclusive";
+  const statusLabel = capitalCase(status);
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
@@ -135,10 +137,12 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
           <span
             className={cn(
               "text-xs",
-              passed ? "text-green-500" : "text-red-500 dark:text-red-400",
+              status === "passed" && "text-green-500",
+              status === "failed" && "text-red-500 dark:text-red-400",
+              status === "inconclusive" && "text-muted-foreground",
             )}
           >
-            {passed ? "Passed" : "Failed"}{" "}
+            {statusLabel}{" "}
             {latestMeasurement?.measuredAt != null &&
               `${formatDistanceToNowStrict(new Date(latestMeasurement.measuredAt), { addSuffix: true })}`}
           </span>
