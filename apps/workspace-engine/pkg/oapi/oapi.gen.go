@@ -798,6 +798,7 @@ type PolicyRule struct {
 	Id                     string                      `json:"id"`
 	PolicyId               string                      `json:"policyId"`
 	Retry                  *RetryRule                  `json:"retry,omitempty"`
+	Rollback               *RollbackRule               `json:"rollback,omitempty"`
 	Verification           *VerificationRule           `json:"verification,omitempty"`
 	VersionCooldown        *VersionCooldownRule        `json:"versionCooldown,omitempty"`
 	VersionSelector        *VersionSelectorRule        `json:"versionSelector,omitempty"`
@@ -995,6 +996,15 @@ type RetryRule struct {
 
 // RetryRuleBackoffStrategy Backoff strategy: "linear" uses constant backoffSeconds delay, "exponential" doubles the delay with each retry (backoffSeconds * 2^(attempt-1)).
 type RetryRuleBackoffStrategy string
+
+// RollbackRule defines model for RollbackRule.
+type RollbackRule struct {
+	// OnJobStatuses Job statuses that will trigger a rollback
+	OnJobStatuses *[]JobStatus `json:"onJobStatuses,omitempty"`
+
+	// OnVerificationFailure If true, a release target will be rolled back if the verification fails
+	OnVerificationFailure *bool `json:"onVerificationFailure,omitempty"`
+}
 
 // RuleEvaluation defines model for RuleEvaluation.
 type RuleEvaluation struct {
