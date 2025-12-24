@@ -17,6 +17,8 @@ import {
   DialogTrigger,
 } from "~/components/ui/dialog";
 import { cn } from "~/lib/utils";
+import { ArgoCDVerificationDisplay } from "./argocd/ArgoCD";
+import { isArgoCDMeasurement } from "./argocd/argocd-metric";
 
 type JobVerification = WorkspaceEngine["schemas"]["JobVerification"];
 type VerificationMetricStatus =
@@ -120,6 +122,10 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
   const latestMeasurement = sortedMeasurements.at(0);
+  if (latestMeasurement == null) return null;
+
+  const isArgoCD = isArgoCDMeasurement(latestMeasurement.data);
+
   const status = latestMeasurement?.status?.toLowerCase() ?? "inconclusive";
   const statusLabel = capitalCase(status);
   return (
@@ -150,10 +156,15 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-2 pl-6 text-xs">
-        <MetricSummaryDisplay metric={metric} />
-        {sortedMeasurements.map((measurement, idx) => (
-          <Measurement key={idx} measurement={measurement} />
-        ))}
+        {isArgoCD && <ArgoCDVerificationDisplay metric={metric} />}
+        {!isArgoCD && (
+          <>
+            <MetricSummaryDisplay metric={metric} />
+            {sortedMeasurements.map((measurement, idx) => (
+              <Measurement key={idx} measurement={measurement} />
+            ))}
+          </>
+        )}
       </CollapsibleContent>
     </Collapsible>
   );
@@ -292,7 +303,7 @@ export function VerificationStatusBadge({
         <div className="space-y-2">
           {verifications?.map((verification) => (
             <Fragment key={verification.id}>
-              <div className="text-sm font-medium">{verification.message}</div>
+              <div className="pl-7 text-xs">{verification.message}</div>
               {verification.metrics.map((metric) => (
                 <MetricDisplay key={metric.name} metric={metric} />
               ))}
