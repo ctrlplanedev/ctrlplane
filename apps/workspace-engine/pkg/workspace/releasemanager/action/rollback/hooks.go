@@ -9,9 +9,12 @@ import (
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 )
+
+var hookTracer = otel.Tracer("RollbackHooks")
 
 type RollbackHooks struct {
 	store      *store.Store
@@ -40,7 +43,7 @@ func (h *RollbackHooks) OnMetricComplete(ctx context.Context, verification *oapi
 }
 
 func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verificationResult *oapi.JobVerification) error {
-	ctx, span := tracer.Start(ctx, "RollbackHooks.OnVerificationComplete")
+	ctx, span := hookTracer.Start(ctx, "RollbackHooks.OnVerificationComplete")
 	defer span.End()
 
 	span.SetAttributes(

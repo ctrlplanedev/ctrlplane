@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-var tracer = otel.Tracer("workspace/releasemanager/action/rollback")
+var tracer = otel.Tracer("RollbackAction")
 
 type RollbackAction struct {
 	store      *store.Store
