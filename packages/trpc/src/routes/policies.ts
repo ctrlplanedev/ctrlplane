@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
@@ -85,5 +86,33 @@ export const policiesRouter = router({
       });
 
       return policy;
+    }),
+
+  releaseTargets: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        policyId: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { workspaceId, policyId } = input;
+      const resp = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/policies/{policyId}/release-targets",
+        {
+          params: {
+            path: { workspaceId, policyId },
+          },
+        },
+      );
+
+      if (resp.error != null)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            resp.error.error ?? "Failed to get release targets for policy",
+        });
+
+      return resp.data.releaseTargets ?? [];
     }),
 });

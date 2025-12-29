@@ -49,6 +49,15 @@ export function meta() {
   ];
 }
 
+function useReleaseTargets(policyId: string) {
+  const { workspace } = useWorkspace();
+  const { data, isLoading } = trpc.policies.releaseTargets.useQuery({
+    workspaceId: workspace.id,
+    policyId: policyId,
+  });
+  return { releaseTargets: data ?? [], isLoading };
+}
+
 type Policy = NonNullable<
   NonNullable<RouterOutputs["policies"]["list"]>["policies"]
 >[number];
@@ -62,8 +71,8 @@ function PolicyRow({
   onDelete: () => void;
   onView: () => void;
 }) {
-  // Count release targets from computed relationships
-  const releaseTargetCount = 0;
+  const { releaseTargets, isLoading } = useReleaseTargets(policy.id);
+  const releaseTargetCount = releaseTargets.length;
 
   return (
     <TableRow className="cursor-pointer hover:bg-muted/50" onClick={onView}>
@@ -78,7 +87,7 @@ function PolicyRow({
         </Badge>
       </TableCell>
       <TableCell className="text-center font-mono text-sm">
-        {releaseTargetCount}
+        {isLoading ? "-" : releaseTargetCount}
       </TableCell>
       <TableCell className="text-muted-foreground">
         {format(new Date(policy.createdAt), "MMM d, yyyy")}
