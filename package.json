@@ -24,7 +24,8 @@
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo typecheck",
     "ui-add": "pnpm -F ui ui-add",
-    "openapi:merge": "pnpm -F openapi-merge merge"
+    "openapi:merge": "pnpm -F openapi-merge merge",
+    "generate": "turbo run generate"
   },
   "devDependencies": {
     "@ctrlplane/prettier-config": "workspace:*",

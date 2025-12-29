@@ -476,6 +476,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/release-targets/{releaseTargetId}/latest-jobs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the 10 latest jobs for a release target */
+    get: operations["getLatestJobs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/release-targets/{releaseTargetId}/lock": {
     parameters: {
       query?: never;
@@ -493,6 +510,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/release-targets/{releaseTargetId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a release target */
+    get: operations["getReleaseTarget"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/release-targets/{releaseTargetId}/pin": {
     parameters: {
       query?: never;
@@ -504,6 +538,23 @@ export interface paths {
     put?: never;
     /** Pin a version to a release target */
     post: operations["pinReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/redeploy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Redeploy a release target */
+    post: operations["redeployReleaseTarget"];
     delete?: never;
     options?: never;
     head?: never;
@@ -622,7 +673,8 @@ export interface paths {
     get?: never;
     put?: never;
     post?: never;
-    delete?: never;
+    /** Delete a resource relationship rule */
+    delete: operations["deleteResourceRelationshipRule"];
     options?: never;
     head?: never;
     /** Update a resource relationship rule */
@@ -1033,14 +1085,21 @@ export interface components {
       updatedAt: string;
     };
     BaseDeploymentVariableValue: {
-      resourceSelector: {
+      resourceSelector?: {
         [key: string]: unknown;
       } | null;
       isDefault?: boolean;
+      priority?: number;
     };
     DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
       value:
-        | (string | number | boolean | Record<string, never> | unknown[])
+        | (
+            | string
+            | number
+            | boolean
+            | Record<string, never>
+            | (string | number | boolean | Record<string, never>)[]
+          )
         | null;
       sensitive?: boolean;
     };
@@ -1052,7 +1111,13 @@ export interface components {
       path: string[];
       reference: string;
       defaultValue?:
-        | (string | number | boolean | Record<string, never> | unknown[])
+        | (
+            | string
+            | number
+            | boolean
+            | Record<string, never>
+            | (string | number | boolean | Record<string, never>)[]
+          )
         | null;
     };
     ReferenceDeploymentVariableValueWithId: components["schemas"]["ReferenceDeploymentVariableValue"] & {
@@ -1096,6 +1161,12 @@ export interface components {
       };
     };
     JobWithTrigger: components["schemas"]["Job"] & {
+      links?: {
+        [key: string]: string;
+      };
+      metadata?: {
+        [key: string]: string;
+      };
       release?: components["schemas"]["Release"];
       version?: components["schemas"]["DeploymentVersion"];
       deployment?: components["schemas"]["Deployment"];
@@ -1198,6 +1269,13 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    VersionDependency: {
+      /** Format: uuid */
+      deploymentId: string;
+      versionSelector?: {
+        [key: string]: unknown;
+      };
+    };
     DeploymentVersion: {
       /** Format: uuid */
       id: string;
@@ -1216,6 +1294,7 @@ export interface components {
       metadata?: {
         [key: string]: string;
       };
+      dependencies?: components["schemas"]["VersionDependency"][];
       /** @enum {string} */
       status?: "building" | "ready" | "failed";
     };
@@ -1338,7 +1417,13 @@ export interface components {
     };
     VariableMap: {
       [key: string]:
-        | (string | boolean | number | Record<string, never> | unknown[])
+        | (
+            | string
+            | boolean
+            | number
+            | Record<string, never>
+            | (string | boolean | number | Record<string, never>)[]
+          )
         | null;
     };
     ReferenceVariable: {
@@ -1350,11 +1435,16 @@ export interface components {
         | number
         | boolean
         | Record<string, never>
-        | unknown[];
+        | (string | number | boolean | Record<string, never>)[];
     };
     DirectVariable: {
       key: string;
-      value: string | number | boolean | Record<string, never> | unknown[];
+      value:
+        | string
+        | number
+        | boolean
+        | Record<string, never>
+        | (string | number | boolean | Record<string, never>)[];
       sensitive?: boolean;
     };
     Variable:
@@ -1477,20 +1567,19 @@ export interface components {
       sourceVersion?: string;
       targetKind?: string;
       targetVersion?: string;
-      metadataKeysMatch?: string[];
-      targetMetadataEquals?: {
-        key: string;
-        value: string;
-      }[];
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
     };
-    /** @enum {string} */
-    ResourceRelationshipRuleDependencyType:
-      | "depends_on"
-      | "depends_indirectly_on"
-      | "uses_at_runtime"
-      | "created_after"
-      | "provisioned_in"
-      | "inherits_from";
+    ResourceRelationshipRuleDependencyType: string;
+    MetadataEqualsConstraint: {
+      key?: string;
+      value?: string;
+    };
+    MetadataKeyMatchConstraint: {
+      sourceKey: string;
+      targetKey: string;
+    };
     ResourceRelationshipRule: {
       /** Format: uuid */
       id: string;
@@ -1503,13 +1592,11 @@ export interface components {
       description?: string;
       sourceKind: string;
       sourceVersion: string;
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
       targetKind?: string;
       targetVersion?: string;
-      targetMetadataEquals?: {
-        key: string;
-        value: string;
-      }[];
-      metadataKeysMatches?: string[];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
     };
     CreateResourceRelationshipRule: {
       workspaceId: string;
@@ -1520,13 +1607,11 @@ export interface components {
       description?: string;
       sourceKind: string;
       sourceVersion: string;
-      targetKind: string;
-      targetVersion: string;
-      metadataKeysMatches?: string[];
-      targetMetadataEquals?: {
-        key: string;
-        value: string;
-      }[];
+      targetKind?: string;
+      targetVersion?: string;
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
     };
     ReleaseTarget: {
       /** Format: uuid */
@@ -1800,6 +1885,7 @@ export interface operations {
           metadata?: {
             [key: string]: string;
           };
+          dependencies?: components["schemas"]["VersionDependency"][];
         };
       };
     };
@@ -1988,6 +2074,7 @@ export interface operations {
           metadata?: {
             [key: string]: string;
           };
+          dependencies?: components["schemas"]["VersionDependency"][];
         };
       };
     };
@@ -2306,7 +2393,9 @@ export interface operations {
   };
   listDeploymentVersions: {
     parameters: {
-      query?: never;
+      query?: {
+        status?: "ready" | "building" | "failed" | "rejected";
+      };
       header?: never;
       path: {
         deploymentId: string;
@@ -3285,6 +3374,53 @@ export interface operations {
       };
     };
   };
+  getLatestJobs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The release target ID */
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobWithTrigger"][];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Job not found. */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal server error. */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   lockReleaseTarget: {
     parameters: {
       query?: never;
@@ -3318,6 +3454,39 @@ export interface operations {
       };
       /** @description Internal server error */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The release target */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTarget"];
+        };
+      };
+      /** @description Release target not found */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -3393,6 +3562,52 @@ export interface operations {
         };
       };
       /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  redeployReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Release target not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
       500: {
         headers: {
           [name: string]: unknown;
@@ -3758,6 +3973,50 @@ export interface operations {
       };
     };
   };
+  deleteResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The deleted resource relationship rule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
+        };
+      };
+      /** @description The resource relationship rule was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An error occurred while deleting the resource relationship rule */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
   updateResourceRelationshipRule: {
     parameters: {
       query?: never;
@@ -4075,6 +4334,9 @@ export interface operations {
           identifier?: string;
           workspaceId?: string;
           metadata?: components["schemas"]["MetadataMap"];
+          config?: {
+            [key: string]: unknown;
+          };
           variables?: components["schemas"]["DirectVariable"][];
         };
       };
@@ -4155,7 +4417,9 @@ export interface operations {
           kind: string;
           identifier: string;
           version: string;
-          config: Record<string, never>;
+          config: {
+            [key: string]: unknown;
+          };
           metadata?: {
             [key: string]: string;
           };
@@ -4693,7 +4957,7 @@ export interface operations {
                 ruleId: string;
                 type: string;
                 reference: string;
-                target: components["schemas"]["Resource"];
+                source: components["schemas"]["Resource"];
               };
             };
           };

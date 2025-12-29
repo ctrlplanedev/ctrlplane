@@ -1556,6 +1556,7 @@ export interface components {
       id: string;
       policyId: string;
       retry?: components["schemas"]["RetryRule"];
+      rollback?: components["schemas"]["RollbackRule"];
       verification?: components["schemas"]["VerificationRule"];
       versionCooldown?: components["schemas"]["VersionCooldownRule"];
       versionSelector?: components["schemas"]["VersionSelectorRule"];
@@ -1739,6 +1740,15 @@ export interface components {
       maxRetries: number;
       /** @description Job statuses that count toward the retry limit. If null or empty, defaults to ["failure", "invalidIntegration", "invalidJobAgent"] for maxRetries > 0, or ["failure", "invalidIntegration", "invalidJobAgent", "successful"] for maxRetries = 0. Cancelled and skipped jobs never count by default (allows redeployment after cancellation). Example: ["failure", "cancelled"] will only count failed/cancelled jobs. */
       retryOnStatuses?: components["schemas"]["JobStatus"][];
+    };
+    RollbackRule: {
+      /** @description Job statuses that will trigger a rollback */
+      onJobStatuses?: components["schemas"]["JobStatus"][];
+      /**
+       * @description If true, a release target will be rolled back if the verification fails
+       * @default false
+       */
+      onVerificationFailure: boolean;
     };
     RuleEvaluation: {
       /** @description Whether the rule requires an action (e.g., approval, wait) */

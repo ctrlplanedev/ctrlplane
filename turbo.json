@@ -6,6 +6,25 @@
     "topo": {
       "dependsOn": ["^topo"]
     },
+    "generate": {
+      "dependsOn": ["^generate"],
+      "outputs": [
+        "openapi/openapi.json",
+        "oapi/openapi.json",
+        "src/types/openapi.ts",
+        "app/api/openapi.ts",
+        "src/schema.ts",
+        "api/schema.ts",
+        "drizzle/**"
+      ],
+      "cache": false
+    },
+    "@ctrlplane/web#generate": {
+      "dependsOn": ["@ctrlplane/web-api#generate"]
+    },
+    "@ctrlplane/workspace-engine-sdk#generate": {
+      "dependsOn": ["@ctrlplane/workspace-engine#generate"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [
