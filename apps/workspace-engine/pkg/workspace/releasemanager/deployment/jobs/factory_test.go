@@ -72,6 +72,11 @@ func createTestJobAgent(t *testing.T, id string, agentType string, config oapi.J
 
 func createTestRelease(t *testing.T, deploymentId, environmentId, resourceId, versionId string) *oapi.Release {
 	t.Helper()
+	return createTestReleaseWithJobAgentConfig(t, deploymentId, environmentId, resourceId, versionId, nil)
+}
+
+func createTestReleaseWithJobAgentConfig(t *testing.T, deploymentId, environmentId, resourceId, versionId string, jobAgentConfig map[string]interface{}) *oapi.Release {
+	t.Helper()
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
 			DeploymentId:  deploymentId,
@@ -79,12 +84,13 @@ func createTestRelease(t *testing.T, deploymentId, environmentId, resourceId, ve
 			ResourceId:    resourceId,
 		},
 		Version: oapi.DeploymentVersion{
-			Id:           versionId,
-			Tag:          "v1.0.0",
-			DeploymentId: deploymentId,
-			Config:       map[string]interface{}{},
-			Metadata:     map[string]string{},
-			CreatedAt:    time.Now(),
+			Id:             versionId,
+			Tag:            "v1.0.0",
+			DeploymentId:   deploymentId,
+			Config:         map[string]interface{}{},
+			Metadata:       map[string]string{},
+			CreatedAt:      time.Now(),
+			JobAgentConfig: jobAgentConfig,
 		},
 	}
 }
@@ -846,4 +852,304 @@ func TestFactory_CreateJobForRelease_EmptyJobAgentId(t *testing.T) {
 	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
 	require.NotNil(t, job.Message)
 	require.Contains(t, *job.Message, "No job agent configured")
+}
+
+// =============================================================================
+// Version JobAgentConfig Override Tests
+// =============================================================================
+
+func TestFactory_MergeJobAgentConfig_VersionOverridesDeployment(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"baseUrl": "https://api.example.com"
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"timeout": 30,
+		"env": "production"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	versionJobAgentConfig := map[string]interface{}{
+		"type":    "custom",
+		"timeout": 60,
+		"env":     "staging",
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusPending, job.Status)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	require.Equal(t, "https://api.example.com", configMap["baseUrl"])
+	require.Equal(t, float64(60), configMap["timeout"])
+	require.Equal(t, "staging", configMap["env"])
+}
+
+func TestFactory_MergeJobAgentConfig_VersionAddsNewFields(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"baseUrl": "https://api.example.com"
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"timeout": 30
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	versionJobAgentConfig := map[string]interface{}{
+		"type":      "custom",
+		"versionId": "v1.2.3",
+		"extra":     "field",
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	require.Equal(t, "https://api.example.com", configMap["baseUrl"])
+	require.Equal(t, float64(30), configMap["timeout"])
+	require.Equal(t, "v1.2.3", configMap["versionId"])
+	require.Equal(t, "field", configMap["extra"])
+}
+
+func TestFactory_MergeJobAgentConfig_EmptyVersionConfig_IsNoop(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"baseUrl": "https://api.example.com"
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"timeout": 30,
+		"env": "production"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusPending, job.Status)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	require.Equal(t, "https://api.example.com", configMap["baseUrl"])
+	require.Equal(t, float64(30), configMap["timeout"])
+	require.Equal(t, "production", configMap["env"])
+}
+
+func TestFactory_MergeJobAgentConfig_NilVersionConfig_IsNoop(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"baseUrl": "https://api.example.com"
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"timeout": 30
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", nil)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusPending, job.Status)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	require.Equal(t, "https://api.example.com", configMap["baseUrl"])
+	require.Equal(t, float64(30), configMap["timeout"])
+}
+
+func TestFactory_MergeJobAgentConfig_VersionDeepNestedOverride(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"settings": {
+			"debug": false,
+			"logging": {
+				"level": "info",
+				"format": "json"
+			}
+		}
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"settings": {
+			"debug": true,
+			"logging": {
+				"level": "debug"
+			}
+		}
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	versionJobAgentConfig := map[string]interface{}{
+		"type": "custom",
+		"settings": map[string]interface{}{
+			"logging": map[string]interface{}{
+				"level": "warn",
+			},
+		},
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	settings := configMap["settings"].(map[string]any)
+	require.Equal(t, true, settings["debug"])
+
+	logging := settings["logging"].(map[string]any)
+	require.Equal(t, "warn", logging["level"])
+	require.Equal(t, "json", logging["format"])
+}
+
+func TestFactory_MergeJobAgentConfig_VersionOverridesAll_GithubApp(t *testing.T) {
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "github-app",
+		"installationId": 12345,
+		"owner": "my-org"
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "github-app",
+		"repo": "my-repo",
+		"workflowId": 67890,
+		"ref": "main"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "github-app", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	versionJobAgentConfig := map[string]interface{}{
+		"type": "github-app",
+		"ref":  "release-v2",
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusPending, job.Status)
+
+	fullConfig, err := job.JobAgentConfig.AsFullGithubJobAgentConfig()
+	require.NoError(t, err)
+
+	require.Equal(t, 12345, fullConfig.InstallationId)
+	require.Equal(t, "my-org", fullConfig.Owner)
+	require.Equal(t, "my-repo", fullConfig.Repo)
+	require.Equal(t, int64(67890), fullConfig.WorkflowId)
+	require.NotNil(t, fullConfig.Ref)
+	require.Equal(t, "release-v2", *fullConfig.Ref)
 }

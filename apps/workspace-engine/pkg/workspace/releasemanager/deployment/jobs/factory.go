@@ -30,7 +30,7 @@ func NewFactory(store *store.Store) *Factory {
 	}
 }
 
-func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (oapi.FullJobAgentConfig, error) {
+func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.FullJobAgentConfig, error) {
 	runnerDiscriminator, err := jobAgent.Config.Discriminator()
 	if err != nil {
 		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config discriminator: %w", err)
@@ -97,11 +97,16 @@ func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oap
 	if err != nil {
 		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to convert job agent config to map: %w", err)
 	}
+	versionMap, err := toMap(version.JobAgentConfig)
+	if err != nil {
+		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to convert deployment version job agent config to map: %w", err)
+	}
 
-	// Merge job agent defaults first, then apply deployment overrides.
+	// Merge job agent defaults first, then apply deployment overrides, then apply version overrides.
 	mergedConfig := make(map[string]any)
 	deepMerge(mergedConfig, runnerMap)
 	deepMerge(mergedConfig, deploymentMap)
+	deepMerge(mergedConfig, versionMap)
 
 	// Ensure discriminator exists so the union can unmarshal.
 	mergedConfig["type"] = runnerDiscriminator
@@ -207,7 +212,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	// Merge job agent config: deployment config overrides agent defaults
-	mergedConfig, err := f.mergeJobAgentConfig(deployment, jobAgent)
+	mergedConfig, err := f.mergeJobAgentConfig(deployment, jobAgent, &release.Version)
 	if err != nil {
 		if action != nil {
 			action.AddStep("Configure job", trace.StepResultFail,
