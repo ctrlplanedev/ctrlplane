@@ -110,7 +110,7 @@ func (e *Evaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope
 
 // evaluateCEL evaluates a CEL-based selector
 func (e *Evaluator) evaluateCEL(
-	ctx context.Context,
+	_ context.Context,
 	scope evaluator.EvaluatorScope,
 	deployment *oapi.Deployment,
 	resource *oapi.Resource,
