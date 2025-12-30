@@ -3,6 +3,7 @@ import { Editor } from "@monaco-editor/react";
 import yaml from "js-yaml";
 
 import type { Environment } from "./types";
+import { useTheme } from "~/components/ThemeProvider";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ export const VersionActionsPanel: React.FC<VersionActionsPanelProps> = ({
   onOpenChange,
 }) => {
   const { jobAgentConfig } = version;
+  const { theme } = useTheme();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
@@ -56,9 +58,11 @@ export const VersionActionsPanel: React.FC<VersionActionsPanelProps> = ({
           <div className="space-y-2.5 pt-4">
             {"template" in jobAgentConfig && (
               <Editor
+                height="400px"
                 options={{ readOnly: true }}
-                language="yaml"
+                language="plaintext"
                 value={parseJobAgentConfig(jobAgentConfig)}
+                theme={theme === "dark" ? "vs-dark" : "vs"}
               />
             )}
           </div>
