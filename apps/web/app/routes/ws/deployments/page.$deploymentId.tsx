@@ -315,7 +315,7 @@ export default function DeploymentDetail() {
         <>
           <div className="w-fit min-w-full max-w-full shrink-0 overflow-clip border-b bg-accent/50">
             {versions.length > 0 && (
-              <div className="flex min-h-[175px] min-w-full flex-grow gap-2 overflow-x-auto p-4">
+              <div className="flex min-h-[175px] min-w-full grow gap-2 overflow-x-auto p-4">
                 {versions.map((version) => {
                   const currentReleaseTargets = releaseTargets.filter(
                     (rt) => rt.state.currentRelease?.version.id === version.id,
