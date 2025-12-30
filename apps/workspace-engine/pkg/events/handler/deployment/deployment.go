@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"sort"
 	"time"
 
@@ -159,35 +158,11 @@ func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets 
 	return nil
 }
 
-func getIsJobAgentConfigChanged(oldDeployment *oapi.Deployment, newDeployment *oapi.Deployment) bool {
-	if newDeployment == nil {
-		return false
-	}
-
-	if oldDeployment == nil {
-		return true
-	}
-
-	return !reflect.DeepEqual(oldDeployment.JobAgentConfig, newDeployment.JobAgentConfig)
-}
-
 func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
 		for _, releaseTarget := range releaseTargets {
 			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
-			)
-		}
-	}
-	return nil
-}
-
-func redeployTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
-	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
-		for _, releaseTarget := range releaseTargets {
-			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
-				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
-				releasemanager.WithSkipEligibilityCheck(true),
 			)
 		}
 	}
@@ -204,7 +179,6 @@ func HandleDeploymentUpdated(
 		return err
 	}
 
-	oldDeployment, _ := ws.Deployments().Get(deployment.Id)
 	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
 		return err
 	}
@@ -230,11 +204,6 @@ func HandleDeploymentUpdated(
 	err = upsertTargets(ctx, ws, addedReleaseTargets)
 	if err != nil {
 		return err
-	}
-
-	isJobAgentConfigChanged := getIsJobAgentConfigChanged(oldDeployment, deployment)
-	if isJobAgentConfigChanged {
-		return redeployTargets(ctx, ws, deployment, releaseTargets)
 	}
 
 	err = reconcileTargets(ctx, ws, deployment, addedReleaseTargets)
