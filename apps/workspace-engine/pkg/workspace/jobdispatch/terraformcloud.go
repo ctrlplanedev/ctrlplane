@@ -199,8 +199,14 @@ func (d *TerraformCloudDispatcher) generateWorkspace(job *oapi.TemplatableJob, t
 		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	// Convert to map for lowercase template keys (consistent with CEL and verification providers)
+	templateData, err := structToMap(job)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert job to template data: %w", err)
+	}
+
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, job); err != nil {
+	if err := t.Execute(&buf, templateData); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 

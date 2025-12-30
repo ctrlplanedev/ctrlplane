@@ -100,6 +100,14 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("failed to get templatable job with release: %w", err)
 	}
 
+	// Convert to map for lowercase template keys (consistent with CEL and verification providers)
+	templateData, err := structToMap(templatableJobWithRelease)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to convert job to template data")
+		return fmt.Errorf("failed to convert job to template data: %w", err)
+	}
+
 	span.SetAttributes(attribute.String("cfg", fmt.Sprintf("%+v", cfg)))
 	span.SetAttributes(attribute.String("argocd.server_url", cfg.ServerUrl))
 	t, err := template.New("argoCDAgentConfig").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(cfg.Template)
@@ -110,7 +118,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	}
 
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, templatableJobWithRelease); err != nil {
+	if err := t.Execute(&buf, templateData); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to execute template")
 		return fmt.Errorf("failed to execute template: %w", err)
@@ -342,4 +350,19 @@ func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 
 	span.SetStatus(codes.Ok, "verification started")
 	return nil
+}
+
+// structToMap converts a struct to a map using JSON marshaling.
+// This ensures template keys use lowercase names (from json tags),
+// consistent with CEL selectors and verification providers.
+func structToMap(v any) (map[string]any, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
