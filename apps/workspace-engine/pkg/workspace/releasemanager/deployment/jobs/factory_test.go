@@ -213,10 +213,9 @@ func TestFactory_MergeJobAgentConfig_ArgoCD_BasicMerge(t *testing.T) {
 		"serverUrl": "https://argocd.example.com"
 	}`)
 
-	// Deployment has template (deployment override)
+	// Deployment has type only (no template - template comes from version)
 	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
-		"type": "argo-cd",
-		"template": "apiVersion: argoproj.io/v1alpha1\nkind: Application\nmetadata:\n  name: {{ .deployment.name }}"
+		"type": "argo-cd"
 	}`)
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "argo-cd", jobAgentConfig)
@@ -225,7 +224,12 @@ func TestFactory_MergeJobAgentConfig_ArgoCD_BasicMerge(t *testing.T) {
 	st.JobAgents.Upsert(ctx, jobAgent)
 	_ = st.Deployments.Upsert(ctx, deployment)
 
-	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+	// Version has template (version override)
+	versionJobAgentConfig := map[string]interface{}{
+		"type":     "argo-cd",
+		"template": "apiVersion: argoproj.io/v1alpha1\nkind: Application\nmetadata:\n  name: {{ .deployment.name }}",
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
 
 	factory := NewFactory(st)
 	job, err := factory.CreateJobForRelease(ctx, release, nil)
@@ -242,7 +246,7 @@ func TestFactory_MergeJobAgentConfig_ArgoCD_BasicMerge(t *testing.T) {
 	require.Equal(t, "secret-api-key", fullConfig.ApiKey)
 	require.Equal(t, "https://argocd.example.com", fullConfig.ServerUrl)
 
-	// From Deployment
+	// From Version
 	require.Contains(t, fullConfig.Template, "argoproj.io/v1alpha1")
 	require.Contains(t, fullConfig.Template, "{{ .deployment.name }}")
 

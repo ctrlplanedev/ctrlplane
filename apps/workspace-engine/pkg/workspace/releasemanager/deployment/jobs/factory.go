@@ -39,6 +39,7 @@ func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oap
 	var deploymentConfig interface{}
 	switch runnerDiscriminator {
 	case string(oapi.TestRunner):
+	case string(oapi.ArgoCd):
 	default:
 		deploymentDiscriminator, err := deployment.JobAgentConfig.Discriminator()
 		if err != nil {
