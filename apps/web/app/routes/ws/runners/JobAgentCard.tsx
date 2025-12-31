@@ -2,7 +2,10 @@ import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { SiArgo, SiGithub, SiTerraform } from "@icons-pack/react-simple-icons";
 import { PlayIcon } from "lucide-react";
 
+import { trpc } from "~/api/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { useWorkspace } from "~/components/WorkspaceProvider";
+import { Badge } from "../../../components/ui/badge";
 import {
   ArgoCDConfig,
   argoCdJobAgentConfig,
@@ -72,6 +75,48 @@ function ConfigSection({ config, id }: { config: JobAgentConfig; id: string }) {
   );
 }
 
+function useAgentDeployments(jobAgentId: string) {
+  const { workspace } = useWorkspace();
+  const deploymentsQuery = trpc.jobAgents.deployments.useQuery({
+    workspaceId: workspace.id,
+    jobAgentId,
+  });
+  const deployments = deploymentsQuery.data?.items ?? [];
+
+  return { deployments, isLoading: deploymentsQuery.isLoading };
+}
+
+function DeploymentList({ jobAgentId }: { jobAgentId: string }) {
+  const { deployments, isLoading } = useAgentDeployments(jobAgentId);
+  const { workspace } = useWorkspace();
+  if (isLoading) return <div>Loading...</div>;
+  if (deployments.length === 0)
+    return (
+      <Badge variant="secondary" className="text-xs">
+        No deployments
+      </Badge>
+    );
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {deployments.map((deployment) => (
+        <a
+          href={`/${workspace.slug}/deployments/${deployment.id}`}
+          key={deployment.id}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Badge
+            key={deployment.id}
+            className="bg-blue-500 text-xs hover:bg-blue-400"
+          >
+            {deployment.name}
+          </Badge>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function TypeIcon({ config }: { config: JobAgentConfig }) {
   const githubParseResult = githubJobAgentConfig.safeParse(config);
   if (githubParseResult.success) return <SiGithub className="size-4" />;
@@ -98,8 +143,9 @@ export function JobAgentCard({ jobAgent }: { jobAgent: JobAgent }) {
           <JobAgentActions jobAgent={jobAgent} />
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex h-full flex-col justify-between gap-4">
         <ConfigSection {...jobAgent} />
+        <DeploymentList jobAgentId={jobAgent.id} />
       </CardContent>
     </Card>
   );

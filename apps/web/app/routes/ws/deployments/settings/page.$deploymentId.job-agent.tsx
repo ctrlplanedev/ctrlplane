@@ -1,4 +1,3 @@
-import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type { Control, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";

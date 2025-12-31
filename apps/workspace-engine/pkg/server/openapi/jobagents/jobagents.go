@@ -105,3 +105,42 @@ func (s *JobAgents) GetJobsForJobAgent(c *gin.Context, workspaceId string, jobAg
 		"items":  jobsList[start:end],
 	})
 }
+
+func (s *JobAgents) GetDeploymentsForJobAgent(c *gin.Context, workspaceId string, jobAgentId string, params oapi.GetDeploymentsForJobAgentParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	deployments := ws.Deployments().Items()
+	deploymentsList := make([]*oapi.Deployment, 0, len(deployments))
+	for _, deployment := range deployments {
+		if deployment.JobAgentId != nil && *deployment.JobAgentId == jobAgentId {
+			deploymentsList = append(deploymentsList, deployment)
+		}
+	}
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(deploymentsList)
+	start := min(offset, total)
+	end := min(start+limit, total)
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  deploymentsList[start:end],
+	})
+}
