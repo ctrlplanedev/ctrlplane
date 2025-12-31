@@ -19,6 +19,7 @@ import (
 	argocdclient "github.com/argoproj/argo-cd/v2/pkg/apiclient"
 	applicationpkg "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -68,6 +69,22 @@ func unmarshalApplication(data []byte, app *v1alpha1.Application) error {
 	}
 
 	return nil
+}
+
+// isRetryableError checks if an error is a transient error that should be retried
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	// Check for HTTP status codes that indicate transient failures
+	return strings.Contains(errStr, "502") ||
+		strings.Contains(errStr, "503") ||
+		strings.Contains(errStr, "504") ||
+		strings.Contains(errStr, "connection refused") ||
+		strings.Contains(errStr, "connection reset") ||
+		strings.Contains(errStr, "timeout") ||
+		strings.Contains(errStr, "temporarily unavailable")
 }
 
 func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
@@ -164,10 +181,40 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	)
 
 	upsert := true
-	_, err = appClient.Create(ctx, &applicationpkg.ApplicationCreateRequest{
-		Application: &app,
-		Upsert:      &upsert,
-	})
+
+	err = retry.Do(
+		func() error {
+			_, createErr := appClient.Create(ctx, &applicationpkg.ApplicationCreateRequest{
+				Application: &app,
+				Upsert:      &upsert,
+			})
+			if createErr != nil {
+				if isRetryableError(createErr) {
+					log.Warn("ArgoCD application creation failed with retryable error, will retry",
+						"job_id", job.Id,
+						"app_name", app.ObjectMeta.Name,
+						"error", createErr)
+					return createErr // Return error to trigger retry
+				}
+				// Non-retryable error - stop retrying
+				return retry.Unrecoverable(createErr)
+			}
+			return nil
+		},
+		retry.Attempts(5),
+		retry.Delay(1*time.Second),
+		retry.MaxDelay(10*time.Second),
+		retry.DelayType(retry.BackOffDelay),
+		retry.OnRetry(func(n uint, err error) {
+			log.Warn("Retrying ArgoCD application creation",
+				"attempt", n+1,
+				"job_id", job.Id,
+				"app_name", app.ObjectMeta.Name,
+				"error", err)
+			span.AddEvent("Retrying ArgoCD application creation")
+		}),
+		retry.Context(ctx),
+	)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create ArgoCD application")
