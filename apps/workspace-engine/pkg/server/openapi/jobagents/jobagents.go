@@ -2,6 +2,7 @@ package jobagents
 
 import (
 	"net/http"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 
@@ -122,6 +123,10 @@ func (s *JobAgents) GetDeploymentsForJobAgent(c *gin.Context, workspaceId string
 			deploymentsList = append(deploymentsList, deployment)
 		}
 	}
+
+	sort.Slice(deploymentsList, func(i, j int) bool {
+		return deploymentsList[i].Name < deploymentsList[j].Name
+	})
 
 	limit := 50
 	if params.Limit != nil {
