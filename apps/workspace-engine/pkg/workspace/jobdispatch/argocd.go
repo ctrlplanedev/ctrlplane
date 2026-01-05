@@ -76,9 +76,9 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	
+
 	errStr := strings.ToLower(err.Error())
-	
+
 	// Patterns that indicate transient failures worth retrying
 	retryablePatterns := []string{
 		// HTTP status codes indicating transient failures
@@ -97,13 +97,13 @@ func isRetryableError(err error) bool {
 		"invalid destination",
 		"unknown cluster",
 	}
-	
+
 	for _, pattern := range retryablePatterns {
 		if strings.Contains(errStr, pattern) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
