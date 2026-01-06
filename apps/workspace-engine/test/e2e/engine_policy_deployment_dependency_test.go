@@ -365,24 +365,17 @@ func TestEngine_PolicyDeploymentDependency_ArgoCDRetryBehavior(t *testing.T) {
 		"Job should be in a valid state: %v, got: %v", validStatuses, appJob.Status)
 }
 
-// TestEngine_PolicyDeploymentDependency_DocumentsRaceCondition demonstrates the
-// CURRENT (buggy) behavior where policy allows deployment immediately after job
-// success, without verifying ArgoCD resource is synced.
-//
-// ⚠️ THIS TEST PASSES WHILE THE BUG EXISTS ⚠️
-//
-// This is a DOCUMENTATION TEST that shows:
+
+// TestEngine_PolicyDeploymentDependency_PolicyTimingIssue demonstrates the race condition:
 // 1. Upstream (destination) job completes successfully
 // 2. Policy evaluator IMMEDIATELY allows downstream deployment
 //    (only checks job.Status == Successful, doesn't verify ArgoCD resource is synced)
 // 3. In production: Downstream dispatch to ArgoCD would fail because
 //    the destination hasn't finished syncing yet
 //
-// Once a fix is implemented (retry logic or resource verification),
-// this test should be:
-// - Removed (if behavior changes make it invalid), OR
-// - Rewritten to validate the fix works correctly
-func TestEngine_PolicyDeploymentDependency_DocumentsRaceCondition(t *testing.T) {
+// This test validates that the policy allows deployment too early,
+// which is the root cause of the "unable to find destination server" errors.
+func TestEngine_PolicyDeploymentDependency_PolicyTimingIssue(t *testing.T) {
 	destinationJobAgentID := "destination-agent"
 	appJobAgentID := "app-agent"
 
@@ -474,32 +467,29 @@ func TestEngine_PolicyDeploymentDependency_DocumentsRaceCondition(t *testing.T) 
 		},
 	})
 
-	// Step 4: ⚠️ RACE CONDITION DEMONSTRATED HERE ⚠️
-	// CURRENT BEHAVIOR (documents the bug):
-	// - Policy sees job.Status == Successful
-	// - Policy IMMEDIATELY allows downstream deployment
-	// - Does NOT check if ArgoCD destination is actually synced
+	// Step 4: ⚠️ RACE CONDITION - This is where the bug manifests ⚠️
+	// Current buggy behavior: Policy evaluator sees job.Status == Successful
+	// and IMMEDIATELY allows downstream deployment without checking if
+	// ArgoCD destination is actually synced.
+	
+	// Check immediately after destination success - app should still be blocked
 	appJobs = getAgentJobsSortedByNewest(engine, appJobAgentID)
-	assert.Equal(t, 1, len(appJobs),
-		"DOCUMENTS BUG: Policy allows app deployment immediately after job success")
-
-	appJob := appJobs[0]
-	assert.Equal(t, oapi.JobStatusPending, appJob.Status,
-		"DOCUMENTS BUG: App job created and would dispatch to ArgoCD")
-
-	// ⚠️ In production at this point:
-	// 1. This appJob would dispatch to ArgoCD API
-	// 2. ArgoCD would return: "unable to find destination server"
-	// 3. Job would be marked InvalidJobAgent (now with error message!)
+	
+	// ❌ THIS ASSERTION WILL FAIL - exposing the bug
+	// The policy should NOT allow deployment immediately because ArgoCD
+	// destinations need time to sync. The app job should still be blocked.
+	assert.Equal(t, 0, len(appJobs),
+		"EXPECTED BEHAVIOR: App should remain blocked immediately after destination job success "+
+		"to allow time for ArgoCD destination to sync. "+
+		"ACTUAL BUG: Policy allows deployment immediately, causing 'unable to find destination server' errors")
+	
+	// Expected fix: The policy evaluator should either:
+	// 1. Add a delay/grace period after ArgoCD destination jobs succeed, OR
+	// 2. Check ArgoCD sync status before allowing dependent deployments, OR  
+	// 3. Mark downstream jobs with a flag to wait for ArgoCD sync
 	//
-	// The test demonstrates that the policy evaluation happens too early,
-	// before ArgoCD has finished its internal sync process.
-
-	t.Log("⚠️  DOCUMENTATION TEST - This test PASSES while bug exists:")
-	t.Log("   - Destination job succeeded")
-	t.Log("   - Policy immediately allowed downstream (BUG)")
-	t.Log("   - ArgoCD destination might not be synced yet")
-	t.Log("   - Production dispatch would fail with 'unable to find destination server'")
-	t.Log("")
-	t.Log("   After implementing fix (retry or verification), update or remove this test")
+	// When the fix is implemented, the above assertion will pass because:
+	// - The policy will add a delay/wait mechanism
+	// - The app job won't be created immediately
+	// - Only after ArgoCD sync is verified will the app job be created
 }
