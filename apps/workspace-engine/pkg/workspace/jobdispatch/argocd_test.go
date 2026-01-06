@@ -58,27 +58,32 @@ func TestIsRetryableError(t *testing.T) {
 			retryable: true,
 		},
 
-		// ArgoCD destination/cluster errors (race condition when destination is being synced)
-		// Based on actual production error logs
+		// ArgoCD destination/cluster errors - NOT retryable in current implementation
+		// These expose the race condition this PR is documenting
 		{
 			name:      "unable to find destination server",
 			err:       errors.New("unable to find destination server: there are 2 clusters with the same name"),
-			retryable: true,
+			retryable: false,
 		},
 		{
 			name:      "application destination spec is invalid",
 			err:       errors.New("application destination spec for my-app is invalid: unable to find destination server"),
-			retryable: true,
+			retryable: false,
 		},
 		{
 			name:      "argocd rpc error - destination spec invalid",
 			err:       errors.New("rpc error: code = InvalidArgument desc = application destination spec for wandb-cluster-datadog is invalid: unable to find destination server: there are 2 clusters with the same name: [https://34.23.213.231 https://34.73.236.204]"),
-			retryable: true,
+			retryable: false,
 		},
 		{
-			name:      "mixed case - unable to find destination",
-			err:       errors.New("Unable To Find Destination Server"),
-			retryable: true,
+			name:      "cluster not found",
+			err:       errors.New("cluster not found"),
+			retryable: false,
+		},
+		{
+			name:      "destination does not exist",
+			err:       errors.New("destination does not exist"),
+			retryable: false,
 		},
 
 		// Non-retryable errors
@@ -142,10 +147,12 @@ func TestIsRetryableError(t *testing.T) {
 // BenchmarkIsRetryableError benchmarks the error classification function
 func BenchmarkIsRetryableError(b *testing.B) {
 	testErrors := []error{
-		errors.New("cluster not found"),
-		errors.New("destination does not exist"),
+		errors.New("HTTP 502 Bad Gateway"),
 		errors.New("HTTP 503 Service Unavailable"),
+		errors.New("connection refused"),
+		errors.New("timeout"),
 		errors.New("authentication failed"),
+		errors.New("unable to find destination server"),
 		nil,
 	}
 

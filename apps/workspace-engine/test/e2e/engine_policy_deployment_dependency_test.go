@@ -365,13 +365,12 @@ func TestEngine_PolicyDeploymentDependency_ArgoCDRetryBehavior(t *testing.T) {
 		"Job should be in a valid state: %v, got: %v", validStatuses, appJob.Status)
 }
 
-
 // TestEngine_PolicyDeploymentDependency_PolicyTimingIssue demonstrates the race condition:
-// 1. Upstream (destination) job completes successfully
-// 2. Policy evaluator IMMEDIATELY allows downstream deployment
-//    (only checks job.Status == Successful, doesn't verify ArgoCD resource is synced)
-// 3. In production: Downstream dispatch to ArgoCD would fail because
-//    the destination hasn't finished syncing yet
+//  1. Upstream (destination) job completes successfully
+//  2. Policy evaluator IMMEDIATELY allows downstream deployment
+//     (only checks job.Status == Successful, doesn't verify ArgoCD resource is synced)
+//  3. In production: Downstream dispatch to ArgoCD would fail because
+//     the destination hasn't finished syncing yet
 //
 // This test validates that the policy allows deployment too early,
 // which is the root cause of the "unable to find destination server" errors.
@@ -471,21 +470,21 @@ func TestEngine_PolicyDeploymentDependency_PolicyTimingIssue(t *testing.T) {
 	// Current buggy behavior: Policy evaluator sees job.Status == Successful
 	// and IMMEDIATELY allows downstream deployment without checking if
 	// ArgoCD destination is actually synced.
-	
+
 	// Check immediately after destination success - app should still be blocked
 	appJobs = getAgentJobsSortedByNewest(engine, appJobAgentID)
-	
+
 	// ❌ THIS ASSERTION WILL FAIL - exposing the bug
 	// The policy should NOT allow deployment immediately because ArgoCD
 	// destinations need time to sync. The app job should still be blocked.
 	assert.Equal(t, 0, len(appJobs),
 		"EXPECTED BEHAVIOR: App should remain blocked immediately after destination job success "+
-		"to allow time for ArgoCD destination to sync. "+
-		"ACTUAL BUG: Policy allows deployment immediately, causing 'unable to find destination server' errors")
-	
+			"to allow time for ArgoCD destination to sync. "+
+			"ACTUAL BUG: Policy allows deployment immediately, causing 'unable to find destination server' errors")
+
 	// Expected fix: The policy evaluator should either:
 	// 1. Add a delay/grace period after ArgoCD destination jobs succeed, OR
-	// 2. Check ArgoCD sync status before allowing dependent deployments, OR  
+	// 2. Check ArgoCD sync status before allowing dependent deployments, OR
 	// 3. Mark downstream jobs with a flag to wait for ArgoCD sync
 	//
 	// When the fix is implemented, the above assertion will pass because:
