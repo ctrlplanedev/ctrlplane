@@ -59,66 +59,25 @@ func TestIsRetryableError(t *testing.T) {
 		},
 
 		// ArgoCD destination/cluster errors (race condition when destination is being synced)
+		// Based on actual production error logs
 		{
-			name:      "cluster not found",
-			err:       errors.New("cluster not found"),
+			name:      "unable to find destination server",
+			err:       errors.New("unable to find destination server: there are 2 clusters with the same name"),
 			retryable: true,
 		},
 		{
-			name:      "cluster not found - uppercase",
-			err:       errors.New("Cluster Not Found"),
+			name:      "application destination spec is invalid",
+			err:       errors.New("application destination spec for my-app is invalid: unable to find destination server"),
 			retryable: true,
 		},
 		{
-			name:      "destination not found",
-			err:       errors.New("destination not found"),
+			name:      "argocd rpc error - destination spec invalid",
+			err:       errors.New("rpc error: code = InvalidArgument desc = application destination spec for wandb-cluster-datadog is invalid: unable to find destination server: there are 2 clusters with the same name: [https://34.23.213.231 https://34.73.236.204]"),
 			retryable: true,
 		},
 		{
-			name:      "cluster does not exist",
-			err:       errors.New("cluster does not exist"),
-			retryable: true,
-		},
-		{
-			name:      "destination does not exist",
-			err:       errors.New("destination does not exist"),
-			retryable: true,
-		},
-		{
-			name:      "destination server not found",
-			err:       errors.New("destination server not found"),
-			retryable: true,
-		},
-		{
-			name:      "server not found",
-			err:       errors.New("server not found"),
-			retryable: true,
-		},
-		{
-			name:      "invalid destination",
-			err:       errors.New("invalid destination: cluster not configured"),
-			retryable: true,
-		},
-		{
-			name:      "unknown cluster",
-			err:       errors.New("unknown cluster: https://my-cluster"),
-			retryable: true,
-		},
-
-		// ArgoCD realistic error messages
-		{
-			name:      "argocd api error - destination server not found",
-			err:       errors.New("rpc error: code = InvalidArgument desc = application spec is invalid: InvalidSpecError: Destination server not found"),
-			retryable: true,
-		},
-		{
-			name:      "argocd cluster does not exist error",
-			err:       errors.New("application destination spec is invalid: cluster does not exist: https://1.2.3.4"),
-			retryable: true,
-		},
-		{
-			name:      "mixed case cluster error",
-			err:       errors.New("CLUSTER NOT FOUND in ArgoCD"),
+			name:      "mixed case - unable to find destination",
+			err:       errors.New("Unable To Find Destination Server"),
 			retryable: true,
 		},
 

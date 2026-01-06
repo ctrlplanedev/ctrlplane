@@ -76,35 +76,15 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-
-	errStr := strings.ToLower(err.Error())
-
-	// Patterns that indicate transient failures worth retrying
-	retryablePatterns := []string{
-		// HTTP status codes indicating transient failures
-		"502", "503", "504",
-		"connection refused",
-		"connection reset",
-		"timeout",
-		"temporarily unavailable",
-		// ArgoCD destination/cluster errors (race condition when destination is being synced)
-		"cluster not found",
-		"destination not found",
-		"cluster does not exist",
-		"destination does not exist",
-		"destination server not found",
-		"server not found",
-		"invalid destination",
-		"unknown cluster",
-	}
-
-	for _, pattern := range retryablePatterns {
-		if strings.Contains(errStr, pattern) {
-			return true
-		}
-	}
-
-	return false
+	errStr := err.Error()
+	// Check for HTTP status codes that indicate transient failures
+	return strings.Contains(errStr, "502") ||
+		strings.Contains(errStr, "503") ||
+		strings.Contains(errStr, "504") ||
+		strings.Contains(errStr, "connection refused") ||
+		strings.Contains(errStr, "connection reset") ||
+		strings.Contains(errStr, "timeout") ||
+		strings.Contains(errStr, "temporarily unavailable")
 }
 
 func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {

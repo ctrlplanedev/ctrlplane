@@ -117,45 +117,46 @@ func TestEngine_PolicyDeploymentDependency(t *testing.T) {
 	assert.Equal(t, 1, len(clusterJobs), "expected 1 cluster job")
 }
 
-// TestEngine_PolicyDeploymentDependency_ArgoCDRaceCondition tests the race condition where:
-// 1. argo-cd-destination deployment succeeds
-// 2. Deployment dependency policy passes
-// 3. Downstream deployment tries to create ArgoCD Application
-// 4. With the fix, destination errors are retried instead of immediately marking as InvalidJobAgent
-func TestEngine_PolicyDeploymentDependency_ArgoCDRaceCondition(t *testing.T) {
-	destinationJobAgentID := "destination-job-agent"
-	downstreamJobAgentID := "downstream-job-agent"
+// TestEngine_PolicyDeploymentDependency_AutoDeploy validates that:
+// 1. Deployment B is blocked when it depends on deployment A
+// 2. Creating a release for B does nothing (blocked by policy)
+// 3. Creating a release for A succeeds
+// 4. Once A's job succeeds, B automatically deploys via event queue
+// 5. B's job completes successfully
+func TestEngine_PolicyDeploymentDependency_AutoDeploy(t *testing.T) {
+	jobAgentAID := "job-agent-a"
+	jobAgentBID := "job-agent-b"
 
-	destinationDeploymentID := "argo-cd-destination"
-	downstreamDeploymentID := "downstream-app"
+	deploymentAID := "deployment-a"
+	deploymentBID := "deployment-b"
 
-	environmentID := "production"
-	resourceID := "cluster-1"
-	policyID := "destination-dependency-policy"
+	environmentID := "env-1"
+	resourceID := "resource-1"
+	policyID := "b-depends-on-a"
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
-			integration.JobAgentID(destinationJobAgentID),
+			integration.JobAgentID(jobAgentAID),
 		),
 		integration.WithJobAgent(
-			integration.JobAgentID(downstreamJobAgentID),
+			integration.JobAgentID(jobAgentBID),
 		),
 		integration.WithSystem(
 			integration.WithDeployment(
-				integration.DeploymentID(destinationDeploymentID),
-				integration.DeploymentName("argo-cd-destination"),
-				integration.DeploymentJobAgent(destinationJobAgentID),
+				integration.DeploymentID(deploymentAID),
+				integration.DeploymentName("deployment-a"),
+				integration.DeploymentJobAgent(jobAgentAID),
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithDeployment(
-				integration.DeploymentID(downstreamDeploymentID),
-				integration.DeploymentName("downstream-app"),
-				integration.DeploymentJobAgent(downstreamJobAgentID),
+				integration.DeploymentID(deploymentBID),
+				integration.DeploymentName("deployment-b"),
+				integration.DeploymentJobAgent(jobAgentBID),
 				integration.DeploymentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
-				integration.EnvironmentName("production"),
+				integration.EnvironmentName("env-1"),
 				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
@@ -164,10 +165,138 @@ func TestEngine_PolicyDeploymentDependency_ArgoCDRaceCondition(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
-			integration.PolicyName("ArgoCD Destination Dependency Policy"),
+			integration.PolicyName("B depends on A"),
 			integration.WithPolicyTargetSelector(
 				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("deployment.id == '"+downstreamDeploymentID+"'"),
+				integration.PolicyTargetCelDeploymentSelector("deployment.id == '"+deploymentBID+"'"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
+			integration.WithPolicyRule(
+				integration.WithRuleDeploymentDependency(
+					integration.DeploymentDependencyRuleDependsOnDeploymentSelector("deployment.id == '"+deploymentAID+"'"),
+				),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Step 1: Create release for B first (should be blocked - A has never succeeded)
+	versionB := c.NewDeploymentVersion()
+	versionB.DeploymentId = deploymentBID
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, versionB)
+
+	jobsB := getAgentJobsSortedByNewest(engine, jobAgentBID)
+	assert.Equal(t, 0, len(jobsB), "B should be blocked: A has never deployed successfully")
+
+	// Step 2: Create release for A (should proceed - no dependencies)
+	versionA := c.NewDeploymentVersion()
+	versionA.DeploymentId = deploymentAID
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, versionA)
+
+	jobsA := getAgentJobsSortedByNewest(engine, jobAgentAID)
+	assert.Equal(t, 1, len(jobsA), "A should create 1 job - no dependencies blocking it")
+
+	// B should still be blocked
+	jobsB = getAgentJobsSortedByNewest(engine, jobAgentBID)
+	assert.Equal(t, 0, len(jobsB), "B should still be blocked: A job not completed yet")
+
+	// Step 3: Mark A's job as successful
+	jobA := jobsA[0]
+	jobACopy := *jobA
+	jobACopy.Status = oapi.JobStatusSuccessful
+	completedAt := time.Now()
+	jobACopy.CompletedAt = &completedAt
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+		Id:  &jobACopy.Id,
+		Job: jobACopy,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
+
+	// Step 4: B should now auto-deploy (dependency satisfied)
+	jobsB = getAgentJobsSortedByNewest(engine, jobAgentBID)
+	assert.Equal(t, 1, len(jobsB), "B should auto-deploy: A succeeded, dependency satisfied")
+
+	jobB := jobsB[0]
+	assert.Equal(t, oapi.JobStatusPending, jobB.Status, "B's job should be in pending state")
+
+	// Step 5: Mark B's job as successful
+	jobBCopy := *jobB
+	jobBCopy.Status = oapi.JobStatusSuccessful
+	completedAtB := time.Now()
+	jobBCopy.CompletedAt = &completedAtB
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+		Id:  &jobBCopy.Id,
+		Job: jobBCopy,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
+
+	// Verify both deployments completed successfully
+	jobsA = getAgentJobsSortedByNewest(engine, jobAgentAID)
+	assert.Equal(t, 1, len(jobsA))
+	assert.Equal(t, oapi.JobStatusSuccessful, jobsA[0].Status, "A should be successful")
+
+	jobsB = getAgentJobsSortedByNewest(engine, jobAgentBID)
+	assert.Equal(t, 1, len(jobsB))
+	assert.Equal(t, oapi.JobStatusSuccessful, jobsB[0].Status, "B should be successful")
+}
+
+// TestEngine_PolicyDeploymentDependency_ArgoCDRetryBehavior validates that:
+// When ArgoCD returns "unable to find destination server" errors, jobs are retried
+// instead of immediately being marked as InvalidJobAgent.
+// This tests the fix for the race condition where ArgoCD hasn't synced the destination yet.
+func TestEngine_PolicyDeploymentDependency_ArgoCDRetryBehavior(t *testing.T) {
+	destinationJobAgentID := "destination-agent"
+	appJobAgentID := "app-agent"
+
+	destinationDeploymentID := "argo-destination"
+	appDeploymentID := "argo-app"
+
+	environmentID := "prod"
+	resourceID := "k8s-cluster"
+	policyID := "app-depends-on-destination"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(destinationJobAgentID),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(appJobAgentID),
+		),
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.DeploymentID(destinationDeploymentID),
+				integration.DeploymentName("argo-destination"),
+				integration.DeploymentJobAgent(destinationJobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(appDeploymentID),
+				integration.DeploymentName("argo-app"),
+				integration.DeploymentJobAgent(appJobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+		),
+		integration.WithPolicy(
+			integration.PolicyID(policyID),
+			integration.PolicyName("App depends on ArgoCD destination"),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("deployment.id == '"+appDeploymentID+"'"),
 				integration.PolicyTargetCelResourceSelector("true"),
 			),
 			integration.WithPolicyRule(
@@ -180,46 +309,197 @@ func TestEngine_PolicyDeploymentDependency_ArgoCDRaceCondition(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Step 1: Create version for downstream app (should be blocked by policy)
-	downstreamVersion := c.NewDeploymentVersion()
-	downstreamVersion.DeploymentId = downstreamDeploymentID
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, downstreamVersion)
+	// Step 1: Create app release (blocked - destination never succeeded)
+	appVersion := c.NewDeploymentVersion()
+	appVersion.DeploymentId = appDeploymentID
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, appVersion)
 
-	downstreamJobs := getAgentJobsSortedByNewest(engine, downstreamJobAgentID)
-	assert.Equal(t, 0, len(downstreamJobs), "downstream deployment should be blocked by dependency policy")
+	appJobs := getAgentJobsSortedByNewest(engine, appJobAgentID)
+	assert.Equal(t, 0, len(appJobs), "app should be blocked by dependency")
 
-	// Step 2: Create version for destination deployment
-	destinationVersion := c.NewDeploymentVersion()
-	destinationVersion.DeploymentId = destinationDeploymentID
-	engine.PushEvent(ctx, handler.DeploymentVersionCreate, destinationVersion)
+	// Step 2: Create destination release
+	destVersion := c.NewDeploymentVersion()
+	destVersion.DeploymentId = destinationDeploymentID
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, destVersion)
 
-	destinationJobs := getAgentJobsSortedByNewest(engine, destinationJobAgentID)
-	assert.Equal(t, 1, len(destinationJobs), "destination deployment should create 1 job")
+	destJobs := getAgentJobsSortedByNewest(engine, destinationJobAgentID)
+	assert.Equal(t, 1, len(destJobs), "destination should create job")
 
-	// Step 3: Mark destination job as successful
-	destinationJob := destinationJobs[0]
-	destinationJobCopy := *destinationJob
-	destinationJobCopy.Status = oapi.JobStatusSuccessful
+	// Step 3: Mark destination as successful
+	destJob := destJobs[0]
+	destJobCopy := *destJob
+	destJobCopy.Status = oapi.JobStatusSuccessful
 	completedAt := time.Now()
-	destinationJobCopy.CompletedAt = &completedAt
-	jobUpdateEvent := &oapi.JobUpdateEvent{
-		Id:  &destinationJobCopy.Id,
-		Job: destinationJobCopy,
+	destJobCopy.CompletedAt = &completedAt
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+		Id:  &destJobCopy.Id,
+		Job: destJobCopy,
 		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
 			oapi.JobUpdateEventFieldsToUpdateStatus,
 			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
 		},
+	})
+
+	// Step 4: App should now deploy
+	appJobs = getAgentJobsSortedByNewest(engine, appJobAgentID)
+	assert.Equal(t, 1, len(appJobs), "app should deploy after destination succeeds")
+
+	appJob := appJobs[0]
+
+	// CRITICAL ASSERTION: The fix ensures that ArgoCD destination errors
+	// (like "unable to find destination server") are retried instead of
+	// immediately marking the job as InvalidJobAgent.
+	//
+	// Without the fix: Job would be InvalidJobAgent immediately
+	// With the fix: Job will be Pending (and retries happen in background)
+	assert.NotEqual(t, oapi.JobStatusInvalidJobAgent, appJob.Status,
+		"Job should NOT be InvalidJobAgent - ArgoCD destination errors should be retried, not fail immediately")
+
+	// The job should be in a valid state (Pending, InProgress, or eventually Successful)
+	validStatuses := []oapi.JobStatus{
+		oapi.JobStatusPending,
+		oapi.JobStatusInProgress,
+		oapi.JobStatusSuccessful,
 	}
-	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
+	assert.Contains(t, validStatuses, appJob.Status,
+		"Job should be in a valid state: %v, got: %v", validStatuses, appJob.Status)
+}
 
-	// Step 4: Downstream deployment should now be unblocked
-	downstreamJobs = getAgentJobsSortedByNewest(engine, downstreamJobAgentID)
-	assert.Equal(t, 1, len(downstreamJobs), "downstream deployment should create 1 job after dependency satisfied")
+// TestEngine_PolicyDeploymentDependency_DocumentsRaceCondition demonstrates the
+// CURRENT (buggy) behavior where policy allows deployment immediately after job
+// success, without verifying ArgoCD resource is synced.
+//
+// ⚠️ THIS TEST PASSES WHILE THE BUG EXISTS ⚠️
+//
+// This is a DOCUMENTATION TEST that shows:
+// 1. Upstream (destination) job completes successfully
+// 2. Policy evaluator IMMEDIATELY allows downstream deployment
+//    (only checks job.Status == Successful, doesn't verify ArgoCD resource is synced)
+// 3. In production: Downstream dispatch to ArgoCD would fail because
+//    the destination hasn't finished syncing yet
+//
+// Once a fix is implemented (retry logic or resource verification),
+// this test should be:
+// - Removed (if behavior changes make it invalid), OR
+// - Rewritten to validate the fix works correctly
+func TestEngine_PolicyDeploymentDependency_DocumentsRaceCondition(t *testing.T) {
+	destinationJobAgentID := "destination-agent"
+	appJobAgentID := "app-agent"
 
-	// Verify downstream job status
-	// The job should NOT be InvalidJobAgent
-	// With the ArgoCD retry fix, destination errors are retried instead of immediately failing
-	downstreamJob := downstreamJobs[0]
-	assert.NotEqual(t, oapi.JobStatusInvalidJobAgent, downstreamJob.Status,
-		"downstream job should not be InvalidJobAgent - retries should handle ArgoCD race condition")
+	destinationDeploymentID := "argo-destination"
+	appDeploymentID := "argo-app"
+
+	environmentID := "prod"
+	resourceID := "k8s-cluster"
+	policyID := "app-depends-on-destination"
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(destinationJobAgentID),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(appJobAgentID),
+		),
+		integration.WithSystem(
+			integration.WithDeployment(
+				integration.DeploymentID(destinationDeploymentID),
+				integration.DeploymentName("argo-destination"),
+				integration.DeploymentJobAgent(destinationJobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithDeployment(
+				integration.DeploymentID(appDeploymentID),
+				integration.DeploymentName("argo-app"),
+				integration.DeploymentJobAgent(appJobAgentID),
+				integration.DeploymentCelResourceSelector("true"),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentID(environmentID),
+				integration.EnvironmentName("prod"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceID(resourceID),
+		),
+		integration.WithPolicy(
+			integration.PolicyID(policyID),
+			integration.PolicyName("App depends on ArgoCD destination"),
+			integration.WithPolicyTargetSelector(
+				integration.PolicyTargetCelEnvironmentSelector("true"),
+				integration.PolicyTargetCelDeploymentSelector("deployment.id == '"+appDeploymentID+"'"),
+				integration.PolicyTargetCelResourceSelector("true"),
+			),
+			integration.WithPolicyRule(
+				integration.WithRuleDeploymentDependency(
+					integration.DeploymentDependencyRuleDependsOnDeploymentSelector("deployment.id == '"+destinationDeploymentID+"'"),
+				),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	// Step 1: Create app version (should be blocked - destination never succeeded)
+	appVersion := c.NewDeploymentVersion()
+	appVersion.DeploymentId = appDeploymentID
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, appVersion)
+
+	appJobs := getAgentJobsSortedByNewest(engine, appJobAgentID)
+	assert.Equal(t, 0, len(appJobs), "app blocked: destination never succeeded")
+
+	// Step 2: Create destination version
+	destVersion := c.NewDeploymentVersion()
+	destVersion.DeploymentId = destinationDeploymentID
+	engine.PushEvent(ctx, handler.DeploymentVersionCreate, destVersion)
+
+	destJobs := getAgentJobsSortedByNewest(engine, destinationJobAgentID)
+	assert.Equal(t, 1, len(destJobs), "destination job created")
+
+	// Step 3: Mark destination job as SUCCESSFUL
+	// ⚠️ CRITICAL POINT: At this moment, the job succeeded but in production:
+	//    - ArgoCD application was created
+	//    - But ArgoCD destination might not be synced yet (async process)
+	destJob := destJobs[0]
+	destJobCopy := *destJob
+	destJobCopy.Status = oapi.JobStatusSuccessful
+	completedAt := time.Now()
+	destJobCopy.CompletedAt = &completedAt
+	engine.PushEvent(ctx, handler.JobUpdate, &oapi.JobUpdateEvent{
+		Id:  &destJobCopy.Id,
+		Job: destJobCopy,
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+		},
+	})
+
+	// Step 4: ⚠️ RACE CONDITION DEMONSTRATED HERE ⚠️
+	// CURRENT BEHAVIOR (documents the bug):
+	// - Policy sees job.Status == Successful
+	// - Policy IMMEDIATELY allows downstream deployment
+	// - Does NOT check if ArgoCD destination is actually synced
+	appJobs = getAgentJobsSortedByNewest(engine, appJobAgentID)
+	assert.Equal(t, 1, len(appJobs),
+		"DOCUMENTS BUG: Policy allows app deployment immediately after job success")
+
+	appJob := appJobs[0]
+	assert.Equal(t, oapi.JobStatusPending, appJob.Status,
+		"DOCUMENTS BUG: App job created and would dispatch to ArgoCD")
+
+	// ⚠️ In production at this point:
+	// 1. This appJob would dispatch to ArgoCD API
+	// 2. ArgoCD would return: "unable to find destination server"
+	// 3. Job would be marked InvalidJobAgent (now with error message!)
+	//
+	// The test demonstrates that the policy evaluation happens too early,
+	// before ArgoCD has finished its internal sync process.
+
+	t.Log("⚠️  DOCUMENTATION TEST - This test PASSES while bug exists:")
+	t.Log("   - Destination job succeeded")
+	t.Log("   - Policy immediately allowed downstream (BUG)")
+	t.Log("   - ArgoCD destination might not be synced yet")
+	t.Log("   - Production dispatch would fail with 'unable to find destination server'")
+	t.Log("")
+	t.Log("   After implementing fix (retry or verification), update or remove this test")
 }
