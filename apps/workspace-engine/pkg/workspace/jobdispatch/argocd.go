@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"text/template"
 	"time"
@@ -110,6 +111,13 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return err
 	}
 
+	if jobWithRelease.Resource == nil {
+		err := fmt.Errorf("resource not found for job %s", job.Id)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "resource not found for job")
+		return err
+	}
+
 	templatableJobWithRelease, err := jobWithRelease.ToTemplatable()
 	if err != nil {
 		span.RecordError(err)
@@ -159,7 +167,11 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	}
 
 	if app.ObjectMeta.Name == "" {
-		err := fmt.Errorf("application name is required in metadata.name")
+		resourceName := ""
+		if templatableJobWithRelease.Resource != nil {
+			resourceName = templatableJobWithRelease.Resource.Name
+		}
+		err := fmt.Errorf("application name is required in metadata.name (resource.Name=%q, template output preview: %s)", resourceName, buf.String()[:min(500, len(buf.String()))])
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing application name")
 		return err
@@ -275,9 +287,7 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg oapi.FullArgoCD
 	}
 
 	newJobMetadata := make(map[string]string)
-	for key, value := range job.Metadata {
-		newJobMetadata[key] = value
-	}
+	maps.Copy(newJobMetadata, job.Metadata)
 	newJobMetadata[string("ctrlplane/links")] = string(linksJSON)
 
 	now := time.Now().UTC()
