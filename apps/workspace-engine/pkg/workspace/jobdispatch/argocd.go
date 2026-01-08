@@ -29,19 +29,53 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"google.golang.org/grpc"
 )
 
 var argoCDTracer = otel.Tracer("ArgoCDDispatcher")
 
+// ArgoCDApplicationClient interface for creating ArgoCD applications
+type ArgoCDApplicationClient interface {
+	Create(ctx context.Context, req *applicationpkg.ApplicationCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Application, error)
+}
+
+// VerificationStarter interface for starting verifications
+type VerificationStarter interface {
+	StartVerification(ctx context.Context, job *oapi.Job, metrics []oapi.VerificationMetricSpec) error
+}
+
+// KafkaProducerFactory creates Kafka producers
+type KafkaProducerFactory func() (messaging.Producer, error)
+
+// ArgoCDAppClientFactory creates ArgoCD application clients
+type ArgoCDAppClientFactory func(serverAddr, authToken string) (ArgoCDApplicationClient, error)
+
 type ArgoCDDispatcher struct {
-	store        *store.Store
-	verification *verification.Manager
+	store                *store.Store
+	verification         VerificationStarter
+	appClientFactory     ArgoCDAppClientFactory
+	kafkaProducerFactory KafkaProducerFactory
 }
 
 func NewArgoCDDispatcher(store *store.Store, verification *verification.Manager) *ArgoCDDispatcher {
 	return &ArgoCDDispatcher{
 		store:        store,
 		verification: verification,
+	}
+}
+
+// NewArgoCDDispatcherWithFactories creates a dispatcher with custom factories for testing
+func NewArgoCDDispatcherWithFactories(
+	store *store.Store,
+	verification VerificationStarter,
+	appClientFactory ArgoCDAppClientFactory,
+	kafkaProducerFactory KafkaProducerFactory,
+) *ArgoCDDispatcher {
+	return &ArgoCDDispatcher{
+		store:                store,
+		verification:         verification,
+		appClientFactory:     appClientFactory,
+		kafkaProducerFactory: kafkaProducerFactory,
 	}
 }
 
@@ -141,23 +175,39 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
-		ServerAddr: cfg.ServerUrl,
-		AuthToken:  cfg.ApiKey,
-	})
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to create ArgoCD client")
-		return fmt.Errorf("failed to create ArgoCD client: %w", err)
-	}
+	var appClient ArgoCDApplicationClient
+	var closer func()
 
-	closer, appClient, err := client.NewApplicationClient()
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to create application client")
-		return fmt.Errorf("failed to create ArgoCD application client: %w", err)
+	if d.appClientFactory != nil {
+		client, err := d.appClientFactory(cfg.ServerUrl, cfg.ApiKey)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to create ArgoCD client")
+			return fmt.Errorf("failed to create ArgoCD client: %w", err)
+		}
+		appClient = client
+		closer = func() {} // No-op closer for factory-created clients
+	} else {
+		client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
+			ServerAddr: cfg.ServerUrl,
+			AuthToken:  cfg.ApiKey,
+		})
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to create ArgoCD client")
+			return fmt.Errorf("failed to create ArgoCD client: %w", err)
+		}
+
+		ioCloser, realAppClient, err := client.NewApplicationClient()
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to create application client")
+			return fmt.Errorf("failed to create ArgoCD application client: %w", err)
+		}
+		appClient = realAppClient
+		closer = func() { ioCloser.Close() }
 	}
-	defer closer.Close()
+	defer closer()
 
 	var app v1alpha1.Application
 	if err := unmarshalApplication(buf.Bytes(), &app); err != nil {
@@ -252,6 +302,9 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 }
 
 func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
+	if d.kafkaProducerFactory != nil {
+		return d.kafkaProducerFactory()
+	}
 	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
 		"bootstrap.servers":        config.Global.KafkaBrokers,
 		"enable.idempotence":       true,
