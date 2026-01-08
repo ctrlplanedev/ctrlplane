@@ -1035,8 +1035,19 @@ metadata:
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to create ArgoCD application")
 
-	// Verify Kafka message was NOT published (since ArgoCD failed)
-	require.Len(t, mockProducer.publishedMessages, 0)
+	// Verify a failure event was published with the error message
+	require.Len(t, mockProducer.publishedMessages, 1)
+	msg := mockProducer.publishedMessages[0]
+
+	var event map[string]any
+	err = json.Unmarshal(msg.value, &event)
+	require.NoError(t, err)
+
+	data := event["data"].(map[string]any)
+	jobData := data["job"].(map[string]any)
+	require.Equal(t, "failure", jobData["status"])
+	require.Contains(t, jobData["message"], "Failed to create ArgoCD application")
+	require.Contains(t, jobData["message"], "my-app")
 }
 
 func TestArgoCDDispatcher_DispatchJob_VerificationContinuesOnError(t *testing.T) {
@@ -1081,6 +1092,194 @@ metadata:
 
 	// Kafka message was still published
 	require.Len(t, mockProducer.publishedMessages, 1)
+}
+
+func TestArgoCDDispatcher_DispatchJob_InvalidTemplateOutput_SendsMessage(t *testing.T) {
+	testStore := createTestStore(t)
+	mockClient := &mockArgoCDClient{}
+	mockProducer := &mockKafkaProducer{}
+	mockVerifier := &mockVerificationStarter{}
+
+	dispatcher := NewArgoCDDispatcherWithFactories(
+		testStore,
+		mockVerifier,
+		func(serverAddr, authToken string) (ArgoCDApplicationClient, error) {
+			return mockClient, nil
+		},
+		func() (messaging.Producer, error) {
+			return mockProducer, nil
+		},
+	)
+
+	// Valid template syntax that produces invalid YAML/JSON output
+	templateStr := `not valid yaml or json: [[[`
+
+	config := createArgoCDJobConfig(t, templateStr)
+
+	job := &oapi.Job{
+		Id:             "job-123",
+		ReleaseId:      testStore.Jobs.Items()["job-123"].ReleaseId,
+		JobAgentConfig: config,
+	}
+
+	err := dispatcher.DispatchJob(context.Background(), job)
+	require.Error(t, err)
+
+	// Verify a failure event was published with invalidJobAgent status
+	require.Len(t, mockProducer.publishedMessages, 1)
+	msg := mockProducer.publishedMessages[0]
+
+	var event map[string]any
+	err = json.Unmarshal(msg.value, &event)
+	require.NoError(t, err)
+
+	data := event["data"].(map[string]any)
+	jobData := data["job"].(map[string]any)
+	require.Equal(t, "invalidJobAgent", jobData["status"])
+	require.Contains(t, jobData["message"], "Template output is not a valid ArgoCD Application")
+}
+
+func TestArgoCDDispatcher_DispatchJob_InvalidTemplate_SendsMessage(t *testing.T) {
+	testStore := createTestStore(t)
+	mockClient := &mockArgoCDClient{}
+	mockProducer := &mockKafkaProducer{}
+	mockVerifier := &mockVerificationStarter{}
+
+	dispatcher := NewArgoCDDispatcherWithFactories(
+		testStore,
+		mockVerifier,
+		func(serverAddr, authToken string) (ArgoCDApplicationClient, error) {
+			return mockClient, nil
+		},
+		func() (messaging.Producer, error) {
+			return mockProducer, nil
+		},
+	)
+
+	// Invalid template syntax
+	templateStr := `{{ .Resource.Name`
+
+	config := createArgoCDJobConfig(t, templateStr)
+
+	job := &oapi.Job{
+		Id:             "job-123",
+		ReleaseId:      testStore.Jobs.Items()["job-123"].ReleaseId,
+		JobAgentConfig: config,
+	}
+
+	err := dispatcher.DispatchJob(context.Background(), job)
+	require.Error(t, err)
+
+	// Verify a failure event was published with invalidJobAgent status
+	require.Len(t, mockProducer.publishedMessages, 1)
+	msg := mockProducer.publishedMessages[0]
+
+	var event map[string]any
+	err = json.Unmarshal(msg.value, &event)
+	require.NoError(t, err)
+
+	data := event["data"].(map[string]any)
+	jobData := data["job"].(map[string]any)
+	require.Equal(t, "invalidJobAgent", jobData["status"])
+	require.Contains(t, jobData["message"], "Invalid ArgoCD Application template syntax")
+}
+
+func TestArgoCDDispatcher_DispatchJob_MissingApplicationName_SendsMessage(t *testing.T) {
+	testStore := createTestStore(t)
+	mockClient := &mockArgoCDClient{}
+	mockProducer := &mockKafkaProducer{}
+	mockVerifier := &mockVerificationStarter{}
+
+	dispatcher := NewArgoCDDispatcherWithFactories(
+		testStore,
+		mockVerifier,
+		func(serverAddr, authToken string) (ArgoCDApplicationClient, error) {
+			return mockClient, nil
+		},
+		func() (messaging.Producer, error) {
+			return mockProducer, nil
+		},
+	)
+
+	// Template missing metadata.name
+	templateStr := `apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  namespace: argocd
+spec:
+  project: default`
+
+	config := createArgoCDJobConfig(t, templateStr)
+
+	job := &oapi.Job{
+		Id:             "job-123",
+		ReleaseId:      testStore.Jobs.Items()["job-123"].ReleaseId,
+		JobAgentConfig: config,
+	}
+
+	err := dispatcher.DispatchJob(context.Background(), job)
+	require.Error(t, err)
+
+	// Verify a failure event was published with invalidJobAgent status
+	require.Len(t, mockProducer.publishedMessages, 1)
+	msg := mockProducer.publishedMessages[0]
+
+	var event map[string]any
+	err = json.Unmarshal(msg.value, &event)
+	require.NoError(t, err)
+
+	data := event["data"].(map[string]any)
+	jobData := data["job"].(map[string]any)
+	require.Equal(t, "invalidJobAgent", jobData["status"])
+	require.Contains(t, jobData["message"], "ArgoCD Application template must include metadata.name")
+}
+
+func TestArgoCDDispatcher_DispatchJob_ConnectionError_SendsMessage(t *testing.T) {
+	testStore := createTestStore(t)
+	mockProducer := &mockKafkaProducer{}
+	mockVerifier := &mockVerificationStarter{}
+
+	dispatcher := NewArgoCDDispatcherWithFactories(
+		testStore,
+		mockVerifier,
+		func(serverAddr, authToken string) (ArgoCDApplicationClient, error) {
+			return nil, errors.New("connection refused")
+		},
+		func() (messaging.Producer, error) {
+			return mockProducer, nil
+		},
+	)
+
+	templateStr := `apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  namespace: argocd`
+
+	config := createArgoCDJobConfig(t, templateStr)
+
+	job := &oapi.Job{
+		Id:             "job-123",
+		ReleaseId:      testStore.Jobs.Items()["job-123"].ReleaseId,
+		JobAgentConfig: config,
+	}
+
+	err := dispatcher.DispatchJob(context.Background(), job)
+	require.Error(t, err)
+
+	// Verify a failure event was published with invalidIntegration status
+	require.Len(t, mockProducer.publishedMessages, 1)
+	msg := mockProducer.publishedMessages[0]
+
+	var event map[string]any
+	err = json.Unmarshal(msg.value, &event)
+	require.NoError(t, err)
+
+	data := event["data"].(map[string]any)
+	jobData := data["job"].(map[string]any)
+	require.Equal(t, "invalidIntegration", jobData["status"])
+	require.Contains(t, jobData["message"], "Failed to connect to ArgoCD server")
+	require.Contains(t, jobData["message"], "argocd.example.com")
 }
 
 func TestArgoCDDispatcher_SendJobUpdateEvent_PublishesCorrectEvent(t *testing.T) {

@@ -130,6 +130,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
+		message := fmt.Sprintf("Invalid ArgoCD job agent configuration: %s", err.Error())
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidJobAgent, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return err
 	}
 
@@ -142,6 +146,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get job with release")
+		message := fmt.Sprintf("Failed to get job with release: %s", err.Error())
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusFailure, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return err
 	}
 
@@ -149,6 +157,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		err := fmt.Errorf("resource not found for job %s", job.Id)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "resource not found for job")
+		message := "Resource not found for this job. Ensure the resource exists and is properly configured."
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusFailure, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return err
 	}
 
@@ -156,6 +168,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get templatable job")
+		message := fmt.Sprintf("Failed to prepare job data for templating: %s", err.Error())
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusFailure, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return fmt.Errorf("failed to get templatable job with release: %w", err)
 	}
 
@@ -165,6 +181,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse template")
+		message := fmt.Sprintf("Invalid ArgoCD Application template syntax: %s", err.Error())
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidJobAgent, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
@@ -172,6 +192,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err := t.Execute(&buf, templatableJobWithRelease); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to execute template")
+		message := fmt.Sprintf("Failed to execute ArgoCD Application template: %s", err.Error())
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidJobAgent, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
@@ -183,6 +207,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to create ArgoCD client")
+			message := fmt.Sprintf("Failed to connect to ArgoCD server at %s: %s", cfg.ServerUrl, err.Error())
+			if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidIntegration, message); sendErr != nil {
+				log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+			}
 			return fmt.Errorf("failed to create ArgoCD client: %w", err)
 		}
 		appClient = client
@@ -195,6 +223,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to create ArgoCD client")
+			message := fmt.Sprintf("Failed to connect to ArgoCD server at %s: %s", cfg.ServerUrl, err.Error())
+			if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidIntegration, message); sendErr != nil {
+				log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+			}
 			return fmt.Errorf("failed to create ArgoCD client: %w", err)
 		}
 
@@ -202,6 +234,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to create application client")
+			message := fmt.Sprintf("Failed to create ArgoCD application client: %s", err.Error())
+			if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidIntegration, message); sendErr != nil {
+				log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+			}
 			return fmt.Errorf("failed to create ArgoCD application client: %w", err)
 		}
 		appClient = realAppClient
@@ -213,6 +249,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err := unmarshalApplication(buf.Bytes(), &app); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse template output")
+		message := fmt.Sprintf("Template output is not a valid ArgoCD Application: %s", err.Error())
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidJobAgent, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return fmt.Errorf("failed to parse template output as ArgoCD Application: %w", err)
 	}
 
@@ -224,6 +264,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		err := fmt.Errorf("application name is required in metadata.name (resource.Name=%q, template output preview: %s)", resourceName, buf.String()[:min(500, len(buf.String()))])
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing application name")
+		message := "ArgoCD Application template must include metadata.name. Check that your template sets a valid application name."
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusInvalidJobAgent, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return err
 	}
 
@@ -280,6 +324,10 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create ArgoCD application")
+		message := fmt.Sprintf("Failed to create ArgoCD application '%s': %s", app.ObjectMeta.Name, err.Error())
+		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusFailure, message); sendErr != nil {
+			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
+		}
 		return fmt.Errorf("failed to create ArgoCD application: %w", err)
 	}
 
@@ -312,6 +360,69 @@ func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
 		"message.send.max.retries": 10,
 		"retry.backoff.ms":         100,
 	})
+}
+
+// sendJobFailureEvent sends a job update event with a failure status and message
+func (d *ArgoCDDispatcher) sendJobFailureEvent(job *oapi.Job, status oapi.JobStatus, message string) error {
+	_, span := argoCDTracer.Start(context.Background(), "sendJobFailureEvent")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("job.id", job.Id),
+		attribute.String("job.status", string(status)),
+		attribute.String("job.message", message),
+	)
+
+	workspaceId := d.store.ID()
+
+	now := time.Now().UTC()
+	eventPayload := oapi.JobUpdateEvent{
+		Id: &job.Id,
+		Job: oapi.Job{
+			Id:          job.Id,
+			Status:      status,
+			Message:     &message,
+			UpdatedAt:   now,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateMessage,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	}
+
+	producer, err := d.getKafkaProducer()
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create Kafka producer")
+		return fmt.Errorf("failed to create Kafka producer: %w", err)
+	}
+	defer producer.Close()
+
+	event := map[string]any{
+		"eventType":   "job.updated",
+		"workspaceId": workspaceId,
+		"data":        eventPayload,
+		"timestamp":   time.Now().Unix(),
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal event")
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+
+	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to publish event")
+		return err
+	}
+
+	span.SetStatus(codes.Ok, "failure event published")
+	return nil
 }
 
 func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg oapi.FullArgoCDJobAgentConfig, app v1alpha1.Application) error {
