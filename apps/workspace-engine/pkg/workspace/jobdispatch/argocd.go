@@ -177,6 +177,17 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 
 	span.SetAttributes(attribute.String("cfg", fmt.Sprintf("%+v", cfg)))
 	span.SetAttributes(attribute.String("argocd.server_url", cfg.ServerUrl))
+	span.SetAttributes(attribute.Int("argocd.template_length", len(cfg.Template)))
+	
+	// Debug: Log if template is empty
+	if cfg.Template == "" {
+		log.Error("ArgoCD template is EMPTY!",
+			"job_id", job.Id,
+			"server_url", cfg.ServerUrl,
+			"api_key_set", cfg.ApiKey != "",
+		)
+	}
+	
 	t, err := template.New("argoCDAgentConfig").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(cfg.Template)
 	if err != nil {
 		span.RecordError(err)

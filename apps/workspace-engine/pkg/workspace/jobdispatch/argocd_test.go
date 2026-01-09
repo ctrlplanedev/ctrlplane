@@ -158,6 +158,52 @@ metadata:
 			expectError: false,
 			expectName:  "",
 		},
+		{
+			name: "YAML with leading document separator",
+			input: `---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-with-separator
+  namespace: argocd
+spec:
+  project: default`,
+			expectError: false,
+			expectName:  "app-with-separator",
+		},
+		{
+			name: "multi-document YAML only parses first document",
+			input: `---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: first-app
+  namespace: argocd
+spec:
+  project: default
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: second-app
+  namespace: argocd
+spec:
+  project: other`,
+			expectError: false,
+			expectName:  "first-app", // Only the first document should be parsed
+		},
+		{
+			name: "YAML without leading separator",
+			input: `apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: no-separator-app
+  namespace: argocd
+spec:
+  project: default`,
+			expectError: false,
+			expectName:  "no-separator-app",
+		},
 	}
 
 	for _, tt := range tests {
