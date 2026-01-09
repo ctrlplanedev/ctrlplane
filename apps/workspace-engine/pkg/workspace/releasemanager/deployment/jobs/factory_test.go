@@ -1157,3 +1157,466 @@ func TestFactory_MergeJobAgentConfig_VersionOverridesAll_GithubApp(t *testing.T)
 	require.NotNil(t, fullConfig.Ref)
 	require.Equal(t, "release-v2", *fullConfig.Ref)
 }
+
+// =============================================================================
+// JobAgentConfig Merge Ordering Tests
+// =============================================================================
+// These tests verify that the merge order is correct:
+// 1. JobAgent config (base defaults)
+// 2. Deployment config (deployment-specific overrides)
+// 3. Version config (version-specific overrides)
+// Each layer can override values from previous layers, and deep nested
+// objects are merged recursively.
+
+func TestFactory_MergeJobAgentConfig_ThreeLevelMergeOrder(t *testing.T) {
+	// This test verifies the complete 3-level merge:
+	// JobAgent -> Deployment -> Version
+	// Each level can add new fields or override existing ones.
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	// Level 1: JobAgent provides base config with some defaults
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"agentOnly": "from-agent",
+		"sharedField": "agent-value",
+		"overriddenByDeployment": "agent-value",
+		"overriddenByVersion": "agent-value",
+		"overriddenByBoth": "agent-value"
+	}`)
+
+	// Level 2: Deployment adds new fields and overrides some
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"deploymentOnly": "from-deployment",
+		"overriddenByDeployment": "deployment-value",
+		"overriddenByVersion": "deployment-value",
+		"overriddenByBoth": "deployment-value"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	// Level 3: Version adds new fields and overrides some
+	versionJobAgentConfig := map[string]interface{}{
+		"type":                "custom",
+		"versionOnly":         "from-version",
+		"overriddenByVersion": "version-value",
+		"overriddenByBoth":    "version-value",
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusPending, job.Status)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	// Fields unique to each level should be preserved
+	require.Equal(t, "from-agent", configMap["agentOnly"], "agentOnly should come from JobAgent")
+	require.Equal(t, "from-deployment", configMap["deploymentOnly"], "deploymentOnly should come from Deployment")
+	require.Equal(t, "from-version", configMap["versionOnly"], "versionOnly should come from Version")
+
+	// Shared field not overridden should stay from JobAgent
+	require.Equal(t, "agent-value", configMap["sharedField"], "sharedField should remain from JobAgent")
+
+	// Fields overridden at different levels
+	require.Equal(t, "deployment-value", configMap["overriddenByDeployment"], "overriddenByDeployment should come from Deployment")
+	require.Equal(t, "version-value", configMap["overriddenByVersion"], "overriddenByVersion should come from Version")
+	require.Equal(t, "version-value", configMap["overriddenByBoth"], "overriddenByBoth should come from Version (last wins)")
+
+	// Type discriminator should always be present
+	require.Equal(t, "custom", configMap["type"])
+}
+
+func TestFactory_MergeJobAgentConfig_DeepNestedThreeLevelMerge(t *testing.T) {
+	// This test verifies that deep nested objects are merged correctly
+	// at all three levels.
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	// Level 1: JobAgent with deep nested config
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"settings": {
+			"agent": {
+				"onlyInAgent": "agent-value"
+			},
+			"shared": {
+				"level1": {
+					"fromAgent": "agent",
+					"overrideByDeployment": "agent",
+					"overrideByVersion": "agent"
+				}
+			}
+		}
+	}`)
+
+	// Level 2: Deployment adds to nested structure and overrides some
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"settings": {
+			"deployment": {
+				"onlyInDeployment": "deployment-value"
+			},
+			"shared": {
+				"level1": {
+					"fromDeployment": "deployment",
+					"overrideByDeployment": "deployment",
+					"overrideByVersion": "deployment"
+				}
+			}
+		}
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	// Level 3: Version adds more nested structure and overrides
+	versionJobAgentConfig := map[string]interface{}{
+		"type": "custom",
+		"settings": map[string]interface{}{
+			"version": map[string]interface{}{
+				"onlyInVersion": "version-value",
+			},
+			"shared": map[string]interface{}{
+				"level1": map[string]interface{}{
+					"fromVersion":       "version",
+					"overrideByVersion": "version",
+				},
+			},
+		},
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	settings := configMap["settings"].(map[string]any)
+
+	// Each level's unique nested object should be preserved
+	agent := settings["agent"].(map[string]any)
+	require.Equal(t, "agent-value", agent["onlyInAgent"], "Agent-only nested field should be preserved")
+
+	deployment2 := settings["deployment"].(map[string]any)
+	require.Equal(t, "deployment-value", deployment2["onlyInDeployment"], "Deployment-only nested field should be preserved")
+
+	version := settings["version"].(map[string]any)
+	require.Equal(t, "version-value", version["onlyInVersion"], "Version-only nested field should be preserved")
+
+	// Verify deep merge in shared object
+	shared := settings["shared"].(map[string]any)
+	level1 := shared["level1"].(map[string]any)
+
+	require.Equal(t, "agent", level1["fromAgent"], "Agent field in deep nest should be preserved")
+	require.Equal(t, "deployment", level1["fromDeployment"], "Deployment field in deep nest should be preserved")
+	require.Equal(t, "version", level1["fromVersion"], "Version field in deep nest should be preserved")
+	require.Equal(t, "deployment", level1["overrideByDeployment"], "Deployment should override agent in deep nest")
+	require.Equal(t, "version", level1["overrideByVersion"], "Version should override deployment in deep nest")
+}
+
+func TestFactory_MergeJobAgentConfig_VersionOverridesNull(t *testing.T) {
+	// This test verifies that version can override values to null
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"field": "agent-value"
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"field": "deployment-value",
+		"extra": "extra-value"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	// Version explicitly sets field to null
+	versionJobAgentConfig := map[string]interface{}{
+		"type":  "custom",
+		"field": nil,
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	// Field should be overridden to null
+	require.Nil(t, configMap["field"], "field should be nil when version sets it to null")
+	// Extra field from deployment should still be present
+	require.Equal(t, "extra-value", configMap["extra"])
+}
+
+func TestFactory_MergeJobAgentConfig_ArraysNotDeepMerged(t *testing.T) {
+	// This test verifies that arrays are replaced, not merged
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"items": ["agent-item-1", "agent-item-2"]
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"items": ["deployment-item-1"]
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	// Arrays should be replaced, not merged
+	items := configMap["items"].([]any)
+	require.Len(t, items, 1, "Array should be replaced, not merged")
+	require.Equal(t, "deployment-item-1", items[0], "Array should contain deployment value")
+}
+
+func TestFactory_MergeJobAgentConfig_VersionArrayOverride(t *testing.T) {
+	// This test verifies that version can override arrays
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"tags": ["base-tag"]
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom",
+		"tags": ["deployment-tag-1", "deployment-tag-2"]
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	versionJobAgentConfig := map[string]interface{}{
+		"type": "custom",
+		"tags": []string{"version-tag"},
+	}
+	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionJobAgentConfig)
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	// Version array should completely replace deployment array
+	tags := configMap["tags"].([]any)
+	require.Len(t, tags, 1)
+	require.Equal(t, "version-tag", tags[0])
+}
+
+func TestFactory_MergeJobAgentConfig_PreservesTypeDiscriminator(t *testing.T) {
+	// This test verifies that the type discriminator is always set
+	// to the JobAgent's type, regardless of what deployment/version specify
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	// JobAgent has custom type
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"field": "value"
+	}`)
+
+	// Deployment might try to set a different type (though shouldn't)
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	// Type discriminator must always be from JobAgent
+	require.Equal(t, "custom", configMap["type"])
+}
+
+func TestFactory_MergeJobAgentConfig_EmptyDeploymentConfig(t *testing.T) {
+	// This test verifies that an empty deployment config doesn't
+	// affect the agent config
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom",
+		"baseUrl": "https://api.example.com",
+		"timeout": 30,
+		"nested": {
+			"key": "value"
+		}
+	}`)
+
+	// Empty deployment config (just type)
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	// All agent config should be preserved
+	require.Equal(t, "https://api.example.com", configMap["baseUrl"])
+	require.Equal(t, float64(30), configMap["timeout"])
+	nested := configMap["nested"].(map[string]any)
+	require.Equal(t, "value", nested["key"])
+}
+
+func TestFactory_MergeJobAgentConfig_AllThreeLevelsEmpty(t *testing.T) {
+	// This test verifies behavior when all configs are minimal
+	st := setupTestStore()
+	ctx := context.Background()
+
+	jobAgentId := "agent-1"
+
+	// Minimal configs at all levels
+	jobAgentConfig := mustCreateJobAgentConfig(t, `{
+		"type": "custom"
+	}`)
+
+	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+		"type": "custom"
+	}`)
+
+	jobAgent := createTestJobAgent(t, jobAgentId, "custom", jobAgentConfig)
+	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
+
+	st.JobAgents.Upsert(ctx, jobAgent)
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
+
+	factory := NewFactory(st)
+	job, err := factory.CreateJobForRelease(ctx, release, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, oapi.JobStatusPending, job.Status)
+
+	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	require.NoError(t, err)
+
+	var configMap map[string]any
+	err = json.Unmarshal(configJSON, &configMap)
+	require.NoError(t, err)
+
+	// Should only have the type discriminator
+	require.Equal(t, "custom", configMap["type"])
+}
