@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -30,13 +31,13 @@ func NewFactory(store *store.Store) *Factory {
 	}
 }
 
-func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.FullJobAgentConfig, error) {
+func (f *Factory) MergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.FullJobAgentConfig, error) {
 	runnerDiscriminator, err := jobAgent.Config.Discriminator()
 	if err != nil {
 		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config discriminator: %w", err)
 	}
 
-	var deploymentConfig interface{}
+	var deploymentConfig any
 	switch runnerDiscriminator {
 	case string(oapi.TestRunner):
 	case string(oapi.ArgoCd):
@@ -69,11 +70,9 @@ func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oap
 		if m, ok := v.(map[string]any); ok {
 			return m, nil
 		}
-		if m, ok := v.(map[string]interface{}); ok {
+		if m, ok := v.(map[string]any); ok {
 			out := make(map[string]any, len(m))
-			for k, vv := range m {
-				out[k] = vv
-			}
+			maps.Copy(out, m)
 			return out, nil
 		}
 		b, err := json.Marshal(v)
@@ -213,7 +212,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	// Merge job agent config: deployment config overrides agent defaults
-	mergedConfig, err := f.mergeJobAgentConfig(deployment, jobAgent, &release.Version)
+	mergedConfig, err := f.MergeJobAgentConfig(deployment, jobAgent, &release.Version)
 	if err != nil {
 		if action != nil {
 			action.AddStep("Configure job", trace.StepResultFail,
