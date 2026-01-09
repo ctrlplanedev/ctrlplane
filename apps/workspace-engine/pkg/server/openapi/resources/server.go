@@ -48,7 +48,6 @@ func (r *Resources) GetResourceByIdentifier(c *gin.Context, workspaceId string, 
 	resources := ws.Resources().Items()
 	for _, resource := range resources {
 		if resource.Identifier == decodedIdentifier {
-			fmt.Println("Found matching resource:", resource.Identifier)
 			c.JSON(http.StatusOK, resource)
 			return
 		}

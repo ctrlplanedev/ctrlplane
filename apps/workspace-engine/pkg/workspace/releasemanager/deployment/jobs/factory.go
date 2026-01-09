@@ -24,6 +24,32 @@ type Factory struct {
 	store *store.Store
 }
 
+func toMap(v any) (map[string]any, error) {
+	if v == nil {
+		return map[string]any{}, nil
+	}
+	if m, ok := v.(map[string]any); ok {
+		return m, nil
+	}
+	if m, ok := v.(map[string]any); ok {
+		out := make(map[string]any, len(m))
+		maps.Copy(out, m)
+		return out, nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		return nil, err
+	}
+	if out == nil {
+		out = map[string]any{}
+	}
+	return out, nil
+}
+
 // NewFactory creates a new job factory.
 func NewFactory(store *store.Store) *Factory {
 	return &Factory{
@@ -60,33 +86,6 @@ func (f *Factory) MergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oap
 	runnerConfig, err := jobAgent.Config.ValueByDiscriminator()
 	if err != nil {
 		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config: %w", err)
-	}
-
-	// ValueByDiscriminator returns a concrete struct type (as interface{}). Convert both to maps so we can deep-merge.
-	toMap := func(v any) (map[string]any, error) {
-		if v == nil {
-			return map[string]any{}, nil
-		}
-		if m, ok := v.(map[string]any); ok {
-			return m, nil
-		}
-		if m, ok := v.(map[string]any); ok {
-			out := make(map[string]any, len(m))
-			maps.Copy(out, m)
-			return out, nil
-		}
-		b, err := json.Marshal(v)
-		if err != nil {
-			return nil, err
-		}
-		var out map[string]any
-		if err := json.Unmarshal(b, &out); err != nil {
-			return nil, err
-		}
-		if out == nil {
-			out = map[string]any{}
-		}
-		return out, nil
 	}
 
 	deploymentMap, err := toMap(deploymentConfig)

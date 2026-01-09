@@ -2269,3 +2269,290 @@ func TestMergeJobAgentConfig_NullOverridesValue(t *testing.T) {
 	// Other fields should be preserved
 	require.Equal(t, "keep", configMap["keepThis"])
 }
+
+// =============================================================================
+// toMap Function Unit Tests
+// =============================================================================
+
+func TestToMap_NilInput(t *testing.T) {
+	result, err := toMap(nil)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Empty(t, result)
+}
+
+func TestToMap_MapStringAnyInput(t *testing.T) {
+	input := map[string]any{
+		"key1": "value1",
+		"key2": 42,
+		"key3": true,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, input, result)
+}
+
+func TestToMap_EmptyMapInput(t *testing.T) {
+	input := map[string]any{}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Empty(t, result)
+}
+
+func TestToMap_StructInput(t *testing.T) {
+	type testStruct struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+
+	input := testStruct{
+		Name:  "test",
+		Value: 123,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "test", result["name"])
+	require.Equal(t, float64(123), result["value"]) // JSON numbers become float64
+}
+
+func TestToMap_StructPointerInput(t *testing.T) {
+	type testStruct struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+
+	input := &testStruct{
+		Name:  "test-ptr",
+		Value: 456,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "test-ptr", result["name"])
+	require.Equal(t, float64(456), result["value"])
+}
+
+func TestToMap_NestedStructInput(t *testing.T) {
+	type inner struct {
+		InnerKey string `json:"innerKey"`
+	}
+	type outer struct {
+		OuterKey string `json:"outerKey"`
+		Nested   inner  `json:"nested"`
+	}
+
+	input := outer{
+		OuterKey: "outer-value",
+		Nested: inner{
+			InnerKey: "inner-value",
+		},
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "outer-value", result["outerKey"])
+
+	nested, ok := result["nested"].(map[string]any)
+	require.True(t, ok, "nested should be a map")
+	require.Equal(t, "inner-value", nested["innerKey"])
+}
+
+func TestToMap_MapStringInterfaceInput(t *testing.T) {
+	// map[string]interface{} is equivalent to map[string]any
+	input := map[string]interface{}{
+		"key1": "value1",
+		"key2": 42,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "value1", result["key1"])
+	require.Equal(t, 42, result["key2"])
+}
+
+func TestToMap_NestedMapInput(t *testing.T) {
+	input := map[string]any{
+		"level1": map[string]any{
+			"level2": map[string]any{
+				"deep": "value",
+			},
+		},
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+
+	level1, ok := result["level1"].(map[string]any)
+	require.True(t, ok)
+
+	level2, ok := level1["level2"].(map[string]any)
+	require.True(t, ok)
+
+	require.Equal(t, "value", level2["deep"])
+}
+
+func TestToMap_WithNilValues(t *testing.T) {
+	input := map[string]any{
+		"key1":    "value1",
+		"nullKey": nil,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "value1", result["key1"])
+	require.Nil(t, result["nullKey"])
+}
+
+func TestToMap_WithArrayValues(t *testing.T) {
+	input := map[string]any{
+		"tags": []string{"tag1", "tag2", "tag3"},
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+
+	tags, ok := result["tags"].([]string)
+	require.True(t, ok)
+	require.Len(t, tags, 3)
+	require.Equal(t, []string{"tag1", "tag2", "tag3"}, tags)
+}
+
+func TestToMap_StructWithOmitEmpty(t *testing.T) {
+	type testStruct struct {
+		Name    string  `json:"name"`
+		Empty   string  `json:"empty,omitempty"`
+		Pointer *string `json:"pointer,omitempty"`
+	}
+
+	input := testStruct{
+		Name:    "test",
+		Empty:   "",
+		Pointer: nil,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "test", result["name"])
+
+	// omitempty fields should not be present
+	_, hasEmpty := result["empty"]
+	require.False(t, hasEmpty, "empty field with omitempty should not be present")
+
+	_, hasPointer := result["pointer"]
+	require.False(t, hasPointer, "nil pointer with omitempty should not be present")
+}
+
+func TestToMap_StructWithAllTypes(t *testing.T) {
+	type testStruct struct {
+		String  string         `json:"string"`
+		Int     int            `json:"int"`
+		Float   float64        `json:"float"`
+		Bool    bool           `json:"bool"`
+		Slice   []string       `json:"slice"`
+		Map     map[string]int `json:"map"`
+		Pointer *string        `json:"pointer"`
+	}
+
+	strPtr := "pointer-value"
+	input := testStruct{
+		String:  "hello",
+		Int:     42,
+		Float:   3.14,
+		Bool:    true,
+		Slice:   []string{"a", "b"},
+		Map:     map[string]int{"x": 1, "y": 2},
+		Pointer: &strPtr,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+
+	require.Equal(t, "hello", result["string"])
+	require.Equal(t, float64(42), result["int"]) // JSON numbers are float64
+	require.Equal(t, 3.14, result["float"])
+	require.Equal(t, true, result["bool"])
+	require.Equal(t, "pointer-value", result["pointer"])
+
+	slice, ok := result["slice"].([]any)
+	require.True(t, ok)
+	require.Len(t, slice, 2)
+
+	mapVal, ok := result["map"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, float64(1), mapVal["x"])
+	require.Equal(t, float64(2), mapVal["y"])
+}
+
+func TestToMap_EmptyStruct(t *testing.T) {
+	type emptyStruct struct{}
+
+	input := emptyStruct{}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Empty(t, result)
+}
+
+func TestToMap_AnonymousStruct(t *testing.T) {
+	input := struct {
+		Field1 string `json:"field1"`
+		Field2 int    `json:"field2"`
+	}{
+		Field1: "anonymous",
+		Field2: 999,
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "anonymous", result["field1"])
+	require.Equal(t, float64(999), result["field2"])
+}
+
+func TestToMap_UnexportedFields(t *testing.T) {
+	type testStruct struct {
+		Exported   string `json:"exported"`
+		unexported string //nolint:unused
+	}
+
+	input := testStruct{
+		Exported:   "visible",
+		unexported: "hidden",
+	}
+
+	result, err := toMap(input)
+	require.NoError(t, err)
+	require.Equal(t, "visible", result["exported"])
+
+	// unexported field should not be present
+	_, hasUnexported := result["unexported"]
+	require.False(t, hasUnexported, "unexported field should not be in result")
+}
+
+func TestToMap_PrimitiveString(t *testing.T) {
+	// A primitive string cannot be converted to a map
+	input := "just a string"
+
+	_, err := toMap(input)
+	require.Error(t, err, "primitive string should fail to convert to map")
+}
+
+func TestToMap_PrimitiveInt(t *testing.T) {
+	// A primitive int cannot be converted to a map
+	input := 42
+
+	_, err := toMap(input)
+	require.Error(t, err, "primitive int should fail to convert to map")
+}
+
+func TestToMap_SliceInput(t *testing.T) {
+	// A slice at the top level cannot be converted to a map
+	input := []string{"a", "b", "c"}
+
+	_, err := toMap(input)
+	require.Error(t, err, "slice should fail to convert to map")
+}
