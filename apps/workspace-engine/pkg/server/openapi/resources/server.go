@@ -262,13 +262,6 @@ func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId str
 	}
 
 	releaseTargets := ws.ReleaseTargets().GetForResource(c.Request.Context(), resource.Id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get release targets: " + err.Error(),
-		})
-		return
-	}
-
 	releaseTargetsList := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
 	for _, releaseTarget := range releaseTargets {
 		if releaseTarget == nil {
