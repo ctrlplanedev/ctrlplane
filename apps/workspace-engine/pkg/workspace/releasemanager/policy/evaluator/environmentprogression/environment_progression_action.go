@@ -3,6 +3,7 @@ package environmentprogression
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -47,7 +48,16 @@ func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger acti
 		return nil
 	}
 
-	progressionDependentTargets, err := a.getProgressionDependentTargets(ctx, progressionDependentPolicies)
+	version := &actx.Release.Version
+	policiesThatCrossedThreshold := a.filterPoliciesWhereThresholdJustCrossed(
+		ctx, environment, version, actx.Job, progressionDependentPolicies,
+	)
+
+	if len(policiesThatCrossedThreshold) == 0 {
+		return nil
+	}
+
+	progressionDependentTargets, err := a.getProgressionDependentTargets(ctx, policiesThatCrossedThreshold)
 	if err != nil {
 		return fmt.Errorf("failed to get progression dependent targets: %w", err)
 	}
@@ -119,4 +129,84 @@ func (a *EnvironmentProgressionAction) reconcileTargets(ctx context.Context, tar
 		}
 	}
 	return nil
+}
+
+func (a *EnvironmentProgressionAction) filterPoliciesWhereThresholdJustCrossed(
+	ctx context.Context,
+	dependencyEnv *oapi.Environment,
+	version *oapi.DeploymentVersion,
+	job *oapi.Job,
+	policies []*oapi.Policy,
+) []*oapi.Policy {
+	result := make([]*oapi.Policy, 0)
+
+	for _, policy := range policies {
+		rule := a.getEnvironmentProgressionRule(policy)
+		if rule == nil {
+			continue
+		}
+
+		if a.didThresholdJustCross(ctx, dependencyEnv, version, job, rule) {
+			result = append(result, policy)
+		}
+	}
+
+	return result
+}
+
+func (a *EnvironmentProgressionAction) getEnvironmentProgressionRule(policy *oapi.Policy) *oapi.EnvironmentProgressionRule {
+	for _, rule := range policy.Rules {
+		if rule.EnvironmentProgression != nil {
+			return rule.EnvironmentProgression
+		}
+	}
+	return nil
+}
+
+func (a *EnvironmentProgressionAction) didThresholdJustCross(
+	ctx context.Context,
+	dependencyEnv *oapi.Environment,
+	version *oapi.DeploymentVersion,
+	job *oapi.Job,
+	rule *oapi.EnvironmentProgressionRule,
+) bool {
+	if job.CompletedAt == nil {
+		return false
+	}
+
+	successStatuses := map[oapi.JobStatus]bool{oapi.JobStatusSuccessful: true}
+	if rule.SuccessStatuses != nil {
+		successStatuses = make(map[oapi.JobStatus]bool)
+		for _, status := range *rule.SuccessStatuses {
+			successStatuses[status] = true
+		}
+	}
+
+	var minPercentage float32 = 0.0
+	if rule.MinimumSuccessPercentage != nil {
+		minPercentage = *rule.MinimumSuccessPercentage
+	}
+
+	tracker := NewReleaseTargetJobTracker(ctx, a.store, dependencyEnv, version, successStatuses)
+
+	if len(tracker.ReleaseTargets) == 0 {
+		return false
+	}
+
+	satisfiedAt := a.getThresholdSatisfiedAt(tracker, minPercentage)
+	if satisfiedAt.IsZero() {
+		return false
+	}
+
+	return satisfiedAt.Equal(*job.CompletedAt)
+}
+
+func (a *EnvironmentProgressionAction) getThresholdSatisfiedAt(
+	tracker *ReleaseTargetJobTracker,
+	minPercentage float32,
+) time.Time {
+	if minPercentage == 0 {
+		return tracker.GetEarliestSuccess()
+	}
+	return tracker.GetSuccessPercentageSatisfiedAt(minPercentage)
 }
