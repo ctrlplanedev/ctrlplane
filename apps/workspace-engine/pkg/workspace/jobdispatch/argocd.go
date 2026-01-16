@@ -198,7 +198,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	}
 
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, templatableJobWithRelease); err != nil {
+	if err := t.Execute(&buf, templatableJobWithRelease.Map()); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to execute template")
 		message := fmt.Sprintf("Failed to execute ArgoCD Application template: %s", err.Error())
