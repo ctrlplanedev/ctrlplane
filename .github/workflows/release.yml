@@ -30,7 +30,7 @@ jobs:
         id: semantic-release
         uses: googleapis/release-please-action@v4
         with:
-          release-type: go
+          release-type: simple
           token: ${{ secrets.GH_TOKEN }}
 
   build-images:
