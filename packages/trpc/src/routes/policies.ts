@@ -1,7 +1,9 @@
 import { TRPCError } from "@trpc/server";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
@@ -49,6 +51,74 @@ export const policiesRouter = router({
       );
 
       return result.data;
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        name: z.string().min(1),
+        description: z.string().optional(),
+        priority: z.number().min(0),
+        enabled: z.boolean(),
+        target: z.object({
+          deploymentSelector: z.object({ cel: z.string().min(1) }),
+          environmentSelector: z.object({ cel: z.string().min(1) }),
+          resourceSelector: z.object({ cel: z.string().min(1) }),
+        }),
+        anyApproval: z
+          .object({
+            minApprovals: z.number().min(1),
+          })
+          .optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, target, anyApproval, ...policyInput } = input;
+      const policyId = uuidv4();
+      const createdAt = new Date().toISOString();
+      const selectors: WorkspaceEngine["schemas"]["PolicyTargetSelector"][] = [
+        {
+          id: uuidv4(),
+          deploymentSelector: { cel: target.deploymentSelector.cel },
+          environmentSelector: { cel: target.environmentSelector.cel },
+          resourceSelector: { cel: target.resourceSelector.cel },
+        },
+      ];
+      const rules: WorkspaceEngine["schemas"]["PolicyRule"][] = [];
+
+      if (anyApproval != null) {
+        rules.push({
+          id: uuidv4(),
+          policyId,
+          createdAt,
+          anyApproval: {
+            minApprovals: anyApproval.minApprovals,
+          },
+        });
+      }
+
+      const policy: WorkspaceEngine["schemas"]["Policy"] = {
+        id: policyId,
+        workspaceId,
+        createdAt,
+        name: policyInput.name,
+        description: policyInput.description,
+        enabled: policyInput.enabled,
+        priority: policyInput.priority,
+        metadata: {},
+        selectors,
+        rules,
+      };
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.PolicyCreated,
+        timestamp: Date.now(),
+        data: policy,
+      });
+
+      return policy;
     }),
 
   delete: protectedProcedure
