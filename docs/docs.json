@@ -11,15 +11,41 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Getting Started",
         "groups": [
           {
-            "group": "Getting Started",
-            "pages": ["index", "installation", "quickstart"]
+            "group": "Introduction",
+            "pages": ["index", "how-it-works", "quickstart", "installation"]
           },
+          {
+            "group": "Comparisons",
+            "pages": ["comparisons"]
+          }
+        ]
+      },
+      {
+        "tab": "Core Concepts",
+        "groups": [
           {
             "group": "Overview",
             "pages": ["concepts/introduction"]
+          },
+          {
+            "group": "Infrastructure",
+            "pages": [
+              "concepts/resources",
+              "concepts/environments",
+              "concepts/selectors"
+            ]
+          },
+          {
+            "group": "Deployments",
+            "pages": [
+              "concepts/systems",
+              "concepts/deployments",
+              "concepts/releases-and-jobs",
+              "concepts/release-targets"
+            ]
           }
         ]
       },
@@ -29,14 +55,6 @@
           {
             "group": "Overview",
             "pages": ["inventory/overview"]
-          },
-          {
-            "group": "Core Concepts",
-            "pages": [
-              "concepts/resources",
-              "concepts/environments",
-              "concepts/selectors"
-            ]
           },
           {
             "group": "Resource Providers",
@@ -50,15 +68,6 @@
           {
             "group": "Overview",
             "pages": ["deployment/overview"]
-          },
-          {
-            "group": "Core Concepts",
-            "pages": [
-              "concepts/systems",
-              "concepts/deployments",
-              "concepts/releases-and-jobs",
-              "concepts/release-targets"
-            ]
           },
           {
             "group": "CI/CD Integration",

@@ -11,7 +11,8 @@ configurable policies, verification, and approval workflows.
 Deployment orchestration manages how releases flow through your environments —
 from build to production — with:
 
-- **Progressive delivery** — Canary, blue-green, and phased rollouts
+- **Gradual rollouts** — Deploy to targets sequentially with verification
+  between each
 - **Policy-driven gates** — Approvals, verification, and dependencies
 - **Environment promotion** — Automated staging → production progression
 - **Rollback & recovery** — Automatic rollback on verification failure
@@ -68,8 +69,13 @@ Your CI pipeline creates a version after successful builds:
 ```yaml
 - name: Create Version
   run: |
-    curl -X POST ".../deployments/$DEPLOYMENT_ID/versions" \
-      -d '{"tag": "${{ github.sha }}", "status": "ready"}'
+    ctrlplane create version \
+      --deployment $DEPLOYMENT_ID \
+      --tag ${{ github.sha }} \
+      --name "Build #${{ github.run_number }}" \
+      --status ready \
+      --metadata "commit=${{ github.sha }}" \
+      --metadata "branch=${{ github.ref_name }}"
 ```
 
 ### 2. Ctrlplane Creates Releases

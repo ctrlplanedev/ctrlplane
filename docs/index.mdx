@@ -9,13 +9,13 @@ description:
 **Ctrlplane is the orchestration layer between your CI/CD pipelines and your
 infrastructure.**
 
-Your CI builds code. Your clusters run it. Ctrlplane decides _when_ releases are
+Your CI builds code. Your compute run it. Ctrlplane decides _when_ releases are
 ready, _where_ they should deploy, and _what gates_ they must pass—handling
 environment promotion, verification, approvals, and rollbacks automatically.
 
 ```
 Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
- (builds)          (orchestrates)           (deploys)
+ (builds)            (orchestrates)           (deploys)
 ```
 
 ## The Problem
@@ -30,7 +30,8 @@ symptoms:
   requires checking multiple dashboards
 - **Inconsistent policies**: Some services require approval, some don't—it's
   tribal knowledge
-- **Painful multi-region**: Deploying to 10 clusters means running 10 pipelines
+- **Painful multi-region**: Deploying to 10 compute resources means running 10
+  pipelines
 - **No source of truth for infrastructure**: Resources are scattered across
   Kubernetes, cloud providers, and spreadsheets—no unified view
 - **Static deployment targets**: Adding a new cluster means updating configs
@@ -178,16 +179,16 @@ them:
 ## Next Steps
 
 <CardGroup cols={2}>
+  <Card title="How It Works" icon="diagram-project" href="./how-it-works">
+    Understand the architecture and flow
+  </Card>
   <Card title="Quickstart" icon="rocket" href="./quickstart">
     Set up your first deployment pipeline in 10 minutes
   </Card>
+  <Card title="Comparisons" icon="scale-balanced" href="./comparisons">
+    See how Ctrlplane compares to other tools
+  </Card>
   <Card title="Installation" icon="server" href="./installation">
     Self-host Ctrlplane or use the cloud offering
-  </Card>
-  <Card title="Inventory" icon="server" href="./inventory/overview">
-    Manage your infrastructure resources
-  </Card>
-  <Card title="Deployment" icon="rocket" href="./deployment/overview">
-    Orchestrate releases across environments
   </Card>
 </CardGroup>
