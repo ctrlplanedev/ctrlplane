@@ -198,7 +198,9 @@ func (d *TerraformCloudDispatcher) generateWorkspace(job *oapi.TemplatableJob, t
 	}
 
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, job); err != nil {
+	// Use Map() to convert to lowercase field names for consistent templating
+	// This allows templates to use {{.resource.name}} instead of {{.Resource.Name}}
+	if err := t.Execute(&buf, job.Map()); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 

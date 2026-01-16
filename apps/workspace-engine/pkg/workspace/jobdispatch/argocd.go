@@ -198,7 +198,9 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	}
 
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, templatableJobWithRelease); err != nil {
+	// Use Map() to convert to lowercase field names for consistent templating
+	// This allows templates to use {{.resource.name}} instead of {{.Resource.Name}}
+	if err := t.Execute(&buf, templatableJobWithRelease.Map()); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to execute template")
 		message := fmt.Sprintf("Failed to execute ArgoCD Application template: %s", err.Error())
@@ -270,7 +272,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		if templatableJobWithRelease.Resource != nil {
 			resourceName = templatableJobWithRelease.Resource.Name
 		}
-		err := fmt.Errorf("application name is required in metadata.name (resource.Name=%q, template output preview: %s)", resourceName, buf.String()[:min(500, len(buf.String()))])
+		err := fmt.Errorf("application name is required in metadata.name (resource.name=%q, template output preview: %s)", resourceName, buf.String()[:min(500, len(buf.String()))])
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing application name")
 		message := "ArgoCD Application template must include metadata.name. Check that your template sets a valid application name."

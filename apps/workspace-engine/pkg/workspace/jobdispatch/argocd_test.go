@@ -303,7 +303,8 @@ func executeTemplate(templateStr string, data *oapi.TemplatableJob) (string, err
 		return "", err
 	}
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, data); err != nil {
+	// Use Map() to convert to lowercase field names for consistent templating
+	if err := t.Execute(&buf, data.Map()); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
@@ -391,32 +392,32 @@ func TestTemplateExecution_BasicFields(t *testing.T) {
 	}{
 		{
 			name:     "job id",
-			template: `{{ .Job.Id }}`,
+			template: `{{ .job.id }}`,
 			expected: "job-123",
 		},
 		{
 			name:     "resource name",
-			template: `{{ .Resource.Name }}`,
+			template: `{{ .resource.name }}`,
 			expected: "my-app",
 		},
 		{
 			name:     "resource identifier",
-			template: `{{ .Resource.Identifier }}`,
+			template: `{{ .resource.identifier }}`,
 			expected: "my-app-identifier",
 		},
 		{
 			name:     "environment name",
-			template: `{{ .Environment.Name }}`,
+			template: `{{ .environment.name }}`,
 			expected: "production",
 		},
 		{
 			name:     "deployment name",
-			template: `{{ .Deployment.Name }}`,
+			template: `{{ .deployment.name }}`,
 			expected: "my-deployment",
 		},
 		{
 			name:     "release version name",
-			template: `{{ .Release.Version.Name }}`,
+			template: `{{ .release.version.name }}`,
 			expected: "v1.2.3",
 		},
 	}
@@ -440,18 +441,18 @@ func TestTemplateExecution_ReleaseVariables(t *testing.T) {
 	}{
 		{
 			name:     "access variable by key",
-			template: `{{ index .Release.Variables "IMAGE_TAG" }}`,
+			template: `{{ index .release.variables "IMAGE_TAG" }}`,
 			expected: "v1.2.3",
 		},
 		{
 			name:     "access multiple variables",
-			template: `tag={{ index .Release.Variables "IMAGE_TAG" }}, replicas={{ index .Release.Variables "REPLICAS" }}`,
+			template: `tag={{ index .release.variables "IMAGE_TAG" }}, replicas={{ index .release.variables "REPLICAS" }}`,
 			expected: "tag=v1.2.3, replicas=3",
 		},
 		{
-			name:     "missing variable returns empty with missingkey=zero",
-			template: `{{ index .Release.Variables "NONEXISTENT" }}`,
-			expected: "",
+			name:     "missing variable returns no value",
+			template: `{{ index .release.variables "NONEXISTENT" }}`,
+			expected: "<no value>",
 		},
 	}
 
@@ -474,12 +475,12 @@ func TestTemplateExecution_ResourceConfig(t *testing.T) {
 	}{
 		{
 			name:     "access config value",
-			template: `{{ index .Resource.Config "namespace" }}`,
+			template: `{{ index .resource.config "namespace" }}`,
 			expected: "production",
 		},
 		{
 			name:     "access nested config",
-			template: `{{ index .Resource.Config "cluster" }}`,
+			template: `{{ index .resource.config "cluster" }}`,
 			expected: "us-west-2",
 		},
 	}
@@ -503,22 +504,22 @@ func TestTemplateExecution_SprigFunctions(t *testing.T) {
 	}{
 		{
 			name:     "lower function",
-			template: `{{ .Resource.Name | lower }}`,
+			template: `{{ .resource.name | lower }}`,
 			expected: "my-app",
 		},
 		{
 			name:     "upper function",
-			template: `{{ .Resource.Name | upper }}`,
+			template: `{{ .resource.name | upper }}`,
 			expected: "MY-APP",
 		},
 		{
 			name:     "replace function",
-			template: `{{ .Resource.Name | replace "-" "_" }}`,
+			template: `{{ .resource.name | replace "-" "_" }}`,
 			expected: "my_app",
 		},
 		{
 			name:     "default function for missing value",
-			template: `{{ index .Release.Variables "MISSING" | default "default-value" }}`,
+			template: `{{ index .release.variables "MISSING" | default "default-value" }}`,
 			expected: "default-value",
 		},
 	}
@@ -538,20 +539,20 @@ func TestTemplateExecution_FullArgoCDApplication(t *testing.T) {
 	templateStr := `apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .Resource.Name }}
+  name: {{ .resource.name }}
   namespace: argocd
   labels:
-    app: {{ .Resource.Name }}
-    env: {{ .Environment.Name }}
+    app: {{ .resource.name }}
+    env: {{ .environment.name }}
 spec:
   project: default
   source:
     repoURL: https://github.com/example/repo
-    path: manifests/{{ .Environment.Name }}
-    targetRevision: {{ index .Release.Variables "IMAGE_TAG" }}
+    path: manifests/{{ .environment.name }}
+    targetRevision: {{ index .release.variables "IMAGE_TAG" }}
   destination:
     server: https://kubernetes.default.svc
-    namespace: {{ index .Resource.Config "namespace" }}`
+    namespace: {{ index .resource.config "namespace" }}`
 
 	result, err := executeTemplate(templateStr, job)
 	require.NoError(t, err)
@@ -578,7 +579,7 @@ func TestTemplateExecution_NilResource(t *testing.T) {
 	job.Resource = nil
 
 	// With missingkey=zero, accessing nil resource should not panic
-	templateStr := `name: {{ if .Resource }}{{ .Resource.Name }}{{ else }}unknown{{ end }}`
+	templateStr := `name: {{ if .resource }}{{ .resource.name }}{{ else }}unknown{{ end }}`
 	result, err := executeTemplate(templateStr, job)
 	require.NoError(t, err)
 	require.Equal(t, "name: unknown", result)
@@ -593,11 +594,11 @@ func TestTemplateExecution_InvalidTemplate(t *testing.T) {
 	}{
 		{
 			name:     "unclosed action",
-			template: `{{ .Job.Id`,
+			template: `{{ .job.id`,
 		},
 		{
 			name:     "unknown function",
-			template: `{{ nonexistentFunc .Job.Id }}`,
+			template: `{{ nonexistentFunc .job.id }}`,
 		},
 	}
 
@@ -787,15 +788,15 @@ func TestArgoCDDispatcher_DispatchJob_Success(t *testing.T) {
 	templateStr := `apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .Resource.Name }}
+  name: {{ .resource.name }}
   namespace: argocd
   labels:
-    env: {{ .Environment.Name }}
+    env: {{ .environment.name }}
 spec:
   project: default
   source:
     repoURL: https://github.com/example/repo
-    targetRevision: {{ .Release.Version.Name }}
+    targetRevision: {{ .release.version.name }}
   destination:
     server: https://kubernetes.default.svc
     namespace: production`
@@ -862,10 +863,10 @@ func TestArgoCDDispatcher_DispatchJob_CleansApplicationName(t *testing.T) {
 	templateStr := `apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: {{ .Resource.Name }}
+  name: {{ .resource.name }}
   namespace: argocd
   labels:
-    original-name: {{ .Resource.Name }}`
+    original-name: {{ .resource.name }}`
 
 	config := createArgoCDJobConfig(t, templateStr)
 
