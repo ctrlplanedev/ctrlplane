@@ -6,48 +6,68 @@ description:
 
 ## What is Ctrlplane?
 
-Ctrlplane is an open-source platform that solves two critical challenges for
-platform and DevOps teams:
+**Ctrlplane is the orchestration layer between your CI/CD pipelines and your
+infrastructure.**
 
-1. **Deployment Orchestration** — Progressive delivery with policy-driven
-   environment promotion, approval workflows, and automated verification
-2. **Infrastructure Inventory** — Unified visibility into resources across your
-   entire stack with custom relationships and dynamic grouping
+Your CI builds code. Your clusters run it. Ctrlplane decides _when_ releases are
+ready, _where_ they should deploy, and _what gates_ they must pass—handling
+environment promotion, verification, approvals, and rollbacks automatically.
 
-Think of it as the control plane that sits between your CI/CD pipelines and your
-infrastructure, providing the orchestration layer for complex multi-environment
-deployments and the visibility layer for understanding what's running where.
+```
+Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
+ (builds)          (orchestrates)           (deploys)
+```
 
-## The Two Systems
+## The Problem
+
+Most teams outgrow their deployment setup around 10-20 services. Common
+symptoms:
+
+- **Manual promotion**: Someone has to remember to deploy to prod after staging
+  looks good
+- **No verification**: Deployments succeed, but did the service actually work?
+- **Scattered visibility**: "What version is running in eu-west-1 prod?"
+  requires checking multiple dashboards
+- **Inconsistent policies**: Some services require approval, some don't—it's
+  tribal knowledge
+- **Painful multi-region**: Deploying to 10 clusters means running 10 pipelines
+- **No source of truth for infrastructure**: Resources are scattered across
+  Kubernetes, cloud providers, and spreadsheets—no unified view
+- **Static deployment targets**: Adding a new cluster means updating configs
+  everywhere instead of having it automatically included
+
+## How Ctrlplane Solves This
+
+Ctrlplane provides two core systems:
 
 ### 1. Deployment Orchestration
 
-Ctrlplane's deployment system handles the complexity of promoting releases
-through environments with configurable policies, gates, and verification.
+Define _what_ should deploy _where_ and _when_—Ctrlplane handles the
+coordination.
 
 **Key Capabilities:**
 
-- **Progressive Delivery** — Canary rollouts, blue-green deployments, and phased
-  environment promotion
-- **Policy-Driven Workflows** — Define approval gates, environment sequencing,
-  and deployment constraints
-- **Automated Verification** — Integrate with Datadog, Prometheus, or custom
-  endpoints to validate deployments before promotion
-- **Environment Promotion** — Automatically promote successful releases from
-  staging → production with configurable gates
-- **Rollback & Recovery** — Automatic rollback when verification fails or manual
-  intervention triggers
+- **Environment Progression** — Automatically promote from staging → production
+  when verification passes
+- **Policy Gates** — Require approvals, wait for dependencies, enforce
+  deployment windows
+- **Automated Verification** — Query Datadog, Prometheus, or HTTP endpoints to
+  confirm deployments are healthy
+- **Gradual Rollouts** — Deploy to targets sequentially with configurable
+  intervals
+- **Automatic Rollback** — If verification fails, roll back without manual
+  intervention
 
 ```mermaid
 flowchart LR
-    Build["Build (CI/CD)"] --> Staging
+    Build["CI Build"] --> Staging
 
     subgraph Staging["Staging"]
         direction TB
         S1["Deploy"] --> S2["Verify"]
     end
 
-    Staging --> Production
+    Staging -->|"auto-promote"| Production
 
     subgraph Production["Production"]
         direction TB
@@ -64,29 +84,28 @@ flowchart LR
 
 ### 2. Infrastructure Inventory
 
-Ctrlplane provides a unified inventory of your resources with powerful
-relationship modeling and dynamic grouping — giving you visibility that spans
-Kubernetes clusters, cloud resources, and custom infrastructure.
+A single source of truth for _what exists_ and _what's running where_ across
+your entire infrastructure—regardless of provider.
 
 **Key Capabilities:**
 
 - **Resource Discovery** — Auto-sync resources from Kubernetes, AWS, GCP, or
-  custom providers
-- **Custom Relationships** — Model dependencies, ownership, and service
-  connections between resources
-- **Dynamic Grouping** — Use selectors to create views based on metadata,
-  labels, or custom attributes
-- **Rich Metadata** — Attach arbitrary metadata for filtering, grouping, and
-  automation
-- **Cross-Stack Visibility** — See Kubernetes deployments, cloud functions, VMs,
-  and databases in one place
+  custom providers into a unified inventory
+- **Dynamic Environments** — Define "production" as all resources with
+  `env=prod` metadata—new clusters automatically join
+- **Version Tracking** — See which version of each service is deployed to every
+  resource in real-time
+- **Custom Relationships** — Model dependencies, ownership, and connections
+  between services and infrastructure
+- **Rich Metadata** — Tag resources with arbitrary metadata for filtering,
+  grouping, and policy targeting
 
 ```mermaid
 flowchart TB
     subgraph Inventory["Resource Inventory"]
         direction TB
         K8s["K8s Clusters"] --> Unified
-        AWS["AWS Lambda"] --> Unified
+        AWS["AWS Resources"] --> Unified
         Custom["Custom Infra"] --> Unified
 
         subgraph Unified["Unified View"]
@@ -106,19 +125,28 @@ flowchart TB
 - Creating custom views for different teams (backend services, data pipelines,
   etc.)
 
+## Who Is Ctrlplane For?
+
+| Team                     | Use Case                                                                    |
+| ------------------------ | --------------------------------------------------------------------------- |
+| **Platform Engineering** | Building an IDP with deployment orchestration and infrastructure visibility |
+| **DevOps / SRE**         | Enforcing deployment policies and tracking what's running where             |
+| **Scaling Startups**     | Moving from "we manually deploy" to automated, policy-driven releases       |
+| **Multi-region Teams**   | Coordinating deployments across clusters/regions with a unified inventory   |
+| **Multi-cloud Teams**    | Managing resources across AWS, GCP, Azure, and K8s from a single pane       |
+
 ## When to Use Ctrlplane
 
-Ctrlplane is designed for platform teams who need:
-
-| Challenge                               | How Ctrlplane Helps                                                 |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| Multi-environment promotion is manual   | Automated environment progression with policy gates                 |
-| No visibility into what's deployed      | Real-time inventory of resources and their versions                 |
-| Deployments lack verification           | Integrated verification with Datadog, HTTP checks, etc.             |
-| Rollbacks are slow and manual           | Automatic rollback on verification failure                          |
-| Infrastructure spread across providers  | Unified inventory with custom relationships                         |
-| Different teams need different policies | Flexible policy engine with environment/deployment selectors        |
-| Scaling deployment orchestration        | Handle 1000s of release targets with a single deployment definition |
+| Challenge                                   | How Ctrlplane Helps                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| Multi-environment promotion is manual       | Automated environment progression with policy gates                 |
+| No visibility into what's deployed          | Real-time inventory of resources and their versions                 |
+| Deployments lack verification               | Integrated verification with Datadog, Prometheus, HTTP checks       |
+| Rollbacks are slow and manual               | Automatic rollback on verification failure                          |
+| Infrastructure spread across providers      | Unified inventory synced from K8s, AWS, GCP, and custom sources     |
+| Adding new clusters requires config changes | Dynamic environments auto-include resources matching selectors      |
+| Different teams need different policies     | Flexible policy engine with environment/deployment selectors        |
+| Scaling deployment orchestration            | Handle 1000s of release targets with a single deployment definition |
 
 ## Core Concepts
 
@@ -134,25 +162,18 @@ Ctrlplane is designed for platform teams who need:
 | **Job**            | The execution unit that performs the deployment                 |
 | **Policy**         | Rules governing approvals, progression, and verification        |
 
-## Integration Points
+## How It Fits Your Stack
 
-Ctrlplane integrates with your existing stack:
+Ctrlplane doesn't replace your CI or your deployment tooling—it coordinates
+them:
 
-**CI/CD Systems:**
-
-- GitHub Actions, GitLab CI, Jenkins, CircleCI — create versions after builds
-
-**Job Execution:**
-
-- Kubernetes Jobs, GitHub Actions, ArgoCD — execute deployments
-
-**Verification Providers:**
-
-- Datadog, Prometheus, HTTP endpoints — validate deployment health
-
-**Resource Providers:**
-
-- Kubernetes, AWS, GCP, custom scripts — sync infrastructure inventory
+| Layer           | Tools                                           | What They Do                                  |
+| --------------- | ----------------------------------------------- | --------------------------------------------- |
+| **Build**       | GitHub Actions, GitLab CI, Jenkins              | Build artifacts, create versions in Ctrlplane |
+| **Inventory**   | **Ctrlplane** + K8s, AWS, GCP, custom providers | Sync and track all resources in one place     |
+| **Orchestrate** | **Ctrlplane**                                   | Decide when/where to deploy, enforce policies |
+| **Execute**     | ArgoCD, K8s Jobs, GitHub Actions, Terraform     | Perform the actual deployment                 |
+| **Monitor**     | Datadog, Prometheus                             | Provide metrics for verification              |
 
 ## Next Steps
 
