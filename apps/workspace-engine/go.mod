@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/argoproj/argo-cd/v2 v2.14.21
+	github.com/avast/retry-go v2.7.0+incompatible
 	github.com/aws/smithy-go v1.23.1
 	github.com/charmbracelet/log v0.4.2
 	github.com/cockroachdb/pebble v1.1.5
@@ -104,7 +105,7 @@ require (
 	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/grpc v1.75.0 // indirect
+	google.golang.org/grpc v1.75.0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
@@ -120,7 +121,6 @@ require (
 	github.com/ProtonMail/go-crypto v1.1.5 // indirect
 	github.com/argoproj/gitops-engine v0.7.1-0.20250521000818-c08b0a72c1f1 // indirect
 	github.com/argoproj/pkg v0.13.7-0.20230626144333-d56162821bd1 // indirect
-	github.com/avast/retry-go v2.7.0+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2 v1.39.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.10 // indirect
