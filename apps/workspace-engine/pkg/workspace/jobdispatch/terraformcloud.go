@@ -197,8 +197,11 @@ func (d *TerraformCloudDispatcher) generateWorkspace(job *oapi.TemplatableJob, t
 		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	// Convert to map with lowercase keys for consistent template variable naming
+	templateData := job.ToTemplateData()
+
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, job); err != nil {
+	if err := t.Execute(&buf, templateData); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 

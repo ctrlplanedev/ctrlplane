@@ -197,8 +197,11 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	// Convert to map with lowercase keys for consistent template variable naming
+	templateData := templatableJobWithRelease.ToTemplateData()
+
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, templatableJobWithRelease); err != nil {
+	if err := t.Execute(&buf, templateData); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to execute template")
 		message := fmt.Sprintf("Failed to execute ArgoCD Application template: %s", err.Error())
