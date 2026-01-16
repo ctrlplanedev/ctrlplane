@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"maps"
 	"strings"
-	"text/template"
 	"time"
 	"workspace-engine/pkg/config"
 
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
@@ -22,14 +22,12 @@ import (
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
+	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"sigs.k8s.io/yaml"
-
-	"github.com/Masterminds/sprig/v3"
-	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"google.golang.org/grpc"
+	"sigs.k8s.io/yaml"
 )
 
 var argoCDTracer = otel.Tracer("ArgoCDDispatcher")
@@ -188,7 +186,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		)
 	}
 
-	t, err := template.New("argoCDAgentConfig").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(cfg.Template)
+	t, err := templatefuncs.Parse("argoCDAgentConfig", cfg.Template)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse template")

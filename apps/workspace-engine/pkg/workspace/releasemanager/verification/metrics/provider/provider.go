@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"text/template"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
 )
 
 // ProviderContext provides context information for metric providers
@@ -39,7 +39,7 @@ func (p *ProviderContext) Template(tmpl string) string {
 	}
 
 	data := p.Map()
-	t, err := template.New("").Parse(tmpl)
+	t, err := templatefuncs.Parse("template", tmpl)
 	if err != nil {
 		return tmpl
 	}

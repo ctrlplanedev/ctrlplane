@@ -6,15 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
-	"text/template"
 	"time"
 
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/store"
 
-	"github.com/Masterminds/sprig/v3"
 	applicationpkg "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/stretchr/testify/require"
@@ -299,7 +298,7 @@ func TestIsRetryableError(t *testing.T) {
 
 // Helper to execute a template with the same options as DispatchJob
 func executeTemplate(templateStr string, data *oapi.TemplatableJob) (string, error) {
-	t, err := template.New("test").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(templateStr)
+	t, err := templatefuncs.Parse("test", templateStr)
 	if err != nil {
 		return "", err
 	}
