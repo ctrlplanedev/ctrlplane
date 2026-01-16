@@ -186,6 +186,33 @@ func (r *ReleaseTargets) GetForSystem(ctx context.Context, systemId string) ([]*
 	return releaseTargets, nil
 }
 
+func (r *ReleaseTargets) GetForPolicy(ctx context.Context, policy *oapi.Policy) (map[string]*oapi.ReleaseTarget, error) {
+	targetMap := make(map[string]*oapi.ReleaseTarget)
+
+	allReleaseTargets := r.releaseTargets.Items()
+	for _, releaseTarget := range allReleaseTargets {
+		environment, ok := r.store.Environments.Get(releaseTarget.EnvironmentId)
+		if !ok {
+			continue
+		}
+		deployment, ok := r.store.Deployments.Get(releaseTarget.DeploymentId)
+		if !ok {
+			continue
+		}
+		resource, ok := r.store.Resources.Get(releaseTarget.ResourceId)
+		if !ok {
+			continue
+		}
+
+		isMatch := selector.MatchPolicy(ctx, policy, selector.NewResolvedReleaseTarget(environment, deployment, resource))
+		if isMatch {
+			targetMap[releaseTarget.Key()] = releaseTarget
+		}
+	}
+
+	return targetMap, nil
+}
+
 func (r *ReleaseTargets) RemoveForResource(ctx context.Context, resourceId string) {
 	for _, releaseTarget := range r.GetForResource(ctx, resourceId) {
 		if releaseTarget.ResourceId == resourceId {

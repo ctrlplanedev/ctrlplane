@@ -69,7 +69,7 @@ export function JobStatusBadge({
   status: keyof typeof JobStatusDisplayName;
   message?: string | null;
 }) {
-  if (message != null) {
+  if (message != null && message !== "") {
     return (
       <TooltipProvider>
         <Tooltip>

@@ -46,4 +46,20 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/deployments': {
+    get: {
+      summary: 'Get deployments for a job agent',
+      operationId: 'getDeploymentsForJobAgent',
+      description: 'Returns a list of deployments for a job agent.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.jobAgentIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Deployment'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

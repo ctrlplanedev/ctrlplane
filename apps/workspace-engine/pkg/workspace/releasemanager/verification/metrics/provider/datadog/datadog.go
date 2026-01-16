@@ -65,8 +65,6 @@ func New(config *oapi.DatadogMetricProvider) (*Provider, error) {
 		config.IntervalSeconds = &interval
 	}
 
-	fmt.Printf("Datadog provider interval configured as: %d seconds\n", *config.IntervalSeconds)
-
 	if config.Aggregator == nil || *config.Aggregator == "" {
 		aggregator := oapi.DatadogMetricProviderAggregator("last")
 		config.Aggregator = &aggregator

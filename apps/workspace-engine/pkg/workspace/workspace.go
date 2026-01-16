@@ -10,6 +10,7 @@ import (
 	verificationaction "workspace-engine/pkg/workspace/releasemanager/action/verification"
 	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
+	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/store"
@@ -33,25 +34,16 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 
 	// Create release manager with trace store (will panic if nil)
 	ws.releasemanager = releasemanager.New(s, ws.traceStore)
+	reconcileFn := func(ctx context.Context, target *oapi.ReleaseTarget) error {
+		return ws.releasemanager.ReconcileTarget(ctx, target, releasemanager.WithTrigger(trace.TriggerJobSuccess))
+	}
+
 	ws.actionOrchestrator = action.
 		NewOrchestrator(s).
-		RegisterAction(
-			verificationaction.NewVerificationAction(
-				ws.releasemanager.VerificationManager(),
-			),
-		).RegisterAction(
-		deploymentdependency.NewDeploymentDependencyAction(
-			s,
-			func(ctx context.Context, target *oapi.ReleaseTarget) error {
-				return ws.releasemanager.ReconcileTarget(ctx, target, releasemanager.WithTrigger(trace.TriggerJobSuccess))
-			},
-		),
-	).RegisterAction(
-		rollback.NewRollbackAction(
-			s,
-			jobs.NewDispatcher(s, ws.releasemanager.VerificationManager()),
-		),
-	)
+		RegisterAction(verificationaction.NewVerificationAction(ws.releasemanager.VerificationManager())).
+		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
+		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
+		RegisterAction(rollback.NewRollbackAction(s, jobs.NewDispatcher(s, ws.releasemanager.VerificationManager())))
 
 	return ws
 }

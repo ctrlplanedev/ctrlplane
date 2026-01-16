@@ -11,12 +11,10 @@ import (
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
-	"text/template"
-
-	"github.com/Masterminds/sprig/v3"
 	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/hashicorp/go-tfe"
 	"go.opentelemetry.io/otel"
@@ -194,7 +192,7 @@ func (d *TerraformCloudDispatcher) getTemplatableJob(job *oapi.Job) (*oapi.Templ
 }
 
 func (d *TerraformCloudDispatcher) generateWorkspace(job *oapi.TemplatableJob, tfTemplate string) (*WorkspaceTemplate, error) {
-	t, err := template.New("terraformWorkspaceTemplate").Funcs(sprig.TxtFuncMap()).Option("missingkey=zero").Parse(tfTemplate)
+	t, err := templatefuncs.Parse("terraformWorkspaceTemplate", tfTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}

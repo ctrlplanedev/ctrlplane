@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import z from "zod";
 
@@ -101,5 +102,27 @@ export const jobAgentsRouter = router({
         data: jobAgentResponse.data,
       });
       return jobAgentResponse.data;
+    }),
+
+  deployments: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid(), jobAgentId: z.string() }))
+    .query(async ({ input }) => {
+      const response = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}/deployments",
+        {
+          params: {
+            path: input,
+            query: { limit: 1000, offset: 0 },
+          },
+        },
+      );
+
+      if (response.error != null)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: response.error.error,
+        });
+
+      return response.data;
     }),
 });

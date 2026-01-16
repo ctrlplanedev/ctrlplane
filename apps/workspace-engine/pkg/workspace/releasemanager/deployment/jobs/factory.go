@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -23,6 +24,32 @@ type Factory struct {
 	store *store.Store
 }
 
+func toMap(v any) (map[string]any, error) {
+	if v == nil {
+		return map[string]any{}, nil
+	}
+	if m, ok := v.(map[string]any); ok {
+		return m, nil
+	}
+	if m, ok := v.(map[string]any); ok {
+		out := make(map[string]any, len(m))
+		maps.Copy(out, m)
+		return out, nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		return nil, err
+	}
+	if out == nil {
+		out = map[string]any{}
+	}
+	return out, nil
+}
+
 // NewFactory creates a new job factory.
 func NewFactory(store *store.Store) *Factory {
 	return &Factory{
@@ -30,13 +57,13 @@ func NewFactory(store *store.Store) *Factory {
 	}
 }
 
-func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.FullJobAgentConfig, error) {
+func (f *Factory) MergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.FullJobAgentConfig, error) {
 	runnerDiscriminator, err := jobAgent.Config.Discriminator()
 	if err != nil {
 		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config discriminator: %w", err)
 	}
 
-	var deploymentConfig interface{}
+	var deploymentConfig any
 	switch runnerDiscriminator {
 	case string(oapi.TestRunner):
 	case string(oapi.ArgoCd):
@@ -59,35 +86,6 @@ func (f *Factory) mergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oap
 	runnerConfig, err := jobAgent.Config.ValueByDiscriminator()
 	if err != nil {
 		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config: %w", err)
-	}
-
-	// ValueByDiscriminator returns a concrete struct type (as interface{}). Convert both to maps so we can deep-merge.
-	toMap := func(v any) (map[string]any, error) {
-		if v == nil {
-			return map[string]any{}, nil
-		}
-		if m, ok := v.(map[string]any); ok {
-			return m, nil
-		}
-		if m, ok := v.(map[string]interface{}); ok {
-			out := make(map[string]any, len(m))
-			for k, vv := range m {
-				out[k] = vv
-			}
-			return out, nil
-		}
-		b, err := json.Marshal(v)
-		if err != nil {
-			return nil, err
-		}
-		var out map[string]any
-		if err := json.Unmarshal(b, &out); err != nil {
-			return nil, err
-		}
-		if out == nil {
-			out = map[string]any{}
-		}
-		return out, nil
 	}
 
 	deploymentMap, err := toMap(deploymentConfig)
@@ -213,7 +211,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}
 
 	// Merge job agent config: deployment config overrides agent defaults
-	mergedConfig, err := f.mergeJobAgentConfig(deployment, jobAgent, &release.Version)
+	mergedConfig, err := f.MergeJobAgentConfig(deployment, jobAgent, &release.Version)
 	if err != nil {
 		if action != nil {
 			action.AddStep("Configure job", trace.StepResultFail,
