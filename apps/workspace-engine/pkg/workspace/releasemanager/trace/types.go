@@ -78,22 +78,24 @@ const (
 type TriggerReason string
 
 const (
-	TriggerScheduled          TriggerReason = "scheduled"           // Periodic scheduled reconciliation
-	TriggerDeploymentCreated  TriggerReason = "deployment.created"  // New deployment created
-	TriggerDeploymentUpdated  TriggerReason = "deployment.updated"  // Deployment configuration changed
-	TriggerEnvironmentCreated TriggerReason = "environment.created" // New environment created
-	TriggerEnvironmentUpdated TriggerReason = "environment.updated" // Environment configuration changed
-	TriggerResourceCreated    TriggerReason = "resource.created"    // New resource added
-	TriggerResourceUpdated    TriggerReason = "resource.updated"    // Resource configuration changed
-	TriggerVersionCreated     TriggerReason = "version.created"     // New deployment version created
-	TriggerApprovalCreated    TriggerReason = "approval.created"    // User approval granted
-	TriggerApprovalUpdated    TriggerReason = "approval.updated"    // User approval status changed
-	TriggerPolicyUpdated      TriggerReason = "policy.updated"      // Policy configuration changed
-	TriggerVariablesUpdated   TriggerReason = "variables.updated"   // Deployment or resource variables changed
-	TriggerJobAgentUpdated    TriggerReason = "jobagent.updated"    // Job agent configuration changed
-	TriggerJobSuccess         TriggerReason = "job.success"         // Job was successful
-	TriggerManual             TriggerReason = "manual"              // Manually triggered (e.g., force redeploy)
-	TriggerFirstBoot          TriggerReason = "first_boot"          // Initial workspace startup
+	TriggerScheduled           TriggerReason = "scheduled"            // Periodic scheduled reconciliation
+	TriggerDeploymentCreated   TriggerReason = "deployment.created"   // New deployment created
+	TriggerDeploymentUpdated   TriggerReason = "deployment.updated"   // Deployment configuration changed
+	TriggerEnvironmentCreated  TriggerReason = "environment.created"  // New environment created
+	TriggerEnvironmentUpdated  TriggerReason = "environment.updated"  // Environment configuration changed
+	TriggerResourceCreated     TriggerReason = "resource.created"     // New resource added
+	TriggerResourceUpdated     TriggerReason = "resource.updated"     // Resource configuration changed
+	TriggerVersionCreated      TriggerReason = "version.created"      // New deployment version created
+	TriggerApprovalCreated     TriggerReason = "approval.created"     // User approval granted
+	TriggerApprovalUpdated     TriggerReason = "approval.updated"     // User approval status changed
+	TriggerPolicyUpdated       TriggerReason = "policy.updated"       // Policy configuration changed
+	TriggerVariablesUpdated    TriggerReason = "variables.updated"    // Deployment or resource variables changed
+	TriggerJobAgentUpdated     TriggerReason = "jobagent.updated"     // Job agent configuration changed
+	TriggerJobSuccess          TriggerReason = "job.success"          // Job was successful
+	TriggerJobFailure          TriggerReason = "job.failure"          // Job failed
+	TriggerVerificationFailure TriggerReason = "verification.failure" // Verification failed
+	TriggerManual              TriggerReason = "manual"               // Manually triggered (e.g., force redeploy)
+	TriggerFirstBoot           TriggerReason = "first_boot"           // Initial workspace startup
 )
 
 // PersistenceStore interface for storing trace spans

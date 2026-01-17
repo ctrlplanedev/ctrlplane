@@ -43,7 +43,9 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		RegisterAction(verificationaction.NewVerificationAction(ws.releasemanager.VerificationManager())).
 		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
 		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
-		RegisterAction(rollback.NewRollbackAction(s, jobs.NewDispatcher(s, ws.releasemanager.VerificationManager())))
+		RegisterAction(rollback.NewRollbackAction(s, jobs.NewDispatcher(s, ws.releasemanager.VerificationManager()), func(ctx context.Context, target *oapi.ReleaseTarget) error {
+			return ws.releasemanager.ReconcileTarget(ctx, target, releasemanager.WithTrigger(trace.TriggerJobFailure))
+		}))
 
 	return ws
 }

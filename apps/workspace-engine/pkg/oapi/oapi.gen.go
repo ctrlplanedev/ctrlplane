@@ -907,6 +907,13 @@ type Release struct {
 	Version            DeploymentVersion       `json:"version"`
 }
 
+// ReleaseRollback defines model for ReleaseRollback.
+type ReleaseRollback struct {
+	Reason       *string   `json:"reason,omitempty"`
+	ReleaseId    string    `json:"releaseId"`
+	RolledBackAt time.Time `json:"rolledBackAt"`
+}
+
 // ReleaseTarget defines model for ReleaseTarget.
 type ReleaseTarget struct {
 	DeploymentId  string `json:"deploymentId"`

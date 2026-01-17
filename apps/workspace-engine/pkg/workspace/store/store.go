@@ -25,6 +25,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.Systems = NewSystems(store)
 	store.DeploymentVariables = NewDeploymentVariables(store)
 	store.Releases = NewReleases(store)
+	store.ReleaseRollbacks = NewReleaseRollbacks(store)
 	store.Jobs = NewJobs(store)
 	store.JobAgents = NewJobAgents(store)
 	store.UserApprovalRecords = NewUserApprovalRecords(store)
@@ -57,6 +58,7 @@ type Store struct {
 	ReleaseTargets           *ReleaseTargets
 	Systems                  *Systems
 	Releases                 *Releases
+	ReleaseRollbacks         *ReleaseRollbacks
 	Jobs                     *Jobs
 	JobAgents                *JobAgents
 	UserApprovalRecords      *UserApprovalRecords

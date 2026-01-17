@@ -54,13 +54,20 @@ func New(store *store.Store, traceStore PersistenceStore) *Manager {
 	compositeHooks := verification.NewCompositeHooks(releaseManagerHooks, rollbackHooks)
 	verificationManager.SetHooks(compositeHooks)
 
-	return &Manager{
+	mgr := &Manager{
 		store:        store,
 		cache:        stateCache,
 		deployment:   deploymentOrch,
 		verification: verificationManager,
 		traceStore:   traceStore,
 	}
+
+	reconcileFn := func(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error {
+		return mgr.ReconcileTarget(ctx, releaseTarget, WithTrigger(trace.TriggerVerificationFailure))
+	}
+	rollbackHooks.SetReconcileTargetFn(reconcileFn)
+
+	return mgr
 }
 
 // ============================================================================

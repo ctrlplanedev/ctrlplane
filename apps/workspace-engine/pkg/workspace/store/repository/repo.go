@@ -56,6 +56,7 @@ func New(wsId string) *InMemoryStore {
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		Systems:                  createTypedStore[*oapi.System](router, "system"),
 		Releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
+		ReleaseRollbacks:         createTypedStore[*oapi.ReleaseRollback](router, "release_rollback"),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		JobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
@@ -85,6 +86,7 @@ type InMemoryStore struct {
 	PolicySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
 	Systems          cmap.ConcurrentMap[string, *oapi.System]
 	Releases         *indexstore.Store[*oapi.Release]
+	ReleaseRollbacks cmap.ConcurrentMap[string, *oapi.ReleaseRollback]
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
 	Jobs      *indexstore.Store[*oapi.Job]

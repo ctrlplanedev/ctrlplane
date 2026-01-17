@@ -240,6 +240,16 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  ReleaseRollback: {
+    type: 'object',
+    required: ['releaseId', 'rolledBackAt'],
+    properties: {
+      releaseId: { type: 'string' },
+      rolledBackAt: { type: 'string', format: 'date-time' },
+      reason: { type: 'string' },
+    },
+  },
+
   GithubEntity: {
     type: 'object',
     required: ['installationId', 'slug'],

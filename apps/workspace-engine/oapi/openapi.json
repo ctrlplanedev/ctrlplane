@@ -1597,6 +1597,25 @@
             ],
             "type": "object"
          },
+         "ReleaseRollback": {
+            "properties": {
+               "reason": {
+                  "type": "string"
+               },
+               "releaseId": {
+                  "type": "string"
+               },
+               "rolledBackAt": {
+                  "format": "date-time",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "releaseId",
+               "rolledBackAt"
+            ],
+            "type": "object"
+         },
          "ReleaseTarget": {
             "properties": {
                "deploymentId": {

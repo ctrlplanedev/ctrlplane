@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -16,9 +15,12 @@ import (
 
 var hookTracer = otel.Tracer("RollbackHooks")
 
+type reconcileTargetFn func(ctx context.Context, releaseTarget *oapi.ReleaseTarget) error
+
 type RollbackHooks struct {
-	store      *store.Store
-	dispatcher *jobs.Dispatcher
+	store           *store.Store
+	dispatcher      *jobs.Dispatcher
+	reconcileTarget reconcileTargetFn
 }
 
 var _ verification.VerificationHooks = &RollbackHooks{}
@@ -28,6 +30,11 @@ func NewRollbackHooks(store *store.Store, dispatcher *jobs.Dispatcher) *Rollback
 		store:      store,
 		dispatcher: dispatcher,
 	}
+}
+
+func (h *RollbackHooks) SetReconcileTargetFn(reconcileTargetFn reconcileTargetFn) *RollbackHooks {
+	h.reconcileTarget = reconcileTargetFn
+	return h
 }
 
 func (h *RollbackHooks) OnVerificationStarted(ctx context.Context, verification *oapi.JobVerification) error {
@@ -91,46 +98,16 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 
 	span.SetAttributes(attribute.Bool("rollback_applicable", true))
 
-	currentRelease, lastSuccessfulJob, err := h.store.ReleaseTargets.GetCurrentRelease(ctx, &release.ReleaseTarget)
-	if err != nil {
-		span.AddEvent("No previous release to roll back to")
-		span.SetStatus(codes.Ok, "no previous release available")
-		return nil
+	releaseRollback := oapi.ReleaseRollback{
+		ReleaseId:    release.ID(),
+		RolledBackAt: time.Now(),
 	}
-
-	// Don't rollback to the same release
-	if currentRelease.ID() == release.ID() {
-		span.AddEvent("Current release is the same as failed release, no rollback needed")
-		span.SetStatus(codes.Ok, "already on current release")
-		return nil
-	}
-
-	span.SetAttributes(
-		attribute.String("rollback_to_release.id", currentRelease.ID()),
-		attribute.String("rollback_to_version.id", currentRelease.Version.Id),
-		attribute.String("rollback_to_version.tag", currentRelease.Version.Tag),
-	)
-
-	now := time.Now()
-	newJob := oapi.Job{
-		Id:             uuid.New().String(),
-		ReleaseId:      lastSuccessfulJob.ReleaseId,
-		JobAgentId:     lastSuccessfulJob.JobAgentId,
-		JobAgentConfig: lastSuccessfulJob.JobAgentConfig,
-		Status:         oapi.JobStatusPending,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-	}
-
-	h.store.Jobs.Upsert(ctx, &newJob)
-
-	if err := h.dispatcher.DispatchJob(ctx, &newJob); err != nil {
+	if err := h.store.ReleaseRollbacks.Upsert(ctx, &releaseRollback); err != nil {
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "rollback execution failed")
+		span.SetStatus(codes.Error, "failed to create release rollback")
 		return err
 	}
 
-	span.SetStatus(codes.Ok, "rollback executed successfully")
 	return nil
 }
 
