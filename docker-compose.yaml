@@ -1,59 +1,186 @@
 services:
-  postgres:
-    platform: linux/amd64
-    image: postgres:18
-    container_name: ctrlplane-postgres
-    environment:
-      POSTGRES_USER: ctrlplane
-      POSTGRES_PASSWORD: ctrlplane
-      POSTGRES_DB: ctrlplane
+  traefik:
+    image: "traefik:v3.6"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "portway.ignore=true"
+    command:
+      - "--api.insecure=true"
+      - "--entryPoints.web.address=:80"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
     ports:
-      - "5432:5432"
+      - "80:80"
+      - "8080:8080" # Traefik dashboard
+    configs:
+      - source: traefik_dynamic
+        target: /etc/traefik/dynamic.yml
+    networks:
+      - proxy
+      - default
+
+  postgres:
+    image: postgres:18
+    platform: linux/amd64
+    restart: always
+    env_file: .env.compose
+    expose:
+      - 5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ctrlplane -d ctrlplane"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  migrations:
-    build:
-      context: .
-      dockerfile: ./packages/db/Dockerfile
+  redpanda:
+    image: redpandadata/redpanda:v24.3.18
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092
+    ports:
+      - 9092:9092
+    volumes:
+      - redpanda_data:/var/redpanda/data
 
-    container_name: ctrlplane-migrations
+  migrations:
+    image: ctrlplane/migrations:local
+    build:
+      context: ./packages/db
+      dockerfile: Dockerfile
+    platform: linux/amd64
     restart: "no"
-    environment:
-      POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
+    env_file: .env.compose
     depends_on:
       postgres:
         condition: service_healthy
 
-  jobs:
+  api:
+    image: ctrlplane/api:local
     build:
-      context: .
-      dockerfile: ./apps/jobs/Dockerfile
-
-    container_name: ctrlplane-jobs
-    environment:
-      POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
-      VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
+      context: ./apps/api
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: always
+    env_file: .env.compose
+    expose:
+      - "8081"
     depends_on:
       - postgres
+      - migrations
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.services.api.loadbalancer.server.port=8081"
+    networks:
+      - proxy
+      - default
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: ctrlplane-otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  workspace-engine:
+    image: ctrlplane/workspace-engine:local
+    build:
+      context: ./apps/workspace-engine
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: always
+    env_file: .env.compose
     ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-      - "8125:8125" # StatsD
-      - "8888:8888" # Telemetry
-      - "9109:9109" # Prometheus endpoint
+      - "8081:8081"
+    depends_on:
+      - api
+      - migrations
+      - redpanda
+
+  workspace-engine-router:
+    image: ctrlplane/workspace-engine-router:local
+    build:
+      context: ./apps/workspace-engine-router
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: always
+    env_file: .env.compose
+    ports:
+      - "9091:9091"
+      - "9090:9090"
+    depends_on:
+      - workspace-engine
+      - redpanda
+
+  web:
+    image: ctrlplane/web:local
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    restart: always
+    env_file: .env.compose
+    expose:
+      - "3000"
+    depends_on:
+      - api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.web.entrypoints=web"
+      - "traefik.http.routers.web.priority=1"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
+    networks:
+      - proxy
+      - default
+
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   container_name: ctrlplane-otel-collector
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "4317:4317" # OTLP gRPC
+  #     - "4318:4318" # OTLP HTTP
+  #     - "8125:8125" # StatsD
+  #     - "8888:8888" # Telemetry
+  #     - "9109:9109" # Prometheus endpoint
 
 volumes:
   postgres_data:
+  redpanda_data:
+
+configs:
+  traefik_dynamic:
+    content: |
+      http:
+        routers:
+          api:
+            rule: "PathPrefix(`/api`)"
+            entryPoints: [web]
+            service: api
+          web:
+            rule: "PathPrefix(`/`)"
+            entryPoints: [web]
+            service: web
+            priority: 1
+        services:
+          api:
+            loadBalancer:
+              servers:
+                - url: "http://api:8081"
+          web:
+            loadBalancer:
+              servers:
+                - url: "http://web:3000"
+
+networks:
+  proxy:
+    name: proxy
