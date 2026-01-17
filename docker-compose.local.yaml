@@ -1,0 +1,38 @@
+# Override for local development - builds from source (native platform)
+# Usage: docker compose -f docker-compose.yaml -f docker-compose.local.yaml up --build
+
+services:
+  migrations:
+    image: ctrlplane/migrations:local
+    platform: ""
+    build:
+      context: .
+      dockerfile: packages/db/Dockerfile
+
+  api:
+    image: ctrlplane/api:local
+    platform: ""
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+
+  workspace-engine:
+    image: ctrlplane/workspace-engine:local
+    platform: ""
+    build:
+      context: ./apps/workspace-engine
+      dockerfile: Dockerfile
+
+  workspace-engine-router:
+    image: ctrlplane/workspace-engine-router:local
+    platform: ""
+    build:
+      context: ./apps/workspace-engine-router
+      dockerfile: Dockerfile
+
+  web:
+    image: ctrlplane/web:local
+    platform: ""
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile

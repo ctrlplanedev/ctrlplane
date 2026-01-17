@@ -50,10 +50,7 @@ services:
       - redpanda_data:/var/redpanda/data
 
   migrations:
-    image: ctrlplane/migrations:local
-    build:
-      context: ./packages/db
-      dockerfile: Dockerfile
+    image: ctrlplane/migrations:f8e3076
     platform: linux/amd64
     restart: "no"
     env_file: .env.compose
@@ -62,10 +59,7 @@ services:
         condition: service_healthy
 
   api:
-    image: ctrlplane/api:local
-    build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+    image: ctrlplane/api:373492e
     platform: linux/amd64
     restart: always
     env_file: .env.compose
@@ -79,20 +73,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
-      - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.services.api.loadbalancer.server.port=8081"
     networks:
       - proxy
       - default
 
   workspace-engine:
-    image: ctrlplane/workspace-engine:local
-    build:
-      context: ./apps/workspace-engine
-      dockerfile: Dockerfile
+    image: ctrlplane/workspace-engine:44eec79
     platform: linux/amd64
     restart: always
     env_file: .env.compose
@@ -104,10 +90,7 @@ services:
       - redpanda
 
   workspace-engine-router:
-    image: ctrlplane/workspace-engine-router:local
-    build:
-      context: ./apps/workspace-engine-router
-      dockerfile: Dockerfile
+    image: ctrlplane/workspace-engine-router:a9b9bd7
     platform: linux/amd64
     restart: always
     env_file: .env.compose
@@ -119,10 +102,7 @@ services:
       - redpanda
 
   web:
-    image: ctrlplane/web:local
-    build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+    image: ctrlplane/web:373492e
     platform: linux/amd64
     restart: always
     env_file: .env.compose
@@ -130,28 +110,9 @@ services:
       - "3000"
     depends_on:
       - api
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.web.entrypoints=web"
-      - "traefik.http.routers.web.priority=1"
-      - "traefik.http.services.web.loadbalancer.server.port=3000"
     networks:
       - proxy
       - default
-
-  # otel-collector:
-  #   image: otel/opentelemetry-collector-contrib:latest
-  #   container_name: ctrlplane-otel-collector
-  #   command: ["--config=/etc/otel-collector-config.yaml"]
-  #   volumes:
-  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-  #   ports:
-  #     - "4317:4317" # OTLP gRPC
-  #     - "4318:4318" # OTLP HTTP
-  #     - "8125:8125" # StatsD
-  #     - "8888:8888" # Telemetry
-  #     - "9109:9109" # Prometheus endpoint
 
 volumes:
   postgres_data:

@@ -1,0 +1,6 @@
+# Minimal dockerignore for Go builds
+tmp/
+bin/
+*.test
+coverage.out
+*.prof
