@@ -38,6 +38,9 @@ export const auth = betterAuth({
       clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET ?? "",
     },
   },
+  emailAndPassword: {
+    enabled: true,
+  },
   trustedOrigins: [env.BASE_URL, "http://localhost:5173"],
   advanced: {
     database: {

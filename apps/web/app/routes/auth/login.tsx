@@ -1,5 +1,9 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
 import { authClient } from "~/api/auth-client";
 import { Button } from "~/components/ui/button";
 import {
@@ -9,14 +13,104 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
+import { Input } from "~/components/ui/input";
+import { Separator } from "~/components/ui/separator";
 
 const signInGoogle = () => {
   void authClient.signIn.social({ provider: "google" });
 };
 
+function LoginSeparator() {
+  return (
+    <div className="flex items-center gap-3">
+      <Separator className="flex-1" />
+      <span className="text-sm text-muted-foreground">or</span>
+      <Separator className="flex-1" />
+    </div>
+  );
+}
+
+const signInEmailPasswordSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+});
+
+function LoginEmailPassword() {
+  const form = useForm<z.infer<typeof signInEmailPasswordSchema>>({
+    resolver: zodResolver(signInEmailPasswordSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof signInEmailPasswordSchema>) => {
+    void authClient.signIn.email({
+      ...data,
+      rememberMe: true,
+      callbackURL: "/workspaces",
+    });
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="space-y-2">
+          <Button type="submit" className="w-full">
+            Sign in
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Don't have an account?{" "}
+            <a
+              href="/sign-up"
+              className="cursor-pointer text-primary underline"
+            >
+              Sign up
+            </a>
+          </span>
+        </div>
+      </form>
+    </Form>
+  );
+}
+
 export default function Login() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
+    <div className="bg-linear-to-br flex min-h-screen items-center justify-center from-background via-background to-muted/20 p-4">
       <div className="mx-auto w-full" style={{ maxWidth: "400px" }}>
         {/* Logo */}
         <div className="mb-6 flex items-center justify-center">
@@ -75,6 +169,8 @@ export default function Login() {
                 </svg>
                 <span>Continue with Google</span>
               </Button>
+              <LoginSeparator />
+              <LoginEmailPassword />
             </div>
           </CardContent>
         </Card>
