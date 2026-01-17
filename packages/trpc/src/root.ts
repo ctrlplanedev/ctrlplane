@@ -1,3 +1,4 @@
+import { authRouter } from "./routes/auth.js";
 import { deploymentTracesRouter } from "./routes/deployment-traces.js";
 import { deploymentVersionsRouter } from "./routes/deployment-versions.js";
 import { deploymentsRouter } from "./routes/deployments.js";
@@ -18,6 +19,7 @@ import { workspaceRouter } from "./routes/workspace.js";
 import { router } from "./trpc.js";
 
 export const appRouter = router({
+  auth: authRouter,
   user: userRouter,
   resource: resourcesRouter,
   workspace: workspaceRouter,

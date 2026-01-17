@@ -12,12 +12,7 @@ import * as OpenApiValidator from "express-openapi-validator";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 
-import {
-  auth,
-  isCredentialsAuthEnabled,
-  isGoogleAuthEnabled,
-  isOIDCAuthEnabled,
-} from "@ctrlplane/auth/server";
+import { auth } from "@ctrlplane/auth/server";
 import { appRouter, createTRPCContext } from "@ctrlplane/trpc";
 
 import swaggerDocument from "../openapi/openapi.json" with { type: "json" };
@@ -77,14 +72,6 @@ const app = express()
   })
 
   .use(oapiValidatorMiddleware)
-
-  .get("/api/auth/config", (_, res) => {
-    res.status(200).json({
-      credentialsEnabled: isCredentialsAuthEnabled,
-      googleEnabled: isGoogleAuthEnabled,
-      oidcEnabled: isOIDCAuthEnabled,
-    });
-  })
 
   .all("/api/auth/*splat", toNodeHandler(auth))
 
