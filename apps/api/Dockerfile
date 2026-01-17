@@ -41,7 +41,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/web-api --filter=!@ctrlplane/github-get-job-inputs
+RUN turbo build --filter=...@ctrlplane/web-api
 
 # Debug: Verify the build output exists
 RUN ls -la /app/apps/api/dist/ && \
