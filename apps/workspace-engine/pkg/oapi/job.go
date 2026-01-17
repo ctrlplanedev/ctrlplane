@@ -48,3 +48,54 @@ func (j *JobWithRelease) ToTemplatable() (*TemplatableJob,
 		Release:        release,
 	}, nil
 }
+
+// Map converts the TemplatableJob to a map with lowercase keys for template use.
+// This provides a consistent template interface using lowercase field names
+// (e.g., {{.resource.name}} instead of {{.Resource.Name}}).
+func (t *TemplatableJob) Map() map[string]any {
+	result := make(map[string]any)
+
+	// Convert each field to a map using JSON marshal/unmarshal
+	// This ensures all keys are lowercase per JSON tags
+
+	// Resource
+	if t.Resource != nil {
+		result["resource"] = structToMap(t.Resource)
+	}
+
+	// Deployment
+	if t.Deployment != nil {
+		result["deployment"] = structToMap(t.Deployment)
+	}
+
+	// Environment
+	if t.Environment != nil {
+		result["environment"] = structToMap(t.Environment)
+	}
+
+	// Job
+	result["job"] = structToMap(t.Job)
+
+	// Release with variables
+	if t.Release != nil {
+		releaseMap := structToMap(t.Release.Release)
+		releaseMap["variables"] = t.Release.Variables
+		result["release"] = releaseMap
+	}
+
+	return result
+}
+
+// structToMap converts a struct to a map using JSON marshal/unmarshal.
+// This ensures all keys use the lowercase JSON tag names.
+func structToMap(v any) map[string]any {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil
+	}
+	return result
+}

@@ -15,13 +15,13 @@ const DEFAULT_CONFIG = {
   apiVersion: "argoproj.io/v1alpha1",
   kind: "Application",
   metadata: {
-    name: "{{.Resource.Name}}-application",
+    name: "{{.resource.name}}-application",
     namespace: "argocd",
     labels: {
-      "app.kubernetes.io/name": "{{.Resource.Name}}",
-      environment: "{{.Environment.Name}}",
-      deployment: "{{.Deployment.Name}}",
-      resource: "{{.Resource.Name}}",
+      "app.kubernetes.io/name": "{{.resource.name}}",
+      environment: "{{.environment.name}}",
+      deployment: "{{.deployment.name}}",
+      resource: "{{.resource.name}}",
     },
   },
   spec: {
@@ -31,11 +31,11 @@ const DEFAULT_CONFIG = {
       path: "YOUR_PATH_IN_REPO",
       targetRevision: "HEAD",
       helm: {
-        releaseName: "{{.Resource.Name}}",
+        releaseName: "{{.resource.name}}",
       },
     },
     destination: {
-      name: "{{.Resource.Identifier}}",
+      name: "{{.resource.identifier}}",
       namespace: "default",
     },
     syncPolicy: {

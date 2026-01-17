@@ -198,7 +198,7 @@ func (d *TerraformCloudDispatcher) generateWorkspace(job *oapi.TemplatableJob, t
 	}
 
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, job); err != nil {
+	if err := t.Execute(&buf, job.Map()); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
