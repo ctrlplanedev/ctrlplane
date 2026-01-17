@@ -127,12 +127,12 @@ export const workspaceRouter = router({
       });
 
       // Trigger workspace engine to save initial snapshot
-      // await sendGoEvent({
-      //   workspaceId: newWorkspace.id,
-      //   eventType: Event.WorkspaceSave,
-      //   timestamp: Date.now(),
-      //   data: {},
-      // });
+      await sendGoEvent({
+        workspaceId: newWorkspace.id,
+        eventType: Event.WorkspaceSave,
+        timestamp: Date.now(),
+        data: {},
+      });
 
       return newWorkspace;
     }),
