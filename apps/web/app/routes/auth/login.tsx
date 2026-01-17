@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { authClient } from "~/api/auth-client";
+import { useAuthConfig } from "~/api/auth-config";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -109,6 +110,9 @@ function LoginEmailPassword() {
 }
 
 export default function Login() {
+  const authConfig = useAuthConfig();
+  const isCredentialsEnabled = authConfig?.credentialsEnabled ?? false;
+
   return (
     <div className="bg-linear-to-br flex min-h-screen items-center justify-center from-background via-background to-muted/20 p-4">
       <div className="mx-auto w-full" style={{ maxWidth: "400px" }}>
@@ -169,8 +173,12 @@ export default function Login() {
                 </svg>
                 <span>Continue with Google</span>
               </Button>
-              <LoginSeparator />
-              <LoginEmailPassword />
+              {isCredentialsEnabled ? (
+                <>
+                  <LoginSeparator />
+                  <LoginEmailPassword />
+                </>
+              ) : null}
             </div>
           </CardContent>
         </Card>

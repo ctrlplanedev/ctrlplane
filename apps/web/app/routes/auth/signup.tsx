@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { authClient } from "~/api/auth-client";
+import { useAuthConfig } from "~/api/auth-config";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -101,6 +102,9 @@ function SignupForm() {
 }
 
 export default function Signup() {
+  const authConfig = useAuthConfig();
+  const credentialsEnabled = authConfig?.credentialsEnabled;
+
   return (
     <div className="bg-linear-to-br flex min-h-screen items-center justify-center from-background via-background to-muted/20 p-4">
       <div className="mx-auto w-full" style={{ maxWidth: "400px" }}>
@@ -134,7 +138,17 @@ export default function Signup() {
           </CardHeader>
 
           <CardContent className="space-y-6 px-6">
-            <SignupForm />
+            {credentialsEnabled === true ? (
+              <SignupForm />
+            ) : credentialsEnabled === false ? (
+              <p className="text-sm text-muted-foreground">
+                Email and password sign-up is disabled.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Checking available sign-up options...
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

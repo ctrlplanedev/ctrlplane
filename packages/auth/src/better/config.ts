@@ -13,12 +13,16 @@ export const isGoogleAuthEnabled =
   env.AUTH_GOOGLE_CLIENT_SECRET != null &&
   env.AUTH_GOOGLE_CLIENT_SECRET !== "";
 
-export const isOIDCAuthEnabled = false;
-// env.AUTH_OIDC_CLIENT_ID != null && env.AUTH_OIDC_ISSUER !== "";
-export const isCredentialsAuthEnabled = false;
-// env.AUTH_CREDENTIALS_ENABLED === "auto"
-//   ? !isGoogleAuthEnabled && !isOIDCAuthEnabled
-//   : env.AUTH_CREDENTIALS_ENABLED === "true";
+export const isOIDCAuthEnabled =
+  env.AUTH_OIDC_CLIENT_ID != null &&
+  env.AUTH_OIDC_CLIENT_ID !== "" &&
+  env.AUTH_OIDC_ISSUER != null &&
+  env.AUTH_OIDC_ISSUER !== "";
+
+export const isCredentialsAuthEnabled =
+  env.AUTH_CREDENTIALS_ENABLED === "auto"
+    ? !isGoogleAuthEnabled && !isOIDCAuthEnabled
+    : env.AUTH_CREDENTIALS_ENABLED === "true";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -39,7 +43,7 @@ export const auth = betterAuth({
     },
   },
   emailAndPassword: {
-    enabled: true,
+    enabled: isCredentialsAuthEnabled,
   },
   trustedOrigins: [env.BASE_URL, "http://localhost:5173"],
   advanced: {
