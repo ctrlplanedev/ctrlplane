@@ -1,0 +1,91 @@
+# Changelog
+
+## 1.0.0 (2026-01-18)
+
+
+### Features
+
+* add deploymentId filter to deployment traces query and update schema validation ([e956dd2](https://github.com/ctrlplanedev/ctrlplane/commit/e956dd2fbfd647bbbde6394eb60c806fd43519f2))
+* add docker-compose configuration and environment variables ([07148a1](https://github.com/ctrlplanedev/ctrlplane/commit/07148a12a3dd51327fe62780bfb0a171a743553d))
+* add verification metrics display to EnvironmentReleaseTargetsGroup and integrate with VersionDisplay for enhanced deployment status visualization ([762f8a8](https://github.com/ctrlplanedev/ctrlplane/commit/762f8a8898bcca2c78f1ef771757409cbe5f7e9e))
+* add version debounce evaluator to policy manager and enhance tests for time-based version deployment ([3e04546](https://github.com/ctrlplanedev/ctrlplane/commit/3e04546cd281ca1b5800a11d1ae3a8211d1fb431))
+* authentication auto configuration ([#749](https://github.com/ctrlplanedev/ctrlplane/issues/749)) ([82f6904](https://github.com/ctrlplanedev/ctrlplane/commit/82f690444f59258c35cc27a8fa29f4f82717bd26))
+* enable automatic topic creation and set default partitions in Redpanda configuration ([108bc95](https://github.com/ctrlplanedev/ctrlplane/commit/108bc95f5e3d7707212bce2220e317efcf2e950b))
+* enhance DatadogMetricProvider schema with new properties and update related interfaces for improved metrics configuration ([3fd60cf](https://github.com/ctrlplanedev/ctrlplane/commit/3fd60cf00356e654fbd9bc8c366abacc48be86ae))
+* enhance job update handling by preserving trace token and triggering actions on status change ([48b965b](https://github.com/ctrlplanedev/ctrlplane/commit/48b965b5a02684ca133481f351889f1bce80050b))
+* enhance version cooldown policy with next deployment time tracking and update documentation; add new metric providers for Datadog and Terraform Cloud ([1a44e22](https://github.com/ctrlplanedev/ctrlplane/commit/1a44e22aa404861e479320d6dfe31d6bdc884a45))
+* expand documentation structure with new sections for Inventory and Deployment, enhance policy details, and improve clarity on verification metrics ([97f6813](https://github.com/ctrlplanedev/ctrlplane/commit/97f68130ef664ed473f4387acbadaba9382f0ce2))
+* implement action orchestrator for job status changes and enhance trace handling with job trace tokens ([1c05313](https://github.com/ctrlplanedev/ctrlplane/commit/1c0531307f60db18eb0c6c7f168c1d84c87c8418))
+* implement job failure event handling in ArgoCDDispatcher for improved error reporting ([ea62977](https://github.com/ctrlplanedev/ctrlplane/commit/ea62977ea66a282f8b14d617816b18d60cf0f0b9))
+* introduce default metric interval for verification metrics and handle zero intervals in scheduler ([043bd51](https://github.com/ctrlplanedev/ctrlplane/commit/043bd51b15a9a7d00090a904bc8485bcad5d221a))
+
+
+### Bug Fixes
+
+* actually create workspace in engine ([#747](https://github.com/ctrlplanedev/ctrlplane/issues/747)) ([373492e](https://github.com/ctrlplanedev/ctrlplane/commit/373492e51f014f9bcdfe4f88acd04167eae95332))
+* actually pass inthe verficiation manager ([952a503](https://github.com/ctrlplanedev/ctrlplane/commit/952a503f6dbb12ba14eb8764e5b5287adf71e2c2))
+* add error handler to api router ([7e3c8f4](https://github.com/ctrlplanedev/ctrlplane/commit/7e3c8f45df61e1f1550f998c1dc6a60e4b9887a7))
+* add release verifications to global json entity registry ([84a707a](https://github.com/ctrlplanedev/ctrlplane/commit/84a707aed671e3bc841f559ea26a6ee8e36ae530))
+* add timeout to lint ([ced6a6a](https://github.com/ctrlplanedev/ctrlplane/commit/ced6a6ab9d94b3a77337ae278afc1617f08d42d0))
+* check if job agent id is nil ([0c68e8d](https://github.com/ctrlplanedev/ctrlplane/commit/0c68e8d7013284a413d0d36aaedd5ac3206926a4))
+* consistent oapi time formatting for env created_at ([168591b](https://github.com/ctrlplanedev/ctrlplane/commit/168591bde0d60ba16a7516c4e77977a26af479b3))
+* correct argo verification cel ([52763d7](https://github.com/ctrlplanedev/ctrlplane/commit/52763d75abd75572393d88710512280f451df306))
+* correct json registry entry ([7771e5e](https://github.com/ctrlplanedev/ctrlplane/commit/7771e5e07f2b2279e89ff5d674d56e519c20f966))
+* correct oapi ([c1f7924](https://github.com/ctrlplanedev/ctrlplane/commit/c1f7924c52f94dd5dacbd81bdbe7c3d165d5f005))
+* correct path for verifications in release router ([84a90b7](https://github.com/ctrlplanedev/ctrlplane/commit/84a90b71f172026d108fc8c664b2da5d25c600e7))
+* correct variable key reference in deployment variable retrieval ([57ee063](https://github.com/ctrlplanedev/ctrlplane/commit/57ee063aa790ab2cc2dbc1ac8d1a3c47300ece73))
+* deployment resources typecheck ([ab8dc3e](https://github.com/ctrlplanedev/ctrlplane/commit/ab8dc3e71b631ccde125827fb1a3a8171220528c))
+* deployment upsert works ([01436c5](https://github.com/ctrlplanedev/ctrlplane/commit/01436c5c90752828bb9d7c7e63e4413c7b6ad84d))
+* dont verify existence for upserts in deployment var router ([3a990d5](https://github.com/ctrlplanedev/ctrlplane/commit/3a990d551e2b5b4e2fc39e33cf167d9456b9ccf2))
+* encode resource identifier ([977d246](https://github.com/ctrlplanedev/ctrlplane/commit/977d2467754cd6c71443a91196e7c602ddaeea8d))
+* fmt ([9ccb4fd](https://github.com/ctrlplanedev/ctrlplane/commit/9ccb4fd8f86ba6be4f7e10feefc364650015f61d))
+* fmt ([9bb4772](https://github.com/ctrlplanedev/ctrlplane/commit/9bb47721eb4327a4351ac0c2c52372c907f5b99c))
+* formatting ([b36f1c1](https://github.com/ctrlplanedev/ctrlplane/commit/b36f1c1f9918f03e1b5bddede6e00e11e4424974))
+* gen new params on query edit ([9cc9304](https://github.com/ctrlplanedev/ctrlplane/commit/9cc9304cfa139b6783e887f0b9ed05e6ab31e5f6))
+* generate argo job updates in copy struct ([857334c](https://github.com/ctrlplanedev/ctrlplane/commit/857334c17e0141b95d0d0e12fa1de41e9ffe1532))
+* icon ([e6a8608](https://github.com/ctrlplanedev/ctrlplane/commit/e6a860810646f19e7e929afaf6532b958f00b9f1))
+* job message tooltip wraps ([61e1bb7](https://github.com/ctrlplanedev/ctrlplane/commit/61e1bb7efde1e05a504a291f30fd17920fa9f0a3))
+* lint p2 ([4ada281](https://github.com/ctrlplanedev/ctrlplane/commit/4ada281d950081699ab4805c1c0cc3ef3d497c34))
+* linting ([30e03b7](https://github.com/ctrlplanedev/ctrlplane/commit/30e03b723e4b64a0ef772ae6c1cf89c8cffabde6))
+* linting p1 ([7cc6789](https://github.com/ctrlplanedev/ctrlplane/commit/7cc67896317eb5657efd013f96ce497cda46786b))
+* log default metric interval usage for verification metrics in scheduler ([3b1a2a8](https://github.com/ctrlplanedev/ctrlplane/commit/3b1a2a87a64c3843273a99aaf4e8052916298e3a))
+* monaco expands and matches theme ([97d35b6](https://github.com/ctrlplanedev/ctrlplane/commit/97d35b67821b1903d9436ae40d4d907779d6a196))
+* more str cleaning ([dda82db](https://github.com/ctrlplanedev/ctrlplane/commit/dda82db8a59af8f3d1969cc9415804ad75689908))
+* move span attribute stuff outside of trace start ([47edcb0](https://github.com/ctrlplanedev/ctrlplane/commit/47edcb01e071d544bf51b3d3e0dd7c226fb45e57))
+* oapi typo ([04eb6bd](https://github.com/ctrlplanedev/ctrlplane/commit/04eb6bd6c067a7f98868eab82d6021ada1874f60))
+* only retrigger latest invalid agent jobs ([#719](https://github.com/ctrlplanedev/ctrlplane/issues/719)) ([1319f71](https://github.com/ctrlplanedev/ctrlplane/commit/1319f71d84bed1ef1a3a001850c8a04638a1ad39))
+* pass manager into dispatcher ([d416e86](https://github.com/ctrlplanedev/ctrlplane/commit/d416e866e6443227ca2e8760a09d919496308176))
+* prevent duplicates of skips returned ([7141bee](https://github.com/ctrlplanedev/ctrlplane/commit/7141bee3e8ef16c66a1973b49856e2f5ca3921f4))
+* remove empty query from search params ([6e62c16](https://github.com/ctrlplanedev/ctrlplane/commit/6e62c1620d3d98ca601aa6276e95a2a0d758ad6f))
+* remove lint ([8793699](https://github.com/ctrlplanedev/ctrlplane/commit/87936991969fe36945db6a683818f3a4aa209ec8))
+* remove lint from router ([a9b9bd7](https://github.com/ctrlplanedev/ctrlplane/commit/a9b9bd77c66907d258e358b9e4ae3b922343afdb))
+* respect failure limits and fix completion hooks ([#725](https://github.com/ctrlplanedev/ctrlplane/issues/725)) ([d793f37](https://github.com/ctrlplanedev/ctrlplane/commit/d793f378010578fefacefd0d53873f5746675768))
+* return latest verification for release ([cc88957](https://github.com/ctrlplanedev/ctrlplane/commit/cc88957ecf134a654f373903f56edceed6bcfec2))
+* revert to working state ([45694d9](https://github.com/ctrlplanedev/ctrlplane/commit/45694d96f01dd7ad307764ef5342730873d85be1))
+* switch compaction key to policy_skip ([ff71b34](https://github.com/ctrlplanedev/ctrlplane/commit/ff71b34e4b91fa59f0d014542ba0aeb1424a07ac))
+* truncate K8s compatible names to 63 characters ([32e9e55](https://github.com/ctrlplanedev/ctrlplane/commit/32e9e5525b9b8dc500585ede62f3c2838a7811c0))
+* typecheck ([de8c590](https://github.com/ctrlplanedev/ctrlplane/commit/de8c5909c2bc1ed44200ab5a16295103af5da21b))
+* update auth db schemas ([31c127b](https://github.com/ctrlplanedev/ctrlplane/commit/31c127b8d9d08b76064c9fd2ae7f782e04354ce7))
+* update job after verification is created ([5389661](https://github.com/ctrlplanedev/ctrlplane/commit/5389661881c18c875e901a92bb8c1cfb67336b43))
+* updating deployment job agent config redeploys all deployment release targets ([959ea3d](https://github.com/ctrlplanedev/ctrlplane/commit/959ea3d678e95930007ab1728d879ec5d3b55091))
+* use correct oapi func name ([ea7a58e](https://github.com/ctrlplanedev/ctrlplane/commit/ea7a58e682af1b25715a9f9df72aa12dc26901ea))
+* use correct param name in delete mutation ([8cfa896](https://github.com/ctrlplanedev/ctrlplane/commit/8cfa8963ab7ba9665889a62b4f6a89950eb7c1ee))
+* use hardcoded verifcation ([587d916](https://github.com/ctrlplanedev/ctrlplane/commit/587d916edffef7f25b6443995f80887215471108))
+* use identifier prefix for paths ([d2e44a5](https://github.com/ctrlplanedev/ctrlplane/commit/d2e44a5fbb4d4300c72fcd4660600ebd5749d444))
+* use k8s compatiable app names ([f4552be](https://github.com/ctrlplanedev/ctrlplane/commit/f4552be8ae0bd2f40897f7b954f2af207b67a22e))
+* workspaceID check doesn't return ([#752](https://github.com/ctrlplanedev/ctrlplane/issues/752)) ([cfce62e](https://github.com/ctrlplanedev/ctrlplane/commit/cfce62e8e35eda5dbf53c97382fcd6573229d073))
+
+
+### Performance Improvements
+
+* add rule complexity weighting ([1a54205](https://github.com/ctrlplanedev/ctrlplane/commit/1a5420568855acc8ee149f5dc58b2076db6fe7d9))
+* build identifier map only once ([d568f9c](https://github.com/ctrlplanedev/ctrlplane/commit/d568f9c4a54044ba61cbc0e306ce1223b39ebe1a))
+* cache target policies in materialized view ([#712](https://github.com/ctrlplanedev/ctrlplane/issues/712)) ([e4ba529](https://github.com/ctrlplanedev/ctrlplane/commit/e4ba529db2ef559409cc157b57000c280f3206d8))
+* only process newer candidate versions ([#720](https://github.com/ctrlplanedev/ctrlplane/issues/720)) ([dccc1a3](https://github.com/ctrlplanedev/ctrlplane/commit/dccc1a3eaf2acce98876a36a46b2383e6942a477))
+* only trigger downstream reconciles if progression threshold is met ([da1ca76](https://github.com/ctrlplanedev/ctrlplane/commit/da1ca767bd2f4a31b4f4b0a134477566d9aa2edc))
+* reduce chunk size ([880e735](https://github.com/ctrlplanedev/ctrlplane/commit/880e73557128e2de750ffa989cde9dcc203b9598))
+
+
+### Reverts
+
+* relationship in argocd ([d641549](https://github.com/ctrlplanedev/ctrlplane/commit/d6415490f8eb4da09dc1eeb8d426a16d0983e3e3))
