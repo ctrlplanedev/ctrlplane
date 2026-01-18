@@ -235,6 +235,7 @@ func (r *Router) RouteToWorkerAllPaths(c *gin.Context) {
 			"error":   "Workspace ID required",
 			"message": "Please provide workspace ID via X-Workspace-ID header or in path (/v1/workspaces/{workspaceId}/...)",
 		})
+		return
 	}
 
 	// Get partition count
