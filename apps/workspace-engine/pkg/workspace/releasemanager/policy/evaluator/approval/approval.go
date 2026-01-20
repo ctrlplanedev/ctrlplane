@@ -17,9 +17,10 @@ var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/approval")
 var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
 type AnyApprovalEvaluator struct {
-	store  *store.Store
-	ruleId string
-	rule   *oapi.AnyApprovalRule
+	store         *store.Store
+	ruleId        string
+	ruleCreatedAt string
+	rule          *oapi.AnyApprovalRule
 }
 
 func NewEvaluator(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.Evaluator {
@@ -27,9 +28,10 @@ func NewEvaluator(store *store.Store, approvalRule *oapi.PolicyRule) evaluator.E
 		return nil
 	}
 	return evaluator.WithMemoization(&AnyApprovalEvaluator{
-		store:  store,
-		ruleId: approvalRule.Id,
-		rule:   approvalRule.AnyApproval,
+		store:         store,
+		ruleId:        approvalRule.Id,
+		rule:          approvalRule.AnyApproval,
+		ruleCreatedAt: approvalRule.CreatedAt,
 	})
 }
 
@@ -108,22 +110,25 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			WithSatisfiedAt(approvalTime)
 	}
 
-	_, previousApprovalCheckSpan := tracer.Start(ctx, "previousApprovalCheck")
-	// If this version has already been deployed to this environment, it was previously "approved"
-	// so we can allow it without requiring new approvals. Will need to add support for bypass jobs though.
-	// Doing this check later so the messages are more insightful.
-	for _, release := range m.store.Releases.Items() {
-		if release.Version.Id == version.Id && release.ReleaseTarget.EnvironmentId == environment.Id {
-			previousApprovalCheckSpan.End()
-			return results.
-				NewAllowedResult("Version already deployed to this environment.").
-				WithDetail("release_id", release.ID()).
-				WithDetail("version_id", version.Id).
-				WithDetail("environment_id", environment.Id).
-				WithSatisfiedAt(version.CreatedAt) // Use version creation time as it was already approved before
-		}
+	// If the version was created before the policy was created, it was previously "approved"
+	ruleCreatedAt, err := time.Parse(time.RFC3339, m.ruleCreatedAt)
+	if err != nil {
+		return results.
+			NewPendingResult("approval",
+				fmt.Sprintf("Failed to parse rule created_at: %v", err),
+			).
+			WithDetail("min_approvals", minApprovals).
+			WithDetail("approvers", approvers).
+			WithDetail("version_id", version.Id).
+			WithDetail("environment_id", environment.Id)
 	}
-	previousApprovalCheckSpan.End()
+	if version.CreatedAt.Before(ruleCreatedAt) {
+		return results.
+			NewAllowedResult("Version was created before the policy was created.").
+			WithDetail("version_id", version.Id).
+			WithDetail("environment_id", environment.Id).
+			WithSatisfiedAt(version.CreatedAt)
+	}
 
 	return results.
 		NewPendingResult("approval",

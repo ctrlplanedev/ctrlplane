@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -29,6 +30,20 @@ func (p *Policies) Get(id string) (*oapi.Policy, bool) {
 func (p *Policies) Upsert(ctx context.Context, policy *oapi.Policy) {
 	if policy.Metadata == nil {
 		policy.Metadata = make(map[string]string)
+	}
+
+	if policy.CreatedAt == "" {
+		policy.CreatedAt = time.Now().Format(time.RFC3339)
+	}
+
+	for _, rule := range policy.Rules {
+		if rule.PolicyId == "" {
+			rule.PolicyId = policy.Id
+		}
+
+		if rule.CreatedAt == "" {
+			rule.CreatedAt = policy.CreatedAt
+		}
 	}
 
 	p.repo.Policies.Set(policy.Id, policy)
