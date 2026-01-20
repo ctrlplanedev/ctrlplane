@@ -38,11 +38,15 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		return ws.releasemanager.ReconcileTarget(ctx, target, releasemanager.WithTrigger(trace.TriggerJobSuccess))
 	}
 
+	reconcileTargetsWithConcurrency := func(ctx context.Context, targets []*oapi.ReleaseTarget) error {
+		return ws.releasemanager.ReconcileTargets(ctx, targets, releasemanager.WithTrigger(trace.TriggerJobSuccess))
+	}
+
 	ws.actionOrchestrator = action.
 		NewOrchestrator(s).
 		RegisterAction(verificationaction.NewVerificationAction(ws.releasemanager.VerificationManager())).
 		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
-		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
+		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileTargetsWithConcurrency)).
 		RegisterAction(rollback.NewRollbackAction(s, jobs.NewDispatcher(s, ws.releasemanager.VerificationManager())))
 
 	return ws

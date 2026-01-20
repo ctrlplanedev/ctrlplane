@@ -11,7 +11,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 )
 
-type ReconcileFn func(ctx context.Context, target *oapi.ReleaseTarget) error
+type ReconcileFn func(ctx context.Context, targets []*oapi.ReleaseTarget) error
 
 type EnvironmentProgressionAction struct {
 	store       *store.Store
@@ -66,7 +66,7 @@ func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger acti
 		return nil
 	}
 
-	return a.reconcileTargets(ctx, progressionDependentTargets)
+	return a.reconcileFn(ctx, progressionDependentTargets)
 }
 
 func (a *EnvironmentProgressionAction) getEnvironment(envId string) *oapi.Environment {
@@ -120,15 +120,6 @@ func (a *EnvironmentProgressionAction) getProgressionDependentTargets(ctx contex
 		targetList = append(targetList, target)
 	}
 	return targetList, nil
-}
-
-func (a *EnvironmentProgressionAction) reconcileTargets(ctx context.Context, targets []*oapi.ReleaseTarget) error {
-	for _, target := range targets {
-		if err := a.reconcileFn(ctx, target); err != nil {
-			return fmt.Errorf("failed to reconcile target %s: %w", target.Key(), err)
-		}
-	}
-	return nil
 }
 
 func (a *EnvironmentProgressionAction) filterPoliciesWhereThresholdJustCrossed(
