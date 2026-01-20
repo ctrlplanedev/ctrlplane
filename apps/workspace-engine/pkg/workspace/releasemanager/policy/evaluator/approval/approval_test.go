@@ -697,3 +697,36 @@ func TestAnyApprovalEvaluator_OlderVersionAllowed(t *testing.T) {
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
 	assert.Equal(t, versionCreatedAt, *result.SatisfiedAt, "satisfiedAt should be version creation time")
 }
+
+func TestAnyApprovalEvaluator_EmptyRuleCreatedAt(t *testing.T) {
+	ctx := context.Background()
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	st := setupStore(versionId, environmentId, []string{})
+
+	versionCreatedAt := time.Now()
+	version := &oapi.DeploymentVersion{
+		Id:        versionId,
+		CreatedAt: versionCreatedAt,
+	}
+
+	rule := &oapi.PolicyRule{
+		Id:          "rule-1",
+		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
+		CreatedAt:   "",
+	}
+	eval := NewEvaluator(st, rule)
+	require.NotNil(t, eval, "evaluator should not be nil")
+
+	environment, _ := st.Environments.Get(environmentId)
+
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	assert.False(t, result.Allowed, "expected denied because version needs approvals")
+	assert.NotContains(t, result.Message, "Failed to parse", "should not have a parse error")
+}

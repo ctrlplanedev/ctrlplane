@@ -111,7 +111,11 @@ func (m *AnyApprovalEvaluator) Evaluate(
 	}
 
 	// If the version was created before the policy was created, it was previously "approved"
-	ruleCreatedAt, err := time.Parse(time.RFC3339, m.ruleCreatedAt)
+	ruleCreatedAtStr := m.ruleCreatedAt
+	if ruleCreatedAtStr == "" {
+		ruleCreatedAtStr = time.Time{}.Format(time.RFC3339)
+	}
+	ruleCreatedAt, err := time.Parse(time.RFC3339, ruleCreatedAtStr)
 	if err != nil {
 		return results.
 			NewPendingResult("approval",
