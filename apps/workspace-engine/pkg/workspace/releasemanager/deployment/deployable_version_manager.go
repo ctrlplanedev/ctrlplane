@@ -208,7 +208,15 @@ func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions [
 
 		filteredEvaluators := m.filterBypassedEvaluators(evaluators, version.Id)
 		for evalIdx, eval := range filteredEvaluators {
+			_, evaluationSpan := deployableVersionTracer.Start(ctx, "EvaluatePolicy",
+				oteltrace.WithAttributes(
+					attribute.String("evaluator.type", eval.RuleType()),
+					attribute.String("version.id", version.Id),
+					attribute.String("version.name", version.Name),
+					attribute.String("release_target.key", m.releaseTarget.Key()),
+				))
 			result := eval.Evaluate(ctx, scope)
+			evaluationSpan.End()
 			results = append(results, result)
 			if !result.Allowed {
 				eligible = false
