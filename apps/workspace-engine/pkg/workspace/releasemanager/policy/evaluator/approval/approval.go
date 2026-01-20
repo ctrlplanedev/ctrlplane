@@ -8,7 +8,11 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/results"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/approval")
 
 var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
@@ -53,6 +57,9 @@ func (m *AnyApprovalEvaluator) Evaluate(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
 ) *oapi.RuleEvaluation {
+	ctx, span := tracer.Start(ctx, "AnyApprovalEvaluator.Evaluate")
+	defer span.End()
+
 	environment := scope.Environment
 	version := scope.Version
 
@@ -101,11 +108,13 @@ func (m *AnyApprovalEvaluator) Evaluate(
 			WithSatisfiedAt(approvalTime)
 	}
 
+	_, previousApprovalCheckSpan := tracer.Start(ctx, "previousApprovalCheck")
 	// If this version has already been deployed to this environment, it was previously "approved"
 	// so we can allow it without requiring new approvals. Will need to add support for bypass jobs though.
 	// Doing this check later so the messages are more insightful.
 	for _, release := range m.store.Releases.Items() {
 		if release.Version.Id == version.Id && release.ReleaseTarget.EnvironmentId == environment.Id {
+			previousApprovalCheckSpan.End()
 			return results.
 				NewAllowedResult("Version already deployed to this environment.").
 				WithDetail("release_id", release.ID()).
@@ -114,6 +123,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 				WithSatisfiedAt(version.CreatedAt) // Use version creation time as it was already approved before
 		}
 	}
+	previousApprovalCheckSpan.End()
 
 	return results.
 		NewPendingResult("approval",
