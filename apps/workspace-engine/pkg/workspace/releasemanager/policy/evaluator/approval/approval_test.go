@@ -625,7 +625,7 @@ func TestAnyApprovalEvaluator_SatisfiedAt_OutOfOrderApprovals(t *testing.T) {
 
 // TestAnyApprovalEvaluator_AlreadyDeployed tests that if a version has already been deployed
 // to an environment, it should be allowed without requiring new approvals.
-func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
+func TestAnyApprovalEvaluator_OlderVersionAllowed(t *testing.T) {
 	ctx := context.Background()
 	versionId := "version-1"
 	environmentId := "env-1"
@@ -672,7 +672,11 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 	_ = st.Releases.Upsert(ctx, release)
 
 	// Rule requires 2 approvals, but we have none
-	rule := &oapi.PolicyRule{Id: "rule-1", AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2}}
+	rule := &oapi.PolicyRule{
+		Id:          "rule-1",
+		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
+		CreatedAt:   time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
+	}
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "evaluator should not be nil")
 
@@ -687,7 +691,7 @@ func TestAnyApprovalEvaluator_AlreadyDeployed(t *testing.T) {
 
 	// Assert: Should be allowed because version was already deployed to this environment
 	assert.True(t, result.Allowed, "expected allowed because version already deployed to this environment")
-	assert.Contains(t, result.Message, "already deployed")
+	assert.Contains(t, result.Message, "Version was created before the policy was created.")
 	assert.Equal(t, versionId, result.Details["version_id"])
 	assert.Equal(t, environmentId, result.Details["environment_id"])
 	require.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
