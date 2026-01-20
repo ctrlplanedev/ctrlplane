@@ -369,7 +369,7 @@ func (m *Manager) ReconcileTargets(ctx context.Context, releaseTargets []*oapi.R
 			}
 			return nil, nil
 		},
-		concurrency.WithChunkSize(10),
+		concurrency.WithChunkSize(1),
 	)
 
 	return nil
