@@ -55,6 +55,40 @@ function Measurement({ measurement }: { measurement: MetricMeasurement }) {
   );
 }
 
+function getConsecutiveSuccessCount(measurements: MetricMeasurement[]): number {
+  let consecutiveSuccessCount = 0;
+  for (const m of measurements) {
+    if (m.status === "passed") consecutiveSuccessCount++;
+    else consecutiveSuccessCount = 0;
+  }
+
+  return consecutiveSuccessCount;
+}
+
+function getStatusMessage(
+  failedCount: number,
+  failureLimit: number,
+  consecutiveSuccessCount: number,
+  successThreshold: number | undefined,
+  totalMeasurements: number,
+  expectedCount: number,
+): string {
+  const hasFailed = failedCount > failureLimit;
+  if (hasFailed)
+    return `Failed: ${failedCount} failure${failedCount !== 1 ? "s" : ""} exceeded limit of ${failureLimit}`;
+
+  const hasPassedThreshold =
+    successThreshold != null && consecutiveSuccessCount >= successThreshold;
+  if (hasPassedThreshold)
+    return `Passed: ${consecutiveSuccessCount} consecutive successes met threshold of ${successThreshold}`;
+
+  const isComplete = totalMeasurements >= expectedCount;
+  if (!isComplete)
+    return `In progress: ${totalMeasurements} of ${expectedCount} measurements completed`;
+
+  return `Passed: Completed ${totalMeasurements} measurements within failure limit`;
+}
+
 function MetricSummaryDisplay({
   metric,
 }: {
@@ -69,29 +103,19 @@ function MetricSummaryDisplay({
   const totalMeasurements = metric.measurements.length;
   const expectedCount = metric.count;
 
-  const failureThreshold = metric.failureThreshold;
+  const failureLimit = metric.failureThreshold ?? 0;
   const successThreshold = metric.successThreshold;
 
-  const isComplete = totalMeasurements >= expectedCount;
-  // failureThreshold of 0 means no limit, only check if > 0
-  const hasFailed = failureThreshold > 0 && failedCount >= failureThreshold;
+  const consecutiveSuccessCount = getConsecutiveSuccessCount(metric.measurements);
 
-  let statusMessage: string;
-  if (hasFailed) {
-    statusMessage = `Failed: ${failedCount} failure${failedCount !== 1 ? "s" : ""} reached threshold of ${failureThreshold}`;
-  } else if (
-    successThreshold != null &&
-    passedCount >= successThreshold &&
-    isComplete
-  ) {
-    statusMessage = `Passed: Reached ${successThreshold} consecutive successes`;
-  } else if (isComplete && failedCount === 0) {
-    statusMessage = `Passed: All ${totalMeasurements} measurements successful`;
-  } else if (isComplete) {
-    statusMessage = `Passed: ${passedCount} of ${totalMeasurements} passed (within failure threshold)`;
-  } else {
-    statusMessage = `In progress: ${totalMeasurements} of ${expectedCount} measurements completed`;
-  }
+  const statusMessage = getStatusMessage(
+    failedCount,
+    failureLimit,
+    consecutiveSuccessCount,
+    successThreshold,
+    totalMeasurements,
+    expectedCount,
+  );
 
   return (
     <div className="space-y-1 rounded-md border border-muted bg-muted/30 p-2">
@@ -174,22 +198,19 @@ type MetricSummary = {
   name: string;
   status: "passed" | "failed" | "inconclusive";
 };
+
 const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
-  // If no measurements, treat as inconclusive
   if (metric.measurements.length === 0) {
     return { name: metric.name, status: "inconclusive" };
   }
 
-  // failureLimit: threshold for failure (0 means no limit)
-  const failureLimit = metric.failureThreshold;
+  const failureLimit = metric.failureThreshold ?? 0;
   const successThreshold = metric.successThreshold;
 
   let failedCount = 0;
   let consecutiveSuccessCount = 0;
-  let hasPassed = false;
-  let hasFailed = false;
 
-  // Traverse measurements in order, just like Go logic
+  // Process ALL measurements first (no early exit)
   for (const m of metric.measurements) {
     switch (m.status) {
       case "failed":
@@ -201,41 +222,22 @@ const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
         break;
       case "inconclusive":
       default:
-        // treat inconclusive as a break in consecutive success
         consecutiveSuccessCount = 0;
         break;
     }
-    // If, at this point, we have hit the failureLimit: it's failing
-    // (0 means no limit, so only check if failureLimit > 0)
-    if (failureLimit > 0 && failedCount >= failureLimit) {
-      hasFailed = true;
-      break;
-    }
-    // If at this point, we satisfy the consecutive success threshold, pass
-    if (
-      typeof successThreshold === "number" &&
-      consecutiveSuccessCount >= successThreshold
-    ) {
-      hasPassed = true;
-      // (Go continues to next metric, but for this summary, we can stop)
-      break;
-    }
   }
 
-  if (hasFailed) return { name: metric.name, status: "failed" };
-  if (hasPassed) return { name: metric.name, status: "passed" };
+  if (failedCount > failureLimit)
+    return { name: metric.name, status: "failed" };
 
-  // If not failed or passed (may still be in progress), mark inconclusive
+  if (successThreshold != null && consecutiveSuccessCount >= successThreshold)
+    return { name: metric.name, status: "passed" };
+
+
   if (metric.measurements.length < metric.count)
     return { name: metric.name, status: "inconclusive" };
 
-  // If reached here, all measurements done, not failed or passed threshold,
-  // treat as passing if all are passed, otherwise failing (fallback logic).
-  const allPassed = metric.measurements.every((m) => m.status === "passed");
-  if (allPassed) {
-    return { name: metric.name, status: "passed" };
-  }
-  return { name: metric.name, status: "failed" };
+  return { name: metric.name, status: "passed" };
 };
 
 export function verificationSummary(
