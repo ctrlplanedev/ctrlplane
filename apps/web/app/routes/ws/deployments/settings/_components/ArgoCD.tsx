@@ -73,97 +73,6 @@ export function ArgoCDConfig({ form }: ArgoCDConfigProps) {
   const { theme } = useTheme();
   const argoForm = form as unknown as ArgoForm;
 
-  const handleEditorWillMount = (monaco: any) => {
-    monaco.languages.register({ id: "helm" });
-    monaco.languages.setMonarchTokensProvider("helm", {
-      tokenizer: {
-        root: [
-          [/\{\{-?\s*/, "delimiter.template"],
-          [/\s*-?\}\}/, "delimiter.template"],
-          [/\$[a-zA-Z_]\w*/, "variable.template"],
-          [/\.[a-zA-Z_]\w*/, "variable.predefined.template"],
-          [
-            /\b(if|else|end|with|range|define|template|block|and|or|not)\b/,
-            "keyword.template",
-          ],
-          [/"([^"\\]|\\.)*$/, "string.invalid"],
-          [/'([^'\\]|\\.)*$/, "string.invalid"],
-          [/"/, "string", "@string_double"],
-          [/'/, "string", "@string_single"],
-          [/\d+/, "number"],
-          [/^[\w-]+:/, "key"],
-          [/#.*$/, "comment"],
-        ],
-        string_double: [
-          [/[^\\"]+/, "string"],
-          [/"/, "string", "@pop"],
-        ],
-        string_single: [
-          [/[^\\']+/, "string"],
-          [/'/, "string", "@pop"],
-        ],
-      },
-    });
-
-    monaco.languages.setLanguageConfiguration("helm", {
-      comments: {
-        lineComment: "#",
-      },
-      brackets: [
-        ["{", "}"],
-        ["[", "]"],
-        ["(", ")"],
-      ],
-      autoClosingPairs: [
-        { open: "{", close: "}" },
-        { open: "[", close: "]" },
-        { open: "(", close: ")" },
-        { open: '"', close: '"' },
-        { open: "'", close: "'" },
-      ],
-    });
-
-    monaco.editor.defineTheme("helm-dark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [
-        {
-          token: "delimiter.template",
-          foreground: "C792EA",
-          fontStyle: "bold",
-        },
-        { token: "variable.template", foreground: "82AAFF" },
-        { token: "variable.predefined.template", foreground: "89DDFF" },
-        { token: "keyword.template", foreground: "C792EA", fontStyle: "bold" },
-        { token: "key", foreground: "FFCB6B" },
-        { token: "string", foreground: "C3E88D" },
-        { token: "number", foreground: "F78C6C" },
-        { token: "comment", foreground: "546E7A", fontStyle: "italic" },
-      ],
-      colors: {},
-    });
-
-    monaco.editor.defineTheme("helm-light", {
-      base: "vs",
-      inherit: true,
-      rules: [
-        {
-          token: "delimiter.template",
-          foreground: "7C4DFF",
-          fontStyle: "bold",
-        },
-        { token: "variable.template", foreground: "0277BD" },
-        { token: "variable.predefined.template", foreground: "00838F" },
-        { token: "keyword.template", foreground: "7C4DFF", fontStyle: "bold" },
-        { token: "key", foreground: "F76D47" },
-        { token: "string", foreground: "22863A" },
-        { token: "number", foreground: "E5534B" },
-        { token: "comment", foreground: "90A4AE", fontStyle: "italic" },
-      ],
-      colors: {},
-    });
-  };
-
   return (
     <FormField
       control={argoForm.control}
@@ -177,12 +86,9 @@ export function ArgoCDConfig({ form }: ArgoCDConfigProps) {
         return (
           <div className="border">
             <Editor
-              language="helm"
-              theme={theme === "dark" ? "helm-dark" : "helm-light"}
-              beforeMount={handleEditorWillMount}
-              options={{
-                minimap: { enabled: false },
-              }}
+              language="plaintext"
+              theme={theme === "dark" ? "vs-dark" : "vs"}
+              options={{ minimap: { enabled: false }}}
               value={configString}
               onChange={(newValue) => handleChange(newValue ?? "")}
               height="600px"
