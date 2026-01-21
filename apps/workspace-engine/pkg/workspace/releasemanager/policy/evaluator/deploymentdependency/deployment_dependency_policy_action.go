@@ -6,9 +6,14 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
-type ReconcileFn func(ctx context.Context, target *oapi.ReleaseTarget) error
+var actionTracer = otel.Tracer("DeploymentDependencyAction")
+
+type ReconcileFn func(ctx context.Context, targets []*oapi.ReleaseTarget) error
 
 type DeploymentDependencyAction struct {
 	store       *store.Store
@@ -27,6 +32,15 @@ func (d *DeploymentDependencyAction) Name() string {
 }
 
 func (d *DeploymentDependencyAction) Execute(ctx context.Context, trigger action.ActionTrigger, context action.ActionContext) error {
+	ctx, span := actionTracer.Start(ctx, "DeploymentDependencyAction.Execute")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("trigger", string(trigger)),
+		attribute.String("release.id", context.Release.ID()),
+		attribute.String("job.id", context.Job.Id),
+		attribute.String("job.status", string(context.Job.Status)),
+	)
 	if trigger != action.TriggerJobSuccess {
 		return nil
 	}
@@ -67,10 +81,8 @@ func (d *DeploymentDependencyAction) Execute(ctx context.Context, trigger action
 		return nil
 	}
 
-	for _, target := range targetsToReconcile {
-		if err := d.reconcileFn(ctx, target); err != nil {
-			return fmt.Errorf("failed to reconcile target: %s", target.Key())
-		}
+	if err := d.reconcileFn(ctx, targetsToReconcile); err != nil {
+		return fmt.Errorf("failed to reconcile targets: %w", err)
 	}
 
 	return nil

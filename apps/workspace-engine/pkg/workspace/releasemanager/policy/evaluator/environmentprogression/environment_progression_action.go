@@ -9,7 +9,12 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/store"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
+
+var actionTracer = otel.Tracer("EnvironmentProgressionAction")
 
 type ReconcileFn func(ctx context.Context, targets []*oapi.ReleaseTarget) error
 
@@ -30,6 +35,15 @@ func (a *EnvironmentProgressionAction) Name() string {
 }
 
 func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger action.ActionTrigger, actx action.ActionContext) error {
+	ctx, span := actionTracer.Start(ctx, "EnvironmentProgressionAction.Execute")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("trigger", string(trigger)),
+		attribute.String("release.id", actx.Release.ID()),
+		attribute.String("job.id", actx.Job.Id),
+		attribute.String("job.status", string(actx.Job.Status)),
+	)
 	if trigger != action.TriggerJobSuccess {
 		return nil
 	}
