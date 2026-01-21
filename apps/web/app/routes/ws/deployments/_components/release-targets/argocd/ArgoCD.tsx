@@ -61,7 +61,7 @@ export function ArgoCDVerificationDisplay({
   const latestMeasurement = sortedMeasurements.at(0);
   if (latestMeasurement == null) return null;
 
-  const data = metric.measurements.at(0)?.data;
+  const { data } = latestMeasurement;
   if (data == null) return null;
 
   const parsedData = parseArgoCDMeasurement(data);
