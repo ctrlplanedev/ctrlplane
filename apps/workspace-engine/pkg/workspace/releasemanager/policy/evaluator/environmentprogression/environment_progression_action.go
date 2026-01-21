@@ -71,7 +71,8 @@ func (a *EnvironmentProgressionAction) Execute(ctx context.Context, trigger acti
 		return nil
 	}
 
-	progressionDependentTargets, err := a.getProgressionDependentTargets(ctx, policiesThatCrossedThreshold)
+	deploymentId := actx.Release.ReleaseTarget.DeploymentId
+	progressionDependentTargets, err := a.getProgressionDependentTargets(ctx, policiesThatCrossedThreshold, deploymentId)
 	if err != nil {
 		return fmt.Errorf("failed to get progression dependent targets: %w", err)
 	}
@@ -117,15 +118,32 @@ func (a *EnvironmentProgressionAction) getProgressionDependentPolicies(ctx conte
 	return policies, nil
 }
 
-func (a *EnvironmentProgressionAction) getProgressionDependentTargets(ctx context.Context, policies []*oapi.Policy) ([]*oapi.ReleaseTarget, error) {
+func (a *EnvironmentProgressionAction) getProgressionDependentTargets(ctx context.Context, policies []*oapi.Policy, deploymentId string) ([]*oapi.ReleaseTarget, error) {
 	targetMap := make(map[string]*oapi.ReleaseTarget)
-	for _, policy := range policies {
-		policyTargets, err := a.store.ReleaseTargets.GetForPolicy(ctx, policy)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get release targets for policy %s: %w", policy.Id, err)
+
+	deploymentTargets, err := a.store.ReleaseTargets.GetForDeployment(ctx, deploymentId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment targets: %w", err)
+	}
+
+	for _, target := range deploymentTargets {
+		environment, ok := a.store.Environments.Get(target.EnvironmentId)
+		if !ok {
+			continue
 		}
-		for _, target := range policyTargets {
-			targetMap[target.Key()] = target
+		resource, ok := a.store.Resources.Get(target.ResourceId)
+		if !ok {
+			continue
+		}
+		deployment, ok := a.store.Deployments.Get(target.DeploymentId)
+		if !ok {
+			continue
+		}
+
+		for _, policy := range policies {
+			if selector.MatchPolicy(ctx, policy, selector.NewResolvedReleaseTarget(environment, deployment, resource)) {
+				targetMap[target.Key()] = target
+			}
 		}
 	}
 
