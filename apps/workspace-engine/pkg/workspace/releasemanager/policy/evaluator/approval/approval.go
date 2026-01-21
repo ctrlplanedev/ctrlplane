@@ -14,6 +14,31 @@ import (
 
 var tracer = otel.Tracer("workspace/releasemanager/policy/evaluator/approval")
 
+func parseTimestamp(s string) (time.Time, error) {
+	if s == "" {
+		return time.Time{}, nil
+	}
+
+	formats := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05.999999999",
+		"2006-01-02T15:04:05.999999",
+		"2006-01-02T15:04:05",
+	}
+
+	var lastErr error
+	for _, format := range formats {
+		t, err := time.Parse(format, s)
+		if err == nil {
+			return t, nil
+		}
+		lastErr = err
+	}
+
+	return time.Time{}, fmt.Errorf("failed to parse timestamp %q: %w", s, lastErr)
+}
+
 var _ evaluator.Evaluator = &AnyApprovalEvaluator{}
 
 type AnyApprovalEvaluator struct {
@@ -111,11 +136,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 	}
 
 	// If the version was created before the policy was created, it was previously "approved"
-	ruleCreatedAtStr := m.ruleCreatedAt
-	if ruleCreatedAtStr == "" {
-		ruleCreatedAtStr = time.Time{}.Format(time.RFC3339)
-	}
-	ruleCreatedAt, err := time.Parse(time.RFC3339, ruleCreatedAtStr)
+	ruleCreatedAt, err := parseTimestamp(m.ruleCreatedAt)
 	if err != nil {
 		return results.
 			NewPendingResult("approval",

@@ -730,3 +730,124 @@ func TestAnyApprovalEvaluator_EmptyRuleCreatedAt(t *testing.T) {
 	assert.False(t, result.Allowed, "expected denied because version needs approvals")
 	assert.NotContains(t, result.Message, "Failed to parse", "should not have a parse error")
 }
+
+// Tests for parseTimestamp function
+
+func TestParseTimestamp_EmptyString(t *testing.T) {
+	result, err := parseTimestamp("")
+	assert.NoError(t, err, "empty string should not produce an error")
+	assert.True(t, result.IsZero(), "empty string should return zero time")
+}
+
+func TestParseTimestamp_RFC3339(t *testing.T) {
+	input := "2025-11-04T01:39:37Z"
+	result, err := parseTimestamp(input)
+	assert.NoError(t, err, "RFC3339 format should parse successfully")
+	assert.Equal(t, 2025, result.Year())
+	assert.Equal(t, time.November, result.Month())
+	assert.Equal(t, 4, result.Day())
+	assert.Equal(t, 1, result.Hour())
+	assert.Equal(t, 39, result.Minute())
+	assert.Equal(t, 37, result.Second())
+}
+
+func TestParseTimestamp_RFC3339WithOffset(t *testing.T) {
+	input := "2025-11-04T01:39:37+05:30"
+	result, err := parseTimestamp(input)
+	assert.NoError(t, err, "RFC3339 with timezone offset should parse successfully")
+	assert.Equal(t, 2025, result.Year())
+	assert.Equal(t, time.November, result.Month())
+	assert.Equal(t, 4, result.Day())
+}
+
+func TestParseTimestamp_RFC3339Nano(t *testing.T) {
+	input := "2025-11-04T01:39:37.123456789Z"
+	result, err := parseTimestamp(input)
+	assert.NoError(t, err, "RFC3339Nano format should parse successfully")
+	assert.Equal(t, 2025, result.Year())
+	assert.Equal(t, 123456789, result.Nanosecond())
+}
+
+func TestParseTimestamp_WithoutTimezone_Microseconds(t *testing.T) {
+	// This is the format that was causing the backwards compatibility issue
+	input := "2025-11-04T01:39:37.265927"
+	result, err := parseTimestamp(input)
+	assert.NoError(t, err, "timestamp without timezone (microseconds) should parse successfully")
+	assert.Equal(t, 2025, result.Year())
+	assert.Equal(t, time.November, result.Month())
+	assert.Equal(t, 4, result.Day())
+	assert.Equal(t, 1, result.Hour())
+	assert.Equal(t, 39, result.Minute())
+	assert.Equal(t, 37, result.Second())
+}
+
+func TestParseTimestamp_WithoutTimezone_NoFractionalSeconds(t *testing.T) {
+	input := "2025-11-04T01:39:37"
+	result, err := parseTimestamp(input)
+	assert.NoError(t, err, "timestamp without timezone (no fractional seconds) should parse successfully")
+	assert.Equal(t, 2025, result.Year())
+	assert.Equal(t, time.November, result.Month())
+	assert.Equal(t, 4, result.Day())
+}
+
+func TestParseTimestamp_WithoutTimezone_Nanoseconds(t *testing.T) {
+	input := "2025-11-04T01:39:37.123456789"
+	result, err := parseTimestamp(input)
+	assert.NoError(t, err, "timestamp without timezone (nanoseconds) should parse successfully")
+	assert.Equal(t, 2025, result.Year())
+	assert.Equal(t, 123456789, result.Nanosecond())
+}
+
+func TestParseTimestamp_InvalidFormat(t *testing.T) {
+	invalidInputs := []string{
+		"not-a-timestamp",
+		"2025/11/04",
+		"11-04-2025",
+		"2025-11-04 01:39:37", // space instead of T
+		"01:39:37",
+	}
+
+	for _, input := range invalidInputs {
+		_, err := parseTimestamp(input)
+		assert.Error(t, err, "invalid format %q should produce an error", input)
+	}
+}
+
+func TestParseTimestamp_BackwardsCompatibility_Integration(t *testing.T) {
+	// Test that the evaluator handles timestamps without timezone correctly
+	ctx := context.Background()
+	versionId := "version-1"
+	environmentId := "env-1"
+
+	st := setupStore(versionId, environmentId, []string{})
+
+	// Version created BEFORE the rule (should be auto-approved)
+	versionCreatedAt := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+	version := &oapi.DeploymentVersion{
+		Id:        versionId,
+		CreatedAt: versionCreatedAt,
+	}
+
+	// Rule created AFTER the version, using timestamp format without timezone
+	// This is the format that was causing the backwards compatibility issue
+	rule := &oapi.PolicyRule{
+		Id:          "rule-1",
+		AnyApproval: &oapi.AnyApprovalRule{MinApprovals: 2},
+		CreatedAt:   "2025-11-04T01:39:37.265927", // No timezone suffix
+	}
+	eval := NewEvaluator(st, rule)
+	require.NotNil(t, eval, "evaluator should not be nil")
+
+	environment, _ := st.Environments.Get(environmentId)
+
+	scope := evaluator.EvaluatorScope{
+		Environment: environment,
+		Version:     version,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	// Should be allowed because version was created before the policy
+	assert.True(t, result.Allowed, "expected allowed because version predates policy")
+	assert.NotContains(t, result.Message, "Failed to parse", "should not have a parse error")
+	assert.Contains(t, result.Message, "Version was created before the policy was created")
+}
