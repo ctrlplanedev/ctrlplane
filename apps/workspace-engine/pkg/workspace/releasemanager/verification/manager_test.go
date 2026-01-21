@@ -520,6 +520,8 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	body := `{"key": "value"}`
 	headers := map[string]string{"Authorization": "Bearer token"}
 	failureLimit := 5
+	failureCondition := "result.statusCode == 500 || result.body.status == 'error'"
+	successThreshold := 3
 
 	provider := oapi.MetricProvider{}
 	_ = provider.FromHTTPMetricProvider(oapi.HTTPMetricProvider{
@@ -537,7 +539,9 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 			IntervalSeconds:  120,
 			Count:            20,
 			SuccessCondition: "result.body.status == 'ok'",
+			FailureCondition: &failureCondition,
 			FailureThreshold: &failureLimit,
+			SuccessThreshold: &successThreshold,
 			Provider:         provider,
 		},
 	}
@@ -555,7 +559,11 @@ func TestManager_StartVerification_PreservesAllMetricFields(t *testing.T) {
 	assert.EqualValues(t, 120, metric.IntervalSeconds)
 	assert.EqualValues(t, 20, metric.Count)
 	assert.Equal(t, "result.body.status == 'ok'", metric.SuccessCondition)
+	require.NotNil(t, metric.FailureCondition, "FailureCondition should be preserved")
+	assert.Equal(t, failureCondition, *metric.FailureCondition)
 	assert.EqualValues(t, 5, *metric.FailureThreshold)
+	require.NotNil(t, metric.SuccessThreshold, "SuccessThreshold should be preserved")
+	assert.EqualValues(t, 3, *metric.SuccessThreshold)
 
 	// Clean up
 	manager.scheduler.StopVerification(verification.Id)

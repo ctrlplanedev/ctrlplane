@@ -115,6 +115,7 @@ func (m *Manager) StartVerification(
 			Count:            metric.Count,
 			SuccessCondition: metric.SuccessCondition,
 			FailureThreshold: metric.FailureThreshold,
+			FailureCondition: metric.FailureCondition,
 			SuccessThreshold: metric.SuccessThreshold,
 			Provider:         metric.Provider,
 			Measurements:     []oapi.VerificationMeasurement{},
