@@ -11,6 +11,7 @@ const USER_APPROVAL_RECORD_SELECT_QUERY = `
 	SELECT 
 		pra.user_id,
 		pra.deployment_version_id,
+		pra.environment_id,
 		pra.status,
 		pra.reason,
 		pra.created_at::text
@@ -49,7 +50,7 @@ func getUserApprovalRecords(ctx context.Context, workspaceID string) ([]*oapi.Us
 
 func scanUserApprovalRecord(rows pgx.Rows) (*oapi.UserApprovalRecord, error) {
 	var userApprovalRecord oapi.UserApprovalRecord
-	err := rows.Scan(&userApprovalRecord.UserId, &userApprovalRecord.VersionId, &userApprovalRecord.Status, &userApprovalRecord.Reason, &userApprovalRecord.CreatedAt)
+	err := rows.Scan(&userApprovalRecord.UserId, &userApprovalRecord.VersionId, &userApprovalRecord.EnvironmentId, &userApprovalRecord.Status, &userApprovalRecord.Reason, &userApprovalRecord.CreatedAt)
 	if err != nil {
 		return nil, err
 	}

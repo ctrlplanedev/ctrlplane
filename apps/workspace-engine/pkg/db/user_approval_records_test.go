@@ -41,6 +41,11 @@ func validateRetrievedUserApprovalRecords(t *testing.T, actualRecords []*oapi.Us
 			t.Fatalf("expected status %v, got %v", expectedRecord.Status, actualRecord.Status)
 		}
 
+		// Verify EnvironmentId is loaded (critical for approval lookups)
+		if actualRecord.EnvironmentId == "" {
+			t.Fatalf("expected environment_id to be set, got empty string")
+		}
+
 		compareStrPtr(t, actualRecord.Reason, expectedRecord.Reason)
 
 		if actualRecord.CreatedAt == "" {
@@ -1188,5 +1193,80 @@ func TestDBUserApprovalRecords_DeleteOneOfMany(t *testing.T) {
 
 	if records[0].UserId != user2ID {
 		t.Fatalf("expected remaining record to belong to user2, got user %s", records[0].UserId)
+	}
+}
+
+func TestDBUserApprovalRecords_EnvironmentIdIsLoaded(t *testing.T) {
+	workspaceID, conn := setupTestWithWorkspace(t)
+	defer conn.Release()
+
+	// Create required dependencies
+	userID := uuid.New().String()
+	_, err := conn.Exec(t.Context(),
+		`INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3)`,
+		userID, "Test User", "test@example.com")
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	systemID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO system (id, name, slug, workspace_id) VALUES ($1, $2, $3, $4)`,
+		systemID, "Test System", "test-system", workspaceID)
+	if err != nil {
+		t.Fatalf("failed to create system: %v", err)
+	}
+
+	environmentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO environment (id, name, system_id) VALUES ($1, $2, $3)`,
+		environmentID, "Test Environment", systemID)
+	if err != nil {
+		t.Fatalf("failed to create environment: %v", err)
+	}
+
+	deploymentID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment (id, name, slug, description, system_id) VALUES ($1, $2, $3, $4, $5)`,
+		deploymentID, "Test Deployment", "test-deployment", "Test deployment description", systemID)
+	if err != nil {
+		t.Fatalf("failed to create deployment: %v", err)
+	}
+
+	versionID := uuid.New().String()
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO deployment_version (id, name, tag, deployment_id) VALUES ($1, $2, $3, $4)`,
+		versionID, "v1.0.0", "latest", deploymentID)
+	if err != nil {
+		t.Fatalf("failed to create deployment version: %v", err)
+	}
+
+	// Insert approval record
+	reason := "Approved"
+	_, err = conn.Exec(t.Context(),
+		`INSERT INTO policy_rule_any_approval_record 
+		(id, deployment_version_id, environment_id, user_id, status, reason, created_at) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		uuid.New().String(), versionID, environmentID, userID, "approved", reason, time.Now())
+	if err != nil {
+		t.Fatalf("failed to create approval record: %v", err)
+	}
+
+	records, err := getUserApprovalRecords(t.Context(), workspaceID)
+	if err != nil {
+		t.Fatalf("expected no errors, got %v", err)
+	}
+
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
+	}
+
+	// This is the critical check - EnvironmentId must be loaded from the database
+	if records[0].EnvironmentId == "" {
+		t.Fatalf("expected EnvironmentId to be set, got empty string")
+	}
+
+	if records[0].EnvironmentId != environmentID {
+		t.Fatalf("expected EnvironmentId %v, got %v", environmentID, records[0].EnvironmentId)
 	}
 }
