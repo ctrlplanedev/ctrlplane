@@ -736,6 +736,42 @@ func TestPersistence_ConcurrentSaveAndLoad(t *testing.T) {
 	}
 }
 
+func TestUserApprovalRecordKeyIncludesEnvironment(t *testing.T) {
+	ctx := context.Background()
+	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
+
+	versionId := uuid.New().String()
+	userId := "user-123"
+
+	recordOne := &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		UserId:        userId,
+		EnvironmentId: uuid.New().String(),
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     time.Now().Format(time.RFC3339),
+	}
+	recordTwo := &oapi.UserApprovalRecord{
+		VersionId:     versionId,
+		UserId:        userId,
+		EnvironmentId: uuid.New().String(),
+		Status:        oapi.ApprovalStatusApproved,
+		CreatedAt:     time.Now().Add(time.Second).Format(time.RFC3339),
+	}
+
+	testStore.UserApprovalRecords.Upsert(ctx, recordOne)
+	testStore.UserApprovalRecords.Upsert(ctx, recordTwo)
+
+	assert.NotEqual(t, recordOne.Key(), recordTwo.Key())
+
+	_, ok := testStore.Repo().UserApprovalRecords.Get(recordOne.Key())
+	assert.True(t, ok, "first user approval record should be stored")
+
+	_, ok = testStore.Repo().UserApprovalRecords.Get(recordTwo.Key())
+	assert.True(t, ok, "second user approval record should be stored")
+
+	assert.Equal(t, 2, len(testStore.Repo().UserApprovalRecords.Items()))
+}
+
 // Helper function to create string pointers
 func ptr(s string) *string {
 	return &s

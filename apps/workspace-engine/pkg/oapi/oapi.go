@@ -88,7 +88,7 @@ func (rv *ResourceVariable) ID() string {
 }
 
 func (x *UserApprovalRecord) Key() string {
-	return x.VersionId + x.UserId
+	return x.VersionId + x.UserId + x.EnvironmentId
 }
 
 func (j *Job) IsInProcessingState() bool {
