@@ -2,30 +2,19 @@ local openapi = import '../lib/openapi.libsonnet';
 
 {
   WorkflowTaskTemplate: {
-    discriminator: {
-      propertyName: 'type',
-    },
-    oneOf: [
-      {
+    type: 'object',
+    required: ['name', 'jobAgent'],
+    properties: {
+      name: { type: 'string' },
+      jobAgent: { 
         type: 'object',
-        required: ['name', 'type', 'jobAgent'],
+        required: ['id', 'config'],
         properties: {
-          name: { type: 'string' },
-          type: { type: 'string', enum: ['job'] },
-          jobAgent: { 
-            type: 'object',
-            required: ['id', 'config'],
-            properties: {
-              id: { type: 'string' },
-              config: { type: 'object', additionalProperties: true },
-            },
-          },
-          when: { type: 'string' },
-          dependencies: { type: 'array', items: { type: 'string' } },
-          matrix: { type: 'string' },
+          id: { type: 'string' },
+          config: { type: 'object', additionalProperties: true },
         },
       },
-    ],
+    },
   },
 
   WorkflowStringParameter: {
@@ -76,9 +65,6 @@ local openapi = import '../lib/openapi.libsonnet';
   },
   
   WorkflowParameter: {
-    discriminator: {
-      propertyName: 'type',
-    },
     oneOf: [
       openapi.schemaRef('WorkflowStringParameter'),
       openapi.schemaRef('WorkflowNumberParameter'),
