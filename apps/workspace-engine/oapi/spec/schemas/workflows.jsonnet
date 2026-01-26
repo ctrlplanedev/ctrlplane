@@ -91,7 +91,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Task: {
     type: 'object',
-    required: ['id', 'workflowId', 'taskTemplateId', 'jobs', 'status'],
+    required: ['id', 'workflowId', 'taskName', 'jobIds', 'status'],
     properties: {
       id: { type: 'string' },
       workflowId: { type: 'string' },
