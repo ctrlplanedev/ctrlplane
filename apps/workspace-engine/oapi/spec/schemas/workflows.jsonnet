@@ -95,8 +95,8 @@ local openapi = import '../lib/openapi.libsonnet';
     properties: {
       id: { type: 'string' },
       workflowId: { type: 'string' },
-      taskTemplateId: { type: 'string' },
-      jobs: { type: 'array', items: openapi.schemaRef('Job') },
+      taskName: { type: 'string' },
+      jobIds: { type: 'array', items: { type: 'string' } },
       status: openapi.schemaRef('JobStatus'),
       startedAt: { type: 'string', format: 'date-time' },
       completedAt: { type: 'string', format: 'date-time' },
