@@ -10,6 +10,7 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'object',
         required: ['name', 'type', 'jobAgent'],
         properties: {
+          name: { type: 'string' },
           type: { type: 'string', enum: ['job'] },
           jobAgent: { 
             type: 'object',
