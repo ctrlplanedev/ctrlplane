@@ -6,7 +6,7 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name', 'jobAgent'],
     properties: {
       name: { type: 'string' },
-      jobAgent: { 
+      jobAgent: {
         type: 'object',
         required: ['id', 'config'],
         properties: {
@@ -26,7 +26,7 @@ local openapi = import '../lib/openapi.libsonnet';
       default: { type: 'string' },
     },
   },
-  
+
   WorkflowNumberParameter: {
     type: 'object',
     required: ['name', 'type', 'default'],
@@ -46,7 +46,7 @@ local openapi = import '../lib/openapi.libsonnet';
       default: { type: 'boolean' },
     },
   },
-  
+
   WorkflowParameter: {
     oneOf: [
       openapi.schemaRef('WorkflowStringParameter'),
@@ -61,7 +61,7 @@ local openapi = import '../lib/openapi.libsonnet';
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
-      parameters: { 
+      parameters: {
         type: 'array',
         items: openapi.schemaRef('WorkflowParameter'),
       },

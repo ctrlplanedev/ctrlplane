@@ -2297,6 +2297,142 @@
                "selector"
             ],
             "type": "object"
+         },
+         "WorkflowBooleanParameter": {
+            "properties": {
+               "default": {
+                  "type": "boolean"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "boolean"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "default"
+            ],
+            "type": "object"
+         },
+         "WorkflowNumberParameter": {
+            "properties": {
+               "default": {
+                  "type": "number"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "number"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "default"
+            ],
+            "type": "object"
+         },
+         "WorkflowParameter": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/WorkflowStringParameter"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowNumberParameter"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowBooleanParameter"
+               }
+            ]
+         },
+         "WorkflowStringParameter": {
+            "properties": {
+               "default": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "string"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "default"
+            ],
+            "type": "object"
+         },
+         "WorkflowTaskTemplate": {
+            "properties": {
+               "jobAgent": {
+                  "properties": {
+                     "config": {
+                        "additionalProperties": true,
+                        "type": "object"
+                     },
+                     "id": {
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "id",
+                     "config"
+                  ],
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "jobAgent"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplate": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "parameters": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowParameter"
+                  },
+                  "type": "array"
+               },
+               "tasks": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowTaskTemplate"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "parameters",
+               "tasks"
+            ],
+            "type": "object"
          }
       }
    },

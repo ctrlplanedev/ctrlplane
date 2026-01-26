@@ -241,6 +241,21 @@ const (
 	JobSuccess VerificationRuleTriggerOn = "jobSuccess"
 )
 
+// Defines values for WorkflowBooleanParameterType.
+const (
+	Boolean WorkflowBooleanParameterType = "boolean"
+)
+
+// Defines values for WorkflowNumberParameterType.
+const (
+	Number WorkflowNumberParameterType = "number"
+)
+
+// Defines values for WorkflowStringParameterType.
+const (
+	String WorkflowStringParameterType = "string"
+)
+
 // AnyApprovalRule defines model for AnyApprovalRule.
 type AnyApprovalRule struct {
 	MinApprovals int32 `json:"minApprovals"`
@@ -1238,6 +1253,58 @@ type VersionSelectorRule struct {
 	// Description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments"
 	Description *string  `json:"description,omitempty"`
 	Selector    Selector `json:"selector"`
+}
+
+// WorkflowBooleanParameter defines model for WorkflowBooleanParameter.
+type WorkflowBooleanParameter struct {
+	Default bool                         `json:"default"`
+	Name    string                       `json:"name"`
+	Type    WorkflowBooleanParameterType `json:"type"`
+}
+
+// WorkflowBooleanParameterType defines model for WorkflowBooleanParameter.Type.
+type WorkflowBooleanParameterType string
+
+// WorkflowNumberParameter defines model for WorkflowNumberParameter.
+type WorkflowNumberParameter struct {
+	Default float32                     `json:"default"`
+	Name    string                      `json:"name"`
+	Type    WorkflowNumberParameterType `json:"type"`
+}
+
+// WorkflowNumberParameterType defines model for WorkflowNumberParameter.Type.
+type WorkflowNumberParameterType string
+
+// WorkflowParameter defines model for WorkflowParameter.
+type WorkflowParameter struct {
+	union json.RawMessage
+}
+
+// WorkflowStringParameter defines model for WorkflowStringParameter.
+type WorkflowStringParameter struct {
+	Default string                      `json:"default"`
+	Name    string                      `json:"name"`
+	Type    WorkflowStringParameterType `json:"type"`
+}
+
+// WorkflowStringParameterType defines model for WorkflowStringParameter.Type.
+type WorkflowStringParameterType string
+
+// WorkflowTaskTemplate defines model for WorkflowTaskTemplate.
+type WorkflowTaskTemplate struct {
+	JobAgent struct {
+		Config map[string]interface{} `json:"config"`
+		Id     string                 `json:"id"`
+	} `json:"jobAgent"`
+	Name string `json:"name"`
+}
+
+// WorkflowTemplate defines model for WorkflowTemplate.
+type WorkflowTemplate struct {
+	Id         string                 `json:"id"`
+	Name       string                 `json:"name"`
+	Parameters []WorkflowParameter    `json:"parameters"`
+	Tasks      []WorkflowTaskTemplate `json:"tasks"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
@@ -3087,6 +3154,94 @@ func (t Value) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Value) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsWorkflowStringParameter returns the union data inside the WorkflowParameter as a WorkflowStringParameter
+func (t WorkflowParameter) AsWorkflowStringParameter() (WorkflowStringParameter, error) {
+	var body WorkflowStringParameter
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowStringParameter overwrites any union data inside the WorkflowParameter as the provided WorkflowStringParameter
+func (t *WorkflowParameter) FromWorkflowStringParameter(v WorkflowStringParameter) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowStringParameter performs a merge with any union data inside the WorkflowParameter, using the provided WorkflowStringParameter
+func (t *WorkflowParameter) MergeWorkflowStringParameter(v WorkflowStringParameter) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowNumberParameter returns the union data inside the WorkflowParameter as a WorkflowNumberParameter
+func (t WorkflowParameter) AsWorkflowNumberParameter() (WorkflowNumberParameter, error) {
+	var body WorkflowNumberParameter
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowNumberParameter overwrites any union data inside the WorkflowParameter as the provided WorkflowNumberParameter
+func (t *WorkflowParameter) FromWorkflowNumberParameter(v WorkflowNumberParameter) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowNumberParameter performs a merge with any union data inside the WorkflowParameter, using the provided WorkflowNumberParameter
+func (t *WorkflowParameter) MergeWorkflowNumberParameter(v WorkflowNumberParameter) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowBooleanParameter returns the union data inside the WorkflowParameter as a WorkflowBooleanParameter
+func (t WorkflowParameter) AsWorkflowBooleanParameter() (WorkflowBooleanParameter, error) {
+	var body WorkflowBooleanParameter
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowBooleanParameter overwrites any union data inside the WorkflowParameter as the provided WorkflowBooleanParameter
+func (t *WorkflowParameter) FromWorkflowBooleanParameter(v WorkflowBooleanParameter) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowBooleanParameter performs a merge with any union data inside the WorkflowParameter, using the provided WorkflowBooleanParameter
+func (t *WorkflowParameter) MergeWorkflowBooleanParameter(v WorkflowBooleanParameter) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowParameter) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowParameter) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
