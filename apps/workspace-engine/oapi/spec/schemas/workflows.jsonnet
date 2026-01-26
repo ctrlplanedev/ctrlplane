@@ -47,29 +47,11 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
   
-  WorkflowMatrixParameter: {
-    type: 'object',
-    required: ['name', 'type', 'source'],
-    properties: {
-      name: { type: 'string' },
-      type: { type: 'string', enum: ['matrix'] },
-      source: {
-        type: 'object',
-        required: ['kind', 'selector'],
-        properties: {
-          kind: { type: 'string', enum: ['resource', 'environment', 'deployment'] },
-          selector: openapi.schemaRef('Selector'),
-        },
-      },
-    },
-  },
-  
   WorkflowParameter: {
     oneOf: [
       openapi.schemaRef('WorkflowStringParameter'),
       openapi.schemaRef('WorkflowNumberParameter'),
       openapi.schemaRef('WorkflowBooleanParameter'),
-      openapi.schemaRef('WorkflowMatrixParameter'),
     ],
   },
 
