@@ -6,6 +6,7 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name', 'jobAgent'],
     properties: {
       name: { type: 'string' },
+      id: { type: 'string' },
       jobAgent: {
         type: 'object',
         required: ['id', 'config'],
@@ -69,6 +70,36 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'array',
         items: openapi.schemaRef('WorkflowTaskTemplate'),
       },
+    },
+  },
+
+  Workflow: {
+    type: 'object',
+    required: ['id', 'workflowTemplateId', 'parameters', 'status'],
+    properties: {
+      id: { type: 'string' },
+      workflowTemplateId: { type: 'string' },
+      parameters: {
+        type: 'array',
+        items: openapi.schemaRef('LiteralValue'),
+      },
+      status: openapi.schemaRef('JobStatus'),
+      startedAt: { type: 'string', format: 'date-time' },
+      completedAt: { type: 'string', format: 'date-time' },
+    },
+  },
+
+  Task: {
+    type: 'object',
+    required: ['id', 'workflowId', 'taskTemplateId', 'jobs', 'status'],
+    properties: {
+      id: { type: 'string' },
+      workflowId: { type: 'string' },
+      taskTemplateId: { type: 'string' },
+      jobs: { type: 'array', items: openapi.schemaRef('Job') },
+      status: openapi.schemaRef('JobStatus'),
+      startedAt: { type: 'string', format: 'date-time' },
+      completedAt: { type: 'string', format: 'date-time' },
     },
   },
 }
