@@ -84,8 +84,8 @@ local openapi = import '../lib/openapi.libsonnet';
         items: openapi.schemaRef('LiteralValue'),
       },
       status: openapi.schemaRef('JobStatus'),
-      startedAt: { type: 'string', format: 'date-time' },
-      completedAt: { type: 'string', format: 'date-time' },
+      startedAt: { type: 'string', format: 'date-time', nullable: true },
+      completedAt: { type: 'string', format: 'date-time', nullable: true },
     },
   },
 
@@ -97,8 +97,8 @@ local openapi = import '../lib/openapi.libsonnet';
       workflowId: { type: 'string' },
       taskName: { type: 'string' },
       status: openapi.schemaRef('JobStatus'),
-      startedAt: { type: 'string', format: 'date-time' },
-      completedAt: { type: 'string', format: 'date-time' },
+      startedAt: { type: 'string', format: 'date-time', nullable: true },
+      completedAt: { type: 'string', format: 'date-time', nullable: true },
     },
   },
 }
