@@ -77,14 +77,14 @@ func (wt *WorkflowTemplate) CompactionKey() (string, string) {
 	return "workflow_template", wt.Id
 }
 
-func (wtt *WorkflowTaskTemplate) CompactionKey() (string, string) {
-	return "workflow_task_template", wtt.Id
+func (wtt *WorkflowStepTemplate) CompactionKey() (string, string) {
+	return "workflow_step_template", wtt.Id
 }
 
 func (w *Workflow) CompactionKey() (string, string) {
 	return "workflow", w.Id
 }
 
-func (wt *WorkflowTask) CompactionKey() (string, string) {
-	return "workflow_task", wt.Id
+func (wt *WorkflowStep) CompactionKey() (string, string) {
+	return "workflow_step", wt.Id
 }
