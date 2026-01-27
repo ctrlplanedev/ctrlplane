@@ -18,7 +18,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowStringParameter: {
+  WorkflowStringInput: {
     type: 'object',
     required: ['name', 'type', 'default'],
     properties: {
@@ -28,7 +28,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowNumberParameter: {
+  WorkflowNumberInput: {
     type: 'object',
     required: ['name', 'type', 'default'],
     properties: {
@@ -38,7 +38,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowBooleanParameter: {
+  WorkflowBooleanInput: {
     type: 'object',
     required: ['name', 'type', 'default'],
     properties: {
@@ -48,23 +48,23 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowParameter: {
+  WorkflowInput: {
     oneOf: [
-      openapi.schemaRef('WorkflowStringParameter'),
-      openapi.schemaRef('WorkflowNumberParameter'),
-      openapi.schemaRef('WorkflowBooleanParameter'),
+      openapi.schemaRef('WorkflowStringInput'),
+      openapi.schemaRef('WorkflowNumberInput'),
+      openapi.schemaRef('WorkflowBooleanInput'),
     ],
   },
 
   WorkflowTemplate: {
     type: 'object',
-    required: ['id', 'name', 'parameters', 'steps'],
+    required: ['id', 'name', 'inputs', 'steps'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
-      parameters: {
+      inputs: {
         type: 'array',
-        items: openapi.schemaRef('WorkflowParameter'),
+        items: openapi.schemaRef('WorkflowInput'),
       },
       steps: {
         type: 'array',
@@ -75,11 +75,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Workflow: {
     type: 'object',
-    required: ['id', 'workflowTemplateId', 'parameters'],
+    required: ['id', 'workflowTemplateId', 'inputs'],
     properties: {
       id: { type: 'string' },
       workflowTemplateId: { type: 'string' },
-      parameters: {
+      inputs: {
         type: 'object',
         additionalProperties: true,
       },

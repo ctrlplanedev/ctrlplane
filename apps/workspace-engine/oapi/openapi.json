@@ -2308,7 +2308,7 @@
                "id": {
                   "type": "string"
                },
-               "parameters": {
+               "inputs": {
                   "additionalProperties": true,
                   "type": "object"
                },
@@ -2319,11 +2319,11 @@
             "required": [
                "id",
                "workflowTemplateId",
-               "parameters"
+               "inputs"
             ],
             "type": "object"
          },
-         "WorkflowBooleanParameter": {
+         "WorkflowBooleanInput": {
             "properties": {
                "default": {
                   "type": "boolean"
@@ -2345,7 +2345,20 @@
             ],
             "type": "object"
          },
-         "WorkflowNumberParameter": {
+         "WorkflowInput": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/WorkflowStringInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowNumberInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowBooleanInput"
+               }
+            ]
+         },
+         "WorkflowNumberInput": {
             "properties": {
                "default": {
                   "type": "number"
@@ -2366,19 +2379,6 @@
                "default"
             ],
             "type": "object"
-         },
-         "WorkflowParameter": {
-            "oneOf": [
-               {
-                  "$ref": "#/components/schemas/WorkflowStringParameter"
-               },
-               {
-                  "$ref": "#/components/schemas/WorkflowNumberParameter"
-               },
-               {
-                  "$ref": "#/components/schemas/WorkflowBooleanParameter"
-               }
-            ]
          },
          "WorkflowStep": {
             "properties": {
@@ -2431,7 +2431,7 @@
             ],
             "type": "object"
          },
-         "WorkflowStringParameter": {
+         "WorkflowStringInput": {
             "properties": {
                "default": {
                   "type": "string"
@@ -2458,14 +2458,14 @@
                "id": {
                   "type": "string"
                },
-               "name": {
-                  "type": "string"
-               },
-               "parameters": {
+               "inputs": {
                   "items": {
-                     "$ref": "#/components/schemas/WorkflowParameter"
+                     "$ref": "#/components/schemas/WorkflowInput"
                   },
                   "type": "array"
+               },
+               "name": {
+                  "type": "string"
                },
                "steps": {
                   "items": {
@@ -2477,7 +2477,7 @@
             "required": [
                "id",
                "name",
-               "parameters",
+               "inputs",
                "steps"
             ],
             "type": "object"

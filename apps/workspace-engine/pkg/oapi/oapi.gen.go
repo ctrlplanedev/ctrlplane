@@ -242,19 +242,19 @@ const (
 	JobSuccess VerificationRuleTriggerOn = "jobSuccess"
 )
 
-// Defines values for WorkflowBooleanParameterType.
+// Defines values for WorkflowBooleanInputType.
 const (
-	Boolean WorkflowBooleanParameterType = "boolean"
+	Boolean WorkflowBooleanInputType = "boolean"
 )
 
-// Defines values for WorkflowNumberParameterType.
+// Defines values for WorkflowNumberInputType.
 const (
-	Number WorkflowNumberParameterType = "number"
+	Number WorkflowNumberInputType = "number"
 )
 
-// Defines values for WorkflowStringParameterType.
+// Defines values for WorkflowStringInputType.
 const (
-	String WorkflowStringParameterType = "string"
+	String WorkflowStringInputType = "string"
 )
 
 // AnyApprovalRule defines model for AnyApprovalRule.
@@ -1260,34 +1260,34 @@ type VersionSelectorRule struct {
 // Workflow defines model for Workflow.
 type Workflow struct {
 	Id                 string                 `json:"id"`
-	Parameters         map[string]interface{} `json:"parameters"`
+	Inputs             map[string]interface{} `json:"inputs"`
 	WorkflowTemplateId string                 `json:"workflowTemplateId"`
 }
 
-// WorkflowBooleanParameter defines model for WorkflowBooleanParameter.
-type WorkflowBooleanParameter struct {
-	Default bool                         `json:"default"`
-	Name    string                       `json:"name"`
-	Type    WorkflowBooleanParameterType `json:"type"`
+// WorkflowBooleanInput defines model for WorkflowBooleanInput.
+type WorkflowBooleanInput struct {
+	Default bool                     `json:"default"`
+	Name    string                   `json:"name"`
+	Type    WorkflowBooleanInputType `json:"type"`
 }
 
-// WorkflowBooleanParameterType defines model for WorkflowBooleanParameter.Type.
-type WorkflowBooleanParameterType string
+// WorkflowBooleanInputType defines model for WorkflowBooleanInput.Type.
+type WorkflowBooleanInputType string
 
-// WorkflowNumberParameter defines model for WorkflowNumberParameter.
-type WorkflowNumberParameter struct {
-	Default float32                     `json:"default"`
-	Name    string                      `json:"name"`
-	Type    WorkflowNumberParameterType `json:"type"`
-}
-
-// WorkflowNumberParameterType defines model for WorkflowNumberParameter.Type.
-type WorkflowNumberParameterType string
-
-// WorkflowParameter defines model for WorkflowParameter.
-type WorkflowParameter struct {
+// WorkflowInput defines model for WorkflowInput.
+type WorkflowInput struct {
 	union json.RawMessage
 }
+
+// WorkflowNumberInput defines model for WorkflowNumberInput.
+type WorkflowNumberInput struct {
+	Default float32                 `json:"default"`
+	Name    string                  `json:"name"`
+	Type    WorkflowNumberInputType `json:"type"`
+}
+
+// WorkflowNumberInputType defines model for WorkflowNumberInput.Type.
+type WorkflowNumberInputType string
 
 // WorkflowStep defines model for WorkflowStep.
 type WorkflowStep struct {
@@ -1306,22 +1306,22 @@ type WorkflowStepTemplate struct {
 	Name string `json:"name"`
 }
 
-// WorkflowStringParameter defines model for WorkflowStringParameter.
-type WorkflowStringParameter struct {
-	Default string                      `json:"default"`
-	Name    string                      `json:"name"`
-	Type    WorkflowStringParameterType `json:"type"`
+// WorkflowStringInput defines model for WorkflowStringInput.
+type WorkflowStringInput struct {
+	Default string                  `json:"default"`
+	Name    string                  `json:"name"`
+	Type    WorkflowStringInputType `json:"type"`
 }
 
-// WorkflowStringParameterType defines model for WorkflowStringParameter.Type.
-type WorkflowStringParameterType string
+// WorkflowStringInputType defines model for WorkflowStringInput.Type.
+type WorkflowStringInputType string
 
 // WorkflowTemplate defines model for WorkflowTemplate.
 type WorkflowTemplate struct {
-	Id         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Parameters []WorkflowParameter    `json:"parameters"`
-	Steps      []WorkflowStepTemplate `json:"steps"`
+	Id     string                 `json:"id"`
+	Inputs []WorkflowInput        `json:"inputs"`
+	Name   string                 `json:"name"`
+	Steps  []WorkflowStepTemplate `json:"steps"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
@@ -3175,22 +3175,22 @@ func (t *Value) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsWorkflowStringParameter returns the union data inside the WorkflowParameter as a WorkflowStringParameter
-func (t WorkflowParameter) AsWorkflowStringParameter() (WorkflowStringParameter, error) {
-	var body WorkflowStringParameter
+// AsWorkflowStringInput returns the union data inside the WorkflowInput as a WorkflowStringInput
+func (t WorkflowInput) AsWorkflowStringInput() (WorkflowStringInput, error) {
+	var body WorkflowStringInput
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromWorkflowStringParameter overwrites any union data inside the WorkflowParameter as the provided WorkflowStringParameter
-func (t *WorkflowParameter) FromWorkflowStringParameter(v WorkflowStringParameter) error {
+// FromWorkflowStringInput overwrites any union data inside the WorkflowInput as the provided WorkflowStringInput
+func (t *WorkflowInput) FromWorkflowStringInput(v WorkflowStringInput) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeWorkflowStringParameter performs a merge with any union data inside the WorkflowParameter, using the provided WorkflowStringParameter
-func (t *WorkflowParameter) MergeWorkflowStringParameter(v WorkflowStringParameter) error {
+// MergeWorkflowStringInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowStringInput
+func (t *WorkflowInput) MergeWorkflowStringInput(v WorkflowStringInput) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -3201,22 +3201,22 @@ func (t *WorkflowParameter) MergeWorkflowStringParameter(v WorkflowStringParamet
 	return err
 }
 
-// AsWorkflowNumberParameter returns the union data inside the WorkflowParameter as a WorkflowNumberParameter
-func (t WorkflowParameter) AsWorkflowNumberParameter() (WorkflowNumberParameter, error) {
-	var body WorkflowNumberParameter
+// AsWorkflowNumberInput returns the union data inside the WorkflowInput as a WorkflowNumberInput
+func (t WorkflowInput) AsWorkflowNumberInput() (WorkflowNumberInput, error) {
+	var body WorkflowNumberInput
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromWorkflowNumberParameter overwrites any union data inside the WorkflowParameter as the provided WorkflowNumberParameter
-func (t *WorkflowParameter) FromWorkflowNumberParameter(v WorkflowNumberParameter) error {
+// FromWorkflowNumberInput overwrites any union data inside the WorkflowInput as the provided WorkflowNumberInput
+func (t *WorkflowInput) FromWorkflowNumberInput(v WorkflowNumberInput) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeWorkflowNumberParameter performs a merge with any union data inside the WorkflowParameter, using the provided WorkflowNumberParameter
-func (t *WorkflowParameter) MergeWorkflowNumberParameter(v WorkflowNumberParameter) error {
+// MergeWorkflowNumberInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowNumberInput
+func (t *WorkflowInput) MergeWorkflowNumberInput(v WorkflowNumberInput) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -3227,22 +3227,22 @@ func (t *WorkflowParameter) MergeWorkflowNumberParameter(v WorkflowNumberParamet
 	return err
 }
 
-// AsWorkflowBooleanParameter returns the union data inside the WorkflowParameter as a WorkflowBooleanParameter
-func (t WorkflowParameter) AsWorkflowBooleanParameter() (WorkflowBooleanParameter, error) {
-	var body WorkflowBooleanParameter
+// AsWorkflowBooleanInput returns the union data inside the WorkflowInput as a WorkflowBooleanInput
+func (t WorkflowInput) AsWorkflowBooleanInput() (WorkflowBooleanInput, error) {
+	var body WorkflowBooleanInput
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromWorkflowBooleanParameter overwrites any union data inside the WorkflowParameter as the provided WorkflowBooleanParameter
-func (t *WorkflowParameter) FromWorkflowBooleanParameter(v WorkflowBooleanParameter) error {
+// FromWorkflowBooleanInput overwrites any union data inside the WorkflowInput as the provided WorkflowBooleanInput
+func (t *WorkflowInput) FromWorkflowBooleanInput(v WorkflowBooleanInput) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeWorkflowBooleanParameter performs a merge with any union data inside the WorkflowParameter, using the provided WorkflowBooleanParameter
-func (t *WorkflowParameter) MergeWorkflowBooleanParameter(v WorkflowBooleanParameter) error {
+// MergeWorkflowBooleanInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowBooleanInput
+func (t *WorkflowInput) MergeWorkflowBooleanInput(v WorkflowBooleanInput) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -3253,12 +3253,12 @@ func (t *WorkflowParameter) MergeWorkflowBooleanParameter(v WorkflowBooleanParam
 	return err
 }
 
-func (t WorkflowParameter) MarshalJSON() ([]byte, error) {
+func (t WorkflowInput) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *WorkflowParameter) UnmarshalJSON(b []byte) error {
+func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
