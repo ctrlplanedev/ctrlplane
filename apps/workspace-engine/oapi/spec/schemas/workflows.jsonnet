@@ -3,7 +3,7 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   WorkflowStepTemplate: {
     type: 'object',
-    required: ['name', 'jobAgent'],
+    required: ['id', 'name', 'jobAgent'],
     properties: {
       name: { type: 'string' },
       id: { type: 'string' },

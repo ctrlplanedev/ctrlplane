@@ -2425,6 +2425,7 @@
                }
             },
             "required": [
+               "id",
                "name",
                "jobAgent"
             ],

@@ -35,6 +35,10 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.GithubEntities = NewGithubEntities(store)
 	store.Relations = NewRelations(store)
 	store.JobVerifications = NewJobVerifications(store)
+	store.WorkflowTemplates = NewWorkflowTemplates(store)
+	store.WorkflowStepTemplates = NewWorkflowStepTemplates(store)
+	store.Workflows = NewWorkflows(store)
+	store.WorkflowSteps = NewWorkflowSteps(store)
 
 	return store
 }
@@ -65,6 +69,10 @@ type Store struct {
 	GithubEntities           *GithubEntities
 	Relations                *Relations
 	JobVerifications         *JobVerifications
+	WorkflowTemplates        *WorkflowTemplates
+	WorkflowStepTemplates    *WorkflowStepTemplates
+	Workflows                *Workflows
+	WorkflowSteps            *WorkflowSteps
 }
 
 func (s *Store) ID() string {

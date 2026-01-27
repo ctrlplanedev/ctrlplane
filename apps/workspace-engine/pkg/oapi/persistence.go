@@ -72,3 +72,19 @@ func (dvv *DeploymentVariableValue) CompactionKey() (string, string) {
 func (jv *JobVerification) CompactionKey() (string, string) {
 	return "job_verification", jv.Id
 }
+
+func (wt *WorkflowTemplate) CompactionKey() (string, string) {
+	return "workflow_template", wt.Id
+}
+
+func (wtt *WorkflowStepTemplate) CompactionKey() (string, string) {
+	return "workflow_step_template", wtt.Id
+}
+
+func (w *Workflow) CompactionKey() (string, string) {
+	return "workflow", w.Id
+}
+
+func (wt *WorkflowStep) CompactionKey() (string, string) {
+	return "workflow_step", wt.Id
+}

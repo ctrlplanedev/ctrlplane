@@ -1298,7 +1298,7 @@ type WorkflowStep struct {
 
 // WorkflowStepTemplate defines model for WorkflowStepTemplate.
 type WorkflowStepTemplate struct {
-	Id       *string `json:"id,omitempty"`
+	Id       string `json:"id"`
 	JobAgent struct {
 		Config map[string]interface{} `json:"config"`
 		Id     string                 `json:"id"`

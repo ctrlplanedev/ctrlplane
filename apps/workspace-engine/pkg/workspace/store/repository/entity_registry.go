@@ -36,6 +36,10 @@ func initGlobalRegistry() {
 		globalRegistry.Register("relationship_rule", func() persistence.Entity { return &oapi.RelationshipRule{} })
 		globalRegistry.Register("github_entity", func() persistence.Entity { return &oapi.GithubEntity{} })
 		globalRegistry.Register("job_verification", func() persistence.Entity { return &oapi.JobVerification{} })
+		globalRegistry.Register("workflow_template", func() persistence.Entity { return &oapi.WorkflowTemplate{} })
+		globalRegistry.Register("workflow_step_template", func() persistence.Entity { return &oapi.WorkflowStepTemplate{} })
+		globalRegistry.Register("workflow", func() persistence.Entity { return &oapi.Workflow{} })
+		globalRegistry.Register("workflow_step", func() persistence.Entity { return &oapi.WorkflowStep{} })
 	})
 }
 
