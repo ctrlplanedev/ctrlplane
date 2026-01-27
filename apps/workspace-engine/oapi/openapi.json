@@ -898,6 +898,9 @@
                "status": {
                   "$ref": "#/components/schemas/JobStatus"
                },
+               "taskId": {
+                  "type": "string"
+               },
                "traceToken": {
                   "type": "string"
                },
@@ -909,6 +912,7 @@
             "required": [
                "id",
                "releaseId",
+               "taskId",
                "jobAgentId",
                "jobAgentConfig",
                "status",
@@ -1024,6 +1028,7 @@
                         "releaseId",
                         "startedAt",
                         "status",
+                        "taskId",
                         "traceToken",
                         "updatedAt"
                      ],
@@ -2298,6 +2303,26 @@
             ],
             "type": "object"
          },
+         "Workflow": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "parameters": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "workflowTemplateId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowTemplateId",
+               "parameters"
+            ],
+            "type": "object"
+         },
          "WorkflowBooleanParameter": {
             "properties": {
                "default": {
@@ -2377,8 +2402,30 @@
             ],
             "type": "object"
          },
+         "WorkflowTask": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "workflowId": {
+                  "type": "string"
+               },
+               "workflowTaskTemplateId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowId",
+               "taskName"
+            ],
+            "type": "object"
+         },
          "WorkflowTaskTemplate": {
             "properties": {
+               "id": {
+                  "type": "string"
+               },
                "jobAgent": {
                   "properties": {
                      "config": {

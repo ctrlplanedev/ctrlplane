@@ -80,23 +80,19 @@ local openapi = import '../lib/openapi.libsonnet';
       id: { type: 'string' },
       workflowTemplateId: { type: 'string' },
       parameters: {
-        type: 'array',
-        items: openapi.schemaRef('LiteralValue'),
+        type: 'object',
+        additionalProperties: true,
       },
-      startedAt: { type: 'string', format: 'date-time', nullable: true },
-      completedAt: { type: 'string', format: 'date-time', nullable: true },
     },
   },
 
-  Task: {
+  WorkflowTask: {
     type: 'object',
     required: ['id', 'workflowId', 'taskName'],
     properties: {
       id: { type: 'string' },
       workflowId: { type: 'string' },
-      taskName: { type: 'string' },
-      startedAt: { type: 'string', format: 'date-time', nullable: true },
-      completedAt: { type: 'string', format: 'date-time', nullable: true },
+      workflowTaskTemplateId: { type: 'string' },
     },
   },
 }
