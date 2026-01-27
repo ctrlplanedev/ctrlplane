@@ -148,6 +148,7 @@ const (
 	JobUpdateEventFieldsToUpdateReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
 	JobUpdateEventFieldsToUpdateStartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
 	JobUpdateEventFieldsToUpdateStatus         JobUpdateEventFieldsToUpdate = "status"
+	JobUpdateEventFieldsToUpdateTaskId         JobUpdateEventFieldsToUpdate = "taskId"
 	JobUpdateEventFieldsToUpdateTraceToken     JobUpdateEventFieldsToUpdate = "traceToken"
 	JobUpdateEventFieldsToUpdateUpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
 )
@@ -681,6 +682,7 @@ type Job struct {
 	ReleaseId      string             `json:"releaseId"`
 	StartedAt      *time.Time         `json:"startedAt,omitempty"`
 	Status         JobStatus          `json:"status"`
+	TaskId         string             `json:"taskId"`
 	TraceToken     *string            `json:"traceToken,omitempty"`
 	UpdatedAt      time.Time          `json:"updatedAt"`
 }
@@ -1255,6 +1257,13 @@ type VersionSelectorRule struct {
 	Selector    Selector `json:"selector"`
 }
 
+// Workflow defines model for Workflow.
+type Workflow struct {
+	Id                 string                 `json:"id"`
+	Parameters         map[string]interface{} `json:"parameters"`
+	WorkflowTemplateId string                 `json:"workflowTemplateId"`
+}
+
 // WorkflowBooleanParameter defines model for WorkflowBooleanParameter.
 type WorkflowBooleanParameter struct {
 	Default bool                         `json:"default"`
@@ -1290,8 +1299,16 @@ type WorkflowStringParameter struct {
 // WorkflowStringParameterType defines model for WorkflowStringParameter.Type.
 type WorkflowStringParameterType string
 
+// WorkflowTask defines model for WorkflowTask.
+type WorkflowTask struct {
+	Id                     string `json:"id"`
+	WorkflowId             string `json:"workflowId"`
+	WorkflowTaskTemplateId string `json:"workflowTaskTemplateId"`
+}
+
 // WorkflowTaskTemplate defines model for WorkflowTaskTemplate.
 type WorkflowTaskTemplate struct {
+	Id       *string `json:"id,omitempty"`
 	JobAgent struct {
 		Config map[string]interface{} `json:"config"`
 		Id     string                 `json:"id"`
