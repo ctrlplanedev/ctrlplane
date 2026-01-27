@@ -2417,7 +2417,7 @@
             "required": [
                "id",
                "workflowId",
-               "taskName"
+               "workflowTaskTemplateId"
             ],
             "type": "object"
          },

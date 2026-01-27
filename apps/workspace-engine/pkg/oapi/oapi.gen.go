@@ -1301,9 +1301,9 @@ type WorkflowStringParameterType string
 
 // WorkflowTask defines model for WorkflowTask.
 type WorkflowTask struct {
-	Id                     string  `json:"id"`
-	WorkflowId             string  `json:"workflowId"`
-	WorkflowTaskTemplateId *string `json:"workflowTaskTemplateId,omitempty"`
+	Id                     string `json:"id"`
+	WorkflowId             string `json:"workflowId"`
+	WorkflowTaskTemplateId string `json:"workflowTaskTemplateId"`
 }
 
 // WorkflowTaskTemplate defines model for WorkflowTaskTemplate.
