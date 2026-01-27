@@ -93,6 +93,14 @@ local openapi = import '../lib/openapi.libsonnet';
       id: { type: 'string' },
       workflowId: { type: 'string' },
       workflowStepTemplateId: { type: 'string' },
+      jobAgent: {
+        type: 'object',
+        required: ['id', 'config'],
+        properties: {
+          id: { type: 'string' },
+          config: { type: 'object', additionalProperties: true },
+        },
+      },
     },
   },
 }

@@ -148,9 +148,9 @@ const (
 	JobUpdateEventFieldsToUpdateReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
 	JobUpdateEventFieldsToUpdateStartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
 	JobUpdateEventFieldsToUpdateStatus         JobUpdateEventFieldsToUpdate = "status"
-	JobUpdateEventFieldsToUpdateTaskId         JobUpdateEventFieldsToUpdate = "taskId"
 	JobUpdateEventFieldsToUpdateTraceToken     JobUpdateEventFieldsToUpdate = "traceToken"
 	JobUpdateEventFieldsToUpdateUpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
+	JobUpdateEventFieldsToUpdateWorkflowStepId JobUpdateEventFieldsToUpdate = "workflowStepId"
 )
 
 // Defines values for JobVerificationStatus.
@@ -682,9 +682,9 @@ type Job struct {
 	ReleaseId      string             `json:"releaseId"`
 	StartedAt      *time.Time         `json:"startedAt,omitempty"`
 	Status         JobStatus          `json:"status"`
-	TaskId         string             `json:"taskId"`
 	TraceToken     *string            `json:"traceToken,omitempty"`
 	UpdatedAt      time.Time          `json:"updatedAt"`
+	WorkflowStepId string             `json:"workflowStepId"`
 }
 
 // JobAgent defines model for JobAgent.
@@ -1291,7 +1291,11 @@ type WorkflowNumberInputType string
 
 // WorkflowStep defines model for WorkflowStep.
 type WorkflowStep struct {
-	Id                     string `json:"id"`
+	Id       string `json:"id"`
+	JobAgent *struct {
+		Config map[string]interface{} `json:"config"`
+		Id     string                 `json:"id"`
+	} `json:"jobAgent,omitempty"`
 	WorkflowId             string `json:"workflowId"`
 	WorkflowStepTemplateId string `json:"workflowStepTemplateId"`
 }

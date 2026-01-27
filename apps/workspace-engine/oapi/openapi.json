@@ -898,21 +898,21 @@
                "status": {
                   "$ref": "#/components/schemas/JobStatus"
                },
-               "taskId": {
-                  "type": "string"
-               },
                "traceToken": {
                   "type": "string"
                },
                "updatedAt": {
                   "format": "date-time",
                   "type": "string"
+               },
+               "workflowStepId": {
+                  "type": "string"
                }
             },
             "required": [
                "id",
                "releaseId",
-               "taskId",
+               "workflowStepId",
                "jobAgentId",
                "jobAgentConfig",
                "status",
@@ -1028,9 +1028,9 @@
                         "releaseId",
                         "startedAt",
                         "status",
-                        "taskId",
                         "traceToken",
-                        "updatedAt"
+                        "updatedAt",
+                        "workflowStepId"
                      ],
                      "type": "string"
                   },
@@ -2384,6 +2384,22 @@
             "properties": {
                "id": {
                   "type": "string"
+               },
+               "jobAgent": {
+                  "properties": {
+                     "config": {
+                        "additionalProperties": true,
+                        "type": "object"
+                     },
+                     "id": {
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "id",
+                     "config"
+                  ],
+                  "type": "object"
                },
                "workflowId": {
                   "type": "string"
