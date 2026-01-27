@@ -1308,7 +1308,7 @@ type WorkflowTask struct {
 
 // WorkflowTaskTemplate defines model for WorkflowTaskTemplate.
 type WorkflowTaskTemplate struct {
-	Id       *string `json:"id,omitempty"`
+	Id       string `json:"id"`
 	JobAgent struct {
 		Config map[string]interface{} `json:"config"`
 		Id     string                 `json:"id"`

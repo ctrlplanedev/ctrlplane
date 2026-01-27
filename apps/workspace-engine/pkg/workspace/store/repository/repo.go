@@ -29,7 +29,7 @@ func createMemDBStore[E persistence.Entity](router *persistence.RepositoryRouter
 		_, key := keyer.CompactionKey()
 		return key
 	}
-	return indexstore.NewStore[E](db, entityType, fn)
+	return indexstore.NewStore(db, entityType, fn)
 }
 
 func New(wsId string) *InMemoryStore {
@@ -61,6 +61,10 @@ func New(wsId string) *InMemoryStore {
 		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
 		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
+		WorkflowTemplates:        createTypedStore[*oapi.WorkflowTemplate](router, "workflow_template"),
+		WorkflowTaskTemplates:    createTypedStore[*oapi.WorkflowTaskTemplate](router, "workflow_task_template"),
+		Workflows:                createTypedStore[*oapi.Workflow](router, "workflow"),
+		WorkflowTasks:            createTypedStore[*oapi.WorkflowTask](router, "workflow_task"),
 	}
 }
 
@@ -93,6 +97,11 @@ type InMemoryStore struct {
 	GithubEntities      cmap.ConcurrentMap[string, *oapi.GithubEntity]
 	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
+
+	WorkflowTemplates     cmap.ConcurrentMap[string, *oapi.WorkflowTemplate]
+	WorkflowTaskTemplates cmap.ConcurrentMap[string, *oapi.WorkflowTaskTemplate]
+	Workflows             cmap.ConcurrentMap[string, *oapi.Workflow]
+	WorkflowTasks         cmap.ConcurrentMap[string, *oapi.WorkflowTask]
 }
 
 func (s *InMemoryStore) Router() *persistence.RepositoryRouter {
