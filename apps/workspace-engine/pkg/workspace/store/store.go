@@ -36,9 +36,9 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.Relations = NewRelations(store)
 	store.JobVerifications = NewJobVerifications(store)
 	store.WorkflowTemplates = NewWorkflowTemplates(store)
-	store.WorkflowTaskTemplates = NewWorkflowTaskTemplates(store)
+	store.WorkflowStepTemplates = NewWorkflowStepTemplates(store)
 	store.Workflows = NewWorkflows(store)
-	store.WorkflowTasks = NewWorkflowTasks(store)
+	store.WorkflowSteps = NewWorkflowSteps(store)
 
 	return store
 }
@@ -70,9 +70,9 @@ type Store struct {
 	Relations                *Relations
 	JobVerifications         *JobVerifications
 	WorkflowTemplates        *WorkflowTemplates
-	WorkflowTaskTemplates    *WorkflowTaskTemplates
+	WorkflowStepTemplates    *WorkflowStepTemplates
 	Workflows                *Workflows
-	WorkflowTasks            *WorkflowTasks
+	WorkflowSteps            *WorkflowSteps
 }
 
 func (s *Store) ID() string {

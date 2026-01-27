@@ -6,36 +6,36 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-func NewWorkflowTaskTemplates(store *Store) *WorkflowTaskTemplates {
-	return &WorkflowTaskTemplates{
+func NewWorkflowStepTemplates(store *Store) *WorkflowStepTemplates {
+	return &WorkflowStepTemplates{
 		repo:  store.repo,
 		store: store,
 	}
 }
 
-type WorkflowTaskTemplates struct {
+type WorkflowStepTemplates struct {
 	repo  *repository.InMemoryStore
 	store *Store
 }
 
-func (w *WorkflowTaskTemplates) Items() map[string]*oapi.WorkflowTaskTemplate {
-	return w.repo.WorkflowTaskTemplates.Items()
+func (w *WorkflowStepTemplates) Items() map[string]*oapi.WorkflowStepTemplate {
+	return w.repo.WorkflowStepTemplates.Items()
 }
 
-func (w *WorkflowTaskTemplates) Get(id string) (*oapi.WorkflowTaskTemplate, bool) {
-	return w.repo.WorkflowTaskTemplates.Get(id)
+func (w *WorkflowStepTemplates) Get(id string) (*oapi.WorkflowStepTemplate, bool) {
+	return w.repo.WorkflowStepTemplates.Get(id)
 }
 
-func (w *WorkflowTaskTemplates) Upsert(ctx context.Context, id string, workflowTaskTemplate *oapi.WorkflowTaskTemplate) {
-	w.repo.WorkflowTaskTemplates.Set(id, workflowTaskTemplate)
-	w.store.changeset.RecordUpsert(workflowTaskTemplate)
+func (w *WorkflowStepTemplates) Upsert(ctx context.Context, workflowStepTemplate *oapi.WorkflowStepTemplate) {
+	w.repo.WorkflowStepTemplates.Set(workflowStepTemplate.Id, workflowStepTemplate)
+	w.store.changeset.RecordUpsert(workflowStepTemplate)
 }
 
-func (w *WorkflowTaskTemplates) Remove(ctx context.Context, id string) {
-	workflowTaskTemplate, ok := w.repo.WorkflowTaskTemplates.Get(id)
-	if !ok || workflowTaskTemplate == nil {
+func (w *WorkflowStepTemplates) Remove(ctx context.Context, id string) {
+	workflowStepTemplate, ok := w.repo.WorkflowStepTemplates.Get(id)
+	if !ok || workflowStepTemplate == nil {
 		return
 	}
-	w.repo.WorkflowTaskTemplates.Remove(id)
-	w.store.changeset.RecordDelete(workflowTaskTemplate)
+	w.repo.WorkflowStepTemplates.Remove(id)
+	w.store.changeset.RecordDelete(workflowStepTemplate)
 }

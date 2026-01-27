@@ -26,8 +26,8 @@ func (w *Workflows) Get(id string) (*oapi.Workflow, bool) {
 	return w.repo.Workflows.Get(id)
 }
 
-func (w *Workflows) Upsert(ctx context.Context, id string, workflow *oapi.Workflow) {
-	w.repo.Workflows.Set(id, workflow)
+func (w *Workflows) Upsert(ctx context.Context, workflow *oapi.Workflow) {
+	w.repo.Workflows.Set(workflow.Id, workflow)
 	w.store.changeset.RecordUpsert(workflow)
 }
 

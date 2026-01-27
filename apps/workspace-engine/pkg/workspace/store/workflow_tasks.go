@@ -6,36 +6,36 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-func NewWorkflowTasks(store *Store) *WorkflowTasks {
-	return &WorkflowTasks{
+func NewWorkflowSteps(store *Store) *WorkflowSteps {
+	return &WorkflowSteps{
 		repo:  store.repo,
 		store: store,
 	}
 }
 
-type WorkflowTasks struct {
+type WorkflowSteps struct {
 	repo  *repository.InMemoryStore
 	store *Store
 }
 
-func (w *WorkflowTasks) Items() map[string]*oapi.WorkflowTask {
-	return w.repo.WorkflowTasks.Items()
+func (w *WorkflowSteps) Items() map[string]*oapi.WorkflowStep {
+	return w.repo.WorkflowSteps.Items()
 }
 
-func (w *WorkflowTasks) Get(id string) (*oapi.WorkflowTask, bool) {
-	return w.repo.WorkflowTasks.Get(id)
+func (w *WorkflowSteps) Get(id string) (*oapi.WorkflowStep, bool) {
+	return w.repo.WorkflowSteps.Get(id)
 }
 
-func (w *WorkflowTasks) Upsert(ctx context.Context, id string, workflowTask *oapi.WorkflowTask) {
-	w.repo.WorkflowTasks.Set(id, workflowTask)
-	w.store.changeset.RecordUpsert(workflowTask)
+func (w *WorkflowSteps) Upsert(ctx context.Context, workflowStep *oapi.WorkflowStep) {
+	w.repo.WorkflowSteps.Set(workflowStep.Id, workflowStep)
+	w.store.changeset.RecordUpsert(workflowStep)
 }
 
-func (w *WorkflowTasks) Remove(ctx context.Context, id string) {
-	workflowTask, ok := w.repo.WorkflowTasks.Get(id)
-	if !ok || workflowTask == nil {
+func (w *WorkflowSteps) Remove(ctx context.Context, id string) {
+	workflowStep, ok := w.repo.WorkflowSteps.Get(id)
+	if !ok || workflowStep == nil {
 		return
 	}
-	w.repo.WorkflowTasks.Remove(id)
-	w.store.changeset.RecordDelete(workflowTask)
+	w.repo.WorkflowSteps.Remove(id)
+	w.store.changeset.RecordDelete(workflowStep)
 }
