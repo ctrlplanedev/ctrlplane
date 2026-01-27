@@ -1289,6 +1289,23 @@ type WorkflowParameter struct {
 	union json.RawMessage
 }
 
+// WorkflowStep defines model for WorkflowStep.
+type WorkflowStep struct {
+	Id                     string `json:"id"`
+	WorkflowId             string `json:"workflowId"`
+	WorkflowStepTemplateId string `json:"workflowStepTemplateId"`
+}
+
+// WorkflowStepTemplate defines model for WorkflowStepTemplate.
+type WorkflowStepTemplate struct {
+	Id       string `json:"id"`
+	JobAgent struct {
+		Config map[string]interface{} `json:"config"`
+		Id     string                 `json:"id"`
+	} `json:"jobAgent"`
+	Name string `json:"name"`
+}
+
 // WorkflowStringParameter defines model for WorkflowStringParameter.
 type WorkflowStringParameter struct {
 	Default string                      `json:"default"`
@@ -1299,29 +1316,12 @@ type WorkflowStringParameter struct {
 // WorkflowStringParameterType defines model for WorkflowStringParameter.Type.
 type WorkflowStringParameterType string
 
-// WorkflowTask defines model for WorkflowTask.
-type WorkflowTask struct {
-	Id                     string `json:"id"`
-	WorkflowId             string `json:"workflowId"`
-	WorkflowTaskTemplateId string `json:"workflowTaskTemplateId"`
-}
-
-// WorkflowTaskTemplate defines model for WorkflowTaskTemplate.
-type WorkflowTaskTemplate struct {
-	Id       string `json:"id"`
-	JobAgent struct {
-		Config map[string]interface{} `json:"config"`
-		Id     string                 `json:"id"`
-	} `json:"jobAgent"`
-	Name string `json:"name"`
-}
-
 // WorkflowTemplate defines model for WorkflowTemplate.
 type WorkflowTemplate struct {
 	Id         string                 `json:"id"`
 	Name       string                 `json:"name"`
 	Parameters []WorkflowParameter    `json:"parameters"`
-	Tasks      []WorkflowTaskTemplate `json:"tasks"`
+	Steps      []WorkflowStepTemplate `json:"steps"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.

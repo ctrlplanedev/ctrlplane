@@ -2380,29 +2380,7 @@
                }
             ]
          },
-         "WorkflowStringParameter": {
-            "properties": {
-               "default": {
-                  "type": "string"
-               },
-               "name": {
-                  "type": "string"
-               },
-               "type": {
-                  "enum": [
-                     "string"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "name",
-               "type",
-               "default"
-            ],
-            "type": "object"
-         },
-         "WorkflowTask": {
+         "WorkflowStep": {
             "properties": {
                "id": {
                   "type": "string"
@@ -2410,18 +2388,18 @@
                "workflowId": {
                   "type": "string"
                },
-               "workflowTaskTemplateId": {
+               "workflowStepTemplateId": {
                   "type": "string"
                }
             },
             "required": [
                "id",
                "workflowId",
-               "workflowTaskTemplateId"
+               "workflowStepTemplateId"
             ],
             "type": "object"
          },
-         "WorkflowTaskTemplate": {
+         "WorkflowStepTemplate": {
             "properties": {
                "id": {
                   "type": "string"
@@ -2453,6 +2431,28 @@
             ],
             "type": "object"
          },
+         "WorkflowStringParameter": {
+            "properties": {
+               "default": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "string"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "default"
+            ],
+            "type": "object"
+         },
          "WorkflowTemplate": {
             "properties": {
                "id": {
@@ -2467,9 +2467,9 @@
                   },
                   "type": "array"
                },
-               "tasks": {
+               "steps": {
                   "items": {
-                     "$ref": "#/components/schemas/WorkflowTaskTemplate"
+                     "$ref": "#/components/schemas/WorkflowStepTemplate"
                   },
                   "type": "array"
                }
@@ -2478,7 +2478,7 @@
                "id",
                "name",
                "parameters",
-               "tasks"
+               "steps"
             ],
             "type": "object"
          }

@@ -1,7 +1,7 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
-  WorkflowTaskTemplate: {
+  WorkflowStepTemplate: {
     type: 'object',
     required: ['id', 'name', 'jobAgent'],
     properties: {
@@ -58,7 +58,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowTemplate: {
     type: 'object',
-    required: ['id', 'name', 'parameters', 'tasks'],
+    required: ['id', 'name', 'parameters', 'steps'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
@@ -66,9 +66,9 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'array',
         items: openapi.schemaRef('WorkflowParameter'),
       },
-      tasks: {
+      steps: {
         type: 'array',
-        items: openapi.schemaRef('WorkflowTaskTemplate'),
+        items: openapi.schemaRef('WorkflowStepTemplate'),
       },
     },
   },
@@ -86,13 +86,13 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowTask: {
+  WorkflowStep: {
     type: 'object',
-    required: ['id', 'workflowId', 'workflowTaskTemplateId'],
+    required: ['id', 'workflowId', 'workflowStepTemplateId'],
     properties: {
       id: { type: 'string' },
       workflowId: { type: 'string' },
-      workflowTaskTemplateId: { type: 'string' },
+      workflowStepTemplateId: { type: 'string' },
     },
   },
 }
