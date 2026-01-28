@@ -11,6 +11,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	argocdclient "github.com/argoproj/argo-cd/v2/pkg/apiclient"
@@ -24,11 +25,12 @@ import (
 var _ types.Dispatchable = &ArgoApplication{}
 
 type ArgoApplication struct {
-	store *store.Store
+	store         *store.Store
+	verifications *verification.Manager
 }
 
-func NewArgoApplication(store *store.Store) *ArgoApplication {
-	return &ArgoApplication{store: store}
+func NewArgoApplication(store *store.Store, verifications *verification.Manager) *ArgoApplication {
+	return &ArgoApplication{store: store, verifications: verifications}
 }
 
 func (a *ArgoApplication) Type() string {
@@ -60,7 +62,15 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchCo
 	}
 
 	a.makeApplicationK8sCompatible(app)
-	return a.upsertApplicationWithRetry(ctx, app, appClient)
+	if err := a.upsertApplicationWithRetry(ctx, app, appClient); err != nil {
+		return fmt.Errorf("failed to upsert application: %w", err)
+	}
+
+	verification := newArgoApplicationVerification(a.verifications, context.Job, app.ObjectMeta.Name, serverAddr, apiKey)
+	if err := verification.StartVerification(ctx, context.Job); err != nil {
+		return fmt.Errorf("failed to start verification: %w", err)
+	}
+	return nil
 }
 
 func (a *ArgoApplication) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (string, string, string, error) {
