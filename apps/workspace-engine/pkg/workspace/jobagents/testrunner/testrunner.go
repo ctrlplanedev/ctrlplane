@@ -74,7 +74,7 @@ func (t *TestRunner) Dispatch(ctx context.Context, renderCtx types.RenderContext
 	job := renderCtx.Job
 	span.SetAttributes(attribute.String("job.id", job.Id))
 
-	cfg, err := job.JobAgentConfig.AsFullTestRunnerJobAgentConfig()
+	cfg, err := job.GetTestRunnerJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
@@ -100,15 +100,15 @@ func (t *TestRunner) Dispatch(ctx context.Context, renderCtx types.RenderContext
 	return nil
 }
 
-func (t *TestRunner) getDelay(cfg oapi.FullTestRunnerJobAgentConfig) time.Duration {
+func (t *TestRunner) getDelay(cfg *oapi.TestRunnerJobAgentConfig) time.Duration {
 	if cfg.DelaySeconds != nil {
 		return time.Duration(*cfg.DelaySeconds) * time.Second
 	}
 	return 5 * time.Second // default delay
 }
 
-func (t *TestRunner) getFinalStatus(cfg oapi.FullTestRunnerJobAgentConfig) oapi.JobStatus {
-	if cfg.Status != nil && *cfg.Status == oapi.Failure {
+func (t *TestRunner) getFinalStatus(cfg *oapi.TestRunnerJobAgentConfig) oapi.JobStatus {
+	if cfg.Status != nil && *cfg.Status == string(oapi.JobStatusFailure) {
 		return oapi.JobStatusFailure
 	}
 	return oapi.JobStatusSuccessful
