@@ -45,8 +45,6 @@ func setupTestStoreForPassRate() *store.Store {
 	// Create deployment
 	jobAgentId := "agent-1"
 	description := "Test deployment"
-	jobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:               "deploy-1",
 		Name:             "my-app",
@@ -54,7 +52,7 @@ func setupTestStoreForPassRate() *store.Store {
 		SystemId:         "system-1",
 		JobAgentId:       &jobAgentId,
 		Description:      &description,
-		JobAgentConfig:   jobAgentConfig,
+		JobAgentConfig:   oapi.JobAgentConfig{},
 		ResourceSelector: resourceSelector,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -150,8 +148,6 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 
 	// Create 2 successful jobs out of 3 targets (66.67% success)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	jobAgentConfig := oapi.FullJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -160,7 +156,7 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	completedAt2 := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
 	job2 := &oapi.Job{
@@ -171,7 +167,7 @@ func TestPassRateEvaluator_MeetsMinimumRequirement(t *testing.T) {
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -281,8 +277,6 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 
 	// Create only 1 successful job out of 3 targets (33.33% success)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	jobAgentConfig := oapi.FullJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -291,7 +285,7 @@ func TestPassRateEvaluator_BelowMinimumRequirement(t *testing.T) {
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -401,8 +395,6 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 	// Create jobs with specific timestamps
 	// Job 1: 10:05 (33% success)
 	completedAt1 := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	jobAgentConfig := oapi.FullJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -411,7 +403,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt1,
 		CompletedAt:    &completedAt1,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	// Job 2: 10:10 (66% success - meets 50% requirement, this should be satisfiedAt)
 	satisfiedAtTime := time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC)
@@ -424,7 +416,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		CreatedAt:      time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC),
 		UpdatedAt:      completedAt2,
 		CompletedAt:    &completedAt2,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	// Job 3: 10:15 (100% success)
 	completedAt3 := time.Date(2024, 1, 1, 10, 15, 0, 0, time.UTC)
@@ -436,7 +428,7 @@ func TestPassRateEvaluator_SatisfiedAt_ExactThreshold(t *testing.T) {
 		CreatedAt:      time.Date(2024, 1, 1, 10, 10, 0, 0, time.UTC),
 		UpdatedAt:      completedAt3,
 		CompletedAt:    &completedAt3,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	st.Jobs.Upsert(ctx, job1)
 	st.Jobs.Upsert(ctx, job2)
@@ -507,8 +499,6 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 
 	// Create successful job before testing
 	completedAt := time.Date(2024, 1, 1, 10, 5, 0, 0, time.UTC)
-	jobAgentConfig := oapi.FullJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -517,7 +507,7 @@ func TestPassRateEvaluator_ZeroMinimumPercentage(t *testing.T) {
 		CreatedAt:      time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	st.Jobs.Upsert(ctx, job1)
 
@@ -610,8 +600,6 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 
 	// Create a job with InProgress status (which we'll treat as successful)
 	completedAt := time.Now().Add(-5 * time.Minute)
-	jobAgentConfig := oapi.FullJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	job1 := &oapi.Job{
 		Id:             "job-1",
 		ReleaseId:      release1.ID(),
@@ -620,7 +608,7 @@ func TestPassRateEvaluator_CustomSuccessStatuses(t *testing.T) {
 		CreatedAt:      time.Now().Add(-10 * time.Minute),
 		UpdatedAt:      completedAt,
 		CompletedAt:    &completedAt,
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	st.Jobs.Upsert(ctx, job1)
 

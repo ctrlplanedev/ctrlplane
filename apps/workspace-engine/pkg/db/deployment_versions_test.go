@@ -115,7 +115,7 @@ func TestDBDeploymentVersions_BasicWrite(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {
@@ -193,7 +193,7 @@ func TestDBDeploymentVersions_BasicWriteAndDelete(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {
@@ -285,7 +285,7 @@ func TestDBDeploymentVersions_AllStatuses(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {
@@ -383,7 +383,7 @@ func TestDBDeploymentVersions_BasicWriteAndUpdate(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {

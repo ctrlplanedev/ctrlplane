@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -27,7 +28,7 @@ func setupTestExecutor(t *testing.T) (*Executor, *store.Store) {
 
 func createTestJobAgent(id, workspaceID, name, agentType string) *oapi.JobAgent {
 	customJobAgentConfig := oapi.JobAgentConfig{}
-	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
+	_ = json.Unmarshal([]byte(`{"type": "custom"}`), &customJobAgentConfig)
 	return &oapi.JobAgent{
 		Id:          id,
 		WorkspaceId: workspaceID,
@@ -41,9 +42,6 @@ func createTestDeploymentForExecutor(id, systemID, name, jobAgentID string) *oap
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
-	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
-
 	return &oapi.Deployment{
 		Id:               id,
 		Name:             name,
@@ -51,7 +49,7 @@ func createTestDeploymentForExecutor(id, systemID, name, jobAgentID string) *oap
 		SystemId:         systemID,
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,
-		JobAgentConfig:   customJobAgentConfig,
+		JobAgentConfig:   oapi.JobAgentConfig{},
 	}
 }
 
@@ -133,15 +131,13 @@ func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
 	// Create deployment without job agent
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	deployment := &oapi.Deployment{
 		Id:               deploymentID,
 		Name:             "test-deployment",
 		SystemId:         systemID,
 		ResourceSelector: selector,
 		JobAgentId:       nil, // No job agent
-		JobAgentConfig:   customJobAgentConfig,
+		JobAgentConfig:   oapi.JobAgentConfig{},
 	}
 	_ = testStore.Deployments.Upsert(ctx, deployment)
 

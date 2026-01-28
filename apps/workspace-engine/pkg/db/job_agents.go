@@ -56,7 +56,7 @@ func runnerJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
 	}
 
 	var cfg oapi.JobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
+	if err := json.Unmarshal(b, &cfg); err != nil {
 		panic(err)
 	}
 	return cfg
@@ -102,14 +102,14 @@ func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	}
 
 	var cfg oapi.JobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
+	if err := json.Unmarshal(b, &cfg); err != nil {
 		// Backwards-compatible fallback for unknown discriminators: treat as "custom".
 		payload["type"] = "custom"
 		b2, mErr := json.Marshal(payload)
 		if mErr != nil {
 			return nil, mErr
 		}
-		if err2 := cfg.UnmarshalJSON(b2); err2 != nil {
+		if err2 := json.Unmarshal(b2, &cfg); err2 != nil {
 			return nil, err
 		}
 	}

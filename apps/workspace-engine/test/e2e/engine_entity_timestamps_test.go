@@ -176,7 +176,7 @@ func TestEngine_Job_TimestampsForCache(t *testing.T) {
 
 	deployment := c.NewDeployment(sys.Id)
 	deployment.JobAgentId = &jobAgent.Id
-	deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(map[string]any{"test": "config"})
+	deployment.JobAgentConfig = map[string]any{"test": "config"}
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)

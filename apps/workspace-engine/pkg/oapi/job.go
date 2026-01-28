@@ -99,3 +99,71 @@ func structToMap(v any) map[string]any {
 	}
 	return result
 }
+
+func (j *Job) GetArgoCDJobAgentConfig() (*ArgoCDJobAgentConfig, error) {
+	cfgJson, err := json.Marshal(j.JobAgentConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal job agent config: %w", err)
+	}
+	var cfg ArgoCDJobAgentConfig
+	if err := json.Unmarshal(cfgJson, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal job agent config: %w", err)
+	}
+	if cfg.ServerUrl == "" || cfg.ApiKey == "" || cfg.Template == "" {
+		return nil, fmt.Errorf("missing required ArgoCD config fields")
+	}
+	return &cfg, nil
+}
+
+func (j *Job) GetGithubJobAgentConfig() (*GithubJobAgentConfig, error) {
+	cfgJson, err := json.Marshal(j.JobAgentConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal job agent config: %w", err)
+	}
+	var cfg GithubJobAgentConfig
+	if err := json.Unmarshal(cfgJson, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal job agent config: %w", err)
+	}
+	if cfg.InstallationId == 0 || cfg.Owner == "" || cfg.Repo == "" || cfg.WorkflowId == 0 {
+		return nil, fmt.Errorf("missing required GitHub config fields")
+	}
+	return &cfg, nil
+}
+
+func (j *Job) GetTerraformCloudJobAgentConfig() (*TerraformCloudJobAgentConfig, error) {
+	cfgJson, err := json.Marshal(j.JobAgentConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal job agent config: %w", err)
+	}
+	var cfg TerraformCloudJobAgentConfig
+	if err := json.Unmarshal(cfgJson, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal job agent config: %w", err)
+	}
+	if cfg.Address == "" || cfg.Organization == "" || cfg.Token == "" || cfg.Template == "" {
+		return nil, fmt.Errorf("missing required Terraform Cloud config fields")
+	}
+	return &cfg, nil
+}
+
+// TestRunnerJobAgentConfig defines config for test-runner job agent.
+type TestRunnerJobAgentConfig struct {
+	Type         string  `json:"type,omitempty"`
+	DelaySeconds *int    `json:"delaySeconds,omitempty"`
+	Status       *string `json:"status,omitempty"`
+	Message      *string `json:"message,omitempty"`
+}
+
+func (j *Job) GetTestRunnerJobAgentConfig() (*TestRunnerJobAgentConfig, error) {
+	cfgJson, err := json.Marshal(j.JobAgentConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal job agent config: %w", err)
+	}
+	var cfg TestRunnerJobAgentConfig
+	if err := json.Unmarshal(cfgJson, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal job agent config: %w", err)
+	}
+	if cfg.Type != "test-runner" {
+		return nil, fmt.Errorf("config type is not test-runner")
+	}
+	return &cfg, nil
+}

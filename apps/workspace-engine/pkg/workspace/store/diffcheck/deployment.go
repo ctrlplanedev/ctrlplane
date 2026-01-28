@@ -112,11 +112,11 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 		changed["jobagentid"] = true
 	}
 
-	oldJobAgentConfigJSON, err := old.JobAgentConfig.MarshalJSON()
+	oldJobAgentConfigJSON, err := json.Marshal(old.JobAgentConfig)
 	if err != nil {
 		return changed
 	}
-	newJobAgentConfigJSON, err := new.JobAgentConfig.MarshalJSON()
+	newJobAgentConfigJSON, err := json.Marshal(new.JobAgentConfig)
 	if err != nil {
 		return changed
 	}

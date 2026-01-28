@@ -19,17 +19,50 @@ import (
 func mustCreateJobAgentConfig(t *testing.T, configJSON string) oapi.JobAgentConfig {
 	t.Helper()
 	var config oapi.JobAgentConfig
-	err := config.UnmarshalJSON([]byte(configJSON))
+	err := json.Unmarshal([]byte(configJSON), &config)
 	require.NoError(t, err)
 	return config
 }
 
-func mustCreateDeploymentJobAgentConfig(t *testing.T, configJSON string) oapi.DeploymentJobAgentConfig {
+// Helper functions for converting JobAgentConfig to specific typed configs
+func getGithubJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.GithubJobAgentConfig {
 	t.Helper()
-	var config oapi.DeploymentJobAgentConfig
-	err := config.UnmarshalJSON([]byte(configJSON))
+	configJSON, err := json.Marshal(config)
 	require.NoError(t, err)
-	return config
+	var fullConfig oapi.GithubJobAgentConfig
+	err = json.Unmarshal(configJSON, &fullConfig)
+	require.NoError(t, err)
+	return &fullConfig
+}
+
+func getArgoCDJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.ArgoCDJobAgentConfig {
+	t.Helper()
+	configJSON, err := json.Marshal(config)
+	require.NoError(t, err)
+	var fullConfig oapi.ArgoCDJobAgentConfig
+	err = json.Unmarshal(configJSON, &fullConfig)
+	require.NoError(t, err)
+	return &fullConfig
+}
+
+func getTerraformCloudJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.TerraformCloudJobAgentConfig {
+	t.Helper()
+	configJSON, err := json.Marshal(config)
+	require.NoError(t, err)
+	var fullConfig oapi.TerraformCloudJobAgentConfig
+	err = json.Unmarshal(configJSON, &fullConfig)
+	require.NoError(t, err)
+	return &fullConfig
+}
+
+func getTestRunnerJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.TestRunnerJobAgentConfig {
+	t.Helper()
+	configJSON, err := json.Marshal(config)
+	require.NoError(t, err)
+	var fullConfig oapi.TestRunnerJobAgentConfig
+	err = json.Unmarshal(configJSON, &fullConfig)
+	require.NoError(t, err)
+	return &fullConfig
 }
 
 func mustCreateResourceSelector(t *testing.T) *oapi.Selector {
@@ -47,7 +80,7 @@ func setupTestStore() *store.Store {
 	return store.New("test-workspace", cs)
 }
 
-func createTestDeployment(t *testing.T, id string, jobAgentId *string, jobAgentConfig oapi.DeploymentJobAgentConfig) *oapi.Deployment {
+func createTestDeployment(t *testing.T, id string, jobAgentId *string, jobAgentConfig oapi.JobAgentConfig) *oapi.Deployment {
 	t.Helper()
 	return &oapi.Deployment{
 		Id:               id,
@@ -106,19 +139,19 @@ func TestFactory_MergeJobAgentConfig_GithubApp_BasicMerge(t *testing.T) {
 	jobAgentId := "agent-1"
 
 	// JobAgent has installationId and owner (base config)
-	jobAgentConfig := mustCreateJobAgentConfig(t, `{
-		"type": "github-app",
+	jobAgentConfig := oapi.JobAgentConfig{
+		"type":           "github-app",
 		"installationId": 12345,
-		"owner": "my-org"
-	}`)
+		"owner":          "my-org",
+	}
 
 	// Deployment has repo, workflowId, and ref (deployment overrides)
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
-		"type": "github-app",
-		"repo": "my-repo",
+	deploymentConfig := oapi.JobAgentConfig{
+		"type":       "github-app",
+		"repo":       "my-repo",
 		"workflowId": 67890,
-		"ref": "main"
-	}`)
+		"ref":        "main",
+	}
 
 	jobAgent := createTestJobAgent(t, jobAgentId, "github-app", jobAgentConfig)
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
@@ -137,8 +170,7 @@ func TestFactory_MergeJobAgentConfig_GithubApp_BasicMerge(t *testing.T) {
 	require.Equal(t, jobAgentId, job.JobAgentId)
 
 	// Verify the merged config has all fields
-	fullConfig, err := job.JobAgentConfig.AsFullGithubJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getGithubJobAgentConfig(t, job.JobAgentConfig)
 
 	// From JobAgent
 	require.Equal(t, 12345, fullConfig.InstallationId)
@@ -150,8 +182,6 @@ func TestFactory_MergeJobAgentConfig_GithubApp_BasicMerge(t *testing.T) {
 	require.NotNil(t, fullConfig.Ref)
 	require.Equal(t, "main", *fullConfig.Ref)
 
-	// Type discriminator should be set
-	require.Equal(t, oapi.FullGithubJobAgentConfigType("github-app"), fullConfig.Type)
 }
 
 func TestFactory_MergeJobAgentConfig_GithubApp_DeploymentOverridesRef(t *testing.T) {
@@ -168,7 +198,7 @@ func TestFactory_MergeJobAgentConfig_GithubApp_DeploymentOverridesRef(t *testing
 	}`)
 
 	// Deployment overrides with specific ref
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "github-app",
 		"repo": "my-repo",
 		"workflowId": 67890,
@@ -189,8 +219,7 @@ func TestFactory_MergeJobAgentConfig_GithubApp_DeploymentOverridesRef(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	fullConfig, err := job.JobAgentConfig.AsFullGithubJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getGithubJobAgentConfig(t, job.JobAgentConfig)
 
 	require.NotNil(t, fullConfig.Ref)
 	require.Equal(t, "feature-branch", *fullConfig.Ref)
@@ -214,7 +243,7 @@ func TestFactory_MergeJobAgentConfig_ArgoCD_BasicMerge(t *testing.T) {
 	}`)
 
 	// Deployment has type only (no template - template comes from version)
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "argo-cd"
 	}`)
 
@@ -239,8 +268,7 @@ func TestFactory_MergeJobAgentConfig_ArgoCD_BasicMerge(t *testing.T) {
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
 	// Verify the merged config has all fields
-	fullConfig, err := job.JobAgentConfig.AsFullArgoCDJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getArgoCDJobAgentConfig(t, job.JobAgentConfig)
 
 	// From JobAgent
 	require.Equal(t, "secret-api-key", fullConfig.ApiKey)
@@ -250,8 +278,6 @@ func TestFactory_MergeJobAgentConfig_ArgoCD_BasicMerge(t *testing.T) {
 	require.Contains(t, fullConfig.Template, "argoproj.io/v1alpha1")
 	require.Contains(t, fullConfig.Template, "{{ .deployment.name }}")
 
-	// Type discriminator should be set
-	require.Equal(t, oapi.FullArgoCDJobAgentConfigType("argo-cd"), fullConfig.Type)
 }
 
 // =============================================================================
@@ -273,7 +299,7 @@ func TestFactory_MergeJobAgentConfig_TerraformCloud_BasicMerge(t *testing.T) {
 	}`)
 
 	// Deployment has template (deployment override)
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "tfe",
 		"template": "name: {{ .deployment.name }}\nworkingDirectory: /terraform"
 	}`)
@@ -294,8 +320,7 @@ func TestFactory_MergeJobAgentConfig_TerraformCloud_BasicMerge(t *testing.T) {
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
 	// Verify the merged config has all fields
-	fullConfig, err := job.JobAgentConfig.AsFullTerraformCloudJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getTerraformCloudJobAgentConfig(t, job.JobAgentConfig)
 
 	// From JobAgent
 	require.Equal(t, "https://app.terraform.io", fullConfig.Address)
@@ -306,8 +331,6 @@ func TestFactory_MergeJobAgentConfig_TerraformCloud_BasicMerge(t *testing.T) {
 	require.Contains(t, fullConfig.Template, "{{ .deployment.name }}")
 	require.Contains(t, fullConfig.Template, "/terraform")
 
-	// Type discriminator should be set
-	require.Equal(t, oapi.FullTerraformCloudJobAgentConfigType("tfe"), fullConfig.Type)
 }
 
 func TestFactory_MergeJobAgentConfig_TerraformCloud_DeploymentOverridesTemplate(t *testing.T) {
@@ -326,7 +349,7 @@ func TestFactory_MergeJobAgentConfig_TerraformCloud_DeploymentOverridesTemplate(
 	}`)
 
 	// Deployment overrides the template
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "tfe",
 		"template": "deployment-specific-template"
 	}`)
@@ -345,8 +368,7 @@ func TestFactory_MergeJobAgentConfig_TerraformCloud_DeploymentOverridesTemplate(
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	fullConfig, err := job.JobAgentConfig.AsFullTerraformCloudJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getTerraformCloudJobAgentConfig(t, job.JobAgentConfig)
 
 	// Deployment template should override job agent template
 	require.Equal(t, "deployment-specific-template", fullConfig.Template)
@@ -375,7 +397,7 @@ func TestFactory_MergeJobAgentConfig_Custom_BasicMerge(t *testing.T) {
 	}`)
 
 	// Deployment has additional custom properties
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"endpoint": "/deploy",
 		"retries": 3
@@ -397,7 +419,7 @@ func TestFactory_MergeJobAgentConfig_Custom_BasicMerge(t *testing.T) {
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
 	// Verify the merged config has all fields by parsing as JSON
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -431,7 +453,7 @@ func TestFactory_MergeJobAgentConfig_Custom_DeploymentOverridesValues(t *testing
 	}`)
 
 	// Deployment overrides some values
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"timeout": 60,
 		"env": "staging"
@@ -451,7 +473,7 @@ func TestFactory_MergeJobAgentConfig_Custom_DeploymentOverridesValues(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -485,7 +507,7 @@ func TestFactory_MergeJobAgentConfig_Custom_DeepNestedMerge(t *testing.T) {
 	}`)
 
 	// Deployment overrides nested values
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"settings": {
 			"debug": true,
@@ -509,7 +531,7 @@ func TestFactory_MergeJobAgentConfig_Custom_DeepNestedMerge(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -534,89 +556,12 @@ func TestFactory_MergeJobAgentConfig_Custom_DeepNestedMerge(t *testing.T) {
 // Error Cases
 // =============================================================================
 
-func TestFactory_CreateJobForRelease_MismatchedDiscriminator(t *testing.T) {
-	st := setupTestStore()
-	ctx := context.Background()
-
-	jobAgentId := "agent-1"
-
-	// JobAgent is github-app type
-	jobAgentConfig := mustCreateJobAgentConfig(t, `{
-		"type": "github-app",
-		"installationId": 12345,
-		"owner": "my-org"
-	}`)
-
-	// Deployment is argo-cd type (MISMATCH!)
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
-		"type": "argo-cd",
-		"template": "some-template"
-	}`)
-
-	jobAgent := createTestJobAgent(t, jobAgentId, "github-app", jobAgentConfig)
-	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
-
-	st.JobAgents.Upsert(ctx, jobAgent)
-	_ = st.Deployments.Upsert(ctx, deployment)
-
-	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
-
-	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, nil)
-
-	// Should create a job with InvalidJobAgent status due to type mismatch
-	require.NoError(t, err)
-	require.NotNil(t, job)
-	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
-	require.Equal(t, jobAgentId, job.JobAgentId)
-	require.NotNil(t, job.Message)
-	require.Contains(t, *job.Message, "does not match")
-}
-
-func TestFactory_CreateJobForRelease_InvalidDeploymentDiscriminator(t *testing.T) {
-	st := setupTestStore()
-	ctx := context.Background()
-
-	jobAgentId := "agent-1"
-
-	// JobAgent with valid github-app config
-	jobAgentConfig := mustCreateJobAgentConfig(t, `{
-		"type": "github-app",
-		"installationId": 12345,
-		"owner": "my-org"
-	}`)
-
-	// Deployment has empty/invalid discriminator value
-	var deploymentConfig oapi.DeploymentJobAgentConfig
-	// Force an empty discriminator by creating an empty union
-	_ = deploymentConfig.UnmarshalJSON([]byte(`{}`))
-
-	jobAgent := createTestJobAgent(t, jobAgentId, "github-app", jobAgentConfig)
-	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deploymentConfig)
-
-	st.JobAgents.Upsert(ctx, jobAgent)
-	_ = st.Deployments.Upsert(ctx, deployment)
-
-	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
-
-	factory := NewFactory(st)
-	job, err := factory.CreateJobForRelease(ctx, release, nil)
-
-	// Should create a job with InvalidJobAgent status due to invalid config
-	require.NoError(t, err)
-	require.NotNil(t, job)
-	require.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status)
-	require.Equal(t, jobAgentId, job.JobAgentId)
-	require.NotNil(t, job.Message)
-	require.Contains(t, *job.Message, "Failed to merge job agent config")
-}
-
 func TestFactory_CreateJobForRelease_NoJobAgentConfigured(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
 
 	// Deployment has no job agent configured
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{"type": "custom"}`)
+	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
 	deployment := createTestDeployment(t, "deploy-1", nil, deploymentConfig)
 
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -640,7 +585,7 @@ func TestFactory_CreateJobForRelease_JobAgentNotFound(t *testing.T) {
 
 	// Deployment references a job agent that doesn't exist
 	nonExistentAgentId := "non-existent-agent"
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{"type": "custom"}`)
+	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
 	deployment := createTestDeployment(t, "deploy-1", &nonExistentAgentId, deploymentConfig)
 
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -693,12 +638,8 @@ func TestFactory_MergeJobAgentConfig_TestRunner_PassthroughConfig(t *testing.T) 
 		"message": "Deployment completed"
 	}`)
 
-	// Deployment config - test-runner type isn't in DeploymentJobAgentConfig,
-	// so we use custom type that matches the discriminator check
-	// Note: The deployment config type must match the job agent config type
-	// Since test-runner is not a valid DeploymentJobAgentConfig type,
-	// we'll use custom as a workaround for this test
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	// Deployment config with test-runner type
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "test-runner"
 	}`)
 
@@ -718,13 +659,12 @@ func TestFactory_MergeJobAgentConfig_TestRunner_PassthroughConfig(t *testing.T) 
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
 	// Verify the config has test-runner fields from JobAgent
-	fullConfig, err := job.JobAgentConfig.AsFullTestRunnerJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getTestRunnerJobAgentConfig(t, job.JobAgentConfig)
 
 	require.NotNil(t, fullConfig.DelaySeconds)
 	require.Equal(t, 5, *fullConfig.DelaySeconds)
 	require.NotNil(t, fullConfig.Status)
-	require.Equal(t, oapi.TestRunnerJobAgentConfigStatus("completed"), *fullConfig.Status)
+	require.Equal(t, "completed", *fullConfig.Status)
 	require.NotNil(t, fullConfig.Message)
 	require.Equal(t, "Deployment completed", *fullConfig.Message)
 }
@@ -744,7 +684,7 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 		"key": "value"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom"
 	}`)
 
@@ -804,7 +744,7 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 		"type": "custom"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom"
 	}`)
 
@@ -840,7 +780,7 @@ func TestFactory_CreateJobForRelease_EmptyJobAgentId(t *testing.T) {
 
 	// Deployment has empty string job agent ID
 	emptyAgentId := ""
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{"type": "custom"}`)
+	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
 	deployment := createTestDeployment(t, "deploy-1", &emptyAgentId, deploymentConfig)
 
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -873,7 +813,7 @@ func TestFactory_MergeJobAgentConfig_VersionOverridesDeployment(t *testing.T) {
 		"baseUrl": "https://api.example.com"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"timeout": 30,
 		"env": "production"
@@ -899,7 +839,7 @@ func TestFactory_MergeJobAgentConfig_VersionOverridesDeployment(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -922,7 +862,7 @@ func TestFactory_MergeJobAgentConfig_VersionAddsNewFields(t *testing.T) {
 		"baseUrl": "https://api.example.com"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"timeout": 30
 	}`)
@@ -946,7 +886,7 @@ func TestFactory_MergeJobAgentConfig_VersionAddsNewFields(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -970,7 +910,7 @@ func TestFactory_MergeJobAgentConfig_EmptyVersionConfig_IsNoop(t *testing.T) {
 		"baseUrl": "https://api.example.com"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"timeout": 30,
 		"env": "production"
@@ -991,7 +931,7 @@ func TestFactory_MergeJobAgentConfig_EmptyVersionConfig_IsNoop(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1014,7 +954,7 @@ func TestFactory_MergeJobAgentConfig_NilVersionConfig_IsNoop(t *testing.T) {
 		"baseUrl": "https://api.example.com"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"timeout": 30
 	}`)
@@ -1034,7 +974,7 @@ func TestFactory_MergeJobAgentConfig_NilVersionConfig_IsNoop(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1062,7 +1002,7 @@ func TestFactory_MergeJobAgentConfig_VersionDeepNestedOverride(t *testing.T) {
 		}
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"settings": {
 			"debug": true,
@@ -1094,7 +1034,7 @@ func TestFactory_MergeJobAgentConfig_VersionDeepNestedOverride(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1121,7 +1061,7 @@ func TestFactory_MergeJobAgentConfig_VersionOverridesAll_GithubApp(t *testing.T)
 		"owner": "my-org"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "github-app",
 		"repo": "my-repo",
 		"workflowId": 67890,
@@ -1147,8 +1087,7 @@ func TestFactory_MergeJobAgentConfig_VersionOverridesAll_GithubApp(t *testing.T)
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
-	fullConfig, err := job.JobAgentConfig.AsFullGithubJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getGithubJobAgentConfig(t, job.JobAgentConfig)
 
 	require.Equal(t, 12345, fullConfig.InstallationId)
 	require.Equal(t, "my-org", fullConfig.Owner)
@@ -1188,7 +1127,7 @@ func TestFactory_MergeJobAgentConfig_ThreeLevelMergeOrder(t *testing.T) {
 	}`)
 
 	// Level 2: Deployment adds new fields and overrides some
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"deploymentOnly": "from-deployment",
 		"overriddenByDeployment": "deployment-value",
@@ -1218,7 +1157,7 @@ func TestFactory_MergeJobAgentConfig_ThreeLevelMergeOrder(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1268,7 +1207,7 @@ func TestFactory_MergeJobAgentConfig_DeepNestedThreeLevelMerge(t *testing.T) {
 	}`)
 
 	// Level 2: Deployment adds to nested structure and overrides some
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"settings": {
 			"deployment": {
@@ -1313,7 +1252,7 @@ func TestFactory_MergeJobAgentConfig_DeepNestedThreeLevelMerge(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1355,7 +1294,7 @@ func TestFactory_MergeJobAgentConfig_VersionOverridesNull(t *testing.T) {
 		"field": "agent-value"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"field": "deployment-value",
 		"extra": "extra-value"
@@ -1380,7 +1319,7 @@ func TestFactory_MergeJobAgentConfig_VersionOverridesNull(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1405,7 +1344,7 @@ func TestFactory_MergeJobAgentConfig_ArraysNotDeepMerged(t *testing.T) {
 		"items": ["agent-item-1", "agent-item-2"]
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"items": ["deployment-item-1"]
 	}`)
@@ -1424,7 +1363,7 @@ func TestFactory_MergeJobAgentConfig_ArraysNotDeepMerged(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1449,7 +1388,7 @@ func TestFactory_MergeJobAgentConfig_VersionArrayOverride(t *testing.T) {
 		"tags": ["base-tag"]
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"tags": ["deployment-tag-1", "deployment-tag-2"]
 	}`)
@@ -1472,7 +1411,7 @@ func TestFactory_MergeJobAgentConfig_VersionArrayOverride(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1500,7 +1439,7 @@ func TestFactory_MergeJobAgentConfig_PreservesTypeDiscriminator(t *testing.T) {
 	}`)
 
 	// Deployment might try to set a different type (though shouldn't)
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom"
 	}`)
 
@@ -1518,7 +1457,7 @@ func TestFactory_MergeJobAgentConfig_PreservesTypeDiscriminator(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1547,7 +1486,7 @@ func TestFactory_MergeJobAgentConfig_EmptyDeploymentConfig(t *testing.T) {
 	}`)
 
 	// Empty deployment config (just type)
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom"
 	}`)
 
@@ -1565,7 +1504,7 @@ func TestFactory_MergeJobAgentConfig_EmptyDeploymentConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, job)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1591,7 +1530,7 @@ func TestFactory_MergeJobAgentConfig_AllThreeLevelsEmpty(t *testing.T) {
 		"type": "custom"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom"
 	}`)
 
@@ -1610,7 +1549,7 @@ func TestFactory_MergeJobAgentConfig_AllThreeLevelsEmpty(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, oapi.JobStatusPending, job.Status)
 
-	configJSON, err := job.JobAgentConfig.MarshalJSON()
+	configJSON, err := json.Marshal(job.JobAgentConfig)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1649,7 +1588,7 @@ func TestMergeJobAgentConfig_BasicMerge_Custom(t *testing.T) {
 		"shared": "from-agent"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"deploymentField": "deployment-value",
 		"shared": "from-deployment"
@@ -1666,7 +1605,7 @@ func TestMergeJobAgentConfig_BasicMerge_Custom(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1695,7 +1634,7 @@ func TestMergeJobAgentConfig_MergeOrder_VersionOverridesDeploymentOverridesAgent
 		"level3": "agent"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"level2": "deployment",
 		"level3": "deployment"
@@ -1711,7 +1650,7 @@ func TestMergeJobAgentConfig_MergeOrder_VersionOverridesDeploymentOverridesAgent
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1744,7 +1683,7 @@ func TestMergeJobAgentConfig_DeepMerge_NestedObjects(t *testing.T) {
 		}
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"settings": {
 			"deployment": {
@@ -1775,7 +1714,7 @@ func TestMergeJobAgentConfig_DeepMerge_NestedObjects(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1810,7 +1749,7 @@ func TestMergeJobAgentConfig_NilVersionConfig(t *testing.T) {
 		"field": "agent-value"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"field": "deployment-value"
 	}`)
@@ -1822,7 +1761,7 @@ func TestMergeJobAgentConfig_NilVersionConfig(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1841,7 +1780,7 @@ func TestMergeJobAgentConfig_EmptyVersionConfig(t *testing.T) {
 		"field": "agent-value"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"field": "deployment-value"
 	}`)
@@ -1853,7 +1792,7 @@ func TestMergeJobAgentConfig_EmptyVersionConfig(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -1875,7 +1814,7 @@ func TestMergeJobAgentConfig_GithubApp_FullMerge(t *testing.T) {
 	}`)
 
 	// Deployment provides repo, workflowId, and ref
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "github-app",
 		"repo": "my-repo",
 		"workflowId": 67890,
@@ -1892,8 +1831,7 @@ func TestMergeJobAgentConfig_GithubApp_FullMerge(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	fullConfig, err := result.AsFullGithubJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getGithubJobAgentConfig(t, result)
 
 	// From JobAgent
 	require.Equal(t, 12345, fullConfig.InstallationId)
@@ -1907,8 +1845,6 @@ func TestMergeJobAgentConfig_GithubApp_FullMerge(t *testing.T) {
 	require.NotNil(t, fullConfig.Ref)
 	require.Equal(t, "release-v2", *fullConfig.Ref)
 
-	// Type should be set
-	require.Equal(t, oapi.FullGithubJobAgentConfigType("github-app"), fullConfig.Type)
 }
 
 func TestMergeJobAgentConfig_ArgoCD_SkipsDeploymentConfig(t *testing.T) {
@@ -1922,7 +1858,7 @@ func TestMergeJobAgentConfig_ArgoCD_SkipsDeploymentConfig(t *testing.T) {
 	}`)
 
 	// This deployment config should be ignored for argo-cd type
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "argo-cd"
 	}`)
 
@@ -1936,8 +1872,7 @@ func TestMergeJobAgentConfig_ArgoCD_SkipsDeploymentConfig(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	fullConfig, err := result.AsFullArgoCDJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getArgoCDJobAgentConfig(t, result)
 
 	// From JobAgent
 	require.Equal(t, "secret-key", fullConfig.ApiKey)
@@ -1957,7 +1892,7 @@ func TestMergeJobAgentConfig_TestRunner_SkipsDeploymentConfig(t *testing.T) {
 		"status": "completed"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "test-runner"
 	}`)
 
@@ -1971,14 +1906,13 @@ func TestMergeJobAgentConfig_TestRunner_SkipsDeploymentConfig(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	fullConfig, err := result.AsFullTestRunnerJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getTestRunnerJobAgentConfig(t, result)
 
 	// From JobAgent
 	require.NotNil(t, fullConfig.DelaySeconds)
 	require.Equal(t, 5, *fullConfig.DelaySeconds)
 	require.NotNil(t, fullConfig.Status)
-	require.Equal(t, oapi.TestRunnerJobAgentConfigStatus("completed"), *fullConfig.Status)
+	require.Equal(t, "completed", *fullConfig.Status)
 
 	// From Version
 	require.NotNil(t, fullConfig.Message)
@@ -1995,7 +1929,7 @@ func TestMergeJobAgentConfig_TerraformCloud_FullMerge(t *testing.T) {
 		"token": "secret-token"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "tfe",
 		"template": "default-template"
 	}`)
@@ -2010,8 +1944,7 @@ func TestMergeJobAgentConfig_TerraformCloud_FullMerge(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	fullConfig, err := result.AsFullTerraformCloudJobAgentConfig()
-	require.NoError(t, err)
+	fullConfig := getTerraformCloudJobAgentConfig(t, result)
 
 	// From JobAgent
 	require.Equal(t, "https://app.terraform.io", fullConfig.Address)
@@ -2022,52 +1955,6 @@ func TestMergeJobAgentConfig_TerraformCloud_FullMerge(t *testing.T) {
 	require.Equal(t, "version-template", fullConfig.Template)
 }
 
-func TestMergeJobAgentConfig_Error_MismatchedDiscriminator(t *testing.T) {
-	factory := NewFactory(nil)
-
-	// JobAgent is github-app
-	jobAgentConfig := mustCreateJobAgentConfig(t, `{
-		"type": "github-app",
-		"installationId": 12345,
-		"owner": "my-org"
-	}`)
-
-	// Deployment is argo-cd (MISMATCH!)
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
-		"type": "argo-cd",
-		"template": "some-template"
-	}`)
-
-	jobAgent := createTestJobAgent(t, "agent-1", "github-app", jobAgentConfig)
-	deployment := createTestDeployment(t, "deploy-1", nil, deploymentConfig)
-	version := createTestVersion(t, "deploy-1", nil)
-
-	_, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "does not match")
-}
-
-func TestMergeJobAgentConfig_Error_InvalidDeploymentDiscriminator(t *testing.T) {
-	factory := NewFactory(nil)
-
-	jobAgentConfig := mustCreateJobAgentConfig(t, `{
-		"type": "github-app",
-		"installationId": 12345,
-		"owner": "my-org"
-	}`)
-
-	// Empty/invalid deployment config
-	var deploymentConfig oapi.DeploymentJobAgentConfig
-	_ = deploymentConfig.UnmarshalJSON([]byte(`{}`))
-
-	jobAgent := createTestJobAgent(t, "agent-1", "github-app", jobAgentConfig)
-	deployment := createTestDeployment(t, "deploy-1", nil, deploymentConfig)
-	version := createTestVersion(t, "deploy-1", nil)
-
-	_, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
-	require.Error(t, err)
-}
-
 func TestMergeJobAgentConfig_ArraysAreReplaced(t *testing.T) {
 	factory := NewFactory(nil)
 
@@ -2076,7 +1963,7 @@ func TestMergeJobAgentConfig_ArraysAreReplaced(t *testing.T) {
 		"tags": ["agent-tag-1", "agent-tag-2"]
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"tags": ["deployment-tag"]
 	}`)
@@ -2088,7 +1975,7 @@ func TestMergeJobAgentConfig_ArraysAreReplaced(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -2109,7 +1996,7 @@ func TestMergeJobAgentConfig_VersionArrayOverridesDeployment(t *testing.T) {
 		"tags": ["agent-tag"]
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"tags": ["deployment-tag-1", "deployment-tag-2"]
 	}`)
@@ -2124,7 +2011,7 @@ func TestMergeJobAgentConfig_VersionArrayOverridesDeployment(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -2134,39 +2021,6 @@ func TestMergeJobAgentConfig_VersionArrayOverridesDeployment(t *testing.T) {
 	tags := configMap["tags"].([]any)
 	require.Len(t, tags, 1)
 	require.Equal(t, "version-tag", tags[0])
-}
-
-func TestMergeJobAgentConfig_PreservesTypeFromJobAgent(t *testing.T) {
-	factory := NewFactory(nil)
-
-	jobAgentConfig := mustCreateJobAgentConfig(t, `{
-		"type": "custom",
-		"field": "value"
-	}`)
-
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
-		"type": "custom"
-	}`)
-
-	jobAgent := createTestJobAgent(t, "agent-1", "custom", jobAgentConfig)
-	deployment := createTestDeployment(t, "deploy-1", nil, deploymentConfig)
-	// Even if version tries to override type, it should be preserved from agent
-	version := createTestVersion(t, "deploy-1", map[string]interface{}{
-		"type": "should-be-ignored",
-	})
-
-	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
-	require.NoError(t, err)
-
-	configJSON, err := result.MarshalJSON()
-	require.NoError(t, err)
-
-	var configMap map[string]any
-	err = json.Unmarshal(configJSON, &configMap)
-	require.NoError(t, err)
-
-	// Type should always be from JobAgent
-	require.Equal(t, "custom", configMap["type"])
 }
 
 func TestMergeJobAgentConfig_DeeplyNestedOverride(t *testing.T) {
@@ -2184,7 +2038,7 @@ func TestMergeJobAgentConfig_DeeplyNestedOverride(t *testing.T) {
 		}
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom",
 		"level1": {
 			"level2": {
@@ -2213,7 +2067,7 @@ func TestMergeJobAgentConfig_DeeplyNestedOverride(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any
@@ -2242,7 +2096,7 @@ func TestMergeJobAgentConfig_NullOverridesValue(t *testing.T) {
 		"keepThis": "keep"
 	}`)
 
-	deploymentConfig := mustCreateDeploymentJobAgentConfig(t, `{
+	deploymentConfig := mustCreateJobAgentConfig(t, `{
 		"type": "custom"
 	}`)
 
@@ -2256,7 +2110,7 @@ func TestMergeJobAgentConfig_NullOverridesValue(t *testing.T) {
 	result, err := factory.MergeJobAgentConfig(deployment, jobAgent, version)
 	require.NoError(t, err)
 
-	configJSON, err := result.MarshalJSON()
+	configJSON, err := json.Marshal(result)
 	require.NoError(t, err)
 
 	var configMap map[string]any

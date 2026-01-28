@@ -41,18 +41,15 @@
                   "description": "ArgoCD server address (host[:port] or URL).",
                   "type": "string"
                },
-               "type": {
-                  "description": "Job agent type discriminator.",
-                  "enum": [
-                     "argo-cd"
-                  ],
+               "template": {
+                  "description": "ArgoCD application template.",
                   "type": "string"
                }
             },
             "required": [
-               "type",
                "serverUrl",
-               "apiKey"
+               "apiKey",
+               "template"
             ],
             "type": "object"
          },
@@ -78,22 +75,6 @@
             },
             "required": [
                "cel"
-            ],
-            "type": "object"
-         },
-         "CustomJobAgentConfig": {
-            "additionalProperties": true,
-            "properties": {
-               "type": {
-                  "description": "Job agent type discriminator.",
-                  "enum": [
-                     "custom"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "type"
             ],
             "type": "object"
          },
@@ -190,7 +171,7 @@
                   "type": "string"
                },
                "jobAgentConfig": {
-                  "$ref": "#/components/schemas/DeploymentJobAgentConfig"
+                  "$ref": "#/components/schemas/JobAgentConfig"
                },
                "jobAgentId": {
                   "type": "string"
@@ -232,42 +213,6 @@
             ],
             "type": "object"
          },
-         "DeploymentArgoCDJobAgentConfig": {
-            "properties": {
-               "template": {
-                  "description": "ArgoCD Application YAML/JSON template (supports Go templates).",
-                  "type": "string"
-               },
-               "type": {
-                  "description": "Deployment job agent type discriminator.",
-                  "enum": [
-                     "argo-cd"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "type",
-               "template"
-            ],
-            "type": "object"
-         },
-         "DeploymentCustomJobAgentConfig": {
-            "additionalProperties": true,
-            "properties": {
-               "type": {
-                  "description": "Deployment job agent type discriminator.",
-                  "enum": [
-                     "custom"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "type"
-            ],
-            "type": "object"
-         },
          "DeploymentDependencyRule": {
             "properties": {
                "dependsOnDeploymentSelector": {
@@ -280,81 +225,6 @@
             },
             "required": [
                "dependsOnDeploymentSelector"
-            ],
-            "type": "object"
-         },
-         "DeploymentGithubJobAgentConfig": {
-            "properties": {
-               "ref": {
-                  "description": "Git ref to run the workflow on (defaults to \"main\" if omitted).",
-                  "type": "string"
-               },
-               "repo": {
-                  "description": "GitHub repository name.",
-                  "type": "string"
-               },
-               "type": {
-                  "description": "Deployment job agent type discriminator.",
-                  "enum": [
-                     "github-app"
-                  ],
-                  "type": "string"
-               },
-               "workflowId": {
-                  "description": "GitHub Actions workflow ID.",
-                  "format": "int64",
-                  "type": "integer"
-               }
-            },
-            "required": [
-               "type",
-               "repo",
-               "workflowId"
-            ],
-            "type": "object"
-         },
-         "DeploymentJobAgentConfig": {
-            "discriminator": {
-               "mapping": {
-                  "argo-cd": "#/components/schemas/DeploymentArgoCDJobAgentConfig",
-                  "custom": "#/components/schemas/DeploymentCustomJobAgentConfig",
-                  "github-app": "#/components/schemas/DeploymentGithubJobAgentConfig",
-                  "tfe": "#/components/schemas/DeploymentTerraformCloudJobAgentConfig"
-               },
-               "propertyName": "type"
-            },
-            "oneOf": [
-               {
-                  "$ref": "#/components/schemas/DeploymentGithubJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/DeploymentArgoCDJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/DeploymentTerraformCloudJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/DeploymentCustomJobAgentConfig"
-               }
-            ]
-         },
-         "DeploymentTerraformCloudJobAgentConfig": {
-            "properties": {
-               "template": {
-                  "description": "Terraform Cloud workspace template (YAML/JSON; supports Go templates).",
-                  "type": "string"
-               },
-               "type": {
-                  "description": "Deployment job agent type discriminator.",
-                  "enum": [
-                     "tfe"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "type",
-               "template"
             ],
             "type": "object"
          },
@@ -445,9 +315,7 @@
                   "type": "string"
                },
                "jobAgentConfig": {
-                  "additionalProperties": true,
-                  "description": "DeploymentVersion-specific overrides applied on top of JobAgent.config. See JobAgentConfig for typed config shapes.",
-                  "type": "object"
+                  "$ref": "#/components/schemas/JobAgentConfig"
                },
                "message": {
                   "type": "string"
@@ -668,79 +536,6 @@
             },
             "type": "object"
          },
-         "FullArgoCDJobAgentConfig": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/ArgoCDJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/DeploymentArgoCDJobAgentConfig"
-               }
-            ]
-         },
-         "FullCustomJobAgentConfig": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/CustomJobAgentConfig"
-               }
-            ]
-         },
-         "FullGithubJobAgentConfig": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/GithubJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/DeploymentGithubJobAgentConfig"
-               }
-            ]
-         },
-         "FullJobAgentConfig": {
-            "discriminator": {
-               "mapping": {
-                  "argo-cd": "#/components/schemas/FullArgoCDJobAgentConfig",
-                  "custom": "#/components/schemas/FullCustomJobAgentConfig",
-                  "github-app": "#/components/schemas/FullGithubJobAgentConfig",
-                  "test-runner": "#/components/schemas/FullTestRunnerJobAgentConfig",
-                  "tfe": "#/components/schemas/FullTerraformCloudJobAgentConfig"
-               },
-               "propertyName": "type"
-            },
-            "oneOf": [
-               {
-                  "$ref": "#/components/schemas/FullGithubJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/FullArgoCDJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/FullTerraformCloudJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/FullTestRunnerJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/FullCustomJobAgentConfig"
-               }
-            ]
-         },
-         "FullTerraformCloudJobAgentConfig": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/TerraformCloudJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/DeploymentTerraformCloudJobAgentConfig"
-               }
-            ]
-         },
-         "FullTestRunnerJobAgentConfig": {
-            "allOf": [
-               {
-                  "$ref": "#/components/schemas/TestRunnerJobAgentConfig"
-               }
-            ]
-         },
          "GithubEntity": {
             "properties": {
                "installationId": {
@@ -759,24 +554,33 @@
          "GithubJobAgentConfig": {
             "properties": {
                "installationId": {
+                  "description": "GitHub app installation ID.",
                   "format": "int",
                   "type": "integer"
                },
                "owner": {
+                  "description": "GitHub repository owner.",
                   "type": "string"
                },
-               "type": {
-                  "description": "Job agent type discriminator.",
-                  "enum": [
-                     "github-app"
-                  ],
+               "ref": {
+                  "description": "Git ref to run the workflow on (defaults to \"main\" if omitted).",
                   "type": "string"
+               },
+               "repo": {
+                  "description": "GitHub repository name.",
+                  "type": "string"
+               },
+               "workflowId": {
+                  "description": "GitHub Actions workflow ID.",
+                  "format": "int64",
+                  "type": "integer"
                }
             },
             "required": [
-               "type",
                "installationId",
-               "owner"
+               "owner",
+               "repo",
+               "workflowId"
             ],
             "type": "object"
          },
@@ -874,7 +678,7 @@
                   "type": "string"
                },
                "jobAgentConfig": {
-                  "$ref": "#/components/schemas/FullJobAgentConfig"
+                  "$ref": "#/components/schemas/JobAgentConfig"
                },
                "jobAgentId": {
                   "type": "string"
@@ -950,33 +754,8 @@
             "type": "object"
          },
          "JobAgentConfig": {
-            "discriminator": {
-               "mapping": {
-                  "argo-cd": "#/components/schemas/ArgoCDJobAgentConfig",
-                  "custom": "#/components/schemas/CustomJobAgentConfig",
-                  "github-app": "#/components/schemas/GithubJobAgentConfig",
-                  "test-runner": "#/components/schemas/TestRunnerJobAgentConfig",
-                  "tfe": "#/components/schemas/TerraformCloudJobAgentConfig"
-               },
-               "propertyName": "type"
-            },
-            "oneOf": [
-               {
-                  "$ref": "#/components/schemas/GithubJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/ArgoCDJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/TerraformCloudJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/TestRunnerJobAgentConfig"
-               },
-               {
-                  "$ref": "#/components/schemas/CustomJobAgentConfig"
-               }
-            ]
+            "additionalProperties": true,
+            "type": "object"
          },
          "JobStatus": {
             "enum": [
@@ -1997,7 +1776,6 @@
             "type": "object"
          },
          "TerraformCloudJobAgentConfig": {
-            "additionalProperties": true,
             "properties": {
                "address": {
                   "description": "Terraform Cloud address (e.g. https://app.terraform.io).",
@@ -2008,26 +1786,19 @@
                   "type": "string"
                },
                "template": {
-                  "description": "Terraform Cloud workspace template (YAML/JSON; supports Go templates).",
+                  "description": "Terraform Cloud workspace template.",
                   "type": "string"
                },
                "token": {
                   "description": "Terraform Cloud API token.",
                   "type": "string"
-               },
-               "type": {
-                  "description": "Job agent type discriminator.",
-                  "enum": [
-                     "tfe"
-                  ],
-                  "type": "string"
                }
             },
             "required": [
-               "type",
                "address",
+               "organization",
                "token",
-               "organization"
+               "template"
             ],
             "type": "object"
          },
@@ -2061,38 +1832,6 @@
                "address",
                "token",
                "runId"
-            ],
-            "type": "object"
-         },
-         "TestRunnerJobAgentConfig": {
-            "properties": {
-               "delaySeconds": {
-                  "description": "Delay before resolving the job.",
-                  "format": "int",
-                  "type": "integer"
-               },
-               "message": {
-                  "description": "Optional message to include in the job output.",
-                  "type": "string"
-               },
-               "status": {
-                  "description": "Final status to set.",
-                  "enum": [
-                     "completed",
-                     "failure"
-                  ],
-                  "type": "string"
-               },
-               "type": {
-                  "description": "Job agent type discriminator.",
-                  "enum": [
-                     "test-runner"
-                  ],
-                  "type": "string"
-               }
-            },
-            "required": [
-               "type"
             ],
             "type": "object"
          },

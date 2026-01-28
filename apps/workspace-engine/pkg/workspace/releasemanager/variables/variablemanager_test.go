@@ -42,15 +42,12 @@ func setupStoreWithDeployment(deploymentID string) *store.Store {
 	st := store.New("test-workspace", cs)
 	ctx := context.Background()
 
-	jobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
-
 	deployment := &oapi.Deployment{
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: jobAgentConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -168,12 +165,6 @@ func mustCreateValueFromLiteral(value interface{}) *oapi.Value {
 	return v
 }
 
-func mustCreateDeploymentJobAgentConfig() oapi.DeploymentJobAgentConfig {
-	jobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
-	return jobAgentConfig
-}
-
 // TestVariableManager_OnlyDeploymentKeysReturned tests that only variables
 // defined in the deployment are returned, even if resource has more variables
 func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {
@@ -189,7 +180,7 @@ func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -256,7 +247,7 @@ func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -320,7 +311,7 @@ func TestVariableManager_DeploymentVariablePriority(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -384,7 +375,7 @@ func TestVariableManager_FallbackToDefault(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -447,7 +438,7 @@ func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -500,7 +491,7 @@ func TestVariableManager_SelectorFiltering(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -566,7 +557,7 @@ func TestVariableManager_NoSelectorMatches(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -656,7 +647,7 @@ func TestVariableManager_EmptyDeploymentVariables(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -703,7 +694,7 @@ func TestVariableManager_ComplexVariableTypes(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -780,7 +771,7 @@ func TestVariableManager_MixedPriorities(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)
@@ -892,7 +883,7 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(),
-		JobAgentConfig: mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
 		t.Fatalf("failed to upsert deployment: %v", err)

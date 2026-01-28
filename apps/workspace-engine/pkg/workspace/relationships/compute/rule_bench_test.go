@@ -42,7 +42,7 @@ func BenchmarkFilterEntities_WithCEL(b *testing.B) {
 			Name:           fmt.Sprintf("Deployment %d", i),
 			Slug:           fmt.Sprintf("deployment-%d", i),
 			SystemId:       strconv.Itoa(i % 10),
-			JobAgentConfig: customJobAgentConfig(nil),
+			JobAgentConfig: map[string]any{},
 		}
 		allEntities = append(allEntities, relationships.NewDeploymentEntity(deployment))
 	}
@@ -114,7 +114,7 @@ func BenchmarkFilterEntities_NoSelector(b *testing.B) {
 			Name:           fmt.Sprintf("Deployment %d", i),
 			Slug:           fmt.Sprintf("deployment-%d", i),
 			SystemId:       strconv.Itoa(i % 10),
-			JobAgentConfig: customJobAgentConfig(nil),
+			JobAgentConfig: map[string]any{},
 		}
 		allEntities = append(allEntities, relationships.NewDeploymentEntity(deployment))
 	}
@@ -171,7 +171,7 @@ func BenchmarkFilterEntities_HighSelectivity(b *testing.B) {
 			Name:           fmt.Sprintf("Deployment %d", i),
 			Slug:           fmt.Sprintf("deployment-%d", i),
 			SystemId:       strconv.Itoa(i % 100),
-			JobAgentConfig: customJobAgentConfig(nil),
+			JobAgentConfig: map[string]any{},
 		}
 		allEntities = append(allEntities, relationships.NewDeploymentEntity(deployment))
 	}

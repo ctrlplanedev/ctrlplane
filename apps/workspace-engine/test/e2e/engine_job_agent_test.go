@@ -192,25 +192,22 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 		break
 	}
 
-	config, err := job.JobAgentConfig.AsFullCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job job agent config: %v", err)
-	}
+	config := job.JobAgentConfig
 
 	if job.JobAgentId != jobAgentID {
 		t.Fatalf("job agent mismatch: got %s, want %s", job.JobAgentId, jobAgentID)
 	}
 
-	if config.AdditionalProperties["namespace"] != "default" {
-		t.Fatalf("job agent config namespace mismatch: got %s, want default", config.AdditionalProperties["namespace"])
+	if config["namespace"] != "default" {
+		t.Fatalf("job agent config namespace mismatch: got %s, want default", config["namespace"])
 	}
 
-	if config.AdditionalProperties["timeout"] != float64(300) {
-		t.Fatalf("job agent config timeout mismatch: got %v, want 300", config.AdditionalProperties["timeout"])
+	if config["timeout"] != float64(300) {
+		t.Fatalf("job agent config timeout mismatch: got %v, want 300", config["timeout"])
 	}
 
-	if config.AdditionalProperties["retries"] != float64(3) {
-		t.Fatalf("job agent config retries mismatch: got %v, want 3", config.AdditionalProperties["retries"])
+	if config["retries"] != float64(3) {
+		t.Fatalf("job agent config retries mismatch: got %v, want 3", config["retries"])
 	}
 
 	job.Status = oapi.JobStatusSuccessful
@@ -218,11 +215,11 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 
 	ja := &oapi.JobAgent{
 		Id: jobAgentID,
-		Config: c.CustomJobAgentConfig(map[string]any{
+		Config: map[string]any{
 			"namespace": "custom-namespace",
 			"timeout":   600,
 			"retries":   5,
-		}),
+		},
 	}
 
 	engine.PushEvent(ctx, handler.JobAgentUpdate, ja)
@@ -243,21 +240,17 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 		t.Fatalf("job agent mismatch: got %s, want %s", updatedJob.JobAgentId, jobAgentID)
 	}
 
-	updatedConfig, err := updatedJob.JobAgentConfig.AsFullCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job job agent config: %v", err)
+	updatedConfig := updatedJob.JobAgentConfig
+	if updatedConfig["namespace"] != "custom-namespace" {
+		t.Fatalf("job agent config namespace mismatch: got %s, want custom-namespace", updatedConfig["namespace"])
 	}
 
-	if updatedConfig.AdditionalProperties["namespace"] != "custom-namespace" {
-		t.Fatalf("job agent config namespace mismatch: got %s, want custom-namespace", updatedConfig.AdditionalProperties["namespace"])
+	if updatedConfig["timeout"] != float64(600) {
+		t.Fatalf("job agent config timeout mismatch: got %v, want 600", updatedConfig["timeout"])
 	}
 
-	if updatedConfig.AdditionalProperties["timeout"] != float64(600) {
-		t.Fatalf("job agent config timeout mismatch: got %v, want 600", updatedConfig.AdditionalProperties["timeout"])
-	}
-
-	if updatedConfig.AdditionalProperties["retries"] != float64(5) {
-		t.Fatalf("job agent config retries mismatch: got %v, want 5", updatedConfig.AdditionalProperties["retries"])
+	if updatedConfig["retries"] != float64(5) {
+		t.Fatalf("job agent config retries mismatch: got %v, want 5", updatedConfig["retries"])
 	}
 }
 
@@ -307,7 +300,7 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 	ja.Id = jobAgentID
 	ja.Name = "Config Test Agent"
 	ja.WorkspaceId = engine.Workspace().ID
-	ja.Config = c.CustomJobAgentConfig(map[string]any{
+	ja.Config = map[string]any{
 		"namespace":     "default",
 		"timeout":       300,
 		"retries":       3,
@@ -317,7 +310,7 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 			"cpu":    "1000m",
 			"memory": "2Gi",
 		},
-	})
+	}
 
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja)
 
@@ -327,29 +320,21 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 		t.Fatal("job agent not found")
 	}
 
-	config, err := retrievedJa.Config.AsCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job agent config: %v", err)
+	config := retrievedJa.Config
+	if config["namespace"] != "default" {
+		t.Fatalf("config namespace mismatch: got %s, want default", config["namespace"])
 	}
 
-	if config.AdditionalProperties["namespace"] != "default" {
-		t.Fatalf("config namespace mismatch: got %v, want default", config.AdditionalProperties["namespace"])
+	if timeout, ok := config["timeout"].(float64); !ok || timeout != 300 {
+		t.Fatalf("config timeout mismatch: got %v, want 300", config["timeout"])
 	}
 
-	if timeout, ok := config.AdditionalProperties["timeout"].(float64); !ok || timeout != 300 {
-		t.Fatalf("config timeout mismatch: got %v, want 300", config.AdditionalProperties["timeout"])
-	}
-
-	if retries, ok := config.AdditionalProperties["retries"].(float64); !ok || retries != 3 {
-		t.Fatalf("config retries mismatch: got %v, want 3", config.AdditionalProperties["retries"])
-	}
-
-	if config.AdditionalProperties["cleanupPolicy"] != "always" {
-		t.Fatalf("config cleanupPolicy mismatch: got %v, want always", config.AdditionalProperties["cleanupPolicy"])
+	if config["cleanupPolicy"] != "always" {
+		t.Fatalf("config cleanupPolicy mismatch: got %s, want always", config["cleanupPolicy"])
 	}
 
 	// Verify nested config
-	resources, ok := config.AdditionalProperties["resources"].(map[string]any)
+	resources, ok := config["resources"].(map[string]any)
 	if !ok {
 		t.Fatal("config resources not found or wrong type")
 	}
@@ -374,38 +359,31 @@ func TestEngine_JobAgentConfigUpdate(t *testing.T) {
 	ja.Id = jobAgentID
 	ja.Name = "Config Update Test"
 	ja.WorkspaceId = engine.Workspace().ID
-	ja.Config = c.CustomJobAgentConfig(map[string]any{
+	ja.Config = map[string]any{
 		"timeout": 300,
 		"retries": 3,
-	})
+	}
 
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja)
 
 	// Update config
-	ja.Config = c.CustomJobAgentConfig(map[string]any{
+	ja.Config = map[string]any{
 		"timeout":  600,
 		"retries":  5,
 		"newField": "newValue",
-	})
+	}
 
 	engine.PushEvent(ctx, handler.JobAgentUpdate, ja)
 
 	// Verify updated config
 	updatedJa, _ := engine.Workspace().JobAgents().Get(jobAgentID)
-	config, err := updatedJa.Config.AsCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job agent config: %v", err)
-	}
-	if timeout, ok := config.AdditionalProperties["timeout"].(float64); !ok || timeout != 600 {
-		t.Fatalf("updated config timeout mismatch: got %v, want 600", config.AdditionalProperties["timeout"])
+	config := updatedJa.Config
+	if timeout, ok := config["timeout"].(float64); !ok || timeout != 600 {
+		t.Fatalf("updated config timeout mismatch: got %v, want 600", config["timeout"])
 	}
 
-	if retries, ok := config.AdditionalProperties["retries"].(float64); !ok || retries != 5 {
-		t.Fatalf("updated config retries mismatch: got %v, want 5", config.AdditionalProperties["retries"])
-	}
-
-	if config.AdditionalProperties["newField"] != "newValue" {
-		t.Fatalf("updated config newField mismatch: got %v, want newValue", config.AdditionalProperties["newField"])
+	if retries, ok := config["retries"].(float64); !ok || retries != 5 {
+		t.Fatalf("updated config retries mismatch: got %v, want 5", config["retries"])
 	}
 }
 
@@ -638,7 +616,7 @@ func TestEngine_JobAgentEmptyConfig(t *testing.T) {
 		WorkspaceId: engine.Workspace().ID,
 		Name:        "Empty Config Agent",
 		Type:        "test",
-		Config:      c.CustomJobAgentConfig(nil),
+		Config:      map[string]any{},
 	}
 
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja)
@@ -650,11 +628,8 @@ func TestEngine_JobAgentEmptyConfig(t *testing.T) {
 	}
 
 	// Verify empty config doesn't cause issues
-	config, err := retrievedJa.Config.AsCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job agent config: %v", err)
-	}
-	if len(config.AdditionalProperties) > 0 {
+	config := retrievedJa.Config
+	if len(config) > 0 {
 		t.Fatalf("expected empty config, got %v", config)
 	}
 }

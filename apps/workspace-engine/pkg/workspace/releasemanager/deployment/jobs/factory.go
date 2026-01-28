@@ -57,48 +57,20 @@ func NewFactory(store *store.Store) *Factory {
 	}
 }
 
-func (f *Factory) MergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.FullJobAgentConfig, error) {
-	runnerDiscriminator, err := jobAgent.Config.Discriminator()
-	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config discriminator: %w", err)
-	}
-
-	var deploymentConfig any
-	switch runnerDiscriminator {
-	case string(oapi.TestRunner):
-	case string(oapi.ArgoCd):
-	default:
-		deploymentDiscriminator, err := deployment.JobAgentConfig.Discriminator()
-		if err != nil {
-			return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config discriminator: %w", err)
-		}
-
-		if deploymentDiscriminator != runnerDiscriminator {
-			return oapi.FullJobAgentConfig{}, fmt.Errorf("deployment job agent config type %s does not match job agent config type %s", deploymentDiscriminator, runnerDiscriminator)
-		}
-
-		deploymentConfig, err = deployment.JobAgentConfig.ValueByDiscriminator()
-		if err != nil {
-			return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get deployment job agent config: %w", err)
-		}
-	}
-
-	runnerConfig, err := jobAgent.Config.ValueByDiscriminator()
-	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to get job agent config: %w", err)
-	}
-
+func (f *Factory) MergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.JobAgentConfig, error) {
+	deploymentConfig := deployment.JobAgentConfig
+	runnerConfig := jobAgent.Config
 	deploymentMap, err := toMap(deploymentConfig)
 	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to convert deployment job agent config to map: %w", err)
+		return oapi.JobAgentConfig{}, fmt.Errorf("failed to convert deployment job agent config to map: %w", err)
 	}
 	runnerMap, err := toMap(runnerConfig)
 	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to convert job agent config to map: %w", err)
+		return oapi.JobAgentConfig{}, fmt.Errorf("failed to convert job agent config to map: %w", err)
 	}
 	versionMap, err := toMap(version.JobAgentConfig)
 	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to convert deployment version job agent config to map: %w", err)
+		return oapi.JobAgentConfig{}, fmt.Errorf("failed to convert deployment version job agent config to map: %w", err)
 	}
 
 	// Merge job agent defaults first, then apply deployment overrides, then apply version overrides.
@@ -107,17 +79,14 @@ func (f *Factory) MergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oap
 	deepMerge(mergedConfig, deploymentMap)
 	deepMerge(mergedConfig, versionMap)
 
-	// Ensure discriminator exists so the union can unmarshal.
-	mergedConfig["type"] = runnerDiscriminator
-
 	mergedJSON, err := json.Marshal(mergedConfig)
 	if err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to marshal merged job agent config: %w", err)
+		return oapi.JobAgentConfig{}, fmt.Errorf("failed to marshal merged job agent config: %w", err)
 	}
 
-	var out oapi.FullJobAgentConfig
-	if err := out.UnmarshalJSON(mergedJSON); err != nil {
-		return oapi.FullJobAgentConfig{}, fmt.Errorf("failed to unmarshal merged job agent config: %w", err)
+	var out oapi.JobAgentConfig
+	if err := json.Unmarshal(mergedJSON, &out); err != nil {
+		return oapi.JobAgentConfig{}, fmt.Errorf("failed to unmarshal merged job agent config: %w", err)
 	}
 
 	return out, nil
@@ -167,7 +136,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			Id:             uuid.New().String(),
 			ReleaseId:      release.ID(),
 			JobAgentId:     "",
-			JobAgentConfig: oapi.FullJobAgentConfig{},
+			JobAgentConfig: oapi.JobAgentConfig{},
 			Status:         oapi.JobStatusInvalidJobAgent,
 			Message:        &msg,
 			CreatedAt:      time.Now(),
@@ -193,7 +162,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			Id:             uuid.New().String(),
 			ReleaseId:      release.ID(),
 			JobAgentId:     *jobAgentId,
-			JobAgentConfig: oapi.FullJobAgentConfig{},
+			JobAgentConfig: oapi.JobAgentConfig{},
 			Status:         oapi.JobStatusInvalidJobAgent,
 			Message:        &msg,
 			CreatedAt:      time.Now(),
@@ -227,7 +196,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			Id:             uuid.New().String(),
 			ReleaseId:      release.ID(),
 			JobAgentId:     *jobAgentId,
-			JobAgentConfig: oapi.FullJobAgentConfig{},
+			JobAgentConfig: oapi.JobAgentConfig{},
 			Status:         oapi.JobStatusInvalidJobAgent,
 			Message:        &msg,
 			CreatedAt:      time.Now(),

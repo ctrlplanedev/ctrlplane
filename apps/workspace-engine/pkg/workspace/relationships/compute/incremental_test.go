@@ -2,7 +2,6 @@ package compute
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 	"workspace-engine/pkg/oapi"
@@ -12,22 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfig {
-	payload := map[string]interface{}{}
-	for k, v := range m {
-		payload[k] = v
-	}
-	payload["type"] = "custom"
-	b, err := json.Marshal(payload)
-	if err != nil {
-		panic(err)
-	}
-	var cfg oapi.DeploymentJobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
-		panic(err)
-	}
-	return cfg
-}
 func TestFindRelationsForEntityAndRule_FromEntity(t *testing.T) {
 	ctx := context.Background()
 
@@ -47,14 +30,14 @@ func TestFindRelationsForEntityAndRule_FromEntity(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"region": "us-east"}),
+		JobAgentConfig: map[string]any{"region": "us-east"},
 	}
 	deployment2 := &oapi.Deployment{
 		Id:             "deployment-2",
 		Name:           "Deployment 2",
 		Slug:           "deployment-2",
 		SystemId:       "system-2",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"region": "us-west"}),
+		JobAgentConfig: map[string]any{"region": "us-west"},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
@@ -115,7 +98,7 @@ func TestFindRelationsForEntityAndRule_ToEntity(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"region": "us-east"}),
+		JobAgentConfig: map[string]any{"region": "us-east"},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
@@ -341,7 +324,7 @@ func TestFindRelationsForEntityAndRule_NoMatchWrongType(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{}),
+		JobAgentConfig: map[string]any{},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
@@ -383,7 +366,7 @@ func TestFindRelationsForEntityAndRule_NoMatchSelectorMismatch(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{}),
+		JobAgentConfig: map[string]any{},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
@@ -432,7 +415,7 @@ func TestFindRelationsForEntity_MultipleRules(t *testing.T) {
 		Name:           "app-frontend",
 		Slug:           "app-frontend",
 		SystemId:       "workspace-1",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{}),
+		JobAgentConfig: map[string]any{},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
@@ -629,7 +612,7 @@ func TestFilterEntitiesByTypeAndSelector(t *testing.T) {
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
 		SystemId:       "system-1",
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{}),
+		JobAgentConfig: map[string]any{},
 	}
 
 	allEntities := []*oapi.RelatableEntity{
@@ -681,7 +664,7 @@ func TestFindRelationsForEntityAndRule_LargeDataset(t *testing.T) {
 			Name:           fmt.Sprintf("Deployment %d", i),
 			Slug:           fmt.Sprintf("deployment-%d", i),
 			SystemId:       "system-1",
-			JobAgentConfig: customJobAgentConfig(map[string]interface{}{}),
+			JobAgentConfig: map[string]any{},
 		}
 		allEntities = append(allEntities, relationships.NewDeploymentEntity(deployment))
 	}

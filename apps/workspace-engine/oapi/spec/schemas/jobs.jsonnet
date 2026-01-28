@@ -18,7 +18,7 @@ local Job = {
     releaseId: { type: 'string' },
     taskId: { type: 'string' },
     jobAgentId: { type: 'string' },
-    jobAgentConfig: openapi.schemaRef('FullJobAgentConfig'),
+    jobAgentConfig: openapi.schemaRef('JobAgentConfig'),
     externalId: { type: 'string' },
     traceToken: { type: 'string' },
     status: openapi.schemaRef('JobStatus'),
@@ -95,56 +95,45 @@ local JobPropertyKeys = std.objectFields(Job.properties);
     ],
   },
 
-  FullJobAgentConfig: {
-    oneOf: [
-      openapi.schemaRef('FullGithubJobAgentConfig'),
-      openapi.schemaRef('FullArgoCDJobAgentConfig'),
-      openapi.schemaRef('FullTerraformCloudJobAgentConfig'),
-      openapi.schemaRef('FullTestRunnerJobAgentConfig'),
-      openapi.schemaRef('FullCustomJobAgentConfig'),
-    ],
-    discriminator: {
-      propertyName: 'type',
-      mapping: {
-        'github-app': '#/components/schemas/FullGithubJobAgentConfig',
-        'argo-cd': '#/components/schemas/FullArgoCDJobAgentConfig',
-        tfe: '#/components/schemas/FullTerraformCloudJobAgentConfig',
-        'test-runner': '#/components/schemas/FullTestRunnerJobAgentConfig',
-        custom: '#/components/schemas/FullCustomJobAgentConfig',
-      },
+  GithubJobAgentConfig: {
+    type: 'object',
+    required: ['installationId', 'owner', 'repo', 'workflowId'],
+    properties: {
+      installationId: { type: 'integer', format: 'int', description: 'GitHub app installation ID.' },
+      owner: { type: 'string', description: 'GitHub repository owner.' },
+      repo: { type: 'string', description: 'GitHub repository name.' },
+      ref: { type: 'string', description: 'Git ref to run the workflow on (defaults to "main" if omitted).' },
+      workflowId: { type: 'integer', format: 'int64', description: 'GitHub Actions workflow ID.' },
     },
   },
 
-  FullGithubJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('GithubJobAgentConfig'),
-      openapi.schemaRef('DeploymentGithubJobAgentConfig'),
-    ],
+  ArgoCDJobAgentConfig: {
+    type: 'object',
+    required: ['serverUrl', 'apiKey', 'template'],
+    properties: {
+      serverUrl: { type: 'string', description: 'ArgoCD server address (host[:port] or URL).' },
+      apiKey: { type: 'string', description: 'ArgoCD API token.' },
+      template: { type: 'string', description: 'ArgoCD application template.' },
+    },
   },
 
-  FullArgoCDJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('ArgoCDJobAgentConfig'),
-      openapi.schemaRef('DeploymentArgoCDJobAgentConfig'),
-    ],
+  TerraformCloudJobAgentConfig: {
+    type: 'object',
+    required: ['address', 'organization', 'token', 'template'],
+    properties: {
+      address: { type: 'string', description: 'Terraform Cloud address (e.g. https://app.terraform.io).' },
+      organization: { type: 'string', description: 'Terraform Cloud organization name.' },
+      token: { type: 'string', description: 'Terraform Cloud API token.' },
+      template: { type: 'string', description: 'Terraform Cloud workspace template.' },
+    },
   },
 
-  FullTerraformCloudJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('TerraformCloudJobAgentConfig'),
-      openapi.schemaRef('DeploymentTerraformCloudJobAgentConfig'),
-    ],
-  },
-
-  FullTestRunnerJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('TestRunnerJobAgentConfig'),
-    ],
-  },
-
-  FullCustomJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('CustomJobAgentConfig'),
-    ],
+  TestRunnerJobAgentConfig: {
+    type: 'object',
+    properties: {
+      delaySeconds: { type: 'integer', format: 'int', description: 'Delay in seconds before resolving the job.' },
+      status: { type: 'string', description: 'Final status to set (e.g. "successful", "failure").' },
+      message: { type: 'string', description: 'Optional message to include in the job output.' },
+    },
   },
 }

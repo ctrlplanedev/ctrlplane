@@ -47,8 +47,6 @@ func createTestDeployment(_, systemID, id, name string) *oapi.Deployment {
 
 	description := fmt.Sprintf("Test deployment %s", name)
 	jobAgentID := uuid.New().String()
-	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	_ = customJobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
 	return &oapi.Deployment{
 		Id:               id,
 		Name:             name,
@@ -57,7 +55,7 @@ func createTestDeployment(_, systemID, id, name string) *oapi.Deployment {
 		Description:      &description,
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,
-		JobAgentConfig:   customJobAgentConfig,
+		JobAgentConfig:   oapi.JobAgentConfig{},
 	}
 }
 

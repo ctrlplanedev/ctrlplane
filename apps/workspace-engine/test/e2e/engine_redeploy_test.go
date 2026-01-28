@@ -605,15 +605,12 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 		t.Errorf("replicas = %d, want 5", v)
 	}
 
-	cfg, err := redeployJob.JobAgentConfig.AsFullCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job job agent config: %v", err)
-	}
+	cfg := redeployJob.JobAgentConfig
 
 	// Verify job agent config is preserved
-	if cfg.AdditionalProperties["namespace"] != "production" {
+	if cfg["namespace"] != "production" {
 		t.Errorf("job agent config namespace = %v, want production",
-			cfg.AdditionalProperties["namespace"])
+			cfg["namespace"])
 	}
 }
 

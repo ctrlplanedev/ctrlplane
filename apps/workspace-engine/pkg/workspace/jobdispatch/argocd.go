@@ -124,7 +124,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	ctx, span := argoCDTracer.Start(ctx, "ArgoCDDispatcher.DispatchJob")
 	defer span.End()
 
-	cfg, err := job.JobAgentConfig.AsFullArgoCDJobAgentConfig()
+	cfg, err := job.GetArgoCDJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
@@ -434,7 +434,7 @@ func (d *ArgoCDDispatcher) sendJobFailureEvent(job *oapi.Job, status oapi.JobSta
 	return nil
 }
 
-func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg oapi.FullArgoCDJobAgentConfig, app v1alpha1.Application) error {
+func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg *oapi.ArgoCDJobAgentConfig, app v1alpha1.Application) error {
 	_, span := argoCDTracer.Start(context.Background(), "sendJobUpdateEvent")
 	defer span.End()
 
@@ -518,7 +518,7 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg oapi.FullArgoCD
 func (d *ArgoCDDispatcher) startArgoApplicationVerification(
 	ctx context.Context,
 	jobWithRelease *oapi.JobWithRelease,
-	cfg oapi.FullArgoCDJobAgentConfig,
+	cfg *oapi.ArgoCDJobAgentConfig,
 	appName string,
 ) error {
 	ctx, span := argoCDTracer.Start(ctx, "startArgoApplicationVerification")

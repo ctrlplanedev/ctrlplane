@@ -270,7 +270,7 @@ func (d *TerraformCloudDispatcher) syncVariables(ctx context.Context, client *tf
 	return nil
 }
 
-func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, release *oapi.Release, job *oapi.Job, config oapi.FullTerraformCloudJobAgentConfig, runId string) error {
+func (d *TerraformCloudDispatcher) createRunVerification(ctx context.Context, release *oapi.Release, job *oapi.Job, config *oapi.TerraformCloudJobAgentConfig, runId string) error {
 	provider := oapi.MetricProvider{}
 	err := provider.FromTerraformCloudRunMetricProvider(oapi.TerraformCloudRunMetricProvider{
 		Address: config.Address,
@@ -306,7 +306,7 @@ func (d *TerraformCloudDispatcher) getKafkaProducer() (messaging.Producer, error
 	})
 }
 
-func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config oapi.FullTerraformCloudJobAgentConfig, workspaceName string) error {
+func (d *TerraformCloudDispatcher) sendJobUpdateEvent(job *oapi.Job, run *tfe.Run, config *oapi.TerraformCloudJobAgentConfig, workspaceName string) error {
 	_, span := terraformTracer.Start(context.Background(), "sendJobUpdateEvent")
 	defer span.End()
 
@@ -395,7 +395,7 @@ func (d *TerraformCloudDispatcher) DispatchJob(ctx context.Context, job *oapi.Jo
 
 	span.SetAttributes(attribute.String("job.id", job.Id))
 
-	cfg, err := job.JobAgentConfig.AsFullTerraformCloudJobAgentConfig()
+	cfg, err := job.GetTerraformCloudJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
