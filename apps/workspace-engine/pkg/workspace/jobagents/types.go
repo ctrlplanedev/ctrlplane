@@ -8,6 +8,12 @@ import (
 type Dispatchable interface {
 	Type() string
 	Dispatch(ctx context.Context, context RenderContext) error
+	Supports() Capabilities
+}
+
+type Capabilities struct {
+	Workflows   bool
+	Deployments bool
 }
 
 type RenderContext struct {
