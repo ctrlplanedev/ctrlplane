@@ -14,7 +14,6 @@
 package templatefuncs
 
 import (
-	"bytes"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
@@ -54,69 +53,4 @@ func New(name string) *template.Template {
 //	t, err := templatefuncs.Parse("myTemplate", "Hello {{ .Name }}")
 func Parse(name, text string) (*template.Template, error) {
 	return New(name).Parse(text)
-}
-
-// RenderMap recursively walks a map and renders any string values that contain
-// Go template syntax (e.g., "{{.workflow.inputs.version}}"). Non-string values
-// and strings without templates are left unchanged.
-//
-// Usage:
-//
-//	config := map[string]interface{}{
-//	    "application": "app-{{.resource.name}}",
-//	    "revision":    "{{.workflow.inputs.version}}",
-//	    "replicas":    3,  // non-string, left as-is
-//	}
-//	data := map[string]interface{}{"resource": ..., "workflow": ...}
-//	resolved, err := templatefuncs.RenderMap(config, data)
-func RenderMap(input map[string]interface{}, data interface{}) (map[string]interface{}, error) {
-	result := make(map[string]interface{}, len(input))
-	for key, value := range input {
-		rendered, err := renderValue(value, data)
-		if err != nil {
-			return nil, err
-		}
-		result[key] = rendered
-	}
-	return result, nil
-}
-
-// renderValue recursively renders a single value.
-func renderValue(value interface{}, data interface{}) (interface{}, error) {
-	switch v := value.(type) {
-	case string:
-		return renderString(v, data)
-	case map[string]interface{}:
-		return RenderMap(v, data)
-	case []interface{}:
-		return renderSlice(v, data)
-	default:
-		return value, nil
-	}
-}
-
-// renderString templates a string if it contains template syntax.
-func renderString(s string, data interface{}) (string, error) {
-	t, err := Parse("inline", s)
-	if err != nil {
-		return "", err
-	}
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, data); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-// renderSlice recursively renders each element in a slice.
-func renderSlice(slice []interface{}, data interface{}) ([]interface{}, error) {
-	result := make([]interface{}, len(slice))
-	for i, item := range slice {
-		rendered, err := renderValue(item, data)
-		if err != nil {
-			return nil, err
-		}
-		result[i] = rendered
-	}
-	return result, nil
 }
