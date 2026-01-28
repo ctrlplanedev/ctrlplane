@@ -702,21 +702,21 @@
                "status": {
                   "$ref": "#/components/schemas/JobStatus"
                },
-               "taskId": {
-                  "type": "string"
-               },
                "traceToken": {
                   "type": "string"
                },
                "updatedAt": {
                   "format": "date-time",
                   "type": "string"
+               },
+               "workflowStepId": {
+                  "type": "string"
                }
             },
             "required": [
                "id",
                "releaseId",
-               "taskId",
+               "workflowStepId",
                "jobAgentId",
                "jobAgentConfig",
                "status",
@@ -807,9 +807,9 @@
                         "releaseId",
                         "startedAt",
                         "status",
-                        "taskId",
                         "traceToken",
-                        "updatedAt"
+                        "updatedAt",
+                        "workflowStepId"
                      ],
                      "type": "string"
                   },
@@ -1835,6 +1835,24 @@
             ],
             "type": "object"
          },
+         "TestRunnerJobAgentConfig": {
+            "properties": {
+               "delaySeconds": {
+                  "description": "Delay in seconds before resolving the job.",
+                  "format": "int",
+                  "type": "integer"
+               },
+               "message": {
+                  "description": "Optional message to include in the job output.",
+                  "type": "string"
+               },
+               "status": {
+                  "description": "Final status to set (e.g. \"successful\", \"failure\").",
+                  "type": "string"
+               }
+            },
+            "type": "object"
+         },
          "UserApprovalRecord": {
             "properties": {
                "createdAt": {
@@ -2097,6 +2115,22 @@
                }
             ]
          },
+         "WorkflowJobAgentConfig": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "config"
+            ],
+            "type": "object"
+         },
          "WorkflowNumberInput": {
             "properties": {
                "default": {
@@ -2124,17 +2158,20 @@
                "id": {
                   "type": "string"
                },
-               "workflowId": {
-                  "type": "string"
+               "index": {
+                  "type": "integer"
                },
-               "workflowStepTemplateId": {
+               "jobAgent": {
+                  "$ref": "#/components/schemas/WorkflowJobAgentConfig"
+               },
+               "workflowId": {
                   "type": "string"
                }
             },
             "required": [
                "id",
                "workflowId",
-               "workflowStepTemplateId"
+               "index"
             ],
             "type": "object"
          },
@@ -2144,20 +2181,7 @@
                   "type": "string"
                },
                "jobAgent": {
-                  "properties": {
-                     "config": {
-                        "additionalProperties": true,
-                        "type": "object"
-                     },
-                     "id": {
-                        "type": "string"
-                     }
-                  },
-                  "required": [
-                     "id",
-                     "config"
-                  ],
-                  "type": "object"
+                  "$ref": "#/components/schemas/WorkflowJobAgentConfig"
                },
                "name": {
                   "type": "string"

@@ -39,3 +39,13 @@ func (w *WorkflowSteps) Remove(ctx context.Context, id string) {
 	w.repo.WorkflowSteps.Remove(id)
 	w.store.changeset.RecordDelete(workflowStep)
 }
+
+func (w *WorkflowSteps) GetByWorkflowId(workflowId string) []*oapi.WorkflowStep {
+	steps := make([]*oapi.WorkflowStep, 0)
+	for _, step := range w.repo.WorkflowSteps.Items() {
+		if step.WorkflowId == workflowId {
+			steps = append(steps, step)
+		}
+	}
+	return steps
+}

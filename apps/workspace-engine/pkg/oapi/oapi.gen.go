@@ -98,9 +98,9 @@ const (
 	JobUpdateEventFieldsToUpdateReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
 	JobUpdateEventFieldsToUpdateStartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
 	JobUpdateEventFieldsToUpdateStatus         JobUpdateEventFieldsToUpdate = "status"
-	JobUpdateEventFieldsToUpdateTaskId         JobUpdateEventFieldsToUpdate = "taskId"
 	JobUpdateEventFieldsToUpdateTraceToken     JobUpdateEventFieldsToUpdate = "traceToken"
 	JobUpdateEventFieldsToUpdateUpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
+	JobUpdateEventFieldsToUpdateWorkflowStepId JobUpdateEventFieldsToUpdate = "workflowStepId"
 )
 
 // Defines values for JobVerificationStatus.
@@ -478,9 +478,9 @@ type Job struct {
 	ReleaseId      string            `json:"releaseId"`
 	StartedAt      *time.Time        `json:"startedAt,omitempty"`
 	Status         JobStatus         `json:"status"`
-	TaskId         string            `json:"taskId"`
 	TraceToken     *string           `json:"traceToken,omitempty"`
 	UpdatedAt      time.Time         `json:"updatedAt"`
+	WorkflowStepId string            `json:"workflowStepId"`
 }
 
 // JobAgent defines model for JobAgent.
@@ -912,6 +912,18 @@ type TerraformCloudRunMetricProvider struct {
 // TerraformCloudRunMetricProviderType Provider type
 type TerraformCloudRunMetricProviderType string
 
+// TestRunnerJobAgentConfig defines model for TestRunnerJobAgentConfig.
+type TestRunnerJobAgentConfig struct {
+	// DelaySeconds Delay in seconds before resolving the job.
+	DelaySeconds *int `json:"delaySeconds,omitempty"`
+
+	// Message Optional message to include in the job output.
+	Message *string `json:"message,omitempty"`
+
+	// Status Final status to set (e.g. "successful", "failure").
+	Status *string `json:"status,omitempty"`
+}
+
 // UserApprovalRecord defines model for UserApprovalRecord.
 type UserApprovalRecord struct {
 	CreatedAt     string         `json:"createdAt"`
@@ -1045,6 +1057,12 @@ type WorkflowInput struct {
 	union json.RawMessage
 }
 
+// WorkflowJobAgentConfig defines model for WorkflowJobAgentConfig.
+type WorkflowJobAgentConfig struct {
+	Config map[string]interface{} `json:"config"`
+	Id     string                 `json:"id"`
+}
+
 // WorkflowNumberInput defines model for WorkflowNumberInput.
 type WorkflowNumberInput struct {
 	Default float32                 `json:"default"`
@@ -1057,19 +1075,17 @@ type WorkflowNumberInputType string
 
 // WorkflowStep defines model for WorkflowStep.
 type WorkflowStep struct {
-	Id                     string `json:"id"`
-	WorkflowId             string `json:"workflowId"`
-	WorkflowStepTemplateId string `json:"workflowStepTemplateId"`
+	Id         string                  `json:"id"`
+	Index      int                     `json:"index"`
+	JobAgent   *WorkflowJobAgentConfig `json:"jobAgent,omitempty"`
+	WorkflowId string                  `json:"workflowId"`
 }
 
 // WorkflowStepTemplate defines model for WorkflowStepTemplate.
 type WorkflowStepTemplate struct {
-	Id       string `json:"id"`
-	JobAgent struct {
-		Config map[string]interface{} `json:"config"`
-		Id     string                 `json:"id"`
-	} `json:"jobAgent"`
-	Name string `json:"name"`
+	Id       string                 `json:"id"`
+	JobAgent WorkflowJobAgentConfig `json:"jobAgent"`
+	Name     string                 `json:"name"`
 }
 
 // WorkflowStringInput defines model for WorkflowStringInput.

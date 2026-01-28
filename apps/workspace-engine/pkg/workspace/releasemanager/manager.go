@@ -488,7 +488,7 @@ func (m *Manager) InvalidateReleaseTargetState(releaseTarget *oapi.ReleaseTarget
 	m.cache.Invalidate(releaseTarget)
 }
 
-// Planner returns the planner instance for backward compatibility.
+// Planner returns the planner instance for API
 func (m *Manager) Planner() *deployment.Planner {
 	return m.deployment.Planner()
 }

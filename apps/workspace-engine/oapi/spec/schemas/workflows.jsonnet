@@ -1,20 +1,22 @@
 local openapi = import '../lib/openapi.libsonnet';
 
 {
+  WorkflowJobAgentConfig: {
+    type: 'object',
+    required: ['id', 'config'],
+    properties: {
+      id: { type: 'string' },
+      config: { type: 'object', additionalProperties: true },
+    },
+  },
+
   WorkflowStepTemplate: {
     type: 'object',
     required: ['id', 'name', 'jobAgent'],
     properties: {
       name: { type: 'string' },
       id: { type: 'string' },
-      jobAgent: {
-        type: 'object',
-        required: ['id', 'config'],
-        properties: {
-          id: { type: 'string' },
-          config: { type: 'object', additionalProperties: true },
-        },
-      },
+      jobAgent: openapi.schemaRef('WorkflowJobAgentConfig'),
     },
   },
 
@@ -88,11 +90,12 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowStep: {
     type: 'object',
-    required: ['id', 'workflowId', 'workflowStepTemplateId'],
+    required: ['id', 'workflowId', 'index'],
     properties: {
       id: { type: 'string' },
+      index: { type: 'integer' },
       workflowId: { type: 'string' },
-      workflowStepTemplateId: { type: 'string' },
+      jobAgent: openapi.schemaRef('WorkflowJobAgentConfig'),
     },
   },
 }
