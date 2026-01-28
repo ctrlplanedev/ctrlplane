@@ -8,7 +8,7 @@ import (
 
 type Dispatchable interface {
 	Type() string
-	Dispatch(ctx context.Context, context RenderContext) error
+	Dispatch(ctx context.Context, context DispatchContext) error
 	Supports() Capabilities
 }
 
@@ -17,7 +17,7 @@ type Capabilities struct {
 	Deployments bool
 }
 
-type RenderContext struct {
+type DispatchContext struct {
 	Job            *oapi.Job               `json:"job"`
 	JobAgent       *oapi.JobAgent          `json:"jobAgent"`
 	JobAgentConfig oapi.JobAgentConfig     `json:"-"`
@@ -31,7 +31,7 @@ type RenderContext struct {
 	Inputs         map[string]any          `json:"inputs"`
 }
 
-func (r *RenderContext) Map() map[string]any {
+func (r *DispatchContext) Map() map[string]any {
 	data, err := json.Marshal(r)
 	if err != nil {
 		return nil

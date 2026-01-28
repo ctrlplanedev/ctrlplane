@@ -28,6 +28,6 @@ func (a *GithubAction) Supports() types.Capabilities {
 }
 
 // Dispatch implements types.Dispatchable.
-func (a *GithubAction) Dispatch(ctx context.Context, context types.RenderContext) error {
+func (a *GithubAction) Dispatch(ctx context.Context, context types.DispatchContext) error {
 	panic("unimplemented")
 }

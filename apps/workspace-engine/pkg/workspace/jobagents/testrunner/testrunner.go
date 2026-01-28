@@ -67,7 +67,7 @@ func (t *TestRunner) Supports() types.Capabilities {
 	}
 }
 
-func (t *TestRunner) Dispatch(ctx context.Context, renderCtx types.RenderContext) error {
+func (t *TestRunner) Dispatch(ctx context.Context, renderCtx types.DispatchContext) error {
 	ctx, span := tracer.Start(ctx, "TestRunner.Dispatch")
 	defer span.End()
 

@@ -47,7 +47,7 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("job agent type %s not found", jobAgent.Type)
 	}
 
-	renderContext := types.RenderContext{}
+	renderContext := types.DispatchContext{}
 	renderContext.Job = job
 	renderContext.JobAgent = jobAgent
 

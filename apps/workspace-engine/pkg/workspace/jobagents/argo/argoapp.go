@@ -42,7 +42,7 @@ func (a *ArgoApplication) Supports() types.Capabilities {
 	}
 }
 
-func (a *ArgoApplication) Dispatch(ctx context.Context, context types.RenderContext) error {
+func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchContext) error {
 	jobAgentConfig := context.JobAgentConfig
 	serverAddr, apiKey, template, err := a.parseJobAgentConfig(jobAgentConfig)
 	if err != nil {
@@ -93,7 +93,7 @@ func (a *ArgoApplication) getApplicationClient(serverAddr, apiKey string) (io.Cl
 	return client.NewApplicationClient()
 }
 
-func (a *ArgoApplication) getTemplatedApplication(ctx types.RenderContext, template string) (*v1alpha1.Application, error) {
+func (a *ArgoApplication) getTemplatedApplication(ctx types.DispatchContext, template string) (*v1alpha1.Application, error) {
 	t, err := templatefuncs.Parse("argoCDAgentConfig", template)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
