@@ -38,7 +38,7 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 	isWorkflow := job.WorkflowStepId != ""
 	caps := dispatcher.Supports()
-	
+
 	if isWorkflow && !caps.Workflows {
 		return fmt.Errorf("job agent type %s does not support workflows", jobAgent.Type)
 	}
