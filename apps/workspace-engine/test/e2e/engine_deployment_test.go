@@ -110,12 +110,10 @@ func TestEngine_DeploymentJobAgentConfiguration(t *testing.T) {
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentID1),
 			integration.JobAgentName("Agent 1"),
-			integration.JobAgentType("kubernetes"),
 		),
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentID2),
 			integration.JobAgentName("Agent 2"),
-			integration.JobAgentType("docker"),
 		),
 		integration.WithSystem(
 			integration.SystemName("test-system"),
@@ -374,12 +372,10 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentK8s),
 			integration.JobAgentName("Kubernetes Agent"),
-			integration.JobAgentType("kubernetes"),
 		),
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentDocker),
 			integration.JobAgentName("Docker Agent"),
-			integration.JobAgentType("docker"),
 		),
 		integration.WithSystem(
 			integration.SystemName("test-system"),

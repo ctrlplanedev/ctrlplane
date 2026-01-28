@@ -2,18 +2,16 @@ package deployment
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/jobs"
-	deploymentjobs "workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/trace/token"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
-	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -21,17 +19,17 @@ import (
 
 // Executor handles deployment execution (Phase 2: ACTION - Write operations).
 type Executor struct {
-	store         *store.Store
-	jobFactory    *jobs.Factory
-	jobDispatcher *deploymentjobs.Dispatcher
+	store            *store.Store
+	jobFactory       *jobs.Factory
+	jobAgentRegistry *jobagents.Registry
 }
 
 // NewExecutor creates a new deployment executor.
 func NewExecutor(store *store.Store, verification *verification.Manager) *Executor {
 	return &Executor{
-		store:         store,
-		jobFactory:    jobs.NewFactory(store),
-		jobDispatcher: deploymentjobs.NewDispatcher(store, verification),
+		store:            store,
+		jobFactory:       jobs.NewFactory(store),
+		jobAgentRegistry: jobagents.NewRegistry(store, verification),
 	}
 }
 
@@ -125,12 +123,8 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 
 		go func() {
 			dispatchCtx := context.WithoutCancel(ctx)
-			if err := e.jobDispatcher.DispatchJob(dispatchCtx, newJob); err != nil && !errors.Is(err, deploymentjobs.ErrUnsupportedJobAgent) {
+			if err := e.jobAgentRegistry.Dispatch(dispatchCtx, newJob); err != nil {
 				message := fmt.Sprintf("Failed to dispatch job to integration: %s", err.Error())
-				log.Error("error dispatching job to integration",
-					"job_id", newJob.Id,
-					"error", err.Error(),
-					"message", message)
 				newJob.Status = oapi.JobStatusInvalidJobAgent
 				newJob.UpdatedAt = time.Now()
 				newJob.Message = &message

@@ -40,12 +40,13 @@ func (a *ArgoApplication) Type() string {
 func (a *ArgoApplication) Supports() types.Capabilities {
 	return types.Capabilities{
 		Workflows:   true,
-		Deployments: false,
+		Deployments: true,
 	}
 }
 
 func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchContext) error {
 	jobAgentConfig := context.JobAgentConfig
+	log.Info("Dispatching ArgoCD application", "jobAgentConfig", jobAgentConfig)
 	serverAddr, apiKey, template, err := a.parseJobAgentConfig(jobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)

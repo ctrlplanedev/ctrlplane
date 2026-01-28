@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
@@ -17,16 +17,16 @@ import (
 var hookTracer = otel.Tracer("RollbackHooks")
 
 type RollbackHooks struct {
-	store      *store.Store
-	dispatcher *jobs.Dispatcher
+	store            *store.Store
+	jobAgentRegistry *jobagents.Registry
 }
 
 var _ verification.VerificationHooks = &RollbackHooks{}
 
-func NewRollbackHooks(store *store.Store, dispatcher *jobs.Dispatcher) *RollbackHooks {
+func NewRollbackHooks(store *store.Store, verificationManager *verification.Manager) *RollbackHooks {
 	return &RollbackHooks{
-		store:      store,
-		dispatcher: dispatcher,
+		store:            store,
+		jobAgentRegistry: jobagents.NewRegistry(store, verificationManager),
 	}
 }
 
@@ -124,7 +124,7 @@ func (h *RollbackHooks) OnVerificationComplete(ctx context.Context, verification
 
 	h.store.Jobs.Upsert(ctx, &newJob)
 
-	if err := h.dispatcher.DispatchJob(ctx, &newJob); err != nil {
+	if err := h.jobAgentRegistry.Dispatch(ctx, &newJob); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "rollback execution failed")
 		return err
