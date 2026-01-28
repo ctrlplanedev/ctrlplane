@@ -3,22 +3,37 @@ package jobagents
 import (
 	"context"
 	"fmt"
+
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents/argo"
+	"workspace-engine/pkg/workspace/jobagents/github"
+	"workspace-engine/pkg/workspace/jobagents/terraformcloud"
+	"workspace-engine/pkg/workspace/jobagents/testrunner"
+	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/store"
 )
 
 type Registry struct {
-	dispatchers map[string]Dispatchable
+	dispatchers map[string]types.Dispatchable
 	store       *store.Store
 }
 
 func NewRegistry(store *store.Store) *Registry {
-	dispatchers := make(map[string]Dispatchable)
+	r := &Registry{}
+	r.dispatchers = make(map[string]types.Dispatchable)
+	r.store = store
 
-	return &Registry{
-		dispatchers: dispatchers,
-		store:       store,
-	}
+	r.Register(testrunner.New(store))
+	r.Register(argo.NewArgoApplication(store))
+	r.Register(terraformcloud.NewTFE(store))
+	r.Register(github.NewGithubAction(store))
+
+	return r
+}
+
+// Register adds a dispatcher to the registry.
+func (r *Registry) Register(dispatcher types.Dispatchable) {
+	r.dispatchers[dispatcher.Type()] = dispatcher
 }
 
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
@@ -32,7 +47,7 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("job agent type %s not found", jobAgent.Type)
 	}
 
-	renderContext := RenderContext{}
+	renderContext := types.RenderContext{}
 	renderContext.Job = job
 	renderContext.JobAgent = jobAgent
 

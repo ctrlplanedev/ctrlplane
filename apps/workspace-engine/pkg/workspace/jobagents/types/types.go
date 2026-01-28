@@ -1,4 +1,4 @@
-package jobagents
+package types
 
 import (
 	"context"
