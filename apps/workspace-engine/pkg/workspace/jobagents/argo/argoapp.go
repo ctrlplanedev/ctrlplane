@@ -46,7 +46,6 @@ func (a *ArgoApplication) Supports() types.Capabilities {
 
 func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchContext) error {
 	jobAgentConfig := context.JobAgentConfig
-	log.Info("Dispatching ArgoCD application", "jobAgentConfig", jobAgentConfig)
 	serverAddr, apiKey, template, err := a.parseJobAgentConfig(jobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
