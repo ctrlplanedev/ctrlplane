@@ -36,6 +36,17 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	renderContext.Job = job
 	renderContext.JobAgent = jobAgent
 
+	isWorkflow := job.WorkflowStepId != ""
+	caps := dispatcher.Supports()
+	
+	if isWorkflow && !caps.Workflows {
+		return fmt.Errorf("job agent type %s does not support workflows", jobAgent.Type)
+	}
+
+	if !isWorkflow && !caps.Deployments {
+		return fmt.Errorf("job agent type %s does not support deployments", jobAgent.Type)
+	}
+
 	if jobWithRelease, _ := r.store.Jobs.GetWithRelease(job.Id); jobWithRelease != nil {
 		renderContext.Release = &jobWithRelease.Release
 		renderContext.Deployment = jobWithRelease.Deployment
