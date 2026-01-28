@@ -22,12 +22,6 @@ func createMatchAllSelector() *oapi.Selector {
 	return selector
 }
 
-func createDeploymentJobAgentConfig() oapi.DeploymentJobAgentConfig {
-	jobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	_ = jobAgentConfig.UnmarshalJSON([]byte(`{"type": "custom"}`))
-	return jobAgentConfig
-}
-
 func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 	ctx := context.Background()
 	cs := statechange.NewChangeSet[any]()
@@ -49,7 +43,7 @@ func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: createDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -155,7 +149,7 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: createDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -233,7 +227,7 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: createDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -312,7 +306,7 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: createDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
@@ -425,7 +419,7 @@ func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
 		SystemId:       "system-1",
-		JobAgentConfig: createDeploymentJobAgentConfig(),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 

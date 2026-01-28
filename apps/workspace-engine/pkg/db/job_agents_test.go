@@ -43,7 +43,7 @@ func validateRetrievedJobAgents(t *testing.T, actualJobAgents []*oapi.JobAgent, 
 		}
 
 		// Validate config
-		expectedConfigJson, err := expected.Config.MarshalJSON()
+		expectedConfigJson, err := json.Marshal(expected.Config)
 		if err != nil {
 			t.Fatalf("failed to marshal expected config: %v", err)
 		}
@@ -51,7 +51,7 @@ func validateRetrievedJobAgents(t *testing.T, actualJobAgents []*oapi.JobAgent, 
 		if err := json.Unmarshal(expectedConfigJson, &expectedConfig); err != nil {
 			t.Fatalf("failed to unmarshal expected config: %v", err)
 		}
-		actualConfigJson, err := actual.Config.MarshalJSON()
+		actualConfigJson, err := json.Marshal(actual.Config)
 		if err != nil {
 			t.Fatalf("failed to marshal actual config: %v", err)
 		}

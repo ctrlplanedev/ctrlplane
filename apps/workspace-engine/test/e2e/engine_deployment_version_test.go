@@ -652,18 +652,15 @@ func TestEngine_DeploymentVersionJobsWithJobAgentConfig(t *testing.T) {
 		break
 	}
 
-	config, err := job.JobAgentConfig.AsFullCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job job agent config: %v", err)
+	config := job.JobAgentConfig
+	if config["timeout"] != float64(300) {
+		t.Errorf("expected timeout=300, got %v", config["timeout"])
 	}
-	if config.AdditionalProperties["timeout"] != float64(300) {
-		t.Errorf("expected timeout=300, got %v", config.AdditionalProperties["timeout"])
+	if config["retries"] != float64(3) {
+		t.Errorf("expected retries=3, got %v", config["retries"])
 	}
-	if config.AdditionalProperties["retries"] != float64(3) {
-		t.Errorf("expected retries=3, got %v", config.AdditionalProperties["retries"])
-	}
-	if config.AdditionalProperties["deploy_script"] != "/scripts/deploy.sh" {
-		t.Errorf("expected deploy_script=/scripts/deploy.sh, got %v", config.AdditionalProperties["deploy_script"])
+	if config["deploy_script"] != "/scripts/deploy.sh" {
+		t.Errorf("expected deploy_script=/scripts/deploy.sh, got %v", config["deploy_script"])
 	}
 }
 

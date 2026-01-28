@@ -52,25 +52,6 @@ func createEmptyJsonSelector(t *testing.T) *oapi.Selector {
 	return selector
 }
 
-func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfig {
-	payload := map[string]interface{}{}
-	for k, v := range m {
-		payload[k] = v
-	}
-	payload["type"] = "custom"
-
-	b, err := json.Marshal(payload)
-	if err != nil {
-		panic(err)
-	}
-
-	var cfg oapi.DeploymentJobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
-		panic(err)
-	}
-	return cfg
-}
-
 func TestMatch_JsonSelector_Resource(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -317,9 +298,9 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 				Name:     "api-deployment",
 				SystemId: "sys1",
 				Slug:     "api-deployment",
-				JobAgentConfig: customJobAgentConfig(map[string]interface{}{
+				JobAgentConfig: oapi.JobAgentConfig{
 					"region": "us-east-1",
-				}),
+				},
 			},
 			wantMatch: true,
 			wantErr:   false,
@@ -336,7 +317,7 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 				Name:           "Production API",
 				SystemId:       "sys1",
 				Slug:           "prod-api",
-				JobAgentConfig: customJobAgentConfig(nil),
+				JobAgentConfig: oapi.JobAgentConfig{},
 			},
 			wantMatch: true,
 			wantErr:   false,
@@ -353,7 +334,7 @@ func TestMatch_JsonSelector_Deployment(t *testing.T) {
 				Name:           "Staging API",
 				SystemId:       "sys1",
 				Slug:           "staging-api",
-				JobAgentConfig: customJobAgentConfig(nil),
+				JobAgentConfig: oapi.JobAgentConfig{},
 			},
 			wantMatch: false,
 			wantErr:   false,
@@ -822,7 +803,7 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 				Name:           "api-deployment",
 				SystemId:       "sys1",
 				Slug:           "api-deployment",
-				JobAgentConfig: customJobAgentConfig(nil),
+				JobAgentConfig: oapi.JobAgentConfig{},
 			},
 			wantMatch: true,
 			wantErr:   false,
@@ -835,7 +816,7 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 				Name:           "Production API",
 				SystemId:       "sys1",
 				Slug:           "prod-api",
-				JobAgentConfig: customJobAgentConfig(nil),
+				JobAgentConfig: oapi.JobAgentConfig{},
 			},
 			wantMatch: true,
 			wantErr:   false,
@@ -848,7 +829,7 @@ func TestMatch_CelSelector_Deployment(t *testing.T) {
 				Name:           "Staging API",
 				SystemId:       "sys1",
 				Slug:           "staging-api",
-				JobAgentConfig: customJobAgentConfig(nil),
+				JobAgentConfig: oapi.JobAgentConfig{},
 			},
 			wantMatch: false,
 			wantErr:   false,

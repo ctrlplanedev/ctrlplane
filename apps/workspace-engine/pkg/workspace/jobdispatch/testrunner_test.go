@@ -64,20 +64,13 @@ func newMockProducerFactory(producer *mockProducer) func() (messaging.Producer, 
 	}
 }
 
-func createJobAgentConfig(t *testing.T, configPayload map[string]any) oapi.FullJobAgentConfig {
+func createJobAgentConfig(_ *testing.T, configPayload map[string]any) oapi.JobAgentConfig {
 	if configPayload == nil {
 		configPayload = map[string]any{}
 	}
-	configPayload["type"] = oapi.TestRunner
-	configJSON, err := json.Marshal(configPayload)
-	if err != nil {
-		t.Fatalf("Failed to marshal test runner job agent config: %v", err)
-	}
-	config := oapi.FullJobAgentConfig{}
-	if err := config.UnmarshalJSON(configJSON); err != nil {
-		t.Fatalf("Failed to unmarshal test runner job agent config: %v", err)
-	}
-	return config
+	// Always set the type to test-runner for these tests
+	configPayload["type"] = "test-runner"
+	return configPayload
 }
 
 func TestTestRunnerDispatcher_DispatchJob_DefaultConfig(t *testing.T) {
@@ -206,7 +199,7 @@ func TestTestRunnerDispatcher_DispatchJob_FailureStatus(t *testing.T) {
 		Id:     "test-job-789",
 		Status: oapi.JobStatusPending,
 		JobAgentConfig: createJobAgentConfig(t, map[string]any{
-			"status": oapi.Failure,
+			"status": "failure",
 		}),
 		UpdatedAt: time.Now(),
 	}

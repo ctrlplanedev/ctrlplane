@@ -37,7 +37,7 @@ func (m *mockDeployment) CompactionKey() (string, string) {
 	return "mock_deployment", m.ID
 }
 
-func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfig {
+func customJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
 	// Minimal approach for tests: force discriminator, marshal, and rely on generated UnmarshalJSON.
 	payload := map[string]interface{}{}
 	for k, v := range m {
@@ -50,14 +50,14 @@ func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfi
 		panic(err)
 	}
 
-	var cfg oapi.DeploymentJobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
+	var cfg oapi.JobAgentConfig
+	if err := json.Unmarshal(b, &cfg); err != nil {
 		panic(err)
 	}
 	return cfg
 }
 
-func customFullJobAgentConfig(m map[string]interface{}) oapi.FullJobAgentConfig {
+func customFullJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
 	// For Job.jobAgentConfig (resolved/merged config)
 	payload := map[string]interface{}{}
 	for k, v := range m {
@@ -70,8 +70,8 @@ func customFullJobAgentConfig(m map[string]interface{}) oapi.FullJobAgentConfig 
 		panic(err)
 	}
 
-	var cfg oapi.FullJobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
+	var cfg oapi.JobAgentConfig
+	if err := json.Unmarshal(b, &cfg); err != nil {
 		panic(err)
 	}
 	return cfg
@@ -91,7 +91,7 @@ func customJobAgentDefaults(m map[string]interface{}) oapi.JobAgentConfig {
 	}
 
 	var cfg oapi.JobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
+	if err := json.Unmarshal(b, &cfg); err != nil {
 		panic(err)
 	}
 	return cfg

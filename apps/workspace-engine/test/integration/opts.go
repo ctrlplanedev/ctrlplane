@@ -405,7 +405,7 @@ func DeploymentJobAgentConfig(config map[string]any) DeploymentOption {
 		if config == nil {
 			config = map[string]any{}
 		}
-		cfg := c.CustomDeploymentJobAgentConfig(config)
+		cfg := config
 		d.JobAgentConfig = cfg
 	}
 }
@@ -701,7 +701,7 @@ func JobAgentType(agentType string) JobAgentOption {
 
 func JobAgentConfig(config map[string]any) JobAgentOption {
 	return func(_ *TestWorkspace, ja *oapi.JobAgent) {
-		cfg := c.CustomJobAgentConfig(config)
+		cfg := config
 		ja.Config = cfg
 	}
 }

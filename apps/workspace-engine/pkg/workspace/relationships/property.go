@@ -110,7 +110,7 @@ func getDeploymentProperty(deployment *oapi.Deployment, propertyPath []string) (
 		if len(propertyPath) == 1 {
 			return convertValue(deployment.JobAgentConfig)
 		}
-		jobAgentConfigJSON, err := deployment.JobAgentConfig.MarshalJSON()
+		jobAgentConfigJSON, err := json.Marshal(deployment.JobAgentConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal deployment job agent config: %v", err)
 		}

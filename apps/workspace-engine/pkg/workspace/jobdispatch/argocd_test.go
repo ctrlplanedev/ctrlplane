@@ -748,22 +748,15 @@ func createTestStore(t *testing.T) *store.Store {
 }
 
 // Helper to create a job config
-func createArgoCDJobConfig(t *testing.T, templateStr string) oapi.FullJobAgentConfig {
-	configPayload := oapi.FullArgoCDJobAgentConfig{
-		Type:      "argo-cd",
-		ServerUrl: "argocd.example.com",
-		ApiKey:    "test-api-key",
-		Template:  templateStr,
+func createArgoCDJobConfig(t *testing.T, templateStr string) oapi.JobAgentConfig {
+	configPayload := oapi.JobAgentConfig{
+		"type":      "argo-cd",
+		"serverUrl": "argocd.example.com",
+		"apiKey":    "test-api-key",
+		"template":  &templateStr,
 	}
 
-	configJSON, err := json.Marshal(configPayload)
-	require.NoError(t, err)
-
-	config := oapi.FullJobAgentConfig{}
-	err = config.UnmarshalJSON(configJSON)
-	require.NoError(t, err)
-
-	return config
+	return configPayload
 }
 
 func TestArgoCDDispatcher_DispatchJob_Success(t *testing.T) {

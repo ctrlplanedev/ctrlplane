@@ -284,17 +284,14 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 
 	// Verify deployment has job agent config
 	d, _ := engine.Workspace().Deployments().Get(deploymentID)
-	config, err := d.JobAgentConfig.AsDeploymentCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get deployment job agent config: %v", err)
+	config := d.JobAgentConfig
+
+	if config["namespace"] != "custom-namespace" {
+		t.Fatalf("deployment job agent config namespace mismatch: got %v, want custom-namespace", config["namespace"])
 	}
 
-	if config.AdditionalProperties["namespace"] != "custom-namespace" {
-		t.Fatalf("deployment job agent config namespace mismatch: got %v, want custom-namespace", config.AdditionalProperties["namespace"])
-	}
-
-	if timeout, ok := config.AdditionalProperties["timeout"].(float64); !ok || timeout != 300 {
-		t.Fatalf("deployment job agent config timeout mismatch: got %v, want 300", config.AdditionalProperties["timeout"])
+	if timeout, ok := config["timeout"].(float64); !ok || timeout != 300 {
+		t.Fatalf("deployment job agent config timeout mismatch: got %v, want 300", config["timeout"])
 	}
 
 	// Verify job was created with merged config
@@ -308,18 +305,15 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 		job = j
 		break
 	}
-	jobConfig, err := job.JobAgentConfig.AsFullCustomJobAgentConfig()
-	if err != nil {
-		t.Fatalf("failed to get job job agent config: %v", err)
-	}
+	jobConfig := job.JobAgentConfig
 
 	// Verify merged config includes deployment-specific settings
-	if jobConfig.AdditionalProperties["namespace"] != "custom-namespace" {
-		t.Fatalf("job config namespace mismatch: got %v, want custom-namespace", jobConfig.AdditionalProperties["namespace"])
+	if jobConfig["namespace"] != "custom-namespace" {
+		t.Fatalf("job config namespace mismatch: got %v, want custom-namespace", jobConfig["namespace"])
 	}
 
-	if timeout, ok := jobConfig.AdditionalProperties["timeout"].(float64); !ok || timeout != 300 {
-		t.Fatalf("job config timeout mismatch: got %v, want 300", jobConfig.AdditionalProperties["timeout"])
+	if timeout, ok := jobConfig["timeout"].(float64); !ok || timeout != 300 {
+		t.Fatalf("job config timeout mismatch: got %v, want 300", jobConfig["timeout"])
 	}
 }
 

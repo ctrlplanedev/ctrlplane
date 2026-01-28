@@ -47,7 +47,7 @@ func createBenchDeployment(systemID, id, name string) *oapi.Deployment {
 		Description:      &description,
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,
-		JobAgentConfig:   mustCreateDeploymentJobAgentConfig(),
+		JobAgentConfig:   oapi.JobAgentConfig{},
 	}
 }
 

@@ -57,7 +57,7 @@ func createTestEnvironment(systemID, environmentID, name string) *oapi.Environme
 	}
 }
 
-func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfig {
+func customJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
 	payload := map[string]interface{}{}
 	for k, v := range m {
 		payload[k] = v
@@ -68,8 +68,8 @@ func customJobAgentConfig(m map[string]interface{}) oapi.DeploymentJobAgentConfi
 		panic(err)
 	}
 
-	var cfg oapi.DeploymentJobAgentConfig
-	if err := cfg.UnmarshalJSON(b); err != nil {
+	var cfg oapi.JobAgentConfig
+	if err := json.Unmarshal(b, &cfg); err != nil {
 		panic(err)
 	}
 	return cfg

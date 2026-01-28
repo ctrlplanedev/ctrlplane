@@ -2,7 +2,6 @@ package relationships
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -975,21 +974,10 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 	jobAgentId := "agent-123"
 
 	customJobAgentConfigMap := map[string]any{
-		"type": "custom",
 		"kubernetes": map[string]any{
 			"namespace": "default",
 			"cluster":   "prod",
 		},
-	}
-
-	customJobAgentConfigJSON, err := json.Marshal(customJobAgentConfigMap)
-	if err != nil {
-		t.Fatalf("Failed to marshal custom job agent config: %v", err)
-	}
-	customJobAgentConfig := oapi.DeploymentJobAgentConfig{}
-	err = customJobAgentConfig.UnmarshalJSON(customJobAgentConfigJSON)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal custom job agent config: %v", err)
 	}
 
 	tests := []struct {
@@ -1079,7 +1067,7 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			deployment: &oapi.Deployment{
 				Id:             "deploy-123",
 				SystemId:       "system-1",
-				JobAgentConfig: customJobAgentConfig,
+				JobAgentConfig: customJobAgentConfigMap,
 			},
 			propertyPath: []string{"job_agent_config", "kubernetes", "namespace"},
 			wantValue:    "default",

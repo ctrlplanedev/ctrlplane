@@ -329,7 +329,7 @@ func TestReleaseTarget_WriteMultipleDifferent(t *testing.T) {
 		Slug:           "test-deployment-2",
 		SystemId:       systemID,
 		Description:    &deploymentDescription2,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := writeDeployment(ctx, deployment2, tx); err != nil {
 		t.Fatalf("failed to create deployment 2: %v", err)

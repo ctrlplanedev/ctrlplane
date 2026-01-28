@@ -60,7 +60,7 @@ func NewTestRunnerDispatcherWithOptions(store *store.Store, opts TestRunnerDispa
 	return d
 }
 
-func (d *TestRunnerDispatcher) getDelay(cfg oapi.TestRunnerJobAgentConfig) time.Duration {
+func (d *TestRunnerDispatcher) getDelay(cfg *oapi.TestRunnerJobAgentConfig) time.Duration {
 	if cfg.DelaySeconds != nil {
 		return time.Duration(*cfg.DelaySeconds) * time.Second
 	}
@@ -68,7 +68,7 @@ func (d *TestRunnerDispatcher) getDelay(cfg oapi.TestRunnerJobAgentConfig) time.
 }
 
 func (d *TestRunnerDispatcher) getFinalStatus(cfg oapi.TestRunnerJobAgentConfig) oapi.JobStatus {
-	if cfg.Status != nil && *cfg.Status == oapi.Failure {
+	if cfg.Status != nil && *cfg.Status == string(oapi.JobStatusFailure) {
 		return oapi.JobStatusFailure
 	}
 	return oapi.JobStatusSuccessful
@@ -82,7 +82,7 @@ func (d *TestRunnerDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) e
 
 	span.SetAttributes(attribute.String("job.id", job.Id))
 
-	cfg, err := job.JobAgentConfig.AsFullTestRunnerJobAgentConfig()
+	cfg, err := job.GetTestRunnerJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
@@ -90,7 +90,7 @@ func (d *TestRunnerDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) e
 	}
 
 	delay := d.getDelay(cfg)
-	finalStatus := d.getFinalStatus(cfg)
+	finalStatus := d.getFinalStatus(*cfg)
 	message := ""
 	if cfg.Message != nil {
 		message = *cfg.Message

@@ -49,7 +49,7 @@ func validateRetrievedDeployments(t *testing.T, actualDeployments []*oapi.Deploy
 		}
 
 		// Validate JobAgentConfig
-		expectedJobAgentConfigJson, err := expected.JobAgentConfig.MarshalJSON()
+		expectedJobAgentConfigJson, err := json.Marshal(expected.JobAgentConfig)
 		if err != nil {
 			t.Fatalf("failed to marshal expected job agent config: %v", err)
 		}
@@ -59,7 +59,7 @@ func validateRetrievedDeployments(t *testing.T, actualDeployments []*oapi.Deploy
 			t.Fatalf("failed to unmarshal expected job agent config: %v", err)
 		}
 
-		actualJobAgentConfigJson, err := actual.JobAgentConfig.MarshalJSON()
+		actualJobAgentConfigJson, err := json.Marshal(actual.JobAgentConfig)
 		if err != nil {
 			t.Fatalf("failed to marshal actual job agent config: %v", err)
 		}
@@ -107,7 +107,7 @@ func TestDBDeployments_BasicWrite(t *testing.T) {
 		Slug:             fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:         systemID,
 		Description:      &description,
-		JobAgentConfig:   customJobAgentConfig(nil),
+		JobAgentConfig:   oapi.JobAgentConfig{},
 		ResourceSelector: nil, // Selector is complex type, skipping for basic test
 	}
 
@@ -162,7 +162,7 @@ func TestDBDeployments_BasicWriteAndDelete(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &deploymentDescription,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 
 	err = writeDeployment(t.Context(), deployment, tx)
@@ -239,7 +239,7 @@ func TestDBDeployments_BasicWriteAndUpdate(t *testing.T) {
 		Slug:           fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:       systemID,
 		Description:    &description,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 
 	err = writeDeployment(t.Context(), deployment, tx)
@@ -262,10 +262,10 @@ func TestDBDeployments_BasicWriteAndUpdate(t *testing.T) {
 	updatedDescription := "updated description"
 	deployment.Name = deployment.Name + "-updated"
 	deployment.Description = &updatedDescription
-	deployment.JobAgentConfig = customJobAgentConfig(map[string]interface{}{
+	deployment.JobAgentConfig = oapi.JobAgentConfig{
 		"key":  "value",
 		"port": 8080.0,
-	})
+	}
 
 	err = writeDeployment(t.Context(), deployment, tx)
 	if err != nil {
@@ -317,7 +317,7 @@ func TestDBDeployments_WithJobAgentConfig(t *testing.T) {
 		Slug:        fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:    systemID,
 		Description: &deploymentDescription,
-		JobAgentConfig: customJobAgentConfig(map[string]interface{}{
+		JobAgentConfig: oapi.JobAgentConfig{
 			"string": "value",
 			"number": 42.0,
 			"bool":   true,
@@ -325,7 +325,7 @@ func TestDBDeployments_WithJobAgentConfig(t *testing.T) {
 				"key": "value",
 			},
 			"array": []interface{}{"item1", "item2"},
-		}),
+		},
 	}
 
 	err = writeDeployment(t.Context(), deployment, tx)
@@ -362,7 +362,7 @@ func TestDBDeployments_NonexistentSystemThrowsError(t *testing.T) {
 		Slug:           "test-deployment",
 		SystemId:       uuid.New().String(), // Non-existent system
 		Description:    &description,
-		JobAgentConfig: customJobAgentConfig(nil),
+		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 
 	err = writeDeployment(t.Context(), deployment, tx)
@@ -426,7 +426,7 @@ func TestDBDeployments_WithJsonResourceSelector(t *testing.T) {
 		Slug:             fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:         systemID,
 		Description:      &description,
-		JobAgentConfig:   customJobAgentConfig(nil),
+		JobAgentConfig:   oapi.JobAgentConfig{},
 		ResourceSelector: resourceSelector,
 	}
 
@@ -525,7 +525,7 @@ func TestDBDeployments_UpdateResourceSelector(t *testing.T) {
 		Slug:             fmt.Sprintf("test-deployment-%s", deploymentID[:8]),
 		SystemId:         systemID,
 		Description:      &description,
-		JobAgentConfig:   customJobAgentConfig(nil),
+		JobAgentConfig:   oapi.JobAgentConfig{},
 		ResourceSelector: initialSelector,
 	}
 

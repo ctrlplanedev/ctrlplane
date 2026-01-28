@@ -2,7 +2,6 @@ package jobdispatch
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"testing"
 
@@ -54,31 +53,21 @@ func TestGithubDispatcher_DispatchJob_Success(t *testing.T) {
 		return mockClient, nil
 	})
 
-	configPayload := oapi.FullGithubJobAgentConfig{
-		Type:           "github-app",
-		InstallationId: 12345,
-		Owner:          "test-owner",
-		Repo:           "test-repo",
-		WorkflowId:     456,
-	}
-
-	configJSON, err := json.Marshal(configPayload)
-	if err != nil {
-		t.Fatalf("Failed to marshal github job agent config: %v", err)
-	}
-	config := oapi.FullJobAgentConfig{}
-	if err := config.UnmarshalJSON(configJSON); err != nil {
-		t.Fatalf("Failed to unmarshal github job agent config: %v", err)
+	configPayload := map[string]any{
+		"installationId": 12345,
+		"owner":          "test-owner",
+		"repo":           "test-repo",
+		"workflowId":     456,
 	}
 
 	// Create test job
 	job := &oapi.Job{
 		Id:             "test-job-123",
-		JobAgentConfig: config,
+		JobAgentConfig: configPayload,
 	}
 
 	// Dispatch the job
-	if err = dispatcher.DispatchJob(context.Background(), job); err != nil {
+	if err := dispatcher.DispatchJob(context.Background(), job); err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
@@ -120,28 +109,19 @@ func TestGithubDispatcher_DispatchJob_WithCustomRef(t *testing.T) {
 	})
 
 	customRef := "develop"
-	configPayload := oapi.FullGithubJobAgentConfig{
-		Type:           "github-app",
-		InstallationId: 12345,
-		Owner:          "test-owner",
-		Repo:           "test-repo",
-		WorkflowId:     789,
-		Ref:            &customRef,
-	}
-	configJSON, err := json.Marshal(configPayload)
-	if err != nil {
-		t.Fatalf("Failed to marshal github job agent config: %v", err)
-	}
-	config := oapi.FullJobAgentConfig{}
-	if err := config.UnmarshalJSON(configJSON); err != nil {
-		t.Fatalf("Failed to unmarshal github job agent config: %v", err)
+	configPayload := map[string]any{
+		"installationId": 12345,
+		"owner":          "test-owner",
+		"repo":           "test-repo",
+		"workflowId":     789,
+		"ref":            customRef,
 	}
 	job := &oapi.Job{
 		Id:             "test-job-456",
-		JobAgentConfig: config,
+		JobAgentConfig: configPayload,
 	}
 
-	if err = dispatcher.DispatchJob(context.Background(), job); err != nil {
+	if err := dispatcher.DispatchJob(context.Background(), job); err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
@@ -165,27 +145,18 @@ func TestGithubDispatcher_DispatchJob_EntityNotFound(t *testing.T) {
 		return mockClient, nil
 	})
 
-	configPayload := oapi.FullGithubJobAgentConfig{
-		Type:           "github-app",
-		InstallationId: 99999,
-		Owner:          "nonexistent-owner",
-		Repo:           "test-repo",
-		WorkflowId:     123,
-	}
-	configJSON, err := json.Marshal(configPayload)
-	if err != nil {
-		t.Fatalf("Failed to marshal github job agent config: %v", err)
-	}
-	config := oapi.FullJobAgentConfig{}
-	if err := config.UnmarshalJSON(configJSON); err != nil {
-		t.Fatalf("Failed to unmarshal github job agent config: %v", err)
+	configPayload := map[string]any{
+		"installationId": 99999,
+		"owner":          "nonexistent-owner",
+		"repo":           "test-repo",
+		"workflowId":     123,
 	}
 	job := &oapi.Job{
 		Id:             "test-job-789",
-		JobAgentConfig: config,
+		JobAgentConfig: configPayload,
 	}
 
-	err = dispatcher.DispatchJob(context.Background(), job)
+	err := dispatcher.DispatchJob(context.Background(), job)
 	if err == nil {
 		t.Fatal("Expected error for missing GitHub entity, got nil")
 	}
@@ -208,7 +179,7 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 			installationID int
 			slug           string
 		}
-		searchCfg   oapi.FullGithubJobAgentConfig
+		searchCfg   map[string]any
 		expectFound bool
 	}{
 		{
@@ -220,9 +191,9 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 				{12345, "owner1"},
 				{67890, "owner2"},
 			},
-			searchCfg: oapi.FullGithubJobAgentConfig{
-				InstallationId: 12345,
-				Owner:          "owner1",
+			searchCfg: map[string]any{
+				"installationId": 12345,
+				"owner":          "owner1",
 			},
 			expectFound: true,
 		},
@@ -234,9 +205,9 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 			}{
 				{12345, "owner1"},
 			},
-			searchCfg: oapi.FullGithubJobAgentConfig{
-				InstallationId: 99999,
-				Owner:          "owner1",
+			searchCfg: map[string]any{
+				"installationId": 99999,
+				"owner":          "owner1",
 			},
 			expectFound: false,
 		},
@@ -248,9 +219,9 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 			}{
 				{12345, "owner1"},
 			},
-			searchCfg: oapi.FullGithubJobAgentConfig{
-				InstallationId: 12345,
-				Owner:          "wrong-owner",
+			searchCfg: map[string]any{
+				"installationId": 12345,
+				"owner":          "wrong-owner",
 			},
 			expectFound: false,
 		},
@@ -274,14 +245,14 @@ func TestGithubDispatcher_GetGithubEntity(t *testing.T) {
 			}
 
 			dispatcher := NewGithubDispatcher(mockStore)
-			result, exists := dispatcher.store.GithubEntities.Get(tt.searchCfg.Owner, tt.searchCfg.InstallationId)
+			result, exists := dispatcher.store.GithubEntities.Get(tt.searchCfg["owner"].(string), tt.searchCfg["installationId"].(int))
 
 			if tt.expectFound {
 				if !exists {
 					t.Fatalf("Expected to find entity, but it was not found")
 				}
-				require.Equal(t, tt.searchCfg.InstallationId, result.InstallationId)
-				require.Equal(t, tt.searchCfg.Owner, result.Slug)
+				require.Equal(t, tt.searchCfg["installationId"].(int), result.InstallationId)
+				require.Equal(t, tt.searchCfg["owner"].(string), result.Slug)
 			} else {
 				if exists {
 					t.Fatalf("Expected entity not to be found, but found: %+v", result)

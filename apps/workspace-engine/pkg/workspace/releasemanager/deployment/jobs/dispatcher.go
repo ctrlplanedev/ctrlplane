@@ -34,23 +34,22 @@ func (d *Dispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("job agent %s not found", job.JobAgentId)
 	}
 
-	config, err := job.JobAgentConfig.Discriminator()
-	if err != nil {
-		return fmt.Errorf("failed to get job agent config discriminator: %w", err)
-	}
-	switch config {
-	case "github-app":
-		return jobdispatch.NewGithubDispatcher(d.store).DispatchJob(ctx, job)
-	case "argo-cd":
+	if _, err := job.GetArgoCDJobAgentConfig(); err == nil {
 		return jobdispatch.NewArgoCDDispatcher(d.store, d.verification).DispatchJob(ctx, job)
-	case "tfe":
-		return jobdispatch.NewTerraformCloudDispatcher(d.store, d.verification).DispatchJob(ctx, job)
-	case "test-runner":
-		return jobdispatch.NewTestRunnerDispatcher(d.store).DispatchJob(ctx, job)
-	case "custom":
-		// For now custom job agents will handle job processing themselves
-		return nil
-	default:
-		return ErrUnsupportedJobAgent
 	}
+
+	if _, err := job.GetGithubJobAgentConfig(); err == nil {
+		return jobdispatch.NewGithubDispatcher(d.store).DispatchJob(ctx, job)
+	}
+
+	if _, err := job.GetTerraformCloudJobAgentConfig(); err == nil {
+		return jobdispatch.NewTerraformCloudDispatcher(d.store, d.verification).DispatchJob(ctx, job)
+	}
+
+	if _, err := job.GetTestRunnerJobAgentConfig(); err == nil {
+		return jobdispatch.NewTestRunnerDispatcher(d.store).DispatchJob(ctx, job)
+	}
+
+	// Custom job agents handle job processing themselves - no dispatch needed
+	return nil
 }

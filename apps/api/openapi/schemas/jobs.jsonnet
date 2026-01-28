@@ -1,5 +1,10 @@
 local openapi = import '../lib/openapi.libsonnet';
 
+local jobAgentConfig = {
+  type: 'object',
+  additionalProperties: true,
+};
+
 local Job = {
   type: 'object',
   required: [
@@ -16,7 +21,7 @@ local Job = {
     id: { type: 'string' },
     releaseId: { type: 'string' },
     jobAgentId: { type: 'string' },
-    jobAgentConfig: openapi.schemaRef('FullJobAgentConfig'),
+    jobAgentConfig: jobAgentConfig,
     externalId: { type: 'string' },
     status: openapi.schemaRef('JobStatus'),
     createdAt: { type: 'string', format: 'date-time' },
@@ -76,59 +81,6 @@ local JobPropertyKeys = std.objectFields(Job.properties);
     oneOf: [
       { required: ['id'] },
       { required: ['agentId', 'externalId'] },
-    ],
-  },
-
-  FullJobAgentConfig: {
-    oneOf: [
-      openapi.schemaRef('FullGithubJobAgentConfig'),
-      openapi.schemaRef('FullArgoCDJobAgentConfig'),
-      openapi.schemaRef('FullTerraformCloudJobAgentConfig'),
-      openapi.schemaRef('FullTestRunnerJobAgentConfig'),
-      openapi.schemaRef('FullCustomJobAgentConfig'),
-    ],
-    discriminator: {
-      propertyName: 'type',
-      mapping: {
-        'github-app': '#/components/schemas/FullGithubJobAgentConfig',
-        'argo-cd': '#/components/schemas/FullArgoCDJobAgentConfig',
-        tfe: '#/components/schemas/FullTerraformCloudJobAgentConfig',
-        'test-runner': '#/components/schemas/FullTestRunnerJobAgentConfig',
-        custom: '#/components/schemas/FullCustomJobAgentConfig',
-      },
-    },
-  },
-
-  FullGithubJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('GithubJobAgentConfig'),
-      openapi.schemaRef('DeploymentGithubJobAgentConfig'),
-    ],
-  },
-
-  FullArgoCDJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('ArgoCDJobAgentConfig'),
-      openapi.schemaRef('DeploymentArgoCDJobAgentConfig'),
-    ],
-  },
-
-  FullTerraformCloudJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('TerraformCloudJobAgentConfig'),
-      openapi.schemaRef('DeploymentTerraformCloudJobAgentConfig'),
-    ],
-  },
-
-  FullTestRunnerJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('TestRunnerJobAgentConfig'),
-    ],
-  },
-
-  FullCustomJobAgentConfig: {
-    allOf: [
-      openapi.schemaRef('CustomJobAgentConfig'),
     ],
   },
 }

@@ -73,10 +73,10 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		deployment.JobAgentId = &jobAgentID
 		deployment.ResourceSelector = &oapi.Selector{}
 		_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-		deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(map[string]any{
+		deployment.JobAgentConfig = map[string]any{
 			"namespace": fmt.Sprintf("ns-%d", i),
 			"cluster":   fmt.Sprintf("cluster-%d", i%5),
-		})
+		}
 		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
 
 		// Create 25 variables per deployment (mix of literal and reference types)
@@ -553,10 +553,10 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			deployment.JobAgentId = &jobAgentID
 			deployment.ResourceSelector = &oapi.Selector{}
 			_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-			deployment.JobAgentConfig = c.CustomDeploymentJobAgentConfig(map[string]any{
+			deployment.JobAgentConfig = map[string]any{
 				"namespace": fmt.Sprintf("ns-%d", depIdx),
 				"cluster":   fmt.Sprintf("cluster-%d", depIdx%5),
-			})
+			}
 			engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
 		}
 

@@ -164,7 +164,7 @@ func (d *GithubDispatcher) createGithubClient(installationID int) (GithubClient,
 	}, nil
 }
 
-func (d *GithubDispatcher) sendToGithub(ctx context.Context, job *oapi.Job, cfg oapi.FullGithubJobAgentConfig, ghEntity *oapi.GithubEntity) error {
+func (d *GithubDispatcher) sendToGithub(ctx context.Context, job *oapi.Job, cfg *oapi.GithubJobAgentConfig, ghEntity *oapi.GithubEntity) error {
 	var client GithubClient
 	var err error
 
@@ -206,7 +206,7 @@ func (d *GithubDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	ctx, span := ghTracer.Start(ctx, "GithubDispatcher.DispatchJob")
 	defer span.End()
 
-	cfg, err := job.JobAgentConfig.AsFullGithubJobAgentConfig()
+	cfg, err := job.GetGithubJobAgentConfig()
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse job config")
