@@ -20,7 +20,7 @@ type Capabilities struct {
 type RenderContext struct {
 	Job            *oapi.Job               `json:"job"`
 	JobAgent       *oapi.JobAgent          `json:"jobAgent"`
-	JobAgentConfig oapi.JobAgentConfig     `json:"jobAgentConfig"`
+	JobAgentConfig oapi.JobAgentConfig     `json:"-"`
 	Release        *oapi.Release           `json:"release"`
 	Deployment     *oapi.Deployment        `json:"deployment"`
 	Environment    *oapi.Environment       `json:"environment"`
