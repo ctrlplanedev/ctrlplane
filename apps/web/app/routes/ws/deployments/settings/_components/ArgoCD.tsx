@@ -50,7 +50,7 @@ const DEFAULT_CONFIG = {
 
 const formSchema = z.object({
   jobAgentId: z.string(),
-  jobAgentConfig: deploymentJobAgentConfig,
+  jobAgentConfig: z.record(z.string(), z.any()),
 });
 
 const argoFormSchema = z.object({
@@ -88,7 +88,7 @@ export function ArgoCDConfig({ form }: ArgoCDConfigProps) {
             <Editor
               language="plaintext"
               theme={theme === "dark" ? "vs-dark" : "vs"}
-              options={{ minimap: { enabled: false }}}
+              options={{ minimap: { enabled: false } }}
               value={configString}
               onChange={(newValue) => handleChange(newValue ?? "")}
               height="600px"

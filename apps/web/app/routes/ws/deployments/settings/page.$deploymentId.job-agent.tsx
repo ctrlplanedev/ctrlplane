@@ -26,13 +26,13 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "../_components/DeploymentProvider";
 import { ArgoCDConfig } from "./_components/ArgoCD";
 import { GithubAgentConfig } from "./_components/GithubAgentConfig";
+import { TerraformCloudConfig } from "./_components/TerraformCloudConfig";
 import { useAllJobAgents, useSelectedJobAgent } from "./_hooks/job-agents";
 import { deploymentJobAgentConfig } from "./deploymentJobAgentConfig";
-import { TerraformCloudConfig } from "./_components/TerraformCloudConfig";
 
 const formSchema = z.object({
   jobAgentId: z.string(),
-  jobAgentConfig: deploymentJobAgentConfig,
+  jobAgentConfig: z.record(z.string(), z.any()),
 });
 
 type JobAgentSelectorProps = {

@@ -1,10 +1,14 @@
-import { z } from "zod";
-import { useTheme } from "~/components/ThemeProvider";
-import { deploymentJobAgentConfig, tfeJobAgentConfig } from "../deploymentJobAgentConfig";
-import yaml from "js-yaml";
 import type { UseFormReturn } from "react-hook-form";
-import { FormField } from "~/components/ui/form";
 import { Editor } from "@monaco-editor/react";
+import yaml from "js-yaml";
+import { z } from "zod";
+
+import { useTheme } from "~/components/ThemeProvider";
+import { FormField } from "~/components/ui/form";
+import {
+  deploymentJobAgentConfig,
+  tfeJobAgentConfig,
+} from "../deploymentJobAgentConfig";
 
 const DEFAULT_CONFIG = {
   apiVersion: "v1",
@@ -19,7 +23,7 @@ const DEFAULT_CONFIG = {
 
 const formSchema = z.object({
   jobAgentId: z.string(),
-  jobAgentConfig: deploymentJobAgentConfig,
+  jobAgentConfig: z.record(z.string(), z.any()),
 });
 
 const tfeFormSchema = z.object({
@@ -38,14 +42,12 @@ type TfeForm = UseFormReturn<z.infer<typeof tfeFormSchema>>;
 
 type TerraformCloudConfigProps = { form: Form };
 
-export function TerraformCloudConfig({
-  form,
-}: TerraformCloudConfigProps) {
+export function TerraformCloudConfig({ form }: TerraformCloudConfigProps) {
   const { theme } = useTheme();
-  const tfeForm = form as unknown as TfeForm;  
+  const tfeForm = form as unknown as TfeForm;
 
   return (
-    <FormField  
+    <FormField
       control={tfeForm.control}
       name="jobAgentConfig"
       render={({ field: { value, onChange } }) => {
@@ -59,7 +61,7 @@ export function TerraformCloudConfig({
             <Editor
               language="plaintext"
               theme={theme === "dark" ? "vs-dark" : "vs"}
-              options={{ minimap: { enabled: false }}}
+              options={{ minimap: { enabled: false } }}
               value={configString}
               onChange={(newValue) => handleChange(newValue ?? "")}
               height="600px"
@@ -68,5 +70,5 @@ export function TerraformCloudConfig({
         );
       }}
     />
-  )
+  );
 }
