@@ -36,7 +36,7 @@ func (r *Registry) Register(dispatcher types.Dispatchable) {
 	r.dispatchers[dispatcher.Type()] = dispatcher
 }
 
-func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
+func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job, jobAgentConfig oapi.JobAgentConfig) error {
 	jobAgent, ok := r.store.JobAgents.Get(job.JobAgentId)
 	if !ok {
 		return fmt.Errorf("job agent %s not found", job.JobAgentId)

@@ -5,8 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"time"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/store"
@@ -23,14 +25,10 @@ var _ types.Dispatchable = &ArgoApplication{}
 
 type ArgoApplication struct {
 	store *store.Store
-
-	template  string
-	serverUrl string
-	apiKey    string
 }
 
-func NewArgoApplication(store *store.Store, template, serverUrl, apiKey string) *ArgoApplication {
-	return &ArgoApplication{store: store, template: template, serverUrl: serverUrl, apiKey: apiKey}
+func NewArgoApplication(store *store.Store) *ArgoApplication {
+	return &ArgoApplication{store: store}
 }
 
 func (a *ArgoApplication) Type() string {
@@ -45,13 +43,18 @@ func (a *ArgoApplication) Supports() types.Capabilities {
 }
 
 func (a *ArgoApplication) Dispatch(ctx context.Context, context types.RenderContext) error {
-	ioCloser, appClient, err := a.getApplicationClient()
+	jobAgentConfig := context.JobAgentConfig
+	serverAddr, apiKey, template, err := a.parseJobAgentConfig(jobAgentConfig)
+	if err != nil {
+		return fmt.Errorf("failed to parse job agent config: %w", err)
+	}
+	ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to create ArgoCD client: %w", err)
 	}
 	defer ioCloser.Close()
 
-	app, err := a.getTemplatedApplication(context)
+	app, err := a.getTemplatedApplication(context, template)
 	if err != nil {
 		return fmt.Errorf("failed to generate application from template: %w", err)
 	}
@@ -60,10 +63,29 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, context types.RenderCont
 	return a.upsertApplicationWithRetry(ctx, app, appClient)
 }
 
-func (a *ArgoApplication) getApplicationClient() (io.Closer, argocdapplication.ApplicationServiceClient, error) {
+func (a *ArgoApplication) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (string, string, string, error) {
+	serverAddr, ok := jobAgentConfig["serverUrl"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("serverUrl is required")
+	}
+	apiKey, ok := jobAgentConfig["apiKey"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("apiKey is required")
+	}
+	template, ok := jobAgentConfig["template"].(string)
+	if !ok {
+		return "", "", "", fmt.Errorf("template is required")
+	}
+	if serverAddr == "" || apiKey == "" || template == "" {
+		return "", "", "", fmt.Errorf("missing required fields in job agent config")
+	}
+	return serverAddr, apiKey, template, nil
+}
+
+func (a *ArgoApplication) getApplicationClient(serverAddr, apiKey string) (io.Closer, argocdapplication.ApplicationServiceClient, error) {
 	client, err := argocdclient.NewClient(&argocdclient.ClientOptions{
-		ServerAddr: a.serverUrl,
-		AuthToken:  a.apiKey,
+		ServerAddr: serverAddr,
+		AuthToken:  apiKey,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create ArgoCD client: %w", err)
@@ -71,8 +93,8 @@ func (a *ArgoApplication) getApplicationClient() (io.Closer, argocdapplication.A
 	return client.NewApplicationClient()
 }
 
-func (a *ArgoApplication) getTemplatedApplication(ctx types.RenderContext) (*v1alpha1.Application, error) {
-	t, err := templatefuncs.Parse("argoCDAgentConfig", a.template)
+func (a *ArgoApplication) getTemplatedApplication(ctx types.RenderContext, template string) (*v1alpha1.Application, error) {
+	t, err := templatefuncs.Parse("argoCDAgentConfig", template)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -98,15 +120,16 @@ func (a *ArgoApplication) makeApplicationK8sCompatible(app *v1alpha1.Application
 }
 
 func getK8sCompatibleName(name string) string {
-	// Replace invalid characters with hyphens
-	cleaned := strings.ReplaceAll(name, "/", "-")
-	cleaned = strings.ReplaceAll(cleaned, ":", "-")
-
-	// Ensure it starts and ends with alphanumeric
-	cleaned = strings.Trim(cleaned, "-_.")
+	cleaned := strings.ToLower(name)
+	k8sInvalidCharsRegex := regexp.MustCompile(`[^a-z0-9-]`)
+	cleaned = k8sInvalidCharsRegex.ReplaceAllString(cleaned, "-")
 
 	if len(cleaned) > 63 {
-		return cleaned[:63]
+		cleaned = cleaned[:63]
+	}
+	cleaned = strings.Trim(cleaned, "-")
+	if cleaned == "" {
+		return "default"
 	}
 
 	return cleaned
