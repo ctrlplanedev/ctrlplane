@@ -145,14 +145,6 @@ func (j *Job) GetTerraformCloudJobAgentConfig() (*TerraformCloudJobAgentConfig, 
 	return &cfg, nil
 }
 
-// TestRunnerJobAgentConfig defines config for test-runner job agent.
-type TestRunnerJobAgentConfig struct {
-	Type         string  `json:"type,omitempty"`
-	DelaySeconds *int    `json:"delaySeconds,omitempty"`
-	Status       *string `json:"status,omitempty"`
-	Message      *string `json:"message,omitempty"`
-}
-
 func (j *Job) GetTestRunnerJobAgentConfig() (*TestRunnerJobAgentConfig, error) {
 	cfgJson, err := json.Marshal(j.JobAgentConfig)
 	if err != nil {
@@ -161,9 +153,6 @@ func (j *Job) GetTestRunnerJobAgentConfig() (*TestRunnerJobAgentConfig, error) {
 	var cfg TestRunnerJobAgentConfig
 	if err := json.Unmarshal(cfgJson, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal job agent config: %w", err)
-	}
-	if cfg.Type != "test-runner" {
-		return nil, fmt.Errorf("config type is not test-runner")
 	}
 	return &cfg, nil
 }
