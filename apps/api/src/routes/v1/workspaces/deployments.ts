@@ -3,7 +3,6 @@ import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import z from "zod";
 
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -54,43 +53,6 @@ const existingDeploymentById = async (
   }
 
   return response.data;
-};
-
-const ghSchema = z.object({
-  workflowId: z.coerce.number(),
-  ref: z.string().optional(),
-  repo: z.string(),
-});
-
-const argoSchema = z.object({
-  template: z.string(),
-});
-
-const tfeSchema = z.object({
-  template: z.string(),
-});
-
-const customSchema = z.object({}).passthrough();
-
-const getTypedDeploymentAgentConfig = (
-  config: Record<string, any>,
-): WorkspaceEngine["schemas"]["DeploymentJobAgentConfig"] => {
-  const ghParseResult = ghSchema.safeParse(config);
-  if (ghParseResult.success)
-    return { ...ghParseResult.data, type: "github-app" };
-
-  const argoParseResult = argoSchema.safeParse(config);
-  if (argoParseResult.success)
-    return { ...argoParseResult.data, type: "argo-cd" };
-
-  const tfeParseResult = tfeSchema.safeParse(config);
-  if (tfeParseResult.success) return { ...tfeParseResult.data, type: "tfe" };
-
-  const customParseResult = customSchema.safeParse(config);
-  if (customParseResult.success)
-    return { ...customParseResult.data, type: "custom" };
-
-  throw new ApiError("Invalid deployment agent config", 400);
 };
 
 const getDeployment: AsyncTypedHandler<
@@ -145,7 +107,7 @@ const postDeployment: AsyncTypedHandler<
   const deployment: WorkspaceEngine["schemas"]["Deployment"] = {
     id: uuidv4(),
     ...body,
-    jobAgentConfig: getTypedDeploymentAgentConfig(body.jobAgentConfig ?? {}),
+    jobAgentConfig: body.jobAgentConfig ?? {},
   };
 
   const isValid = await validResourceSelector(body.resourceSelector);
@@ -186,9 +148,7 @@ const upsertDeployment: AsyncTypedHandler<
       data: {
         ...body,
         id: deploymentId,
-        jobAgentConfig: getTypedDeploymentAgentConfig(
-          body.jobAgentConfig ?? {},
-        ),
+        jobAgentConfig: body.jobAgentConfig ?? {},
       },
     });
 
@@ -206,7 +166,7 @@ const upsertDeployment: AsyncTypedHandler<
     data: {
       ...deployment,
       ...body,
-      jobAgentConfig: getTypedDeploymentAgentConfig(body.jobAgentConfig ?? {}),
+      jobAgentConfig: body.jobAgentConfig ?? {},
     },
   });
 

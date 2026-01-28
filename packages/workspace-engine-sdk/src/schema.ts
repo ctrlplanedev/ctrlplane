@@ -1067,11 +1067,8 @@ export interface components {
       apiKey: string;
       /** @description ArgoCD server address (host[:port] or URL). */
       serverUrl: string;
-      /**
-       * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "argo-cd";
+      /** @description ArgoCD application template. */
+      template: string;
     };
     BooleanValue: boolean;
     CelMatcher: {
@@ -1079,15 +1076,6 @@ export interface components {
     };
     CelSelector: {
       cel: string;
-    };
-    CustomJobAgentConfig: {
-      /**
-       * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "custom";
-    } & {
-      [key: string]: unknown;
     };
     DatadogMetricProvider: {
       /**
@@ -1148,7 +1136,7 @@ export interface components {
     Deployment: {
       description?: string;
       id: string;
-      jobAgentConfig: components["schemas"]["DeploymentJobAgentConfig"];
+      jobAgentConfig: components["schemas"]["JobAgentConfig"];
       jobAgentId?: string;
       name: string;
       resourceSelector?: components["schemas"]["Selector"];
@@ -1159,58 +1147,10 @@ export interface components {
       deployment: components["schemas"]["Deployment"];
       system: components["schemas"]["System"];
     };
-    DeploymentArgoCDJobAgentConfig: {
-      /** @description ArgoCD Application YAML/JSON template (supports Go templates). */
-      template: string;
-      /**
-       * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "argo-cd";
-    };
-    DeploymentCustomJobAgentConfig: {
-      /**
-       * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "custom";
-    } & {
-      [key: string]: unknown;
-    };
     DeploymentDependencyRule: {
       dependsOnDeploymentSelector: components["schemas"]["Selector"];
       /** @description Reference to the entity that this rule depends on */
       reference?: string;
-    };
-    DeploymentGithubJobAgentConfig: {
-      /** @description Git ref to run the workflow on (defaults to "main" if omitted). */
-      ref?: string;
-      /** @description GitHub repository name. */
-      repo: string;
-      /**
-       * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "github-app";
-      /**
-       * Format: int64
-       * @description GitHub Actions workflow ID.
-       */
-      workflowId: number;
-    };
-    DeploymentJobAgentConfig:
-      | components["schemas"]["DeploymentGithubJobAgentConfig"]
-      | components["schemas"]["DeploymentArgoCDJobAgentConfig"]
-      | components["schemas"]["DeploymentTerraformCloudJobAgentConfig"]
-      | components["schemas"]["DeploymentCustomJobAgentConfig"];
-    DeploymentTerraformCloudJobAgentConfig: {
-      /** @description Terraform Cloud workspace template (YAML/JSON; supports Go templates). */
-      template: string;
-      /**
-       * @description Deployment job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "tfe";
     };
     DeploymentVariable: {
       defaultValue?: components["schemas"]["LiteralValue"];
@@ -1239,10 +1179,7 @@ export interface components {
       createdAt: string;
       deploymentId: string;
       id: string;
-      /** @description DeploymentVersion-specific overrides applied on top of JobAgent.config. See JobAgentConfig for typed config shapes. */
-      jobAgentConfig: {
-        [key: string]: unknown;
-      };
+      jobAgentConfig: components["schemas"]["JobAgentConfig"];
       message?: string;
       metadata: {
         [key: string]: string;
@@ -1328,63 +1265,27 @@ export interface components {
       environmentId?: string;
       versionId?: string;
     };
-    FullArgoCDJobAgentConfig: components["schemas"]["ArgoCDJobAgentConfig"] &
-      components["schemas"]["DeploymentArgoCDJobAgentConfig"] & {
-        /**
-         * @description discriminator enum property added by openapi-typescript
-         * @enum {string}
-         */
-        type: "argo-cd";
-      };
-    FullCustomJobAgentConfig: components["schemas"]["CustomJobAgentConfig"] & {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: "custom";
-    };
-    FullGithubJobAgentConfig: components["schemas"]["GithubJobAgentConfig"] &
-      components["schemas"]["DeploymentGithubJobAgentConfig"] & {
-        /**
-         * @description discriminator enum property added by openapi-typescript
-         * @enum {string}
-         */
-        type: "github-app";
-      };
-    FullJobAgentConfig:
-      | components["schemas"]["FullGithubJobAgentConfig"]
-      | components["schemas"]["FullArgoCDJobAgentConfig"]
-      | components["schemas"]["FullTerraformCloudJobAgentConfig"]
-      | components["schemas"]["FullTestRunnerJobAgentConfig"]
-      | components["schemas"]["FullCustomJobAgentConfig"];
-    FullTerraformCloudJobAgentConfig: components["schemas"]["TerraformCloudJobAgentConfig"] &
-      components["schemas"]["DeploymentTerraformCloudJobAgentConfig"] & {
-        /**
-         * @description discriminator enum property added by openapi-typescript
-         * @enum {string}
-         */
-        type: "tfe";
-      };
-    FullTestRunnerJobAgentConfig: components["schemas"]["TestRunnerJobAgentConfig"] & {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: "test-runner";
-    };
     GithubEntity: {
       installationId: number;
       slug: string;
     };
     GithubJobAgentConfig: {
-      /** Format: int */
-      installationId: number;
-      owner: string;
       /**
-       * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
+       * Format: int
+       * @description GitHub app installation ID.
        */
-      type: "github-app";
+      installationId: number;
+      /** @description GitHub repository owner. */
+      owner: string;
+      /** @description Git ref to run the workflow on (defaults to "main" if omitted). */
+      ref?: string;
+      /** @description GitHub repository name. */
+      repo: string;
+      /**
+       * Format: int64
+       * @description GitHub Actions workflow ID.
+       */
+      workflowId: number;
     };
     GradualRolloutRule: {
       /**
@@ -1435,7 +1336,7 @@ export interface components {
       createdAt: string;
       externalId?: string;
       id: string;
-      jobAgentConfig: components["schemas"]["FullJobAgentConfig"];
+      jobAgentConfig: components["schemas"]["JobAgentConfig"];
       jobAgentId: string;
       message?: string;
       metadata: {
@@ -1445,6 +1346,7 @@ export interface components {
       /** Format: date-time */
       startedAt?: string;
       status: components["schemas"]["JobStatus"];
+      taskId: string;
       traceToken?: string;
       /** Format: date-time */
       updatedAt: string;
@@ -1456,12 +1358,9 @@ export interface components {
       type: string;
       workspaceId: string;
     };
-    JobAgentConfig:
-      | components["schemas"]["GithubJobAgentConfig"]
-      | components["schemas"]["ArgoCDJobAgentConfig"]
-      | components["schemas"]["TerraformCloudJobAgentConfig"]
-      | components["schemas"]["TestRunnerJobAgentConfig"]
-      | components["schemas"]["CustomJobAgentConfig"];
+    JobAgentConfig: {
+      [key: string]: unknown;
+    };
     /** @enum {string} */
     JobStatus:
       | "cancelled"
@@ -1489,6 +1388,7 @@ export interface components {
         | "releaseId"
         | "startedAt"
         | "status"
+        | "taskId"
         | "traceToken"
         | "updatedAt"
       )[];
@@ -1829,17 +1729,10 @@ export interface components {
       address: string;
       /** @description Terraform Cloud organization name. */
       organization: string;
-      /** @description Terraform Cloud workspace template (YAML/JSON; supports Go templates). */
-      template?: string;
+      /** @description Terraform Cloud workspace template. */
+      template: string;
       /** @description Terraform Cloud API token. */
       token: string;
-      /**
-       * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "tfe";
-    } & {
-      [key: string]: unknown;
     };
     TerraformCloudRunMetricProvider: {
       /**
@@ -1862,25 +1755,6 @@ export interface components {
        * @enum {string}
        */
       type: "terraformCloudRun";
-    };
-    TestRunnerJobAgentConfig: {
-      /**
-       * Format: int
-       * @description Delay before resolving the job.
-       */
-      delaySeconds?: number;
-      /** @description Optional message to include in the job output. */
-      message?: string;
-      /**
-       * @description Final status to set.
-       * @enum {string}
-       */
-      status?: "completed" | "failure";
-      /**
-       * @description Job agent type discriminator. (enum property replaced by openapi-typescript)
-       * @enum {string}
-       */
-      type: "test-runner";
     };
     UserApprovalRecord: {
       createdAt: string;
@@ -1971,6 +1845,56 @@ export interface components {
       /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
       description?: string;
       selector: components["schemas"]["Selector"];
+    };
+    Workflow: {
+      id: string;
+      inputs: {
+        [key: string]: unknown;
+      };
+      workflowTemplateId: string;
+    };
+    WorkflowBooleanInput: {
+      default: boolean;
+      name: string;
+      /** @enum {string} */
+      type: "boolean";
+    };
+    WorkflowInput:
+      | components["schemas"]["WorkflowStringInput"]
+      | components["schemas"]["WorkflowNumberInput"]
+      | components["schemas"]["WorkflowBooleanInput"];
+    WorkflowNumberInput: {
+      default: number;
+      name: string;
+      /** @enum {string} */
+      type: "number";
+    };
+    WorkflowStep: {
+      id: string;
+      workflowId: string;
+      workflowStepTemplateId: string;
+    };
+    WorkflowStepTemplate: {
+      id: string;
+      jobAgent: {
+        config: {
+          [key: string]: unknown;
+        };
+        id: string;
+      };
+      name: string;
+    };
+    WorkflowStringInput: {
+      default: string;
+      name: string;
+      /** @enum {string} */
+      type: "string";
+    };
+    WorkflowTemplate: {
+      id: string;
+      inputs: components["schemas"]["WorkflowInput"][];
+      name: string;
+      steps: components["schemas"]["WorkflowStepTemplate"][];
     };
   };
   responses: never;
