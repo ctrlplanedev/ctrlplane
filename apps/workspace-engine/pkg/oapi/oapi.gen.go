@@ -1279,6 +1279,12 @@ type WorkflowInput struct {
 	union json.RawMessage
 }
 
+// WorkflowJobAgentConfig defines model for WorkflowJobAgentConfig.
+type WorkflowJobAgentConfig struct {
+	Config map[string]interface{} `json:"config"`
+	Id     string                 `json:"id"`
+}
+
 // WorkflowNumberInput defines model for WorkflowNumberInput.
 type WorkflowNumberInput struct {
 	Default float32                 `json:"default"`
@@ -1291,23 +1297,18 @@ type WorkflowNumberInputType string
 
 // WorkflowStep defines model for WorkflowStep.
 type WorkflowStep struct {
-	Id       string `json:"id"`
-	JobAgent *struct {
-		Config map[string]interface{} `json:"config"`
-		Id     string                 `json:"id"`
-	} `json:"jobAgent,omitempty"`
-	WorkflowId             string `json:"workflowId"`
-	WorkflowStepTemplateId string `json:"workflowStepTemplateId"`
+	Id                     string                  `json:"id"`
+	Index                  int                     `json:"index"`
+	JobAgent               *WorkflowJobAgentConfig `json:"jobAgent,omitempty"`
+	WorkflowId             string                  `json:"workflowId"`
+	WorkflowStepTemplateId string                  `json:"workflowStepTemplateId"`
 }
 
 // WorkflowStepTemplate defines model for WorkflowStepTemplate.
 type WorkflowStepTemplate struct {
-	Id       string `json:"id"`
-	JobAgent struct {
-		Config map[string]interface{} `json:"config"`
-		Id     string                 `json:"id"`
-	} `json:"jobAgent"`
-	Name string `json:"name"`
+	Id       string                 `json:"id"`
+	JobAgent WorkflowJobAgentConfig `json:"jobAgent"`
+	Name     string                 `json:"name"`
 }
 
 // WorkflowStringInput defines model for WorkflowStringInput.
