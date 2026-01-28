@@ -34,7 +34,7 @@ func NewArgoApplication(store *store.Store, verifications *verification.Manager)
 }
 
 func (a *ArgoApplication) Type() string {
-	return "argo-application"
+	return "argo-cd"
 }
 
 func (a *ArgoApplication) Supports() types.Capabilities {
