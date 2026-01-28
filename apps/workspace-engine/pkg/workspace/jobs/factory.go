@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -22,32 +21,6 @@ var tracer = otel.Tracer("workspace/releasemanager/jobs")
 // Factory creates jobs for releases.
 type Factory struct {
 	store *store.Store
-}
-
-func toMap(v any) (map[string]any, error) {
-	if v == nil {
-		return map[string]any{}, nil
-	}
-	if m, ok := v.(map[string]any); ok {
-		return m, nil
-	}
-	if m, ok := v.(map[string]any); ok {
-		out := make(map[string]any, len(m))
-		maps.Copy(out, m)
-		return out, nil
-	}
-	b, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	var out map[string]any
-	if err := json.Unmarshal(b, &out); err != nil {
-		return nil, err
-	}
-	if out == nil {
-		out = map[string]any{}
-	}
-	return out, nil
 }
 
 // NewFactory creates a new job factory.
@@ -235,15 +208,12 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}, nil
 }
 
-// deepMerge recursively merges src into dst.
-func deepMerge(dst, src map[string]any) {
-	for k, v := range src {
-		if sm, ok := v.(map[string]any); ok {
-			if dm, ok := dst[k].(map[string]any); ok {
-				deepMerge(dm, sm)
-				continue
-			}
-		}
-		dst[k] = v // overwrite
-	}
+func (f *Factory) CreateJobForStep(ctx context.Context, step *oapi.WorkflowStep, action *trace.Action) (*oapi.Job, error) {
+	_, span := tracer.Start(ctx, "CreateJobForStep",
+		oteltrace.WithAttributes(
+			attribute.String("step.id", step.Id),
+		))
+	defer span.End()
+
+	panic("not implemented")
 }

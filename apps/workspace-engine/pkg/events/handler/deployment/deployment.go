@@ -11,10 +11,11 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/releasemanager"
-	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
+	deploymentjobs "workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
 	"github.com/charmbracelet/log"
@@ -298,7 +299,7 @@ func getJobsToRetrigger(ws *workspace.Workspace, deployment *oapi.Deployment) []
 func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, jobsToRetrigger []*oapi.Job) {
 	// Create job factory and dispatcher
 	jobFactory := jobs.NewFactory(ws.Store())
-	jobDispatcher := jobs.NewDispatcher(ws.Store(), ws.ReleaseManager().VerificationManager())
+	jobDispatcher := deploymentjobs.NewDispatcher(ws.Store(), ws.ReleaseManager().VerificationManager())
 
 	for _, job := range jobsToRetrigger {
 		// Get the release for this job
@@ -330,7 +331,7 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 		// Dispatch the job asynchronously if it's not InvalidJobAgent
 		if newJob.Status != oapi.JobStatusInvalidJobAgent {
 			go func(jobToDispatch *oapi.Job) {
-				if err := jobDispatcher.DispatchJob(ctx, jobToDispatch); err != nil && !errors.Is(err, jobs.ErrUnsupportedJobAgent) {
+				if err := jobDispatcher.DispatchJob(ctx, jobToDispatch); err != nil && !errors.Is(err, deploymentjobs.ErrUnsupportedJobAgent) {
 					message := err.Error()
 					log.Error("error dispatching retriggered job to integration",
 						"jobId", jobToDispatch.Id,
