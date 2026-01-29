@@ -29,13 +29,13 @@ func NewGithubAction(store *store.Store) *GithubAction {
 }
 
 func (a *GithubAction) Type() string {
-	return "github-action"
+	return "github-app"
 }
 
 func (a *GithubAction) Supports() types.Capabilities {
 	return types.Capabilities{
 		Workflows:   true,
-		Deployments: false,
+		Deployments: true,
 	}
 }
 
@@ -46,12 +46,7 @@ func (a *GithubAction) Dispatch(ctx context.Context, context types.DispatchConte
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
 
-	ghEntity, exists := a.store.GithubEntities.Get(cfg.Owner, cfg.InstallationId)
-	if !exists {
-		return fmt.Errorf("github entity not found for job %s", context.Job.Id)
-	}
-
-	client, err := a.createGithubClient(ghEntity, &cfg)
+	client, err := a.createGithubClient(&cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create github client: %w", err)
 	}
@@ -61,19 +56,25 @@ func (a *GithubAction) Dispatch(ctx context.Context, context types.DispatchConte
 		ref = *cfg.Ref
 	}
 
-	if _, err := client.Actions.CreateWorkflowDispatchEventByID(ctx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
-		Ref:    ref,
-		Inputs: map[string]any{"job_id": context.Job.Id},
-	}); err != nil {
-		return fmt.Errorf("failed to dispatch workflow: %w", err)
-	}
+	go func() {
+		if _, err := client.Actions.CreateWorkflowDispatchEventByID(ctx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
+			Ref:    ref,
+			Inputs: map[string]any{"job_id": context.Job.Id},
+		}); err != nil {
+			message := fmt.Sprintf("failed to dispatch workflow: %s", err.Error())
+			context.Job.Status = oapi.JobStatusInvalidIntegration
+			context.Job.UpdatedAt = time.Now()
+			context.Job.Message = &message
+			a.store.Jobs.Upsert(ctx, context.Job)
+		}
+	}()
 
 	return nil
 }
 
 func (a *GithubAction) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (oapi.GithubJobAgentConfig, error) {
-	installationId, ok := jobAgentConfig["installationId"].(int)
-	if !ok || installationId == 0 {
+	installationId := toInt(jobAgentConfig["installationId"])
+	if installationId == 0 {
 		return oapi.GithubJobAgentConfig{}, fmt.Errorf("installationId is required")
 	}
 
@@ -87,8 +88,8 @@ func (a *GithubAction) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (
 		return oapi.GithubJobAgentConfig{}, fmt.Errorf("repo is required")
 	}
 
-	workflowId, ok := jobAgentConfig["workflowId"].(int64)
-	if !ok || workflowId == 0 {
+	workflowId := toInt64(jobAgentConfig["workflowId"])
+	if workflowId == 0 {
 		return oapi.GithubJobAgentConfig{}, fmt.Errorf("workflowId is required")
 	}
 
@@ -106,9 +107,20 @@ func (a *GithubAction) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (
 	}, nil
 }
 
-func (a *GithubAction) createGithubClient(ghEntity *oapi.GithubEntity, cfg *oapi.GithubJobAgentConfig) (*github.Client, error) {
+func (a *GithubAction) createGithubClient(cfg *oapi.GithubJobAgentConfig) (*github.Client, error) {
+	appIDStr := config.Global.GithubBotAppID
+	privateKey := config.Global.GithubBotPrivateKey
 
-	jwtToken, err := a.generateJWT(int64(ghEntity.InstallationId), []byte(config.Global.GithubBotPrivateKey))
+	if appIDStr == "" || privateKey == "" {
+		return nil, fmt.Errorf("GitHub bot not configured: missing GITHUB_BOT_APP_ID or GITHUB_BOT_PRIVATE_KEY")
+	}
+
+	appID, err := strconv.ParseInt(appIDStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid GITHUB_BOT_APP_ID: %w", err)
+	}
+
+	jwtToken, err := a.generateJWT(appID, []byte(privateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate JWT: %w", err)
 	}
@@ -175,4 +187,28 @@ func (a *GithubAction) getInstallationToken(jwtToken string, installationID int)
 	}
 
 	return result.Token, nil
+}
+
+func toInt(v interface{}) int {
+	switch val := v.(type) {
+	case int:
+		return val
+	case float64:
+		return int(val)
+	default:
+		return 0
+	}
+}
+
+func toInt64(v interface{}) int64 {
+	switch val := v.(type) {
+	case int64:
+		return val
+	case int:
+		return int64(val)
+	case float64:
+		return int64(val)
+	default:
+		return 0
+	}
 }

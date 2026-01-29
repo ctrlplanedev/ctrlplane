@@ -40,7 +40,7 @@ func (a *ArgoApplication) Type() string {
 func (a *ArgoApplication) Supports() types.Capabilities {
 	return types.Capabilities{
 		Workflows:   true,
-		Deployments: false,
+		Deployments: true,
 	}
 }
 
@@ -62,14 +62,26 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchCo
 	}
 
 	a.makeApplicationK8sCompatible(app)
-	if err := a.upsertApplicationWithRetry(ctx, app, appClient); err != nil {
-		return fmt.Errorf("failed to upsert application: %w", err)
-	}
 
-	verification := newArgoApplicationVerification(a.verifications, context.Job, app.ObjectMeta.Name, serverAddr, apiKey)
-	if err := verification.StartVerification(ctx, context.Job); err != nil {
-		return fmt.Errorf("failed to start verification: %w", err)
-	}
+	go func() {
+		if err := a.upsertApplicationWithRetry(ctx, app, appClient); err != nil {
+			message := fmt.Sprintf("failed to upsert application: %s", err.Error())
+			context.Job.Status = oapi.JobStatusInvalidIntegration
+			context.Job.UpdatedAt = time.Now()
+			context.Job.Message = &message
+			a.store.Jobs.Upsert(ctx, context.Job)
+		}
+
+		verification := newArgoApplicationVerification(a.verifications, context.Job, app.ObjectMeta.Name, serverAddr, apiKey)
+		if err := verification.StartVerification(ctx, context.Job); err != nil {
+			message := fmt.Sprintf("failed to start verification: %s", err.Error())
+			context.Job.Status = oapi.JobStatusInvalidIntegration
+			context.Job.UpdatedAt = time.Now()
+			context.Job.Message = &message
+			a.store.Jobs.Upsert(ctx, context.Job)
+		}
+	}()
+
 	return nil
 }
 

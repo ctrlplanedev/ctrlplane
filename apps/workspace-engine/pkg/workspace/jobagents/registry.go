@@ -68,6 +68,15 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		renderContext.Deployment = jobWithRelease.Deployment
 		renderContext.Environment = jobWithRelease.Environment
 		renderContext.Resource = jobWithRelease.Resource
+		jobAgentConfig, err := mergeJobAgentConfig(
+			jobAgent.Config,
+			jobWithRelease.Deployment.JobAgentConfig,
+			jobWithRelease.Release.Version.JobAgentConfig,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to merge job agent config: %w", err)
+		}
+		renderContext.JobAgentConfig = jobAgentConfig
 	}
 
 	if workflowStep, ok := r.store.WorkflowSteps.Get(job.WorkflowStepId); ok {
@@ -78,4 +87,26 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 
 	return dispatcher.Dispatch(ctx, renderContext)
+}
+
+// mergeJobAgentConfig merges the given job agent configs into a single config.
+// The configs are merged in the order they are provided, with later configs overriding earlier ones.
+func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) (oapi.JobAgentConfig, error) {
+	mergedConfig := make(map[string]any)
+	for _, config := range configs {
+		deepMerge(mergedConfig, config)
+	}
+	return mergedConfig, nil
+}
+
+func deepMerge(dst, src map[string]any) {
+	for k, v := range src {
+		if sm, ok := v.(map[string]any); ok {
+			if dm, ok := dst[k].(map[string]any); ok {
+				deepMerge(dm, sm)
+				continue
+			}
+		}
+		dst[k] = v
+	}
 }

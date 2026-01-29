@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
 	verificationaction "workspace-engine/pkg/workspace/releasemanager/action/verification"
-	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/deploymentdependency"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -44,7 +43,7 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		RegisterAction(verificationaction.NewVerificationAction(ws.releasemanager.VerificationManager())).
 		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
 		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
-		RegisterAction(rollback.NewRollbackAction(s, jobs.NewDispatcher(s, ws.releasemanager.VerificationManager())))
+		RegisterAction(rollback.NewRollbackAction(s, ws.releasemanager.VerificationManager()))
 
 	return ws
 }
