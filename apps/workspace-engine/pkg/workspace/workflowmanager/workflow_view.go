@@ -60,6 +60,15 @@ func (w *WorkflowView) isStepComplete(stepId string) bool {
 	return true
 }
 
+func (w *WorkflowView) isStepInProgress(stepId string) bool {
+	for _, job := range w.stepJobs[stepId] {
+		if !job.IsInTerminalState() {
+			return true
+		}
+	}
+	return false
+}
+
 func (w *WorkflowView) HasActiveJobs() bool {
 	for _, stepJobs := range w.stepJobs {
 		for _, job := range stepJobs {
@@ -74,6 +83,9 @@ func (w *WorkflowView) HasActiveJobs() bool {
 func (w *WorkflowView) GetNextStep() *oapi.WorkflowStep {
 	for _, step := range w.steps {
 		if !w.isStepComplete(step.Id) {
+			if w.isStepInProgress(step.Id) {
+				return nil
+			}
 			return step
 		}
 	}
