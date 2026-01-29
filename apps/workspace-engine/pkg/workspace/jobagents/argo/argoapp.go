@@ -3,16 +3,23 @@ package argo
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"regexp"
 	"strings"
 	"time"
+	"workspace-engine/pkg/config"
+	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
+
+	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
 	argocdclient "github.com/argoproj/argo-cd/v2/pkg/apiclient"
 	argocdapplication "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
@@ -61,30 +68,26 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchCo
 	go func() {
 		ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
 		if err != nil {
-			a.failJobWithMessage(ctx, context, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
+			a.sendJobFailureEvent(context, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
 			return
 		}
 		defer ioCloser.Close()
 
 		if err := a.upsertApplicationWithRetry(ctx, app, appClient); err != nil {
-			a.failJobWithMessage(ctx, context, fmt.Sprintf("failed to upsert application: %s", err.Error()))
+			a.sendJobFailureEvent(context, fmt.Sprintf("failed to upsert application: %s", err.Error()))
 			return
 		}
 
 		verification := newArgoApplicationVerification(a.verifications, context.Job, app.ObjectMeta.Name, serverAddr, apiKey)
 		if err := verification.StartVerification(ctx, context.Job); err != nil {
-			a.failJobWithMessage(ctx, context, fmt.Sprintf("failed to start verification: %s", err.Error()))
+			a.sendJobFailureEvent(context, fmt.Sprintf("failed to start verification: %s", err.Error()))
+			return
 		}
+
+		a.sendJobUpdateEvent(serverAddr, app, context)
 	}()
 
 	return nil
-}
-
-func (a *ArgoApplication) failJobWithMessage(ctx context.Context, context types.DispatchContext, message string) {
-	context.Job.Status = oapi.JobStatusInvalidIntegration
-	context.Job.UpdatedAt = time.Now()
-	context.Job.Message = &message
-	a.store.Jobs.Upsert(ctx, context.Job)
 }
 
 func (a *ArgoApplication) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (string, string, string, error) {
@@ -206,4 +209,114 @@ func isRetryableError(err error) bool {
 		strings.Contains(errStr, "temporarily unavailable") ||
 		strings.Contains(errStr, "EOF") ||
 		strings.Contains(errStr, "Unavailable")
+}
+
+func (a *ArgoApplication) sendJobFailureEvent(context types.DispatchContext, message string) error {
+	workspaceId := a.store.ID()
+
+	now := time.Now().UTC()
+	eventPayload := oapi.JobUpdateEvent{
+		Id: &context.Job.Id,
+		Job: oapi.Job{
+			Id:          context.Job.Id,
+			Status:      oapi.JobStatusFailure,
+			Message:     &message,
+			UpdatedAt:   now,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateMessage,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	}
+	producer, err := a.getKafkaProducer()
+	if err != nil {
+		return fmt.Errorf("failed to create Kafka producer: %w", err)
+	}
+	defer producer.Close()
+
+	event := map[string]any{
+		"eventType":   "job.updated",
+		"workspaceId": workspaceId,
+		"data":        eventPayload,
+		"timestamp":   time.Now().Unix(),
+	}
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+		return fmt.Errorf("failed to publish event: %w", err)
+	}
+	return nil
+}
+
+func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Application, context types.DispatchContext) error {
+	workspaceId := a.store.ID()
+
+	appUrl := fmt.Sprintf("%s/applications/%s/%s", serverAddr, app.ObjectMeta.Namespace, app.ObjectMeta.Name)
+	if !strings.HasPrefix(appUrl, "https://") {
+		appUrl = "https://" + appUrl
+	}
+
+	links := make(map[string]string)
+	links["ArgoCD Application"] = appUrl
+	linksJSON, err := json.Marshal(links)
+	if err != nil {
+		return fmt.Errorf("failed to marshal links: %w", err)
+	}
+
+	newJobMetadata := make(map[string]string)
+	maps.Copy(newJobMetadata, context.Job.Metadata)
+	newJobMetadata[string("ctrlplane/links")] = string(linksJSON)
+
+	now := time.Now().UTC()
+	eventPayload := oapi.JobUpdateEvent{
+		Id: &context.Job.Id,
+		Job: oapi.Job{
+			Id:          context.Job.Id,
+			Metadata:    newJobMetadata,
+			Status:      oapi.JobStatusSuccessful,
+			UpdatedAt:   now,
+			CompletedAt: &now,
+		},
+		FieldsToUpdate: &[]oapi.JobUpdateEventFieldsToUpdate{
+			oapi.JobUpdateEventFieldsToUpdateStatus,
+			oapi.JobUpdateEventFieldsToUpdateMetadata,
+			oapi.JobUpdateEventFieldsToUpdateCompletedAt,
+			oapi.JobUpdateEventFieldsToUpdateUpdatedAt,
+		},
+	}
+	producer, err := a.getKafkaProducer()
+	if err != nil {
+		return fmt.Errorf("failed to create Kafka producer: %w", err)
+	}
+	defer producer.Close()
+
+	event := map[string]any{
+		"eventType":   "job.updated",
+		"workspaceId": workspaceId,
+		"data":        eventPayload,
+		"timestamp":   time.Now().Unix(),
+	}
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("failed to marshal event: %w", err)
+	}
+	if err := producer.Publish([]byte(workspaceId), eventBytes); err != nil {
+		return fmt.Errorf("failed to publish event: %w", err)
+	}
+	return nil
+}
+
+func (a *ArgoApplication) getKafkaProducer() (messaging.Producer, error) {
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
+		"bootstrap.servers":        config.Global.KafkaBrokers,
+		"enable.idempotence":       true,
+		"compression.type":         "snappy",
+		"message.send.max.retries": 10,
+		"retry.backoff.ms":         100,
+	})
 }
