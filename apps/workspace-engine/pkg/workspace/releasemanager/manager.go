@@ -39,12 +39,11 @@ type PersistenceStore = trace.PersistenceStore
 
 // New creates a new release manager for a workspace.
 // traceStore must not be nil - panics if not provided.
-func New(store *store.Store, traceStore PersistenceStore) *Manager {
+func New(store *store.Store, traceStore PersistenceStore, verificationManager *verification.Manager) *Manager {
 	if traceStore == nil {
 		panic("traceStore cannot be nil - deployment tracing is mandatory")
 	}
 
-	verificationManager := verification.NewManager(store)
 	deploymentOrch := NewDeploymentOrchestrator(store, verificationManager)
 	stateCache := NewStateCache(store, deploymentOrch.Planner())
 

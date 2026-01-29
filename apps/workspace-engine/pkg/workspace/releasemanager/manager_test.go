@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -20,7 +21,8 @@ func setupTestManager(t *testing.T) (*Manager, *store.Store) {
 	cs := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", cs)
 	traceStore := spanstore.NewInMemoryStore()
-	manager := New(testStore, traceStore)
+	verificationManager := verification.NewManager(testStore)
+	manager := New(testStore, traceStore, verificationManager)
 	return manager, testStore
 }
 

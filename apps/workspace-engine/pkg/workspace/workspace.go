@@ -12,6 +12,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/environmentprogression"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 )
 
@@ -31,8 +32,10 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		option(ws)
 	}
 
+	ws.verificationManager = verification.NewManager(s)
+
 	// Create release manager with trace store (will panic if nil)
-	ws.releasemanager = releasemanager.New(s, ws.traceStore)
+	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.verificationManager)
 
 	reconcileFn := func(ctx context.Context, targets []*oapi.ReleaseTarget) error {
 		return ws.releasemanager.ReconcileTargets(ctx, targets, releasemanager.WithTrigger(trace.TriggerJobSuccess))
@@ -40,10 +43,10 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 
 	ws.actionOrchestrator = action.
 		NewOrchestrator(s).
-		RegisterAction(verificationaction.NewVerificationAction(ws.releasemanager.VerificationManager())).
+		RegisterAction(verificationaction.NewVerificationAction(ws.verificationManager)).
 		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
 		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
-		RegisterAction(rollback.NewRollbackAction(s, ws.releasemanager.VerificationManager()))
+		RegisterAction(rollback.NewRollbackAction(s, ws.verificationManager))
 
 	return ws
 }
@@ -51,11 +54,12 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 type Workspace struct {
 	ID string
 
-	changeset          *statechange.ChangeSet[any]
-	store              *store.Store
-	releasemanager     *releasemanager.Manager
-	traceStore         releasemanager.PersistenceStore
-	actionOrchestrator *action.Orchestrator
+	changeset           *statechange.ChangeSet[any]
+	store               *store.Store
+	verificationManager *verification.Manager
+	releasemanager      *releasemanager.Manager
+	traceStore          releasemanager.PersistenceStore
+	actionOrchestrator  *action.Orchestrator
 }
 
 func (w *Workspace) ActionOrchestrator() *action.Orchestrator {
@@ -72,6 +76,10 @@ func (w *Workspace) Policies() *store.Policies {
 
 func (w *Workspace) ReleaseManager() *releasemanager.Manager {
 	return w.releasemanager
+}
+
+func (w *Workspace) VerificationManager() *verification.Manager {
+	return w.verificationManager
 }
 
 func (w *Workspace) DeploymentVersions() *store.DeploymentVersions {
