@@ -51,14 +51,14 @@ func (a *ArgoApplication) Supports() types.Capabilities {
 	}
 }
 
-func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchContext) error {
-	jobAgentConfig := context.JobAgentConfig
+func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) error {
+	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := a.parseJobAgentConfig(jobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
 
-	app, err := a.getTemplatedApplication(context, template)
+	app, err := a.getTemplatedApplication(dispatchCtx, template)
 	if err != nil {
 		return fmt.Errorf("failed to generate application from template: %w", err)
 	}
@@ -66,25 +66,26 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchCo
 	a.makeApplicationK8sCompatible(app)
 
 	go func() {
+		ctx := context.WithoutCancel(ctx)
 		ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
 		if err != nil {
-			a.sendJobFailureEvent(context, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
+			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
 			return
 		}
 		defer ioCloser.Close()
 
 		if err := a.upsertApplicationWithRetry(ctx, app, appClient); err != nil {
-			a.sendJobFailureEvent(context, fmt.Sprintf("failed to upsert application: %s", err.Error()))
+			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to upsert application: %s", err.Error()))
 			return
 		}
 
-		verification := newArgoApplicationVerification(a.verifications, context.Job, app.ObjectMeta.Name, serverAddr, apiKey)
-		if err := verification.StartVerification(ctx, context.Job); err != nil {
-			a.sendJobFailureEvent(context, fmt.Sprintf("failed to start verification: %s", err.Error()))
+		verification := newArgoApplicationVerification(a.verifications, dispatchCtx.Job, app.ObjectMeta.Name, serverAddr, apiKey)
+		if err := verification.StartVerification(ctx, dispatchCtx.Job); err != nil {
+			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to start verification: %s", err.Error()))
 			return
 		}
 
-		a.sendJobUpdateEvent(serverAddr, app, context)
+		a.sendJobUpdateEvent(serverAddr, app, dispatchCtx)
 	}()
 
 	return nil
