@@ -50,11 +50,6 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchCo
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
 	}
-	ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to create ArgoCD client: %w", err)
-	}
-	defer ioCloser.Close()
 
 	app, err := a.getTemplatedApplication(context, template)
 	if err != nil {
@@ -64,25 +59,32 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, context types.DispatchCo
 	a.makeApplicationK8sCompatible(app)
 
 	go func() {
+		ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
+		if err != nil {
+			a.failJobWithMessage(ctx, context, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
+			return
+		}
+		defer ioCloser.Close()
+
 		if err := a.upsertApplicationWithRetry(ctx, app, appClient); err != nil {
-			message := fmt.Sprintf("failed to upsert application: %s", err.Error())
-			context.Job.Status = oapi.JobStatusInvalidIntegration
-			context.Job.UpdatedAt = time.Now()
-			context.Job.Message = &message
-			a.store.Jobs.Upsert(ctx, context.Job)
+			a.failJobWithMessage(ctx, context, fmt.Sprintf("failed to upsert application: %s", err.Error()))
+			return
 		}
 
 		verification := newArgoApplicationVerification(a.verifications, context.Job, app.ObjectMeta.Name, serverAddr, apiKey)
 		if err := verification.StartVerification(ctx, context.Job); err != nil {
-			message := fmt.Sprintf("failed to start verification: %s", err.Error())
-			context.Job.Status = oapi.JobStatusInvalidIntegration
-			context.Job.UpdatedAt = time.Now()
-			context.Job.Message = &message
-			a.store.Jobs.Upsert(ctx, context.Job)
+			a.failJobWithMessage(ctx, context, fmt.Sprintf("failed to start verification: %s", err.Error()))
 		}
 	}()
 
 	return nil
+}
+
+func (a *ArgoApplication) failJobWithMessage(ctx context.Context, context types.DispatchContext, message string) {
+	context.Job.Status = oapi.JobStatusInvalidIntegration
+	context.Job.UpdatedAt = time.Now()
+	context.Job.Message = &message
+	a.store.Jobs.Upsert(ctx, context.Job)
 }
 
 func (a *ArgoApplication) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (string, string, string, error) {
@@ -194,12 +196,14 @@ func isRetryableError(err error) bool {
 		return false
 	}
 	errStr := err.Error()
-	// Check for HTTP status codes that indicate transient failures
+	// Check for HTTP status codes and gRPC errors that indicate transient failures
 	return strings.Contains(errStr, "502") ||
 		strings.Contains(errStr, "503") ||
 		strings.Contains(errStr, "504") ||
 		strings.Contains(errStr, "connection refused") ||
 		strings.Contains(errStr, "connection reset") ||
 		strings.Contains(errStr, "timeout") ||
-		strings.Contains(errStr, "temporarily unavailable")
+		strings.Contains(errStr, "temporarily unavailable") ||
+		strings.Contains(errStr, "EOF") ||
+		strings.Contains(errStr, "Unavailable")
 }
