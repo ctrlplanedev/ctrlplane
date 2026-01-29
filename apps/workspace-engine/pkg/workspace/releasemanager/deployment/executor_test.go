@@ -86,7 +86,7 @@ func TestExecuteRelease_Success(t *testing.T) {
 	jobAgentID := uuid.New().String()
 
 	// Create necessary entities in store
-	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "github")
+	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "test-runner")
 	testStore.JobAgents.Upsert(ctx, jobAgent)
 
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)

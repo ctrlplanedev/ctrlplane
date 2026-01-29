@@ -11,7 +11,6 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
-	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
@@ -50,7 +49,7 @@ func New(store *store.Store, traceStore PersistenceStore) *Manager {
 	stateCache := NewStateCache(store, deploymentOrch.Planner())
 
 	releaseManagerHooks := newReleaseManagerVerificationHooks(store, stateCache)
-	rollbackHooks := rollback.NewRollbackHooks(store, jobs.NewDispatcher(store, verificationManager))
+	rollbackHooks := rollback.NewRollbackHooks(store, verificationManager)
 	compositeHooks := verification.NewCompositeHooks(releaseManagerHooks, rollbackHooks)
 	verificationManager.SetHooks(compositeHooks)
 

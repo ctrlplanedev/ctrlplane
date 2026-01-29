@@ -5,8 +5,9 @@ import (
 	"slices"
 	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/action"
-	"workspace-engine/pkg/workspace/releasemanager/deployment/jobs"
+	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -18,14 +19,14 @@ import (
 var tracer = otel.Tracer("RollbackAction")
 
 type RollbackAction struct {
-	store      *store.Store
-	dispatcher *jobs.Dispatcher
+	store            *store.Store
+	jobAgentRegistry *jobagents.Registry
 }
 
-func NewRollbackAction(store *store.Store, dispatcher *jobs.Dispatcher) *RollbackAction {
+func NewRollbackAction(store *store.Store, verificationManager *verification.Manager) *RollbackAction {
 	return &RollbackAction{
-		store:      store,
-		dispatcher: dispatcher,
+		store:            store,
+		jobAgentRegistry: jobagents.NewRegistry(store, verificationManager),
 	}
 }
 
@@ -88,7 +89,7 @@ func (r *RollbackAction) Execute(
 
 	r.store.Jobs.Upsert(ctx, &newJob)
 
-	if err := r.dispatcher.DispatchJob(ctx, &newJob); err != nil {
+	if err := r.jobAgentRegistry.Dispatch(ctx, &newJob); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "rollback execution failed")
 		return err

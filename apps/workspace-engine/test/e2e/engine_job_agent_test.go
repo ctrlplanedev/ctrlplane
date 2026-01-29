@@ -151,7 +151,6 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("Original Name"),
-			integration.JobAgentType("kubernetes"),
 			integration.JobAgentConfig(map[string]any{
 				"namespace": "default",
 				"timeout":   300,
@@ -220,6 +219,7 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 			"timeout":   600,
 			"retries":   5,
 		},
+		Type: "test-runner",
 	}
 
 	engine.PushEvent(ctx, handler.JobAgentUpdate, ja)
@@ -536,7 +536,6 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 		integration.WithJobAgent(
 			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("Shared Agent"),
-			integration.JobAgentType("kubernetes"),
 		),
 		integration.WithSystem(
 			integration.SystemName("test-system"),
