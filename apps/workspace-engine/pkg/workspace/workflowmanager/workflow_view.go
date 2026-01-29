@@ -34,6 +34,7 @@ func NewWorkflowView(store *store.Store, workflowId string) (*WorkflowView, erro
 		store:    store,
 		workflow: workflow,
 		steps:    steps,
+		stepJobs: stepJobs,
 	}, nil
 }
 
@@ -47,21 +48,22 @@ func (w *WorkflowView) IsComplete() bool {
 }
 
 func (w *WorkflowView) isStepComplete(stepId string) bool {
+	if len(w.stepJobs[stepId]) == 0 {
+		return false
+	}
+
 	for _, job := range w.stepJobs[stepId] {
-		if len(w.stepJobs[stepId]) == 0 {
-			return false
-		}
-		if job.Status == oapi.JobStatusPending || job.Status == oapi.JobStatusInProgress {
+		if !job.IsInTerminalState() {
 			return false
 		}
 	}
 	return true
 }
 
-func (w *WorkflowView) HasPendingJobs() bool {
+func (w *WorkflowView) HasActiveJobs() bool {
 	for _, stepJobs := range w.stepJobs {
 		for _, job := range stepJobs {
-			if job.Status == oapi.JobStatusPending || job.Status == oapi.JobStatusInProgress || job.Status == oapi.JobStatusActionRequired {
+			if !job.IsInTerminalState() {
 				return true
 			}
 		}
@@ -79,7 +81,6 @@ func (w *WorkflowView) GetNextStep() *oapi.WorkflowStep {
 }
 
 func (w *WorkflowView) GetWorkflow() *oapi.Workflow {
-
 	return w.workflow
 }
 

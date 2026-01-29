@@ -2,22 +2,25 @@ package workflowmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
+	"time"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 )
 
 type Manager struct {
-	store *store.Store
+	store            *store.Store
+	jobAgentRegistry *jobagents.Registry
 }
 
-func NewWorkflowManager(store *store.Store) *Manager {
+func NewWorkflowManager(store *store.Store, jobAgentRegistry *jobagents.Registry) *Manager {
 	return &Manager{
-		store: store,
+		store:            store,
+		jobAgentRegistry: jobAgentRegistry,
 	}
 }
 
@@ -47,18 +50,43 @@ func (w *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 	}
 
 	w.store.Workflows.Upsert(ctx, workflow)
+
+	w.ReconcileWorkflow(ctx, workflow)
 	return workflow, nil
 }
 
 // dispatchJobForStep dispatches a job for the given step
-func (m *Manager) dispatchStep(ctx context.Context, workflow *oapi.Workflow, step *oapi.WorkflowStep) error {
-	// job := &oapi.Job{
-	// 	Id:             uuid.New().String(),
-	// 	WorkflowStepId: step.Id,
-	// 	JobAgentId:     step.JobAgent.Id,
-	// 	JobAgentConfig: step.JobAgent.Config,
-	// }
-	return errors.New("not implemented")
+func (m *Manager) dispatchStep(ctx context.Context, step *oapi.WorkflowStep) error {
+	jobAgent, ok := m.store.JobAgents.Get(step.JobAgent.Id)
+	if !ok {
+		return fmt.Errorf("job agent %s not found", step.JobAgent.Id)
+	}
+
+	mergedConfig, err := mergeJobAgentConfig(
+		jobAgent.Config,
+		step.JobAgent.Config,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to merge job agent config: %w", err)
+	}
+
+	job := &oapi.Job{
+		Id:             uuid.New().String(),
+		WorkflowStepId: step.Id,
+		JobAgentId:     step.JobAgent.Id,
+		JobAgentConfig: mergedConfig,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Metadata:       make(map[string]string),
+		Status:         oapi.JobStatusPending,
+	}
+
+	m.store.Jobs.Upsert(ctx, job)
+	if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
+		return fmt.Errorf("failed to dispatch job: %w", err)
+	}
+
+	return nil
 }
 
 // ReconcileWorkflow reconciles a workflow, advancing to the next step if ready.
@@ -71,7 +99,7 @@ func (m *Manager) ReconcileWorkflow(ctx context.Context, workflow *oapi.Workflow
 	if wfv.IsComplete() {
 		return nil
 	}
-	if wfv.HasPendingJobs() {
+	if wfv.HasActiveJobs() {
 		return nil
 	}
 
@@ -80,5 +108,25 @@ func (m *Manager) ReconcileWorkflow(ctx context.Context, workflow *oapi.Workflow
 		return nil
 	}
 
-	return m.dispatchStep(ctx, workflow, nextStep)
+	return m.dispatchStep(ctx, nextStep)
+}
+
+func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) (oapi.JobAgentConfig, error) {
+	mergedConfig := make(map[string]any)
+	for _, config := range configs {
+		deepMerge(mergedConfig, config)
+	}
+	return mergedConfig, nil
+}
+
+func deepMerge(dst, src map[string]any) {
+	for k, v := range src {
+		if sm, ok := v.(map[string]any); ok {
+			if dm, ok := dst[k].(map[string]any); ok {
+				deepMerge(dm, sm)
+				continue
+			}
+		}
+		dst[k] = v
+	}
 }

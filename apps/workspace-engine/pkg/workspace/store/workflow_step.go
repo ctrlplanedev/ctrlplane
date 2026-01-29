@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
 )
@@ -47,5 +48,8 @@ func (w *WorkflowSteps) GetByWorkflowId(workflowId string) []*oapi.WorkflowStep 
 			steps = append(steps, step)
 		}
 	}
+	sort.Slice(steps, func(i, j int) bool {
+		return steps[i].Index < steps[j].Index
+	})
 	return steps
 }
