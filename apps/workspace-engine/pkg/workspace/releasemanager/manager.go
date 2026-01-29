@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
@@ -39,16 +40,16 @@ type PersistenceStore = trace.PersistenceStore
 
 // New creates a new release manager for a workspace.
 // traceStore must not be nil - panics if not provided.
-func New(store *store.Store, traceStore PersistenceStore, verificationManager *verification.Manager) *Manager {
+func New(store *store.Store, traceStore PersistenceStore, verificationManager *verification.Manager, jobAgentRegistry *jobagents.Registry) *Manager {
 	if traceStore == nil {
 		panic("traceStore cannot be nil - deployment tracing is mandatory")
 	}
 
-	deploymentOrch := NewDeploymentOrchestrator(store, verificationManager)
+	deploymentOrch := NewDeploymentOrchestrator(store, jobAgentRegistry)
 	stateCache := NewStateCache(store, deploymentOrch.Planner())
 
 	releaseManagerHooks := newReleaseManagerVerificationHooks(store, stateCache)
-	rollbackHooks := rollback.NewRollbackHooks(store, verificationManager)
+	rollbackHooks := rollback.NewRollbackHooks(store, jobAgentRegistry)
 	compositeHooks := verification.NewCompositeHooks(releaseManagerHooks, rollbackHooks)
 	verificationManager.SetHooks(compositeHooks)
 

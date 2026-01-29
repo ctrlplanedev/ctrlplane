@@ -4,6 +4,7 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/action"
 	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
@@ -33,9 +34,10 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 	}
 
 	ws.verificationManager = verification.NewManager(s)
+	ws.jobAgentRegistry = jobagents.NewRegistry(ws.store, ws.verificationManager)
 
 	// Create release manager with trace store (will panic if nil)
-	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.verificationManager)
+	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.verificationManager, ws.jobAgentRegistry)
 
 	reconcileFn := func(ctx context.Context, targets []*oapi.ReleaseTarget) error {
 		return ws.releasemanager.ReconcileTargets(ctx, targets, releasemanager.WithTrigger(trace.TriggerJobSuccess))
@@ -46,7 +48,7 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		RegisterAction(verificationaction.NewVerificationAction(ws.verificationManager)).
 		RegisterAction(deploymentdependency.NewDeploymentDependencyAction(s, reconcileFn)).
 		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
-		RegisterAction(rollback.NewRollbackAction(s, ws.verificationManager))
+		RegisterAction(rollback.NewRollbackAction(s, ws.jobAgentRegistry))
 
 	return ws
 }
@@ -60,6 +62,7 @@ type Workspace struct {
 	releasemanager      *releasemanager.Manager
 	traceStore          releasemanager.PersistenceStore
 	actionOrchestrator  *action.Orchestrator
+	jobAgentRegistry    *jobagents.Registry
 }
 
 func (w *Workspace) ActionOrchestrator() *action.Orchestrator {
@@ -80,6 +83,10 @@ func (w *Workspace) ReleaseManager() *releasemanager.Manager {
 
 func (w *Workspace) VerificationManager() *verification.Manager {
 	return w.verificationManager
+}
+
+func (w *Workspace) JobAgentRegistry() *jobagents.Registry {
+	return w.jobAgentRegistry
 }
 
 func (w *Workspace) DeploymentVersions() *store.DeploymentVersions {

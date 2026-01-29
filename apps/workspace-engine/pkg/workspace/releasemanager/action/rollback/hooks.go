@@ -23,10 +23,10 @@ type RollbackHooks struct {
 
 var _ verification.VerificationHooks = &RollbackHooks{}
 
-func NewRollbackHooks(store *store.Store, verificationManager *verification.Manager) *RollbackHooks {
+func NewRollbackHooks(store *store.Store, jobAgentRegistry *jobagents.Registry) *RollbackHooks {
 	return &RollbackHooks{
 		store:            store,
-		jobAgentRegistry: jobagents.NewRegistry(store, verificationManager),
+		jobAgentRegistry: jobAgentRegistry,
 	}
 }
 

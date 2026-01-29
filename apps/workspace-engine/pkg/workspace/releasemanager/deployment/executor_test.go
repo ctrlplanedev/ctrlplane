@@ -7,6 +7,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
@@ -22,7 +23,8 @@ func setupTestExecutor(t *testing.T) (*Executor, *store.Store) {
 	cs := statechange.NewChangeSet[any]()
 	testStore := store.New("test-workspace", cs)
 	testVerification := verification.NewManager(testStore)
-	executor := NewExecutor(testStore, testVerification)
+	testJobAgentRegistry := jobagents.NewRegistry(testStore, testVerification)
+	executor := NewExecutor(testStore, testJobAgentRegistry)
 	return executor, testStore
 }
 

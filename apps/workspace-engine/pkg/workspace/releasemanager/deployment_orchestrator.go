@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/variables"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
 
@@ -27,7 +27,7 @@ type DeploymentOrchestrator struct {
 }
 
 // NewDeploymentOrchestrator creates a new deployment orchestrator.
-func NewDeploymentOrchestrator(store *store.Store, verification *verification.Manager) *DeploymentOrchestrator {
+func NewDeploymentOrchestrator(store *store.Store, jobAgentRegistry *jobagents.Registry) *DeploymentOrchestrator {
 	policyManager := policy.New(store)
 	versionManager := versions.New(store)
 	variableManager := variables.New(store)
@@ -36,7 +36,7 @@ func NewDeploymentOrchestrator(store *store.Store, verification *verification.Ma
 		store:                 store,
 		planner:               deployment.NewPlanner(store, policyManager, versionManager, variableManager),
 		jobEligibilityChecker: deployment.NewJobEligibilityChecker(store),
-		executor:              deployment.NewExecutor(store, verification),
+		executor:              deployment.NewExecutor(store, jobAgentRegistry),
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/relationships/compute"
@@ -298,7 +297,6 @@ func getJobsToRetrigger(ws *workspace.Workspace, deployment *oapi.Deployment) []
 func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, jobsToRetrigger []*oapi.Job) {
 	// Create job factory and dispatcher
 	jobFactory := jobs.NewFactory(ws.Store())
-	jobAgentRegistry := jobagents.NewRegistry(ws.Store(), ws.ReleaseManager().VerificationManager())
 
 	for _, job := range jobsToRetrigger {
 		// Get the release for this job
@@ -329,7 +327,7 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 
 		// Dispatch the job asynchronously if it's not InvalidJobAgent
 		if newJob.Status != oapi.JobStatusInvalidJobAgent {
-			if err := jobAgentRegistry.Dispatch(ctx, newJob); err != nil {
+			if err := ws.JobAgentRegistry().Dispatch(ctx, newJob); err != nil {
 				message := err.Error()
 				newJob.Status = oapi.JobStatusInvalidIntegration
 				newJob.UpdatedAt = time.Now()

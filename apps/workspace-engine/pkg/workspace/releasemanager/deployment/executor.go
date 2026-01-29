@@ -9,7 +9,6 @@ import (
 	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/releasemanager/trace/token"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -25,11 +24,11 @@ type Executor struct {
 }
 
 // NewExecutor creates a new deployment executor.
-func NewExecutor(store *store.Store, verification *verification.Manager) *Executor {
+func NewExecutor(store *store.Store, jobAgentRegistry *jobagents.Registry) *Executor {
 	return &Executor{
 		store:            store,
 		jobFactory:       jobs.NewFactory(store),
-		jobAgentRegistry: jobagents.NewRegistry(store, verification),
+		jobAgentRegistry: jobAgentRegistry,
 	}
 }
 

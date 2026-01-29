@@ -7,7 +7,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/action"
-	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -23,10 +22,10 @@ type RollbackAction struct {
 	jobAgentRegistry *jobagents.Registry
 }
 
-func NewRollbackAction(store *store.Store, verificationManager *verification.Manager) *RollbackAction {
+func NewRollbackAction(store *store.Store, jobAgentRegistry *jobagents.Registry) *RollbackAction {
 	return &RollbackAction{
 		store:            store,
-		jobAgentRegistry: jobagents.NewRegistry(store, verificationManager),
+		jobAgentRegistry: jobAgentRegistry,
 	}
 }
 

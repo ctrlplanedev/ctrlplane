@@ -6,6 +6,7 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
+	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
@@ -22,7 +23,8 @@ func setupTestManager(t *testing.T) (*Manager, *store.Store) {
 	testStore := store.New("test-workspace", cs)
 	traceStore := spanstore.NewInMemoryStore()
 	verificationManager := verification.NewManager(testStore)
-	manager := New(testStore, traceStore, verificationManager)
+	jobAgentRegistry := jobagents.NewRegistry(testStore, verificationManager)
+	manager := New(testStore, traceStore, verificationManager, jobAgentRegistry)
 	return manager, testStore
 }
 
