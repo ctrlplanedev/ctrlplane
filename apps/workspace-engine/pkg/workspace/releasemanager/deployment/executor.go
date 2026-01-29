@@ -121,16 +121,13 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 			createJobAction.AddStep("Dispatch job", trace.StepResultPass, "Job dispatched to integration")
 		}
 
-		go func() {
-			dispatchCtx := context.WithoutCancel(ctx)
-			if err := e.jobAgentRegistry.Dispatch(dispatchCtx, newJob); err != nil {
-				message := fmt.Sprintf("Failed to dispatch job to integration: %s", err.Error())
-				newJob.Status = oapi.JobStatusInvalidJobAgent
-				newJob.UpdatedAt = time.Now()
-				newJob.Message = &message
-				e.store.Jobs.Upsert(dispatchCtx, newJob)
-			}
-		}()
+		if err := e.jobAgentRegistry.Dispatch(ctx, newJob); err != nil {
+			message := fmt.Sprintf("Failed to dispatch job to integration: %s", err.Error())
+			newJob.Status = oapi.JobStatusInvalidJobAgent
+			newJob.UpdatedAt = time.Now()
+			newJob.Message = &message
+			e.store.Jobs.Upsert(ctx, newJob)
+		}
 	} else {
 		span.AddEvent("Skipping job dispatch (InvalidJobAgent status)",
 			oteltrace.WithAttributes(attribute.String("job.id", newJob.Id)))

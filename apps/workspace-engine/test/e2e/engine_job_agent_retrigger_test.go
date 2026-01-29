@@ -72,7 +72,6 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 	jobAgent := c.NewJobAgent(engine.Workspace().ID)
 	jobAgent.Id = jobAgentID
 	jobAgent.Name = "Test Agent"
-	jobAgent.Type = "kubernetes"
 	jobAgent.WorkspaceId = engine.Workspace().ID
 	engine.PushEvent(ctx, handler.JobAgentCreate, jobAgent)
 
@@ -175,7 +174,6 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	jobAgent := c.NewJobAgent(engine.Workspace().ID)
 	jobAgent.Id = jobAgentID
 	jobAgent.Name = "Test Agent"
-	jobAgent.Type = "kubernetes"
 	jobAgent.WorkspaceId = engine.Workspace().ID
 	jobAgent.Config = map[string]any{
 		"namespace": "default",

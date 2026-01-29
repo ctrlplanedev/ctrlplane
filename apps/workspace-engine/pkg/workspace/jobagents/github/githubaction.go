@@ -56,12 +56,18 @@ func (a *GithubAction) Dispatch(ctx context.Context, context types.DispatchConte
 		ref = *cfg.Ref
 	}
 
-	if _, err := client.Actions.CreateWorkflowDispatchEventByID(ctx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
-		Ref:    ref,
-		Inputs: map[string]any{"job_id": context.Job.Id},
-	}); err != nil {
-		return fmt.Errorf("failed to dispatch workflow: %w", err)
-	}
+	go func() {
+		if _, err := client.Actions.CreateWorkflowDispatchEventByID(ctx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
+			Ref:    ref,
+			Inputs: map[string]any{"job_id": context.Job.Id},
+		}); err != nil {
+			message := fmt.Sprintf("failed to dispatch workflow: %s", err.Error())
+			context.Job.Status = oapi.JobStatusInvalidIntegration
+			context.Job.UpdatedAt = time.Now()
+			context.Job.Message = &message
+			a.store.Jobs.Upsert(ctx, context.Job)
+		}
+	}()
 
 	return nil
 }

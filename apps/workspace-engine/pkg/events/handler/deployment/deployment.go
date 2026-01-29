@@ -329,15 +329,13 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 
 		// Dispatch the job asynchronously if it's not InvalidJobAgent
 		if newJob.Status != oapi.JobStatusInvalidJobAgent {
-			go func(jobToDispatch *oapi.Job) {
-				if err := jobAgentRegistry.Dispatch(ctx, jobToDispatch); err != nil {
-					message := err.Error()
-					jobToDispatch.Status = oapi.JobStatusInvalidIntegration
-					jobToDispatch.UpdatedAt = time.Now()
-					jobToDispatch.Message = &message
-					ws.Jobs().Upsert(ctx, jobToDispatch)
-				}
-			}(newJob)
+			if err := jobAgentRegistry.Dispatch(ctx, newJob); err != nil {
+				message := err.Error()
+				newJob.Status = oapi.JobStatusInvalidIntegration
+				newJob.UpdatedAt = time.Now()
+				newJob.Message = &message
+				ws.Jobs().Upsert(ctx, newJob)
+			}
 		}
 	}
 }
