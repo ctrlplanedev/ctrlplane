@@ -5647,6 +5647,39 @@
          }
       },
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}": {
+         "delete": {
+            "description": "Deletes a resource by its identifier.",
+            "operationId": "deleteResourceByIdentifier",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Identifier of the resource",
+                  "in": "path",
+                  "name": "identifier",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "204": {
+                  "description": "No content"
+               }
+            },
+            "summary": "Delete resource by identifier",
+            "tags": [
+               "Resources"
+            ]
+         },
          "get": {
             "description": "Returns a resource by its identifier.",
             "operationId": "getResourceByIdentifier",
