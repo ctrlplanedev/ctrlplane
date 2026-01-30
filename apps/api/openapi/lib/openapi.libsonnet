@@ -25,7 +25,7 @@
   providerIdParam():: self.stringParam('providerId', 'ID of the resource provider'),
   relationshipRuleIdParam():: self.stringParam('relationshipRuleId', 'ID of the relationship rule'),
 
-  limitParam(defaultValue = 50):: {
+  limitParam(defaultValue=50):: {
     name: 'limit',
     'in': 'query',
     required: false,
@@ -37,7 +37,7 @@
       default: defaultValue,
     },
   },
-  
+
   offsetParam():: {
     name: 'offset',
     'in': 'query',
@@ -59,16 +59,16 @@
       type: 'string',
     },
   },
-  
+
   // Response helpers
-  schemaRef(name, nullable = false):: (
+  schemaRef(name, nullable=false):: (
     if nullable then
       { '$ref': '#/components/schemas/' + name, nullable: true }
     else
       { '$ref': '#/components/schemas/' + name }
   ),
-  
-  okResponse(schema, description = "OK response"):: {
+
+  okResponse(schema, description='OK response'):: {
     '200': {
       description: description,
       content: {
@@ -78,8 +78,8 @@
       },
     },
   },
-  
-  acceptedResponse(schema, description = "Accepted response"):: {
+
+  acceptedResponse(schema, description='Accepted response'):: {
     '202': {
       description: description,
       content: {
@@ -90,7 +90,7 @@
     },
   },
 
-  createdResponse(schema, description = "Resource created successfully"):: {
+  createdResponse(schema, description='Resource created successfully'):: {
     '201': {
       description: description,
       content: {
@@ -98,6 +98,12 @@
           schema: schema,
         },
       },
+    },
+  },
+
+  noContent():: {
+    '204': {
+      description: 'No content',
     },
   },
 
@@ -111,7 +117,7 @@
       },
     },
   },
-  
+
   badRequestResponse():: {
     '400': {
       description: 'Invalid request',
@@ -123,7 +129,18 @@
     },
   },
 
-  paginatedResponse(itemsSchema, description = "Paginated list of items"):: {
+  internalServerError():: {
+    '500': {
+      description: 'Internal server error',
+      content: {
+        'application/json': {
+          schema: { '$ref': '#/components/schemas/ErrorResponse' },
+        },
+      },
+    },
+  },
+
+  paginatedResponse(itemsSchema, description='Paginated list of items'):: {
     '200': {
       description: description,
       content: {
