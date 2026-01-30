@@ -58,29 +58,6 @@ const getResourceByIdentifier: AsyncTypedHandler<
     res.status(200).json(result.data);
 };
 
-// const deleteResourceByIdentifier: AsyncTypedHandler<
-//     "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-//     "delete"
-// > = async (req, res) => {
-//     const { workspaceId, identifier } = req.params;
-//
-//     // Directly use 'identifier' from the path, encoding it
-//     const encodedIdentifier = encodeURIComponent(identifier);
-//
-//     const result = await getClientFor(workspaceId).DELETE(
-//         `/v1/workspaces/${workspaceId}/resources/identifier/${encodedIdentifier}`,
-//     );
-//
-//     if (result.error != null) {
-//         throw new ApiError(
-//             result.error.error ?? "Failed to delete resource",
-//             result.response.status,
-//         );
-//     }
-//
-//     res.status(204).end();
-// };
-
 const deleteResourceByIdentifier: AsyncTypedHandler<
     "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
     "delete"
