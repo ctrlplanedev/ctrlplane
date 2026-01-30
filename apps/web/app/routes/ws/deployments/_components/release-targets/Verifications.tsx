@@ -19,6 +19,7 @@ import {
 import { cn } from "~/lib/utils";
 import { ArgoCDVerificationDisplay } from "./argocd/ArgoCD";
 import { isArgoCDMeasurement } from "./argocd/argocd-metric";
+import { VerificationMetricStatus } from "./VerificationMetricStatus";
 
 type JobVerification = WorkspaceEngine["schemas"]["JobVerification"];
 type VerificationMetricStatus =
@@ -106,7 +107,9 @@ function MetricSummaryDisplay({
   const failureLimit = metric.failureThreshold ?? 0;
   const successThreshold = metric.successThreshold;
 
-  const consecutiveSuccessCount = getConsecutiveSuccessCount(metric.measurements);
+  const consecutiveSuccessCount = getConsecutiveSuccessCount(
+    metric.measurements,
+  );
 
   const statusMessage = getStatusMessage(
     failedCount,
@@ -146,12 +149,10 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
       new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime(),
   );
   const latestMeasurement = sortedMeasurements.at(0);
-  if (latestMeasurement == null) return null;
 
-  const isArgoCD = isArgoCDMeasurement(latestMeasurement.data);
+  const isArgoCD =
+    latestMeasurement != null && isArgoCDMeasurement(latestMeasurement.data);
 
-  const status = latestMeasurement?.status?.toLowerCase() ?? "inconclusive";
-  const statusLabel = capitalCase(status);
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
@@ -164,18 +165,7 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
           />
           <span className="text-sm font-medium">{metric.name}</span>
           <div className="grow" />
-          <span
-            className={cn(
-              "text-xs",
-              status === "passed" && "text-green-500",
-              status === "failed" && "text-red-500 dark:text-red-400",
-              status === "inconclusive" && "text-muted-foreground",
-            )}
-          >
-            {statusLabel}{" "}
-            {latestMeasurement?.measuredAt != null &&
-              `${formatDistanceToNowStrict(new Date(latestMeasurement.measuredAt), { addSuffix: true })}`}
-          </span>
+          <VerificationMetricStatus metric={metric} />
         </div>
       </CollapsibleTrigger>
 
@@ -199,7 +189,10 @@ type MetricSummary = {
   status: "passed" | "failed" | "inconclusive";
 };
 
-const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
+type VerificationMetricStatusType =
+  WorkspaceEngine["schemas"]["VerificationMetricStatus"];
+
+const metricStatus = (metric: VerificationMetricStatusType): MetricSummary => {
   if (metric.measurements.length === 0) {
     return { name: metric.name, status: "inconclusive" };
   }
@@ -232,7 +225,6 @@ const metricStatus = (metric: VerificationMetricStatus): MetricSummary => {
 
   if (successThreshold != null && consecutiveSuccessCount >= successThreshold)
     return { name: metric.name, status: "passed" };
-
 
   if (metric.measurements.length < metric.count)
     return { name: metric.name, status: "inconclusive" };
