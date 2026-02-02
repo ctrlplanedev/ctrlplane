@@ -4408,6 +4408,75 @@
             "summary": "Get job"
          }
       },
+      "/v1/workspaces/{workspaceId}/jobs/{jobId}/status": {
+         "put": {
+            "description": "Updates the status of a specific job by ID.",
+            "operationId": "updateJobStatus",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the job",
+                  "in": "path",
+                  "name": "jobId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/JobStatus"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/Job"
+                        }
+                     }
+                  },
+                  "description": "Update job status"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Update job status"
+         }
+      },
       "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release": {
          "get": {
             "description": "Returns a specific job by ID with its release.",

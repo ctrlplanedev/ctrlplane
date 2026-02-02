@@ -44,4 +44,26 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/jobs/{jobId}/status': {
+    put: {
+      summary: 'Update job status',
+      operationId: 'updateJobStatus',
+      description: 'Updates the status of a specific job by ID.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.jobIdParam(),
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: openapi.schemaRef('JobStatus'),
+          },
+        },
+      },
+      responses: openapi.okResponse(openapi.schemaRef('Job'), 'Update job status')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

@@ -1,7 +1,9 @@
 import type { AsyncTypedHandler } from "@/types/api.js";
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
 
+import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 const getJobs: AsyncTypedHandler<
@@ -22,7 +24,10 @@ const getJobs: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Failed to list jobs", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Failed to list jobs",
+      response.response.status,
+    );
 
   res.status(200).json(response.data);
 };
@@ -38,7 +43,10 @@ const getJob: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Job not found", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Job not found",
+      response.response.status,
+    );
 
   res.status(200).json(response.data);
 };
@@ -54,12 +62,40 @@ const getJobWithRelease: AsyncTypedHandler<
   );
 
   if (response.error != null)
-    throw new ApiError(response.error.error ?? "Job not found", response.response.status);
+    throw new ApiError(
+      response.error.error ?? "Job not found",
+      response.response.status,
+    );
 
   res.status(200).json(response.data);
+};
+
+const updateJobStatus: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/jobs/{jobId}/status",
+  "put"
+> = async (req, res) => {
+  const { workspaceId, jobId } = req.params;
+  const { body: status } = req;
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.JobUpdated,
+    timestamp: Date.now(),
+    data: {
+      id: jobId,
+      job: {
+        id: jobId,
+        status,
+      } as WorkspaceEngine["schemas"]["Job"],
+      fieldsToUpdate: ["status"],
+    },
+  });
+
+  res.status(200).json({ message: "Job status update queued" });
 };
 
 export const jobsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(getJobs))
   .get("/:jobId", asyncHandler(getJob))
-  .get("/:jobId/with-release", asyncHandler(getJobWithRelease));
+  .get("/:jobId/with-release", asyncHandler(getJobWithRelease))
+  .put("/:jobId/status", asyncHandler(updateJobStatus));
