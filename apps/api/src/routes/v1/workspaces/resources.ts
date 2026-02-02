@@ -58,6 +58,41 @@ const getResourceByIdentifier: AsyncTypedHandler<
   res.status(200).json(result.data);
 };
 
+const deleteResourceByIdentifier: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, identifier } = req.params;
+
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const resourceResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
+    { params: { path: { workspaceId, resourceIdentifier } } },
+  );
+  if (resourceResponse.error != null) {
+    const status = resourceResponse.response.status;
+    if (status >= 500) {
+      throw new ApiError(
+        resourceResponse.error.error ?? "Internal server error",
+        status,
+      );
+    }
+    throw new ApiError(
+      resourceResponse.error.error ?? "Resource not found",
+      status,
+    );
+  }
+
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.ResourceDeleted,
+    timestamp: Date.now(),
+    data: resourceResponse.data,
+  });
+
+  res.status(204).end();
+};
+
 const getVariablesForResource: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
   "get"
@@ -147,6 +182,7 @@ const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
 export const resourceRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(listResources))
   .get("/identifier/:identifier", asyncHandler(getResourceByIdentifier))
+  .delete("/identifier/:identifier", asyncHandler(deleteResourceByIdentifier))
   .get(
     "/identifier/:identifier/variables",
     asyncHandler(getVariablesForResource),

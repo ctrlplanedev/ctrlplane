@@ -29,6 +29,17 @@ local openapi = import '../lib/openapi.libsonnet';
       ],
       responses: openapi.okResponse(openapi.schemaRef('Resource')),
     },
+    delete: {
+      tags: ['Resources'],
+      summary: 'Delete resource by identifier',
+      operationId: 'deleteResourceByIdentifier',
+      description: 'Deletes a resource by its identifier.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.identifierParam(),
+      ],
+      responses: openapi.noContent() + openapi.notFoundResponse() + openapi.badRequestResponse(),
+    },
   },
   '/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables': {
     get: {
@@ -42,9 +53,9 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.limitParam(),
         openapi.offsetParam(),
       ],
-      responses: openapi.paginatedResponse(openapi.schemaRef('ResourceVariable'), 'The requested variables') + 
-        openapi.notFoundResponse() + 
-        openapi.badRequestResponse(),
+      responses: openapi.paginatedResponse(openapi.schemaRef('ResourceVariable'), 'The requested variables') +
+                 openapi.notFoundResponse() +
+                 openapi.badRequestResponse(),
     },
     patch: {
       tags: ['Resources'],
@@ -87,8 +98,8 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.deploymentIdParam(),
       ],
       responses: openapi.okResponse(openapi.schemaRef('ReleaseTarget'), 'The requested release target') +
-        openapi.notFoundResponse() +
-        openapi.badRequestResponse(),
+                 openapi.notFoundResponse() +
+                 openapi.badRequestResponse(),
     },
   },
 }
