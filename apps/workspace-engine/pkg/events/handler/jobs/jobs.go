@@ -111,6 +111,17 @@ func triggerActionsOnStatusChange(ctx context.Context, ws *workspace.Workspace, 
 	if err != nil {
 		log.Error("error triggering actions on status change", "job_id", job.Id, "from", previousStatus, "to", job.Status, "error", err.Error())
 	}
+
+	if job.Status != oapi.JobStatusSuccessful {
+		return
+	}
+
+	err = ws.
+		WorkflowActionOrchestrator().
+		OnJobSuccess(ctx, job)
+	if err != nil {
+		log.Error("error triggering actions on job success", "job_id", job.Id, "error", err.Error())
+	}
 }
 
 // invalidateCacheForJob invalidates the release target state cache for the job's release target.
