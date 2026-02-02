@@ -31,8 +31,12 @@
 - Type imports: `import type { Type } from "module"`
 - Prefer async/await over raw promises
 - Use functional React components only (no class components)
+- For React components, use `React.FC` with explicit typing, e.g. `const My: React.FC = () => {}`
 - Format with Prettier (`@ctrlplane/prettier-config`)
 - Go: keep code gofmt-compliant, follow existing patterns in the package
+
+## Design patterns
+- Promote the builder pattern for complex object construction and configuration
 
 ## Testing guidance
 - For TypeScript packages, use the existing vitest setup
