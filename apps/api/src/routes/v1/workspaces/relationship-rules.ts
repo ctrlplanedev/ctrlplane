@@ -53,21 +53,22 @@ const deleteRelationshipRule: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, relationshipRuleId } = req.params;
 
+  const relationshipRuleResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/relationship-rules/{relationshipRuleId}",
+    { params: { path: { workspaceId, relationshipRuleId } } },
+  );
+
+  if (relationshipRuleResponse.error != null)
+    throw new ApiError(
+      relationshipRuleResponse.error.error ?? "Relationship rule not found",
+      relationshipRuleResponse.response.status,
+    );
+
   await sendGoEvent({
     workspaceId,
     eventType: Event.RelationshipRuleDeleted,
     timestamp: Date.now(),
-    data: {
-      id: relationshipRuleId,
-      workspaceId,
-      fromType: "deployment",
-      matcher: { cel: "" },
-      metadata: {},
-      name: "",
-      reference: "",
-      relationshipType: "",
-      toType: "deployment",
-    },
+    data: relationshipRuleResponse.data,
   });
 
   res.status(202).json({ id: relationshipRuleId });

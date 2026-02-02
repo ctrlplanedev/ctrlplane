@@ -61,12 +61,23 @@ export const deleteSystem: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, systemId } = req.params;
 
+  const systemResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/systems/{systemId}",
+    { params: { path: { workspaceId, systemId } } },
+  );
+
+  if (systemResponse.error != null)
+    throw new ApiError(
+      systemResponse.error.error ?? "System not found",
+      systemResponse.response.status,
+    );
+
   try {
     await sendGoEvent({
       workspaceId,
       eventType: Event.SystemDeleted,
       timestamp: Date.now(),
-      data: { id: systemId, name: "", workspaceId },
+      data: systemResponse.data.system,
     });
   } catch {
     res.status(500).json({ message: "Failed to delete system" });
