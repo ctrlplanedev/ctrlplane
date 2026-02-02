@@ -6,197 +6,192 @@ import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 const listResources: AsyncTypedHandler<
-    "/v1/workspaces/{workspaceId}/resources",
-    "get"
+  "/v1/workspaces/{workspaceId}/resources",
+  "get"
 > = async (req, res) => {
-    const { workspaceId } = req.params;
-    const { limit, offset, cel } = req.query;
+  const { workspaceId } = req.params;
+  const { limit, offset, cel } = req.query;
 
-    const decodedCel =
-        typeof cel === "string" ? decodeURIComponent(cel.replace(/\+/g, " ")) : cel;
+  const decodedCel =
+    typeof cel === "string" ? decodeURIComponent(cel.replace(/\+/g, " ")) : cel;
 
-    const result = await getClientFor(workspaceId).POST(
-        "/v1/workspaces/{workspaceId}/resources/query",
-        {
-            body: {
-                filter: decodedCel != null ? { cel: decodedCel } : undefined,
-            },
-            params: {
-                path: { workspaceId },
-                query: { limit, offset },
-            },
-        },
+  const result = await getClientFor(workspaceId).POST(
+    "/v1/workspaces/{workspaceId}/resources/query",
+    {
+      body: {
+        filter: decodedCel != null ? { cel: decodedCel } : undefined,
+      },
+      params: {
+        path: { workspaceId },
+        query: { limit, offset },
+      },
+    },
+  );
+
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Failed to list resources",
+      result.response.status,
     );
 
-    if (result.error != null)
-        throw new ApiError(
-            result.error.error ?? "Failed to list resources",
-            result.response.status,
-        );
-
-    res.status(200).json(result.data);
+  res.status(200).json(result.data);
 };
 
 const getResourceByIdentifier: AsyncTypedHandler<
-    "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-    "get"
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+  "get"
 > = async (req, res) => {
-    const { workspaceId, identifier } = req.params;
+  const { workspaceId, identifier } = req.params;
 
-    const resourceIdentifier = encodeURIComponent(identifier);
-    const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-        { params: { path: { workspaceId, resourceIdentifier } } },
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const result = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
+    { params: { path: { workspaceId, resourceIdentifier } } },
+  );
+
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Resource not found",
+      result.response.status,
     );
 
-    if (result.error != null)
-        throw new ApiError(
-            result.error.error ?? "Resource not found",
-            result.response.status,
-        );
-
-    res.status(200).json(result.data);
+  res.status(200).json(result.data);
 };
 
 const deleteResourceByIdentifier: AsyncTypedHandler<
-    "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
-    "delete"
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}",
+  "delete"
 > = async (req, res) => {
-    const { workspaceId, identifier } = req.params;
+  const { workspaceId, identifier } = req.params;
 
-    const resourceIdentifier = encodeURIComponent(identifier);
-    const resourceResponse = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-        { params: { path: { workspaceId, resourceIdentifier } } },
-    );
-
-    if (resourceResponse.error != null) {
-        const status = resourceResponse.response.status;
-        if (status >= 500) {
-            throw new ApiError(
-                resourceResponse.error.error ?? "Internal server error",
-                status,
-            );
-        }
-        throw new ApiError(
-            resourceResponse.error.error ?? "Resource not found",
-            status,
-        );
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const resourceResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
+    { params: { path: { workspaceId, resourceIdentifier } } },
+  );
+  if (resourceResponse.error != null) {
+    const status = resourceResponse.response.status;
+    if (status >= 500) {
+      throw new ApiError(
+        resourceResponse.error.error ?? "Internal server error",
+        status,
+      );
     }
+    throw new ApiError(
+      resourceResponse.error.error ?? "Resource not found",
+      status,
+    );
+  }
 
-    await sendGoEvent({
-        workspaceId,
-        eventType: Event.ResourceDeleted,
-        timestamp: Date.now(),
-        data: resourceResponse.data,
-    });
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.ResourceDeleted,
+    timestamp: Date.now(),
+    data: resourceResponse.data,
+  });
 
-    res.status(204).end();
+  res.status(204).end();
 };
 
-
 const getVariablesForResource: AsyncTypedHandler<
-    "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
-    "get"
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+  "get"
 > = async (req, res) => {
-    const { workspaceId, identifier } = req.params;
-    const { limit, offset } = req.query;
+  const { workspaceId, identifier } = req.params;
+  const { limit, offset } = req.query;
 
-    const resourceIdentifier = encodeURIComponent(identifier);
-    const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
-        {
-            params: { path: { workspaceId, resourceIdentifier } },
-            query: { limit, offset },
-        },
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const result = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/variables",
+    {
+      params: { path: { workspaceId, resourceIdentifier } },
+      query: { limit, offset },
+    },
+  );
+
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Failed to get variables for resource",
+      result.response.status,
     );
 
-    if (result.error != null)
-        throw new ApiError(
-            result.error.error ?? "Failed to get variables for resource",
-            result.response.status,
-        );
-
-    res.status(200).json(result.data);
+  res.status(200).json(result.data);
 };
 
 const updateVariablesForResource: AsyncTypedHandler<
-    "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
-    "patch"
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables",
+  "patch"
 > = async (req, res) => {
-    const { workspaceId, identifier } = req.params;
-    const { body } = req;
+  const { workspaceId, identifier } = req.params;
+  const { body } = req;
 
-    const resourceIdentifier = encodeURIComponent(identifier);
-    const resourceResponse = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
-        { params: { path: { workspaceId, resourceIdentifier } } },
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const resourceResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}",
+    { params: { path: { workspaceId, resourceIdentifier } } },
+  );
+
+  if (resourceResponse.error != null) {
+    throw new ApiError(
+      resourceResponse.error.error ?? "Failed to get resource",
+      resourceResponse.response.status,
     );
+  }
 
-    if (resourceResponse.error != null) {
-        throw new ApiError(
-            resourceResponse.error.error ?? "Failed to get resource",
-            resourceResponse.response.status,
-        );
-    }
+  await sendGoEvent({
+    workspaceId,
+    eventType: Event.ResourceVariablesBulkUpdated,
+    timestamp: Date.now(),
+    data: { resourceId: resourceResponse.data.id, variables: body },
+  });
 
-    await sendGoEvent({
-        workspaceId,
-        eventType: Event.ResourceVariablesBulkUpdated,
-        timestamp: Date.now(),
-        data: { resourceId: resourceResponse.data.id, variables: body },
-    });
-
-    res.status(204).end();
+  res.status(204).end();
 };
 
 const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
-    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}",
-    "get"
+  "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}",
+  "get"
 > = async (req, res) => {
-    const { workspaceId, resourceIdentifier, deploymentId } = req.params;
+  const { workspaceId, resourceIdentifier, deploymentId } = req.params;
 
-    const encodedResourceIdentifier = encodeURIComponent(resourceIdentifier);
+  const encodedResourceIdentifier = encodeURIComponent(resourceIdentifier);
 
-    const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}",
-        {
-            params: {
-                path: {
-                    workspaceId,
-                    resourceIdentifier: encodedResourceIdentifier,
-                    deploymentId,
-                },
-            },
+  const result = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}",
+    {
+      params: {
+        path: {
+          workspaceId,
+          resourceIdentifier: encodedResourceIdentifier,
+          deploymentId,
         },
+      },
+    },
+  );
+
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ??
+        "Failed to get release target for resource in deployment",
+      result.response.status,
     );
 
-    if (result.error != null)
-        throw new ApiError(
-            result.error.error ??
-            "Failed to get release target for resource in deployment",
-            result.response.status,
-        );
-
-    res.status(200).json(result.data);
+  res.status(200).json(result.data);
 };
 
 export const resourceRouter = Router({ mergeParams: true })
-    .get("/", asyncHandler(listResources))
-    .get("/identifier/:identifier", asyncHandler(getResourceByIdentifier))
-    .delete(
-        "/identifier/:identifier",
-        asyncHandler(deleteResourceByIdentifier),
-    )
-    .get(
-        "/identifier/:identifier/variables",
-        asyncHandler(getVariablesForResource),
-    )
-    .patch(
-        "/identifier/:identifier/variables",
-        asyncHandler(updateVariablesForResource),
-    )
-    .get(
-        "/identifier/:identifier/release-targets/deployment/:deploymentId",
-        asyncHandler(getReleaseTargetForResourceInDeployment),
-    );
+  .get("/", asyncHandler(listResources))
+  .get("/identifier/:identifier", asyncHandler(getResourceByIdentifier))
+  .delete("/identifier/:identifier", asyncHandler(deleteResourceByIdentifier))
+  .get(
+    "/identifier/:identifier/variables",
+    asyncHandler(getVariablesForResource),
+  )
+  .patch(
+    "/identifier/:identifier/variables",
+    asyncHandler(updateVariablesForResource),
+  )
+  .get(
+    "/identifier/:identifier/release-targets/deployment/:deploymentId",
+    asyncHandler(getReleaseTargetForResourceInDeployment),
+  );
