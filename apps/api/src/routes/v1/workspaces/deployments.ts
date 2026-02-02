@@ -80,17 +80,21 @@ const deleteDeployment: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, deploymentId } = req.params;
 
+  const deploymentResponse = await existingDeploymentById(
+    workspaceId,
+    deploymentId,
+  );
+  const deployment = deploymentResponse?.deployment;
+
+  if (deployment == null) {
+    throw new ApiError("Deployment not found", 404);
+  }
+
   await sendGoEvent({
     workspaceId,
     eventType: Event.DeploymentDeleted,
     timestamp: Date.now(),
-    data: {
-      id: deploymentId,
-      name: "",
-      systemId: "",
-      slug: "",
-      jobAgentConfig: { type: "custom" },
-    },
+    data: deployment,
   });
 
   res.status(204).json({ message: "Deployment deleted successfully" });

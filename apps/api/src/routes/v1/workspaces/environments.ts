@@ -61,16 +61,22 @@ const deleteEnvironment: AsyncTypedHandler<
 > = async (req, res) => {
   const { workspaceId, environmentId } = req.params;
 
+  const environmentResponse = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/environments/{environmentId}",
+    { params: { path: { workspaceId, environmentId } } },
+  );
+
+  if (environmentResponse.error != null)
+    throw new ApiError(
+      environmentResponse.error.error ?? "Environment not found",
+      environmentResponse.response.status,
+    );
+
   await sendGoEvent({
     workspaceId,
     eventType: Event.EnvironmentDeleted,
     timestamp: Date.now(),
-    data: {
-      id: environmentId,
-      name: "",
-      systemId: "",
-      createdAt: "",
-    },
+    data: environmentResponse.data,
   });
 
   res.status(204).json({ message: "Environment deleted successfully" });
