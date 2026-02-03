@@ -1,13 +1,13 @@
 ---
 type: Resource
-identifier: tutorial-quickstart-resource-a
+identifier: tutorial-quickstart-resource-staging
 kind: KubernetesCluster
-name: quickstart-region-a
+name: quickstart-staging-cluster
 version: tutorial/quickstart/v1
 metadata:
   tutorial: quickstart
-  environment: tutorial
-  region: a
+  environment: staging
+  region: us-east-1
 config:
   number: 1
   string: "one"
@@ -18,14 +18,14 @@ config:
     - three
 ---
 type: Resource
-identifier: tutorial-quickstart-resource-b
+identifier: tutorial-quickstart-resource-production
 kind: KubernetesCluster
-name: quickstart-region-b
+name: quickstart-production-cluster
 version: tutorial/quickstart/v1
 metadata:
   tutorial: quickstart
-  environment: tutorial
-  region: b
+  environment: production
+  region: us-east-1
 config:
   number: 1
   string: "one"
