@@ -1423,6 +1423,7 @@ func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowTemplateOp
 		for _, option := range options {
 			option(ws, input)
 		}
+		wft.Inputs = append(wft.Inputs, *input)
 	}
 }
 
