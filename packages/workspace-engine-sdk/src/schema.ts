@@ -1346,10 +1346,10 @@ export interface components {
       /** Format: date-time */
       startedAt?: string;
       status: components["schemas"]["JobStatus"];
-      taskId: string;
       traceToken?: string;
       /** Format: date-time */
       updatedAt: string;
+      workflowStepId: string;
     };
     JobAgent: {
       config: components["schemas"]["JobAgentConfig"];
@@ -1388,9 +1388,9 @@ export interface components {
         | "releaseId"
         | "startedAt"
         | "status"
-        | "taskId"
         | "traceToken"
         | "updatedAt"
+        | "workflowStepId"
       )[];
       id?: string;
       job: components["schemas"]["Job"];
@@ -1756,6 +1756,17 @@ export interface components {
        */
       type: "terraformCloudRun";
     };
+    TestRunnerJobAgentConfig: {
+      /**
+       * Format: int
+       * @description Delay in seconds before resolving the job.
+       */
+      delaySeconds?: number;
+      /** @description Optional message to include in the job output. */
+      message?: string;
+      /** @description Final status to set (e.g. "successful", "failure"). */
+      status?: string;
+    };
     UserApprovalRecord: {
       createdAt: string;
       environmentId: string;
@@ -1863,6 +1874,12 @@ export interface components {
       | components["schemas"]["WorkflowStringInput"]
       | components["schemas"]["WorkflowNumberInput"]
       | components["schemas"]["WorkflowBooleanInput"];
+    WorkflowJobAgentConfig: {
+      config: {
+        [key: string]: unknown;
+      };
+      id: string;
+    };
     WorkflowNumberInput: {
       default: number;
       name: string;
@@ -1871,17 +1888,13 @@ export interface components {
     };
     WorkflowStep: {
       id: string;
+      index: number;
+      jobAgent?: components["schemas"]["WorkflowJobAgentConfig"];
       workflowId: string;
-      workflowStepTemplateId: string;
     };
     WorkflowStepTemplate: {
       id: string;
-      jobAgent: {
-        config: {
-          [key: string]: unknown;
-        };
-        id: string;
-      };
+      jobAgent: components["schemas"]["WorkflowJobAgentConfig"];
       name: string;
     };
     WorkflowStringInput: {
