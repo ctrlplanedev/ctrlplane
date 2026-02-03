@@ -52,7 +52,7 @@ export default function Jobs() {
 
           <div className="flex-1"></div>
 
-          <div className=" flex flex-shrink-0 gap-2">
+          <div className=" flex shrink-0 gap-2">
             <ResourceFilter />
             <EnvironmentFilter />
             <DeploymentFilter />
