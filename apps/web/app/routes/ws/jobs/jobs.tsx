@@ -50,7 +50,7 @@ export default function Jobs() {
             </BreadcrumbList>
           </Breadcrumb>
 
-          <div className="flex-1"></div>
+          <div className="flex-1" />
 
           <div className=" flex shrink-0 gap-2">
             <ResourceFilter />
