@@ -18,6 +18,7 @@ import (
 	"workspace-engine/pkg/events/handler/system"
 	"workspace-engine/pkg/events/handler/tick"
 	"workspace-engine/pkg/events/handler/userapprovalrecords"
+	"workspace-engine/pkg/events/handler/workflows"
 )
 
 var handlers = handler.HandlerRegistry{
@@ -87,6 +88,9 @@ var handlers = handler.HandlerRegistry{
 	handler.WorkspaceTick: tick.HandleWorkspaceTick,
 
 	handler.ReleaseTargetDeploy: redeploy.HandleReleaseTargetDeploy,
+
+	handler.WorkflowTemplateCreate: workflows.HandleWorkflowTemplateCreated,
+	handler.WorkflowCreate:         workflows.HandleWorkflowCreated,
 }
 
 func NewEventHandler() *handler.EventListener {

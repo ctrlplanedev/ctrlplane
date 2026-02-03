@@ -26,6 +26,16 @@ func (w *Workflows) Get(id string) (*oapi.Workflow, bool) {
 	return w.repo.Workflows.Get(id)
 }
 
+func (w *Workflows) GetByTemplateID(templateID string) map[string]*oapi.Workflow {
+	workflows := make(map[string]*oapi.Workflow)
+	for _, workflow := range w.repo.Workflows.Items() {
+		if workflow.WorkflowTemplateId == templateID {
+			workflows[workflow.Id] = workflow
+		}
+	}
+	return workflows
+}
+
 func (w *Workflows) Upsert(ctx context.Context, workflow *oapi.Workflow) {
 	w.repo.Workflows.Set(workflow.Id, workflow)
 	w.store.changeset.RecordUpsert(workflow)

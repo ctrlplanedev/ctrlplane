@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
+	"workspace-engine/pkg/workspace/workflowmanager"
 )
 
 func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace {
@@ -38,6 +39,7 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 
 	// Create release manager with trace store (will panic if nil)
 	ws.releasemanager = releasemanager.New(s, ws.traceStore, ws.verificationManager, ws.jobAgentRegistry)
+	ws.workflowManager = workflowmanager.NewWorkflowManager(s, ws.jobAgentRegistry)
 
 	reconcileFn := func(ctx context.Context, targets []*oapi.ReleaseTarget) error {
 		return ws.releasemanager.ReconcileTargets(ctx, targets, releasemanager.WithTrigger(trace.TriggerJobSuccess))
@@ -50,23 +52,33 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 		RegisterAction(environmentprogression.NewEnvironmentProgressionAction(s, reconcileFn)).
 		RegisterAction(rollback.NewRollbackAction(s, ws.jobAgentRegistry))
 
+	ws.workflowActionOrchestrator = workflowmanager.
+		NewWorkflowActionOrchestrator(s).
+		RegisterAction(workflowmanager.NewWorkflowManagerAction(s, ws.workflowManager))
+
 	return ws
 }
 
 type Workspace struct {
 	ID string
 
-	changeset           *statechange.ChangeSet[any]
-	store               *store.Store
-	verificationManager *verification.Manager
-	releasemanager      *releasemanager.Manager
-	traceStore          releasemanager.PersistenceStore
-	actionOrchestrator  *action.Orchestrator
-	jobAgentRegistry    *jobagents.Registry
+	changeset                  *statechange.ChangeSet[any]
+	store                      *store.Store
+	verificationManager        *verification.Manager
+	workflowManager            *workflowmanager.Manager
+	releasemanager             *releasemanager.Manager
+	traceStore                 releasemanager.PersistenceStore
+	actionOrchestrator         *action.Orchestrator
+	workflowActionOrchestrator *workflowmanager.WorkflowActionOrchestrator
+	jobAgentRegistry           *jobagents.Registry
 }
 
 func (w *Workspace) ActionOrchestrator() *action.Orchestrator {
 	return w.actionOrchestrator
+}
+
+func (w *Workspace) WorkflowActionOrchestrator() *workflowmanager.WorkflowActionOrchestrator {
+	return w.workflowActionOrchestrator
 }
 
 func (w *Workspace) Store() *store.Store {
@@ -83,6 +95,10 @@ func (w *Workspace) ReleaseManager() *releasemanager.Manager {
 
 func (w *Workspace) VerificationManager() *verification.Manager {
 	return w.verificationManager
+}
+
+func (w *Workspace) WorkflowManager() *workflowmanager.Manager {
+	return w.workflowManager
 }
 
 func (w *Workspace) JobAgentRegistry() *jobagents.Registry {
@@ -163,4 +179,20 @@ func (w *Workspace) DeploymentVariableValues() *store.DeploymentVariableValues {
 
 func (w *Workspace) Relations() *store.Relations {
 	return w.store.Relations
+}
+
+func (w *Workspace) WorkflowTemplates() *store.WorkflowTemplates {
+	return w.store.WorkflowTemplates
+}
+
+func (w *Workspace) WorkflowStepTemplates() *store.WorkflowStepTemplates {
+	return w.store.WorkflowStepTemplates
+}
+
+func (w *Workspace) Workflows() *store.Workflows {
+	return w.store.Workflows
+}
+
+func (w *Workspace) WorkflowSteps() *store.WorkflowSteps {
+	return w.store.WorkflowSteps
 }

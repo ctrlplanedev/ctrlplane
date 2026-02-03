@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -1320,5 +1321,166 @@ func DeploymentVariableValueBoolValue(value bool) DeploymentVariableValueOption 
 func DeploymentVariableValueReferenceValue(reference string, path []string) DeploymentVariableValueOption {
 	return func(_ *TestWorkspace, dvv *oapi.DeploymentVariableValue) {
 		dvv.Value = *c.NewValueFromReference(reference, path)
+	}
+}
+
+// ===== Workflow Options =====
+
+type WorkflowTemplateOption func(*TestWorkspace, *oapi.WorkflowTemplate)
+
+func WithWorkflowTemplate(options ...WorkflowTemplateOption) WorkspaceOption {
+	return func(ws *TestWorkspace) error {
+		wft := c.NewWorkflowTemplate(ws.workspace.ID)
+		for _, option := range options {
+			option(ws, wft)
+		}
+		ws.PushEvent(context.Background(), handler.WorkflowTemplateCreate, wft)
+		return nil
+	}
+}
+
+func WorkflowTemplateName(name string) WorkflowTemplateOption {
+	return func(_ *TestWorkspace, wft *oapi.WorkflowTemplate) {
+		wft.Name = name
+	}
+}
+
+func WorkflowTemplateID(id string) WorkflowTemplateOption {
+	return func(_ *TestWorkspace, wft *oapi.WorkflowTemplate) {
+		wft.Id = id
+	}
+}
+
+type WorkflowInputOption func(*TestWorkspace, *oapi.WorkflowInput)
+
+func WithWorkflowStringInput(options ...WorkflowInputOption) WorkflowTemplateOption {
+	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+		input := c.NewStringWorkflowInput(wft.Id)
+		for _, option := range options {
+			option(ws, input)
+		}
+		wft.Inputs = append(wft.Inputs, *input)
+	}
+}
+
+func WorkflowStringInputName(name string) WorkflowInputOption {
+	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
+		curr, _ := input.MarshalJSON()
+		var cfg map[string]any
+		json.Unmarshal(curr, &cfg)
+		cfg["name"] = name
+		new, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(new)
+	}
+}
+
+func WorkflowStringInputDefault(defaultValue string) WorkflowInputOption {
+	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
+		curr, _ := input.MarshalJSON()
+		var cfg map[string]any
+		json.Unmarshal(curr, &cfg)
+		cfg["default"] = defaultValue
+		new, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(new)
+	}
+}
+
+func WithWorkflowNumberInput(options ...WorkflowInputOption) WorkflowTemplateOption {
+	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+		input := c.NewNumberWorkflowInput(wft.Id)
+		for _, option := range options {
+			option(ws, input)
+		}
+		wft.Inputs = append(wft.Inputs, *input)
+	}
+}
+
+func WorkflowNumberInputName(name string) WorkflowInputOption {
+	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
+		curr, _ := input.MarshalJSON()
+		var cfg map[string]any
+		json.Unmarshal(curr, &cfg)
+		cfg["name"] = name
+		new, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(new)
+	}
+}
+
+func WorkflowNumberInputDefault(defaultValue float32) WorkflowInputOption {
+	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
+		curr, _ := input.MarshalJSON()
+		var cfg map[string]any
+		json.Unmarshal(curr, &cfg)
+		cfg["default"] = defaultValue
+		new, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(new)
+	}
+}
+
+func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowTemplateOption {
+	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+		input := c.NewBooleanWorkflowInput(wft.Id)
+		for _, option := range options {
+			option(ws, input)
+		}
+		wft.Inputs = append(wft.Inputs, *input)
+	}
+}
+
+func WorkflowBooleanInputName(name string) WorkflowInputOption {
+	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
+		curr, _ := input.MarshalJSON()
+		var cfg map[string]any
+		json.Unmarshal(curr, &cfg)
+		cfg["name"] = name
+		new, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(new)
+	}
+}
+
+func WorkflowBooleanInputDefault(defaultValue bool) WorkflowInputOption {
+	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
+		curr, _ := input.MarshalJSON()
+		var cfg map[string]any
+		json.Unmarshal(curr, &cfg)
+		cfg["default"] = defaultValue
+		new, _ := json.Marshal(cfg)
+		_ = input.UnmarshalJSON(new)
+	}
+}
+
+type WorkflowStepTemplateOption func(*TestWorkspace, *oapi.WorkflowStepTemplate)
+
+func WithWorkflowStepTemplate(options ...WorkflowStepTemplateOption) WorkflowTemplateOption {
+	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+		stepTemplate := c.NewWorkflowStepTemplate(wft.Id)
+		for _, option := range options {
+			option(ws, stepTemplate)
+		}
+		wft.Steps = append(wft.Steps, *stepTemplate)
+	}
+}
+
+func WorkflowStepTemplateID(id string) WorkflowStepTemplateOption {
+	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
+		stepTemplate.Id = id
+	}
+}
+
+func WorkflowStepTemplateJobAgentID(id string) WorkflowStepTemplateOption {
+	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
+		stepTemplate.JobAgent.Id = id
+	}
+}
+
+func WorkflowStepTemplateJobAgentConfig(config map[string]any) WorkflowStepTemplateOption {
+	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
+		stepTemplate.JobAgent.Config = config
+	}
+}
+
+func WorkflowStepTemplateName(name string) WorkflowStepTemplateOption {
+	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
+		stepTemplate.Name = name
 	}
 }

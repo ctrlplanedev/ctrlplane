@@ -90,6 +90,9 @@ const (
 	WorkspaceSave EventType = "workspace.save"
 
 	ReleaseTargetDeploy EventType = "release-target.deploy"
+
+	WorkflowTemplateCreate EventType = "workflow-template.created"
+	WorkflowCreate         EventType = "workflow.created"
 )
 
 // RawEvent represents the raw event data received from Kafka messages
