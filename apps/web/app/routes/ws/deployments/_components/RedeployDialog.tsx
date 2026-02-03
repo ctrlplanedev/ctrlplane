@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -14,9 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { Skeleton } from "~/components/ui/skeleton";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 
-type RedeployDialogProps = { releaseTarget: ReleaseTarget };
+type RedeployDialogProps = {
+  releaseTarget: ReleaseTarget;
+  resourceIdentifier: string;
+};
 
 type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTarget"];
 
@@ -36,7 +41,60 @@ const useRedeploy = (releaseTarget: ReleaseTarget, onClose: () => void) => {
   return { handleRedeploy, isPending: redeploy.isPending };
 };
 
-export function RedeployDialog({ releaseTarget }: RedeployDialogProps) {
+const useDeployment = (deploymentId: string) => {
+  const { workspace } = useWorkspace();
+  const { data: deployment, isLoading } = trpc.deployment.get.useQuery({
+    workspaceId: workspace.id,
+    deploymentId,
+  });
+  return { deployment: deployment?.deployment, isLoading };
+};
+
+function DeploymentBadge({ deploymentId }: { deploymentId: string }) {
+  const { deployment, isLoading } = useDeployment(deploymentId);
+  if (isLoading) return <Skeleton className="h-4 w-20" />;
+  if (!deployment) return null;
+  return (
+    <Badge variant="secondary" className="text-xs">
+      {deployment.name}
+    </Badge>
+  );
+}
+
+const useResource = (identifier: string) => {
+  const { workspace } = useWorkspace();
+  const { data: resource, isLoading } = trpc.resource.get.useQuery({
+    workspaceId: workspace.id,
+    identifier,
+  });
+  return { resource, isLoading };
+};
+
+function ResourceBadge({ resourceIdentifier }: { resourceIdentifier: string }) {
+  const { workspace } = useWorkspace();
+  const { resource, isLoading } = useResource(resourceIdentifier);
+  if (isLoading) return <Skeleton className="h-4 w-20" />;
+  if (!resource) return null;
+  return (
+    <a
+      href={`/${workspace.slug}/resources/${encodeURIComponent(resourceIdentifier)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Badge
+        className="cursor-pointer text-xs hover:bg-accent"
+        variant="outline"
+      >
+        {resource.name}
+      </Badge>
+    </a>
+  );
+}
+
+export function RedeployDialog({
+  releaseTarget,
+  resourceIdentifier,
+}: RedeployDialogProps) {
   const [open, setOpen] = useState(false);
   const onClose = () => setOpen(false);
   const { handleRedeploy, isPending } = useRedeploy(releaseTarget, onClose);
@@ -56,11 +114,11 @@ export function RedeployDialog({ releaseTarget }: RedeployDialogProps) {
         <DialogHeader>
           <DialogTitle>Redeploy release target</DialogTitle>
           <DialogDescription>
-            Are you sure you want to redeploy this release target?
-            <div className="flex flex-col gap-1">
-              <span>Deployment: {releaseTarget.deploymentId}</span>
-              <span>Environment: {releaseTarget.environmentId}</span>
-              <span>Resource: {releaseTarget.resourceId}</span>
+            Are you sure you want to redeploy this release target? Redeploying
+            does not override any active policies.
+            <div className="flex gap-1">
+              <DeploymentBadge deploymentId={releaseTarget.deploymentId} />
+              <ResourceBadge resourceIdentifier={resourceIdentifier} />
             </div>
           </DialogDescription>
         </DialogHeader>

@@ -101,7 +101,10 @@ function ReleaseTargetRow({
       <JobLinks job={state.latestJob?.job} />
       <VersionDisplay {...state} />
       <TableCell className="text-right">
-        <RedeployDialog releaseTarget={releaseTarget} />
+        <RedeployDialog
+          releaseTarget={releaseTarget}
+          resourceIdentifier={resource.identifier}
+        />
       </TableCell>
     </TableRow>
   );
