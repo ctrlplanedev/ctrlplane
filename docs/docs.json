@@ -15,7 +15,13 @@
         "groups": [
           {
             "group": "Introduction",
-            "pages": ["index", "how-it-works", "quickstart", "installation"]
+            "pages": [
+              "index",
+              "why-ctrlplane",
+              "overview",
+              "quickstart",
+              "installation"
+            ]
           },
           {
             "group": "Comparisons",
@@ -24,54 +30,35 @@
         ]
       },
       {
-        "tab": "Core Concepts",
+        "tab": "Use Cases",
         "groups": [
           {
-            "group": "Overview",
-            "pages": ["concepts/introduction"]
+            "group": "Deployment",
+            "pages": [
+              "use-cases/multi-region",
+              "use-cases/environment-promotion",
+              "use-cases/deployment-verification"
+            ]
           },
           {
             "group": "Infrastructure",
             "pages": [
-              "concepts/resources",
-              "concepts/environments",
-              "concepts/selectors"
-            ]
-          },
-          {
-            "group": "Deployments",
-            "pages": [
-              "concepts/systems",
-              "concepts/deployments",
-              "concepts/releases-and-jobs",
-              "concepts/release-targets"
+              "use-cases/infrastructure-inventory",
+              "use-cases/dynamic-environments"
             ]
           }
         ]
       },
       {
-        "tab": "Inventory",
+        "tab": "Guides",
         "groups": [
           {
-            "group": "Overview",
-            "pages": ["inventory/overview"]
+            "group": "Inventory",
+            "pages": ["inventory/overview", "integrations/resource-providers"]
           },
           {
-            "group": "Resource Providers",
-            "pages": ["integrations/resource-providers"]
-          }
-        ]
-      },
-      {
-        "tab": "Deployment",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": ["deployment/overview"]
-          },
-          {
-            "group": "CI/CD Integration",
-            "pages": ["integrations/cicd"]
+            "group": "Deployment",
+            "pages": ["deployment/overview", "integrations/cicd"]
           },
           {
             "group": "Job Agents",
@@ -103,6 +90,24 @@
               "policies/verification/providers/datadog",
               "policies/verification/providers/sleep",
               "policies/verification/providers/terraform-cloud-run"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Concepts",
+            "pages": [
+              "reference/glossary",
+              "concepts/resources",
+              "concepts/environments",
+              "concepts/selectors",
+              "concepts/systems",
+              "concepts/deployments",
+              "concepts/releases-and-jobs",
+              "concepts/release-targets"
             ]
           }
         ]

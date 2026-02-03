@@ -1,0 +1,136 @@
+---
+title: "Why Ctrlplane?"
+description: "The deployment problems you're already dealing with—and how to solve them"
+---
+
+## Sound Familiar?
+
+<AccordionGroup>
+  <Accordion title="What version is running in prod-eu-west-1?">
+    **The pain**: You check Kubernetes, then AWS console, then your team's spreadsheet. 15 minutes later, you're still not 100% sure.
+
+    **With Ctrlplane**: Single inventory showing every resource and its current version, updated in real-time.
+  </Accordion>
+
+  <Accordion title="Can someone approve this deploy?">
+    **The pain**: Slack message sent. Thread dies. Deploy sits for hours. You ping again. Finally someone approves at 6pm.
+
+    **With Ctrlplane**: Built-in approval workflows with notifications. Approvers see pending releases in one place.
+  </Accordion>
+
+  <Accordion title="Staging passed—now deploy to prod">
+    **The pain**: Manual step someone forgets. Or worse, staging didn't actually pass but prod got deployed anyway.
+
+    **With Ctrlplane**: Auto-promote to production only when staging verification succeeds. No manual intervention needed.
+  </Accordion>
+
+  <Accordion title="We added a new cluster">
+    **The pain**: Update 6 config files, 3 CI pipelines, and remember to tell the team. Miss one and deploys fail silently.
+
+    **With Ctrlplane**: New clusters auto-join environments via selectors. Tag it `env: production` and it starts receiving deployments.
+  </Accordion>
+
+  <Accordion title="Rollback NOW!">
+    **The pain**: Scramble to find the right commands. Which version was stable? Did we roll back all regions? Did we miss one?
+
+    **With Ctrlplane**: Automatic rollback when verification fails. One-click manual rollback when needed.
+  </Accordion>
+
+  <Accordion title="Deploy to 10 regions without breaking everything">
+    **The pain**: Either deploy to all at once (risky) or manually babysit each region (slow and error-prone).
+
+    **With Ctrlplane**: Gradual rollouts deploy one region at a time, verify health, then continue—automatically.
+  </Accordion>
+</AccordionGroup>
+
+## The Problems at Scale
+
+When you have 5 services and 2 environments, everything is manageable. When you hit 20+ services across 4 environments and 8 clusters, you start feeling the pain:
+
+| Challenge | What Teams Do Today | What Goes Wrong |
+|-----------|---------------------|-----------------|
+| **Environment promotion** | Manual deploy after checking staging | Someone forgets, or staging wasn't actually verified |
+| **Deployment verification** | "It deployed successfully!" | Service is broken, but pipeline says green |
+| **Infrastructure visibility** | Spreadsheets + multiple dashboards | Outdated info, no source of truth |
+| **Adding new infrastructure** | Update configs everywhere | Miss something, deploys fail |
+| **Multi-region deploys** | Sequential manual deploys or YOLO all-at-once | Too slow or too risky |
+| **Rollbacks** | Ad-hoc scripts and hope | Inconsistent, slow, error-prone |
+
+## How Ctrlplane Helps
+
+Ctrlplane is the **orchestration layer** between your CI/CD pipelines and your infrastructure:
+
+```
+Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
+ (builds)            (orchestrates)           (deploys)
+```
+
+### Two Core Systems
+
+<CardGroup cols={2}>
+  <Card title="Deployment Orchestration" icon="rocket">
+    Controls **when** and **where** releases happen:
+    - Auto-promote after verification
+    - Approval gates for production
+    - Gradual rollouts across regions
+    - Automatic rollback on failure
+  </Card>
+  <Card title="Infrastructure Inventory" icon="server">
+    Tracks **what exists** and **what's running**:
+    - Real-time resource inventory
+    - Dynamic environment membership
+    - Version tracking across all targets
+    - Works with K8s, AWS, GCP, custom
+  </Card>
+</CardGroup>
+
+## What Ctrlplane Is NOT
+
+Ctrlplane doesn't replace your existing tools—it coordinates them:
+
+- **Not a CI system** — Your CI (GitHub Actions, GitLab, Jenkins) still builds code
+- **Not a GitOps engine** — ArgoCD/Flux still syncs manifests to clusters
+- **Not infrastructure provisioning** — Terraform still creates your resources
+
+Ctrlplane decides _when_ deployments should happen, _where_ they should go, and _whether_ they passed verification.
+
+## Quick Example
+
+Here's what deployment orchestration looks like with Ctrlplane:
+
+**1. CI builds and creates a version:**
+```bash
+curl -X POST "https://api.ctrlplane.dev/deployments/$ID/versions" \
+  -d '{"tag": "v1.2.3", "status": "ready"}'
+```
+
+**2. Ctrlplane automatically:**
+- Calculates which release targets need this version
+- Deploys to staging first (environment progression policy)
+- Runs verification checks against Datadog metrics
+- After staging passes, requests approval for production
+- Once approved, gradually rolls out to production clusters
+- Verifies each cluster before proceeding to the next
+- Auto-rolls back if any verification fails
+
+**3. You get:**
+- Full visibility in one dashboard
+- Consistent process every time
+- Confidence that verification actually passed
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="5-Minute Overview" icon="clock" href="./overview">
+    Understand the mental model
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="./quickstart">
+    Set up your first deployment pipeline
+  </Card>
+  <Card title="Use Cases" icon="lightbulb" href="./use-cases/multi-region">
+    See specific scenarios solved
+  </Card>
+  <Card title="Comparisons" icon="scale-balanced" href="./comparisons">
+    How Ctrlplane compares to other tools
+  </Card>
+</CardGroup>
