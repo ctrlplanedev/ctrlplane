@@ -1,0 +1,12 @@
+---
+# Staging environment
+type: Environment
+name: Staging
+description: Pre-production validation
+resourceSelector: resource.metadata["environment"] == "staging"
+---
+# Production environment
+type: Environment
+name: Production
+description: Live production environment
+resourceSelector: resource.metadata["environment"] == "production"

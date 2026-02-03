@@ -1,0 +1,8 @@
+type: Policy
+name: production-approval-policy
+description: Production Approval Policy
+selectors:
+  - environments: environment.metadata['requires-approval'] == 'true'
+rules:
+  - approval:
+    required: 1

@@ -50,9 +50,10 @@ bounded context.
 ```yaml YAML
 # ctrlc apply -f system.yaml
 type: System
-name: API Platform
-slug: api-platform
-description: Core API services
+name: Tutorial Quickstart
+description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
+metadata:
+  tutorial: quickstart
 ```
 
 </CodeGroup>
@@ -64,31 +65,44 @@ Kubernetes or cloud providers. For this quickstart, we'll create them manually.
 
 <CodeGroup>
 
-```yaml ctrlc apply
+```yaml
 # ctrlc apply -f resource.yaml
-type: Resource
-version: tutorial/v1
-kind: KubernetesCluster
-name: Staging Cluster
-identifier: k8s-staging-useast1
-metadata:
-  environment: staging
-  region: us-east-1
-  provider: aws
-config:
-  namespace: api-platform
 ---
 type: Resource
-version: tutorial/v1
+identifier: tutorial-quickstart-resource-a
 kind: KubernetesCluster
-name: Production Cluster
-identifier: k8s-prod-useast1
+name: quickstart-region-a
+version: tutorial/quickstart/v1
 metadata:
-  environment: production
-  region: us-east-1
-  provider: aws
+  tutorial: quickstart
+  environment: tutorial
+  region: a
 config:
-  namespace: api-platform
+  number: 1
+  string: "one"
+  boolean: true
+  array:
+    - one
+    - two
+    - three
+---
+type: Resource
+identifier: tutorial-quickstart-resource-b
+kind: KubernetesCluster
+name: quickstart-region-b
+version: tutorial/quickstart/v1
+metadata:
+  tutorial: quickstart
+  environment: tutorial
+  region: b
+config:
+  number: 1
+  string: "one"
+  boolean: true
+  array:
+    - one
+    - two
+    - three
 ```
 
 </CodeGroup>
@@ -118,45 +132,46 @@ resourceSelector: resource.metadata["environment"] == "production"
 
 ## Step 4: Create a Job Agent
 
-Job agents execute your deployments. We'll use GitHub Actions, but Ctrlplane
-supports Kubernetes jobs, ArgoCD, or custom agents.
+Job agents execute your deployments. We'll use a simle test runner, but Ctrlplane
+supports Github, Kubernetes jobs, ArgoCD, or custom agents.
 
-```bash
-curl -X PATCH https://app.ctrlplane.dev/api/v1/job-agents/name \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "github-actions",
-    "type": "github",
-    "workspaceId": "{workspaceId}"
-  }'
+
+<CodeGroup>
+
+```yaml YAML
+# Production environment
+type: JobAgent
+name: Tutorial Quickstart Job Agent
+description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
+metadata:
+  tutorial: quickstart
+agent:
+  type: test-runner
+  config:
+    sleep: 5s
 ```
 
-Save the returned `id` as `JOB_AGENT_ID`.
+</CodeGroup>
 
 ## Step 5: Create a Deployment
 
 A deployment represents your application. The job agent config tells Ctrlplane
 how to trigger deployments.
 
-```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/systems/$SYSTEM_ID/deployments \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "API Gateway",
-    "slug": "api-gateway",
-    "description": "Main API gateway service",
-    "jobAgentId": "'$JOB_AGENT_ID'",
-    "jobAgentConfig": {
-      "workflow": "deploy.yml",
-      "owner": "your-org",
-      "repo": "api-gateway"
-    }
-  }'
+<CodeGroup>
+
+```yaml YAML
+# Production environment
+type: Deployment
+name: Tutorial Quickstart Deployment
+description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
+metadata:
+  tutorial: quickstart
+jobAgent:
+  ref: Tutorial Quickstart Job Agent
 ```
 
-Save the returned `id` as `DEPLOYMENT_ID`.
+</CodeGroup>
 
 ## Step 6: Add Deployment Workflow
 
@@ -203,79 +218,44 @@ Add `CTRLPLANE_API_KEY` to your repository secrets.
 Add version creation to your build workflow (`.github/workflows/build.yml`):
 
 ```yaml
+- name: Install Ctrlplane CLI
+  uses: ctrlplanedev/cli@main
+  with:
+    api_key: ${{ secrets.CTRLPLANE_API_KEY }}
+
 - name: Create deployment version
   if: github.ref == 'refs/heads/main'
   run: |
-    curl -X POST https://app.ctrlplane.dev/api/v1/deployments/$DEPLOYMENT_ID/versions \
-      -H "Authorization: Bearer ${{ secrets.CTRLPLANE_API_KEY }}" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "tag": "${{ github.sha }}",
-        "name": "Build #${{ github.run_number }}",
-        "status": "ready",
-        "metadata": {
-          "commit": "${{ github.sha }}",
-          "branch": "${{ github.ref_name }}",
-          "actor": "${{ github.actor }}"
-        }
-      }'
+    ctrlc api upsert version \
+      --workspace wandb \
+      --deployment ${{ secrets.CTRLPLANE_DEPLOYMENT_ID }}  \
+      --tag ${{ github.sha }} \
+      --name "${{ github.sha::7 }}" \
+      --metadata github/owner=${{ github.repository_owner }} \
+      --metadata github/repo=${{ github.event.repository.name }} \
+      --metadata git/sha=${{ github.sha }} \
+      --metadata git/branch=${{ github.ref_name }} \
+      --metadata github/run-number=${{ github.run_number }} \
+      --metadata github/run-id=${{ github.run_id }} \
+      --metadata github/run-attempt=${{ github.run_attempt }}
 ```
 
-## Step 8: Add Verification Policy
+## Step 8: Add Production Approval
 
-Create a policy that requires health checks before considering a deployment
-successful:
+Create a policy requiring approval before production deployments
 
-```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/systems/$SYSTEM_ID/policies \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Health Check Verification",
-    "enabled": true,
-    "selectors": [],
-    "rules": [{
-      "verification": {
-        "metrics": [{
-          "name": "health-check",
-          "intervalSeconds": 30,
-          "count": 5,
-          "provider": {
-            "type": "http",
-            "url": "http://{{.resource.config.namespace}}.{{.resource.identifier}}/health"
-          },
-          "successCondition": "result.ok && result.statusCode == 200",
-          "failureThreshold": 2
-        }]
-      }
-    }]
-  }'
-```
-
-## Step 9: Add Production Approval
-
-Create a policy requiring approval before production deployments:
-
-```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/systems/$SYSTEM_ID/policies \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Production Approval",
-    "enabled": true,
-    "selectors": [{
-      "environmentSelector": {
-        "type": "name",
-        "operator": "equals",
-        "value": "Production"
-      }
-    }],
-    "rules": [{
-      "anyApproval": {
-        "minApprovals": 1
-      }
-    }]
-  }'
+```yaml
+# ctrlc apply -f policy.yaml
+type: Policy
+name: production-approval-policy
+description: Production Approval Policy
+metadata:
+  tutorial: quickstart
+selectors:
+  - environments: environment.metadata['requires-approval'] == 'true'
+rules:
+  - approval:
+      required: 1
 ```
 
 ## Step 10: Test the Pipeline

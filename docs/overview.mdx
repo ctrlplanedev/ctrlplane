@@ -54,6 +54,7 @@ Each release target can have its own policies, verification, and rollout timing.
 Environments use **selectors** to automatically include resources:
 
 ```yaml
+type: Environment
 name: Production
 resourceSelector: resource.metadata["env"] == "production"
 ```
@@ -93,9 +94,11 @@ Policies define rules for when deployments can happen:
 Policies use selectors to target specific releases:
 
 ```yaml
-name: Production Approval
+type: Policy
+name: production-approval-policy
+description: Production Approval Policy
 selectors:
-  - environment: environment.name == "Production"
+  - environments: environment.metadata['requires-approval'] == 'true'
 rules:
   - approval:
       required: 1

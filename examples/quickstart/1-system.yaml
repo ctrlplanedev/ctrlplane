@@ -1,0 +1,6 @@
+---
+type: System
+name: Tutorial Quickstart
+description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
+metadata:
+  tutorial: quickstart

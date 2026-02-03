@@ -1,0 +1,12 @@
+---
+type: JobAgent
+name: Tutorial Quickstart Job Agent
+description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
+metadata:
+  tutorial: quickstart
+agent:
+  type: github
+  config:
+    workflow: tutorial-quickstart-workflow.yml
+    owner: tutorial
+    repo: tutorial
