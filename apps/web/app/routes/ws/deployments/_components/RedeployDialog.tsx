@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
+import { Shield } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -17,6 +18,12 @@ import {
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../../../../components/ui/tooltip";
 
 type RedeployDialogProps = {
   releaseTarget: ReleaseTarget;
@@ -91,6 +98,59 @@ function ResourceBadge({ resourceIdentifier }: { resourceIdentifier: string }) {
   );
 }
 
+function key(releaseTarget: ReleaseTarget) {
+  const { resourceId, environmentId, deploymentId } = releaseTarget;
+  return `${resourceId}-${environmentId}-${deploymentId}`;
+}
+
+const useReleaseTargetPolicies = (releaseTargetKey: string) => {
+  const { workspace } = useWorkspace();
+  const { data: policies, isLoading } = trpc.releaseTargets.policies.useQuery({
+    workspaceId: workspace.id,
+    releaseTargetKey,
+  });
+  return { policies, isLoading };
+};
+
+function getRuleType(rule: WorkspaceEngine["schemas"]["PolicyRule"]): string {
+  if (rule.anyApproval != null) return "approval";
+  if (rule.deploymentDependency != null) return "deployment dependency";
+  if (rule.deploymentWindow != null) return "deployment window";
+  if (rule.environmentProgression != null) return "environment progression";
+  if (rule.gradualRollout != null) return "gradual rollout";
+  if (rule.retry != null) return "retry";
+  if (rule.verification != null) return "verification";
+  if (rule.versionCooldown != null) return "version cooldown";
+  if (rule.versionSelector != null) return "version selector";
+  return "unknown";
+}
+
+function ReleaseTargetPolicies({
+  releaseTargetKey,
+}: {
+  releaseTargetKey: string;
+}) {
+  const { policies, isLoading } = useReleaseTargetPolicies(releaseTargetKey);
+  if (isLoading) return <Skeleton className="h-4 w-20" />;
+  if (!policies) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      {policies.map((policy) => (
+        <div key={policy.id} className="flex flex-col gap-1">
+          <span className="text-sm font-medium">{policy.name}</span>
+          <div className="flex flex-col gap-2">
+            {policy.rules.map((rule) => (
+              <span key={rule.id} className="text-xs">
+                {getRuleType(rule)}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RedeployDialog({
   releaseTarget,
   resourceIdentifier,
@@ -113,15 +173,20 @@ export function RedeployDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Redeploy release target</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to redeploy this release target? Redeploying
-            does not override any active policies.
+          <DialogDescription className="flex flex-col gap-1.5">
+            <span>
+              Are you sure you want to redeploy this release target? Redeploying
+              does not override any active policies.
+            </span>
             <div className="flex gap-1">
               <DeploymentBadge deploymentId={releaseTarget.deploymentId} />
               <ResourceBadge resourceIdentifier={resourceIdentifier} />
             </div>
           </DialogDescription>
         </DialogHeader>
+
+        <ReleaseTargetPolicies releaseTargetKey={key(releaseTarget)} />
+
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
