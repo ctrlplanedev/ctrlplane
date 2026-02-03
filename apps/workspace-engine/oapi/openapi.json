@@ -2112,6 +2112,9 @@
                },
                {
                   "$ref": "#/components/schemas/WorkflowBooleanInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowMatrixInput"
                }
             ]
          },
@@ -2128,6 +2131,37 @@
             "required": [
                "id",
                "config"
+            ],
+            "type": "object"
+         },
+         "WorkflowMatrixInput": {
+            "properties": {
+               "entityType": {
+                  "enum": [
+                     "resource",
+                     "environment",
+                     "deployment"
+                  ],
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "selector": {
+                  "$ref": "#/components/schemas/Selector"
+               },
+               "type": {
+                  "enum": [
+                     "matrix"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "entityType",
+               "selector"
             ],
             "type": "object"
          },

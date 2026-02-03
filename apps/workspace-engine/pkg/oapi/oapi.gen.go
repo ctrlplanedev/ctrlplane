@@ -181,6 +181,18 @@ const (
 	Boolean WorkflowBooleanInputType = "boolean"
 )
 
+// Defines values for WorkflowMatrixInputEntityType.
+const (
+	WorkflowMatrixInputEntityTypeDeployment  WorkflowMatrixInputEntityType = "deployment"
+	WorkflowMatrixInputEntityTypeEnvironment WorkflowMatrixInputEntityType = "environment"
+	WorkflowMatrixInputEntityTypeResource    WorkflowMatrixInputEntityType = "resource"
+)
+
+// Defines values for WorkflowMatrixInputType.
+const (
+	Matrix WorkflowMatrixInputType = "matrix"
+)
+
 // Defines values for WorkflowNumberInputType.
 const (
 	Number WorkflowNumberInputType = "number"
@@ -1062,6 +1074,20 @@ type WorkflowJobAgentConfig struct {
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
 }
+
+// WorkflowMatrixInput defines model for WorkflowMatrixInput.
+type WorkflowMatrixInput struct {
+	EntityType WorkflowMatrixInputEntityType `json:"entityType"`
+	Name       string                        `json:"name"`
+	Selector   Selector                      `json:"selector"`
+	Type       WorkflowMatrixInputType       `json:"type"`
+}
+
+// WorkflowMatrixInputEntityType defines model for WorkflowMatrixInput.EntityType.
+type WorkflowMatrixInputEntityType string
+
+// WorkflowMatrixInputType defines model for WorkflowMatrixInput.Type.
+type WorkflowMatrixInputType string
 
 // WorkflowNumberInput defines model for WorkflowNumberInput.
 type WorkflowNumberInput struct {
@@ -2148,6 +2174,32 @@ func (t *WorkflowInput) FromWorkflowBooleanInput(v WorkflowBooleanInput) error {
 
 // MergeWorkflowBooleanInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowBooleanInput
 func (t *WorkflowInput) MergeWorkflowBooleanInput(v WorkflowBooleanInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowMatrixInput returns the union data inside the WorkflowInput as a WorkflowMatrixInput
+func (t WorkflowInput) AsWorkflowMatrixInput() (WorkflowMatrixInput, error) {
+	var body WorkflowMatrixInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowMatrixInput overwrites any union data inside the WorkflowInput as the provided WorkflowMatrixInput
+func (t *WorkflowInput) FromWorkflowMatrixInput(v WorkflowMatrixInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowMatrixInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowMatrixInput
+func (t *WorkflowInput) MergeWorkflowMatrixInput(v WorkflowMatrixInput) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
