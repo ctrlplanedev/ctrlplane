@@ -227,7 +227,7 @@ Add version creation to your build workflow (`.github/workflows/build.yml`):
   if: github.ref == 'refs/heads/main'
   run: |
     ctrlc api upsert version \
-      --workspace wandb \
+      --workspace <your-workspace> \
       --deployment ${{ secrets.CTRLPLANE_DEPLOYMENT_ID }}  \
       --tag ${{ github.sha }} \
       --name "${{ github.sha::7 }}" \
