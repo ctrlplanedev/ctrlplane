@@ -1,6 +1,5 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
-import { Shield } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
@@ -18,12 +17,6 @@ import {
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../../../../components/ui/tooltip";
 
 type RedeployDialogProps = {
   releaseTarget: ReleaseTarget;
