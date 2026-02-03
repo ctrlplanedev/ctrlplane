@@ -9,12 +9,12 @@ Every deployment in Ctrlplane follows this flow:
 
 ```mermaid
 flowchart LR
-    CI["CI Build"] -->|"1. create version"| CP["Ctrlplane"]
-    CP -->|"2. evaluate policies"| CP
-    CP -->|"3. dispatch job"| Agent["Job Agent"]
-    Agent -->|"4. deploy"| Target["Resource"]
-    Target -->|"5. verify"| CP
-    CP -->|"6. promote or rollback"| Next["Next Target"]
+    CI --"1\. create version"--> Ctrlplane
+    Ctrlplane --"2\. evaluate policies"--> Policies
+    Policies --"3\. dispatch job"--> JobAgent
+    JobAgent --"4\. deploy"--> Resource
+    Resource --"5\. verify"--> Ctrlplane
+    Ctrlplane --"6\. promote or rollback"--> Next
 ```
 
 1. **CI creates a version** — After building, your CI tells Ctrlplane about the new version
@@ -118,11 +118,11 @@ This means Ctrlplane works with your existing deployment tooling.
 
 ```mermaid
 flowchart TB
-    subgraph Build["1. Build"]
+    subgraph Build["1\. Build"]
         CI["GitHub Actions"]
     end
 
-    subgraph Orchestrate["2. Orchestrate (Ctrlplane)"]
+    subgraph Orchestrate["2\. Orchestrate (Ctrlplane)"]
         Version["Version v1.2.3"]
         Staging["Staging Release"]
         Verify1["Verify"]
@@ -131,7 +131,7 @@ flowchart TB
         Verify2["Verify"]
     end
 
-    subgraph Execute["3. Execute"]
+    subgraph Execute["3\. Execute"]
         ArgoStaging["ArgoCD Staging"]
         ArgoProd["ArgoCD Prod"]
     end
