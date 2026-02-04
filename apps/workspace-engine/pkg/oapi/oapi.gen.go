@@ -100,7 +100,7 @@ const (
 	JobUpdateEventFieldsToUpdateStatus         JobUpdateEventFieldsToUpdate = "status"
 	JobUpdateEventFieldsToUpdateTraceToken     JobUpdateEventFieldsToUpdate = "traceToken"
 	JobUpdateEventFieldsToUpdateUpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
-	JobUpdateEventFieldsToUpdateWorkflowStepId JobUpdateEventFieldsToUpdate = "workflowStepId"
+	JobUpdateEventFieldsToUpdateWorkflowJobId  JobUpdateEventFieldsToUpdate = "workflowJobId"
 )
 
 // Defines values for JobVerificationStatus.
@@ -480,7 +480,7 @@ type Job struct {
 	Status         JobStatus         `json:"status"`
 	TraceToken     *string           `json:"traceToken,omitempty"`
 	UpdatedAt      time.Time         `json:"updatedAt"`
-	WorkflowStepId string            `json:"workflowStepId"`
+	WorkflowJobId  string            `json:"workflowJobId"`
 }
 
 // JobAgent defines model for JobAgent.
@@ -1057,10 +1057,33 @@ type WorkflowInput struct {
 	union json.RawMessage
 }
 
+// WorkflowJob defines model for WorkflowJob.
+type WorkflowJob struct {
+	// Config Configuration for the job agent
+	Config map[string]interface{} `json:"config"`
+	Id     string                 `json:"id"`
+	Index  int                    `json:"index"`
+
+	// Ref Reference to the job agent
+	Ref        string `json:"ref"`
+	WorkflowId string `json:"workflowId"`
+}
+
 // WorkflowJobAgentConfig defines model for WorkflowJobAgentConfig.
 type WorkflowJobAgentConfig struct {
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
+}
+
+// WorkflowJobTemplate defines model for WorkflowJobTemplate.
+type WorkflowJobTemplate struct {
+	// Config Configuration for the job agent
+	Config map[string]interface{} `json:"config"`
+	Id     string                 `json:"id"`
+	Name   string                 `json:"name"`
+
+	// Ref Reference to the job agent
+	Ref string `json:"ref"`
 }
 
 // WorkflowNumberInput defines model for WorkflowNumberInput.
@@ -1072,21 +1095,6 @@ type WorkflowNumberInput struct {
 
 // WorkflowNumberInputType defines model for WorkflowNumberInput.Type.
 type WorkflowNumberInputType string
-
-// WorkflowStep defines model for WorkflowStep.
-type WorkflowStep struct {
-	Id         string                  `json:"id"`
-	Index      int                     `json:"index"`
-	JobAgent   *WorkflowJobAgentConfig `json:"jobAgent,omitempty"`
-	WorkflowId string                  `json:"workflowId"`
-}
-
-// WorkflowStepTemplate defines model for WorkflowStepTemplate.
-type WorkflowStepTemplate struct {
-	Id       string                 `json:"id"`
-	JobAgent WorkflowJobAgentConfig `json:"jobAgent"`
-	Name     string                 `json:"name"`
-}
 
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
@@ -1100,10 +1108,10 @@ type WorkflowStringInputType string
 
 // WorkflowTemplate defines model for WorkflowTemplate.
 type WorkflowTemplate struct {
-	Id     string                 `json:"id"`
-	Inputs []WorkflowInput        `json:"inputs"`
-	Name   string                 `json:"name"`
-	Steps  []WorkflowStepTemplate `json:"steps"`
+	Id     string                `json:"id"`
+	Inputs []WorkflowInput       `json:"inputs"`
+	Jobs   []WorkflowJobTemplate `json:"jobs"`
+	Name   string                `json:"name"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.

@@ -16,7 +16,7 @@ import (
 func TestEngine_Workflow_BasicFlow(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	workflowTemplateID := uuid.New().String()
-	workflowStepTemplateID := uuid.New().String()
+	workflowJobTemplateID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -29,13 +29,13 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 				integration.WorkflowStringInputName("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
 			),
-			integration.WithWorkflowStepTemplate(
-				integration.WorkflowStepTemplateID(workflowStepTemplateID),
-				integration.WorkflowStepTemplateJobAgentID(jobAgentID),
-				integration.WorkflowStepTemplateJobAgentConfig(map[string]any{
+			integration.WithWorkflowJobTemplate(
+				integration.WorkflowJobTemplateID(workflowJobTemplateID),
+				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
 					"delaySeconds": 10,
 				}),
-				integration.WorkflowStepTemplateName("Test Step 1"),
+				integration.WorkflowJobTemplateName("Test Job 1"),
 			),
 		),
 	)
@@ -63,14 +63,14 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 		"input-1": "custom-1",
 	}, workflow.Inputs)
 
-	workflowSteps := engine.Workspace().WorkflowSteps().GetByWorkflowId(workflow.Id)
-	assert.Len(t, workflowSteps, 1)
-	assert.Equal(t, 0, workflowSteps[0].Index)
+	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow.Id)
+	assert.Len(t, workflowJobs, 1)
+	assert.Equal(t, 0, workflowJobs[0].Index)
 
-	jobs := engine.Workspace().Jobs().GetByWorkflowStepId(workflowSteps[0].Id)
+	jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[0].Id)
 	assert.Len(t, jobs, 1)
 	assert.Equal(t, oapi.JobStatusPending, jobs[0].Status)
-	assert.Equal(t, workflowSteps[0].Id, jobs[0].WorkflowStepId)
+	assert.Equal(t, workflowJobs[0].Id, jobs[0].WorkflowJobId)
 	assert.Equal(t, jobAgentID, jobs[0].JobAgentId)
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(10),
@@ -80,7 +80,7 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	workflowTemplateID := uuid.New().String()
-	workflowStepTemplateID := uuid.New().String()
+	workflowJobTemplateID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -101,13 +101,13 @@ func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 				integration.WorkflowBooleanInputName("input-3"),
 				integration.WorkflowBooleanInputDefault(true),
 			),
-			integration.WithWorkflowStepTemplate(
-				integration.WorkflowStepTemplateID(workflowStepTemplateID),
-				integration.WorkflowStepTemplateJobAgentID(jobAgentID),
-				integration.WorkflowStepTemplateJobAgentConfig(map[string]any{
+			integration.WithWorkflowJobTemplate(
+				integration.WorkflowJobTemplateID(workflowJobTemplateID),
+				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
 					"delaySeconds": 10,
 				}),
-				integration.WorkflowStepTemplateName("Test Step 1"),
+				integration.WorkflowJobTemplateName("Test Job 1"),
 			),
 		),
 	)
@@ -139,14 +139,14 @@ func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 		"input-3": false,
 	}, workflow.Inputs)
 
-	workflowSteps := engine.Workspace().WorkflowSteps().GetByWorkflowId(workflow.Id)
-	assert.Len(t, workflowSteps, 1)
-	assert.Equal(t, 0, workflowSteps[0].Index)
+	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow.Id)
+	assert.Len(t, workflowJobs, 1)
+	assert.Equal(t, 0, workflowJobs[0].Index)
 
-	jobs := engine.Workspace().Jobs().GetByWorkflowStepId(workflowSteps[0].Id)
+	jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[0].Id)
 	assert.Len(t, jobs, 1)
 	assert.Equal(t, oapi.JobStatusPending, jobs[0].Status)
-	assert.Equal(t, workflowSteps[0].Id, jobs[0].WorkflowStepId)
+	assert.Equal(t, workflowJobs[0].Id, jobs[0].WorkflowJobId)
 	assert.Equal(t, jobAgentID, jobs[0].JobAgentId)
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(10),
@@ -157,8 +157,8 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 	jobAgentID1 := uuid.New().String()
 	jobAgentID2 := uuid.New().String()
 	workflowTemplateID := uuid.New().String()
-	workflowStepTemplateID1 := uuid.New().String()
-	workflowStepTemplateID2 := uuid.New().String()
+	workflowJobTemplateID1 := uuid.New().String()
+	workflowJobTemplateID2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -171,21 +171,21 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 		),
 		integration.WithWorkflowTemplate(
 			integration.WorkflowTemplateID(workflowTemplateID),
-			integration.WithWorkflowStepTemplate(
-				integration.WorkflowStepTemplateID(workflowStepTemplateID1),
-				integration.WorkflowStepTemplateJobAgentID(jobAgentID1),
-				integration.WorkflowStepTemplateJobAgentConfig(map[string]any{
+			integration.WithWorkflowJobTemplate(
+				integration.WorkflowJobTemplateID(workflowJobTemplateID1),
+				integration.WorkflowJobTemplateJobAgentID(jobAgentID1),
+				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
 					"delaySeconds": 10,
 				}),
-				integration.WorkflowStepTemplateName("Test Step 1"),
+				integration.WorkflowJobTemplateName("Test Job 1"),
 			),
-			integration.WithWorkflowStepTemplate(
-				integration.WorkflowStepTemplateID(workflowStepTemplateID2),
-				integration.WorkflowStepTemplateJobAgentID(jobAgentID2),
-				integration.WorkflowStepTemplateJobAgentConfig(map[string]any{
+			integration.WithWorkflowJobTemplate(
+				integration.WorkflowJobTemplateID(workflowJobTemplateID2),
+				integration.WorkflowJobTemplateJobAgentID(jobAgentID2),
+				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
 					"delaySeconds": 20,
 				}),
-				integration.WorkflowStepTemplateName("Test Step 2"),
+				integration.WorkflowJobTemplateName("Test Job 2"),
 			),
 		),
 	)
@@ -207,28 +207,28 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 	assert.NotNil(t, workflow)
 	assert.Equal(t, workflowTemplateID, workflow.WorkflowTemplateId)
 
-	workflowSteps := engine.Workspace().WorkflowSteps().GetByWorkflowId(workflow.Id)
-	assert.Len(t, workflowSteps, 2)
-	assert.Equal(t, 0, workflowSteps[0].Index)
-	assert.Equal(t, 1, workflowSteps[1].Index)
+	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow.Id)
+	assert.Len(t, workflowJobs, 2)
+	assert.Equal(t, 0, workflowJobs[0].Index)
+	assert.Equal(t, 1, workflowJobs[1].Index)
 
-	step1jobs := engine.Workspace().Jobs().GetByWorkflowStepId(workflowSteps[0].Id)
-	assert.Len(t, step1jobs, 1)
-	assert.Equal(t, oapi.JobStatusPending, step1jobs[0].Status)
-	assert.Equal(t, workflowSteps[0].Id, step1jobs[0].WorkflowStepId)
-	assert.Equal(t, jobAgentID1, step1jobs[0].JobAgentId)
+	wfJob1jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[0].Id)
+	assert.Len(t, wfJob1jobs, 1)
+	assert.Equal(t, oapi.JobStatusPending, wfJob1jobs[0].Status)
+	assert.Equal(t, workflowJobs[0].Id, wfJob1jobs[0].WorkflowJobId)
+	assert.Equal(t, jobAgentID1, wfJob1jobs[0].JobAgentId)
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(10),
-	}, step1jobs[0].JobAgentConfig)
+	}, wfJob1jobs[0].JobAgentConfig)
 
-	step2jobs := engine.Workspace().Jobs().GetByWorkflowStepId(workflowSteps[1].Id)
-	assert.Len(t, step2jobs, 0)
+	wfJob2jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[1].Id)
+	assert.Len(t, wfJob2jobs, 0)
 
 	completedAt := time.Now()
 	jobUpdateEvent := &oapi.JobUpdateEvent{
-		Id: &step1jobs[0].Id,
+		Id: &wfJob1jobs[0].Id,
 		Job: oapi.Job{
-			Id:          step1jobs[0].Id,
+			Id:          wfJob1jobs[0].Id,
 			Status:      oapi.JobStatusSuccessful,
 			CompletedAt: &completedAt,
 		},
@@ -239,14 +239,14 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
 
-	step2jobs = engine.Workspace().Jobs().GetByWorkflowStepId(workflowSteps[1].Id)
-	assert.Len(t, step2jobs, 1)
-	assert.Equal(t, oapi.JobStatusPending, step2jobs[0].Status)
-	assert.Equal(t, workflowSteps[1].Id, step2jobs[0].WorkflowStepId)
-	assert.Equal(t, jobAgentID2, step2jobs[0].JobAgentId)
+	wfJob2jobs = engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[1].Id)
+	assert.Len(t, wfJob2jobs, 1)
+	assert.Equal(t, oapi.JobStatusPending, wfJob2jobs[0].Status)
+	assert.Equal(t, workflowJobs[1].Id, wfJob2jobs[0].WorkflowJobId)
+	assert.Equal(t, jobAgentID2, wfJob2jobs[0].JobAgentId)
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(20),
-	}, step2jobs[0].JobAgentConfig)
+	}, wfJob2jobs[0].JobAgentConfig)
 
 	wfv, err := workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow.Id)
 	assert.NoError(t, err)
@@ -255,9 +255,9 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 
 	completedAt2 := time.Now()
 	jobUpdateEvent2 := &oapi.JobUpdateEvent{
-		Id: &step2jobs[0].Id,
+		Id: &wfJob2jobs[0].Id,
 		Job: oapi.Job{
-			Id:          step2jobs[0].Id,
+			Id:          wfJob2jobs[0].Id,
 			Status:      oapi.JobStatusSuccessful,
 			CompletedAt: &completedAt2,
 		},
@@ -277,7 +277,7 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 	jobAgentID := uuid.New().String()
 	workflowTemplateID := uuid.New().String()
-	workflowStepTemplateID := uuid.New().String()
+	workflowJobTemplateID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -290,13 +290,13 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 				integration.WorkflowStringInputName("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
 			),
-			integration.WithWorkflowStepTemplate(
-				integration.WorkflowStepTemplateID(workflowStepTemplateID),
-				integration.WorkflowStepTemplateJobAgentID(jobAgentID),
-				integration.WorkflowStepTemplateJobAgentConfig(map[string]any{
+			integration.WithWorkflowJobTemplate(
+				integration.WorkflowJobTemplateID(workflowJobTemplateID),
+				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
 					"delaySeconds": 10,
 				}),
-				integration.WorkflowStepTemplateName("Test Step 1"),
+				integration.WorkflowJobTemplateName("Test Job 1"),
 			),
 		),
 	)
@@ -339,28 +339,28 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 		}
 	}
 
-	workflow1Steps := engine.Workspace().WorkflowSteps().GetByWorkflowId(workflow1.Id)
-	assert.Len(t, workflow1Steps, 1)
-	assert.Equal(t, 0, workflow1Steps[0].Index)
+	workflow1WorkflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow1.Id)
+	assert.Len(t, workflow1WorkflowJobs, 1)
+	assert.Equal(t, 0, workflow1WorkflowJobs[0].Index)
 
-	workflow2Steps := engine.Workspace().WorkflowSteps().GetByWorkflowId(workflow2.Id)
-	assert.Len(t, workflow2Steps, 1)
-	assert.Equal(t, 0, workflow2Steps[0].Index)
+	workflow2WorkflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow2.Id)
+	assert.Len(t, workflow2WorkflowJobs, 1)
+	assert.Equal(t, 0, workflow2WorkflowJobs[0].Index)
 
-	workflow1Jobs := engine.Workspace().Jobs().GetByWorkflowStepId(workflow1Steps[0].Id)
-	assert.Len(t, workflow1Jobs, 1)
-	assert.Equal(t, oapi.JobStatusPending, workflow1Jobs[0].Status)
-	assert.Equal(t, workflow1Steps[0].Id, workflow1Jobs[0].WorkflowStepId)
-	assert.Equal(t, jobAgentID, workflow1Jobs[0].JobAgentId)
+	workflowJob1Jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflow1WorkflowJobs[0].Id)
+	assert.Len(t, workflowJob1Jobs, 1)
+	assert.Equal(t, oapi.JobStatusPending, workflowJob1Jobs[0].Status)
+	assert.Equal(t, workflow1WorkflowJobs[0].Id, workflowJob1Jobs[0].WorkflowJobId)
+	assert.Equal(t, jobAgentID, workflowJob1Jobs[0].JobAgentId)
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(10),
-	}, workflow1Jobs[0].JobAgentConfig)
+	}, workflowJob1Jobs[0].JobAgentConfig)
 
 	completedAt1 := time.Now()
 	jobUpdateEvent1 := &oapi.JobUpdateEvent{
-		Id: &workflow1Jobs[0].Id,
+		Id: &workflowJob1Jobs[0].Id,
 		Job: oapi.Job{
-			Id:          workflow1Jobs[0].Id,
+			Id:          workflowJob1Jobs[0].Id,
 			Status:      oapi.JobStatusSuccessful,
 			CompletedAt: &completedAt1,
 		},
@@ -371,20 +371,20 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent1)
 
-	workflow2Jobs := engine.Workspace().Jobs().GetByWorkflowStepId(workflow2Steps[0].Id)
-	assert.Len(t, workflow2Jobs, 1)
-	assert.Equal(t, oapi.JobStatusPending, workflow2Jobs[0].Status)
-	assert.Equal(t, workflow2Steps[0].Id, workflow2Jobs[0].WorkflowStepId)
-	assert.Equal(t, jobAgentID, workflow2Jobs[0].JobAgentId)
+	workflowJob2Jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflow2WorkflowJobs[0].Id)
+	assert.Len(t, workflowJob2Jobs, 1)
+	assert.Equal(t, oapi.JobStatusPending, workflowJob2Jobs[0].Status)
+	assert.Equal(t, workflow2WorkflowJobs[0].Id, workflowJob2Jobs[0].WorkflowJobId)
+	assert.Equal(t, jobAgentID, workflowJob2Jobs[0].JobAgentId)
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(10),
-	}, workflow2Jobs[0].JobAgentConfig)
+	}, workflowJob2Jobs[0].JobAgentConfig)
 
 	completedAt2 := time.Now()
 	jobUpdateEvent2 := &oapi.JobUpdateEvent{
-		Id: &workflow2Jobs[0].Id,
+		Id: &workflowJob2Jobs[0].Id,
 		Job: oapi.Job{
-			Id:          workflow2Jobs[0].Id,
+			Id:          workflowJob2Jobs[0].Id,
 			Status:      oapi.JobStatusSuccessful,
 			CompletedAt: &completedAt2,
 		},

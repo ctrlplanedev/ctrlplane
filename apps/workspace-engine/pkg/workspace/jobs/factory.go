@@ -208,10 +208,10 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 	}, nil
 }
 
-func (f *Factory) CreateJobForStep(ctx context.Context, step *oapi.WorkflowStep, action *trace.Action) (*oapi.Job, error) {
+func (f *Factory) CreateJobForStep(ctx context.Context, job *oapi.WorkflowJob, action *trace.Action) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "CreateJobForStep",
 		oteltrace.WithAttributes(
-			attribute.String("step.id", step.Id),
+			attribute.String("workflow_job.id", job.Id),
 		))
 	defer span.End()
 

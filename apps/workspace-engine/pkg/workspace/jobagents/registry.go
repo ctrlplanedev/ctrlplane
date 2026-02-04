@@ -52,7 +52,7 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	renderContext.Job = job
 	renderContext.JobAgent = jobAgent
 
-	isWorkflow := job.WorkflowStepId != ""
+	isWorkflow := job.WorkflowJobId != ""
 	caps := dispatcher.Supports()
 
 	if isWorkflow && !caps.Workflows {
@@ -79,9 +79,9 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		renderContext.JobAgentConfig = jobAgentConfig
 	}
 
-	if workflowStep, ok := r.store.WorkflowSteps.Get(job.WorkflowStepId); ok {
-		renderContext.WorkflowStep = workflowStep
-		if workflow, ok := r.store.Workflows.Get(workflowStep.WorkflowId); ok {
+	if workflowJob, ok := r.store.WorkflowJobs.Get(job.WorkflowJobId); ok {
+		renderContext.WorkflowJob = workflowJob
+		if workflow, ok := r.store.Workflows.Get(workflowJob.WorkflowId); ok {
 			renderContext.Workflow = workflow
 		}
 	}

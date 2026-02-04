@@ -1449,38 +1449,38 @@ func WorkflowBooleanInputDefault(defaultValue bool) WorkflowInputOption {
 	}
 }
 
-type WorkflowStepTemplateOption func(*TestWorkspace, *oapi.WorkflowStepTemplate)
+type WorkflowJobTemplateOption func(*TestWorkspace, *oapi.WorkflowJobTemplate)
 
-func WithWorkflowStepTemplate(options ...WorkflowStepTemplateOption) WorkflowTemplateOption {
+func WithWorkflowJobTemplate(options ...WorkflowJobTemplateOption) WorkflowTemplateOption {
 	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
-		stepTemplate := c.NewWorkflowStepTemplate(wft.Id)
+		jobTemplate := c.NewWorkflowJobTemplate(wft.Id)
 		for _, option := range options {
-			option(ws, stepTemplate)
+			option(ws, jobTemplate)
 		}
-		wft.Steps = append(wft.Steps, *stepTemplate)
+		wft.Jobs = append(wft.Jobs, *jobTemplate)
 	}
 }
 
-func WorkflowStepTemplateID(id string) WorkflowStepTemplateOption {
-	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
-		stepTemplate.Id = id
+func WorkflowJobTemplateID(id string) WorkflowJobTemplateOption {
+	return func(_ *TestWorkspace, jobTemplate *oapi.WorkflowJobTemplate) {
+		jobTemplate.Id = id
 	}
 }
 
-func WorkflowStepTemplateJobAgentID(id string) WorkflowStepTemplateOption {
-	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
-		stepTemplate.JobAgent.Id = id
+func WorkflowJobTemplateJobAgentID(id string) WorkflowJobTemplateOption {
+	return func(_ *TestWorkspace, jobTemplate *oapi.WorkflowJobTemplate) {
+		jobTemplate.Ref = id
 	}
 }
 
-func WorkflowStepTemplateJobAgentConfig(config map[string]any) WorkflowStepTemplateOption {
-	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
-		stepTemplate.JobAgent.Config = config
+func WorkflowJobTemplateJobAgentConfig(config map[string]any) WorkflowJobTemplateOption {
+	return func(_ *TestWorkspace, jobTemplate *oapi.WorkflowJobTemplate) {
+		jobTemplate.Config = config
 	}
 }
 
-func WorkflowStepTemplateName(name string) WorkflowStepTemplateOption {
-	return func(_ *TestWorkspace, stepTemplate *oapi.WorkflowStepTemplate) {
-		stepTemplate.Name = name
+func WorkflowJobTemplateName(name string) WorkflowJobTemplateOption {
+	return func(_ *TestWorkspace, jobTemplate *oapi.WorkflowJobTemplate) {
+		jobTemplate.Name = name
 	}
 }
