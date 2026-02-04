@@ -2080,6 +2080,16 @@
             ],
             "type": "object"
          },
+         "WorkflowArrayInput": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/WorkflowManualArrayInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowSelectorArrayInput"
+               }
+            ]
+         },
          "WorkflowBooleanInput": {
             "properties": {
                "default": {
@@ -2112,6 +2122,9 @@
                },
                {
                   "$ref": "#/components/schemas/WorkflowBooleanInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowArrayInput"
                }
             ]
          },
@@ -2127,6 +2140,9 @@
                },
                "index": {
                   "type": "integer"
+               },
+               "matrix": {
+                  "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
                "ref": {
                   "description": "Reference to the job agent",
@@ -2161,6 +2177,23 @@
             ],
             "type": "object"
          },
+         "WorkflowJobMatrix": {
+            "additionalProperties": {
+               "oneOf": [
+                  {
+                     "items": {
+                        "additionalProperties": true,
+                        "type": "object"
+                     },
+                     "type": "array"
+                  },
+                  {
+                     "type": "string"
+                  }
+               ]
+            },
+            "type": "object"
+         },
          "WorkflowJobTemplate": {
             "properties": {
                "config": {
@@ -2187,6 +2220,31 @@
             ],
             "type": "object"
          },
+         "WorkflowManualArrayInput": {
+            "properties": {
+               "default": {
+                  "items": {
+                     "additionalProperties": true,
+                     "type": "object"
+                  },
+                  "type": "array"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "array"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type"
+            ],
+            "type": "object"
+         },
          "WorkflowNumberInput": {
             "properties": {
                "default": {
@@ -2206,6 +2264,44 @@
                "name",
                "type",
                "default"
+            ],
+            "type": "object"
+         },
+         "WorkflowSelectorArrayInput": {
+            "properties": {
+               "name": {
+                  "type": "string"
+               },
+               "selector": {
+                  "properties": {
+                     "default": {
+                        "$ref": "#/components/schemas/Selector"
+                     },
+                     "entityType": {
+                        "enum": [
+                           "resource",
+                           "environment",
+                           "deployment"
+                        ],
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "type"
+                  ],
+                  "type": "object"
+               },
+               "type": {
+                  "enum": [
+                     "array"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "selector"
             ],
             "type": "object"
          },

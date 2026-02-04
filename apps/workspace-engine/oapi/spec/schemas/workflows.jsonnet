@@ -67,11 +67,11 @@ local openapi = import '../lib/openapi.libsonnet';
     properties: {
       name: { type: 'string' },
       type: { type: 'string', enum: ['array'] },
-      selector: { 
+      selector: {
         type: 'object',
         required: ['type'],
         properties: {
-          type: { type: 'string', enum: ['resource', 'environment', 'deployment'] },
+          entityType: { type: 'string', enum: ['resource', 'environment', 'deployment'] },
           default: openapi.schemaRef('Selector'),
         },
       },
