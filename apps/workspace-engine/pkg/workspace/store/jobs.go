@@ -140,10 +140,10 @@ func (j *Jobs) GetWithRelease(id string) (*oapi.JobWithRelease, error) {
 	}, nil
 }
 
-func (j *Jobs) GetByWorkflowStepId(workflowStepId string) []*oapi.Job {
+func (j *Jobs) GetByWorkflowJobId(workflowJobId string) []*oapi.Job {
 	jobs := make([]*oapi.Job, 0)
 	for _, job := range j.repo.Jobs.Items() {
-		if job.WorkflowStepId == workflowStepId {
+		if job.WorkflowJobId == workflowJobId {
 			jobs = append(jobs, job)
 		}
 	}

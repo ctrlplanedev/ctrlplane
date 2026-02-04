@@ -5,7 +5,7 @@ local Job = {
   required: [
     'id',
     'releaseId',
-    'workflowStepId',
+    'workflowJobId',
     'jobAgentId',
     'jobAgentConfig',
     'status',
@@ -16,7 +16,7 @@ local Job = {
   properties: {
     id: { type: 'string' },
     releaseId: { type: 'string' },
-    workflowStepId: { type: 'string' },
+    workflowJobId: { type: 'string' },
     jobAgentId: { type: 'string' },
     jobAgentConfig: openapi.schemaRef('JobAgentConfig'),
     externalId: { type: 'string' },

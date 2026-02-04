@@ -15,7 +15,7 @@ func NewWorkflowTemplate(workspaceID string) *oapi.WorkflowTemplate {
 		Id:     id,
 		Name:   fmt.Sprintf("workflow-template-%s", idSubstring),
 		Inputs: []oapi.WorkflowInput{},
-		Steps:  []oapi.WorkflowStepTemplate{},
+		Jobs:   []oapi.WorkflowJobTemplate{},
 	}
 
 	return workflowTemplate
@@ -54,16 +54,14 @@ func NewBooleanWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
 	return input
 }
 
-func NewWorkflowStepTemplate(workflowTemplateID string) *oapi.WorkflowStepTemplate {
+func NewWorkflowJobTemplate(workflowTemplateID string) *oapi.WorkflowJobTemplate {
 	id := uuid.New().String()
 	idSubstring := id[:8]
-	stepTemplate := &oapi.WorkflowStepTemplate{
-		Id:   id,
-		Name: fmt.Sprintf("test-step-%s", idSubstring),
-		JobAgent: oapi.WorkflowJobAgentConfig{
-			Id:     "",
-			Config: make(map[string]any),
-		},
+	jobTemplate := &oapi.WorkflowJobTemplate{
+		Id:     id,
+		Name:   fmt.Sprintf("test-job-%s", idSubstring),
+		Ref:    "",
+		Config: make(map[string]any),
 	}
-	return stepTemplate
+	return jobTemplate
 }

@@ -709,14 +709,14 @@
                   "format": "date-time",
                   "type": "string"
                },
-               "workflowStepId": {
+               "workflowJobId": {
                   "type": "string"
                }
             },
             "required": [
                "id",
                "releaseId",
-               "workflowStepId",
+               "workflowJobId",
                "jobAgentId",
                "jobAgentConfig",
                "status",
@@ -809,7 +809,7 @@
                         "status",
                         "traceToken",
                         "updatedAt",
-                        "workflowStepId"
+                        "workflowJobId"
                      ],
                      "type": "string"
                   },
@@ -2115,6 +2115,36 @@
                }
             ]
          },
+         "WorkflowJob": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "description": "Configuration for the job agent",
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "index": {
+                  "type": "integer"
+               },
+               "ref": {
+                  "description": "Reference to the job agent",
+                  "type": "string"
+               },
+               "workflowId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowId",
+               "index",
+               "ref",
+               "config"
+            ],
+            "type": "object"
+         },
          "WorkflowJobAgentConfig": {
             "properties": {
                "config": {
@@ -2127,6 +2157,32 @@
             },
             "required": [
                "id",
+               "config"
+            ],
+            "type": "object"
+         },
+         "WorkflowJobTemplate": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "description": "Configuration for the job agent",
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "ref": {
+                  "description": "Reference to the job agent",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "ref",
                "config"
             ],
             "type": "object"
@@ -2150,47 +2206,6 @@
                "name",
                "type",
                "default"
-            ],
-            "type": "object"
-         },
-         "WorkflowStep": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "index": {
-                  "type": "integer"
-               },
-               "jobAgent": {
-                  "$ref": "#/components/schemas/WorkflowJobAgentConfig"
-               },
-               "workflowId": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "workflowId",
-               "index"
-            ],
-            "type": "object"
-         },
-         "WorkflowStepTemplate": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "jobAgent": {
-                  "$ref": "#/components/schemas/WorkflowJobAgentConfig"
-               },
-               "name": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "name",
-               "jobAgent"
             ],
             "type": "object"
          },
@@ -2227,21 +2242,21 @@
                   },
                   "type": "array"
                },
-               "name": {
-                  "type": "string"
-               },
-               "steps": {
+               "jobs": {
                   "items": {
-                     "$ref": "#/components/schemas/WorkflowStepTemplate"
+                     "$ref": "#/components/schemas/WorkflowJobTemplate"
                   },
                   "type": "array"
+               },
+               "name": {
+                  "type": "string"
                }
             },
             "required": [
                "id",
                "name",
                "inputs",
-               "steps"
+               "jobs"
             ],
             "type": "object"
          }

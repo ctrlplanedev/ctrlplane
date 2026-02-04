@@ -28,14 +28,14 @@ func (w *WorkflowManagerAction) Execute(ctx context.Context, trigger ActionTrigg
 		return nil
 	}
 
-	workflowStep, ok := w.store.WorkflowSteps.Get(job.WorkflowStepId)
+	workflowJob, ok := w.store.WorkflowJobs.Get(job.WorkflowJobId)
 	if !ok {
 		return nil
 	}
 
-	workflow, ok := w.store.Workflows.Get(workflowStep.WorkflowId)
+	workflow, ok := w.store.Workflows.Get(workflowJob.WorkflowId)
 	if !ok {
-		return fmt.Errorf("workflow %s not found for step %s", workflowStep.WorkflowId, workflowStep.Id)
+		return fmt.Errorf("workflow %s not found for job %s", workflowJob.WorkflowId, workflowJob.Id)
 	}
 
 	return w.manager.ReconcileWorkflow(ctx, workflow)

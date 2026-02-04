@@ -36,17 +36,15 @@ func (w *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 		Inputs:             maps.Clone(inputs),
 	}
 
-	for idx, stepTemplate := range workflowTemplate.Steps {
-		step := &oapi.WorkflowStep{
+	for idx, jobTemplate := range workflowTemplate.Jobs {
+		job := &oapi.WorkflowJob{
 			Id:         uuid.New().String(),
 			WorkflowId: workflow.Id,
 			Index:      idx,
-			JobAgent: &oapi.WorkflowJobAgentConfig{
-				Id:     stepTemplate.JobAgent.Id,
-				Config: maps.Clone(stepTemplate.JobAgent.Config),
-			},
+			Ref:        jobTemplate.Ref,
+			Config:     maps.Clone(jobTemplate.Config),
 		}
-		w.store.WorkflowSteps.Upsert(ctx, step)
+		w.store.WorkflowJobs.Upsert(ctx, job)
 	}
 
 	w.store.Workflows.Upsert(ctx, workflow)
@@ -56,15 +54,15 @@ func (w *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 }
 
 // dispatchJobForStep dispatches a job for the given step
-func (m *Manager) dispatchStep(ctx context.Context, step *oapi.WorkflowStep) error {
-	jobAgent, ok := m.store.JobAgents.Get(step.JobAgent.Id)
+func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) error {
+	jobAgent, ok := m.store.JobAgents.Get(wfJob.Ref)
 	if !ok {
-		return fmt.Errorf("job agent %s not found", step.JobAgent.Id)
+		return fmt.Errorf("job agent %s not found", wfJob.Ref)
 	}
 
 	mergedConfig, err := mergeJobAgentConfig(
 		jobAgent.Config,
-		step.JobAgent.Config,
+		wfJob.Config,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to merge job agent config: %w", err)
@@ -72,8 +70,8 @@ func (m *Manager) dispatchStep(ctx context.Context, step *oapi.WorkflowStep) err
 
 	job := &oapi.Job{
 		Id:             uuid.New().String(),
-		WorkflowStepId: step.Id,
-		JobAgentId:     step.JobAgent.Id,
+		WorkflowJobId:  wfJob.Id,
+		JobAgentId:     wfJob.Ref,
 		JobAgentConfig: mergedConfig,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -103,12 +101,12 @@ func (m *Manager) ReconcileWorkflow(ctx context.Context, workflow *oapi.Workflow
 		return nil
 	}
 
-	nextStep := wfv.GetNextStep()
-	if nextStep == nil {
+	nextJob := wfv.GetNextJob()
+	if nextJob == nil {
 		return nil
 	}
 
-	return m.dispatchStep(ctx, nextStep)
+	return m.dispatchJob(ctx, nextJob)
 }
 
 func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) (oapi.JobAgentConfig, error) {

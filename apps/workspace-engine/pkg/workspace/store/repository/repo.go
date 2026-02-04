@@ -62,9 +62,9 @@ func New(wsId string) *InMemoryStore {
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
 		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
 		WorkflowTemplates:        createTypedStore[*oapi.WorkflowTemplate](router, "workflow_template"),
-		WorkflowStepTemplates:    createTypedStore[*oapi.WorkflowStepTemplate](router, "workflow_step_template"),
+		WorkflowJobTemplates:     createTypedStore[*oapi.WorkflowJobTemplate](router, "workflow_job_template"),
 		Workflows:                createTypedStore[*oapi.Workflow](router, "workflow"),
-		WorkflowSteps:            createTypedStore[*oapi.WorkflowStep](router, "workflow_step"),
+		WorkflowJobs:             createTypedStore[*oapi.WorkflowJob](router, "workflow_job"),
 	}
 }
 
@@ -98,10 +98,10 @@ type InMemoryStore struct {
 	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
 	RelationshipRules   cmap.ConcurrentMap[string, *oapi.RelationshipRule]
 
-	WorkflowTemplates     cmap.ConcurrentMap[string, *oapi.WorkflowTemplate]
-	WorkflowStepTemplates cmap.ConcurrentMap[string, *oapi.WorkflowStepTemplate]
-	Workflows             cmap.ConcurrentMap[string, *oapi.Workflow]
-	WorkflowSteps         cmap.ConcurrentMap[string, *oapi.WorkflowStep]
+	WorkflowTemplates    cmap.ConcurrentMap[string, *oapi.WorkflowTemplate]
+	WorkflowJobTemplates cmap.ConcurrentMap[string, *oapi.WorkflowJobTemplate]
+	Workflows            cmap.ConcurrentMap[string, *oapi.Workflow]
+	WorkflowJobs         cmap.ConcurrentMap[string, *oapi.WorkflowJob]
 }
 
 func (s *InMemoryStore) Router() *persistence.RepositoryRouter {

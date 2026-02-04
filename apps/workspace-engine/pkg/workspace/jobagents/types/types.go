@@ -26,7 +26,7 @@ type DispatchContext struct {
 	Environment    *oapi.Environment       `json:"environment"`
 	Resource       *oapi.Resource          `json:"resource"`
 	Workflow       *oapi.Workflow          `json:"workflow"`
-	WorkflowStep   *oapi.WorkflowStep      `json:"step"`
+	WorkflowJob    *oapi.WorkflowJob       `json:"workflowJob"`
 	Version        *oapi.DeploymentVersion `json:"version"`
 	Inputs         map[string]any          `json:"inputs"`
 }

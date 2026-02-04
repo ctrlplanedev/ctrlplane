@@ -8,11 +8,11 @@ import (
 )
 
 type WorkflowView struct {
-	store    *store.Store
-	workflow *oapi.Workflow
-	steps    []*oapi.WorkflowStep
+	store        *store.Store
+	workflow     *oapi.Workflow
+	workflowJobs []*oapi.WorkflowJob
 
-	stepJobs map[string][]*oapi.Job
+	jobs map[string][]*oapi.Job
 }
 
 func NewWorkflowView(store *store.Store, workflowId string) (*WorkflowView, error) {
@@ -20,39 +20,39 @@ func NewWorkflowView(store *store.Store, workflowId string) (*WorkflowView, erro
 	if !ok {
 		return nil, fmt.Errorf("workflow %s not found", workflowId)
 	}
-	steps := store.WorkflowSteps.GetByWorkflowId(workflowId)
-	sort.Slice(steps, func(i, j int) bool {
-		return steps[i].Index < steps[j].Index
+	workflowJobs := store.WorkflowJobs.GetByWorkflowId(workflowId)
+	sort.Slice(workflowJobs, func(i, j int) bool {
+		return workflowJobs[i].Index < workflowJobs[j].Index
 	})
 
-	stepJobs := make(map[string][]*oapi.Job)
-	for _, step := range steps {
-		stepJobs[step.Id] = store.Jobs.GetByWorkflowStepId(step.Id)
+	jobs := make(map[string][]*oapi.Job)
+	for _, job := range workflowJobs {
+		jobs[job.Id] = store.Jobs.GetByWorkflowJobId(job.Id)
 	}
 
 	return &WorkflowView{
-		store:    store,
-		workflow: workflow,
-		steps:    steps,
-		stepJobs: stepJobs,
+		store:        store,
+		workflow:     workflow,
+		workflowJobs: workflowJobs,
+		jobs:         jobs,
 	}, nil
 }
 
 func (w *WorkflowView) IsComplete() bool {
-	for _, step := range w.steps {
-		if !w.isStepComplete(step.Id) {
+	for _, job := range w.workflowJobs {
+		if !w.isJobComplete(job.Id) {
 			return false
 		}
 	}
 	return true
 }
 
-func (w *WorkflowView) isStepComplete(stepId string) bool {
-	if len(w.stepJobs[stepId]) == 0 {
+func (w *WorkflowView) isJobComplete(jobId string) bool {
+	if len(w.jobs[jobId]) == 0 {
 		return false
 	}
 
-	for _, job := range w.stepJobs[stepId] {
+	for _, job := range w.jobs[jobId] {
 		if !job.IsInTerminalState() {
 			return false
 		}
@@ -60,8 +60,8 @@ func (w *WorkflowView) isStepComplete(stepId string) bool {
 	return true
 }
 
-func (w *WorkflowView) isStepInProgress(stepId string) bool {
-	for _, job := range w.stepJobs[stepId] {
+func (w *WorkflowView) isJobInProgress(jobId string) bool {
+	for _, job := range w.jobs[jobId] {
 		if !job.IsInTerminalState() {
 			return true
 		}
@@ -70,8 +70,8 @@ func (w *WorkflowView) isStepInProgress(stepId string) bool {
 }
 
 func (w *WorkflowView) HasActiveJobs() bool {
-	for _, stepJobs := range w.stepJobs {
-		for _, job := range stepJobs {
+	for _, jobs := range w.jobs {
+		for _, job := range jobs {
 			if !job.IsInTerminalState() {
 				return true
 			}
@@ -80,13 +80,13 @@ func (w *WorkflowView) HasActiveJobs() bool {
 	return false
 }
 
-func (w *WorkflowView) GetNextStep() *oapi.WorkflowStep {
-	for _, step := range w.steps {
-		if !w.isStepComplete(step.Id) {
-			if w.isStepInProgress(step.Id) {
+func (w *WorkflowView) GetNextJob() *oapi.WorkflowJob {
+	for _, job := range w.workflowJobs {
+		if !w.isJobComplete(job.Id) {
+			if w.isJobInProgress(job.Id) {
 				return nil
 			}
-			return step
+			return job
 		}
 	}
 	return nil
@@ -96,10 +96,10 @@ func (w *WorkflowView) GetWorkflow() *oapi.Workflow {
 	return w.workflow
 }
 
-func (w *WorkflowView) GetSteps() []*oapi.WorkflowStep {
-	return w.steps
+func (w *WorkflowView) GetJobs() []*oapi.WorkflowJob {
+	return w.workflowJobs
 }
 
-func (w *WorkflowView) GetStep(index int) *oapi.WorkflowStep {
-	return w.steps[index]
+func (w *WorkflowView) GetJob(index int) *oapi.WorkflowJob {
+	return w.workflowJobs[index]
 }
