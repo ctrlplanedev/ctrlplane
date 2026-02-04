@@ -83,17 +83,122 @@ jobAgentConfig:
 
 ## Template Context
 
-The template has access to all job context:
+The template has access to all job context. Variables are accessed using Go template
+syntax: `{{.variable.property}}`.
 
-| Variable       | Description                                 |
-| -------------- | ------------------------------------------- |
-| `.job`         | Job details (id, status, etc.)              |
-| `.release`     | Release details                             |
-| `.version`     | Version being deployed (.tag, .name, etc.)  |
-| `.deployment`  | Deployment details (.name, .slug)           |
-| `.environment` | Environment details (.name, .id)            |
-| `.resource`    | Target resource (.name, .config, .metadata) |
-| `.variables`   | Merged deployment variables                 |
+### Top-Level Variables
+
+| Variable       | Description                                     |
+| -------------- | ----------------------------------------------- |
+| `.job`         | Current job details                             |
+| `.version`     | Version being deployed (shortcut)               |
+| `.deployment`  | Deployment configuration                        |
+| `.environment` | Target environment                              |
+| `.resource`    | Target resource                                 |
+| `.variables`   | Merged deployment variables (key-value strings) |
+
+### Resource Properties
+
+| Property               | Type              | Description                           |
+| ---------------------- | ----------------- | ------------------------------------- |
+| `.resource.id`         | string            | Unique resource ID                    |
+| `.resource.name`       | string            | Display name                          |
+| `.resource.identifier` | string            | Unique identifier within workspace    |
+| `.resource.kind`       | string            | Resource kind (e.g., KubernetesCluster) |
+| `.resource.version`    | string            | Resource schema version               |
+| `.resource.config`     | object            | Arbitrary configuration data          |
+| `.resource.metadata`   | map[string]string | Key-value metadata labels             |
+| `.resource.workspaceId`| string            | Parent workspace ID                   |
+| `.resource.providerId` | string            | Resource provider ID (if any)         |
+| `.resource.createdAt`  | timestamp         | Creation timestamp                    |
+| `.resource.updatedAt`  | timestamp         | Last update timestamp                 |
+| `.resource.lockedAt`   | timestamp         | Lock timestamp (if locked)            |
+
+### Deployment Properties
+
+| Property                      | Type              | Description                        |
+| ----------------------------- | ----------------- | ---------------------------------- |
+| `.deployment.id`              | string            | Unique deployment ID               |
+| `.deployment.name`            | string            | Display name                       |
+| `.deployment.slug`            | string            | URL-friendly identifier            |
+| `.deployment.description`     | string            | Optional description               |
+| `.deployment.systemId`        | string            | Parent system ID                   |
+| `.deployment.jobAgentId`      | string            | Associated job agent ID            |
+| `.deployment.jobAgentConfig`  | object            | Job agent configuration            |
+| `.deployment.resourceSelector`| object            | Resource selector for targeting    |
+
+### Environment Properties
+
+| Property                        | Type      | Description                     |
+| ------------------------------- | --------- | ------------------------------- |
+| `.environment.id`               | string    | Unique environment ID           |
+| `.environment.name`             | string    | Display name                    |
+| `.environment.description`      | string    | Optional description            |
+| `.environment.systemId`         | string    | Parent system ID                |
+| `.environment.resourceSelector` | object    | Resource selector               |
+| `.environment.createdAt`        | timestamp | Creation timestamp              |
+
+### Version Properties
+
+Access via `.version`:
+
+| Property               | Type              | Description                      |
+| ---------------------- | ----------------- | -------------------------------- |
+| `.version.id`          | string            | Unique version ID                |
+| `.version.tag`         | string            | Version tag (e.g., v1.2.3)       |
+| `.version.name`        | string            | Display name                     |
+| `.version.message`     | string            | Optional commit/release message  |
+| `.version.status`      | string            | Version status                   |
+| `.version.config`      | object            | Version-specific configuration   |
+| `.version.metadata`    | map[string]string | Version metadata                 |
+| `.version.jobAgentConfig`| object          | Version-level job agent config   |
+| `.version.deploymentId`| string            | Parent deployment ID             |
+| `.version.createdAt`   | timestamp         | Creation timestamp               |
+
+### Job Properties
+
+| Property            | Type              | Description                        |
+| ------------------- | ----------------- | ---------------------------------- |
+| `.job.id`           | string            | Unique job ID                      |
+| `.job.status`       | string            | Current status                     |
+| `.job.message`      | string            | Status message                     |
+| `.job.externalId`   | string            | External system reference          |
+| `.job.metadata`     | map[string]string | Job metadata                       |
+| `.job.jobAgentId`   | string            | Executing job agent ID             |
+| `.job.releaseId`    | string            | Associated release ID              |
+| `.job.createdAt`    | timestamp         | Creation timestamp                 |
+| `.job.startedAt`    | timestamp         | Execution start timestamp          |
+| `.job.completedAt`  | timestamp         | Completion timestamp               |
+| `.job.updatedAt`    | timestamp         | Last update timestamp              |
+
+### Variables
+
+The `.variables` map contains all resolved deployment variables as strings:
+
+```yaml
+template: |
+  metadata:
+    annotations:
+      replicas: "{{.variables.replica_count}}"
+      db-host: "{{.variables.database_host}}"
+```
+
+### Accessing Nested Config
+
+Resource and version configs are arbitrary objects. Access nested properties:
+
+```yaml
+template: |
+  spec:
+    destination:
+      server: {{.resource.config.cluster_url}}
+      namespace: {{.resource.config.namespaces.app}}
+    source:
+      helm:
+        parameters:
+          - name: image.tag
+            value: {{.version.config.imageTag}}
+```
 
 ## Template Functions
 
@@ -209,3 +314,4 @@ template: |
 - Check ArgoCD Application status in the UI
 - Review sync errors in ArgoCD
 - Verify destination cluster is accessible
+
