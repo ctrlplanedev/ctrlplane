@@ -45,7 +45,6 @@ flowchart LR
 A system groups related deployments. This is typically a product, platform, or
 bounded context.
 
-<CodeGroup>
 
 ```yaml YAML
 # ctrlc apply -f system.yaml
@@ -56,14 +55,14 @@ metadata:
   tutorial: quickstart
 ```
 
-</CodeGroup>
+```bash
+ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/1-system.yaml
+```
 
 ## Step 2: Register Resources
 
 Resources are your deployment targets. In production, you'd sync these from
 Kubernetes or cloud providers. For this quickstart, we'll create them manually.
-
-<CodeGroup>
 
 ```yaml
 # ctrlc apply -f resource.yaml
@@ -105,14 +104,14 @@ config:
     - three
 ```
 
-</CodeGroup>
+```bash
+ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/2-resources.yaml
+```
 
 ## Step 3: Create Environments
 
 Environments use selectors to dynamically match resources. When you add new
 clusters with matching metadata, they're automatically included.
-
-<CodeGroup>
 
 ```yaml YAML
 # Staging environment
@@ -128,15 +127,15 @@ description: Live production environment
 resourceSelector: resource.metadata["environment"] == "production"
 ```
 
-</CodeGroup>
+
+```bash
+ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/3-environments.yaml
+```
 
 ## Step 4: Create a Job Agent
 
 Job agents execute your deployments. We'll use a simple test runner, but Ctrlplane
 supports GitHub Actions, Kubernetes jobs, ArgoCD, or custom agents.
-
-
-<CodeGroup>
 
 ```yaml YAML
 # Production environment
@@ -151,14 +150,14 @@ agent:
     sleep: 5s
 ```
 
-</CodeGroup>
+```bash
+ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/4-job-agent.yaml
+```
 
 ## Step 5: Create a Deployment
 
 A deployment represents your application. The job agent config tells Ctrlplane
 how to trigger deployments.
-
-<CodeGroup>
 
 ```yaml YAML
 # Production environment
@@ -171,7 +170,9 @@ jobAgent:
   ref: Tutorial Quickstart Job Agent
 ```
 
-</CodeGroup>
+```bash
+ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/5-deployment.yaml
+```
 
 ## Step 6: Add Deployment Workflow
 
