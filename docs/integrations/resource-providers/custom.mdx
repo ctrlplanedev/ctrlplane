@@ -1,0 +1,364 @@
+---
+title: "Custom Provider"
+description: "Build your own resource provider via API"
+---
+
+Create custom resource providers to sync any infrastructure into Ctrlplane's
+inventory using the API or SDK.
+
+## When to Use Custom Providers
+
+Use custom providers when you need to sync:
+
+- Internal infrastructure management systems
+- Custom cloud platforms
+- Database clusters
+- Edge devices
+- Any resource not covered by built-in providers
+
+## Using the API
+
+### Create or Update a Resource
+
+```bash
+curl -X PUT "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "my-server-1",
+    "name": "Production Server 1",
+    "kind": "Server",
+    "version": "1.0.0",
+    "metadata": {
+      "environment": "production",
+      "region": "us-east-1",
+      "team": "platform"
+    },
+    "config": {
+      "host": "10.0.1.100",
+      "port": 22
+    }
+  }'
+```
+
+### Delete a Resource
+
+```bash
+curl -X DELETE \
+  "https://app.ctrlplane.dev/api/v1/resources/{resourceId}" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+### List Resources
+
+```bash
+curl "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+## Using the Node.js SDK
+
+```typescript
+import { Ctrlplane } from "@ctrlplane/node-sdk";
+
+const client = new Ctrlplane({ apiKey: process.env.CTRLPLANE_API_KEY });
+
+// Sync resources from your infrastructure
+async function syncResources() {
+  const servers = await discoverServers(); // Your discovery logic
+
+  for (const server of servers) {
+    await client.resources.upsert({
+      workspaceId: "your-workspace-id",
+      identifier: server.id,
+      name: server.hostname,
+      kind: "Server",
+      version: "1.0.0",
+      metadata: {
+        environment: server.environment,
+        region: server.region,
+        team: server.team,
+      },
+      config: {
+        host: server.ip,
+        port: 22,
+      },
+    });
+  }
+}
+
+// Run on interval
+setInterval(syncResources, 5 * 60 * 1000); // Every 5 minutes
+```
+
+## Using a Shell Script
+
+```bash
+#!/bin/bash
+# sync-resources.sh
+
+WORKSPACE_ID="your-workspace-id"
+API_URL="https://app.ctrlplane.dev/api/v1"
+
+# Discover resources (example: from cloud provider)
+INSTANCES=$(aws ec2 describe-instances --query 'Reservations[].Instances[]')
+
+# Sync each instance to Ctrlplane
+echo "$INSTANCES" | jq -c '.[]' | while read instance; do
+  INSTANCE_ID=$(echo "$instance" | jq -r '.InstanceId')
+  NAME=$(echo "$instance" | jq -r '.Tags[] | select(.Key=="Name") | .Value')
+  ENV=$(echo "$instance" | jq -r '.Tags[] | select(.Key=="Environment") | .Value')
+  REGION=$(echo "$instance" | jq -r '.Placement.AvailabilityZone' | sed 's/.$//')
+
+  curl -X PUT "${API_URL}/workspaces/${WORKSPACE_ID}/resources" \
+    -H "Authorization: Bearer ${CTRLPLANE_API_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"identifier\": \"${INSTANCE_ID}\",
+      \"name\": \"${NAME}\",
+      \"kind\": \"AWS/EC2\",
+      \"version\": \"1.0.0\",
+      \"metadata\": {
+        \"environment\": \"${ENV}\",
+        \"region\": \"${REGION}\"
+      }
+    }"
+done
+```
+
+## Using Python
+
+```python
+import os
+import requests
+import time
+
+API_KEY = os.environ["CTRLPLANE_API_KEY"]
+WORKSPACE_ID = os.environ["CTRLPLANE_WORKSPACE"]
+API_URL = "https://app.ctrlplane.dev/api/v1"
+
+def sync_resource(resource):
+    """Upsert a resource to Ctrlplane."""
+    response = requests.put(
+        f"{API_URL}/workspaces/{WORKSPACE_ID}/resources",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json=resource
+    )
+    response.raise_for_status()
+    return response.json()
+
+def discover_resources():
+    """Your custom discovery logic."""
+    # Example: query your internal CMDB
+    return [
+        {
+            "identifier": "server-001",
+            "name": "Web Server 1",
+            "kind": "Server",
+            "version": "1.0.0",
+            "metadata": {
+                "environment": "production",
+                "region": "us-east-1",
+                "team": "platform"
+            },
+            "config": {
+                "host": "10.0.1.100",
+                "port": 22
+            }
+        }
+    ]
+
+def sync_all():
+    """Sync all resources."""
+    resources = discover_resources()
+    for resource in resources:
+        sync_resource(resource)
+        print(f"Synced: {resource['name']}")
+
+if __name__ == "__main__":
+    while True:
+        sync_all()
+        time.sleep(300)  # Every 5 minutes
+```
+
+## Resource Schema
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `identifier` | Yes | Unique identifier for the resource |
+| `name` | Yes | Human-readable name |
+| `kind` | Yes | Resource type (use `Category/Type` format) |
+| `version` | Yes | Resource version/schema version |
+| `metadata` | No | Key-value pairs for filtering |
+| `config` | No | Configuration data for job agents |
+
+### Kind Naming Convention
+
+Use a consistent naming convention:
+
+```yaml
+# Good: Category/Type format
+kind: Server/Linux
+kind: Database/PostgreSQL
+kind: Cache/Redis
+kind: Queue/RabbitMQ
+
+# Bad: inconsistent formats
+kind: linux-server
+kind: postgres
+kind: redis
+```
+
+### Metadata vs Config
+
+- **Metadata**: Used for environment selectors and filtering
+- **Config**: Passed to job agents for deployment execution
+
+```yaml
+# Metadata: for targeting
+metadata:
+  environment: production
+  region: us-east-1
+  team: platform
+  tier: critical
+
+# Config: for deployment
+config:
+  host: 10.0.1.100
+  port: 22
+  ssh_key_path: /path/to/key
+```
+
+## Running Continuously
+
+### Kubernetes CronJob
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sync-custom-resources
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: sync
+              image: your-sync-image
+              command: ["python", "sync.py"]
+              env:
+                - name: CTRLPLANE_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ctrlplane-credentials
+                      key: api-key
+                - name: CTRLPLANE_WORKSPACE
+                  value: your-workspace-id
+          restartPolicy: OnFailure
+```
+
+### Kubernetes Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-resource-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: custom-resource-sync
+  template:
+    metadata:
+      labels:
+        app: custom-resource-sync
+    spec:
+      containers:
+        - name: sync
+          image: your-sync-image
+          command: ["python", "sync.py"]
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: CTRLPLANE_WORKSPACE
+              value: your-workspace-id
+```
+
+## Best Practices
+
+### Use Stable Identifiers
+
+Use identifiers that won't change:
+
+```yaml
+# Good: stable identifiers
+identifier: server-001
+identifier: db-prod-primary
+identifier: cache-us-east-1
+
+# Bad: may change
+identifier: 10.0.1.100
+identifier: ip-10-0-1-100
+```
+
+### Include Essential Metadata
+
+Include metadata for effective targeting:
+
+```yaml
+metadata:
+  environment: production
+  region: us-east-1
+  team: platform
+  tier: critical
+```
+
+### Handle Deletions
+
+Remove resources that no longer exist:
+
+```python
+def sync_all():
+    # Get current resources from source
+    current_resources = discover_resources()
+    current_ids = {r["identifier"] for r in current_resources}
+    
+    # Get existing resources in Ctrlplane
+    existing = get_ctrlplane_resources()
+    existing_ids = {r["identifier"] for r in existing}
+    
+    # Sync current resources
+    for resource in current_resources:
+        sync_resource(resource)
+    
+    # Delete removed resources
+    for resource in existing:
+        if resource["identifier"] not in current_ids:
+            delete_resource(resource["id"])
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Selectors" icon="filter" href="../../concepts/selectors">
+    Learn selector syntax
+  </Card>
+  <Card title="Environments" icon="layer-group" href="../../concepts/environments">
+    Create dynamic environments
+  </Card>
+  <Card title="API Reference" icon="code" href="../../api">
+    Full API documentation
+  </Card>
+  <Card title="Node SDK" icon="npm" href="../../sdk/node">
+    Node.js SDK reference
+  </Card>
+</CardGroup>

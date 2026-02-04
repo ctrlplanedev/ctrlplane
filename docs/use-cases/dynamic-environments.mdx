@@ -47,7 +47,7 @@ When you add a new cluster:
 ```yaml
 type: Resource
 name: prod-ap-south-1
-kind: Kubernetes/Cluster
+kind: KubernetesCluster
 metadata:
   env: production      # ← This makes it "Production"
   region: ap-south-1
@@ -144,7 +144,7 @@ resourceSelector: |
 # Only Kubernetes clusters
 name: K8s Production
 resourceSelector: |
-  resource.kind == "Kubernetes/Cluster" &&
+  resource.kind == "KubernetesCluster" &&
   resource.metadata["env"] == "production"
 
 # Only Lambda functions
@@ -170,7 +170,7 @@ resourceSelector: |
 # Critical K8s clusters in US production
 name: Critical US K8s
 resourceSelector: |
-  resource.kind == "Kubernetes/Cluster" &&
+  resource.kind == "KubernetesCluster" &&
   resource.metadata["env"] == "production" &&
   resource.metadata["region"].startsWith("us-") &&
   resource.metadata["tier"] == "critical"

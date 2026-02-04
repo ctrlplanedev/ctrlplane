@@ -1,0 +1,308 @@
+---
+title: "AWS Provider"
+description: "Sync AWS resources into Ctrlplane"
+---
+
+The AWS provider syncs resources from Amazon Web Services into Ctrlplane's
+inventory—EKS clusters, EC2 instances, RDS databases, and VPC networks.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- AWS credentials configured (environment variables, `~/.aws/credentials`, or IAM role)
+- Ctrlplane API key
+
+## Supported Resources
+
+| Command | Resource Type | Ctrlplane Kind |
+|---------|--------------|----------------|
+| `aws eks` | EKS Clusters | `AWS/EKS` |
+| `aws ec2` | EC2 Instances | `AWS/EC2` |
+| `aws rds` | RDS Instances | `AWS/RDS` |
+| `aws networks` | VPCs & Subnets | `AWS/VPC`, `AWS/Subnet` |
+
+## Authentication
+
+Configure AWS credentials using any standard method:
+
+```bash
+# Environment variables
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export AWS_REGION="us-east-1"
+
+# Or use AWS CLI profile
+export AWS_PROFILE="production"
+
+# Or use IAM role (when running in AWS)
+# Credentials are automatically retrieved
+```
+
+## EKS Clusters
+
+Sync Amazon Elastic Kubernetes Service clusters:
+
+```bash
+# Sync from a specific region
+ctrlc sync aws eks --region us-east-1
+
+# Sync from multiple regions
+ctrlc sync aws eks --region us-east-1 --region us-west-2
+
+# Sync from all regions
+ctrlc sync aws eks
+
+# Continuous sync
+ctrlc sync aws eks --region us-east-1 --interval 5m
+```
+
+### Options
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--region` | AWS region(s) to sync from | No (all regions if not specified) |
+| `--provider` | Resource provider name | No |
+| `--interval` | Sync interval (e.g., `5m`, `1h`) | No |
+
+### Resource Metadata
+
+EKS clusters include metadata from AWS tags:
+
+```yaml
+identifier: arn:aws:eks:us-east-1:123456789:cluster/prod-cluster
+name: prod-cluster
+kind: AWS/EKS
+metadata:
+  region: us-east-1
+  account: "123456789"
+  environment: production  # from AWS tag
+  team: platform           # from AWS tag
+config:
+  endpoint: https://XXXXX.eks.us-east-1.amazonaws.com
+  version: "1.28"
+```
+
+## EC2 Instances
+
+Sync EC2 instances:
+
+```bash
+# Sync from a specific region
+ctrlc sync aws ec2 --region us-east-1
+
+# Continuous sync
+ctrlc sync aws ec2 --region us-east-1 --interval 5m
+```
+
+### Resource Metadata
+
+```yaml
+identifier: i-0123456789abcdef0
+name: web-server-1  # from Name tag
+kind: AWS/EC2
+metadata:
+  region: us-east-1
+  availability_zone: us-east-1a
+  instance_type: t3.medium
+  environment: production  # from AWS tag
+config:
+  private_ip: 10.0.1.100
+  public_ip: 54.123.45.67
+  vpc_id: vpc-12345
+```
+
+## RDS Instances
+
+Sync RDS database instances:
+
+```bash
+# Sync from a specific region
+ctrlc sync aws rds --region us-east-1
+
+# Continuous sync
+ctrlc sync aws rds --region us-east-1 --interval 10m
+```
+
+### Resource Metadata
+
+```yaml
+identifier: arn:aws:rds:us-east-1:123456789:db:prod-db
+name: prod-db
+kind: AWS/RDS
+metadata:
+  region: us-east-1
+  engine: postgres
+  engine_version: "15.4"
+  instance_class: db.r5.large
+  environment: production  # from AWS tag
+config:
+  endpoint: prod-db.xxxxx.us-east-1.rds.amazonaws.com
+  port: 5432
+```
+
+## VPC Networks
+
+Sync VPCs and subnets:
+
+```bash
+# Sync from a specific region
+ctrlc sync aws networks --region us-east-1
+```
+
+## Running in AWS
+
+### ECS Task
+
+```json
+{
+  "family": "ctrlplane-sync",
+  "containerDefinitions": [
+    {
+      "name": "sync",
+      "image": "ghcr.io/ctrlplanedev/cli:latest",
+      "command": [
+        "ctrlc", "sync", "aws", "eks",
+        "--region", "us-east-1",
+        "--interval", "5m"
+      ],
+      "environment": [
+        {
+          "name": "CTRLPLANE_API_KEY",
+          "value": "your-api-key"
+        },
+        {
+          "name": "CTRLPLANE_WORKSPACE",
+          "value": "your-workspace-id"
+        }
+      ]
+    }
+  ],
+  "taskRoleArn": "arn:aws:iam::123456789:role/ctrlplane-sync-role"
+}
+```
+
+### IAM Policy
+
+The sync task needs read permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "eks:ListClusters",
+        "eks:DescribeCluster",
+        "ec2:DescribeInstances",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "rds:DescribeDBInstances",
+        "tag:GetResources"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+### Lambda Function
+
+Run sync periodically with Lambda:
+
+```python
+import subprocess
+
+def handler(event, context):
+    subprocess.run([
+        "ctrlc", "sync", "aws", "eks",
+        "--region", "us-east-1"
+    ], check=True)
+```
+
+## Environment Targeting
+
+Target AWS resources in environments:
+
+```yaml
+# All production EKS clusters
+type: Environment
+name: Production EKS
+resourceSelector: |
+  resource.kind == "AWS/EKS" &&
+  resource.metadata["environment"] == "production"
+```
+
+```yaml
+# US East resources only
+type: Environment
+name: US East
+resourceSelector: |
+  resource.metadata["region"] == "us-east-1"
+```
+
+```yaml
+# Production databases
+type: Environment
+name: Production Databases
+resourceSelector: |
+  resource.kind == "AWS/RDS" &&
+  resource.metadata["environment"] == "production"
+```
+
+## Best Practices
+
+### Tag Your Resources
+
+Ensure AWS resources have meaningful tags:
+
+```bash
+aws ec2 create-tags --resources i-12345 --tags \
+  Key=environment,Value=production \
+  Key=team,Value=platform \
+  Key=tier,Value=critical
+```
+
+### Use Multiple Regions
+
+Sync from all regions your infrastructure spans:
+
+```bash
+ctrlc sync aws eks \
+  --region us-east-1 \
+  --region us-west-2 \
+  --region eu-west-1 \
+  --interval 5m
+```
+
+### Separate by Resource Type
+
+Run separate sync processes for different resource types:
+
+```bash
+# EKS sync
+ctrlc sync aws eks --interval 5m &
+
+# EC2 sync
+ctrlc sync aws ec2 --interval 5m &
+
+# RDS sync (less frequent)
+ctrlc sync aws rds --interval 15m &
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Google Cloud" icon="google" href="./google-cloud">
+    Sync GCP resources
+  </Card>
+  <Card title="Azure" icon="microsoft" href="./azure">
+    Sync Azure resources
+  </Card>
+  <Card title="Selectors" icon="filter" href="../../concepts/selectors">
+    Learn selector syntax
+  </Card>
+  <Card title="Environments" icon="layer-group" href="../../concepts/environments">
+    Create dynamic environments
+  </Card>
+</CardGroup>

@@ -50,13 +50,16 @@ flowchart TB
   <Card title="Environments" icon="layer-group" href="../concepts/environments">
     Dynamic groups of resources using selectors
   </Card>
+  <Card title="Relationships" icon="diagram-project" href="./relationships">
+    Model dependencies between resources
+  </Card>
   <Card title="Selectors" icon="filter" href="../concepts/selectors">
     Query language for matching resources
   </Card>
   <Card
     title="Resource Providers"
     icon="rotate"
-    href="../integrations/resource-providers"
+    href="../integrations/resource-providers/overview"
   >
     Sync infrastructure into the inventory
   </Card>
@@ -71,7 +74,7 @@ Resources are synced into Ctrlplane via resource providers or API:
 ```yaml
 type: Resource
 name: production-cluster-us-east
-kind: Kubernetes/Cluster
+kind: KubernetesCluster
 identifier: k8s-prod-useast1
 metadata:
   environment: production
@@ -118,7 +121,8 @@ Deployment × Environment × Resource = Release Target
 
 - [Resources](../concepts/resources) — Understand resource structure and
   lifecycle
+- [Relationships](./relationships) — Model dependencies between resources
 - [Environments](../concepts/environments) — Create dynamic resource groups
 - [Selectors](../concepts/selectors) — Write powerful resource queries
-- [Resource Providers](../integrations/resource-providers) — Sync your
+- [Resource Providers](../integrations/resource-providers/overview) — Sync your
   infrastructure

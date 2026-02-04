@@ -1,0 +1,175 @@
+---
+title: "vCluster Provider"
+description: "Sync vCluster virtual clusters into Ctrlplane"
+---
+
+The vCluster provider syncs virtual Kubernetes clusters created with
+[vCluster](https://www.vcluster.com/) into Ctrlplane's inventory.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- Access to the host Kubernetes cluster running vClusters
+- Ctrlplane API key
+
+## Basic Usage
+
+```bash
+# Sync all vClusters from the host cluster
+ctrlc sync vcluster \
+  --cluster-identifier host-cluster-id
+
+# Continuous sync
+ctrlc sync vcluster \
+  --cluster-identifier host-cluster-id \
+  --interval 5m
+```
+
+## Options
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--cluster-identifier` | Identifier of the host cluster (or `CLUSTER_IDENTIFIER` env var) | Yes |
+| `--provider` | Resource provider name | No |
+| `--interval` | Sync interval (e.g., `5m`, `1h`) | No |
+
+## Resource Metadata
+
+Each vCluster is synced with metadata:
+
+```yaml
+identifier: host-cluster/vcluster/dev-team-cluster
+name: dev-team-cluster
+kind: vCluster/Cluster
+metadata:
+  host_cluster: host-cluster-id
+  namespace: vcluster-dev-team
+  release_name: dev-team-cluster
+config:
+  host_cluster: host-cluster-id
+  namespace: vcluster-dev-team
+```
+
+## Running in Kubernetes
+
+Deploy on the host cluster:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrlplane-vcluster-sync
+  namespace: ctrlplane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrlplane-vcluster-sync
+  template:
+    metadata:
+      labels:
+        app: ctrlplane-vcluster-sync
+    spec:
+      serviceAccountName: ctrlplane-sync
+      containers:
+        - name: sync
+          image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - vcluster
+            - --cluster-identifier
+            - "$(CLUSTER_IDENTIFIER)"
+            - --interval
+            - "5m"
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: CTRLPLANE_WORKSPACE
+              value: your-workspace-id
+            - name: CLUSTER_IDENTIFIER
+              value: host-cluster-id
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ctrlplane-sync
+  namespace: ctrlplane
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ctrlplane-vcluster-sync
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: ctrlplane-sync
+    namespace: ctrlplane
+```
+
+## Use Case: Development Environments
+
+vClusters are ideal for dynamic development environments:
+
+```yaml
+# All vClusters as dev environments
+type: Environment
+name: Development vClusters
+resourceSelector: |
+  resource.kind == "vCluster/Cluster"
+```
+
+```yaml
+# Team-specific vClusters
+type: Environment
+name: Backend Team Dev
+resourceSelector: |
+  resource.kind == "vCluster/Cluster" &&
+  resource.metadata["namespace"].startsWith("vcluster-backend-")
+```
+
+## Best Practices
+
+### Use Namespace Conventions
+
+Name vCluster namespaces consistently for easy targeting:
+
+```bash
+# Pattern: vcluster-{team}-{purpose}
+vcluster-backend-dev
+vcluster-frontend-preview
+vcluster-data-staging
+```
+
+### Combine with Host Cluster Sync
+
+Sync both the host cluster and vClusters:
+
+```bash
+# Host cluster resources
+ctrlc sync kubernetes \
+  --cluster-identifier host-cluster \
+  --interval 5m &
+
+# vClusters
+ctrlc sync vcluster \
+  --cluster-identifier host-cluster \
+  --interval 5m &
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Kubernetes Provider" icon="dharmachakra" href="./kubernetes">
+    Sync Kubernetes resources
+  </Card>
+  <Card title="Dynamic Environments" icon="layer-group" href="../../use-cases/dynamic-environments">
+    Create environments for vClusters
+  </Card>
+</CardGroup>

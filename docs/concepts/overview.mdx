@@ -1,12 +1,9 @@
 ---
-title: "Glossary & Reference"
-description: "Complete reference for all Ctrlplane entities and concepts"
+title: "Concepts Overview"
+description: "Overview of the core concepts in Ctrlplane"
 ---
 
-This page provides definitions and details for every entity in Ctrlplane. For a
-gentler introduction, see [How It Works](/how-it-works).
-
-## Entity Overview
+This page provides an overview of the core concepts in Ctrlplane.
 
 ```
 System
@@ -23,7 +20,6 @@ Release = Version deployed to a Release Target
 Policy → Rules that govern releases
 ```
 
----
 
 ## System
 
@@ -41,7 +37,6 @@ deployments.
 
 **When to create a System**: One per product, platform, or team boundary.
 
----
 
 ## Resource
 
@@ -51,7 +46,7 @@ runs.
 | Property     | Description                                     |
 | ------------ | ----------------------------------------------- |
 | `name`       | Human-readable name                             |
-| `kind`       | Type (e.g., `Kubernetes/Cluster`, `AWS/Lambda`) |
+| `kind`       | Type (e.g., `KubernetesCluster`, `AWS/Lambda`) |
 | `identifier` | Unique identifier                               |
 | `metadata`   | Key-value pairs for classification              |
 | `config`     | Resource-specific configuration                 |
@@ -63,7 +58,7 @@ runs.
 
 ```yaml
 name: prod-us-east-1
-kind: Kubernetes/Cluster
+kind: KubernetesCluster
 identifier: k8s-prod-use1
 metadata:
   region: us-east-1
@@ -72,8 +67,6 @@ metadata:
 config:
   server: https://k8s.example.com
 ```
-
----
 
 ## Environment
 
@@ -95,8 +88,6 @@ name: Production
 resourceSelector: resource.metadata["environment"] == "production"
 ```
 
----
-
 ## Deployment
 
 A **Deployment** represents a service or application you want to deploy.
@@ -112,8 +103,6 @@ A **Deployment** represents a service or application you want to deploy.
 | `jobAgentConfig`   | Configuration passed to the job agent            |
 
 **Examples**: "API Service", "Frontend App", "Payment Processor".
-
----
 
 ## Version
 
@@ -146,8 +135,6 @@ curl -X POST ".../deployments/{id}/versions" \
   }'
 ```
 
----
-
 ## Release Target
 
 A **Release Target** is the combination of a Deployment, Environment, and
@@ -168,8 +155,6 @@ Release Target = Deployment × Environment × Resource
 
 1. Environment's resource selector → which resources
 2. Deployment's resource selector (if any) → further filtering
-
----
 
 ## Release
 
@@ -194,8 +179,6 @@ Target.
 5. `failed` — Job failed
 6. `cancelled` — Release was cancelled
 
----
-
 ## Job
 
 A **Job** is the actual deployment task executed by a Job Agent.
@@ -216,21 +199,11 @@ A **Job** is the actual deployment task executed by a Job Agent.
 4. Agent updates status as it progresses
 5. Agent marks completed or failed
 
----
-
 ## Job Agent
 
 A **Job Agent** is the executor that performs deployments. It bridges Ctrlplane
 to your infrastructure.
 
-| Agent Type      | What It Does                      |
-| --------------- | --------------------------------- |
-| GitHub Actions  | Triggers workflow dispatch        |
-| ArgoCD          | Creates/syncs ArgoCD Applications |
-| Terraform Cloud | Creates workspaces, triggers runs |
-| Kubernetes      | Applies manifests directly        |
-
----
 
 ## Policy
 
@@ -263,8 +236,6 @@ A **Policy** defines rules governing when and how deployments happen.
 4. Any requires action → release is pending
 5. Any denies → release is blocked
 
----
-
 ## Selector
 
 **Selectors** are query expressions used to match resources, environments, or
@@ -287,8 +258,6 @@ Used in:
 
 See [Selectors](/concepts/selectors) for full syntax.
 
----
-
 ## Variables
 
 **Variables** provide dynamic configuration for deployments.
@@ -308,8 +277,6 @@ See [Selectors](/concepts/selectors) for full syntax.
 }
 ```
 
----
-
 ## Quick Reference Table
 
 | Entity         | What It Is                                      |
@@ -325,8 +292,6 @@ See [Selectors](/concepts/selectors) for full syntax.
 | Job Agent      | Executor (ArgoCD, GitHub Actions, etc.)         |
 | Policy         | Rules controlling deployments                   |
 | Selector       | Query expression matching entities              |
-
----
 
 ## Next Steps
 

@@ -1,4 +1,7 @@
-# Selectors
+---
+title: "Selectors"
+description: "Powerful filtering system for targeting resources, environments, and deployments"
+---
 
 **Selectors** are Ctrlplane's powerful filtering system for targeting resources, environments, and deployments. They allow dynamic, rules-based matching instead of static assignments.
 
@@ -671,7 +674,7 @@ Only matches identifiers starting with `prod-`.
 - Check syntax (use CEL validator)
 - Verify field names are correct
 - Test expression step-by-step
-- Consult [CEL documentation](https://github.com/google/cel-spec)
+- Consult [CEL Reference](../reference/cel) or [CEL specification](https://github.com/google/cel-spec)
 
 ## Advanced Topics
 
@@ -704,8 +707,9 @@ Ctrlplane caches selector evaluation results:
 
 ## Next Steps
 
-- [Environments](./environments.md) - Use selectors in environments
-- [Deployments](./deployments.md) - Filter deployment targets
-- [Resources](./resources.md) - Design resource metadata
-- [Policies](../advanced/policies.md) - Target policies with selectors
+- [CEL Reference](../reference/cel) - Full CEL expression language reference
+- [Environments](./environments) - Use selectors in environments
+- [Deployments](./deployments) - Filter deployment targets
+- [Resources](./resources) - Design resource metadata
+- [Policies](../policies/overview) - Target policies with selectors
 

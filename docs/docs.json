@@ -12,6 +12,7 @@
     "tabs": [
       {
         "tab": "Getting Started",
+        "icon": "rocket",
         "groups": [
           {
             "group": "Introduction",
@@ -20,18 +21,10 @@
               "why-ctrlplane",
               "overview",
               "quickstart",
-              "installation"
+              "installation",
+              "comparisons"
             ]
           },
-          {
-            "group": "Comparisons",
-            "pages": ["comparisons"]
-          }
-        ]
-      },
-      {
-        "tab": "Use Cases",
-        "groups": [
           {
             "group": "Deployment",
             "pages": [
@@ -46,16 +39,26 @@
               "use-cases/infrastructure-inventory",
               "use-cases/dynamic-environments"
             ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/overview",
+              "concepts/resources",
+              "concepts/environments",
+              "concepts/selectors",
+              "concepts/systems",
+              "concepts/deployments",
+              "concepts/releases-and-jobs",
+              "concepts/release-targets"
+            ]
           }
         ]
       },
       {
-        "tab": "Guides",
+        "tab": "Deployment",
+        "icon": "rocket",
         "groups": [
-          {
-            "group": "Inventory",
-            "pages": ["inventory/overview", "integrations/resource-providers"]
-          },
           {
             "group": "Deployment",
             "pages": ["deployment/overview", "integrations/cicd"]
@@ -86,35 +89,51 @@
             "group": "Verification",
             "pages": [
               "policies/verification/overview",
-              "policies/verification/providers/http",
-              "policies/verification/providers/datadog",
-              "policies/verification/providers/sleep",
-              "policies/verification/providers/terraform-cloud-run"
+              "integrations/verification-providers/http",
+              "integrations/verification-providers/datadog",
+              "integrations/verification-providers/sleep",
+              "integrations/verification-providers/terraform-cloud-run"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Inventory",
+        "icon": "database",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["inventory/overview", "inventory/relationships"]
+          },
+          {
+            "group": "Resource Providers",
+            "pages": [
+              "integrations/resource-providers/overview",
+              "integrations/resource-providers/kubernetes",
+              "integrations/resource-providers/aws",
+              "integrations/resource-providers/google-cloud",
+              "integrations/resource-providers/azure",
+              "integrations/resource-providers/terraform",
+              "integrations/resource-providers/helm",
+              "integrations/resource-providers/github",
+              "integrations/resource-providers/vcluster",
+              "integrations/resource-providers/custom"
             ]
           }
         ]
       },
       {
         "tab": "Reference",
+        "icon": "code",
         "groups": [
           {
             "group": "Concepts",
             "pages": [
               "reference/glossary",
-              "concepts/resources",
-              "concepts/environments",
-              "concepts/selectors",
-              "concepts/systems",
-              "concepts/deployments",
-              "concepts/releases-and-jobs",
-              "concepts/release-targets"
+              "reference/cel"
             ]
           }
         ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": []
       }
     ],
     "global": {

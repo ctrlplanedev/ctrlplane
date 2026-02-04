@@ -1,0 +1,539 @@
+---
+title: "CEL Expression Language"
+description: "Reference guide for Common Expression Language (CEL) in Ctrlplane"
+---
+
+Ctrlplane uses [CEL (Common Expression Language)](https://github.com/google/cel-spec)
+for writing powerful selectors and matching expressions. CEL is a simple, fast,
+and safe expression language developed by Google.
+
+## Overview
+
+CEL expressions are used in:
+
+- **Resource selectors** — Match resources to environments
+- **Policy selectors** — Target policies to specific releases
+- **Relationship rules** — Define how entities connect
+
+```yaml
+# Example: Environment resource selector
+resourceSelector: resource.metadata["environment"] == "production"
+
+# Example: Policy selector
+selector: environment.name == "Production" && deployment.metadata["critical"] == "true"
+```
+
+## Basic Syntax
+
+### Accessing Fields
+
+```cel
+# Direct field access
+resource.name
+resource.kind
+resource.identifier
+
+# Metadata access (map)
+resource.metadata["environment"]
+resource.metadata["region"]
+
+# Config access
+resource.config["namespace"]
+```
+
+### Comparison Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `==` | Equal | `resource.kind == "KubernetesCluster"` |
+| `!=` | Not equal | `resource.metadata["env"] != "dev"` |
+| `<` | Less than | `resource.metadata["priority"] < "5"` |
+| `>` | Greater than | `resource.metadata["replicas"] > "1"` |
+| `<=` | Less or equal | `version.metadata["build"] <= "100"` |
+| `>=` | Greater or equal | `resource.metadata["tier"] >= "2"` |
+
+### Logical Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `&&` | Logical AND | `a == "x" && b == "y"` |
+| `\|\|` | Logical OR | `a == "x" \|\| a == "y"` |
+| `!` | Logical NOT | `!resource.metadata["deprecated"]` |
+
+### Arithmetic Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `+` | Addition / Concatenation | `"prefix-" + resource.name` |
+| `-` | Subtraction | `int(a) - int(b)` |
+| `*` | Multiplication | `int(a) * 2` |
+| `/` | Division | `int(a) / 2` |
+| `%` | Modulo | `int(a) % 2 == 0` |
+
+## Available Variables
+
+### Resource Context
+
+When writing resource selectors:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `resource.id` | string | Unique resource ID |
+| `resource.name` | string | Resource display name |
+| `resource.kind` | string | Resource type (e.g., `KubernetesCluster`) |
+| `resource.identifier` | string | External identifier |
+| `resource.version` | string | Resource version |
+| `resource.metadata` | map | Key-value metadata |
+| `resource.config` | map | Resource configuration |
+
+### Environment Context
+
+When writing environment selectors:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `environment.id` | string | Environment ID |
+| `environment.name` | string | Environment name |
+| `environment.metadata` | map | Environment metadata |
+
+### Deployment Context
+
+When writing deployment selectors:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `deployment.id` | string | Deployment ID |
+| `deployment.name` | string | Deployment name |
+| `deployment.metadata` | map | Deployment metadata |
+
+### Version Context
+
+When writing version selectors:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `version.id` | string | Version ID |
+| `version.tag` | string | Version tag |
+| `version.name` | string | Version name |
+| `version.metadata` | map | Version metadata |
+
+## String Functions
+
+### contains
+
+Check if a string contains a substring:
+
+```cel
+resource.name.contains("prod")
+resource.metadata["tags"].contains("critical")
+```
+
+### startsWith
+
+Check if a string starts with a prefix:
+
+```cel
+resource.identifier.startsWith("k8s-")
+resource.metadata["region"].startsWith("us-")
+```
+
+### endsWith
+
+Check if a string ends with a suffix:
+
+```cel
+resource.name.endsWith("-cluster")
+resource.metadata["zone"].endsWith("a")
+```
+
+### matches
+
+Regular expression matching:
+
+```cel
+# Match identifiers like prod-cluster-1, prod-cluster-2
+resource.identifier.matches("^prod-cluster-[0-9]+$")
+
+# Match any US region
+resource.metadata["region"].matches("^us-(east|west)-[0-9]$")
+```
+
+### size
+
+Get string length:
+
+```cel
+resource.name.size() > 0
+resource.metadata["description"].size() < 100
+```
+
+### toLowerCase / toUpperCase
+
+Case conversion:
+
+```cel
+resource.metadata["env"].toLowerCase() == "production"
+```
+
+## List Operations
+
+### in
+
+Check if a value is in a list:
+
+```cel
+resource.metadata["region"] in ["us-east-1", "us-west-2", "eu-west-1"]
+resource.kind in ["KubernetesCluster", "KubernetesNamespace"]
+```
+
+### size
+
+Get list length:
+
+```cel
+resource.metadata["tags"].size() > 0
+```
+
+### exists
+
+Check if any element matches:
+
+```cel
+# Check if any tag starts with "team-"
+resource.metadata["tags"].exists(t, t.startsWith("team-"))
+```
+
+### all
+
+Check if all elements match:
+
+```cel
+# Check if all regions are in US
+resource.metadata["regions"].all(r, r.startsWith("us-"))
+```
+
+## Map Operations
+
+### has
+
+Check if a key exists in a map:
+
+```cel
+has(resource.metadata["team"])
+has(resource.config["namespace"])
+```
+
+This is safer than direct access when the key might not exist.
+
+### Key Access
+
+Access map values:
+
+```cel
+resource.metadata["environment"]
+resource.config["server"]
+```
+
+## Conditional Expressions
+
+### Ternary Operator
+
+```cel
+resource.metadata["tier"] == "critical" ? "high-priority" : "normal"
+```
+
+### Null-Safe Access
+
+Use `has()` for optional fields:
+
+```cel
+has(resource.metadata["deprecated"]) && resource.metadata["deprecated"] == "true"
+```
+
+Or use the default pattern:
+
+```cel
+# Default to empty string if not present
+(has(resource.metadata["team"]) ? resource.metadata["team"] : "") == "platform"
+```
+
+## Common Patterns
+
+### Production Resources
+
+```cel
+resource.metadata["environment"] == "production"
+```
+
+### Multi-Region Targeting
+
+```cel
+resource.metadata["region"] in ["us-east-1", "us-west-2"]
+```
+
+### Kind Filtering
+
+```cel
+resource.kind == "KubernetesCluster" && 
+resource.metadata["environment"] == "production"
+```
+
+### Team-Based Selection
+
+```cel
+resource.metadata["team"] == "platform" || 
+resource.metadata["team"] == "infrastructure"
+```
+
+### Exclude Deprecated
+
+```cel
+!has(resource.metadata["deprecated"]) || 
+resource.metadata["deprecated"] != "true"
+```
+
+### Critical Tier in Production
+
+```cel
+resource.metadata["environment"] == "production" && 
+resource.metadata["tier"] == "critical"
+```
+
+### US Regions Only
+
+```cel
+resource.metadata["region"].startsWith("us-")
+```
+
+### Canary Resources
+
+```cel
+resource.metadata["environment"] == "production" && 
+has(resource.metadata["canary"]) && 
+resource.metadata["canary"] == "true"
+```
+
+### Complex Multi-Condition
+
+```cel
+(resource.metadata["environment"] == "production" && 
+ resource.metadata["region"] in ["us-east-1", "us-west-2"]) ||
+(resource.metadata["environment"] == "staging" && 
+ resource.metadata["region"] == "us-east-1")
+```
+
+## Policy Selector Examples
+
+### Target Production Environment
+
+```cel
+environment.name == "Production"
+```
+
+### Target Critical Deployments
+
+```cel
+deployment.metadata["tier"] == "critical"
+```
+
+### Target Specific Environment + Deployment
+
+```cel
+environment.name == "Production" && 
+deployment.metadata["requires-approval"] == "true"
+```
+
+### Version Filtering
+
+```cel
+version.tag.startsWith("v2.") && 
+!version.tag.contains("beta")
+```
+
+## Relationship Rule Examples
+
+### Match by Region
+
+```cel
+# fromSelector for VPCs
+resource.kind == "vpc"
+
+# toSelector for clusters  
+resource.kind == "KubernetesCluster"
+
+# Property matcher expression
+from.metadata["region"] == to.metadata["region"]
+```
+
+### Match by Account
+
+```cel
+from.metadata["account"] == to.metadata["account"] &&
+from.metadata["region"] == to.metadata["region"]
+```
+
+## Type Coercion
+
+CEL is strongly typed. Use these functions to convert types:
+
+### String to Integer
+
+```cel
+int(resource.metadata["replicas"]) > 3
+```
+
+### Integer to String
+
+```cel
+string(42) == resource.metadata["count"]
+```
+
+### Type Checking
+
+```cel
+type(resource.metadata["count"]) == string
+```
+
+## Error Handling
+
+### Safe Field Access
+
+Always use `has()` for optional fields to avoid runtime errors:
+
+```cel
+# Bad: may error if "team" doesn't exist
+resource.metadata["team"] == "platform"
+
+# Good: safe access
+has(resource.metadata["team"]) && resource.metadata["team"] == "platform"
+```
+
+### Default Values
+
+Provide defaults for optional fields:
+
+```cel
+# Use empty string as default
+(has(resource.metadata["tier"]) ? resource.metadata["tier"] : "standard") == "critical"
+```
+
+## Performance Tips
+
+### Prefer Simple Expressions
+
+```cel
+# Fast: simple equality
+resource.metadata["env"] == "production"
+
+# Slower: regex matching
+resource.identifier.matches("^prod-.*")
+```
+
+### Short-Circuit Evaluation
+
+CEL uses short-circuit evaluation. Put cheap checks first:
+
+```cel
+# Good: check env first (fast), then regex (slow)
+resource.metadata["env"] == "production" && 
+resource.identifier.matches("^prod-cluster-[0-9]+$")
+```
+
+### Avoid Redundant Checks
+
+```cel
+# Bad: redundant
+resource.kind == "KubernetesCluster" && 
+resource.kind != "VM"
+
+# Good: single check
+resource.kind == "KubernetesCluster"
+```
+
+## Debugging
+
+### Test Expressions
+
+Use the API to test your CEL expressions:
+
+```bash
+curl -X POST "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources/query" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": "resource.metadata[\"environment\"] == \"production\""
+  }'
+```
+
+### Common Errors
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `no such key` | Accessing missing map key | Use `has()` check |
+| `type mismatch` | Comparing different types | Use type coercion |
+| `syntax error` | Invalid CEL syntax | Check quotes, brackets |
+| `undeclared reference` | Unknown variable | Check variable names |
+
+### Escaping Quotes
+
+In YAML, escape quotes properly:
+
+```yaml
+# Single quotes around expression, double quotes inside
+resourceSelector: 'resource.metadata["environment"] == "production"'
+
+# Or use YAML literal block
+resourceSelector: |
+  resource.metadata["environment"] == "production"
+```
+
+In JSON:
+
+```json
+{
+  "filter": "resource.metadata[\"environment\"] == \"production\""
+}
+```
+
+## Reference
+
+### Reserved Keywords
+
+These words are reserved in CEL:
+
+- `true`, `false`, `null`
+- `in`
+- `as`
+- `break`, `const`, `continue`, `else`, `for`, `function`, `if`, `import`, `let`, `loop`, `package`, `namespace`, `return`, `var`, `void`, `while`
+
+### Operator Precedence
+
+From highest to lowest:
+
+1. `()` - Grouping
+2. `.` `[]` - Member access
+3. `-` `!` - Unary
+4. `*` `/` `%` - Multiplicative
+5. `+` `-` - Additive
+6. `<` `<=` `>` `>=` `in` - Relational
+7. `==` `!=` - Equality
+8. `&&` - Logical AND
+9. `||` - Logical OR
+10. `?:` - Conditional
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Selectors" icon="filter" href="../concepts/selectors">
+    Use CEL in selectors
+  </Card>
+  <Card title="Relationships" icon="diagram-project" href="../inventory/relationships">
+    CEL in relationship rules
+  </Card>
+  <Card title="Policies" icon="shield" href="../policies/overview">
+    Target policies with CEL
+  </Card>
+  <Card title="Environments" icon="layer-group" href="../concepts/environments">
+    Dynamic environment membership
+  </Card>
+</CardGroup>

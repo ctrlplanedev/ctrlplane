@@ -45,7 +45,7 @@ config:
   kubeconfig: /path/to/kubeconfig
   # Or use in-cluster config
   inCluster: true
-resourceKind: Kubernetes/Cluster
+resourceKind: KubernetesCluster
 metadataMapping:
   region: metadata.labels.region
   environment: metadata.labels.environment
@@ -173,7 +173,7 @@ done
 | ------------ | -------- | ------------------------------------------ |
 | `identifier` | Yes      | Unique identifier for the resource         |
 | `name`       | Yes      | Human-readable name                        |
-| `kind`       | Yes      | Resource type (e.g., `Kubernetes/Cluster`) |
+| `kind`       | Yes      | Resource type (e.g., `KubernetesCluster`) |
 | `version`    | Yes      | Resource version/schema version            |
 | `metadata`   | No       | Key-value pairs for filtering              |
 | `config`     | No       | Configuration data for job agents          |
@@ -247,7 +247,7 @@ When a resource is deleted:
 
 ```yaml
 # Good: consistent kind naming
-kind: Kubernetes/Cluster
+kind: KubernetesCluster
 kind: AWS/Lambda
 kind: GCP/CloudRun
 

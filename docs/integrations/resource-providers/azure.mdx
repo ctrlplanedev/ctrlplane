@@ -1,0 +1,257 @@
+---
+title: "Azure Provider"
+description: "Sync Azure resources into Ctrlplane"
+---
+
+The Azure provider syncs resources from Microsoft Azure into Ctrlplane's
+inventory—AKS clusters and virtual networks.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- Azure credentials configured (Azure CLI, environment variables, or managed identity)
+- Ctrlplane API key
+
+## Supported Resources
+
+| Command | Resource Type | Ctrlplane Kind |
+|---------|--------------|----------------|
+| `azure aks` | AKS Clusters | `Azure/AKS` |
+| `azure networks` | Virtual Networks | `Azure/VNet` |
+
+## Authentication
+
+Configure Azure credentials:
+
+```bash
+# Azure CLI (recommended for local development)
+az login
+
+# Service Principal (for CI/CD)
+export AZURE_CLIENT_ID="your-client-id"
+export AZURE_CLIENT_SECRET="your-client-secret"
+export AZURE_TENANT_ID="your-tenant-id"
+
+# Managed Identity (when running in Azure)
+# Credentials are automatically retrieved
+```
+
+## AKS Clusters
+
+Sync Azure Kubernetes Service clusters:
+
+```bash
+# Sync from default subscription
+ctrlc sync azure aks
+
+# Sync from a specific subscription
+ctrlc sync azure aks --subscription-id 00000000-0000-0000-0000-000000000000
+
+# Continuous sync
+ctrlc sync azure aks --interval 5m
+```
+
+### Options
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--subscription-id` | Azure subscription ID | No (uses default) |
+| `--interval` | Sync interval (e.g., `5m`, `1h`) | No |
+
+### Resource Metadata
+
+```yaml
+identifier: /subscriptions/xxx/resourceGroups/prod-rg/providers/Microsoft.ContainerService/managedClusters/prod-cluster
+name: prod-cluster
+kind: Azure/AKS
+metadata:
+  subscription: 00000000-0000-0000-0000-000000000000
+  resource_group: prod-rg
+  location: eastus
+  environment: production  # from Azure tag
+  team: platform           # from Azure tag
+config:
+  fqdn: prod-cluster-xxxxx.hcp.eastus.azmk8s.io
+  kubernetes_version: "1.28.3"
+```
+
+## Virtual Networks
+
+Sync Azure Virtual Networks:
+
+```bash
+# Sync from default subscription
+ctrlc sync azure networks
+
+# Sync from a specific subscription
+ctrlc sync azure networks --subscription-id 00000000-0000-0000-0000-000000000000
+```
+
+### Resource Metadata
+
+```yaml
+identifier: /subscriptions/xxx/resourceGroups/prod-rg/providers/Microsoft.Network/virtualNetworks/prod-vnet
+name: prod-vnet
+kind: Azure/VNet
+metadata:
+  subscription: 00000000-0000-0000-0000-000000000000
+  resource_group: prod-rg
+  location: eastus
+config:
+  address_space: ["10.0.0.0/16"]
+```
+
+## Running in Azure
+
+### Azure Container Instances
+
+```bash
+az container create \
+  --resource-group ctrlplane-rg \
+  --name ctrlplane-sync \
+  --image ghcr.io/ctrlplanedev/cli:latest \
+  --command-line "ctrlc sync azure aks --interval 5m" \
+  --environment-variables \
+    CTRLPLANE_API_KEY=your-api-key \
+    CTRLPLANE_WORKSPACE=your-workspace-id \
+  --assign-identity
+```
+
+### AKS Deployment with Workload Identity
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrlplane-azure-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrlplane-azure-sync
+  template:
+    metadata:
+      labels:
+        app: ctrlplane-azure-sync
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: ctrlplane-sync
+      containers:
+        - name: sync
+          image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - azure
+            - aks
+            - --interval
+            - "5m"
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: CTRLPLANE_WORKSPACE
+              value: your-workspace-id
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ctrlplane-sync
+  annotations:
+    azure.workload.identity/client-id: your-client-id
+```
+
+### Required Azure Permissions
+
+The sync identity needs Reader permissions:
+
+```bash
+# Assign Reader role at subscription level
+az role assignment create \
+  --assignee <identity-principal-id> \
+  --role "Reader" \
+  --scope /subscriptions/<subscription-id>
+
+# Or at resource group level
+az role assignment create \
+  --assignee <identity-principal-id> \
+  --role "Reader" \
+  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>
+```
+
+## Environment Targeting
+
+Target Azure resources in environments:
+
+```yaml
+# All production AKS clusters
+type: Environment
+name: Production AKS
+resourceSelector: |
+  resource.kind == "Azure/AKS" &&
+  resource.metadata["environment"] == "production"
+```
+
+```yaml
+# East US resources
+type: Environment
+name: East US
+resourceSelector: |
+  resource.metadata["location"] == "eastus"
+```
+
+```yaml
+# Specific resource group
+type: Environment
+name: Production Resource Group
+resourceSelector: |
+  resource.metadata["resource_group"] == "prod-rg"
+```
+
+## Best Practices
+
+### Tag Your Resources
+
+Ensure Azure resources have meaningful tags:
+
+```bash
+az aks update \
+  --resource-group prod-rg \
+  --name prod-cluster \
+  --tags environment=production team=platform tier=critical
+```
+
+### Sync Multiple Subscriptions
+
+Run sync for each subscription:
+
+```bash
+# Production subscription
+ctrlc sync azure aks \
+  --subscription-id prod-subscription-id \
+  --interval 5m &
+
+# Staging subscription
+ctrlc sync azure aks \
+  --subscription-id staging-subscription-id \
+  --interval 5m &
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AWS" icon="aws" href="./aws">
+    Sync AWS resources
+  </Card>
+  <Card title="Google Cloud" icon="google" href="./google-cloud">
+    Sync GCP resources
+  </Card>
+  <Card title="Selectors" icon="filter" href="../../concepts/selectors">
+    Learn selector syntax
+  </Card>
+  <Card title="Environments" icon="layer-group" href="../../concepts/environments">
+    Create dynamic environments
+  </Card>
+</CardGroup>

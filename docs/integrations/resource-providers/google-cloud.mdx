@@ -1,0 +1,337 @@
+---
+title: "Google Cloud Provider"
+description: "Sync Google Cloud resources into Ctrlplane"
+---
+
+The Google Cloud provider syncs resources from GCP into Ctrlplane's
+inventory—GKE clusters, VMs, Cloud SQL, Cloud Run, and more.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- Google Cloud credentials (application default credentials or service account)
+- Ctrlplane API key
+
+## Supported Resources
+
+| Command | Resource Type | Ctrlplane Kind |
+|---------|--------------|----------------|
+| `google-cloud gke` | GKE Clusters | `GCP/GKE` |
+| `google-cloud vms` | Compute Engine VMs | `GCP/VM` |
+| `google-cloud cloudsql` | Cloud SQL Instances | `GCP/CloudSQL` |
+| `google-cloud cloudrun` | Cloud Run Services | `GCP/CloudRun` |
+| `google-cloud buckets` | Storage Buckets | `GCP/Bucket` |
+| `google-cloud bigtable` | Bigtable Instances | `GCP/Bigtable` |
+| `google-cloud redis` | Memorystore Redis | `GCP/Redis` |
+| `google-cloud secrets` | Secret Manager | `GCP/Secret` |
+| `google-cloud networks` | VPC Networks | `GCP/VPC` |
+| `google-cloud projects` | GCP Projects | `GCP/Project` |
+
+## Authentication
+
+Configure GCP credentials:
+
+```bash
+# Application Default Credentials (recommended for local development)
+gcloud auth application-default login
+
+# Service Account key file
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
+
+# Workload Identity (when running in GKE)
+# Credentials are automatically retrieved
+```
+
+## GKE Clusters
+
+Sync Google Kubernetes Engine clusters:
+
+```bash
+# Sync from a specific project
+ctrlc sync google-cloud gke --project my-project
+
+# Continuous sync
+ctrlc sync google-cloud gke --project my-project --interval 5m
+```
+
+### Resource Metadata
+
+```yaml
+identifier: projects/my-project/locations/us-central1/clusters/prod-cluster
+name: prod-cluster
+kind: GCP/GKE
+metadata:
+  project: my-project
+  region: us-central1
+  environment: production  # from GCP label
+  team: platform           # from GCP label
+config:
+  endpoint: https://XXX.XXX.XXX.XXX
+  version: "1.28.3-gke.1286000"
+```
+
+## Compute Engine VMs
+
+Sync virtual machine instances:
+
+```bash
+# Sync from a project
+ctrlc sync google-cloud vms --project my-project
+
+# Continuous sync
+ctrlc sync google-cloud vms --project my-project --interval 5m
+```
+
+### Resource Metadata
+
+```yaml
+identifier: projects/my-project/zones/us-central1-a/instances/web-server-1
+name: web-server-1
+kind: GCP/VM
+metadata:
+  project: my-project
+  zone: us-central1-a
+  machine_type: e2-medium
+  environment: production  # from GCP label
+config:
+  internal_ip: 10.128.0.2
+  external_ip: 34.123.45.67
+```
+
+## Cloud SQL Instances
+
+Sync Cloud SQL database instances:
+
+```bash
+# Sync from a project
+ctrlc sync google-cloud cloudsql --project my-project
+
+# Continuous sync
+ctrlc sync google-cloud cloudsql --project my-project --interval 10m
+```
+
+### Resource Metadata
+
+```yaml
+identifier: projects/my-project/instances/prod-db
+name: prod-db
+kind: GCP/CloudSQL
+metadata:
+  project: my-project
+  region: us-central1
+  database_version: POSTGRES_15
+  tier: db-custom-4-16384
+  environment: production  # from GCP label
+config:
+  connection_name: my-project:us-central1:prod-db
+  ip_address: 10.0.0.5
+```
+
+## Cloud Run Services
+
+Sync Cloud Run services:
+
+```bash
+# Sync from a project
+ctrlc sync google-cloud cloudrun --project my-project
+
+# Continuous sync
+ctrlc sync google-cloud cloudrun --project my-project --interval 5m
+```
+
+### Resource Metadata
+
+```yaml
+identifier: projects/my-project/locations/us-central1/services/api-service
+name: api-service
+kind: GCP/CloudRun
+metadata:
+  project: my-project
+  region: us-central1
+  environment: production  # from GCP label
+config:
+  url: https://api-service-xxxxx-uc.a.run.app
+```
+
+## Running in GCP
+
+### Cloud Run Job
+
+```yaml
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: ctrlplane-sync
+spec:
+  template:
+    spec:
+      containers:
+        - image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - google-cloud
+            - gke
+            - --project
+            - my-project
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: CTRLPLANE_WORKSPACE
+              value: your-workspace-id
+```
+
+### GKE Deployment with Workload Identity
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrlplane-gcp-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrlplane-gcp-sync
+  template:
+    metadata:
+      labels:
+        app: ctrlplane-gcp-sync
+    spec:
+      serviceAccountName: ctrlplane-sync
+      containers:
+        - name: sync
+          image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - google-cloud
+            - gke
+            - --project
+            - my-project
+            - --interval
+            - "5m"
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ctrlplane-sync
+  annotations:
+    iam.gke.io/gcp-service-account: ctrlplane-sync@my-project.iam.gserviceaccount.com
+```
+
+### IAM Permissions
+
+The sync service account needs read permissions:
+
+```bash
+# Create service account
+gcloud iam service-accounts create ctrlplane-sync
+
+# Grant permissions
+gcloud projects add-iam-policy-binding my-project \
+  --member="serviceAccount:ctrlplane-sync@my-project.iam.gserviceaccount.com" \
+  --role="roles/container.viewer"
+
+gcloud projects add-iam-policy-binding my-project \
+  --member="serviceAccount:ctrlplane-sync@my-project.iam.gserviceaccount.com" \
+  --role="roles/compute.viewer"
+
+gcloud projects add-iam-policy-binding my-project \
+  --member="serviceAccount:ctrlplane-sync@my-project.iam.gserviceaccount.com" \
+  --role="roles/cloudsql.viewer"
+```
+
+## Environment Targeting
+
+Target GCP resources in environments:
+
+```yaml
+# All production GKE clusters
+type: Environment
+name: Production GKE
+resourceSelector: |
+  resource.kind == "GCP/GKE" &&
+  resource.metadata["environment"] == "production"
+```
+
+```yaml
+# US Central resources
+type: Environment
+name: US Central
+resourceSelector: |
+  resource.metadata["region"].startsWith("us-central")
+```
+
+```yaml
+# All Cloud Run services
+type: Environment
+name: Cloud Run Production
+resourceSelector: |
+  resource.kind == "GCP/CloudRun" &&
+  resource.metadata["environment"] == "production"
+```
+
+## Best Practices
+
+### Label Your Resources
+
+Ensure GCP resources have meaningful labels:
+
+```bash
+gcloud compute instances add-labels web-server-1 \
+  --labels=environment=production,team=platform,tier=critical
+```
+
+### Sync Multiple Projects
+
+Run sync for each project:
+
+```bash
+# Production project
+ctrlc sync google-cloud gke --project prod-project --interval 5m &
+
+# Staging project
+ctrlc sync google-cloud gke --project staging-project --interval 5m &
+```
+
+### Sync Multiple Resource Types
+
+Run separate sync processes:
+
+```bash
+# GKE clusters
+ctrlc sync google-cloud gke --project my-project --interval 5m &
+
+# Cloud SQL (less frequent)
+ctrlc sync google-cloud cloudsql --project my-project --interval 15m &
+
+# Cloud Run
+ctrlc sync google-cloud cloudrun --project my-project --interval 5m &
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AWS" icon="aws" href="./aws">
+    Sync AWS resources
+  </Card>
+  <Card title="Azure" icon="microsoft" href="./azure">
+    Sync Azure resources
+  </Card>
+  <Card title="Selectors" icon="filter" href="../../concepts/selectors">
+    Learn selector syntax
+  </Card>
+  <Card title="Environments" icon="layer-group" href="../../concepts/environments">
+    Create dynamic environments
+  </Card>
+</CardGroup>

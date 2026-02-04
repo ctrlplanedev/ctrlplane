@@ -1,0 +1,165 @@
+---
+title: "Terraform Provider"
+description: "Sync Terraform Cloud/Enterprise workspaces into Ctrlplane"
+---
+
+The Terraform provider syncs workspaces from Terraform Cloud or Terraform
+Enterprise into Ctrlplane's inventory.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- Terraform Cloud/Enterprise API token
+- Ctrlplane API key
+
+## Authentication
+
+Set your Terraform Cloud token:
+
+```bash
+# Environment variable
+export TFE_TOKEN="your-terraform-cloud-token"
+
+# Optional: Custom Terraform Enterprise URL
+export TFE_ADDRESS="https://tfe.example.com"
+```
+
+## Basic Usage
+
+```bash
+# Sync all workspaces in an organization
+ctrlc sync terraform \
+  --organization my-org \
+  --workspace <ctrlplane-workspace-id>
+
+# Continuous sync
+ctrlc sync terraform \
+  --organization my-org \
+  --workspace <ctrlplane-workspace-id> \
+  --interval 5m
+```
+
+## Options
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--organization` | Terraform organization name | Yes |
+| `--workspace` | Ctrlplane workspace ID | Yes |
+| `--interval` | Sync interval (e.g., `5m`, `1h`) | No |
+
+## Resource Metadata
+
+Each Terraform workspace is synced with metadata:
+
+```yaml
+identifier: ws-abc123def456
+name: production-infrastructure
+kind: Terraform/Workspace
+metadata:
+  organization: my-org
+  environment: production  # from workspace tags
+  team: platform           # from workspace tags
+config:
+  workspace_id: ws-abc123def456
+  vcs_repo: github.com/my-org/infrastructure
+  working_directory: environments/production
+```
+
+## Running Continuously
+
+### Kubernetes Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrlplane-terraform-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrlplane-terraform-sync
+  template:
+    metadata:
+      labels:
+        app: ctrlplane-terraform-sync
+    spec:
+      containers:
+        - name: sync
+          image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - terraform
+            - --organization
+            - my-org
+            - --interval
+            - "5m"
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: CTRLPLANE_WORKSPACE
+              value: your-workspace-id
+            - name: TFE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: terraform-credentials
+                  key: token
+```
+
+## Environment Targeting
+
+Target Terraform workspaces in environments:
+
+```yaml
+# Production workspaces
+type: Environment
+name: Production Infrastructure
+resourceSelector: |
+  resource.kind == "Terraform/Workspace" &&
+  resource.metadata["environment"] == "production"
+```
+
+```yaml
+# Platform team workspaces
+type: Environment
+name: Platform Infrastructure
+resourceSelector: |
+  resource.kind == "Terraform/Workspace" &&
+  resource.metadata["team"] == "platform"
+```
+
+## Best Practices
+
+### Tag Your Workspaces
+
+Add tags to Terraform workspaces for better targeting:
+
+```hcl
+# In Terraform Cloud UI or via API
+# Add tags like: environment:production, team:platform
+```
+
+### Sync Frequently
+
+Keep workspace state current:
+
+```bash
+ctrlc sync terraform \
+  --organization my-org \
+  --interval 5m
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Terraform Cloud Job Agent" icon="cloud" href="../job-agents/terraform-cloud">
+    Trigger Terraform runs from Ctrlplane
+  </Card>
+  <Card title="Selectors" icon="filter" href="../../concepts/selectors">
+    Learn selector syntax
+  </Card>
+</CardGroup>

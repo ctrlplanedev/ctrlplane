@@ -1,0 +1,411 @@
+---
+title: "Relationships"
+description: "Model dependencies and connections between resources"
+---
+
+Relationships in Ctrlplane allow you to model how your infrastructure components
+connect to each other—VPCs containing clusters, clusters running services,
+databases backing applications.
+
+## Why Relationships?
+
+Understanding infrastructure dependencies helps you:
+
+- **Visualize architecture** — See how resources connect across your stack
+- **Impact analysis** — Understand what's affected when a resource changes
+- **Deployment ordering** — Deploy dependencies before dependents
+- **Troubleshooting** — Trace issues through connected resources
+
+## Relationship Rules
+
+Relationship rules automatically create connections between entities based on
+matching criteria. When resources are synced, Ctrlplane evaluates rules and
+creates relationships dynamically.
+
+### Structure
+
+```yaml
+type: RelationshipRule
+id: vpc-to-cluster
+name: VPC to Kubernetes Cluster
+description: Links VPCs to K8s clusters in the same region
+fromType: resource
+toType: resource
+relationshipType: contains
+fromSelector:
+  type: kind
+  operator: equals
+  value: vpc
+toSelector:
+  type: kind
+  operator: equals
+  value: kubernetes-cluster
+propertyMatchers:
+  - fromProperty: ["metadata", "region"]
+    toProperty: ["metadata", "region"]
+    operator: equals
+```
+
+### Components
+
+| Field | Description |
+|-------|-------------|
+| `fromType` | Source entity type (`resource`, `deployment`, `environment`) |
+| `toType` | Target entity type (`resource`, `deployment`, `environment`) |
+| `relationshipType` | Type of connection (see below) |
+| `fromSelector` | Selector matching source entities |
+| `toSelector` | Selector matching target entities |
+| `propertyMatchers` | Property conditions for matching |
+
+### Relationship Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `contains` | Parent contains child | VPC contains clusters |
+| `runs-on` | Service runs on infrastructure | App runs on cluster |
+| `depends-on` | Requires another resource | API depends on database |
+| `deployed-by` | Managed by a deployment | Resource deployed by pipeline |
+| `deploys-to` | Deployment targets environment | Service deploys to production |
+
+## Examples
+
+### VPC to Kubernetes Clusters
+
+Connect VPCs to the Kubernetes clusters running within them:
+
+```yaml
+type: RelationshipRule
+id: vpc-to-cluster
+name: VPC Contains Clusters
+fromType: resource
+toType: resource
+relationshipType: contains
+fromSelector:
+  type: kind
+  operator: equals
+  value: vpc
+toSelector:
+  type: kind
+  operator: equals
+  value: kubernetes-cluster
+propertyMatchers:
+  - fromProperty: ["metadata", "region"]
+    toProperty: ["metadata", "region"]
+    operator: equals
+  - fromProperty: ["metadata", "account"]
+    toProperty: ["metadata", "account"]
+    operator: equals
+```
+
+This rule:
+1. Finds all resources with `kind: vpc`
+2. Finds all resources with `kind: kubernetes-cluster`
+3. Creates a `contains` relationship when both have the same region AND account
+
+### Database Dependencies
+
+Model which services depend on which databases:
+
+```yaml
+type: RelationshipRule
+id: service-to-database
+name: Service Database Dependencies
+fromType: resource
+toType: resource
+relationshipType: depends-on
+fromSelector:
+  type: kind
+  operator: equals
+  value: kubernetes-deployment
+toSelector:
+  type: kind
+  operator: equals
+  value: rds-instance
+propertyMatchers:
+  - fromProperty: ["metadata", "database-cluster"]
+    toProperty: ["metadata", "cluster-id"]
+    operator: equals
+```
+
+### Deployment to Environment
+
+Link deployments to the environments they target:
+
+```yaml
+type: RelationshipRule
+id: deployment-to-env
+name: Deployment Targets Environment
+fromType: deployment
+toType: environment
+relationshipType: deploys-to
+fromSelector:
+  type: metadata
+  key: team
+  operator: equals
+  value: platform
+toSelector:
+  type: name
+  operator: contains
+  value: production
+```
+
+### Cross-Account Resources
+
+Connect resources across AWS accounts:
+
+```yaml
+type: RelationshipRule
+id: transit-gateway-connections
+name: Transit Gateway VPC Attachments
+fromType: resource
+toType: resource
+relationshipType: contains
+fromSelector:
+  type: kind
+  operator: equals
+  value: transit-gateway
+toSelector:
+  type: kind
+  operator: equals
+  value: vpc
+propertyMatchers:
+  - fromProperty: ["config", "attachments"]
+    toProperty: ["metadata", "vpc-id"]
+    operator: contains
+```
+
+## Property Matchers
+
+Property matchers define conditions for when relationships should be created
+between matching entities.
+
+### Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `equals` | Exact match | Region equals region |
+| `contains` | Array contains value | Tags contain team |
+| `startsWith` | String prefix match | Name starts with "prod-" |
+| `regex` | Regular expression | Name matches pattern |
+
+### Nested Properties
+
+Access nested properties using array paths:
+
+```yaml
+propertyMatchers:
+  # Match metadata.region
+  - fromProperty: ["metadata", "region"]
+    toProperty: ["metadata", "region"]
+    operator: equals
+    
+  # Match config.cluster.name
+  - fromProperty: ["config", "cluster", "name"]
+    toProperty: ["metadata", "cluster-name"]
+    operator: equals
+```
+
+### Multiple Matchers
+
+All property matchers must match for a relationship to be created:
+
+```yaml
+propertyMatchers:
+  # Must match region AND account AND environment
+  - fromProperty: ["metadata", "region"]
+    toProperty: ["metadata", "region"]
+    operator: equals
+  - fromProperty: ["metadata", "account"]
+    toProperty: ["metadata", "account"]
+    operator: equals
+  - fromProperty: ["metadata", "environment"]
+    toProperty: ["metadata", "environment"]
+    operator: equals
+```
+
+## Selectors
+
+Selectors filter which entities are considered for relationships.
+
+### By Kind
+
+```yaml
+fromSelector:
+  type: kind
+  operator: equals
+  value: kubernetes-cluster
+```
+
+### By Metadata
+
+```yaml
+fromSelector:
+  type: metadata
+  key: environment
+  operator: equals
+  value: production
+```
+
+### By Name
+
+```yaml
+fromSelector:
+  type: name
+  operator: contains
+  value: prod
+```
+
+## Managing Relationship Rules
+
+### Create a Rule
+
+```bash
+curl -X POST "https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/relationship-rules" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "vpc-to-cluster",
+    "name": "VPC to Kubernetes Cluster",
+    "fromType": "resource",
+    "toType": "resource",
+    "relationshipType": "contains",
+    "fromSelector": {
+      "type": "kind",
+      "operator": "equals",
+      "value": "vpc"
+    },
+    "toSelector": {
+      "type": "kind",
+      "operator": "equals",
+      "value": "kubernetes-cluster"
+    },
+    "propertyMatchers": [{
+      "fromProperty": ["metadata", "region"],
+      "toProperty": ["metadata", "region"],
+      "operator": "equals"
+    }]
+  }'
+```
+
+### Update a Rule
+
+```bash
+curl -X PUT "https://app.ctrlplane.dev/api/v1/relationship-rules/{ruleId}" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Rule Name",
+    "description": "New description"
+  }'
+```
+
+### Delete a Rule
+
+```bash
+curl -X DELETE "https://app.ctrlplane.dev/api/v1/relationship-rules/{ruleId}" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+```
+
+Deleting a relationship rule removes the rule definition but does not delete the
+underlying resources.
+
+## Use Cases
+
+### Infrastructure Topology
+
+Model your complete infrastructure hierarchy:
+
+```
+Account
+└── Region
+    └── VPC
+        └── Subnet
+            └── Kubernetes Cluster
+                └── Namespace
+                    └── Deployment
+```
+
+### Service Dependencies
+
+Track service-to-service and service-to-infrastructure dependencies:
+
+```
+API Gateway
+├── depends-on → Auth Service
+├── depends-on → User Database (RDS)
+└── runs-on → EKS Cluster
+```
+
+### Multi-Cloud Relationships
+
+Connect resources across cloud providers:
+
+```
+On-Prem Database
+└── replicated-to → AWS RDS Read Replica
+    └── accessed-by → EKS Application
+```
+
+## Best Practices
+
+### Use Meaningful Relationship Types
+
+Choose relationship types that reflect the actual connection:
+
+```yaml
+# Good: specific relationship type
+relationshipType: depends-on  # Service needs database
+relationshipType: runs-on     # App runs on cluster
+relationshipType: contains    # VPC contains subnets
+
+# Avoid: generic types
+relationshipType: related-to  # Too vague
+```
+
+### Keep Property Matchers Simple
+
+Start with minimal matchers and add more only if needed:
+
+```yaml
+# Good: simple and clear
+propertyMatchers:
+  - fromProperty: ["metadata", "region"]
+    toProperty: ["metadata", "region"]
+    operator: equals
+
+# Avoid: overly complex
+propertyMatchers:
+  - fromProperty: ["metadata", "tags", "aws:region"]
+    toProperty: ["config", "spec", "provider", "region"]
+    operator: regex
+    value: "^us-(east|west)-[0-9]$"
+```
+
+### Document Your Rules
+
+Add descriptions to explain the purpose:
+
+```yaml
+type: RelationshipRule
+name: VPC to Cluster
+description: |
+  Links VPCs to Kubernetes clusters based on matching region and account.
+  Used for infrastructure topology visualization and impact analysis.
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CEL Reference" icon="code" href="../reference/cel">
+    Full expression language reference
+  </Card>
+  <Card title="Selectors" icon="filter" href="../concepts/selectors">
+    Learn selector syntax
+  </Card>
+  <Card title="Dynamic Environments" icon="layer-group" href="../use-cases/dynamic-environments">
+    Create environments from relationships
+  </Card>
+  <Card title="Resource Providers" icon="rotate" href="../integrations/resource-providers/overview">
+    Sync infrastructure automatically
+  </Card>
+</CardGroup>

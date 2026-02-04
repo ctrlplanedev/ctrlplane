@@ -1,0 +1,192 @@
+---
+title: "GitHub Provider"
+description: "Sync GitHub resources into Ctrlplane"
+---
+
+The GitHub provider syncs resources from GitHub into Ctrlplane's
+inventory—currently supporting pull requests as deployment targets.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- GitHub personal access token or GitHub App
+- Ctrlplane API key
+
+## Supported Resources
+
+| Command | Resource Type | Ctrlplane Kind |
+|---------|--------------|----------------|
+| `github pull-requests` | Pull Requests | `GitHub/PullRequest` |
+
+## Authentication
+
+Set your GitHub token:
+
+```bash
+export GITHUB_TOKEN="your-github-token"
+```
+
+## Pull Requests
+
+Sync GitHub pull requests as resources for preview environments:
+
+```bash
+# Sync pull requests from a repository
+ctrlc sync github pull-requests \
+  --owner my-org \
+  --repo my-app
+
+# Continuous sync
+ctrlc sync github pull-requests \
+  --owner my-org \
+  --repo my-app \
+  --interval 5m
+```
+
+## Resource Metadata
+
+Each pull request is synced with metadata:
+
+```yaml
+identifier: github.com/my-org/my-app/pull/123
+name: "PR #123: Add new feature"
+kind: GitHub/PullRequest
+metadata:
+  owner: my-org
+  repo: my-app
+  number: "123"
+  state: open
+  author: developer
+  branch: feature/new-feature
+  base_branch: main
+config:
+  url: https://github.com/my-org/my-app/pull/123
+  head_sha: abc123def456
+```
+
+## Use Case: Preview Environments
+
+Sync PRs to create dynamic preview environments:
+
+```yaml
+# Environment for all open PRs
+type: Environment
+name: Preview Environments
+resourceSelector: |
+  resource.kind == "GitHub/PullRequest" &&
+  resource.metadata["state"] == "open"
+```
+
+When a PR is opened:
+1. GitHub provider syncs it as a resource
+2. Environment selector matches the PR
+3. Deployments can target the PR environment
+4. When PR is closed/merged, resource is removed
+
+## Running Continuously
+
+### GitHub Actions
+
+```yaml
+name: Sync PRs to Ctrlplane
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Every 5 minutes
+  pull_request:
+    types: [opened, closed, reopened]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync PRs
+        run: |
+          ctrlc sync github pull-requests \
+            --owner ${{ github.repository_owner }} \
+            --repo ${{ github.event.repository.name }}
+        env:
+          CTRLPLANE_API_KEY: ${{ secrets.CTRLPLANE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Kubernetes Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrlplane-github-sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrlplane-github-sync
+  template:
+    metadata:
+      labels:
+        app: ctrlplane-github-sync
+    spec:
+      containers:
+        - name: sync
+          image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - github
+            - pull-requests
+            - --owner
+            - my-org
+            - --repo
+            - my-app
+            - --interval
+            - "5m"
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: github-credentials
+                  key: token
+```
+
+## Best Practices
+
+### Sync on PR Events
+
+Trigger sync immediately when PRs change:
+
+```yaml
+# GitHub Actions workflow
+on:
+  pull_request:
+    types: [opened, closed, synchronize, reopened]
+```
+
+### Label for Targeting
+
+Use PR labels for more specific targeting:
+
+```yaml
+# Only PRs with 'preview' label
+type: Environment
+name: Preview Environments
+resourceSelector: |
+  resource.kind == "GitHub/PullRequest" &&
+  resource.metadata["labels"].contains("preview")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="GitHub Actions Job Agent" icon="github" href="../job-agents/github">
+    Deploy to PRs with GitHub Actions
+  </Card>
+  <Card title="Dynamic Environments" icon="layer-group" href="../../use-cases/dynamic-environments">
+    Learn about dynamic environments
+  </Card>
+</CardGroup>

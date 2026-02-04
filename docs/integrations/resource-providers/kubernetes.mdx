@@ -1,0 +1,226 @@
+---
+title: "Kubernetes Provider"
+description: "Sync Kubernetes resources into Ctrlplane"
+---
+
+The Kubernetes provider syncs resources from your Kubernetes clusters into
+Ctrlplane's inventory—namespaces, deployments, services, and more.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- Kubernetes cluster access (kubeconfig or in-cluster)
+- Ctrlplane API key
+
+## Basic Usage
+
+```bash
+# Sync all resources from the current cluster
+ctrlc sync kubernetes \
+  --cluster-name my-cluster \
+  --cluster-identifier k8s-prod-us-east-1
+```
+
+## Options
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--cluster-name` | Display name for the cluster | Yes |
+| `--cluster-identifier` | Unique identifier (or set `CLUSTER_IDENTIFIER` env var) | Yes |
+| `--provider` | Resource provider name | No |
+| `--interval` | Sync interval (e.g., `5m`, `1h`) | No |
+
+## Examples
+
+### One-Time Sync
+
+```bash
+# Sync from current kubeconfig context
+ctrlc sync kubernetes \
+  --cluster-name "Production US-East" \
+  --cluster-identifier prod-us-east-1
+```
+
+### Continuous Sync
+
+```bash
+# Sync every 5 minutes
+ctrlc sync kubernetes \
+  --cluster-name "Production US-East" \
+  --cluster-identifier prod-us-east-1 \
+  --interval 5m
+```
+
+### Using Environment Variables
+
+```bash
+export CTRLPLANE_API_KEY="your-api-key"
+export CTRLPLANE_WORKSPACE="your-workspace-id"
+export CLUSTER_IDENTIFIER="prod-us-east-1"
+
+ctrlc sync kubernetes --cluster-name "Production US-East"
+```
+
+## Synced Resources
+
+The Kubernetes provider creates resources for:
+
+| Kubernetes Resource | Ctrlplane Kind | Description |
+|---------------------|----------------|-------------|
+| Namespaces | `KubernetesNamespace` | All namespaces in the cluster |
+| Deployments | `KubernetesDeployment` | Deployment workloads |
+| StatefulSets | `KubernetesStatefulSet` | Stateful workloads |
+| Services | `KubernetesService` | Service endpoints |
+
+### Resource Metadata
+
+Each synced resource includes metadata from Kubernetes labels:
+
+```yaml
+# Kubernetes Namespace with labels
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: api-production
+  labels:
+    environment: production
+    team: platform
+    tier: critical
+```
+
+Becomes:
+
+```yaml
+# Ctrlplane Resource
+identifier: prod-us-east-1/namespace/api-production
+name: api-production
+kind: Kubernetes/Namespace
+metadata:
+  environment: production
+  team: platform
+  tier: critical
+  cluster: prod-us-east-1
+config:
+  namespace: api-production
+  cluster: prod-us-east-1
+```
+
+## Running in Kubernetes
+
+Deploy as a Deployment with in-cluster authentication:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrlplane-k8s-sync
+  namespace: ctrlplane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrlplane-k8s-sync
+  template:
+    metadata:
+      labels:
+        app: ctrlplane-k8s-sync
+    spec:
+      serviceAccountName: ctrlplane-sync
+      containers:
+        - name: sync
+          image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - kubernetes
+            - --interval
+            - "5m"
+            - --cluster-name
+            - "$(CLUSTER_NAME)"
+            - --cluster-identifier
+            - "$(CLUSTER_IDENTIFIER)"
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: CTRLPLANE_WORKSPACE
+              value: "your-workspace-id"
+            - name: CLUSTER_NAME
+              value: "Production US-East"
+            - name: CLUSTER_IDENTIFIER
+              value: "prod-us-east-1"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ctrlplane-sync
+  namespace: ctrlplane
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ctrlplane-sync
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: ctrlplane-sync
+    namespace: ctrlplane
+```
+
+## Best Practices
+
+### Label Your Resources
+
+Ensure Kubernetes resources have meaningful labels:
+
+```yaml
+metadata:
+  labels:
+    environment: production
+    team: platform
+    app: api-gateway
+    tier: critical
+```
+
+### Use Consistent Identifiers
+
+Use stable cluster identifiers that won't change:
+
+```bash
+# Good: descriptive and stable
+--cluster-identifier prod-us-east-1
+
+# Bad: may change
+--cluster-identifier cluster-12345
+```
+
+### Sync Frequently
+
+Keep resources up-to-date with short sync intervals:
+
+```bash
+# Every 1 minutes is a good default
+--interval 1m
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Helm Provider" icon="helm" href="./helm">
+    Sync Helm releases
+  </Card>
+  <Card title="vCluster Provider" icon="dharmachakra" href="./vcluster">
+    Sync virtual clusters
+  </Card>
+  <Card title="Selectors" icon="filter" href="../../concepts/selectors">
+    Learn selector syntax
+  </Card>
+  <Card title="Environments" icon="layer-group" href="../../concepts/environments">
+    Create dynamic environments
+  </Card>
+</CardGroup>

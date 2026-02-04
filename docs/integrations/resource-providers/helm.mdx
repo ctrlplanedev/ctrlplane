@@ -1,0 +1,205 @@
+---
+title: "Helm Provider"
+description: "Sync Helm releases into Ctrlplane"
+---
+
+The Helm provider syncs Helm releases from your Kubernetes clusters into
+Ctrlplane's inventory.
+
+## Prerequisites
+
+- `ctrlc` CLI installed
+- Kubernetes cluster access (kubeconfig or in-cluster)
+- Ctrlplane API key
+
+## Basic Usage
+
+```bash
+# Sync all Helm releases from the cluster
+ctrlc sync helm \
+  --cluster-name my-cluster \
+  --cluster-identifier k8s-prod-us-east-1
+
+# Sync from a specific namespace
+ctrlc sync helm \
+  --cluster-name my-cluster \
+  --cluster-identifier k8s-prod-us-east-1 \
+  --namespace production
+
+# Continuous sync
+ctrlc sync helm \
+  --cluster-name my-cluster \
+  --cluster-identifier k8s-prod-us-east-1 \
+  --interval 5m
+```
+
+## Options
+
+| Flag | Description | Required |
+|------|-------------|----------|
+| `--cluster-name` | Display name for the cluster | Yes |
+| `--cluster-identifier` | Unique identifier (or `CLUSTER_IDENTIFIER` env var) | Yes |
+| `--namespace` | Kubernetes namespace (all namespaces if not set) | No |
+| `--provider` | Resource provider name | No |
+| `--interval` | Sync interval (e.g., `5m`, `1h`) | No |
+
+## Resource Metadata
+
+Each Helm release is synced with metadata:
+
+```yaml
+identifier: k8s-prod-us-east-1/helm/production/api-gateway
+name: api-gateway
+kind: Helm/Release
+metadata:
+  cluster: k8s-prod-us-east-1
+  namespace: production
+  chart: api-gateway
+  chart_version: "1.2.3"
+  app_version: "2.0.0"
+  status: deployed
+config:
+  cluster: k8s-prod-us-east-1
+  namespace: production
+  release_name: api-gateway
+```
+
+## Running in Kubernetes
+
+Deploy as a Deployment:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ctrlplane-helm-sync
+  namespace: ctrlplane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ctrlplane-helm-sync
+  template:
+    metadata:
+      labels:
+        app: ctrlplane-helm-sync
+    spec:
+      serviceAccountName: ctrlplane-sync
+      containers:
+        - name: sync
+          image: ghcr.io/ctrlplanedev/cli:latest
+          command:
+            - ctrlc
+            - sync
+            - helm
+            - --cluster-name
+            - "$(CLUSTER_NAME)"
+            - --cluster-identifier
+            - "$(CLUSTER_IDENTIFIER)"
+            - --interval
+            - "5m"
+          env:
+            - name: CTRLPLANE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ctrlplane-credentials
+                  key: api-key
+            - name: CTRLPLANE_WORKSPACE
+              value: your-workspace-id
+            - name: CLUSTER_NAME
+              value: "Production US-East"
+            - name: CLUSTER_IDENTIFIER
+              value: "prod-us-east-1"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ctrlplane-sync
+  namespace: ctrlplane
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ctrlplane-helm-reader
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ctrlplane-helm-sync
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ctrlplane-helm-reader
+subjects:
+  - kind: ServiceAccount
+    name: ctrlplane-sync
+    namespace: ctrlplane
+```
+
+## Environment Targeting
+
+Target Helm releases in environments:
+
+```yaml
+# All production releases
+type: Environment
+name: Production Helm Releases
+resourceSelector: |
+  resource.kind == "Helm/Release" &&
+  resource.metadata["namespace"] == "production"
+```
+
+```yaml
+# Specific chart releases
+type: Environment
+name: API Gateway Releases
+resourceSelector: |
+  resource.kind == "Helm/Release" &&
+  resource.metadata["chart"] == "api-gateway"
+```
+
+## Best Practices
+
+### Sync All Namespaces
+
+Unless you have specific needs, sync from all namespaces:
+
+```bash
+# Omit --namespace to sync all
+ctrlc sync helm \
+  --cluster-name my-cluster \
+  --cluster-identifier prod-cluster
+```
+
+### Combine with Kubernetes Sync
+
+Run both Kubernetes and Helm sync:
+
+```bash
+# Kubernetes resources
+ctrlc sync kubernetes \
+  --cluster-name my-cluster \
+  --cluster-identifier prod-cluster \
+  --interval 5m &
+
+# Helm releases
+ctrlc sync helm \
+  --cluster-name my-cluster \
+  --cluster-identifier prod-cluster \
+  --interval 5m &
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Kubernetes Provider" icon="dharmachakra" href="./kubernetes">
+    Sync Kubernetes resources
+  </Card>
+  <Card title="vCluster Provider" icon="dharmachakra" href="./vcluster">
+    Sync virtual clusters
+  </Card>
+</CardGroup>

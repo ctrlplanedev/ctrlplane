@@ -51,7 +51,7 @@ curl -X POST "https://api.ctrlplane.dev/resources" \
   -H "Authorization: Bearer $API_KEY" \
   -d '{
     "name": "prod-us-east-1",
-    "kind": "Kubernetes/Cluster",
+    "kind": "KubernetesCluster",
     "identifier": "k8s-prod-use1",
     "metadata": {
       "env": "production",
@@ -87,12 +87,12 @@ resource.metadata["team"] == "platform"
 Each resource shows its current deployed versions:
 
 ```
-prod-us-east-1 (Kubernetes/Cluster)
+prod-us-east-1 (KubernetesCluster)
 ├── api-gateway: v1.2.3 (deployed 2h ago)
 ├── user-service: v2.0.1 (deployed 1d ago)
 └── payment-service: v3.1.0 (deployed 3h ago)
 
-prod-eu-west-1 (Kubernetes/Cluster)
+prod-eu-west-1 (KubernetesCluster)
 ├── api-gateway: v1.2.2 (deployed 1d ago)  ← behind!
 ├── user-service: v2.0.1 (deployed 1d ago)
 └── payment-service: v3.1.0 (deployed 3h ago)
