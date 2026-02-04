@@ -51,11 +51,46 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  WorkflowManualArrayInput: {
+    type: 'object',
+    required: ['name', 'type'],
+    properties: {
+      name: { type: 'string' },
+      type: { type: 'string', enum: ['array'] },
+      default: { type: 'array', items: { type: 'object', additionalProperties: true } },
+    },
+  },
+
+  WorkflowSelectorArrayInput: {
+    type: 'object',
+    required: ['name', 'type', 'selector'],
+    properties: {
+      name: { type: 'string' },
+      type: { type: 'string', enum: ['array'] },
+      selector: { 
+        type: 'object',
+        required: ['type'],
+        properties: {
+          type: { type: 'string', enum: ['resource', 'environment', 'deployment'] },
+          default: openapi.schemaRef('Selector'),
+        },
+      },
+    },
+  },
+
+  WorkflowArrayInput: {
+    oneOf: [
+      openapi.schemaRef('WorkflowManualArrayInput'),
+      openapi.schemaRef('WorkflowSelectorArrayInput'),
+    ],
+  },
+
   WorkflowInput: {
     oneOf: [
       openapi.schemaRef('WorkflowStringInput'),
       openapi.schemaRef('WorkflowNumberInput'),
       openapi.schemaRef('WorkflowBooleanInput'),
+      openapi.schemaRef('WorkflowArrayInput'),
     ],
   },
 
@@ -89,6 +124,16 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  WorkflowJobMatrix: {
+    type: 'object',
+    additionalProperties: {
+      oneOf: [
+        { type: 'array', items: { type: 'object', additionalProperties: true } },
+        { type: 'string' },
+      ],
+    },
+  },
+
   WorkflowJob: {
     type: 'object',
     required: ['id', 'workflowId', 'index', 'ref', 'config'],
@@ -98,6 +143,7 @@ local openapi = import '../lib/openapi.libsonnet';
       workflowId: { type: 'string' },
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
+      matrix: openapi.schemaRef('WorkflowJobMatrix'),
     },
   },
 }
