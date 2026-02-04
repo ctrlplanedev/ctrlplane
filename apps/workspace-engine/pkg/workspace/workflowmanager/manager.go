@@ -30,10 +30,15 @@ func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 		return nil, fmt.Errorf("workflow template %s not found", workflowTemplateId)
 	}
 
+	inputsWithResolvedSelectors, err := m.getInputWithResolvedSelectors(ctx, workflowTemplate, inputs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get input with resolved selectors: %w", err)
+	}
+
 	workflow := &oapi.Workflow{
 		Id:                 uuid.New().String(),
 		WorkflowTemplateId: workflowTemplateId,
-		Inputs:             maps.Clone(inputs),
+		Inputs:             inputsWithResolvedSelectors,
 	}
 
 	workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflowTemplate.Jobs))
@@ -44,6 +49,14 @@ func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 			Index:      idx,
 			Ref:        jobTemplate.Ref,
 			Config:     maps.Clone(jobTemplate.Config),
+		}
+
+		if jobTemplate.Matrix != nil {
+			resolvedMatrix, err := NewMatrixResolver(jobTemplate.Matrix, inputsWithResolvedSelectors).Resolve()
+			if err != nil {
+				return workflow, fmt.Errorf("failed to resolve matrix: %w", err)
+			}
+			wfJob.ResolvedMatrix = &resolvedMatrix
 		}
 		m.store.WorkflowJobs.Upsert(ctx, wfJob)
 		workflowJobs = append(workflowJobs, wfJob)
@@ -66,36 +79,60 @@ func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) erro
 		return fmt.Errorf("job agent %s not found", wfJob.Ref)
 	}
 
-	mergedConfig, err := mergeJobAgentConfig(jobAgent.Config, wfJob.Config)
-	if err != nil {
-		return fmt.Errorf("failed to merge job agent config: %w", err)
+	mergedConfig := mergeJobAgentConfig(jobAgent.Config, wfJob.Config)
+
+	if wfJob.ResolvedMatrix == nil {
+		job := &oapi.Job{
+			Id:             uuid.New().String(),
+			WorkflowJobId:  wfJob.Id,
+			JobAgentId:     wfJob.Ref,
+			JobAgentConfig: mergedConfig,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+			Metadata:       make(map[string]string),
+			Status:         oapi.JobStatusPending,
+		}
+
+		m.store.Jobs.Upsert(ctx, job)
+		if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
+			return fmt.Errorf("failed to dispatch job: %w", err)
+		}
+
+		return nil
 	}
 
-	job := &oapi.Job{
-		Id:             uuid.New().String(),
-		WorkflowJobId:  wfJob.Id,
-		JobAgentId:     wfJob.Ref,
-		JobAgentConfig: mergedConfig,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		Metadata:       make(map[string]string),
-		Status:         oapi.JobStatusPending,
-	}
-
-	m.store.Jobs.Upsert(ctx, job)
-	if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
-		return fmt.Errorf("failed to dispatch job: %w", err)
+	for _, matrixItem := range *wfJob.ResolvedMatrix {
+		matrixMergedConfig := mergeJobAgentConfig(
+			mergedConfig,
+			oapi.JobAgentConfig{
+				"matrix": matrixItem,
+			},
+		)
+		job := &oapi.Job{
+			Id:             uuid.New().String(),
+			WorkflowJobId:  wfJob.Id,
+			JobAgentId:     wfJob.Ref,
+			JobAgentConfig: matrixMergedConfig,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+			Metadata:       make(map[string]string),
+			Status:         oapi.JobStatusPending,
+		}
+		m.store.Jobs.Upsert(ctx, job)
+		if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
+			return fmt.Errorf("failed to dispatch job: %w", err)
+		}
 	}
 
 	return nil
 }
 
-func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) (oapi.JobAgentConfig, error) {
+func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) oapi.JobAgentConfig {
 	mergedConfig := make(map[string]any)
 	for _, config := range configs {
 		deepMerge(mergedConfig, config)
 	}
-	return mergedConfig, nil
+	return mergedConfig
 }
 
 func deepMerge(dst, src map[string]any) {

@@ -111,3 +111,17 @@ func (e *Deployments) ForJobAgent(ctx context.Context, jobAgent *oapi.JobAgent) 
 	}
 	return deployments, nil
 }
+
+func (e *Deployments) ForSelector(ctx context.Context, sel *oapi.Selector) map[string]*oapi.Deployment {
+	deployments := make(map[string]*oapi.Deployment)
+	for _, deployment := range e.Items() {
+		matched, err := selector.Match(ctx, sel, deployment)
+		if err != nil {
+			continue
+		}
+		if matched {
+			deployments[deployment.Id] = deployment
+		}
+	}
+	return deployments
+}

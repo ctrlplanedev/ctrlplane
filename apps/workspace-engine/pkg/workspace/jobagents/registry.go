@@ -84,6 +84,9 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		if workflow, ok := r.store.Workflows.Get(workflowJob.WorkflowId); ok {
 			renderContext.Workflow = workflow
 		}
+		if job.JobAgentConfig["matrix"] != nil {
+			renderContext.Matrix = job.JobAgentConfig["matrix"].(map[string]interface{})
+		}
 	}
 
 	return dispatcher.Dispatch(ctx, renderContext)
