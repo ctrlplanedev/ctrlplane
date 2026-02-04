@@ -48,9 +48,9 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("job agent type %s not found", jobAgent.Type)
 	}
 
-	renderContext := types.DispatchContext{}
-	renderContext.Job = job
-	renderContext.JobAgent = jobAgent
+	dispatchContext := types.DispatchContext{}
+	dispatchContext.Job = job
+	dispatchContext.JobAgent = jobAgent
 
 	isWorkflow := job.WorkflowJobId != ""
 	caps := dispatcher.Supports()
@@ -64,10 +64,10 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	}
 
 	if jobWithRelease, _ := r.store.Jobs.GetWithRelease(job.Id); jobWithRelease != nil {
-		renderContext.Release = &jobWithRelease.Release
-		renderContext.Deployment = jobWithRelease.Deployment
-		renderContext.Environment = jobWithRelease.Environment
-		renderContext.Resource = jobWithRelease.Resource
+		dispatchContext.Release = &jobWithRelease.Release
+		dispatchContext.Deployment = jobWithRelease.Deployment
+		dispatchContext.Environment = jobWithRelease.Environment
+		dispatchContext.Resource = jobWithRelease.Resource
 		jobAgentConfig, err := mergeJobAgentConfig(
 			jobAgent.Config,
 			jobWithRelease.Deployment.JobAgentConfig,
@@ -76,19 +76,19 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		if err != nil {
 			return fmt.Errorf("failed to merge job agent config: %w", err)
 		}
-		renderContext.JobAgentConfig = jobAgentConfig
+		dispatchContext.JobAgentConfig = jobAgentConfig
 	}
 
 	if workflowJob, ok := r.store.WorkflowJobs.Get(job.WorkflowJobId); ok {
-		renderContext.WorkflowJob = workflowJob
+		dispatchContext.WorkflowJob = workflowJob
 		if workflow, ok := r.store.Workflows.Get(workflowJob.WorkflowId); ok {
-			renderContext.Workflow = workflow
+			dispatchContext.Workflow = workflow
 		}
-		renderContext.JobAgent = jobAgent
-		renderContext.JobAgentConfig = job.JobAgentConfig
+		dispatchContext.JobAgent = jobAgent
+		dispatchContext.JobAgentConfig = job.JobAgentConfig
 	}
 
-	return dispatcher.Dispatch(ctx, renderContext)
+	return dispatcher.Dispatch(ctx, dispatchContext)
 }
 
 // mergeJobAgentConfig merges the given job agent configs into a single config.
