@@ -11,8 +11,7 @@ type WorkflowView struct {
 	store        *store.Store
 	workflow     *oapi.Workflow
 	workflowJobs []*oapi.WorkflowJob
-
-	jobs map[string][]*oapi.Job
+	jobs         map[string][]*oapi.Job
 }
 
 func NewWorkflowView(store *store.Store, workflowId string) (*WorkflowView, error) {
@@ -26,8 +25,8 @@ func NewWorkflowView(store *store.Store, workflowId string) (*WorkflowView, erro
 	})
 
 	jobs := make(map[string][]*oapi.Job)
-	for _, job := range workflowJobs {
-		jobs[job.Id] = store.Jobs.GetByWorkflowJobId(job.Id)
+	for _, wfJob := range workflowJobs {
+		jobs[wfJob.Id] = store.Jobs.GetByWorkflowJobId(wfJob.Id)
 	}
 
 	return &WorkflowView{
@@ -39,57 +38,18 @@ func NewWorkflowView(store *store.Store, workflowId string) (*WorkflowView, erro
 }
 
 func (w *WorkflowView) IsComplete() bool {
-	for _, job := range w.workflowJobs {
-		if !w.isJobComplete(job.Id) {
+	for _, wfJob := range w.workflowJobs {
+		jobs := w.jobs[wfJob.Id]
+		if len(jobs) == 0 {
 			return false
 		}
-	}
-	return true
-}
-
-func (w *WorkflowView) isJobComplete(jobId string) bool {
-	if len(w.jobs[jobId]) == 0 {
-		return false
-	}
-
-	for _, job := range w.jobs[jobId] {
-		if !job.IsInTerminalState() {
-			return false
-		}
-	}
-	return true
-}
-
-func (w *WorkflowView) isJobInProgress(jobId string) bool {
-	for _, job := range w.jobs[jobId] {
-		if !job.IsInTerminalState() {
-			return true
-		}
-	}
-	return false
-}
-
-func (w *WorkflowView) HasActiveJobs() bool {
-	for _, jobs := range w.jobs {
 		for _, job := range jobs {
 			if !job.IsInTerminalState() {
-				return true
+				return false
 			}
 		}
 	}
-	return false
-}
-
-func (w *WorkflowView) GetNextJob() *oapi.WorkflowJob {
-	for _, job := range w.workflowJobs {
-		if !w.isJobComplete(job.Id) {
-			if w.isJobInProgress(job.Id) {
-				return nil
-			}
-			return job
-		}
-	}
-	return nil
+	return true
 }
 
 func (w *WorkflowView) GetWorkflow() *oapi.Workflow {

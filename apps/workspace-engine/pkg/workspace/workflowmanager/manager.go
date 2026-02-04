@@ -24,8 +24,8 @@ func NewWorkflowManager(store *store.Store, jobAgentRegistry *jobagents.Registry
 	}
 }
 
-func (w *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string, inputs map[string]any) (*oapi.Workflow, error) {
-	workflowTemplate, ok := w.store.WorkflowTemplates.Get(workflowTemplateId)
+func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string, inputs map[string]any) (*oapi.Workflow, error) {
+	workflowTemplate, ok := m.store.WorkflowTemplates.Get(workflowTemplateId)
 	if !ok {
 		return nil, fmt.Errorf("workflow template %s not found", workflowTemplateId)
 	}
@@ -36,34 +36,37 @@ func (w *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 		Inputs:             maps.Clone(inputs),
 	}
 
+	workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflowTemplate.Jobs))
 	for idx, jobTemplate := range workflowTemplate.Jobs {
-		job := &oapi.WorkflowJob{
+		wfJob := &oapi.WorkflowJob{
 			Id:         uuid.New().String(),
 			WorkflowId: workflow.Id,
 			Index:      idx,
 			Ref:        jobTemplate.Ref,
 			Config:     maps.Clone(jobTemplate.Config),
 		}
-		w.store.WorkflowJobs.Upsert(ctx, job)
+		m.store.WorkflowJobs.Upsert(ctx, wfJob)
+		workflowJobs = append(workflowJobs, wfJob)
 	}
 
-	w.store.Workflows.Upsert(ctx, workflow)
+	m.store.Workflows.Upsert(ctx, workflow)
 
-	w.ReconcileWorkflow(ctx, workflow)
+	for _, wfJob := range workflowJobs {
+		if err := m.dispatchJob(ctx, wfJob); err != nil {
+			return workflow, err
+		}
+	}
+
 	return workflow, nil
 }
 
-// dispatchJobForStep dispatches a job for the given step
 func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) error {
 	jobAgent, ok := m.store.JobAgents.Get(wfJob.Ref)
 	if !ok {
 		return fmt.Errorf("job agent %s not found", wfJob.Ref)
 	}
 
-	mergedConfig, err := mergeJobAgentConfig(
-		jobAgent.Config,
-		wfJob.Config,
-	)
+	mergedConfig, err := mergeJobAgentConfig(jobAgent.Config, wfJob.Config)
 	if err != nil {
 		return fmt.Errorf("failed to merge job agent config: %w", err)
 	}
@@ -85,28 +88,6 @@ func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) erro
 	}
 
 	return nil
-}
-
-// ReconcileWorkflow reconciles a workflow, advancing to the next step if ready.
-func (m *Manager) ReconcileWorkflow(ctx context.Context, workflow *oapi.Workflow) error {
-	wfv, err := NewWorkflowView(m.store, workflow.Id)
-	if err != nil {
-		return fmt.Errorf("failed to create workflow view: %w", err)
-	}
-
-	if wfv.IsComplete() {
-		return nil
-	}
-	if wfv.HasActiveJobs() {
-		return nil
-	}
-
-	nextJob := wfv.GetNextJob()
-	if nextJob == nil {
-		return nil
-	}
-
-	return m.dispatchJob(ctx, nextJob)
 }
 
 func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) (oapi.JobAgentConfig, error) {

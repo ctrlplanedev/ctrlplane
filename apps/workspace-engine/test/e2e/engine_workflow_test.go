@@ -153,7 +153,7 @@ func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 	}, jobs[0].JobAgentConfig)
 }
 
-func TestEngine_Workflow_MultipleSteps(t *testing.T) {
+func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 	jobAgentID1 := uuid.New().String()
 	jobAgentID2 := uuid.New().String()
 	workflowTemplateID := uuid.New().String()
@@ -222,7 +222,18 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 	}, wfJob1jobs[0].JobAgentConfig)
 
 	wfJob2jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[1].Id)
-	assert.Len(t, wfJob2jobs, 0)
+	assert.Len(t, wfJob2jobs, 1)
+	assert.Equal(t, oapi.JobStatusPending, wfJob2jobs[0].Status)
+	assert.Equal(t, workflowJobs[1].Id, wfJob2jobs[0].WorkflowJobId)
+	assert.Equal(t, jobAgentID2, wfJob2jobs[0].JobAgentId)
+	assert.Equal(t, oapi.JobAgentConfig{
+		"delaySeconds": float64(20),
+	}, wfJob2jobs[0].JobAgentConfig)
+
+	wfv, err := workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow.Id)
+	assert.NoError(t, err)
+	assert.NotNil(t, wfv)
+	assert.False(t, wfv.IsComplete())
 
 	completedAt := time.Now()
 	jobUpdateEvent := &oapi.JobUpdateEvent{
@@ -239,18 +250,8 @@ func TestEngine_Workflow_MultipleSteps(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
 
-	wfJob2jobs = engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[1].Id)
-	assert.Len(t, wfJob2jobs, 1)
-	assert.Equal(t, oapi.JobStatusPending, wfJob2jobs[0].Status)
-	assert.Equal(t, workflowJobs[1].Id, wfJob2jobs[0].WorkflowJobId)
-	assert.Equal(t, jobAgentID2, wfJob2jobs[0].JobAgentId)
-	assert.Equal(t, oapi.JobAgentConfig{
-		"delaySeconds": float64(20),
-	}, wfJob2jobs[0].JobAgentConfig)
-
-	wfv, err := workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow.Id)
+	wfv, err = workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow.Id)
 	assert.NoError(t, err)
-	assert.NotNil(t, wfv)
 	assert.False(t, wfv.IsComplete())
 
 	completedAt2 := time.Now()
