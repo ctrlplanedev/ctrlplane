@@ -1085,7 +1085,6 @@ type WorkflowJob struct {
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
 	Index  int                    `json:"index"`
-	Matrix *WorkflowJobMatrix     `json:"matrix,omitempty"`
 
 	// Ref Reference to the job agent
 	Ref        string `json:"ref"`
@@ -1117,6 +1116,7 @@ type WorkflowJobTemplate struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
+	Matrix *WorkflowJobMatrix     `json:"matrix,omitempty"`
 	Name   string                 `json:"name"`
 
 	// Ref Reference to the job agent

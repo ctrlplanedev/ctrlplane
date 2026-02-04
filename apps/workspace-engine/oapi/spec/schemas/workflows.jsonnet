@@ -10,6 +10,16 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  WorkflowJobMatrix: {
+    type: 'object',
+    additionalProperties: {
+      oneOf: [
+        { type: 'array', items: { type: 'object', additionalProperties: true } },
+        { type: 'string' },
+      ],
+    },
+  },
+
   WorkflowJobTemplate: {
     type: 'object',
     required: ['id', 'name', 'ref', 'config'],
@@ -18,6 +28,7 @@ local openapi = import '../lib/openapi.libsonnet';
       id: { type: 'string' },
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
+      matrix: openapi.schemaRef('WorkflowJobMatrix'),
     },
   },
 
@@ -124,16 +135,6 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowJobMatrix: {
-    type: 'object',
-    additionalProperties: {
-      oneOf: [
-        { type: 'array', items: { type: 'object', additionalProperties: true } },
-        { type: 'string' },
-      ],
-    },
-  },
-
   WorkflowJob: {
     type: 'object',
     required: ['id', 'workflowId', 'index', 'ref', 'config'],
@@ -143,7 +144,7 @@ local openapi = import '../lib/openapi.libsonnet';
       workflowId: { type: 'string' },
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
-      matrix: openapi.schemaRef('WorkflowJobMatrix'),
+
     },
   },
 }
