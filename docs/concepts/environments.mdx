@@ -21,25 +21,17 @@ Environments are **not** static groups of resources. Instead, they use **selecto
 
 ## Environment Properties
 
-```json
-{
-  "id": "env_abc123",
-  "systemId": "sys_xyz789",
-  "name": "Production",
-  "directory": "environments/prod",
-  "description": "Production environment for customer-facing services",
-  "resourceSelector": {
-    "type": "metadata",
-    "operator": "equals",
-    "key": "environment",
-    "value": "production"
-  },
-  "createdAt": "2024-01-15T10:00:00Z",
-  "metadata": {
-    "owner": "platform-team",
-    "alert-channel": "#prod-alerts"
-  }
-}
+```yaml
+id: env_abc123
+systemId: sys_xyz789
+name: Production
+directory: environments/prod
+description: Production environment for customer-facing services
+resourceSelector: resource.metadata["environment"] == "production"
+createdAt: "2024-01-15T10:00:00Z"
+metadata:
+  owner: platform-team
+  alert-channel: "#prod-alerts"
 ```
 
 ### name
@@ -59,38 +51,23 @@ The selector that determines which resources belong to this environment. This is
 
 **Example Selectors**:
 
-**Simple metadata match**:
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "environment",
-  "value": "production"
-}
+**Simple metadata match** (CEL expression):
+```yaml
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
-**Multiple conditions**:
-```json
-{
-  "type": "metadata",
-  "operator": "and",
-  "conditions": [
-    {"key": "environment", "value": "production"},
-    {"key": "region", "value": "us-east-1"}
-  ]
-}
+**Multiple conditions (AND)**:
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
 ```
 
 **OR logic**:
-```json
-{
-  "type": "metadata",
-  "operator": "or",
-  "conditions": [
-    {"key": "region", "value": "us-east-1"},
-    {"key": "region", "value": "us-west-2"}
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["region"] == "us-east-1" ||
+  resource.metadata["region"] == "us-west-2"
 ```
 
 ### directory
@@ -113,13 +90,12 @@ Optional description of the environment's purpose and usage.
 Key-value pairs with environment information (not used for resource matching).
 
 **Common Metadata**:
-```json
-{
-  "owner": "platform-team",
-  "alert-channel": "#prod-alerts",
-  "cost-center": "engineering",
-  "sla": "99.99%"
-}
+```yaml
+metadata:
+  owner: platform-team
+  alert-channel: "#prod-alerts"
+  cost-center: engineering
+  sla: "99.99%"
 ```
 
 ## Creating Environments
@@ -135,54 +111,45 @@ Key-value pairs with environment information (not used for resource matching).
    - Resource Selector: Add conditions
 5. Click "Create"
 
-### Via API
-
-```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/systems/{systemId}/environments \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Production",
-    "description": "Production environment for customer-facing services",
-    "resourceSelector": {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "environment",
-      "value": "production"
-    },
-    "metadata": {
-      "owner": "platform-team"
-    }
-  }'
-```
-
-### Via YAML
+### Via CLI
 
 ```yaml
-environments:
-  - name: Development
-    description: Development environment
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: environment
-      value: development
+# environment.yaml
+type: Environment
+name: Production
+description: Production environment for customer-facing services
+resourceSelector: resource.metadata["environment"] == "production"
+metadata:
+  owner: platform-team
+```
 
-  - name: Staging
-    description: Staging environment
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: environment
-      value: staging
+```bash
+ctrlc apply -f environment.yaml
+```
 
-  - name: Production
-    description: Production environment
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: environment
-      value: production
+### Multiple Environments
+
+```yaml
+# environments.yaml
+---
+type: Environment
+name: Development
+description: Development environment
+resourceSelector: resource.metadata["environment"] == "development"
+---
+type: Environment
+name: Staging
+description: Staging environment
+resourceSelector: resource.metadata["environment"] == "staging"
+---
+type: Environment
+name: Production
+description: Production environment
+resourceSelector: resource.metadata["environment"] == "production"
+```
+
+```bash
+ctrlc apply -f environments.yaml
 ```
 
 ## How Resource Selectors Work
@@ -191,103 +158,61 @@ Selectors match resources based on their metadata, kind, identifier, or other pr
 
 ### Selector Types
 
+Ctrlplane uses CEL (Common Expression Language) for resource selectors.
+
 #### Metadata Selector
 
 Match resources by metadata key-value pairs.
 
 **Single condition**:
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "environment",
-  "value": "production"
-}
+```yaml
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
 **Operators**:
-- `equals` - Exact match
-- `contains` - Value contains substring
-- `matches` - Regex match
-- `exists` - Key exists (any value)
+- `==` - Exact match
+- `!=` - Not equals
+- `in` - Value in list
+- `has()` - Key exists
 
 **Multiple conditions (AND)**:
-```json
-{
-  "type": "metadata",
-  "operator": "and",
-  "conditions": [
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "environment",
-      "value": "production"
-    },
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "region",
-      "value": "us-east-1"
-    }
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
 ```
 
 **Multiple conditions (OR)**:
-```json
-{
-  "type": "metadata",
-  "operator": "or",
-  "conditions": [
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "region",
-      "value": "us-east-1"
-    },
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "region",
-      "value": "us-west-2"
-    }
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["region"] == "us-east-1" ||
+  resource.metadata["region"] == "us-west-2"
 ```
 
 #### Kind Selector
 
 Match resources by their `kind` field.
 
-```json
-{
-  "type": "kind",
-  "operator": "equals",
-  "value": "kubernetes-cluster"
-}
+```yaml
+resourceSelector: resource.kind == "KubernetesCluster"
 ```
 
 #### Identifier Selector
 
 Match resources by their identifier.
 
-```json
-{
-  "type": "identifier",
-  "operator": "contains",
-  "value": "prod"
-}
+```yaml
+resourceSelector: resource.identifier.contains("prod")
 ```
 
-#### CEL Selector
+#### Complex CEL Expressions
 
-Use CEL (Common Expression Language) for complex matching.
+Use CEL for complex matching logic.
 
-```json
-{
-  "type": "cel",
-  "expression": "metadata.environment == 'production' && metadata.tier == 'critical'"
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["tier"] == "critical"
 ```
 
 ### Selector Evaluation
@@ -302,13 +227,8 @@ When determining which resources belong to an environment:
 **Example**:
 
 Environment selector:
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "environment",
-  "value": "production"
-}
+```yaml
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
 Resources:
@@ -363,18 +283,30 @@ Root
 ### Creating Hierarchical Environments
 
 ```yaml
-environments:
-  # Root level
-  - name: Global Production
-    directory: ""
-    
-  # First level
-  - name: US East Production
-    directory: "regions/us-east"
-    
-  # Nested
-  - name: US East 1a Production
-    directory: "regions/us-east/availability-zones"
+# hierarchical-environments.yaml
+---
+type: Environment
+name: Global Production
+directory: ""
+resourceSelector: resource.metadata["environment"] == "production"
+---
+type: Environment
+name: US East Production
+directory: regions/us-east
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
+---
+type: Environment
+name: US East 1a Production
+directory: regions/us-east/availability-zones
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["zone"] == "us-east-1a"
+```
+
+```bash
+ctrlc apply -f hierarchical-environments.yaml
 ```
 
 ### Benefits
@@ -389,114 +321,99 @@ environments:
 ### Standard Pipeline
 
 ```yaml
-environments:
-  - name: Development
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: environment
-      value: development
+# environments.yaml
+---
+type: Environment
+name: Development
+resourceSelector: resource.metadata["environment"] == "development"
+---
+type: Environment
+name: Staging
+resourceSelector: resource.metadata["environment"] == "staging"
+---
+type: Environment
+name: Production
+resourceSelector: resource.metadata["environment"] == "production"
+```
 
-  - name: Staging
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: environment
-      value: staging
-
-  - name: Production
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: environment
-      value: production
+```bash
+ctrlc apply -f environments.yaml
 ```
 
 ### Multi-Region Environments
 
 ```yaml
-environments:
-  - name: Production US East
-    directory: "production/us-east"
-    resourceSelector:
-      type: metadata
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: region
-          value: us-east-1
+# multi-region-environments.yaml
+---
+type: Environment
+name: Production US East
+directory: production/us-east
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
+---
+type: Environment
+name: Production US West
+directory: production/us-west
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-west-2"
+```
 
-  - name: Production US West
-    directory: "production/us-west"
-    resourceSelector:
-      type: metadata
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: region
-          value: us-west-2
+```bash
+ctrlc apply -f multi-region-environments.yaml
 ```
 
 ### Canary Environments
 
 ```yaml
-environments:
-  - name: Production Canary
-    resourceSelector:
-      type: metadata
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: canary
-          value: "true"
+# canary-environments.yaml
+---
+type: Environment
+name: Production Canary
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["canary"] == "true"
+---
+type: Environment
+name: Production Stable
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["canary"] != "true"
+```
 
-  - name: Production Stable
-    resourceSelector:
-      type: metadata
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: canary
-          operator: exists
-          value: "false"
+```bash
+ctrlc apply -f canary-environments.yaml
 ```
 
 ### Team-Specific Environments
 
 ```yaml
-environments:
-  - name: Platform Team Development
-    resourceSelector:
-      type: metadata
-      operator: and
-      conditions:
-        - key: team
-          value: platform
-        - key: environment
-          value: development
+# team-environments.yaml
+---
+type: Environment
+name: Platform Team Development
+resourceSelector: >-
+  resource.metadata["team"] == "platform" &&
+  resource.metadata["environment"] == "development"
+---
+type: Environment
+name: Product Team Development
+resourceSelector: >-
+  resource.metadata["team"] == "product" &&
+  resource.metadata["environment"] == "development"
+```
 
-  - name: Product Team Development
-    resourceSelector:
-      type: metadata
-      operator: and
-      conditions:
-        - key: team
-          value: product
-        - key: environment
-          value: development
+```bash
+ctrlc apply -f team-environments.yaml
 ```
 
 ## Viewing Environment Resources
 
-### Via API
+### Via CLI
 
 ```bash
-curl https://app.ctrlplane.dev/api/v1/environments/{environmentId}/resources \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+ctrlc api get resources --environment {environmentId}
 ```
 
 Returns all resources matching the environment's selector.
@@ -519,36 +436,9 @@ Environments can have variables that differ per deployment.
 
 ### Deployment Variables
 
-Define a variable at the deployment level, then set values per environment:
+Define a variable at the deployment level, then set values per environment. Variables are typically configured via the Web UI, but can also be managed via API.
 
-```bash
-# Create deployment variable
-curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "key": "REPLICA_COUNT",
-    "description": "Number of replicas to run"
-  }'
-
-# Set value for development
-curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "environmentId": "env_dev",
-    "value": "1"
-  }'
-
-# Set value for production
-curl -X POST https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/variables/{variableId}/values \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "environmentId": "env_prod",
-    "value": "3"
-  }'
-```
+See the [Deployments documentation](./deployments) for details on creating and setting deployment variables.
 
 During job execution, the appropriate value is resolved based on the environment.
 
@@ -558,45 +448,39 @@ Policies often target specific environments using selectors.
 
 ### Approval Required for Production
 
-```json
-{
-  "name": "Production Approval Required",
-  "selectors": [{
-    "environmentSelector": {
-      "type": "name",
-      "operator": "equals",
-      "value": "Production"
-    }
-  }],
-  "rules": [{
-    "anyApproval": {
-      "minApprovals": 2
-    }
-  }]
-}
+```yaml
+# policy.yaml
+type: Policy
+name: Production Approval Required
+selectors:
+  - environments: environment.name == "Production"
+rules:
+  - anyApproval:
+      minApprovals: 2
+```
+
+```bash
+ctrlc apply -f policy.yaml
 ```
 
 ### Environment Progression
 
 Ensure deployments go to staging before production:
 
-```json
-{
-  "name": "Staging Before Production",
-  "selectors": [{
-    "environmentSelector": {
-      "type": "name",
-      "operator": "equals",
-      "value": "Production"
-    }
-  }],
-  "rules": [{
-    "environmentProgression": {
-      "fromEnvironmentId": "env_staging",
-      "toEnvironmentId": "env_production"
-    }
-  }]
-}
+```yaml
+# progression-policy.yaml
+type: Policy
+name: Staging Before Production
+selectors:
+  - environments: environment.name == "Production"
+rules:
+  - environmentProgression:
+      fromEnvironment: Staging
+      toEnvironment: Production
+```
+
+```bash
+ctrlc apply -f progression-policy.yaml
 ```
 
 ## Best Practices
@@ -670,8 +554,8 @@ Ensure deployments go to staging before production:
 
 ## Next Steps
 
-- [Deployments](./deployments.md) - Create deployments
-- [Selectors](./selectors.md) - Deep dive into selector syntax
-- [Release Targets](./release-targets.md) - Understand the deployment matrix
-- [Policies](../advanced/policies.md) - Control deployments with policies
+- [Deployments](./deployments) - Create deployments
+- [Selectors](./selectors) - Deep dive into selector syntax
+- [Release Targets](./release-targets) - Understand the deployment matrix
+- [Policies](../policies/overview) - Control deployments with policies
 

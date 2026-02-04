@@ -41,17 +41,12 @@ Ctrlplane supports several types of selectors:
 
 ## Metadata Selector
 
-Match resources based on metadata key-value pairs.
+Match resources based on metadata key-value pairs using CEL expressions.
 
 ### Simple Equality
 
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "environment",
-  "value": "production"
-}
+```yaml
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
 Matches resources where `metadata.environment === "production"`.
@@ -60,123 +55,77 @@ Matches resources where `metadata.environment === "production"`.
 
 #### equals
 Exact match:
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "region",
-  "value": "us-east-1"
-}
+```yaml
+resourceSelector: resource.metadata["region"] == "us-east-1"
 ```
 
 #### not_equals
 Does not match:
-```json
-{
-  "type": "metadata",
-  "operator": "not_equals",
-  "key": "deprecated",
-  "value": "true"
-}
+```yaml
+resourceSelector: resource.metadata["deprecated"] != "true"
 ```
 
 #### contains
 Value contains substring:
-```json
-{
-  "type": "metadata",
-  "operator": "contains",
-  "key": "identifier",
-  "value": "prod"
-}
+```yaml
+resourceSelector: resource.identifier.contains("prod")
 ```
 
 Matches: `prod-cluster-1`, `k8s-prod`, `production-server`.
 
 #### matches (Regex)
 Regular expression match:
-```json
-{
-  "type": "metadata",
-  "operator": "matches",
-  "key": "identifier",
-  "value": "^prod-.*-[0-9]+$"
-}
+```yaml
+resourceSelector: resource.identifier.matches("^prod-.*-[0-9]+$")
 ```
 
 Matches: `prod-cluster-1`, `prod-server-42`.
 
 #### exists
 Key exists with any value:
-```json
-{
-  "type": "metadata",
-  "operator": "exists",
-  "key": "team"
-}
+```yaml
+resourceSelector: has(resource.metadata["team"])
 ```
 
 Matches any resource with a `team` metadata key.
 
 #### not_exists
 Key does not exist:
-```json
-{
-  "type": "metadata",
-  "operator": "not_exists",
-  "key": "deprecated"
-}
+```yaml
+resourceSelector: "!has(resource.metadata[\"deprecated\"])"
 ```
 
 #### in
 Value is in a list:
-```json
-{
-  "type": "metadata",
-  "operator": "in",
-  "key": "region",
-  "values": ["us-east-1", "us-east-2", "us-west-1"]
-}
+```yaml
+resourceSelector: resource.metadata["region"] in ["us-east-1", "us-east-2", "us-west-1"]
 ```
 
 #### not_in
 Value is not in a list:
-```json
-{
-  "type": "metadata",
-  "operator": "not_in",
-  "key": "status",
-  "values": ["deprecated", "decommissioned"]
-}
+```yaml
+resourceSelector: "!(resource.metadata[\"status\"] in [\"deprecated\", \"decommissioned\"])"
 ```
 
 ## Kind Selector
 
 Match resources by their `kind` field.
 
-```json
-{
-  "type": "kind",
-  "operator": "equals",
-  "value": "kubernetes-cluster"
-}
+```yaml
+resourceSelector: resource.kind == "KubernetesCluster"
 ```
 
 **Common Use Cases**:
-- Kubernetes-only deployments: `kind == "kubernetes-cluster"`
-- VM-only deployments: `kind == "vm"`
-- Exclude certain kinds: `kind != "deprecated-resource"`
+- Kubernetes-only deployments: `resource.kind == "KubernetesCluster"`
+- VM-only deployments: `resource.kind == "VirtualMachine"`
+- Exclude certain kinds: `resource.kind != "DeprecatedResource"`
 
 ## Identifier Selector
 
 Match resources by their identifier.
 
-```json
-{
-  "type": "identifier",
-  "operator": "contains",
-  "value": "prod"
-}
+```yaml
+resourceSelector: resource.identifier.contains("prod")
 ```
 
 **Use Cases**:
@@ -188,12 +137,9 @@ Match resources by their identifier.
 
 Match by the resource or environment name field.
 
-```json
-{
-  "type": "name",
-  "operator": "equals",
-  "value": "Production"
-}
+```yaml
+# In policy selectors
+environments: environment.name == "Production"
 ```
 
 **Use Cases**:
@@ -202,31 +148,16 @@ Match by the resource or environment name field.
 
 ## Composite Selectors (AND/OR)
 
-Combine multiple conditions with boolean logic.
+Combine multiple conditions with boolean logic using CEL operators.
 
 ### AND Logic
 
 All conditions must match:
 
-```json
-{
-  "type": "metadata",
-  "operator": "and",
-  "conditions": [
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "environment",
-      "value": "production"
-    },
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "region",
-      "value": "us-east-1"
-    }
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
 ```
 
 Matches: Resources with BOTH `environment=production` AND `region=us-east-1`.
@@ -235,25 +166,10 @@ Matches: Resources with BOTH `environment=production` AND `region=us-east-1`.
 
 Any condition can match:
 
-```json
-{
-  "type": "metadata",
-  "operator": "or",
-  "conditions": [
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "region",
-      "value": "us-east-1"
-    },
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "region",
-      "value": "us-west-2"
-    }
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["region"] == "us-east-1" ||
+  resource.metadata["region"] == "us-west-2"
 ```
 
 Matches: Resources in EITHER `us-east-1` OR `us-west-2`.
@@ -262,59 +178,32 @@ Matches: Resources in EITHER `us-east-1` OR `us-west-2`.
 
 Combine AND and OR:
 
-```json
-{
-  "type": "metadata",
-  "operator": "and",
-  "conditions": [
-    {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "environment",
-      "value": "production"
-    },
-    {
-      "type": "metadata",
-      "operator": "or",
-      "conditions": [
-        {
-          "type": "metadata",
-          "operator": "equals",
-          "key": "region",
-          "value": "us-east-1"
-        },
-        {
-          "type": "metadata",
-          "operator": "equals",
-          "key": "region",
-          "value": "us-west-2"
-        }
-      ]
-    }
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  (resource.metadata["region"] == "us-east-1" ||
+   resource.metadata["region"] == "us-west-2")
 ```
 
 Matches: `environment=production` AND (`region=us-east-1` OR `region=us-west-2`).
 
-## CEL Selector
+## CEL Expressions
 
-For complex logic, use CEL (Common Expression Language):
+Ctrlplane uses CEL (Common Expression Language) for all selectors:
 
-```json
-{
-  "type": "cel",
-  "expression": "metadata.environment == 'production' && metadata.tier == 'critical'"
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["tier"] == "critical"
 ```
 
 ### CEL Basics
 
 **Field Access**:
-- `metadata.environment` - Access metadata field
-- `kind` - Access kind field
-- `name` - Access name field
-- `identifier` - Access identifier field
+- `resource.metadata["environment"]` - Access metadata field
+- `resource.kind` - Access kind field
+- `resource.name` - Access name field
+- `resource.identifier` - Access identifier field
 
 **Operators**:
 - `==`, `!=` - Equality
@@ -322,40 +211,46 @@ For complex logic, use CEL (Common Expression Language):
 - `!` - Logical NOT
 - `<`, `>`, `<=`, `>=` - Comparison
 - `in` - List membership
-- `matches` - Regex match
+- `.matches()` - Regex match
 
 **Examples**:
 
-```javascript
-// Production OR Staging
-metadata.environment in ['production', 'staging']
+```yaml
+# Production OR Staging
+resourceSelector: resource.metadata["environment"] in ["production", "staging"]
 
-// Critical tier in production
-metadata.environment == 'production' && metadata.tier == 'critical'
+# Critical tier in production
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["tier"] == "critical"
 
-// Not deprecated
-!has(metadata.deprecated) || metadata.deprecated != 'true'
+# Not deprecated
+resourceSelector: >-
+  !has(resource.metadata["deprecated"]) ||
+  resource.metadata["deprecated"] != "true"
 
-// Regex match on identifier
-identifier.matches('^prod-cluster-[0-9]+$')
+# Regex match on identifier
+resourceSelector: resource.identifier.matches("^prod-cluster-[0-9]+$")
 
-// Complex nested logic
-(metadata.environment == 'production' && metadata.region in ['us-east-1', 'us-west-2']) 
-  || (metadata.environment == 'staging' && metadata.region == 'us-east-1')
+# Complex nested logic
+resourceSelector: >-
+  (resource.metadata["environment"] == "production" &&
+   resource.metadata["region"] in ["us-east-1", "us-west-2"]) ||
+  (resource.metadata["environment"] == "staging" &&
+   resource.metadata["region"] == "us-east-1")
 ```
 
-### When to Use CEL
+### CEL Best Practices
 
-**Use CEL when**:
-- ✅ You need complex nested logic
-- ✅ You need mathematical operations
-- ✅ Standard selectors are too verbose
-- ✅ You're comfortable with expression languages
+**Do**:
+- ✅ Use CEL for complex nested logic
+- ✅ Keep expressions readable with line breaks
+- ✅ Test selectors before applying
+- ✅ Reference the [CEL Reference](../reference/cel) for syntax
 
-**Avoid CEL when**:
-- ❌ Simple metadata matching is sufficient
-- ❌ You want UI-friendly selector editing
-- ❌ Team is unfamiliar with CEL syntax
+**Avoid**:
+- ❌ Overly complex expressions that are hard to understand
+- ❌ Expressions that might accidentally match wrong resources
 
 ## Selector Use Cases
 
@@ -363,102 +258,67 @@ identifier.matches('^prod-cluster-[0-9]+$')
 
 Define which resources belong to an environment:
 
-```json
-// Production environment
-{
-  "name": "Production",
-  "resourceSelector": {
-    "type": "metadata",
-    "operator": "equals",
-    "key": "environment",
-    "value": "production"
-  }
-}
+```yaml
+# Production environment
+type: Environment
+name: Production
+resourceSelector: resource.metadata["environment"] == "production"
+```
 
-// Multi-region production
-{
-  "name": "Production US East",
-  "resourceSelector": {
-    "type": "metadata",
-    "operator": "and",
-    "conditions": [
-      {"key": "environment", "value": "production"},
-      {"key": "region", "value": "us-east-1"}
-    ]
-  }
-}
+```yaml
+# Multi-region production
+type: Environment
+name: Production US East
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
 ```
 
 ### Deployment Resource Selectors
 
 Limit which resources a deployment can target:
 
-```json
-// Kubernetes-only deployment
-{
-  "name": "Container Service",
-  "resourceSelector": {
-    "type": "kind",
-    "operator": "equals",
-    "value": "kubernetes-cluster"
-  }
-}
+```yaml
+# Kubernetes-only deployment
+type: Deployment
+name: Container Service
+resourceSelector: resource.kind == "KubernetesCluster"
+```
 
-// Region-specific deployment
-{
-  "name": "US-Only Service",
-  "resourceSelector": {
-    "type": "metadata",
-    "operator": "matches",
-    "key": "region",
-    "value": "^us-.*"
-  }
-}
+```yaml
+# Region-specific deployment
+type: Deployment
+name: US-Only Service
+resourceSelector: resource.metadata["region"].matches("^us-.*")
 ```
 
 ### Policy Selectors
 
 Target policies to specific deployments/environments/resources:
 
-```json
-{
-  "name": "Production Approval Required",
-  "selectors": [{
-    "environmentSelector": {
-      "type": "name",
-      "operator": "equals",
-      "value": "Production"
-    },
-    "deploymentSelector": {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "critical",
-      "value": "true"
-    }
-  }]
-}
+```yaml
+type: Policy
+name: Production Approval Required
+selectors:
+  - environments: environment.name == "Production"
+    deployments: deployment.metadata["critical"] == "true"
+rules:
+  - anyApproval:
+      minApprovals: 2
 ```
 
 This policy applies to critical deployments going to production.
 
 ## Testing Selectors
 
-### Via API
+### Via CLI
 
 Test a selector against your resources:
 
 ```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/workspaces/{workspaceId}/resources/query \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "selector": {
-      "type": "metadata",
-      "operator": "equals",
-      "key": "environment",
-      "value": "production"
-    }
-  }'
+ctrlc api get resources \
+  --workspace {workspaceId} \
+  --selector 'resource.metadata["environment"] == "production"'
 ```
 
 Returns all resources matching the selector.
@@ -471,80 +331,54 @@ Most selector configuration screens have a "Test Selector" or "Preview Resources
 
 ### Pattern 1: Environment-Based
 
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "environment",
-  "value": "production"
-}
+```yaml
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
 **Use Case**: Standard environment separation (dev/staging/prod).
 
 ### Pattern 2: Region-Based
 
-```json
-{
-  "type": "metadata",
-  "operator": "and",
-  "conditions": [
-    {"key": "environment", "value": "production"},
-    {"key": "region", "value": "us-east-1"}
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
 ```
 
 **Use Case**: Multi-region deployments, gradual regional rollout.
 
 ### Pattern 3: Team-Based
 
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "team",
-  "value": "platform"
-}
+```yaml
+resourceSelector: resource.metadata["team"] == "platform"
 ```
 
 **Use Case**: Team-specific resources and deployments.
 
 ### Pattern 4: Tier-Based
 
-```json
-{
-  "type": "metadata",
-  "operator": "in",
-  "key": "tier",
-  "values": ["critical", "high-priority"]
-}
+```yaml
+resourceSelector: resource.metadata["tier"] in ["critical", "high-priority"]
 ```
 
 **Use Case**: SLA-based resource grouping.
 
 ### Pattern 5: Canary
 
-```json
-{
-  "type": "metadata",
-  "operator": "and",
-  "conditions": [
-    {"key": "environment", "value": "production"},
-    {"key": "canary", "value": "true"}
-  ]
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["canary"] == "true"
 ```
 
 **Use Case**: Canary deployment pattern.
 
 ### Pattern 6: Percentage-Based (using identifier)
 
-```json
-{
-  "type": "cel",
-  "expression": "metadata.environment == 'production' && identifier.matches('.*[02468]$')"
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.identifier.matches(".*[02468]$")
 ```
 
 **Use Case**: Target resources with even-numbered identifiers (50% rollout).
@@ -556,15 +390,15 @@ Most selector configuration screens have a "Test Selector" or "Preview Resources
 Design your resource metadata with selectors in mind:
 
 **Good Metadata Schema**:
-```json
-{
-  "environment": "production|staging|development",
-  "region": "us-east-1|us-west-2|eu-west-1",
-  "zone": "us-east-1a|us-east-1b|...",
-  "tier": "critical|high|standard|low",
-  "team": "platform|product|data",
-  "canary": "true|false"
-}
+```yaml
+# Recommended metadata keys
+metadata:
+  environment: production | staging | development
+  region: us-east-1 | us-west-2 | eu-west-1
+  zone: us-east-1a | us-east-1b | ...
+  tier: critical | high | standard | low
+  team: platform | product | data
+  canary: "true" | "false"
 ```
 
 **Why Good**:
@@ -576,26 +410,21 @@ Design your resource metadata with selectors in mind:
 ### Selector Simplicity
 
 **Prefer Simple Selectors**:
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "environment",
-  "value": "production"
-}
+```yaml
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
 **Over Complex Ones**:
-```json
-{
-  "type": "cel",
-  "expression": "..."
-}
+```yaml
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"].startsWith("us-") &&
+  resource.metadata["tier"] == "critical" &&
+  !has(resource.metadata["deprecated"])
 ```
 
 Simple selectors are:
 - Easier to understand
-- Easier to edit in UI
 - Less error-prone
 - More performant
 
@@ -603,15 +432,17 @@ Simple selectors are:
 
 If you must use complex selectors, document them:
 
-```json
-{
-  "name": "Production Critical",
-  "description": "Targets production resources in US regions that are marked critical tier and not deprecated",
-  "resourceSelector": {
-    "type": "cel",
-    "expression": "metadata.environment == 'production' && metadata.region.startsWith('us-') && metadata.tier == 'critical' && !has(metadata.deprecated)"
-  }
-}
+```yaml
+type: Environment
+name: Production Critical
+description: >-
+  Targets production resources in US regions that are marked 
+  critical tier and not deprecated
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"].startsWith("us-") &&
+  resource.metadata["tier"] == "critical" &&
+  !has(resource.metadata["deprecated"])
 ```
 
 ### Test Before Applying
@@ -627,25 +458,15 @@ Always test selectors before using them:
 Be specific to avoid accidentally matching wrong resources:
 
 **Too Broad**:
-```json
-{
-  "type": "metadata",
-  "operator": "contains",
-  "key": "identifier",
-  "value": "prod"
-}
+```yaml
+resourceSelector: resource.identifier.contains("prod")
 ```
 
 Might match: `prod-cluster`, `product-server`, `reproduction-env`.
 
 **Better**:
-```json
-{
-  "type": "metadata",
-  "operator": "matches",
-  "key": "identifier",
-  "value": "^prod-.*"
-}
+```yaml
+resourceSelector: resource.identifier.matches("^prod-.*")
 ```
 
 Only matches identifiers starting with `prod-`.

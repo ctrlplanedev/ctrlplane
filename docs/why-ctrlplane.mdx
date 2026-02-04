@@ -100,8 +100,10 @@ Here's what deployment orchestration looks like with Ctrlplane:
 
 **1. CI builds and creates a version:**
 ```bash
-curl -X POST "https://api.ctrlplane.dev/deployments/$ID/versions" \
-  -d '{"tag": "v1.2.3", "status": "ready"}'
+ctrlc api upsert version \
+  --workspace my-workspace \
+  --deployment $DEPLOYMENT_ID \
+  --tag v1.2.3
 ```
 
 **2. Ctrlplane automatically:**

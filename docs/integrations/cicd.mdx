@@ -52,22 +52,18 @@ jobs:
           docker push myapp:${{ github.sha }}
 
       - name: Create Ctrlplane Version
+        env:
+          CTRLPLANE_API_KEY: ${{ secrets.CTRLPLANE_API_KEY }}
         run: |
-          curl -X POST \
-            "https://app.ctrlplane.dev/api/v1/deployments/${{ vars.DEPLOYMENT_ID }}/versions" \
-            -H "Authorization: Bearer ${{ secrets.CTRLPLANE_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "tag": "${{ github.sha }}",
-              "name": "Build #${{ github.run_number }}",
-              "status": "ready",
-              "metadata": {
-                "commit": "${{ github.sha }}",
-                "branch": "${{ github.ref_name }}",
-                "actor": "${{ github.actor }}",
-                "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-              }
-            }'
+          ctrlc api upsert version \
+            --workspace ${{ vars.CTRLPLANE_WORKSPACE }} \
+            --deployment ${{ vars.CTRLPLANE_DEPLOYMENT_ID }} \
+            --tag ${{ github.sha }} \
+            --name "Build #${{ github.run_number }}" \
+            --metadata git/commit=${{ github.sha }} \
+            --metadata git/branch=${{ github.ref_name }} \
+            --metadata github/actor=${{ github.actor }} \
+            --metadata github/run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 ```
 
 ### Using the Ctrlplane Action
@@ -102,20 +98,14 @@ create-version:
   stage: deploy
   script:
     - |
-      curl -X POST \
-        "https://app.ctrlplane.dev/api/v1/deployments/${DEPLOYMENT_ID}/versions" \
-        -H "Authorization: Bearer ${CTRLPLANE_API_KEY}" \
-        -H "Content-Type: application/json" \
-        -d "{
-          \"tag\": \"${CI_COMMIT_SHA}\",
-          \"name\": \"Pipeline #${CI_PIPELINE_ID}\",
-          \"status\": \"ready\",
-          \"metadata\": {
-            \"commit\": \"${CI_COMMIT_SHA}\",
-            \"branch\": \"${CI_COMMIT_REF_NAME}\",
-            \"pipeline_url\": \"${CI_PIPELINE_URL}\"
-          }
-        }"
+      ctrlc api upsert version \
+        --workspace ${CTRLPLANE_WORKSPACE} \
+        --deployment ${CTRLPLANE_DEPLOYMENT_ID} \
+        --tag ${CI_COMMIT_SHA} \
+        --name "Pipeline #${CI_PIPELINE_ID}" \
+        --metadata git/commit=${CI_COMMIT_SHA} \
+        --metadata git/branch=${CI_COMMIT_REF_NAME} \
+        --metadata gitlab/pipeline-url=${CI_PIPELINE_URL}
   only:
     - main
 ```
@@ -128,7 +118,8 @@ pipeline {
 
     environment {
         CTRLPLANE_API_KEY = credentials('ctrlplane-api-key')
-        DEPLOYMENT_ID = 'your-deployment-id'
+        CTRLPLANE_WORKSPACE = 'your-workspace'
+        CTRLPLANE_DEPLOYMENT_ID = 'your-deployment-id'
     }
 
     stages {
@@ -141,26 +132,16 @@ pipeline {
 
         stage('Create Version') {
             steps {
-                script {
-                    def response = httpRequest(
-                        url: "https://app.ctrlplane.dev/api/v1/deployments/${DEPLOYMENT_ID}/versions",
-                        httpMode: 'POST',
-                        customHeaders: [
-                            [name: 'Authorization', value: "Bearer ${CTRLPLANE_API_KEY}"],
-                            [name: 'Content-Type', value: 'application/json']
-                        ],
-                        requestBody: """{
-                            "tag": "${GIT_COMMIT}",
-                            "name": "Build #${BUILD_NUMBER}",
-                            "status": "ready",
-                            "metadata": {
-                                "commit": "${GIT_COMMIT}",
-                                "branch": "${GIT_BRANCH}",
-                                "build_url": "${BUILD_URL}"
-                            }
-                        }"""
-                    )
-                }
+                sh '''
+                    ctrlc api upsert version \
+                        --workspace ${CTRLPLANE_WORKSPACE} \
+                        --deployment ${CTRLPLANE_DEPLOYMENT_ID} \
+                        --tag ${GIT_COMMIT} \
+                        --name "Build #${BUILD_NUMBER}" \
+                        --metadata git/commit=${GIT_COMMIT} \
+                        --metadata git/branch=${GIT_BRANCH} \
+                        --metadata jenkins/build-url=${BUILD_URL}
+                '''
             }
         }
     }
@@ -187,20 +168,14 @@ jobs:
       - run:
           name: Create Ctrlplane Version
           command: |
-            curl -X POST \
-              "https://app.ctrlplane.dev/api/v1/deployments/${DEPLOYMENT_ID}/versions" \
-              -H "Authorization: Bearer ${CTRLPLANE_API_KEY}" \
-              -H "Content-Type: application/json" \
-              -d "{
-                \"tag\": \"${CIRCLE_SHA1}\",
-                \"name\": \"Build #${CIRCLE_BUILD_NUM}\",
-                \"status\": \"ready\",
-                \"metadata\": {
-                  \"commit\": \"${CIRCLE_SHA1}\",
-                  \"branch\": \"${CIRCLE_BRANCH}\",
-                  \"build_url\": \"${CIRCLE_BUILD_URL}\"
-                }
-              }"
+            ctrlc api upsert version \
+              --workspace ${CTRLPLANE_WORKSPACE} \
+              --deployment ${CTRLPLANE_DEPLOYMENT_ID} \
+              --tag ${CIRCLE_SHA1} \
+              --name "Build #${CIRCLE_BUILD_NUM}" \
+              --metadata git/commit=${CIRCLE_SHA1} \
+              --metadata git/branch=${CIRCLE_BRANCH} \
+              --metadata circleci/build-url=${CIRCLE_BUILD_URL}
 
 workflows:
   build-deploy:
@@ -211,49 +186,62 @@ workflows:
               only: main
 ```
 
-## Version API
+## Installing ctrlc
+
+The `ctrlc` CLI is the recommended way to interact with Ctrlplane from CI/CD pipelines.
+
+```bash
+# Download and install
+curl -fsSL https://get.ctrlplane.dev | sh
+
+# Or using npm
+npm install -g @ctrlplane/cli
+```
+
+Set the `CTRLPLANE_API_KEY` environment variable in your CI secrets.
+
+## CLI Reference
 
 ### Create Version
 
 ```bash
+ctrlc api upsert version \
+  --workspace <workspace> \
+  --deployment <deployment-id> \
+  --tag <version-tag> \
+  --name "<version-name>" \
+  --metadata key=value \
+  --metadata another/key=value
+```
+
+| Flag           | Required | Description                             |
+| -------------- | -------- | --------------------------------------- |
+| `--workspace`  | Yes      | Workspace name or ID                    |
+| `--deployment` | Yes      | Deployment ID                           |
+| `--tag`        | Yes      | Unique version identifier               |
+| `--name`       | No       | Human-readable version name             |
+| `--metadata`   | No       | Key-value metadata (repeatable)         |
+
+## REST API
+
+For environments where the CLI isn't available, use the REST API:
+
+```bash
 POST /api/v1/deployments/{deploymentId}/versions
-```
 
-**Request Body:**
-
-```json
-{
-  "tag": "v1.2.3",
-  "name": "Release 1.2.3",
-  "status": "ready",
-  "metadata": {
-    "commit": "abc123",
-    "branch": "main"
-  }
-}
-```
-
-| Field      | Required | Description                             |
-| ---------- | -------- | --------------------------------------- |
-| `tag`      | Yes      | Unique version identifier               |
-| `name`     | No       | Human-readable version name             |
-| `status`   | No       | `ready` (default), `building`, `failed` |
-| `metadata` | No       | Arbitrary key-value metadata            |
-
-**Response:**
-
-```json
-{
-  "id": "version-uuid",
-  "tag": "v1.2.3",
-  "name": "Release 1.2.3",
-  "status": "ready",
-  "metadata": {
-    "commit": "abc123",
-    "branch": "main"
-  },
-  "createdAt": "2024-01-15T10:30:00Z"
-}
+curl -X POST \
+  "https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/versions" \
+  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tag": "v1.2.3",
+    "name": "Release 1.2.3",
+    "status": "ready",
+    "metadata": {
+      "commit": "abc123",
+      "branch": "main"
+    }
+  }'
 ```
 
 ## Best Practices
@@ -266,56 +254,33 @@ Use semantic versions for release branches:
 - name: Create Version
   run: |
     VERSION=$(cat version.txt)
-    curl -X POST ... -d "{\"tag\": \"${VERSION}\"}"
+    ctrlc api upsert version \
+      --workspace $CTRLPLANE_WORKSPACE \
+      --deployment $CTRLPLANE_DEPLOYMENT_ID \
+      --tag $VERSION
 ```
 
 ### Include Build Metadata
 
 Add useful context to help with debugging:
 
-```json
-{
-  "metadata": {
-    "commit": "abc123",
-    "branch": "main",
-    "build_number": "42",
-    "build_url": "https://ci.example.com/builds/42",
-    "actor": "developer@example.com",
-    "triggered_by": "push"
-  }
-}
-```
-
-### Handle Failures
-
-Check the API response:
-
 ```yaml
 - name: Create Version
   run: |
-    RESPONSE=$(curl -s -w "\n%{http_code}" -X POST ...)
-    HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-    BODY=$(echo "$RESPONSE" | sed '$d')
-
-    if [ "$HTTP_CODE" != "201" ]; then
-      echo "Failed to create version: $BODY"
-      exit 1
-    fi
+    ctrlc api upsert version \
+      --workspace $CTRLPLANE_WORKSPACE \
+      --deployment $CTRLPLANE_DEPLOYMENT_ID \
+      --tag ${{ github.sha }} \
+      --metadata git/commit=${{ github.sha }} \
+      --metadata git/branch=${{ github.ref_name }} \
+      --metadata build/number=${{ github.run_number }} \
+      --metadata build/url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} \
+      --metadata build/actor=${{ github.actor }} \
+      --metadata build/trigger=${{ github.event_name }}
 ```
 
 ### Idempotency
 
-Version tags are unique per deployment. Creating a version with an existing tag
-will return an error. Handle this in CI:
-
-```yaml
-- name: Create Version
-  run: |
-    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST ...)
-    if [ "$RESPONSE" = "409" ]; then
-      echo "Version already exists, skipping"
-    elif [ "$RESPONSE" != "201" ]; then
-      echo "Failed to create version"
-      exit 1
-    fi
-```
+The `ctrlc api upsert version` command is idempotent — it creates or updates the
+version if it already exists. This makes it safe to retry failed CI runs without
+worrying about duplicate version errors.

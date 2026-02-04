@@ -34,16 +34,10 @@ Release targets are created automatically based on selectors:
 ### 1. Environment Selector Matches Resources
 
 Environment defines a resource selector:
-```json
-{
-  "name": "Production",
-  "resourceSelector": {
-    "type": "metadata",
-    "operator": "equals",
-    "key": "environment",
-    "value": "production"
-  }
-}
+```yaml
+type: Environment
+name: Production
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
 This matches all resources with `metadata.environment = "production"`.
@@ -51,15 +45,10 @@ This matches all resources with `metadata.environment = "production"`.
 ### 2. Deployment Selector Further Filters (Optional)
 
 Deployment can have an additional resource selector:
-```json
-{
-  "name": "API Service",
-  "resourceSelector": {
-    "type": "kind",
-    "operator": "equals",
-    "value": "kubernetes-cluster"
-  }
-}
+```yaml
+type: Deployment
+name: API Service
+resourceSelector: resource.kind == "KubernetesCluster"
 ```
 
 This limits the deployment to only Kubernetes clusters.
@@ -90,15 +79,13 @@ Release Targets Created:
 
 ## Release Target Properties
 
-```json
-{
-  "id": "rt_abc123",
-  "deploymentId": "dep_api",
-  "environmentId": "env_prod",
-  "resourceId": "res_cluster1",
-  "key": "dep_api:env_prod:res_cluster1",
-  "createdAt": "2024-01-15T10:00:00Z"
-}
+```yaml
+id: rt_abc123
+deploymentId: dep_api
+environmentId: env_prod
+resourceId: res_cluster1
+key: dep_api:env_prod:res_cluster1
+createdAt: "2024-01-15T10:00:00Z"
 ```
 
 ### key
@@ -139,40 +126,30 @@ As resources are added, updated, or removed:
 2. Click "Release Targets" tab
 3. See all targets with current deployed versions
 
-### Via API
+### Via CLI
 
 ```bash
 # List release targets for a deployment
-curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/release-targets \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+ctrlc api get release-targets --deployment {deploymentId}
 ```
 
 **Response**:
-```json
-{
-  "releaseTargets": [
-    {
-      "id": "rt_abc123",
-      "deployment": {
-        "id": "dep_api",
-        "name": "API Service"
-      },
-      "environment": {
-        "id": "env_prod",
-        "name": "Production"
-      },
-      "resource": {
-        "id": "res_cluster1",
-        "name": "Production US East Cluster",
-        "identifier": "k8s-prod-use1"
-      },
-      "currentRelease": {
-        "versionTag": "v1.2.3",
-        "status": "completed"
-      }
-    }
-  ]
-}
+```yaml
+releaseTargets:
+  - id: rt_abc123
+    deployment:
+      id: dep_api
+      name: API Service
+    environment:
+      id: env_prod
+      name: Production
+    resource:
+      id: res_cluster1
+      name: Production US East Cluster
+      identifier: k8s-prod-use1
+    currentRelease:
+      versionTag: v1.2.3
+      status: completed
 ```
 
 ## Release Target Matrix
@@ -230,15 +207,18 @@ A release exists but is waiting for approval/policies.
 Environment matches many resources, deployment doesn't filter:
 
 ```yaml
-# Environment
-resourceSelector:
-  type: metadata
-  operator: equals
-  key: environment
-  value: production
+# Environment matches all production resources
+type: Environment
+name: Production
+resourceSelector: resource.metadata["environment"] == "production"
+```
 
+```yaml
 # Deployment (no selector)
 # → Deploys to ALL production resources
+type: Deployment
+name: Monitoring Agent
+# resourceSelector: not specified
 ```
 
 **Result**: Deployment goes to every production resource.
@@ -251,17 +231,16 @@ Deployment limits which resources it can target:
 
 ```yaml
 # Environment
-resourceSelector:
-  type: metadata
-  operator: equals
-  key: environment
-  value: production
+type: Environment
+name: Production
+resourceSelector: resource.metadata["environment"] == "production"
+```
 
-# Deployment
-resourceSelector:
-  type: kind
-  operator: equals
-  value: kubernetes-cluster
+```yaml
+# Deployment filters to Kubernetes only
+type: Deployment
+name: API Service
+resourceSelector: resource.kind == "KubernetesCluster"
 ```
 
 **Result**: Deployment only goes to production Kubernetes clusters.
@@ -274,16 +253,12 @@ Create specific environments for precise targeting:
 
 ```yaml
 # Environment: Production Kubernetes US East
-resourceSelector:
-  type: metadata
-  operator: and
-  conditions:
-    - key: environment
-      value: production
-    - key: region
-      value: us-east-1
-    - key: kind
-      value: kubernetes-cluster
+type: Environment
+name: Production Kubernetes US East
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1" &&
+  resource.kind == "KubernetesCluster"
 ```
 
 **Result**: Very specific set of release targets.
@@ -295,13 +270,13 @@ resourceSelector:
 Release targets can be locked to prevent new deployments:
 
 ```bash
-curl -X PATCH https://app.ctrlplane.dev/api/v1/release-targets/{releaseTargetId}/lock \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "locked": true,
-    "reason": "Maintenance window"
-  }'
+ctrlc api lock release-target {releaseTargetId} --reason "Maintenance window"
+```
+
+To unlock:
+
+```bash
+ctrlc api unlock release-target {releaseTargetId}
 ```
 
 **Use Cases**:
@@ -316,7 +291,7 @@ Locked targets won't receive new deployments until unlocked.
 ### By Deployment
 
 ```bash
-GET /api/v1/deployments/{deploymentId}/release-targets
+ctrlc api get release-targets --deployment {deploymentId}
 ```
 
 Shows all targets for a specific deployment.
@@ -324,7 +299,7 @@ Shows all targets for a specific deployment.
 ### By Environment
 
 ```bash
-GET /api/v1/environments/{environmentId}/release-targets
+ctrlc api get release-targets --environment {environmentId}
 ```
 
 Shows all targets in a specific environment.
@@ -332,7 +307,7 @@ Shows all targets in a specific environment.
 ### By Resource
 
 ```bash
-GET /api/v1/resources/{resourceId}/release-targets
+ctrlc api get release-targets --resource {resourceId}
 ```
 
 Shows all targets for a specific resource (all deployments).
@@ -340,12 +315,10 @@ Shows all targets for a specific resource (all deployments).
 ### With Filters
 
 ```bash
-POST /api/v1/release-targets/query
-{
-  "deploymentId": "dep_api",
-  "environmentId": "env_prod",
-  "status": "completed"
-}
+ctrlc api get release-targets \
+  --deployment dep_api \
+  --environment env_prod \
+  --status completed
 ```
 
 ## Release Target Count Estimates
@@ -353,33 +326,21 @@ POST /api/v1/release-targets/query
 Before creating a deployment, estimate how many release targets will be created:
 
 ```bash
-POST /api/v1/deployments/estimate-targets
-{
-  "systemId": "sys_abc",
-  "resourceSelector": {
-    "type": "kind",
-    "value": "kubernetes-cluster"
-  }
-}
+ctrlc api estimate-targets \
+  --system sys_abc \
+  --selector 'resource.kind == "KubernetesCluster"'
 ```
 
 **Response**:
-```json
-{
-  "environments": [
-    {
-      "name": "Development",
-      "matchingResources": 1,
-      "releaseTargets": 1
-    },
-    {
-      "name": "Production",
-      "matchingResources": 3,
-      "releaseTargets": 3
-    }
-  ],
-  "totalReleaseTargets": 4
-}
+```yaml
+environments:
+  - name: Development
+    matchingResources: 1
+    releaseTargets: 1
+  - name: Production
+    matchingResources: 3
+    releaseTargets: 3
+totalReleaseTargets: 4
 ```
 
 ## Common Patterns
@@ -387,27 +348,29 @@ POST /api/v1/deployments/estimate-targets
 ### Pattern 1: Environment-Per-Region
 
 ```yaml
-deployments:
-  - name: API Service
+# regional-setup.yaml
+---
+type: Deployment
+name: API Service
+slug: api-service
+jobAgent:
+  ref: kubernetes-agent
+---
+type: Environment
+name: Production US East
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-east-1"
+---
+type: Environment
+name: Production US West
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["region"] == "us-west-2"
+```
 
-environments:
-  - name: Production US East
-    resourceSelector:
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: region
-          value: us-east-1
-
-  - name: Production US West
-    resourceSelector:
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: region
-          value: us-west-2
+```bash
+ctrlc apply -f regional-setup.yaml
 ```
 
 **Release Targets**: API Service gets separate targets per region.
@@ -417,28 +380,29 @@ environments:
 ### Pattern 2: Tiered Resources
 
 ```yaml
-deployments:
-  - name: Critical Service
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: tier
-      value: critical
+# tiered-setup.yaml
+---
+type: Deployment
+name: Critical Service
+slug: critical-service
+resourceSelector: resource.metadata["tier"] == "critical"
+jobAgent:
+  ref: kubernetes-agent
+---
+type: Deployment
+name: Standard Service
+slug: standard-service
+resourceSelector: resource.metadata["tier"] == "standard"
+jobAgent:
+  ref: kubernetes-agent
+---
+type: Environment
+name: Production
+resourceSelector: resource.metadata["environment"] == "production"
+```
 
-  - name: Standard Service
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: tier
-      value: standard
-
-environments:
-  - name: Production
-    resourceSelector:
-      type: metadata
-      operator: equals
-      key: environment
-      value: production
+```bash
+ctrlc apply -f tiered-setup.yaml
 ```
 
 **Release Targets**: Services only deploy to appropriate tier resources.
@@ -448,28 +412,29 @@ environments:
 ### Pattern 3: Canary Deployments
 
 ```yaml
-deployments:
-  - name: API Service
+# canary-setup.yaml
+---
+type: Deployment
+name: API Service
+slug: api-service
+jobAgent:
+  ref: kubernetes-agent
+---
+type: Environment
+name: Production Canary
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["canary"] == "true"
+---
+type: Environment
+name: Production Stable
+resourceSelector: >-
+  resource.metadata["environment"] == "production" &&
+  resource.metadata["canary"] != "true"
+```
 
-environments:
-  - name: Production Canary
-    resourceSelector:
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: canary
-          value: "true"
-
-  - name: Production Stable
-    resourceSelector:
-      operator: and
-      conditions:
-        - key: environment
-          value: production
-        - key: canary
-          operator: not_equals
-          value: "true"
+```bash
+ctrlc apply -f canary-setup.yaml
 ```
 
 **Release Targets**: Separate targets for canary vs. stable.
@@ -482,15 +447,15 @@ environments:
 
 Design resource metadata with targeting in mind:
 
-```json
-{
-  "environment": "production",
-  "region": "us-east-1",
-  "zone": "us-east-1a",
-  "tier": "critical",
-  "team": "platform",
-  "canary": "false"
-}
+```yaml
+# Good resource metadata
+metadata:
+  environment: production
+  region: us-east-1
+  zone: us-east-1a
+  tier: critical
+  team: platform
+  canary: "false"
 ```
 
 This allows flexible targeting across multiple dimensions.
@@ -498,21 +463,16 @@ This allows flexible targeting across multiple dimensions.
 ### Selector Simplicity
 
 **Prefer Simple Selectors**:
-```json
-{
-  "type": "metadata",
-  "operator": "equals",
-  "key": "environment",
-  "value": "production"
-}
+```yaml
+resourceSelector: resource.metadata["environment"] == "production"
 ```
 
 **Over Complex Ones**:
-```json
-{
-  "type": "cel",
-  "expression": "(metadata.environment == 'production' || metadata.environment == 'prod') && (metadata.tier != 'deprecated') && ..."
-}
+```yaml
+resourceSelector: >-
+  (resource.metadata["environment"] == "production" ||
+   resource.metadata["environment"] == "prod") &&
+  resource.metadata["tier"] != "deprecated" && ...
 ```
 
 Complex selectors are harder to understand and maintain.
@@ -555,8 +515,8 @@ Before deploying:
 
 ## Next Steps
 
-- [Releases and Jobs](./releases-and-jobs.md) - How versions deploy to targets
-- [Selectors](./selectors.md) - Master the selector syntax
-- [Environments](./environments.md) - Create and configure environments
-- [Policies](../advanced/policies.md) - Control which targets receive deployments
+- [Releases and Jobs](./releases-and-jobs) - How versions deploy to targets
+- [Selectors](./selectors) - Master the selector syntax
+- [Environments](./environments) - Create and configure environments
+- [Policies](../policies/overview) - Control which targets receive deployments
 

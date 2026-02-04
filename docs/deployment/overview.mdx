@@ -68,14 +68,16 @@ Your CI pipeline creates a version after successful builds:
 
 ```yaml
 - name: Create Version
+  env:
+    CTRLPLANE_API_KEY: ${{ secrets.CTRLPLANE_API_KEY }}
   run: |
-    ctrlplane create version \
-      --deployment $DEPLOYMENT_ID \
+    ctrlc api upsert version \
+      --workspace ${{ vars.CTRLPLANE_WORKSPACE }} \
+      --deployment ${{ vars.CTRLPLANE_DEPLOYMENT_ID }} \
       --tag ${{ github.sha }} \
       --name "Build #${{ github.run_number }}" \
-      --status ready \
-      --metadata "commit=${{ github.sha }}" \
-      --metadata "branch=${{ github.ref_name }}"
+      --metadata git/commit=${{ github.sha }} \
+      --metadata git/branch=${{ github.ref_name }}
 ```
 
 ### 2. Ctrlplane Creates Releases

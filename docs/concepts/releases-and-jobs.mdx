@@ -25,18 +25,16 @@ A **Release** represents the intent to deploy a specific version to a specific r
 
 ### Release Properties
 
-```json
-{
-  "id": "rel_abc123",
-  "deploymentId": "dep_xyz",
-  "environmentId": "env_prod",
-  "resourceId": "res_cluster1",
-  "versionId": "ver_v123",
-  "jobId": "job_789",
-  "status": "active",
-  "createdAt": "2024-01-15T12:00:00Z",
-  "updatedAt": "2024-01-15T12:05:00Z"
-}
+```yaml
+id: rel_abc123
+deploymentId: dep_xyz
+environmentId: env_prod
+resourceId: res_cluster1
+versionId: ver_v123
+jobId: job_789
+status: active
+createdAt: "2024-01-15T12:00:00Z"
+updatedAt: "2024-01-15T12:05:00Z"
 ```
 
 ### Release Status
@@ -103,15 +101,13 @@ Releases are created automatically by Ctrlplane when:
 2. Click "Releases" tab
 3. See all releases with their status
 
-**Via API**:
+**Via CLI**:
 ```bash
 # List releases for a deployment
-curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/releases \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+ctrlc api get releases --deployment {deploymentId}
 
 # Get release details
-curl https://app.ctrlplane.dev/api/v1/releases/{releaseId} \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+ctrlc api get release {releaseId}
 ```
 
 ### Release Variables
@@ -128,10 +124,7 @@ These are passed to the job for execution.
 Cancel a pending or active release:
 
 ```bash
-curl -X PATCH https://app.ctrlplane.dev/api/v1/releases/{releaseId} \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"status": "cancelled"}'
+ctrlc api cancel release {releaseId}
 ```
 
 Active releases will have their jobs cancelled.
@@ -142,18 +135,16 @@ A **Job** is the actual deployment task that gets executed by a job agent. Jobs 
 
 ### Job Properties
 
-```json
-{
-  "id": "job_abc123",
-  "releaseId": "rel_xyz789",
-  "jobAgentId": "agent_123",
-  "status": "in_progress",
-  "externalId": "12345",
-  "message": "Deploying version v1.2.3",
-  "createdAt": "2024-01-15T12:00:00Z",
-  "startedAt": "2024-01-15T12:01:00Z",
-  "completedAt": null
-}
+```yaml
+id: job_abc123
+releaseId: rel_xyz789
+jobAgentId: agent_123
+status: in_progress
+externalId: "12345"
+message: Deploying version v1.2.3
+createdAt: "2024-01-15T12:00:00Z"
+startedAt: "2024-01-15T12:01:00Z"
+completedAt: null
 ```
 
 ### Job Status
@@ -197,23 +188,21 @@ Jobs receive configuration from multiple sources (in priority order):
 4. **Release context** (environment, resource info)
 
 **Example merged config**:
-```json
-{
-  // From deployment
-  "workflow": "deploy.yml",
-  "owner": "my-org",
-  "repo": "api-service",
-  
-  // From version (overrides)
-  "imageTag": "my-org/api-service:v1.2.3",
-  
-  // From variables
-  "replicaCount": "5",
-  
-  // From release context
-  "environmentName": "Production",
-  "resourceIdentifier": "k8s-prod-use1"
-}
+```yaml
+# From deployment
+workflow: deploy.yml
+owner: my-org
+repo: api-service
+
+# From version (overrides)
+imageTag: my-org/api-service:v1.2.3
+
+# From variables
+replicaCount: "5"
+
+# From release context
+environmentName: Production
+resourceIdentifier: k8s-prod-use1
 ```
 
 ### Job Agents
@@ -239,42 +228,34 @@ GET /api/v1/job-agents/{agentId}/queue/next
 ```
 
 **Response**:
-```json
-{
-  "jobs": [{
-    "id": "job_abc123",
-    "release": {
-      "id": "rel_xyz",
-      "version": {
-        "tag": "v1.2.3",
-        "config": {...}
-      },
-      "environment": {
-        "name": "Production"
-      },
-      "resource": {
-        "identifier": "k8s-prod-use1",
-        "config": {...}
-      },
-      "variables": {
-        "REPLICA_COUNT": "5"
-      }
-    },
-    "jobAgentConfig": {
-      "imageTag": "my-org/api-service:v1.2.3"
-    }
-  }]
-}
+```yaml
+jobs:
+  - id: job_abc123
+    release:
+      id: rel_xyz
+      version:
+        tag: v1.2.3
+        config: {}
+      environment:
+        name: Production
+      resource:
+        identifier: k8s-prod-use1
+        config: {}
+      variables:
+        REPLICA_COUNT: "5"
+    jobAgentConfig:
+      imageTag: my-org/api-service:v1.2.3
 ```
 
 #### 2. Agent Acknowledges Job
 
 ```bash
 PATCH /api/v1/jobs/{jobId}
-{
-  "status": "in_progress",
-  "message": "Starting deployment"
-}
+```
+
+```yaml
+status: in_progress
+message: Starting deployment
 ```
 
 #### 3. Agent Executes Deployment
@@ -315,23 +296,15 @@ As the deployment progresses:
 ```bash
 # Update with progress message
 PATCH /api/v1/jobs/{jobId}
-{
-  "message": "Applying Kubernetes manifests"
-}
+# Body: { "message": "Applying Kubernetes manifests" }
 
 # Mark as completed
 PATCH /api/v1/jobs/{jobId}
-{
-  "status": "completed",
-  "message": "Deployment successful"
-}
+# Body: { "status": "completed", "message": "Deployment successful" }
 
 # Or mark as failed
 PATCH /api/v1/jobs/{jobId}
-{
-  "status": "failed",
-  "message": "Deployment failed: connection timeout"
-}
+# Body: { "status": "failed", "message": "Deployment failed: connection timeout" }
 ```
 
 ### External Job IDs
@@ -340,9 +313,7 @@ When job agents trigger external systems (like GitHub Actions), they can store t
 
 ```bash
 PATCH /api/v1/jobs/{jobId}
-{
-  "externalId": "github-workflow-run-12345"
-}
+# Body: { "externalId": "github-workflow-run-12345" }
 ```
 
 This allows linking to the external system's UI for detailed logs.
@@ -352,7 +323,7 @@ This allows linking to the external system's UI for detailed logs.
 If a job fails, you can create a new job for the same release:
 
 ```bash
-POST /api/v1/releases/{releaseId}/redeploy
+ctrlc api redeploy release {releaseId}
 ```
 
 This creates a new job for the release.
@@ -364,15 +335,13 @@ This creates a new job for the release.
 2. Click "Jobs" tab
 3. See execution history with status
 
-**Via API**:
+**Via CLI**:
 ```bash
 # List jobs for a deployment
-curl https://app.ctrlplane.dev/api/v1/deployments/{deploymentId}/jobs \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+ctrlc api get jobs --deployment {deploymentId}
 
 # Get job details
-curl https://app.ctrlplane.dev/api/v1/jobs/{jobId} \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+ctrlc api get job {jobId}
 ```
 
 ## Version → Release → Job Example
@@ -382,15 +351,11 @@ Let's walk through a complete example:
 ### 1. CI Creates Version
 
 ```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/deployments/dep_api/versions \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY" \
-  -d '{
-    "tag": "v1.2.3",
-    "status": "ready",
-    "jobAgentConfig": {
-      "imageTag": "my-org/api:v1.2.3"
-    }
-  }'
+ctrlc api upsert version \
+  --workspace my-workspace \
+  --deployment dep_api \
+  --tag v1.2.3 \
+  --metadata image/tag=my-org/api:v1.2.3
 ```
 
 ### 2. Ctrlplane Creates Releases
@@ -404,8 +369,7 @@ Creates 2 releases, both status `pending` (waiting for approval policy).
 ### 3. User Approves
 
 ```bash
-curl -X POST https://app.ctrlplane.dev/api/v1/releases/rel_123/approve \
-  -H "Authorization: Bearer $CTRLPLANE_API_KEY"
+ctrlc api approve release rel_123
 ```
 
 Both releases move to `approved` status.
@@ -457,24 +421,18 @@ This behavior is controlled by policies and can be configured.
 
 Ensure releases happen one at a time:
 
-```json
-{
-  "releaseSequencing": {
-    "mode": "sequential"
-  }
-}
+```yaml
+releaseSequencing:
+  mode: sequential
 ```
 
 ### Parallel Releases
 
 Allow multiple versions to deploy concurrently:
 
-```json
-{
-  "releaseSequencing": {
-    "mode": "parallel"
-  }
-}
+```yaml
+releaseSequencing:
+  mode: parallel
 ```
 
 ## Deployment Tracing
@@ -548,8 +506,8 @@ When jobs fail:
 
 ## Next Steps
 
-- [Job Agents](../job-agents/) - Set up and configure job agents
-- [Policies](../advanced/policies.md) - Control release approval and progression
-- [Deployment Tracing](../advanced/deployment-tracing.md) - Add detailed execution traces
-- [CI/CD Integration](../integrations/) - Integrate version creation into your CI
+- [Job Agents](../integrations/job-agents/github) - Set up and configure job agents
+- [Policies](../policies/overview) - Control release approval and progression
+- [CI/CD Integration](../integrations/cicd) - Integrate version creation into your CI
+- [Verification](../policies/verification/overview) - Validate deployment health
 

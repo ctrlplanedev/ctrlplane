@@ -69,14 +69,14 @@ Kubernetes or cloud providers. For this quickstart, we'll create them manually.
 # ctrlc apply -f resource.yaml
 ---
 type: Resource
-identifier: tutorial-quickstart-resource-a
+identifier: tutorial-quickstart-resource-staging
 kind: KubernetesCluster
-name: quickstart-region-a
+name: quickstart-staging-cluster
 version: tutorial/quickstart/v1
 metadata:
   tutorial: quickstart
-  environment: tutorial
-  region: a
+  environment: staging
+  region: us-east-1
 config:
   number: 1
   string: "one"
@@ -87,14 +87,14 @@ config:
     - three
 ---
 type: Resource
-identifier: tutorial-quickstart-resource-b
+identifier: tutorial-quickstart-resource-production
 kind: KubernetesCluster
-name: quickstart-region-b
+name: quickstart-production-cluster
 version: tutorial/quickstart/v1
 metadata:
   tutorial: quickstart
-  environment: tutorial
-  region: b
+  environment: production
+  region: us-east-1
 config:
   number: 1
   string: "one"
@@ -132,8 +132,8 @@ resourceSelector: resource.metadata["environment"] == "production"
 
 ## Step 4: Create a Job Agent
 
-Job agents execute your deployments. We'll use a simle test runner, but Ctrlplane
-supports Github, Kubernetes jobs, ArgoCD, or custom agents.
+Job agents execute your deployments. We'll use a simple test runner, but Ctrlplane
+supports GitHub Actions, Kubernetes jobs, ArgoCD, or custom agents.
 
 
 <CodeGroup>
@@ -252,13 +252,13 @@ description: Production Approval Policy
 metadata:
   tutorial: quickstart
 selectors:
-  - environments: environment.metadata['requires-approval'] == 'true'
+  - environments: environment.metadata["requires-approval"] == "true"
 rules:
   - approval:
       required: 1
 ```
 
-## Step 10: Test the Pipeline
+## Step 9: Test the Pipeline
 
 1. Push a commit to `main`
 2. CI builds and creates a version in Ctrlplane
@@ -297,8 +297,8 @@ View the pipeline in the Ctrlplane UI:
   <Card title="Resources" icon="server" href="./concepts/resources">
     Sync resources from Kubernetes, AWS, or custom providers
   </Card>
-  <Card title="Job Agents" icon="robot" href="./job-agents/overview">
-    Deploy with Kubernetes jobs, ArgoCD, or custom agents
+  <Card title="Job Agents" icon="robot" href="./integrations/job-agents/github">
+    Deploy with GitHub Actions, ArgoCD, or custom agents
   </Card>
 </CardGroup>
 
