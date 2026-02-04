@@ -2287,7 +2287,7 @@
                      }
                   },
                   "required": [
-                     "type"
+                     "entityType"
                   ],
                   "type": "object"
                },

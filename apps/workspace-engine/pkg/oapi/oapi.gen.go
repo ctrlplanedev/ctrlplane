@@ -1147,8 +1147,8 @@ type WorkflowNumberInputType string
 type WorkflowSelectorArrayInput struct {
 	Name     string `json:"name"`
 	Selector struct {
-		Default    *Selector                                     `json:"default,omitempty"`
-		EntityType *WorkflowSelectorArrayInputSelectorEntityType `json:"entityType,omitempty"`
+		Default    *Selector                                    `json:"default,omitempty"`
+		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
 	} `json:"selector"`
 	Type WorkflowSelectorArrayInputType `json:"type"`
 }
