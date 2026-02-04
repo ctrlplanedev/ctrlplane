@@ -3,6 +3,7 @@ import { trpc } from "~/api/trpc";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "~/components/ui/breadcrumb";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
+import { WorkflowTemplateCard } from "./WorkflowTemplateCard";
 
 
 export function meta() {
@@ -39,18 +40,20 @@ function PageHeader() {
 export default function WorkflowTemplates() {
   const { workspace } = useWorkspace();
 
-  const { data, isLoading } = trpc.workflows.list.useQuery({  
+  const { data, isLoading } = trpc.workflows.templates.list.useQuery({  
     workspaceId: workspace.id,
     limit: 100,
     offset: 0,
   });
 
+  const workflowTemplates = data?.items ?? [];
+
   return (
     <>
       <PageHeader />
-      <div className="flex flex-col gap-4 p-4">
-        {data?.items.map((workflowTemplate) => (
-          <div key={workflowTemplate.id}>{workflowTemplate.name}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+        {workflowTemplates.map((workflowTemplate) => (
+          <WorkflowTemplateCard key={workflowTemplate.id} workflowTemplate={workflowTemplate} />
         ))}
       </div>
     </>

@@ -1,12 +1,37 @@
 import { TRPCError } from "@trpc/server";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 import { protectedProcedure, router } from "../trpc.js";
+import { Event, sendGoEvent } from "@ctrlplane/events";
 
 export const workflowsRouter = router({
-  list: protectedProcedure
+  create: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        workflowTemplateId: z.string(),
+        inputs: z.record(z.string(), z.any()),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, workflowTemplateId, inputs } = input;
+      
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.WorkflowCreated,
+        data: {
+          id: uuidv4(),
+          workflowTemplateId,
+          inputs,
+        },
+        timestamp: Date.now(),
+      })
+    }),
+  templates: router({
+    list: protectedProcedure
     .input(
       z.object({
         workspaceId: z.uuid(),
@@ -32,5 +57,6 @@ export const workflowsRouter = router({
           message: "Failed to list workflow templates",
         });
       return result.data;
-    }),
+    }),  
+  }),
 });
