@@ -24,11 +24,43 @@ func NewWorkflowManager(store *store.Store, jobAgentRegistry *jobagents.Registry
 	}
 }
 
+func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflowTemplate *oapi.WorkflowTemplate) {
+	for _, input := range workflowTemplate.Inputs {
+		if stringInput, err := input.AsWorkflowStringInput(); err == nil && stringInput.Type == oapi.String {
+			if stringInput.Default != nil {
+				if _, ok := inputs[stringInput.Name]; !ok {
+					inputs[stringInput.Name] = *stringInput.Default
+				}
+			}
+			continue
+		}
+
+		if numberInput, err := input.AsWorkflowNumberInput(); err == nil && numberInput.Type == oapi.Number {
+			if numberInput.Default != nil {
+				if _, ok := inputs[numberInput.Name]; !ok {
+					inputs[numberInput.Name] = *numberInput.Default
+				}
+			}
+			continue
+		}
+
+		if booleanInput, err := input.AsWorkflowBooleanInput(); err == nil && booleanInput.Type == oapi.Boolean {
+			if booleanInput.Default != nil {
+				if _, ok := inputs[booleanInput.Name]; !ok {
+					inputs[booleanInput.Name] = *booleanInput.Default
+				}
+			}
+		}
+	}
+}
+
 func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string, inputs map[string]any) (*oapi.Workflow, error) {
 	workflowTemplate, ok := m.store.WorkflowTemplates.Get(workflowTemplateId)
 	if !ok {
 		return nil, fmt.Errorf("workflow template %s not found", workflowTemplateId)
 	}
+
+	m.maybeSetDefaultInputValues(inputs, workflowTemplate)
 
 	workflow := &oapi.Workflow{
 		Id:                 uuid.New().String(),

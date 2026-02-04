@@ -23,7 +23,7 @@ func TestWorkflowManager_CreatesNewWorkflow(t *testing.T) {
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
 		Name:    "test-input",
 		Type:    oapi.String,
-		Default: "test-default",
+		Default: &[]string{"test-default"}[0],
 	})
 
 	jobAgent1 := &oapi.JobAgent{
@@ -93,7 +93,7 @@ func TestWorkflowManager_DispatchesAllJobsConcurrently(t *testing.T) {
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
 		Name:    "test-input",
 		Type:    oapi.String,
-		Default: "test-default",
+		Default: &[]string{"test-default"}[0],
 	})
 
 	jobAgent1 := &oapi.JobAgent{
@@ -226,4 +226,161 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 
 	wfv, _ = NewWorkflowView(store, wf.Id)
 	assert.True(t, wfv.IsComplete())
+}
+
+func TestMaybeSetDefaultInputValues_SetsStringDefault(t *testing.T) {
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	var stringInput oapi.WorkflowInput
+	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
+		Name:    "string-input",
+		Type:    oapi.String,
+		Default: &[]string{"default-value"}[0],
+	})
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:     "test-workflow-template",
+		Inputs: []oapi.WorkflowInput{stringInput},
+	}
+
+	inputs := map[string]any{}
+	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+
+	assert.Equal(t, "default-value", inputs["string-input"])
+}
+
+func TestMaybeSetDefaultInputValues_SetsNumberDefault(t *testing.T) {
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	var numberInput oapi.WorkflowInput
+	_ = numberInput.FromWorkflowNumberInput(oapi.WorkflowNumberInput{
+		Name:    "number-input",
+		Type:    oapi.Number,
+		Default: &[]float32{42.0}[0],
+	})
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:     "test-workflow-template",
+		Inputs: []oapi.WorkflowInput{numberInput},
+	}
+
+	inputs := map[string]any{}
+	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+
+	assert.Equal(t, float32(42.0), inputs["number-input"])
+}
+
+func TestMaybeSetDefaultInputValues_SetsBooleanDefault(t *testing.T) {
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	var booleanInput oapi.WorkflowInput
+	_ = booleanInput.FromWorkflowBooleanInput(oapi.WorkflowBooleanInput{
+		Name:    "boolean-input",
+		Type:    oapi.Boolean,
+		Default: &[]bool{true}[0],
+	})
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:     "test-workflow-template",
+		Inputs: []oapi.WorkflowInput{booleanInput},
+	}
+
+	inputs := map[string]any{}
+	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+
+	assert.Equal(t, true, inputs["boolean-input"])
+}
+
+func TestMaybeSetDefaultInputValues_DoesNotOverwriteExistingValue(t *testing.T) {
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	var stringInput oapi.WorkflowInput
+	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
+		Name:    "string-input",
+		Type:    oapi.String,
+		Default: &[]string{"default-value"}[0],
+	})
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:     "test-workflow-template",
+		Inputs: []oapi.WorkflowInput{stringInput},
+	}
+
+	inputs := map[string]any{
+		"string-input": "user-provided-value",
+	}
+	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+
+	assert.Equal(t, "user-provided-value", inputs["string-input"])
+}
+
+func TestMaybeSetDefaultInputValues_HandlesMultipleInputTypes(t *testing.T) {
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	var stringInput oapi.WorkflowInput
+	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
+		Name:    "string-input",
+		Type:    oapi.String,
+		Default: &[]string{"default-string"}[0],
+	})
+
+	var numberInput oapi.WorkflowInput
+	_ = numberInput.FromWorkflowNumberInput(oapi.WorkflowNumberInput{
+		Name:    "number-input",
+		Type:    oapi.Number,
+		Default: &[]float32{123.0}[0],
+	})
+
+	var booleanInput oapi.WorkflowInput
+	_ = booleanInput.FromWorkflowBooleanInput(oapi.WorkflowBooleanInput{
+		Name:    "boolean-input",
+		Type:    oapi.Boolean,
+		Default: &[]bool{false}[0],
+	})
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:     "test-workflow-template",
+		Inputs: []oapi.WorkflowInput{stringInput, numberInput, booleanInput},
+	}
+
+	inputs := map[string]any{}
+	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+
+	assert.Equal(t, "default-string", inputs["string-input"])
+	assert.Equal(t, float32(123.0), inputs["number-input"])
+	assert.Equal(t, false, inputs["boolean-input"])
+}
+
+func TestMaybeSetDefaultInputValues_SkipsInputsWithoutDefault(t *testing.T) {
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	var stringInput oapi.WorkflowInput
+	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
+		Name: "string-input",
+		Type: oapi.String,
+		// No default
+	})
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:     "test-workflow-template",
+		Inputs: []oapi.WorkflowInput{stringInput},
+	}
+
+	inputs := map[string]any{}
+	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+
+	_, exists := inputs["string-input"]
+	assert.False(t, exists)
 }

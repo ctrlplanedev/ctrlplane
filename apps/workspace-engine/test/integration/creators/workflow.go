@@ -27,7 +27,7 @@ func NewStringWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
 	_ = input.FromWorkflowStringInput(oapi.WorkflowStringInput{
 		Name:    name,
 		Type:    oapi.String,
-		Default: "",
+		Default: nil,
 	})
 	return input
 }
@@ -38,7 +38,7 @@ func NewNumberWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
 	_ = input.FromWorkflowNumberInput(oapi.WorkflowNumberInput{
 		Name:    name,
 		Type:    oapi.Number,
-		Default: 0,
+		Default: nil,
 	})
 	return input
 }
@@ -49,7 +49,7 @@ func NewBooleanWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
 	_ = input.FromWorkflowBooleanInput(oapi.WorkflowBooleanInput{
 		Name:    name,
 		Type:    oapi.Boolean,
-		Default: false,
+		Default: nil,
 	})
 	return input
 }

@@ -2107,8 +2107,7 @@
             },
             "required": [
                "name",
-               "type",
-               "default"
+               "type"
             ],
             "type": "object"
          },
@@ -2262,8 +2261,7 @@
             },
             "required": [
                "name",
-               "type",
-               "default"
+               "type"
             ],
             "type": "object"
          },
@@ -2322,8 +2320,7 @@
             },
             "required": [
                "name",
-               "type",
-               "default"
+               "type"
             ],
             "type": "object"
          },

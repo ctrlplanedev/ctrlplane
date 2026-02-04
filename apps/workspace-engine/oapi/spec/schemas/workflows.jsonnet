@@ -34,7 +34,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowStringInput: {
     type: 'object',
-    required: ['name', 'type', 'default'],
+    required: ['name', 'type'],
     properties: {
       name: { type: 'string' },
       type: { type: 'string', enum: ['string'] },
@@ -44,7 +44,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowNumberInput: {
     type: 'object',
-    required: ['name', 'type', 'default'],
+    required: ['name', 'type'],
     properties: {
       name: { type: 'string' },
       type: { type: 'string', enum: ['number'] },
@@ -54,7 +54,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowBooleanInput: {
     type: 'object',
-    required: ['name', 'type', 'default'],
+    required: ['name', 'type'],
     properties: {
       name: { type: 'string' },
       type: { type: 'string', enum: ['boolean'] },

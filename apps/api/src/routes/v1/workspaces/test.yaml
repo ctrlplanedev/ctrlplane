@@ -1,0 +1,18 @@
+name: test-workflow
+
+inputs:
+  version:
+    type: string
+    required: true
+
+  runMigrations:
+    type: boolean
+    default: false
+
+jobs:
+  simple-run:
+    ref: f28c1143-6579-4cd7-8cbf-0984225eee14
+    config:
+      repo: "ctrlplane-old"
+      type: "github-app"
+      workflowId: 106983480
