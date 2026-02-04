@@ -2145,6 +2145,13 @@
                   "description": "Reference to the job agent",
                   "type": "string"
                },
+               "resolvedMatrix": {
+                  "items": {
+                     "additionalProperties": true,
+                     "type": "object"
+                  },
+                  "type": "array"
+               },
                "workflowId": {
                   "type": "string"
                }

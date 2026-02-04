@@ -1087,8 +1087,9 @@ type WorkflowJob struct {
 	Index  int                    `json:"index"`
 
 	// Ref Reference to the job agent
-	Ref        string `json:"ref"`
-	WorkflowId string `json:"workflowId"`
+	Ref            string                    `json:"ref"`
+	ResolvedMatrix *[]map[string]interface{} `json:"resolvedMatrix,omitempty"`
+	WorkflowId     string                    `json:"workflowId"`
 }
 
 // WorkflowJobAgentConfig defines model for WorkflowJobAgentConfig.

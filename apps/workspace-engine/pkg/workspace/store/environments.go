@@ -82,3 +82,17 @@ func (e *Environments) ForResource(ctx context.Context, resource *oapi.Resource)
 	}
 	return environments, nil
 }
+
+func (e *Environments) ForSelector(ctx context.Context, sel *oapi.Selector) map[string]*oapi.Environment {
+	environments := make(map[string]*oapi.Environment)
+	for _, environment := range e.Items() {
+		matched, err := selector.Match(ctx, sel, environment)
+		if err != nil {
+			continue
+		}
+		if matched {
+			environments[environment.Id] = environment
+		}
+	}
+	return environments
+}

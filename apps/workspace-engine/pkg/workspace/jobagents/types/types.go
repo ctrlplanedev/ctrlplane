@@ -29,6 +29,7 @@ type DispatchContext struct {
 	WorkflowJob    *oapi.WorkflowJob       `json:"workflowJob"`
 	Version        *oapi.DeploymentVersion `json:"version"`
 	Inputs         map[string]any          `json:"inputs"`
+	Matrix         map[string]interface{}  `json:"matrix"`
 }
 
 func (r *DispatchContext) Map() map[string]any {
