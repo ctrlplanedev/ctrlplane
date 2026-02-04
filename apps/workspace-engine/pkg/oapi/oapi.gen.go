@@ -181,9 +181,26 @@ const (
 	Boolean WorkflowBooleanInputType = "boolean"
 )
 
+// Defines values for WorkflowManualArrayInputType.
+const (
+	WorkflowManualArrayInputTypeArray WorkflowManualArrayInputType = "array"
+)
+
 // Defines values for WorkflowNumberInputType.
 const (
 	Number WorkflowNumberInputType = "number"
+)
+
+// Defines values for WorkflowSelectorArrayInputSelectorEntityType.
+const (
+	WorkflowSelectorArrayInputSelectorEntityTypeDeployment  WorkflowSelectorArrayInputSelectorEntityType = "deployment"
+	WorkflowSelectorArrayInputSelectorEntityTypeEnvironment WorkflowSelectorArrayInputSelectorEntityType = "environment"
+	WorkflowSelectorArrayInputSelectorEntityTypeResource    WorkflowSelectorArrayInputSelectorEntityType = "resource"
+)
+
+// Defines values for WorkflowSelectorArrayInputType.
+const (
+	WorkflowSelectorArrayInputTypeArray WorkflowSelectorArrayInputType = "array"
 )
 
 // Defines values for WorkflowStringInputType.
@@ -1042,6 +1059,11 @@ type Workflow struct {
 	WorkflowTemplateId string                 `json:"workflowTemplateId"`
 }
 
+// WorkflowArrayInput defines model for WorkflowArrayInput.
+type WorkflowArrayInput struct {
+	union json.RawMessage
+}
+
 // WorkflowBooleanInput defines model for WorkflowBooleanInput.
 type WorkflowBooleanInput struct {
 	Default bool                     `json:"default"`
@@ -1063,6 +1085,7 @@ type WorkflowJob struct {
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
 	Index  int                    `json:"index"`
+	Matrix *WorkflowJobMatrix     `json:"matrix,omitempty"`
 
 	// Ref Reference to the job agent
 	Ref        string `json:"ref"`
@@ -1073,6 +1096,20 @@ type WorkflowJob struct {
 type WorkflowJobAgentConfig struct {
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
+}
+
+// WorkflowJobMatrix defines model for WorkflowJobMatrix.
+type WorkflowJobMatrix map[string]WorkflowJobMatrix_AdditionalProperties
+
+// WorkflowJobMatrix0 defines model for .
+type WorkflowJobMatrix0 = []map[string]interface{}
+
+// WorkflowJobMatrix1 defines model for .
+type WorkflowJobMatrix1 = string
+
+// WorkflowJobMatrix_AdditionalProperties defines model for WorkflowJobMatrix.AdditionalProperties.
+type WorkflowJobMatrix_AdditionalProperties struct {
+	union json.RawMessage
 }
 
 // WorkflowJobTemplate defines model for WorkflowJobTemplate.
@@ -1086,6 +1123,16 @@ type WorkflowJobTemplate struct {
 	Ref string `json:"ref"`
 }
 
+// WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
+type WorkflowManualArrayInput struct {
+	Default *[]map[string]interface{}    `json:"default,omitempty"`
+	Name    string                       `json:"name"`
+	Type    WorkflowManualArrayInputType `json:"type"`
+}
+
+// WorkflowManualArrayInputType defines model for WorkflowManualArrayInput.Type.
+type WorkflowManualArrayInputType string
+
 // WorkflowNumberInput defines model for WorkflowNumberInput.
 type WorkflowNumberInput struct {
 	Default float32                 `json:"default"`
@@ -1095,6 +1142,22 @@ type WorkflowNumberInput struct {
 
 // WorkflowNumberInputType defines model for WorkflowNumberInput.Type.
 type WorkflowNumberInputType string
+
+// WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
+type WorkflowSelectorArrayInput struct {
+	Name     string `json:"name"`
+	Selector struct {
+		Default    *Selector                                    `json:"default,omitempty"`
+		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
+	} `json:"selector"`
+	Type WorkflowSelectorArrayInputType `json:"type"`
+}
+
+// WorkflowSelectorArrayInputSelectorEntityType defines model for WorkflowSelectorArrayInput.Selector.EntityType.
+type WorkflowSelectorArrayInputSelectorEntityType string
+
+// WorkflowSelectorArrayInputType defines model for WorkflowSelectorArrayInput.Type.
+type WorkflowSelectorArrayInputType string
 
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
@@ -2088,6 +2151,68 @@ func (t *Value) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsWorkflowManualArrayInput returns the union data inside the WorkflowArrayInput as a WorkflowManualArrayInput
+func (t WorkflowArrayInput) AsWorkflowManualArrayInput() (WorkflowManualArrayInput, error) {
+	var body WorkflowManualArrayInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowManualArrayInput overwrites any union data inside the WorkflowArrayInput as the provided WorkflowManualArrayInput
+func (t *WorkflowArrayInput) FromWorkflowManualArrayInput(v WorkflowManualArrayInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowManualArrayInput performs a merge with any union data inside the WorkflowArrayInput, using the provided WorkflowManualArrayInput
+func (t *WorkflowArrayInput) MergeWorkflowManualArrayInput(v WorkflowManualArrayInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowSelectorArrayInput returns the union data inside the WorkflowArrayInput as a WorkflowSelectorArrayInput
+func (t WorkflowArrayInput) AsWorkflowSelectorArrayInput() (WorkflowSelectorArrayInput, error) {
+	var body WorkflowSelectorArrayInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowSelectorArrayInput overwrites any union data inside the WorkflowArrayInput as the provided WorkflowSelectorArrayInput
+func (t *WorkflowArrayInput) FromWorkflowSelectorArrayInput(v WorkflowSelectorArrayInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowSelectorArrayInput performs a merge with any union data inside the WorkflowArrayInput, using the provided WorkflowSelectorArrayInput
+func (t *WorkflowArrayInput) MergeWorkflowSelectorArrayInput(v WorkflowSelectorArrayInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowArrayInput) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowArrayInput) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsWorkflowStringInput returns the union data inside the WorkflowInput as a WorkflowStringInput
 func (t WorkflowInput) AsWorkflowStringInput() (WorkflowStringInput, error) {
 	var body WorkflowStringInput
@@ -2166,12 +2291,100 @@ func (t *WorkflowInput) MergeWorkflowBooleanInput(v WorkflowBooleanInput) error 
 	return err
 }
 
+// AsWorkflowArrayInput returns the union data inside the WorkflowInput as a WorkflowArrayInput
+func (t WorkflowInput) AsWorkflowArrayInput() (WorkflowArrayInput, error) {
+	var body WorkflowArrayInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowArrayInput overwrites any union data inside the WorkflowInput as the provided WorkflowArrayInput
+func (t *WorkflowInput) FromWorkflowArrayInput(v WorkflowArrayInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowArrayInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowArrayInput
+func (t *WorkflowInput) MergeWorkflowArrayInput(v WorkflowArrayInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t WorkflowInput) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
 func (t *WorkflowInput) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsWorkflowJobMatrix0 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix0
+func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix0() (WorkflowJobMatrix0, error) {
+	var body WorkflowJobMatrix0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowJobMatrix0 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix0
+func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowJobMatrix0 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix0
+func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix0(v WorkflowJobMatrix0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowJobMatrix1 returns the union data inside the WorkflowJobMatrix_AdditionalProperties as a WorkflowJobMatrix1
+func (t WorkflowJobMatrix_AdditionalProperties) AsWorkflowJobMatrix1() (WorkflowJobMatrix1, error) {
+	var body WorkflowJobMatrix1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowJobMatrix1 overwrites any union data inside the WorkflowJobMatrix_AdditionalProperties as the provided WorkflowJobMatrix1
+func (t *WorkflowJobMatrix_AdditionalProperties) FromWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowJobMatrix1 performs a merge with any union data inside the WorkflowJobMatrix_AdditionalProperties, using the provided WorkflowJobMatrix1
+func (t *WorkflowJobMatrix_AdditionalProperties) MergeWorkflowJobMatrix1(v WorkflowJobMatrix1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t WorkflowJobMatrix_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *WorkflowJobMatrix_AdditionalProperties) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
