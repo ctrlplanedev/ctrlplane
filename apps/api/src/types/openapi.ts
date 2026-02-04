@@ -773,6 +773,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/workflow-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a workflow template from a YAML definition
+         * @description Creates a workflow template from a YAML definition.
+         */
+        post: operations["createWorkflowTemplateFromYaml"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1554,6 +1574,90 @@ export interface components {
              * @description Minimum time in seconds that must pass since the currently deployed (or in-progress) version was created before allowing another deployment. This enables batching of frequent upstream releases into periodic deployments.
              */
             intervalSeconds: number;
+        };
+        Workflow: {
+            id: string;
+            inputs: {
+                [key: string]: unknown;
+            };
+            workflowTemplateId: string;
+        };
+        WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
+        WorkflowBooleanInput: {
+            default: boolean;
+            name: string;
+            /** @enum {string} */
+            type: "boolean";
+        };
+        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"];
+        WorkflowJob: {
+            /** @description Configuration for the job agent */
+            config: {
+                [key: string]: unknown;
+            };
+            id: string;
+            index: number;
+            /** @description Reference to the job agent */
+            ref: string;
+            workflowId: string;
+        };
+        WorkflowJobAgentConfig: {
+            config: {
+                [key: string]: unknown;
+            };
+            id: string;
+        };
+        WorkflowJobMatrix: {
+            [key: string]: {
+                [key: string]: unknown;
+            }[] | string;
+        };
+        WorkflowJobTemplate: {
+            /** @description Configuration for the job agent */
+            config: {
+                [key: string]: unknown;
+            };
+            id: string;
+            matrix?: components["schemas"]["WorkflowJobMatrix"];
+            name: string;
+            /** @description Reference to the job agent */
+            ref: string;
+        };
+        WorkflowManualArrayInput: {
+            default?: {
+                [key: string]: unknown;
+            }[];
+            name: string;
+            /** @enum {string} */
+            type: "array";
+        };
+        WorkflowNumberInput: {
+            default: number;
+            name: string;
+            /** @enum {string} */
+            type: "number";
+        };
+        WorkflowSelectorArrayInput: {
+            name: string;
+            selector: {
+                default?: components["schemas"]["Selector"];
+                /** @enum {string} */
+                entityType: "resource" | "environment" | "deployment";
+            };
+            /** @enum {string} */
+            type: "array";
+        };
+        WorkflowStringInput: {
+            default: string;
+            name: string;
+            /** @enum {string} */
+            type: "string";
+        };
+        WorkflowTemplate: {
+            id: string;
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["WorkflowJobTemplate"][];
+            name: string;
         };
         Workspace: {
             /** @description AWS IAM role ARN for integrations */
@@ -4187,6 +4291,45 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createWorkflowTemplateFromYaml: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The workflow definition in YAML format */
+                    yaml: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowTemplate"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

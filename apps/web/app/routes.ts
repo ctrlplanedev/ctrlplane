@@ -82,6 +82,8 @@ export default [
         route("create", "routes/ws/policies/page.create.tsx"),
       ]),
 
+      route("workflows", "routes/ws/workflows/workflows.tsx"),
+
       route("settings", "routes/ws/settings/_layout.tsx", [
         route("general", "routes/ws/settings/general.tsx"),
         route("members", "routes/ws/settings/members.tsx"),

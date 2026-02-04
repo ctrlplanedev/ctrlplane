@@ -1052,6 +1052,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/workflow-templates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get all workflow templates
+     * @description Gets all workflow templates for a workspace.
+     */
+    get: operations["getWorkflowTemplates"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1349,7 +1369,7 @@ export interface components {
       traceToken?: string;
       /** Format: date-time */
       updatedAt: string;
-      workflowStepId: string;
+      workflowJobId: string;
     };
     JobAgent: {
       config: components["schemas"]["JobAgentConfig"];
@@ -1390,7 +1410,7 @@ export interface components {
         | "status"
         | "traceToken"
         | "updatedAt"
-        | "workflowStepId"
+        | "workflowJobId"
       )[];
       id?: string;
       job: components["schemas"]["Job"];
@@ -1864,6 +1884,9 @@ export interface components {
       };
       workflowTemplateId: string;
     };
+    WorkflowArrayInput:
+      | components["schemas"]["WorkflowManualArrayInput"]
+      | components["schemas"]["WorkflowSelectorArrayInput"];
     WorkflowBooleanInput: {
       default: boolean;
       name: string;
@@ -1873,12 +1896,50 @@ export interface components {
     WorkflowInput:
       | components["schemas"]["WorkflowStringInput"]
       | components["schemas"]["WorkflowNumberInput"]
-      | components["schemas"]["WorkflowBooleanInput"];
+      | components["schemas"]["WorkflowBooleanInput"]
+      | components["schemas"]["WorkflowArrayInput"];
+    WorkflowJob: {
+      /** @description Configuration for the job agent */
+      config: {
+        [key: string]: unknown;
+      };
+      id: string;
+      index: number;
+      /** @description Reference to the job agent */
+      ref: string;
+      workflowId: string;
+    };
     WorkflowJobAgentConfig: {
       config: {
         [key: string]: unknown;
       };
       id: string;
+    };
+    WorkflowJobMatrix: {
+      [key: string]:
+        | {
+            [key: string]: unknown;
+          }[]
+        | string;
+    };
+    WorkflowJobTemplate: {
+      /** @description Configuration for the job agent */
+      config: {
+        [key: string]: unknown;
+      };
+      id: string;
+      matrix?: components["schemas"]["WorkflowJobMatrix"];
+      name: string;
+      /** @description Reference to the job agent */
+      ref: string;
+    };
+    WorkflowManualArrayInput: {
+      default?: {
+        [key: string]: unknown;
+      }[];
+      name: string;
+      /** @enum {string} */
+      type: "array";
     };
     WorkflowNumberInput: {
       default: number;
@@ -1886,16 +1947,15 @@ export interface components {
       /** @enum {string} */
       type: "number";
     };
-    WorkflowStep: {
-      id: string;
-      index: number;
-      jobAgent?: components["schemas"]["WorkflowJobAgentConfig"];
-      workflowId: string;
-    };
-    WorkflowStepTemplate: {
-      id: string;
-      jobAgent: components["schemas"]["WorkflowJobAgentConfig"];
+    WorkflowSelectorArrayInput: {
       name: string;
+      selector: {
+        default?: components["schemas"]["Selector"];
+        /** @enum {string} */
+        entityType: "resource" | "environment" | "deployment";
+      };
+      /** @enum {string} */
+      type: "array";
     };
     WorkflowStringInput: {
       default: string;
@@ -1906,8 +1966,8 @@ export interface components {
     WorkflowTemplate: {
       id: string;
       inputs: components["schemas"]["WorkflowInput"][];
+      jobs: components["schemas"]["WorkflowJobTemplate"][];
       name: string;
-      steps: components["schemas"]["WorkflowStepTemplate"][];
     };
   };
   responses: never;
@@ -4276,6 +4336,60 @@ export interface operations {
             /** @description Environments associated with the system */
             environments: components["schemas"]["Environment"][];
             system: components["schemas"]["System"];
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getWorkflowTemplates: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of items to return */
+        limit?: number;
+        /** @description Number of items to skip */
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated list of items */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["WorkflowTemplate"][];
+            /** @description Maximum number of items returned */
+            limit: number;
+            /** @description Number of items skipped */
+            offset: number;
+            /** @description Total number of items available */
+            total: number;
           };
         };
       };

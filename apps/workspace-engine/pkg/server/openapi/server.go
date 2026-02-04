@@ -17,6 +17,7 @@ import (
 	"workspace-engine/pkg/server/openapi/resources"
 	"workspace-engine/pkg/server/openapi/systems"
 	"workspace-engine/pkg/server/openapi/validators"
+	"workspace-engine/pkg/server/openapi/workflows"
 )
 
 func New() *Server {
@@ -41,4 +42,5 @@ type Server struct {
 	resourceproviders.ResourceProviders
 	githubentities.GithubEntities
 	releases.Releases
+	workflows.Workflows
 }

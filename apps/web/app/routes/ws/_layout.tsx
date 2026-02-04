@@ -5,6 +5,7 @@ import {
   ChevronsUpDown,
   Cpu,
   Eye,
+  FileText,
   LayoutDashboard,
   LayoutGrid,
   Link2,
@@ -16,6 +17,7 @@ import {
   ShieldCheck,
   Sun,
   TreePine,
+  Zap,
 } from "lucide-react";
 import {
   Navigate,
@@ -68,6 +70,16 @@ const navigationGroups = [
       { title: "Policies", to: "/policies", icon: ShieldCheck },
       { title: "Systems", to: "/systems", icon: LayoutDashboard },
       { title: "Jobs", to: "/jobs", icon: Briefcase },
+    ],
+  },
+  {
+    label: "Workflows",
+    items: [
+      {
+        title: "Trigger",
+        to: "/workflows",
+        icon: Zap,
+      },
     ],
   },
   {

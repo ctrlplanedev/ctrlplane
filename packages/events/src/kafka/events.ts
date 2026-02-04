@@ -68,6 +68,8 @@ export enum Event {
   Redeploy = "release-target.deploy",
 
   ResourceProviderSetResources = "resource-provider.set-resources",
+
+  WorkflowTemplateCreated = "workflow-template.created",
 }
 
 export type FullPolicy = schema.Policy & {
@@ -159,6 +161,7 @@ export type EventPayload = {
   [Event.SystemCreated]: schema.System;
   [Event.SystemUpdated]: schema.System;
   [Event.SystemDeleted]: schema.System;
+  [Event.WorkflowTemplateCreated]: string;
   // [Event.JobCreated]: schema.Job;
   // [Event.JobDeleted]: schema.Job;
   // [Event.SystemCreated]: schema.System;
@@ -214,6 +217,7 @@ export type GoEventPayload = {
     providerId: string;
     batchId: string;
   };
+  [Event.WorkflowTemplateCreated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
 };
 
 export type Message<T extends keyof EventPayload> = {

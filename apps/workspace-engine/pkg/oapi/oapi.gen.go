@@ -1370,6 +1370,15 @@ type ListSystemsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// GetWorkflowTemplatesParams defines parameters for GetWorkflowTemplates.
+type GetWorkflowTemplatesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ValidateResourceSelectorJSONRequestBody defines body for ValidateResourceSelector for application/json ContentType.
 type ValidateResourceSelectorJSONRequestBody ValidateResourceSelectorJSONBody
 
@@ -2550,6 +2559,9 @@ type ServerInterface interface {
 	// Get system
 	// (GET /v1/workspaces/{workspaceId}/systems/{systemId})
 	GetSystem(c *gin.Context, workspaceId string, systemId string)
+	// Get all workflow templates
+	// (GET /v1/workspaces/{workspaceId}/workflow-templates)
+	GetWorkflowTemplates(c *gin.Context, workspaceId string, params GetWorkflowTemplatesParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -4545,6 +4557,49 @@ func (siw *ServerInterfaceWrapper) GetSystem(c *gin.Context) {
 	siw.Handler.GetSystem(c, workspaceId, systemId)
 }
 
+// GetWorkflowTemplates operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetWorkflowTemplatesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetWorkflowTemplates(c, workspaceId, params)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -4625,4 +4680,5 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates", wrapper.GetWorkflowTemplates)
 }

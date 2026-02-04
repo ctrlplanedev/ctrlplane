@@ -2196,6 +2196,302 @@
             ],
             "type": "object"
          },
+         "Workflow": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "inputs": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "workflowTemplateId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowTemplateId",
+               "inputs"
+            ],
+            "type": "object"
+         },
+         "WorkflowArrayInput": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/WorkflowManualArrayInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowSelectorArrayInput"
+               }
+            ]
+         },
+         "WorkflowBooleanInput": {
+            "properties": {
+               "default": {
+                  "type": "boolean"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "boolean"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "default"
+            ],
+            "type": "object"
+         },
+         "WorkflowInput": {
+            "oneOf": [
+               {
+                  "$ref": "#/components/schemas/WorkflowStringInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowNumberInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowBooleanInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowArrayInput"
+               }
+            ]
+         },
+         "WorkflowJob": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "description": "Configuration for the job agent",
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "index": {
+                  "type": "integer"
+               },
+               "ref": {
+                  "description": "Reference to the job agent",
+                  "type": "string"
+               },
+               "workflowId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowId",
+               "index",
+               "ref",
+               "config"
+            ],
+            "type": "object"
+         },
+         "WorkflowJobAgentConfig": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "config"
+            ],
+            "type": "object"
+         },
+         "WorkflowJobMatrix": {
+            "additionalProperties": {
+               "oneOf": [
+                  {
+                     "items": {
+                        "additionalProperties": true,
+                        "type": "object"
+                     },
+                     "type": "array"
+                  },
+                  {
+                     "type": "string"
+                  }
+               ]
+            },
+            "type": "object"
+         },
+         "WorkflowJobTemplate": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "description": "Configuration for the job agent",
+                  "type": "object"
+               },
+               "id": {
+                  "type": "string"
+               },
+               "matrix": {
+                  "$ref": "#/components/schemas/WorkflowJobMatrix"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "ref": {
+                  "description": "Reference to the job agent",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "ref",
+               "config"
+            ],
+            "type": "object"
+         },
+         "WorkflowManualArrayInput": {
+            "properties": {
+               "default": {
+                  "items": {
+                     "additionalProperties": true,
+                     "type": "object"
+                  },
+                  "type": "array"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "array"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type"
+            ],
+            "type": "object"
+         },
+         "WorkflowNumberInput": {
+            "properties": {
+               "default": {
+                  "type": "number"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "number"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "default"
+            ],
+            "type": "object"
+         },
+         "WorkflowSelectorArrayInput": {
+            "properties": {
+               "name": {
+                  "type": "string"
+               },
+               "selector": {
+                  "properties": {
+                     "default": {
+                        "$ref": "#/components/schemas/Selector"
+                     },
+                     "entityType": {
+                        "enum": [
+                           "resource",
+                           "environment",
+                           "deployment"
+                        ],
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "entityType"
+                  ],
+                  "type": "object"
+               },
+               "type": {
+                  "enum": [
+                     "array"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "selector"
+            ],
+            "type": "object"
+         },
+         "WorkflowStringInput": {
+            "properties": {
+               "default": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "string"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "type",
+               "default"
+            ],
+            "type": "object"
+         },
+         "WorkflowTemplate": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "inputs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowInput"
+                  },
+                  "type": "array"
+               },
+               "jobs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowJobTemplate"
+                  },
+                  "type": "array"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "inputs",
+               "jobs"
+            ],
+            "type": "object"
+         },
          "Workspace": {
             "properties": {
                "awsRoleArn": {
@@ -6337,6 +6633,68 @@
                }
             },
             "summary": "Upsert system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/workflow-templates": {
+         "post": {
+            "description": "Creates a workflow template from a YAML definition.",
+            "operationId": "createWorkflowTemplateFromYaml",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "properties": {
+                           "yaml": {
+                              "description": "The workflow definition in YAML format",
+                              "type": "string"
+                           }
+                        },
+                        "required": [
+                           "yaml"
+                        ],
+                        "type": "object"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/WorkflowTemplate"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Create a workflow template from a YAML definition",
+            "tags": [
+               "Workflows"
+            ]
          }
       }
    },

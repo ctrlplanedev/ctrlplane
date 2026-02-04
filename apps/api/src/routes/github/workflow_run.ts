@@ -101,7 +101,7 @@ const generateOapiEvent = (
       updatedAt: updatedAt.toISOString(),
       completedAt: completedAt?.toISOString() ?? undefined,
       startedAt: startedAt.toISOString(),
-      workflowStepId: "",
+      workflowJobId: "",
       status: convertStatusToOapiStatus(status),
       releaseId: "",
       jobAgentConfig: {
