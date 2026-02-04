@@ -185,7 +185,7 @@ func (w *Workspace) WorkflowTemplates() *store.WorkflowTemplates {
 	return w.store.WorkflowTemplates
 }
 
-func (w *Workspace) WorfklowJobTemplates() *store.WorkflowJobTemplates {
+func (w *Workspace) WorkflowJobTemplates() *store.WorkflowJobTemplates {
 	return w.store.WorkflowJobTemplates
 }
 
