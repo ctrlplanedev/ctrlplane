@@ -66,10 +66,10 @@ func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Eva
 	})
 }
 
-// ScopeFields returns 0 because deployment window evaluation doesn't depend on
-// environment, version, or release target - only on current time.
+// ScopeFields returns ReleaseTarget since deployment window evaluation needs to
+// know if the target has a deployed version already.
 func (e *DeploymentWindowEvaluator) ScopeFields() evaluator.ScopeFields {
-	return 0
+	return evaluator.ScopeReleaseTarget
 }
 
 // RuleType returns the rule type identifier for bypass matching.
@@ -84,7 +84,7 @@ func (e *DeploymentWindowEvaluator) RuleId() string {
 
 // Complexity returns the computational complexity of this evaluator.
 func (e *DeploymentWindowEvaluator) Complexity() int {
-	return 1
+	return 2
 }
 
 // formatDuration returns a human-readable duration string.
@@ -110,6 +110,12 @@ func (e *DeploymentWindowEvaluator) Evaluate(
 ) *oapi.RuleEvaluation {
 	_, span := tracer.Start(ctx, "DeploymentWindowEvaluator.Evaluate")
 	defer span.End()
+
+	_, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, scope.ReleaseTarget)
+	if err != nil {
+		return results.NewAllowedResult("No previous version deployed - deployment window ignored").
+			WithDetail("reason", "first_deployment")
+	}
 
 	now := time.Now().In(e.location)
 	duration := time.Duration(e.rule.DurationMinutes) * time.Minute

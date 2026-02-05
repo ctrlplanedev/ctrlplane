@@ -81,6 +81,42 @@ func generateDeploymentVersion(ctx context.Context, deploymentID string, created
 	return deploymentVersion
 }
 
+func seedSuccessfulRelease(ctx context.Context, store *store.Store, releaseTarget *oapi.ReleaseTarget) *oapi.Release {
+	versionCreatedAt := time.Now().Add(-24 * time.Hour)
+	version := &oapi.DeploymentVersion{
+		Id:           uuid.New().String(),
+		DeploymentId: releaseTarget.DeploymentId,
+		Tag:          "seed",
+		CreatedAt:    versionCreatedAt,
+	}
+	store.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	release := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version:       *version,
+		CreatedAt:     versionCreatedAt.Add(30 * time.Minute).Format(time.RFC3339),
+	}
+	_ = store.Releases.Upsert(ctx, release)
+
+	completedAt := time.Now().Add(-23 * time.Hour)
+	job := &oapi.Job{
+		Id:          uuid.New().String(),
+		ReleaseId:   release.ID(),
+		Status:      oapi.JobStatusSuccessful,
+		CompletedAt: &completedAt,
+		CreatedAt:   completedAt,
+	}
+	store.Jobs.Upsert(ctx, job)
+
+	return release
+}
+
+func seedSuccessfulReleaseTargets(ctx context.Context, store *store.Store, releaseTargets []*oapi.ReleaseTarget) {
+	for _, releaseTarget := range releaseTargets {
+		seedSuccessfulRelease(ctx, store, releaseTarget)
+	}
+}
+
 // Mock hasher that just returns the number of the resource as its hash
 func getHashingFunc(st *store.Store) func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
 	return func(releaseTarget *oapi.ReleaseTarget, versionID string) (uint64, error) {
@@ -2720,6 +2756,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_InsideAllowWindow(t *testing.T
 		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
+	seedSuccessfulReleaseTargets(ctx, st, releaseTargets)
 
 	// Position 0: should deploy immediately from version.CreatedAt (no window adjustment needed)
 	scope1 := evaluator.EvaluatorScope{
@@ -2807,6 +2844,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
+	seedSuccessfulReleaseTargets(ctx, st, releaseTargets)
 
 	// Position 0: rollout start time should be adjusted to window open (9am)
 	scope1 := evaluator.EvaluatorScope{
@@ -2832,6 +2870,76 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 	assert.Equal(t, int32(1), result2.Details["target_rollout_position"])
 	expectedRolloutTime := nextWindowStart.Add(60 * time.Second)
 	assert.Equal(t, expectedRolloutTime.Format(time.RFC3339), result2.Details["target_rollout_time"])
+}
+
+func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVersion(t *testing.T) {
+	ctx := t.Context()
+	sc := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", sc)
+
+	systemID := uuid.New().String()
+	environment := generateEnvironment(ctx, systemID, st)
+	deployment := generateDeployment(ctx, systemID, st)
+	resources := generateResources(ctx, 1, st)
+
+	versionCreatedAt := time.Date(2025, 1, 6, 23, 0, 0, 0, time.UTC)
+	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
+
+	currentTime := time.Date(2025, 1, 7, 10, 0, 0, 0, time.UTC)
+	hashingFn := getHashingFunc(st)
+	timeGetter := func() time.Time {
+		return currentTime
+	}
+
+	rule := createGradualRolloutRule(oapi.GradualRolloutRuleRolloutTypeLinear, 60)
+	eval := GradualRolloutEvaluator{
+		store:      st,
+		ruleId:     rule.Id,
+		rule:       rule.GradualRollout,
+		hashingFn:  hashingFn,
+		timeGetter: timeGetter,
+	}
+
+	deploymentWindowPolicy := &oapi.Policy{
+		Id:      uuid.New().String(),
+		Enabled: true,
+		Selectors: []oapi.PolicyTargetSelector{
+			{
+				ResourceSelector:    generateResourceSelector(),
+				DeploymentSelector:  generateMatchAllSelector(),
+				EnvironmentSelector: generateMatchAllSelector(),
+			},
+		},
+		Rules: []oapi.PolicyRule{
+			{
+				Id: "deployment-window-rule",
+				DeploymentWindow: &oapi.DeploymentWindowRule{
+					Rrule:           "FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0",
+					DurationMinutes: 480,
+					Timezone:        stringPtr("UTC"),
+					AllowWindow:     boolPtr(true),
+				},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, deploymentWindowPolicy)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		EnvironmentId: environment.Id,
+		DeploymentId:  deployment.Id,
+		ResourceId:    resources[0].Id,
+	}
+	_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
+
+	scope := evaluator.EvaluatorScope{
+		Environment:   environment,
+		Version:       version,
+		ReleaseTarget: releaseTarget,
+	}
+	result := eval.Evaluate(ctx, scope)
+
+	assert.True(t, result.Allowed, "deployment window should be ignored without a deployed version")
+	assert.Equal(t, versionCreatedAt.Format(time.RFC3339), result.Details["rollout_start_time"])
 }
 
 // TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart tests that
@@ -2904,6 +3012,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart(
 		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
+	seedSuccessfulReleaseTargets(ctx, st, releaseTargets)
 
 	// Position 0: rollout start time should be pushed to deny window end (6am)
 	scope1 := evaluator.EvaluatorScope{
@@ -2987,6 +3096,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowOutsideNoChange(t *t
 		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
+	seedSuccessfulReleaseTargets(ctx, st, releaseTargets)
 
 	// Position 0: rollout start time should be version.CreatedAt (not inside deny window)
 	scope1 := evaluator.EvaluatorScope{
@@ -3077,6 +3187,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
+	seedSuccessfulReleaseTargets(ctx, st, releaseTargets)
 
 	// Test that deployments are properly spaced from deny window END time
 	// Position 0: 6:00am (deny window ends)
@@ -3176,6 +3287,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_NoWindowsExistingBehavior(t *t
 		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
+	seedSuccessfulReleaseTargets(ctx, st, releaseTargets)
 
 	// Position 0: should use version.CreatedAt as rollout start
 	scope1 := evaluator.EvaluatorScope{
@@ -3262,6 +3374,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testin
 		_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 		releaseTargets[i] = releaseTarget
 	}
+	seedSuccessfulReleaseTargets(ctx, st, releaseTargets)
 
 	// Test that deployments are properly spaced from window open time
 	// Position 0: 9:00am (window opens)

@@ -3,11 +3,13 @@ package deploymentwindow
 import (
 	"context"
 	"testing"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/store"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,6 +25,88 @@ func boolPtr(b bool) *bool {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func setupReleaseTarget(t *testing.T, st *store.Store) (context.Context, *oapi.ReleaseTarget) {
+	t.Helper()
+
+	ctx := context.Background()
+	systemID := uuid.New().String()
+	deployment := &oapi.Deployment{
+		Id:       uuid.New().String(),
+		Name:     "test-deployment",
+		Slug:     "test-deployment",
+		SystemId: systemID,
+	}
+	require.NoError(t, st.Deployments.Upsert(ctx, deployment))
+
+	environment := &oapi.Environment{
+		Id:       uuid.New().String(),
+		Name:     "test-environment",
+		SystemId: systemID,
+	}
+	require.NoError(t, st.Environments.Upsert(ctx, environment))
+
+	resource := &oapi.Resource{
+		Id:         uuid.New().String(),
+		Identifier: "test-resource",
+		Kind:       "service",
+	}
+	_, err := st.Resources.Upsert(ctx, resource)
+	require.NoError(t, err)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  deployment.Id,
+		EnvironmentId: environment.Id,
+		ResourceId:    resource.Id,
+	}
+	require.NoError(t, st.ReleaseTargets.Upsert(ctx, releaseTarget))
+
+	return ctx, releaseTarget
+}
+
+func seedSuccessfulRelease(
+	t *testing.T,
+	ctx context.Context,
+	st *store.Store,
+	releaseTarget *oapi.ReleaseTarget,
+) {
+	t.Helper()
+
+	versionCreatedAt := time.Now().Add(-2 * time.Hour)
+	version := &oapi.DeploymentVersion{
+		Id:           uuid.New().String(),
+		DeploymentId: releaseTarget.DeploymentId,
+		Tag:          "v1.0.0",
+		CreatedAt:    versionCreatedAt,
+	}
+	st.DeploymentVersions.Upsert(ctx, version.Id, version)
+
+	release := &oapi.Release{
+		ReleaseTarget: *releaseTarget,
+		Version:       *version,
+		CreatedAt:     versionCreatedAt.Add(30 * time.Minute).Format(time.RFC3339),
+	}
+	require.NoError(t, st.Releases.Upsert(ctx, release))
+
+	completedAt := time.Now().Add(-1 * time.Hour)
+	job := &oapi.Job{
+		Id:          uuid.New().String(),
+		ReleaseId:   release.ID(),
+		Status:      oapi.JobStatusSuccessful,
+		CompletedAt: &completedAt,
+		CreatedAt:   completedAt,
+	}
+	st.Jobs.Upsert(ctx, job)
+}
+
+func setupScopeWithDeployedTarget(t *testing.T, st *store.Store) (context.Context, evaluator.EvaluatorScope) {
+	t.Helper()
+
+	ctx, releaseTarget := setupReleaseTarget(t, st)
+	seedSuccessfulRelease(t, ctx, st, releaseTarget)
+
+	return ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget}
 }
 
 func TestDeploymentWindowEvaluator_NewEvaluator_NilRule(t *testing.T) {
@@ -77,8 +161,8 @@ func TestDeploymentWindowEvaluator_ScopeFields(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	// Deployment window doesn't depend on any scope fields
-	assert.Equal(t, evaluator.ScopeFields(0), eval.ScopeFields())
+	// Deployment window needs release target to check for existing deployments
+	assert.Equal(t, evaluator.ScopeReleaseTarget, eval.ScopeFields())
 }
 
 func TestDeploymentWindowEvaluator_RuleType(t *testing.T) {
@@ -132,8 +216,8 @@ func TestDeploymentWindowEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	assert.True(t, result.Allowed, "expected allowed when inside allow window")
 	assert.Contains(t, result.Message, "within allowed deployment window")
@@ -157,8 +241,8 @@ func TestDeploymentWindowEvaluator_AllowWindow_DefaultTrue(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	assert.True(t, result.Allowed, "expected allowed when inside allow window (default)")
 	assert.Equal(t, "allow", result.Details["window_type"])
@@ -180,8 +264,8 @@ func TestDeploymentWindowEvaluator_DenyWindow_InsideWindow(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	assert.False(t, result.Allowed, "expected denied when inside deny window")
 	assert.True(t, result.ActionRequired, "expected action required")
@@ -209,13 +293,37 @@ func TestDeploymentWindowEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	assert.True(t, result.Allowed, "expected allowed when outside deny window")
 	assert.Contains(t, result.Message, "outside deny window")
 	assert.Equal(t, "deny", result.Details["window_type"])
 	assert.NotNil(t, result.SatisfiedAt, "expected satisfiedAt to be set")
+}
+
+func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testing.T) {
+	st := setupStore()
+
+	rule := &oapi.PolicyRule{
+		Id: "rule-1",
+		DeploymentWindow: &oapi.DeploymentWindowRule{
+			Rrule:           "FREQ=MINUTELY;INTERVAL=1",
+			DurationMinutes: 60,
+			AllowWindow:     boolPtr(false),
+		},
+	}
+
+	eval := NewEvaluator(st, rule)
+	require.NotNil(t, eval, "expected non-nil evaluator")
+
+	ctx, releaseTarget := setupReleaseTarget(t, st)
+	scope := evaluator.EvaluatorScope{ReleaseTarget: releaseTarget}
+	result := eval.Evaluate(ctx, scope)
+
+	assert.True(t, result.Allowed, "expected allowed when no deployment exists")
+	assert.Contains(t, result.Message, "deployment window ignored")
+	assert.Equal(t, "first_deployment", result.Details["reason"])
 }
 
 func TestDeploymentWindowEvaluator_NextEvaluationTime(t *testing.T) {
@@ -234,8 +342,8 @@ func TestDeploymentWindowEvaluator_NextEvaluationTime(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	// When inside window, nextEvaluationTime should be when window closes
 	assert.NotNil(t, result.NextEvaluationTime, "expected nextEvaluationTime to be set")
@@ -257,8 +365,8 @@ func TestDeploymentWindowEvaluator_ResultDetails(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	// Check that all expected details are present
 	assert.Contains(t, result.Details, "current_time")
@@ -333,8 +441,8 @@ func TestDeploymentWindowEvaluator_Timezone_VariousTimezones(t *testing.T) {
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for timezone: %s", tz)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for timezone: %s", tz)
 		})
 	}
@@ -357,8 +465,8 @@ func TestDeploymentWindowEvaluator_Timezone_NilTimezone(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator with nil timezone")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 	assert.NotNil(t, result, "expected non-nil result")
 	assert.True(t, result.Allowed, "expected allowed")
 }
@@ -380,8 +488,8 @@ func TestDeploymentWindowEvaluator_Timezone_EmptyString(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator with empty timezone string")
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 	assert.NotNil(t, result, "expected non-nil result")
 	assert.True(t, result.Allowed, "expected allowed")
 }
@@ -416,8 +524,8 @@ func TestDeploymentWindowEvaluator_Timezone_InvalidTimezones(t *testing.T) {
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator even with invalid timezone: %s", tz)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for invalid timezone: %s", tz)
 		})
 	}
@@ -453,8 +561,8 @@ func TestDeploymentWindowEvaluator_Timezone_USBusinessHours(t *testing.T) {
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s timezone", tc.name)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for %s timezone", tc.name)
 			assert.Equal(t, "allow", result.Details["window_type"])
 		})
@@ -491,8 +599,8 @@ func TestDeploymentWindowEvaluator_Timezone_EuropeanBusinessHours(t *testing.T) 
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s timezone", tc.name)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for %s timezone", tc.name)
 		})
 	}
@@ -528,8 +636,8 @@ func TestDeploymentWindowEvaluator_Timezone_AsiaPacificBusinessHours(t *testing.
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s timezone", tc.name)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for %s timezone", tc.name)
 		})
 	}
@@ -566,8 +674,8 @@ func TestDeploymentWindowEvaluator_Timezone_MaintenanceWindowWithTimezone(t *tes
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for %s", tc.description)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for %s", tc.description)
 			assert.Equal(t, "deny", result.Details["window_type"])
 		})
@@ -602,8 +710,8 @@ func TestDeploymentWindowEvaluator_Timezone_DSTAwareTimezones(t *testing.T) {
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for DST-aware timezone: %s", tz)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for DST-aware timezone: %s", tz)
 		})
 	}
@@ -637,8 +745,8 @@ func TestDeploymentWindowEvaluator_Timezone_NonDSTTimezones(t *testing.T) {
 			eval := NewEvaluator(st, rule)
 			require.NotNil(t, eval, "expected non-nil evaluator for non-DST timezone: %s", tz)
 
-			scope := evaluator.EvaluatorScope{}
-			result := eval.Evaluate(context.Background(), scope)
+			ctx, scope := setupScopeWithDeployedTarget(t, st)
+			result := eval.Evaluate(ctx, scope)
 			assert.NotNil(t, result, "expected non-nil result for non-DST timezone: %s", tz)
 		})
 	}
@@ -658,7 +766,7 @@ func TestDeploymentWindowEvaluator_Complexity(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
-	assert.Equal(t, 1, eval.Complexity())
+	assert.Equal(t, 2, eval.Complexity())
 }
 
 func TestValidateRRule_Valid(t *testing.T) {
@@ -710,8 +818,8 @@ func TestDeploymentWindowEvaluator_WeeklyBusinessHours(t *testing.T) {
 	require.NotNil(t, eval, "expected non-nil evaluator for business hours rule")
 
 	// Just verify it can evaluate without error
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 	assert.NotNil(t, result, "expected non-nil result")
 	assert.NotEmpty(t, result.Message, "expected message to be set")
 }
@@ -734,8 +842,8 @@ func TestDeploymentWindowEvaluator_MaintenanceWindow(t *testing.T) {
 	require.NotNil(t, eval, "expected non-nil evaluator for maintenance window rule")
 
 	// Just verify it can evaluate without error
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 	assert.NotNil(t, result, "expected non-nil result")
 	assert.Equal(t, "deny", result.Details["window_type"])
 }
@@ -756,8 +864,8 @@ func TestDeploymentWindowEvaluator_ActionRequired(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval)
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	// When inside deny window, should require action (wait)
 	assert.True(t, result.ActionRequired, "expected action required when inside deny window")
@@ -779,11 +887,11 @@ func TestDeploymentWindowEvaluator_MemoizationWorks(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval)
 
-	scope := evaluator.EvaluatorScope{}
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
 
 	// Call multiple times - should work with memoization
-	result1 := eval.Evaluate(context.Background(), scope)
-	result2 := eval.Evaluate(context.Background(), scope)
+	result1 := eval.Evaluate(ctx, scope)
+	result2 := eval.Evaluate(ctx, scope)
 
 	assert.Equal(t, result1.Allowed, result2.Allowed, "memoized results should be consistent")
 }
@@ -805,8 +913,8 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_AllowWindowInside(t *testing
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval)
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	// Verify enhanced metadata fields
 	assert.True(t, result.Allowed)
@@ -842,8 +950,8 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_DenyWindowInside(t *testing.
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval)
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	// Verify enhanced metadata fields for deny window
 	assert.False(t, result.Allowed)
@@ -880,8 +988,8 @@ func TestDeploymentWindowEvaluator_EnhancedMetadata_DenyWindowOutside(t *testing
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval)
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	// Verify enhanced metadata fields
 	assert.True(t, result.Allowed)
@@ -913,8 +1021,8 @@ func TestDeploymentWindowEvaluator_TimeRemainingFormat(t *testing.T) {
 	eval := NewEvaluator(st, rule)
 	require.NotNil(t, eval)
 
-	scope := evaluator.EvaluatorScope{}
-	result := eval.Evaluate(context.Background(), scope)
+	ctx, scope := setupScopeWithDeployedTarget(t, st)
+	result := eval.Evaluate(ctx, scope)
 
 	// time_remaining should be a formatted string like "1h 30m" or "2h"
 	timeRemaining, ok := result.Details["time_remaining"].(string)
