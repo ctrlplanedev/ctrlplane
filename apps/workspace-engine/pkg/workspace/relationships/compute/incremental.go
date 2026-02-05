@@ -12,19 +12,26 @@ func FindRemovedRelations(
 	oldRelations []*relationships.EntityRelation,
 	newRelations []*relationships.EntityRelation,
 ) []*relationships.EntityRelation {
-	removedRelations := make([]*relationships.EntityRelation, 0)
+	removedRelations := make([]*relationships.EntityRelation, 0, len(oldRelations))
+	if len(oldRelations) == 0 {
+		return removedRelations
+	}
+
+	if len(newRelations) == 0 {
+		return append(removedRelations, oldRelations...)
+	}
+
+	newRelationKeys := make(map[string]struct{}, len(newRelations))
+	for _, newRelation := range newRelations {
+		newRelationKeys[newRelation.Key()] = struct{}{}
+	}
+
 	for _, oldRelation := range oldRelations {
-		found := false
-		for _, newRelation := range newRelations {
-			if oldRelation.Key() == newRelation.Key() {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if _, found := newRelationKeys[oldRelation.Key()]; !found {
 			removedRelations = append(removedRelations, oldRelation)
 		}
 	}
+
 	return removedRelations
 }
 

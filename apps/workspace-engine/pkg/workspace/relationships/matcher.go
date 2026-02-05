@@ -120,13 +120,17 @@ func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matche
 	return true
 }
 
-// BuildEntityMapCache pre-computes map representations for all entities
-// This is expensive but only needs to be done once per rule evaluation
+// BuildEntityMapCache pre-computes map representations for provided entities.
+// This is expensive but only needs to be done once per rule evaluation.
 func BuildEntityMapCache(entities []*oapi.RelatableEntity) EntityMapCache {
 	cache := make(EntityMapCache, len(entities))
 	for _, entity := range entities {
+		entityID := entity.GetID()
+		if _, exists := cache[entityID]; exists {
+			continue
+		}
 		if entityMap, err := entityToMap(entity.Item()); err == nil {
-			cache[entity.GetID()] = entityMap
+			cache[entityID] = entityMap
 		}
 	}
 	return cache

@@ -586,7 +586,6 @@ func TestFindRemovedRelations_NoneRemoved(t *testing.T) {
 
 	assert.Empty(t, removedRelations)
 }
-
 func TestFilterEntitiesByTypeAndSelector(t *testing.T) {
 	ctx := context.Background()
 
