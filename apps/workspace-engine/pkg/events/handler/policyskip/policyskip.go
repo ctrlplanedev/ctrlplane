@@ -31,7 +31,7 @@ func getRelevantTargets(
 		if skip.EnvironmentId != nil && target.EnvironmentId != *skip.EnvironmentId {
 			continue
 		}
-		if skip.EnvironmentId != nil && skip.ResourceId != nil && target.ResourceId != *skip.ResourceId {
+		if skip.ResourceId != nil && target.ResourceId != *skip.ResourceId {
 			continue
 		}
 		filteredTargets = append(filteredTargets, target)
