@@ -28,5 +28,5 @@ func (t *TFE) Supports() types.Capabilities {
 }
 
 func (t *TFE) Dispatch(ctx context.Context, context types.DispatchContext) error {
-	panic("unimplemented")
+	return nil
 }
