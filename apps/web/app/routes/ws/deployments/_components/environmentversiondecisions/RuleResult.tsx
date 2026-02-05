@@ -131,8 +131,8 @@ const Rrule: React.FC<RruleDetails> = ({
   const nextDenyWindowStart = parseTimestamp(next_deny_window_start);
   let windowInfo: WindowInfo | null = null;
 
-  if (window_type === "deny" && windowEnd != null) {
-    windowInfo = { label: "Deny Window Ends", date: windowEnd };
+  if (windowEnd != null) {
+    windowInfo = { label: "Window Ends", date: windowEnd };
   } else if (window_type === "deny" && nextDenyWindowStart != null) {
     windowInfo = { label: "Next Deny Window", date: nextDenyWindowStart };
   } else if (nextWindowStart != null) {
