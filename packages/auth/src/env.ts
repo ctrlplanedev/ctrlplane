@@ -20,6 +20,10 @@ export const env = createEnv({
     AUTH_OIDC_CLIENT_ID: z.string().min(1).optional(),
     AUTH_OIDC_CLIENT_SECRET: z.string().min(1).optional(),
 
+    AUTH_OKTA_CLIENT_ID: z.string().min(1).optional(),
+    AUTH_OKTA_CLIENT_SECRET: z.string().min(1).optional(),
+    AUTH_OKTA_ISSUER: z.string().min(1).optional(),
+
     RESEND_API_KEY: z.string().min(1).optional(),
     RESEND_AUDIENCE_ID: z.string().min(1).optional(),
   },
