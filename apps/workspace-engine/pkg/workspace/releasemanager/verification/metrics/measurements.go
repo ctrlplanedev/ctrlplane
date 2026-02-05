@@ -68,18 +68,17 @@ func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.JobVerif
 	failedCount := m.FailedCount()
 	failureLimit := metric.GetFailureLimit()
 
-	// Check failure limit
-	if failureLimit > 0 && failedCount >= failureLimit {
+	isFailureLimitZero := failureLimit == 0
+	hasAnyFailures := failedCount > 0
+	isFailureLimitExceeded := failureLimit > 0 && failedCount > failureLimit
+	if (isFailureLimitZero && hasAnyFailures) || isFailureLimitExceeded {
 		return oapi.JobVerificationStatusFailed
 	}
 
 	// Check if all measurements completed
 	if len(m) >= metric.Count {
-		if failedCount > 0 && failureLimit > 0 && failedCount < failureLimit {
-			return oapi.JobVerificationStatusRunning // Below failure threshold
-		}
-		if failedCount == 0 {
-			return oapi.JobVerificationStatusPassed // All passed
+		if failedCount == 0 || (failureLimit > 0 && failedCount <= failureLimit) {
+			return oapi.JobVerificationStatusPassed
 		}
 		return oapi.JobVerificationStatusFailed
 	}
@@ -90,10 +89,13 @@ func (m Measurements) Phase(metric *oapi.VerificationMetricStatus) oapi.JobVerif
 // ShouldContinue checks if more measurements are needed
 func (m Measurements) ShouldContinue(metric *oapi.VerificationMetricStatus) bool {
 	failureLimit := metric.GetFailureLimit()
+	failedCount := m.FailedCount()
 	successThreshold := metric.SuccessThreshold
 
-	// Stop if hit failure limit
-	if failureLimit > 0 && m.FailedCount() >= failureLimit {
+	isFailureLimitZero := failureLimit == 0
+	hasAnyFailures := failedCount > 0
+	isFailureLimitExceeded := failureLimit > 0 && failedCount > failureLimit
+	if (isFailureLimitZero && hasAnyFailures) || isFailureLimitExceeded {
 		return false
 	}
 
