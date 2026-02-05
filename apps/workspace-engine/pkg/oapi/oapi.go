@@ -174,7 +174,11 @@ func (jv *JobVerification) Status() JobVerificationStatus {
 			}
 		}
 
-		if failedCount > failureLimit {
+		if failureLimit == 0 {
+			if failedCount > 0 {
+				return JobVerificationStatusFailed
+			}
+		} else if failedCount >= failureLimit {
 			return JobVerificationStatusFailed
 		}
 
