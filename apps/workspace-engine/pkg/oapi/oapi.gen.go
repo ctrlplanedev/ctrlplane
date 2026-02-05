@@ -1123,6 +1123,19 @@ type WorkflowJobTemplate struct {
 	Ref string `json:"ref"`
 }
 
+// WorkflowJobWithJobs defines model for WorkflowJobWithJobs.
+type WorkflowJobWithJobs struct {
+	// Config Configuration for the job agent
+	Config map[string]interface{} `json:"config"`
+	Id     string                 `json:"id"`
+	Index  int                    `json:"index"`
+	Jobs   []Job                  `json:"jobs"`
+
+	// Ref Reference to the job agent
+	Ref        string `json:"ref"`
+	WorkflowId string `json:"workflowId"`
+}
+
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
 type WorkflowManualArrayInput struct {
 	Default *[]map[string]interface{}    `json:"default,omitempty"`
@@ -1175,6 +1188,14 @@ type WorkflowTemplate struct {
 	Inputs []WorkflowInput       `json:"inputs"`
 	Jobs   []WorkflowJobTemplate `json:"jobs"`
 	Name   string                `json:"name"`
+}
+
+// WorkflowWithJobs defines model for WorkflowWithJobs.
+type WorkflowWithJobs struct {
+	Id                 string                 `json:"id"`
+	Inputs             map[string]interface{} `json:"inputs"`
+	Jobs               []WorkflowJobWithJobs  `json:"jobs"`
+	WorkflowTemplateId string                 `json:"workflowTemplateId"`
 }
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
@@ -1372,6 +1393,15 @@ type ListSystemsParams struct {
 
 // GetWorkflowTemplatesParams defines parameters for GetWorkflowTemplates.
 type GetWorkflowTemplatesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetWorkflowsByTemplateParams defines parameters for GetWorkflowsByTemplate.
+type GetWorkflowsByTemplateParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -2562,6 +2592,12 @@ type ServerInterface interface {
 	// Get all workflow templates
 	// (GET /v1/workspaces/{workspaceId}/workflow-templates)
 	GetWorkflowTemplates(c *gin.Context, workspaceId string, params GetWorkflowTemplatesParams)
+	// Get a workflow template
+	// (GET /v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId})
+	GetWorkflowTemplate(c *gin.Context, workspaceId string, workflowTemplateId string)
+	// Get all workflows for a workflow template
+	// (GET /v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows)
+	GetWorkflowsByTemplate(c *gin.Context, workspaceId string, workflowTemplateId string, params GetWorkflowsByTemplateParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -4600,6 +4636,91 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
 	siw.Handler.GetWorkflowTemplates(c, workspaceId, params)
 }
 
+// GetWorkflowTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflowTemplate(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "workflowTemplateId" -------------
+	var workflowTemplateId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowTemplateId", c.Param("workflowTemplateId"), &workflowTemplateId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowTemplateId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetWorkflowTemplate(c, workspaceId, workflowTemplateId)
+}
+
+// GetWorkflowsByTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflowsByTemplate(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "workflowTemplateId" -------------
+	var workflowTemplateId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowTemplateId", c.Param("workflowTemplateId"), &workflowTemplateId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowTemplateId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetWorkflowsByTemplateParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetWorkflowsByTemplate(c, workspaceId, workflowTemplateId, params)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -4681,4 +4802,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates", wrapper.GetWorkflowTemplates)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates/:workflowTemplateId", wrapper.GetWorkflowTemplate)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates/:workflowTemplateId/workflows", wrapper.GetWorkflowsByTemplate)
 }

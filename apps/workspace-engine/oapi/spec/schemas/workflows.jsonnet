@@ -144,7 +144,32 @@ local openapi = import '../lib/openapi.libsonnet';
       workflowId: { type: 'string' },
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
-
     },
+  },
+
+  WorkflowWithJobs: {
+    allOf: [
+      openapi.schemaRef('Workflow'),
+      {
+        type: 'object',
+        required: ['jobs'],
+        properties: {
+          jobs: { type: 'array', items: openapi.schemaRef('WorkflowJobWithJobs') },
+        },
+      },
+    ],
+  },
+
+  WorkflowJobWithJobs: {
+    allOf: [
+      openapi.schemaRef('WorkflowJob'),
+      {
+        type: 'object',
+        required: ['jobs'],
+        properties: {
+          jobs: { type: 'array', items: openapi.schemaRef('Job') },
+        },
+      },
+    ],
   },
 }

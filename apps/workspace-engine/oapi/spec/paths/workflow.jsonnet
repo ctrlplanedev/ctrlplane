@@ -16,4 +16,34 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}': {
+    get: {
+      summary: 'Get a workflow template',
+      operationId: 'getWorkflowTemplate',
+      description: 'Gets a workflow template.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.workflowTemplateIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('WorkflowTemplate'), 'Get workflow template')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows': {
+    get: {
+      summary: 'Get all workflows for a workflow template',
+      operationId: 'getWorkflowsByTemplate',
+      description: 'Gets all workflows for a workflow template.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.workflowTemplateIdParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('WorkflowWithJobs'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

@@ -1072,6 +1072,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a workflow template
+     * @description Gets a workflow template.
+     */
+    get: operations["getWorkflowTemplate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get all workflows for a workflow template
+     * @description Gets all workflows for a workflow template.
+     */
+    get: operations["getWorkflowsByTemplate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1933,6 +1973,9 @@ export interface components {
       /** @description Reference to the job agent */
       ref: string;
     };
+    WorkflowJobWithJobs: components["schemas"]["WorkflowJob"] & {
+      jobs: components["schemas"]["Job"][];
+    };
     WorkflowManualArrayInput: {
       default?: {
         [key: string]: unknown;
@@ -1968,6 +2011,9 @@ export interface components {
       inputs: components["schemas"]["WorkflowInput"][];
       jobs: components["schemas"]["WorkflowJobTemplate"][];
       name: string;
+    };
+    WorkflowWithJobs: components["schemas"]["Workflow"] & {
+      jobs: components["schemas"]["WorkflowJobWithJobs"][];
     };
   };
   responses: never;
@@ -4384,6 +4430,105 @@ export interface operations {
         content: {
           "application/json": {
             items: components["schemas"]["WorkflowTemplate"][];
+            /** @description Maximum number of items returned */
+            limit: number;
+            /** @description Number of items skipped */
+            offset: number;
+            /** @description Total number of items available */
+            total: number;
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getWorkflowTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description ID of the workflow template */
+        workflowTemplateId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Get workflow template */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkflowTemplate"];
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+    };
+  };
+  getWorkflowsByTemplate: {
+    parameters: {
+      query?: {
+        /** @description Maximum number of items to return */
+        limit?: number;
+        /** @description Number of items to skip */
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description ID of the workflow template */
+        workflowTemplateId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated list of items */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["WorkflowWithJobs"][];
             /** @description Maximum number of items returned */
             limit: number;
             /** @description Number of items skipped */
