@@ -10,7 +10,8 @@ type DeploymentTab =
   | "settings"
   | "release-targets"
   | "traces"
-  | "variables";
+  | "variables"
+  | "policies";
 
 const useDeploymentTab = (baseUrl: string): DeploymentTab => {
   const { pathname } = useLocation();
@@ -19,6 +20,7 @@ const useDeploymentTab = (baseUrl: string): DeploymentTab => {
   if (pathname.startsWith(`${baseUrl}/settings/general`)) return "settings";
   if (pathname.startsWith(`${baseUrl}/traces`)) return "traces";
   if (pathname.startsWith(`${baseUrl}/variables`)) return "variables";
+  if (pathname.startsWith(`${baseUrl}/policies`)) return "policies";
   if (pathname.startsWith(`${baseUrl}/release-targets`))
     return "release-targets";
   return "environments";
@@ -47,6 +49,9 @@ export const DeploymentsNavbarTabs = () => {
         </TabsTrigger>
         <TabsTrigger value="release-targets" asChild>
           <Link to={`${baseUrl}/release-targets`}>Targets</Link>
+        </TabsTrigger>
+        <TabsTrigger value="policies" asChild>
+          <Link to={`${baseUrl}/policies`}>Policies</Link>
         </TabsTrigger>
         <TabsTrigger value="settings" asChild>
           <Link to={`${baseUrl}/settings/general`}>Settings</Link>
