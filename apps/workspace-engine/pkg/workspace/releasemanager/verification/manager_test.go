@@ -370,7 +370,7 @@ func TestManager_Restore_FailedVerifications(t *testing.T) {
 	job := createTestJob(s, ctx, release.ID())
 	verification := createTestVerification(s, ctx, job.Id, 1, 30)
 
-	// Make verification failed by hitting failure limit
+	// Make verification failed by exceeding failure limit
 	for i := 0; i <= *verification.Metrics[0].FailureThreshold; i++ {
 		msg := "Failed"
 		verification.Metrics[0].Measurements = append(verification.Metrics[0].Measurements, oapi.VerificationMeasurement{

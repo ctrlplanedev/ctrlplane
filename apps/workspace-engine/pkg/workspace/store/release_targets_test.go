@@ -159,7 +159,7 @@ func createVerificationWithStatus(s *store.Store, ctx context.Context, jobId str
 			},
 		}
 	case oapi.JobVerificationStatusCancelled:
-		// For cancelled, we'll create a failed metric that hit failure limit
+		// For cancelled, we'll create a failed metric that exceeded failure limit
 		// Actually, cancelled isn't computed by Status() - let's use empty metrics with a special flag
 		// For now, let's just use failed status with zero measurements as a proxy
 		successCondition := "result.statusCode == 200"
@@ -561,7 +561,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	}
 	s.Jobs.Upsert(ctx, olderJob)
 
-	// Create newer release with cancelled verification (represented as failed with failure limit hit)
+	// Create newer release with cancelled verification (represented as failed with failure limit exceeded)
 	newerVersionId := uuid.New().String()
 	newerVersion := &oapi.DeploymentVersion{
 		Id:           newerVersionId,
@@ -590,7 +590,7 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	s.Jobs.Upsert(ctx, newerJob)
 
 	newerVerification := createVerificationWithStatus(s, ctx, newerJob.Id, oapi.JobVerificationStatusCancelled, time.Now())
-	// Cancelled verification will show as failed when hitting failure limit
+	// Cancelled verification will show as failed when exceeding failure limit
 	require.Equal(t, oapi.JobVerificationStatusFailed, newerVerification.Status())
 
 	// Get current release - should return older release

@@ -627,14 +627,14 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 	// Create verification with failure limit of 2
 	verification := createTestVerification(s, ctx, job.Id, 1, 1)
 	verification.Metrics[0].Count = 10                // Allow up to 10 measurements
-	verification.Metrics[0].FailureThreshold = ptr(2) // But stop after 2 failures
+	verification.Metrics[0].FailureThreshold = ptr(2) // But stop after 3 failures (limit exceeded)
 	s.JobVerifications.Upsert(ctx, verification)
 
 	// Start the verification
 	scheduler.StartVerification(ctx, verification.Id)
 
-	// Wait for measurements to reach failure limit
-	// Poll until we have at least 2 failed measurements (the failure limit)
+	// Wait for measurements to exceed failure limit
+	// Poll until we have at least 3 failed measurements (limit exceeded)
 	var updatedVerification *oapi.JobVerification
 	require.Eventually(t, func() bool {
 		var ok bool
@@ -642,12 +642,12 @@ func TestScheduler_Integration_StopsOnFailureLimit(t *testing.T) {
 		if !ok {
 			return false
 		}
-		return len(updatedVerification.Metrics[0].Measurements) >= 2
-	}, 3*time.Second, 100*time.Millisecond, "should have at least 2 measurements")
+		return len(updatedVerification.Metrics[0].Measurements) >= 3
+	}, 3*time.Second, 100*time.Millisecond, "should have at least 3 measurements")
 
-	// Should have stopped after reaching failure limit
+	// Should have stopped after exceeding failure limit
 	measurementCount := len(updatedVerification.Metrics[0].Measurements)
-	assert.GreaterOrEqual(t, measurementCount, 2, "should have at least 2 measurements")
+	assert.GreaterOrEqual(t, measurementCount, 3, "should have at least 3 measurements")
 	assert.LessOrEqual(t, measurementCount, 4, "should have stopped near failure limit, not taken all 10")
 
 	// Clean up

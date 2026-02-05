@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestJobVerificationStatus_FailsOnFailureThreshold(t *testing.T) {
+func TestJobVerificationStatus_FailsWhenFailureThresholdExceeded(t *testing.T) {
 	now := time.Now()
-	failureThreshold := 3
+	failureThreshold := 2
 
 	verification := JobVerification{
 		Id:        "verification-1",
