@@ -7,6 +7,7 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "~/components/ui/dialog";
 import { WorkflowTriggerForm } from "./_components/WorkflowTriggerForm";
+import { WorkflowsTable } from "./_components/WorkflowsTable";
 
 export function meta() {
   return [
@@ -61,6 +62,7 @@ export default function WorkflowTemplatePage() {
   return (
     <>
       <PageHeader />
+      <WorkflowsTable />
     </>
   );
 }
