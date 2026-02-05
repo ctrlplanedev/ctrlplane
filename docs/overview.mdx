@@ -49,6 +49,13 @@ When you deploy "API Gateway" to "Production" (which has 3 clusters), Ctrlplane 
 
 Each release target can have its own policies, verification, and rollout timing.
 
+**Advanced example:** Version `v1.2.3` of the "API Gateway" deployment targets the "Production" environment, 
+which expands to multiple clusters including `us-west-2`. Ctrlplane creates one release target per cluster, 
+so each target can be governed independently. A deployment window policy can be scoped to the `us-west-2` 
+release target so it only deploys on weekdays before 9 a.m., while other production targets follow their 
+own timing. When a new version arrives, Ctrlplane waits for that window before dispatching the job for 
+`us-west-2`, even if other targets can deploy sooner.
+
 ## Dynamic Environments
 
 Environments use **selectors** to automatically include resources:
