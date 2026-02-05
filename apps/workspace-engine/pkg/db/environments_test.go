@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 	"workspace-engine/pkg/oapi"
@@ -38,17 +37,6 @@ func validateRetrievedEnvironments(t *testing.T, actualEnvironments []*oapi.Envi
 			t.Fatalf("expected environment system_id %s, got %s", expectedEnv.SystemId, actualEnv.SystemId)
 		}
 		compareStrPtr(t, actualEnv.Description, expectedEnv.Description)
-		expectedMetadata := expectedEnv.Metadata
-		if expectedMetadata == nil {
-			expectedMetadata = map[string]string{}
-		}
-		actualMetadata := actualEnv.Metadata
-		if actualMetadata == nil {
-			actualMetadata = map[string]string{}
-		}
-		if !reflect.DeepEqual(expectedMetadata, actualMetadata) {
-			t.Fatalf("expected environment metadata %v, got %v", expectedMetadata, actualMetadata)
-		}
 		// Note: ResourceSelector is *Selector (complex type), comparing as pointers only
 		if (actualEnv.ResourceSelector == nil) != (expectedEnv.ResourceSelector == nil) {
 			t.Fatalf("resource_selector nil mismatch: expected %v, got %v", expectedEnv.ResourceSelector == nil, actualEnv.ResourceSelector == nil)
@@ -93,7 +81,6 @@ func TestDBEnvironments_BasicWrite(t *testing.T) {
 		Name:             envName,
 		SystemId:         systemID,
 		Description:      &description,
-		Metadata:         map[string]string{"tier": "backend"},
 		ResourceSelector: nil, // Selector is complex type, skipping for test
 	}
 

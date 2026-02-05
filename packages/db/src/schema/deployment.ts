@@ -116,28 +116,18 @@ export const updateDeployment = deploymentInsert.partial();
 export type UpdateDeployment = z.infer<typeof updateDeployment>;
 export type Deployment = InferSelectModel<typeof deployment>;
 
-export const deploymentMetadata = pgTable(
-  "deployment_metadata",
-  {
-    id: uuid("id").primaryKey().defaultRandom().notNull(),
-    deploymentId: uuid("deployment_id")
-      .references(() => deployment.id, { onDelete: "cascade" })
-      .notNull(),
-    key: text("key").notNull(),
-    value: text("value").notNull(),
-  },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.deploymentId) }),
-);
-
-export const deploymentMetadataRelations = relations(
-  deploymentMetadata,
-  ({ one }) => ({
-    deployment: one(deployment, {
-      fields: [deploymentMetadata.deploymentId],
-      references: [deployment.id],
-    }),
+export const deploymentRelations = relations(deployment, ({ one, many }) => ({
+  system: one(system, {
+    fields: [deployment.systemId],
+    references: [system.id],
   }),
-);
+  jobAgent: one(jobAgent, {
+    fields: [deployment.jobAgentId],
+    references: [jobAgent.id],
+  }),
+  computedResources: many(computedDeploymentResource),
+  releaseTargets: many(releaseTarget),
+}));
 
 export const computedDeploymentResource = pgTable(
   "computed_deployment_resource",
@@ -165,20 +155,6 @@ export const computedDeploymentResourceRelations = relations(
     }),
   }),
 );
-
-export const deploymentRelations = relations(deployment, ({ one, many }) => ({
-  system: one(system, {
-    fields: [deployment.systemId],
-    references: [system.id],
-  }),
-  jobAgent: one(jobAgent, {
-    fields: [deployment.jobAgentId],
-    references: [jobAgent.id],
-  }),
-  metadata: many(deploymentMetadata),
-  computedResources: many(computedDeploymentResource),
-  releaseTargets: many(releaseTarget),
-}));
 
 const buildCondition = (cond: DeploymentCondition): SQL<unknown> => {
   if (cond.type === "name")

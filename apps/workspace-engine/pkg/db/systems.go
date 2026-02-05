@@ -12,18 +12,9 @@ const SYSTEM_SELECT_QUERY = `
 		s.id,
 		s.workspace_id,
 		s.name,
-		s.description,
-		COALESCE(
-			json_object_agg(
-				COALESCE(sm.key, ''),
-				COALESCE(sm.value, '')
-			) FILTER (WHERE sm.key IS NOT NULL),
-			'{}'::json
-		) as metadata
+		s.description
 	FROM system s
-	LEFT JOIN system_metadata sm ON sm.system_id = s.id
 	WHERE s.workspace_id = $1
-	GROUP BY s.id, s.workspace_id, s.name, s.description
 `
 
 func getSystems(ctx context.Context, workspaceID string) ([]*oapi.System, error) {
@@ -52,22 +43,15 @@ func getSystems(ctx context.Context, workspaceID string) ([]*oapi.System, error)
 
 func scanSystemRow(rows pgx.Rows) (*oapi.System, error) {
 	system := &oapi.System{}
-	var metadataJSON []byte
 	err := rows.Scan(
 		&system.Id,
 		&system.WorkspaceId,
 		&system.Name,
 		&system.Description,
-		&metadataJSON,
 	)
 	if err != nil {
 		return nil, err
 	}
-	metadata, err := parseMetadataJSON(metadataJSON)
-	if err != nil {
-		return nil, err
-	}
-	system.Metadata = metadata
 	return system, nil
 }
 
@@ -91,19 +75,6 @@ func writeSystem(ctx context.Context, system *oapi.System, tx pgx.Tx) error {
 		system.Name,
 		system.Description,
 	); err != nil {
-		return err
-	}
-
-	metadata := system.Metadata
-	if metadata == nil {
-		metadata = map[string]string{}
-	}
-
-	if _, err := tx.Exec(ctx, "DELETE FROM system_metadata WHERE system_id = $1", system.Id); err != nil {
-		return err
-	}
-
-	if err := writeMetadata(ctx, "system_metadata", "system_id", system.Id, metadata, tx); err != nil {
 		return err
 	}
 	return nil

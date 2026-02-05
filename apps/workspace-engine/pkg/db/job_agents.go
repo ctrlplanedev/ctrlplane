@@ -14,18 +14,9 @@ const JOB_AGENT_SELECT_QUERY = `
 		j.workspace_id,
 		j.name,
 		j.type,
-		j.config,
-		COALESCE(
-			json_object_agg(
-				COALESCE(jm.key, ''),
-				COALESCE(jm.value, '')
-			) FILTER (WHERE jm.key IS NOT NULL),
-			'{}'::json
-		) as metadata
+		j.config
 	FROM job_agent j
-	LEFT JOIN job_agent_metadata jm ON jm.job_agent_id = j.id
 	WHERE j.workspace_id = $1
-	GROUP BY j.id, j.workspace_id, j.name, j.type, j.config
 `
 
 func getJobAgents(ctx context.Context, workspaceID string) ([]*oapi.JobAgent, error) {
@@ -74,7 +65,6 @@ func runnerJobAgentConfig(m map[string]interface{}) oapi.JobAgentConfig {
 func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	jobAgent := &oapi.JobAgent{}
 	var config *map[string]interface{}
-	var metadataJSON []byte
 
 	err := rows.Scan(
 		&jobAgent.Id,
@@ -82,7 +72,6 @@ func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 		&jobAgent.Name,
 		&jobAgent.Type,
 		&config,
-		&metadataJSON,
 	)
 	if err != nil {
 		return nil, err
@@ -126,11 +115,6 @@ func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	}
 
 	jobAgent.Config = cfg
-	metadata, err := parseMetadataJSON(metadataJSON)
-	if err != nil {
-		return nil, err
-	}
-	jobAgent.Metadata = metadata
 	return jobAgent, nil
 }
 
@@ -154,19 +138,6 @@ func writeJobAgent(ctx context.Context, jobAgent *oapi.JobAgent, tx pgx.Tx) erro
 		jobAgent.Type,
 		jobAgent.Config,
 	); err != nil {
-		return err
-	}
-
-	metadata := jobAgent.Metadata
-	if metadata == nil {
-		metadata = map[string]string{}
-	}
-
-	if _, err := tx.Exec(ctx, "DELETE FROM job_agent_metadata WHERE job_agent_id = $1", jobAgent.Id); err != nil {
-		return err
-	}
-
-	if err := writeMetadata(ctx, "job_agent_metadata", "job_agent_id", jobAgent.Id, metadata, tx); err != nil {
 		return err
 	}
 	return nil

@@ -62,18 +62,6 @@ func validateRetrievedJobAgents(t *testing.T, actualJobAgents []*oapi.JobAgent, 
 		if !reflect.DeepEqual(expectedConfig, actualConfig) {
 			t.Fatalf("expected config %v, got %v", expectedConfig, actualConfig)
 		}
-
-		expectedMetadata := expected.Metadata
-		if expectedMetadata == nil {
-			expectedMetadata = map[string]string{}
-		}
-		actualMetadata := actual.Metadata
-		if actualMetadata == nil {
-			actualMetadata = map[string]string{}
-		}
-		if !reflect.DeepEqual(expectedMetadata, actualMetadata) {
-			t.Fatalf("expected metadata %v, got %v", expectedMetadata, actualMetadata)
-		}
 	}
 }
 
@@ -98,7 +86,6 @@ func TestDBJobAgents_BasicWrite(t *testing.T) {
 		Name:        name,
 		Type:        "kubernetes",
 		Config:      config,
-		Metadata:    map[string]string{"team": "release"},
 	}
 
 	err = writeJobAgent(t.Context(), jobAgent, tx)

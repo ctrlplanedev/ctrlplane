@@ -21,32 +21,8 @@ export const jobAgent = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.name) }),
 );
 
-export const jobAgentMetadata = pgTable(
-  "job_agent_metadata",
-  {
-    id: uuid("id").primaryKey().defaultRandom().notNull(),
-    jobAgentId: uuid("job_agent_id")
-      .references(() => jobAgent.id, { onDelete: "cascade" })
-      .notNull(),
-    key: text("key").notNull(),
-    value: text("value").notNull(),
-  },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.jobAgentId) }),
-);
-
-export const jobAgentMetadataRelations = relations(
-  jobAgentMetadata,
-  ({ one }) => ({
-    jobAgent: one(jobAgent, {
-      fields: [jobAgentMetadata.jobAgentId],
-      references: [jobAgent.id],
-    }),
-  }),
-);
-
 export const jobAgentRelations = relations(jobAgent, ({ many }) => ({
   jobs: many(job),
-  metadata: many(jobAgentMetadata),
 }));
 
 export const createJobAgent = createInsertSchema(jobAgent, {

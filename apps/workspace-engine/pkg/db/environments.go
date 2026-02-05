@@ -16,19 +16,10 @@ const ENVIRONMENT_SELECT_QUERY = `
 		e.system_id,
 		e.created_at,
 		e.description,
-		e.resource_selector,
-		COALESCE(
-			json_object_agg(
-				COALESCE(em.key, ''),
-				COALESCE(em.value, '')
-			) FILTER (WHERE em.key IS NOT NULL),
-			'{}'::json
-		) as metadata
+		e.resource_selector
 	FROM environment e
 	INNER JOIN system s ON s.id = e.system_id
-	LEFT JOIN environment_metadata em ON em.environment_id = e.id
 	WHERE s.workspace_id = $1
-	GROUP BY e.id, e.name, e.system_id, e.created_at, e.description, e.resource_selector
 `
 
 func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environment, error) {
@@ -49,7 +40,6 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 		var environment oapi.Environment
 		var createdAt time.Time
 		var rawSelector map[string]interface{}
-		var metadataJSON []byte
 
 		err := rows.Scan(
 			&environment.Id,
@@ -58,7 +48,6 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 			&createdAt,
 			&environment.Description,
 			&rawSelector,
-			&metadataJSON,
 		)
 		if err != nil {
 			return nil, err
@@ -70,12 +59,6 @@ func getEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environme
 		if err != nil {
 			return nil, err
 		}
-
-		metadata, err := parseMetadataJSON(metadataJSON)
-		if err != nil {
-			return nil, err
-		}
-		environment.Metadata = metadata
 
 		environments = append(environments, &environment)
 	}
@@ -113,20 +96,6 @@ func writeEnvironment(ctx context.Context, environment *oapi.Environment, tx pgx
 	); err != nil {
 		return err
 	}
-
-	metadata := environment.Metadata
-	if metadata == nil {
-		metadata = map[string]string{}
-	}
-
-	if _, err := tx.Exec(ctx, "DELETE FROM environment_metadata WHERE environment_id = $1", environment.Id); err != nil {
-		return err
-	}
-
-	if err := writeMetadata(ctx, "environment_metadata", "environment_id", environment.Id, metadata, tx); err != nil {
-		return err
-	}
-
 	return nil
 }
 

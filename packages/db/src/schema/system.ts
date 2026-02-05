@@ -48,30 +48,9 @@ export const updateSystem = createSystem.partial();
 
 export type System = InferSelectModel<typeof system>;
 
-export const systemMetadata = pgTable(
-  "system_metadata",
-  {
-    id: uuid("id").primaryKey().defaultRandom().notNull(),
-    systemId: uuid("system_id")
-      .references(() => system.id, { onDelete: "cascade" })
-      .notNull(),
-    key: text("key").notNull(),
-    value: text("value").notNull(),
-  },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.systemId) }),
-);
-
-export const systemMetadataRelations = relations(systemMetadata, ({ one }) => ({
-  system: one(system, {
-    fields: [systemMetadata.systemId],
-    references: [system.id],
-  }),
-}));
-
 export const systemRelations = relations(system, ({ one, many }) => ({
   environments: many(environment),
   deployments: many(deployment),
-  metadata: many(systemMetadata),
   workspace: one(workspace, {
     fields: [system.workspaceId],
     references: [workspace.id],
