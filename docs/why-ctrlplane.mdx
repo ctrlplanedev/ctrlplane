@@ -56,16 +56,7 @@ When you have 5 services and 2 environments, everything is manageable. When you 
 | **Multi-region deploys** | Sequential manual deploys or YOLO all-at-once | Too slow or too risky |
 | **Rollbacks** | Ad-hoc scripts and hope | Inconsistent, slow, error-prone |
 
-## How Ctrlplane Helps
-
-Ctrlplane is the **orchestration layer** between your CI/CD pipelines and your infrastructure:
-
-```
-Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
- (builds)            (orchestrates)           (deploys)
-```
-
-### Two Core Systems
+## Two Core Systems
 
 <CardGroup cols={2}>
   <Card title="Deployment Orchestration" icon="rocket">
@@ -93,32 +84,6 @@ Ctrlplane doesn't replace your existing tools—it coordinates them:
 - **Not infrastructure provisioning** — Terraform still creates your resources
 
 Ctrlplane decides _when_ deployments should happen, _where_ they should go, and _whether_ they passed verification.
-
-## Quick Example
-
-Here's what deployment orchestration looks like with Ctrlplane:
-
-**1. CI builds and creates a version:**
-```bash
-ctrlc api upsert version \
-  --workspace my-workspace \
-  --deployment $DEPLOYMENT_ID \
-  --tag v1.2.3
-```
-
-**2. Ctrlplane automatically:**
-- Calculates which release targets need this version
-- Deploys to staging first (environment progression policy)
-- Runs verification checks against Datadog metrics
-- After staging passes, requests approval for production
-- Once approved, gradually rolls out to production clusters
-- Verifies each cluster before proceeding to the next
-- Auto-rolls back if any verification fails
-
-**3. You get:**
-- Full visibility in one dashboard
-- Consistent process every time
-- Confidence that verification actually passed
 
 ## Next Steps
 

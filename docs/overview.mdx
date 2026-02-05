@@ -21,7 +21,7 @@ flowchart LR
 2. **Policies are evaluated** — Ctrlplane checks if approvals, dependencies, and gates are satisfied
 3. **Job is dispatched** — Ctrlplane tells your job agent (ArgoCD, GitHub Actions, etc.) to deploy
 4. **Deployment executes** — The job agent performs the actual deployment
-5. **Verification runs** — Ctrlplane checks metrics (Datadog, Prometheus, HTTP) to confirm health
+5. **Verification runs** — Ctrlplane checks metrics (Datadog, Prometheus, HTTP) to confirm health and can also validate resource presence/status (e.g., newly discovered clusters are visible and ready)
 6. **Promote or rollback** — If verification passes, continue; if it fails, roll back
 
 ## The Key Entities
