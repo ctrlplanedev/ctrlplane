@@ -87,9 +87,6 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
 
-	// Trigger reconciliation by updating the version (simulate version event)
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
-
 	// Now job should be created without approvals
 	allJobs = engine.Workspace().Jobs().Items()
 	if len(allJobs) != 1 {
@@ -184,7 +181,6 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass1)
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass2)
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// Job should be created immediately
 	allJobs = engine.Workspace().Jobs().Items()
@@ -266,7 +262,6 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// All 3 resources should have jobs created
 	allJobs = engine.Workspace().Jobs().Items()
@@ -350,7 +345,6 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// Both environments should have jobs
 	allJobs = engine.Workspace().Jobs().Items()
@@ -445,7 +439,6 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// Still no jobs (policy 2 still blocks)
 	allJobs = engine.Workspace().Jobs().Items()
@@ -533,7 +526,6 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 		ExpiresAt:     &pastTime,
 	}
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version)
 
 	// No jobs because bypass is expired
 	allJobs := engine.Workspace().Jobs().Items()
@@ -604,7 +596,6 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 		CreatedAt:     time.Now(),
 	}
 	engine.PushEvent(ctx, handler.PolicySkipCreate, bypass)
-	engine.PushEvent(ctx, handler.DeploymentVersionUpdate, version1)
 
 	// Job should be created
 	allJobs := engine.Workspace().Jobs().Items()
