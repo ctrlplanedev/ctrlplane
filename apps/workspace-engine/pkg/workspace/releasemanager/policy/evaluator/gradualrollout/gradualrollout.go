@@ -258,8 +258,18 @@ func (e *GradualRolloutEvaluator) getRolloutStartTime(ctx context.Context, envir
 	// - Allow windows: if outside, push to when window opens
 	// - Deny windows: if inside, push to when window ends
 	finalStartTime := baseStartTime
+	hasDeployedVersion := true
 	if _, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget); err != nil {
-		return finalStartTime, nil
+		hasDeployedVersion = false
+	}
+	if !hasDeployedVersion {
+		enforcedWindows := make([]*oapi.DeploymentWindowRule, 0, len(deploymentWindowRules))
+		for _, windowRule := range deploymentWindowRules {
+			if windowRule.EnforceOnFirstDeploy != nil && *windowRule.EnforceOnFirstDeploy {
+				enforcedWindows = append(enforcedWindows, windowRule)
+			}
+		}
+		deploymentWindowRules = enforcedWindows
 	}
 	for _, windowRule := range deploymentWindowRules {
 		isAllowWindow := windowRule.AllowWindow == nil || *windowRule.AllowWindow

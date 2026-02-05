@@ -204,6 +204,11 @@ local openapi = import '../lib/openapi.libsonnet';
         default: true,
         description: 'If true, deployments are only allowed during the window. If false, deployments are blocked during the window (deny window)',
       },
+      enforceOnFirstDeploy: {
+        type: 'boolean',
+        default: false,
+        description: 'If true, deployment windows are enforced even when no version has been deployed to the release target yet.',
+      },
     },
   },
 

@@ -326,6 +326,31 @@ func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testin
 	assert.Equal(t, "first_deployment", result.Details["reason"])
 }
 
+func TestDeploymentWindowEvaluator_EnforcesWindowWithoutDeployedVersionWhenConfigured(t *testing.T) {
+	st := setupStore()
+
+	rule := &oapi.PolicyRule{
+		Id: "rule-1",
+		DeploymentWindow: &oapi.DeploymentWindowRule{
+			Rrule:                "FREQ=MINUTELY;INTERVAL=1",
+			DurationMinutes:      60,
+			AllowWindow:          boolPtr(false),
+			EnforceOnFirstDeploy: boolPtr(true),
+		},
+	}
+
+	eval := NewEvaluator(st, rule)
+	require.NotNil(t, eval, "expected non-nil evaluator")
+
+	ctx, releaseTarget := setupReleaseTarget(t, st)
+	scope := evaluator.EvaluatorScope{ReleaseTarget: releaseTarget}
+	result := eval.Evaluate(ctx, scope)
+
+	assert.False(t, result.Allowed, "expected deployment window to apply on first deploy")
+	assert.True(t, result.ActionRequired, "expected action required")
+	assert.Contains(t, result.Message, "within deny window")
+}
+
 func TestDeploymentWindowEvaluator_NextEvaluationTime(t *testing.T) {
 	st := setupStore()
 

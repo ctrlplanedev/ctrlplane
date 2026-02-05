@@ -352,6 +352,9 @@ type DeploymentWindowRule struct {
 	// DurationMinutes Duration of each deployment window in minutes
 	DurationMinutes int32 `json:"durationMinutes"`
 
+	// EnforceOnFirstDeploy If true, deployment windows are enforced even when no version has been deployed to the release target yet.
+	EnforceOnFirstDeploy *bool `json:"enforceOnFirstDeploy,omitempty"`
+
 	// Rrule RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9)
 	Rrule string `json:"rrule"`
 

@@ -993,6 +993,11 @@ export interface components {
              * @description Duration of each deployment window in minutes
              */
             durationMinutes: number;
+            /**
+             * @description If true, deployment windows are enforced even when no version has been deployed to the release target yet.
+             * @default false
+             */
+            enforceOnFirstDeploy: boolean;
             /** @description RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9) */
             rrule: string;
             /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
@@ -1584,7 +1589,7 @@ export interface components {
         };
         WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
         WorkflowBooleanInput: {
-            default: boolean;
+            default?: boolean;
             name: string;
             /** @enum {string} */
             type: "boolean";
@@ -1632,7 +1637,7 @@ export interface components {
             type: "array";
         };
         WorkflowNumberInput: {
-            default: number;
+            default?: number;
             name: string;
             /** @enum {string} */
             type: "number";
@@ -1648,7 +1653,7 @@ export interface components {
             type: "array";
         };
         WorkflowStringInput: {
-            default: string;
+            default?: string;
             name: string;
             /** @enum {string} */
             type: "string";

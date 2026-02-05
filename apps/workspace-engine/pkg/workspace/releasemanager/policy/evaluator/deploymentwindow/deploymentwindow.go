@@ -111,10 +111,13 @@ func (e *DeploymentWindowEvaluator) Evaluate(
 	_, span := tracer.Start(ctx, "DeploymentWindowEvaluator.Evaluate")
 	defer span.End()
 
-	_, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, scope.ReleaseTarget)
-	if err != nil {
-		return results.NewAllowedResult("No previous version deployed - deployment window ignored").
-			WithDetail("reason", "first_deployment")
+	enforceOnFirstDeploy := e.rule.EnforceOnFirstDeploy != nil && *e.rule.EnforceOnFirstDeploy
+	if !enforceOnFirstDeploy {
+		_, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, scope.ReleaseTarget)
+		if err != nil {
+			return results.NewAllowedResult("No previous version deployed - deployment window ignored").
+				WithDetail("reason", "first_deployment")
+		}
 	}
 
 	now := time.Now().In(e.location)

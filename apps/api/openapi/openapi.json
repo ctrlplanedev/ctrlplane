@@ -539,6 +539,11 @@
                   "minimum": 1,
                   "type": "integer"
                },
+               "enforceOnFirstDeploy": {
+                  "default": false,
+                  "description": "If true, deployment windows are enforced even when no version has been deployed to the release target yet.",
+                  "type": "boolean"
+               },
                "rrule": {
                   "description": "RFC 5545 recurrence rule defining when deployment windows start (e.g., FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9)",
                   "type": "string"
@@ -2243,8 +2248,7 @@
             },
             "required": [
                "name",
-               "type",
-               "default"
+               "type"
             ],
             "type": "object"
          },
@@ -2398,8 +2402,7 @@
             },
             "required": [
                "name",
-               "type",
-               "default"
+               "type"
             ],
             "type": "object"
          },
@@ -2458,8 +2461,7 @@
             },
             "required": [
                "name",
-               "type",
-               "default"
+               "type"
             ],
             "type": "object"
          },
