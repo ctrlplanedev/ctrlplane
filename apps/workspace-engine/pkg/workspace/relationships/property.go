@@ -125,6 +125,17 @@ func getDeploymentProperty(deployment *oapi.Deployment, propertyPath []string) (
 			return nil, err
 		}
 		return convertValue(value)
+	case "metadata":
+		if len(propertyPath) == 1 {
+			return convertValue(deployment.Metadata)
+		}
+		if len(propertyPath) == 2 {
+			if val, ok := deployment.Metadata[propertyPath[1]]; ok {
+				return convertValue(val)
+			}
+			return nil, fmt.Errorf("metadata key %s not found", propertyPath[1])
+		}
+		return nil, fmt.Errorf("metadata path too deep: %v", propertyPath)
 	default:
 		return getPropertyReflection(deployment, propertyPath)
 	}
@@ -149,6 +160,17 @@ func getEnvironmentProperty(environment *oapi.Environment, propertyPath []string
 		return nil, fmt.Errorf("description is nil")
 	case "system_id", "systemid":
 		return convertValue(environment.SystemId)
+	case "metadata":
+		if len(propertyPath) == 1 {
+			return convertValue(environment.Metadata)
+		}
+		if len(propertyPath) == 2 {
+			if val, ok := environment.Metadata[propertyPath[1]]; ok {
+				return convertValue(val)
+			}
+			return nil, fmt.Errorf("metadata key %s not found", propertyPath[1])
+		}
+		return nil, fmt.Errorf("metadata path too deep: %v", propertyPath)
 	default:
 		return getPropertyReflection(environment, propertyPath)
 	}

@@ -34,6 +34,10 @@ func (e *Deployments) Upsert(ctx context.Context, deployment *oapi.Deployment) e
 	_, span := deploymentsTracer.Start(ctx, "UpsertDeployment")
 	defer span.End()
 
+	if deployment.Metadata == nil {
+		deployment.Metadata = map[string]string{}
+	}
+
 	e.repo.Deployments.Set(deployment.Id, deployment)
 	e.store.changeset.RecordUpsert(deployment)
 

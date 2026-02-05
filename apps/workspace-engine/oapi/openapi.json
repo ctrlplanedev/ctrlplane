@@ -179,6 +179,12 @@
                "name": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
                },
@@ -192,6 +198,7 @@
             "required": [
                "id",
                "name",
+               "metadata",
                "slug",
                "systemId",
                "jobAgentConfig"
@@ -459,6 +466,7 @@
             "required": [
                "id",
                "name",
+               "metadata",
                "systemId",
                "createdAt"
             ],
@@ -737,6 +745,12 @@
                "name": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
                "type": {
                   "type": "string"
                },
@@ -749,7 +763,8 @@
                "workspaceId",
                "name",
                "type",
-               "config"
+               "config",
+               "metadata"
             ],
             "type": "object"
          },
@@ -1764,6 +1779,12 @@
                "name": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
                "workspaceId": {
                   "type": "string"
                }
@@ -1771,7 +1792,8 @@
             "required": [
                "id",
                "workspaceId",
-               "name"
+               "name",
+               "metadata"
             ],
             "type": "object"
          },

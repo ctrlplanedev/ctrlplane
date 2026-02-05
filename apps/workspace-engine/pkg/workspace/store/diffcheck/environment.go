@@ -81,5 +81,17 @@ func hasEnvironmentChangesBasic(old, new *oapi.Environment) map[string]bool {
 		changed["resourceselector"] = true
 	}
 
+	// Compare metadata
+	for key := range old.Metadata {
+		if newVal, exists := new.Metadata[key]; !exists || old.Metadata[key] != newVal {
+			changed["metadata."+key] = true
+		}
+	}
+	for key := range new.Metadata {
+		if _, exists := old.Metadata[key]; !exists {
+			changed["metadata."+key] = true
+		}
+	}
+
 	return changed
 }

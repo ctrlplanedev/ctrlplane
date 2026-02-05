@@ -242,6 +242,30 @@ func TestHasEnvironmentChanges_ResourceSelectorChanged(t *testing.T) {
 	assert.True(t, hasResourceSelectorChange, "Should detect resourceSelector change")
 }
 
+func TestHasEnvironmentChanges_MetadataChanged(t *testing.T) {
+	old := &oapi.Environment{
+		Name:     "production",
+		SystemId: "sys-123",
+		Metadata: map[string]string{
+			"region": "us-east-1",
+		},
+		Id: "env-123",
+	}
+
+	new := &oapi.Environment{
+		Name:     "production",
+		SystemId: "sys-123",
+		Metadata: map[string]string{
+			"region": "us-west-2",
+		},
+		Id: "env-123",
+	}
+
+	changes := HasEnvironmentChanges(old, new)
+	assert.Len(t, changes, 1, "Should detect metadata change")
+	assert.True(t, changes["metadata.region"], "Should detect metadata.region change")
+}
+
 func TestHasEnvironmentChanges_ResourceSelectorNilToSet(t *testing.T) {
 	newSelector := &oapi.Selector{}
 	_ = newSelector.FromJsonSelector(oapi.JsonSelector{

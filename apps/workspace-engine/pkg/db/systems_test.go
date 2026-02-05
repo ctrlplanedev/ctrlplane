@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"workspace-engine/pkg/oapi"
@@ -35,6 +36,17 @@ func validateRetrievedSystems(t *testing.T, actualSystems []*oapi.System, expect
 		if actualSystem.WorkspaceId != expectedSystem.WorkspaceId {
 			t.Fatalf("expected system %v, got %v", expectedSystem, actualSystem)
 		}
+		expectedMetadata := expectedSystem.Metadata
+		if expectedMetadata == nil {
+			expectedMetadata = map[string]string{}
+		}
+		actualMetadata := actualSystem.Metadata
+		if actualMetadata == nil {
+			actualMetadata = map[string]string{}
+		}
+		if !reflect.DeepEqual(expectedMetadata, actualMetadata) {
+			t.Fatalf("expected system metadata %v, got %v", expectedMetadata, actualMetadata)
+		}
 	}
 }
 
@@ -56,6 +68,7 @@ func TestDBSystems_BasicWrite(t *testing.T) {
 		WorkspaceId: workspaceID,
 		Name:        name,
 		Description: &description,
+		Metadata:    map[string]string{"owner": "platform"},
 	}
 
 	err = writeSystem(t.Context(), sys, tx)

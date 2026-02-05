@@ -43,6 +43,17 @@ func validateRetrievedDeployments(t *testing.T, actualDeployments []*oapi.Deploy
 		}
 		compareStrPtr(t, actual.Description, expected.Description)
 		compareStrPtr(t, actual.JobAgentId, expected.JobAgentId)
+		expectedMetadata := expected.Metadata
+		if expectedMetadata == nil {
+			expectedMetadata = map[string]string{}
+		}
+		actualMetadata := actual.Metadata
+		if actualMetadata == nil {
+			actualMetadata = map[string]string{}
+		}
+		if !reflect.DeepEqual(expectedMetadata, actualMetadata) {
+			t.Fatalf("expected deployment metadata %v, got %v", expectedMetadata, actualMetadata)
+		}
 		// Note: ResourceSelector is *Selector (complex type), comparing as pointers only
 		if (actual.ResourceSelector == nil) != (expected.ResourceSelector == nil) {
 			t.Fatalf("resource_selector nil mismatch: expected %v, got %v", expected.ResourceSelector == nil, actual.ResourceSelector == nil)
@@ -108,6 +119,7 @@ func TestDBDeployments_BasicWrite(t *testing.T) {
 		SystemId:         systemID,
 		Description:      &description,
 		JobAgentConfig:   oapi.JobAgentConfig{},
+		Metadata:         map[string]string{"team": "platform"},
 		ResourceSelector: nil, // Selector is complex type, skipping for basic test
 	}
 

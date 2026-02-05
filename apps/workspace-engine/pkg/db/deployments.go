@@ -17,10 +17,19 @@ const DEPLOYMENT_SELECT_QUERY = `
 		d.system_id,
 		d.job_agent_id,
 		d.job_agent_config,
-		d.resource_selector
+		d.resource_selector,
+		COALESCE(
+			json_object_agg(
+				COALESCE(dm.key, ''),
+				COALESCE(dm.value, '')
+			) FILTER (WHERE dm.key IS NOT NULL),
+			'{}'::json
+		) as metadata
 	FROM deployment d
 	INNER JOIN system s ON s.id = d.system_id
+	LEFT JOIN deployment_metadata dm ON dm.deployment_id = d.id
 	WHERE s.workspace_id = $1
+	GROUP BY d.id, d.name, d.slug, d.description, d.system_id, d.job_agent_id, d.job_agent_config, d.resource_selector
 `
 
 func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment, error) {
@@ -40,6 +49,7 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 	for rows.Next() {
 		var deployment oapi.Deployment
 		var rawSelector map[string]interface{}
+		var metadataJSON []byte
 
 		err := rows.Scan(
 			&deployment.Id,
@@ -50,6 +60,7 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 			&deployment.JobAgentId,
 			&deployment.JobAgentConfig,
 			&rawSelector,
+			&metadataJSON,
 		)
 		if err != nil {
 			return nil, err
@@ -60,6 +71,12 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 		if err != nil {
 			return nil, err
 		}
+
+		metadata, err := parseMetadataJSON(metadataJSON)
+		if err != nil {
+			return nil, err
+		}
+		deployment.Metadata = metadata
 
 		deployments = append(deployments, &deployment)
 	}
@@ -101,6 +118,19 @@ func writeDeployment(ctx context.Context, deployment *oapi.Deployment, tx pgx.Tx
 		deployment.JobAgentConfig,
 		selectorToStore,
 	); err != nil {
+		return err
+	}
+
+	metadata := deployment.Metadata
+	if metadata == nil {
+		metadata = map[string]string{}
+	}
+
+	if _, err := tx.Exec(ctx, "DELETE FROM deployment_metadata WHERE deployment_id = $1", deployment.Id); err != nil {
+		return err
+	}
+
+	if err := writeMetadata(ctx, "deployment_metadata", "deployment_id", deployment.Id, metadata, tx); err != nil {
 		return err
 	}
 

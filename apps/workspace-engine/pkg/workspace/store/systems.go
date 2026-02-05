@@ -23,6 +23,10 @@ func (s *Systems) Get(id string) (*oapi.System, bool) {
 }
 
 func (s *Systems) Upsert(ctx context.Context, system *oapi.System) error {
+	if system.Metadata == nil {
+		system.Metadata = map[string]string{}
+	}
+
 	s.repo.Systems.Set(system.Id, system)
 	s.store.changeset.RecordUpsert(system)
 

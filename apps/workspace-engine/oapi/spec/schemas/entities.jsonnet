@@ -64,7 +64,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Environment: {
     type: 'object',
-    required: ['id', 'name', 'systemId', 'createdAt'],
+    required: ['id', 'name', 'systemId', 'createdAt', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
@@ -72,29 +72,41 @@ local openapi = import '../lib/openapi.libsonnet';
       systemId: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
       createdAt: { type: 'string', format: 'date-time' },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
     },
   },
 
   System: {
     type: 'object',
-    required: ['id', 'workspaceId', 'name'],
+    required: ['id', 'workspaceId', 'name', 'metadata'],
     properties: {
       id: { type: 'string' },
       workspaceId: { type: 'string' },
       name: { type: 'string' },
       description: { type: 'string' },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
     },
   },
 
   JobAgent: {
     type: 'object',
-    required: ['id', 'workspaceId', 'name', 'type', 'config'],
+    required: ['id', 'workspaceId', 'name', 'type', 'config', 'metadata'],
     properties: {
       id: { type: 'string' },
       workspaceId: { type: 'string' },
       name: { type: 'string' },
       type: { type: 'string' },
       config: openapi.schemaRef('JobAgentConfig'),
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
     },
   },
 

@@ -144,6 +144,18 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 		}
 	}
 
+	// Compare metadata
+	for key := range old.Metadata {
+		if newVal, exists := new.Metadata[key]; !exists || old.Metadata[key] != newVal {
+			changed["metadata."+key] = true
+		}
+	}
+	for key := range new.Metadata {
+		if _, exists := old.Metadata[key]; !exists {
+			changed["metadata."+key] = true
+		}
+	}
+
 	// Compare ResourceSelector using deep equality
 	if !deepEqual(old.ResourceSelector, new.ResourceSelector) {
 		changed["resourceselector"] = true
