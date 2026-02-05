@@ -194,6 +194,8 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 		}
 	}
 
+	requireVerificationPassed := e.rule.RequireVerificationPassed != nil && *e.rule.RequireVerificationPassed
+
 	var minSuccessPercentage float32 = 0.0 // Default: require at least one successful job (> 0%)
 	if e.rule.MinimumSuccessPercentage != nil {
 		minSuccessPercentage = *e.rule.MinimumSuccessPercentage
@@ -223,6 +225,7 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 			version,
 			depEnv,
 			successStatuses,
+			requireVerificationPassed,
 			passRateEvaluator,
 			soakTimeEvaluator,
 		).WithDetail("environment", depEnv)
@@ -278,13 +281,14 @@ func (e *EnvironmentProgressionEvaluator) evaluateJobSuccessCriteria(
 	version *oapi.DeploymentVersion,
 	environment *oapi.Environment,
 	successStatuses map[oapi.JobStatus]bool,
+	requireVerificationPassed bool,
 	passRateEvaluator *PassRateEvaluator,
 	soakTimeEvaluator *SoakTimeEvaluator,
 ) *oapi.RuleEvaluation {
 	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.evaluateJobSuccessCriteria")
 	defer span.End()
 
-	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses)
+	tracker := NewReleaseTargetJobTracker(ctx, e.store, environment, version, successStatuses, requireVerificationPassed)
 	if len(tracker.ReleaseTargets) == 0 {
 		return results.NewAllowedResult("No release targets in dependency environment, defaulting to allowed").WithSatisfiedAt(version.CreatedAt)
 	}

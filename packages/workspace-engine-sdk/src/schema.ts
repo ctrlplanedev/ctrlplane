@@ -1312,6 +1312,11 @@ export interface components {
        */
       minimumSuccessPercentage: number;
       successStatuses?: components["schemas"]["JobStatus"][];
+      /**
+       * @description If true, jobs must pass verification to count toward the success percentage
+       * @default false
+       */
+      requireVerificationPassed: boolean;
     };
     ErrorResponse: {
       /** @example Workspace not found */

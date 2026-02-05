@@ -394,9 +394,11 @@ type EnvironmentProgressionRule struct {
 	MaximumAgeHours *int32 `json:"maximumAgeHours,omitempty"`
 
 	// MinimumSockTimeMinutes Minimum time to wait after the depends on environment is in a success state before the current environment can be deployed
-	MinimumSockTimeMinutes   *int32       `json:"minimumSockTimeMinutes,omitempty"`
-	MinimumSuccessPercentage *float32     `json:"minimumSuccessPercentage,omitempty"`
-	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
+	MinimumSockTimeMinutes   *int32   `json:"minimumSockTimeMinutes,omitempty"`
+	MinimumSuccessPercentage *float32 `json:"minimumSuccessPercentage,omitempty"`
+	// RequireVerificationPassed If true, jobs must pass verification to count as successful.
+	RequireVerificationPassed *bool        `json:"requireVerificationPassed,omitempty"`
+	SuccessStatuses           *[]JobStatus `json:"successStatuses,omitempty"`
 }
 
 // ErrorResponse defines model for ErrorResponse.

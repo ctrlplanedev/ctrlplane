@@ -126,6 +126,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
       minimumSuccessPercentage: { type: 'number', format: 'float', minimum: 0, maximum: 100, default: 100 },
       successStatuses: { type: 'array', items: openapi.schemaRef('JobStatus') },
+      requireVerificationPassed: {
+        type: 'boolean',
+        default: false,
+        description: 'If true, jobs must pass verification to count toward the success percentage',
+      },
 
       minimumSockTimeMinutes: {
         type: 'integer',

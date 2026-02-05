@@ -633,6 +633,11 @@
                      "$ref": "#/components/schemas/JobStatus"
                   },
                   "type": "array"
+               },
+               "requireVerificationPassed": {
+                  "default": false,
+                  "description": "If true, jobs must pass verification to count toward the success percentage",
+                  "type": "boolean"
                }
             },
             "required": [

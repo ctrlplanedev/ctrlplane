@@ -1023,6 +1023,13 @@ func EnvironmentProgressionSuccessStatuses(statuses ...oapi.JobStatus) Environme
 	}
 }
 
+func EnvironmentProgressionRequireVerificationPassed(require bool) EnvironmentProgressionRuleOption {
+	return func(_ *TestWorkspace, r *oapi.EnvironmentProgressionRule) error {
+		r.RequireVerificationPassed = &require
+		return nil
+	}
+}
+
 // ===== RelationshipRule Options =====
 
 func RelationshipRuleName(name string) RelationshipRuleOption {
