@@ -129,8 +129,8 @@ export function WorkflowsTable() {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>ID</TableHead>
-          <TableHead>Jobs</TableHead>
+          <TableHead>Workflow ID</TableHead>
+          <TableHead>Workflow Jobs</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
         </TableRow>
