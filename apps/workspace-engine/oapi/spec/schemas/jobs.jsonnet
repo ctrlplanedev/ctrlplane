@@ -117,6 +117,17 @@ local JobPropertyKeys = std.objectFields(Job.properties);
     },
   },
 
+  ArgoWorkflowsJobAgentConfig: {
+    type: 'object',
+    required: ['serverUrl', 'apiKey', 'template'],
+    properties: {
+      serverUrl: { type: 'string', description: 'Argo Workflows server address (host[:port] or URL).' },
+      apiKey: { type: 'string', description: 'Argo Workflows API token.' },
+      namespace: { type: 'string', description: 'Kubernetes namespace for workflow execution (defaults to "default" if omitted).' },
+      template: { type: 'string', description: 'Argo Workflow template.' },
+    },
+  },
+
   TerraformCloudJobAgentConfig: {
     type: 'object',
     required: ['address', 'organization', 'token', 'template'],

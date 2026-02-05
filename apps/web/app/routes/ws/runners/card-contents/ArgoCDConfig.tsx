@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const argoCdJobAgentConfig = z
   .object({
+    type: z.literal("argo-cd"),
     serverUrl: z.string(),
     apiKey: z.string(),
   })

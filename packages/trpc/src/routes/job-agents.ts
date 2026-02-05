@@ -18,6 +18,12 @@ const jobAgentConfig = z.discriminatedUnion("type", [
     apiKey: z.string(),
     serverUrl: z.string(),
   }),
+  z.object({
+    type: z.literal("argo-workflows"),
+    apiKey: z.string(),
+    serverUrl: z.string(),
+    namespace: z.string().optional(),
+  }),
   z
     .object({
       type: z.literal("tfe"),

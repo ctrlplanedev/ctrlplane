@@ -53,6 +53,32 @@
             ],
             "type": "object"
          },
+         "ArgoWorkflowsJobAgentConfig": {
+            "properties": {
+               "apiKey": {
+                  "description": "Argo Workflows API token.",
+                  "type": "string"
+               },
+               "namespace": {
+                  "description": "Kubernetes namespace for workflow execution (defaults to \"default\" if omitted).",
+                  "type": "string"
+               },
+               "serverUrl": {
+                  "description": "Argo Workflows server address (host[:port] or URL).",
+                  "type": "string"
+               },
+               "template": {
+                  "description": "Argo Workflow template.",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "serverUrl",
+               "apiKey",
+               "template"
+            ],
+            "type": "object"
+         },
          "BooleanValue": {
             "type": "boolean"
          },

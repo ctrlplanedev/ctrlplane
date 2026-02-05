@@ -228,6 +228,21 @@ type ArgoCDJobAgentConfig struct {
 	Template string `json:"template"`
 }
 
+// ArgoWorkflowsJobAgentConfig defines model for ArgoWorkflowsJobAgentConfig.
+type ArgoWorkflowsJobAgentConfig struct {
+	// ApiKey Argo Workflows API token.
+	ApiKey string `json:"apiKey"`
+
+	// Namespace Kubernetes namespace for workflow execution (defaults to "default" if omitted).
+	Namespace *string `json:"namespace,omitempty"`
+
+	// ServerUrl Argo Workflows server address (host[:port] or URL).
+	ServerUrl string `json:"serverUrl"`
+
+	// Template Argo Workflow template.
+	Template string `json:"template"`
+}
+
 // BooleanValue defines model for BooleanValue.
 type BooleanValue = bool
 

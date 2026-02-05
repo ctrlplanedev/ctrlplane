@@ -25,6 +25,7 @@ import {
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "../_components/DeploymentProvider";
 import { ArgoCDConfig } from "./_components/ArgoCD";
+import { ArgoWorkflowsConfig } from "./_components/ArgoWorkflows";
 import { GithubAgentConfig } from "./_components/GithubAgentConfig";
 import { TerraformCloudConfig } from "./_components/TerraformCloudConfig";
 import { useAllJobAgents, useSelectedJobAgent } from "./_hooks/job-agents";
@@ -94,6 +95,9 @@ function JobAgentConfigSection({
               )}
               {selectedJobAgent?.type === "argo-cd" && (
                 <ArgoCDConfig form={form} />
+              )}
+              {selectedJobAgent?.type === "argo-workflows" && (
+                <ArgoWorkflowsConfig form={form} />
               )}
               {selectedJobAgent?.type === "tfe" && (
                 <TerraformCloudConfig form={form} />

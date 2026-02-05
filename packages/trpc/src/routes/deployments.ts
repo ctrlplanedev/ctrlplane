@@ -19,6 +19,10 @@ const deploymentArgoCdConfig = z.object({
   template: z.string(),
 });
 
+const deploymentArgoWorkflowsConfig = z.object({
+  template: z.string(),
+});
+
 const deploymentTfeConfig = z.object({
   template: z.string(),
 });
@@ -28,6 +32,7 @@ const deploymentCustomConfig = z.object({}).passthrough();
 const deploymentJobAgentConfig = z.union([
   deploymentGhConfig,
   deploymentArgoCdConfig,
+  deploymentArgoWorkflowsConfig,
   deploymentTfeConfig,
   deploymentCustomConfig,
 ]);
@@ -244,6 +249,14 @@ export const deploymentsRouter = router({
         const argoCdResult = deploymentArgoCdConfig.safeParse(config);
         if (argoCdResult.success) {
           return { ...argoCdResult.data, type: "argo-cd" as const };
+        }
+        const argoWorkflowsResult =
+          deploymentArgoWorkflowsConfig.safeParse(config);
+        if (argoWorkflowsResult.success) {
+          return {
+            ...argoWorkflowsResult.data,
+            type: "argo-workflows" as const,
+          };
         }
         const tfeResult = deploymentTfeConfig.safeParse(config);
         if (tfeResult.success) {

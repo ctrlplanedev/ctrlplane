@@ -68,6 +68,7 @@
             "pages": [
               "integrations/job-agents/github",
               "integrations/job-agents/argocd",
+              "integrations/job-agents/argo-workflows",
               "integrations/job-agents/terraform-cloud"
             ]
           },
