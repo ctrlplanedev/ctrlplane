@@ -28,14 +28,170 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { cn } from "~/lib/utils";
 import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
+import { getRuleDisplay } from "./_components/environmentversiondecisions/policy-skip/utils";
 
 type ResolvedPolicy = WorkspaceEngine["schemas"]["ResolvedPolicy"];
 type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTarget"];
 type ReleaseTargetWithState =
   WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
+type PolicyRule = WorkspaceEngine["schemas"]["PolicyRule"];
+type Selector = WorkspaceEngine["schemas"]["Selector"];
+type PolicyTargetSelector =
+  WorkspaceEngine["schemas"]["PolicyTargetSelector"];
 
 const releaseTargetKey = (releaseTarget: ReleaseTarget) =>
   `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`;
+
+const formatSelector = (selector?: Selector) => {
+  if (!selector) return "any";
+  if ("cel" in selector) return selector.cel;
+  return JSON.stringify(selector);
+};
+
+const truncateText = (value: string, maxLength = 120) => {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength)}...`;
+};
+
+const getRuleDetails = (rule: PolicyRule): string[] => {
+  if (rule.anyApproval != null)
+    return [`Min approvals: ${rule.anyApproval.minApprovals}`];
+
+  if (rule.deploymentDependency != null) {
+    const details = [
+      `Depends on deployments: ${truncateText(
+        formatSelector(rule.deploymentDependency.dependsOnDeploymentSelector),
+      )}`,
+    ];
+    if (rule.deploymentDependency.reference) {
+      details.push(`Reference: ${rule.deploymentDependency.reference}`);
+    }
+    return details;
+  }
+
+  if (rule.deploymentWindow != null) {
+    const details = [
+      rule.deploymentWindow.allowWindow
+        ? "Allow deployments during window"
+        : "Block deployments during window",
+      `Duration: ${rule.deploymentWindow.durationMinutes}m`,
+      `RRule: ${truncateText(rule.deploymentWindow.rrule, 100)}`,
+    ];
+    if (rule.deploymentWindow.timezone) {
+      details.push(`Timezone: ${rule.deploymentWindow.timezone}`);
+    }
+    return details;
+  }
+
+  if (rule.environmentProgression != null) {
+    const details = [
+      `Depends on environments: ${truncateText(
+        formatSelector(
+          rule.environmentProgression.dependsOnEnvironmentSelector,
+        ),
+      )}`,
+      `Min success: ${rule.environmentProgression.minimumSuccessPercentage}%`,
+      `Soak time: ${rule.environmentProgression.minimumSockTimeMinutes}m`,
+    ];
+    if (rule.environmentProgression.maximumAgeHours != null) {
+      details.push(`Max age: ${rule.environmentProgression.maximumAgeHours}h`);
+    }
+    if (
+      rule.environmentProgression.successStatuses != null &&
+      rule.environmentProgression.successStatuses.length > 0
+    ) {
+      details.push(
+        `Success statuses: ${rule.environmentProgression.successStatuses.join(", ")}`,
+      );
+    }
+    return details;
+  }
+
+  if (rule.gradualRollout != null) {
+    return [
+      `Strategy: ${rule.gradualRollout.rolloutType}`,
+      `Interval: ${rule.gradualRollout.timeScaleInterval}s`,
+    ];
+  }
+
+  if (rule.retry != null) {
+    const details = [
+      `Max retries: ${rule.retry.maxRetries}`,
+      `Backoff: ${rule.retry.backoffStrategy}`,
+    ];
+    if (rule.retry.backoffSeconds != null) {
+      details.push(`Backoff delay: ${rule.retry.backoffSeconds}s`);
+    }
+    if (rule.retry.maxBackoffSeconds != null) {
+      details.push(`Max backoff: ${rule.retry.maxBackoffSeconds}s`);
+    }
+    if (rule.retry.retryOnStatuses != null) {
+      details.push(`Statuses: ${rule.retry.retryOnStatuses.join(", ")}`);
+    }
+    return details;
+  }
+
+  if (rule.rollback != null) {
+    const details = [
+      rule.rollback.onVerificationFailure
+        ? "Rollback on verification failure"
+        : "No rollback on verification failure",
+    ];
+    if (rule.rollback.onJobStatuses != null) {
+      details.push(`Job statuses: ${rule.rollback.onJobStatuses.join(", ")}`);
+    }
+    return details;
+  }
+
+  if (rule.verification != null) {
+    return [
+      `Metrics: ${rule.verification.metrics.length}`,
+      `Trigger: ${rule.verification.triggerOn}`,
+    ];
+  }
+
+  if (rule.versionCooldown != null) {
+    return [`Cooldown: ${rule.versionCooldown.intervalSeconds}s`];
+  }
+
+  if (rule.versionSelector != null) {
+    return [
+      ...(rule.versionSelector.description
+        ? [rule.versionSelector.description]
+        : []),
+      `Selector: ${truncateText(formatSelector(rule.versionSelector.selector))}`,
+    ];
+  }
+
+  return [];
+};
+
+const getPolicyTargetDescriptions = (selectors: PolicyTargetSelector[]) => {
+  return selectors
+    .map((selector, idx) => {
+      const parts: string[] = [];
+      if (selector.deploymentSelector != null) {
+        parts.push(
+          `deployment: ${truncateText(formatSelector(selector.deploymentSelector))}`,
+        );
+      }
+      if (selector.environmentSelector != null) {
+        parts.push(
+          `environment: ${truncateText(formatSelector(selector.environmentSelector))}`,
+        );
+      }
+      if (selector.resourceSelector != null) {
+        parts.push(
+          `resource: ${truncateText(formatSelector(selector.resourceSelector))}`,
+        );
+      }
+      if (parts.length === 0) return null;
+      return { id: selector.id ?? `selector-${idx}`, value: parts.join(" | ") };
+    })
+    .filter(
+      (item): item is { id: string; value: string } => item != null,
+    );
+};
 
 type PolicyResourceRowProps = {
   releaseTarget: ReleaseTargetWithState;
@@ -82,6 +238,14 @@ const PolicyReleaseTargetsGroup: React.FC<PolicyReleaseTargetsGroupProps> = ({
 }) => {
   const [open, setOpen] = useState(true);
   const visibleTargets = open ? releaseTargets : [];
+  const ruleSummaries = policy.policy.rules.map((rule) => ({
+    id: rule.id,
+    name: getRuleDisplay(rule),
+    details: getRuleDetails(rule),
+  }));
+  const selectorSummaries = getPolicyTargetDescriptions(
+    policy.policy.selectors ?? [],
+  );
   return (
     <Fragment>
       <TableRow>
@@ -105,6 +269,11 @@ const PolicyReleaseTargetsGroup: React.FC<PolicyReleaseTargetsGroupProps> = ({
               <Badge variant={policy.policy.enabled ? "default" : "secondary"}>
                 {policy.policy.enabled ? "Enabled" : "Disabled"}
               </Badge>
+              <Badge variant="outline">Priority {policy.policy.priority}</Badge>
+              <Badge variant="outline">
+                {policy.policy.rules.length} rule
+                {policy.policy.rules.length === 1 ? "" : "s"}
+              </Badge>
             </div>
             <span className="text-xs text-muted-foreground">
               {releaseTargets.length} resource
@@ -113,6 +282,51 @@ const PolicyReleaseTargetsGroup: React.FC<PolicyReleaseTargetsGroupProps> = ({
           </div>
         </TableCell>
       </TableRow>
+      {open && (
+        <TableRow>
+          <TableCell colSpan={2} className="bg-muted/30">
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {policy.policy.description ??
+                  "No description provided for this policy."}
+              </div>
+              {selectorSummaries.length > 0 && (
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="text-xs font-medium uppercase tracking-wide text-foreground">
+                    Targets
+                  </div>
+                  {selectorSummaries.map((selector) => (
+                    <div key={selector.id}>{selector.value}</div>
+                  ))}
+                </div>
+              )}
+              <div className="space-y-2">
+                <div className="text-xs font-medium uppercase tracking-wide text-foreground">
+                  Rules
+                </div>
+                {ruleSummaries.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    No rules configured for this policy.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {ruleSummaries.map((rule) => (
+                      <div key={rule.id} className="space-y-1">
+                        <div className="text-sm font-medium">{rule.name}</div>
+                        {rule.details.length > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            {rule.details.join(" | ")}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
       {open && releaseTargets.length === 0 && (
         <TableRow>
           <TableCell colSpan={2} className="text-sm text-muted-foreground">
