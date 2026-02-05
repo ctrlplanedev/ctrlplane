@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { ArgoCDDialog } from "./ArgoCD";
+import { ArgoWorkflowsDialog } from "./ArgoWorkflows";
 
 export function CreateJobAgent() {
   return (
@@ -25,6 +26,15 @@ export function CreateJobAgent() {
             Argo CD
           </DropdownMenuItem>
         </ArgoCDDialog>
+        <ArgoWorkflowsDialog>
+          <DropdownMenuItem
+            className="flex items-center gap-2"
+            onSelect={(e) => e.preventDefault()}
+          >
+            <SiArgo className="size-4 text-orange-400" />
+            Argo Workflows
+          </DropdownMenuItem>
+        </ArgoWorkflowsDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );

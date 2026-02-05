@@ -115,6 +115,21 @@ func (j *Job) GetArgoCDJobAgentConfig() (*ArgoCDJobAgentConfig, error) {
 	return &cfg, nil
 }
 
+func (j *Job) GetArgoWorkflowsJobAgentConfig() (*ArgoWorkflowsJobAgentConfig, error) {
+	cfgJson, err := json.Marshal(j.JobAgentConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal job agent config: %w", err)
+	}
+	var cfg ArgoWorkflowsJobAgentConfig
+	if err := json.Unmarshal(cfgJson, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal job agent config: %w", err)
+	}
+	if cfg.ServerUrl == "" || cfg.ApiKey == "" || cfg.Template == "" {
+		return nil, fmt.Errorf("missing required Argo Workflows config fields")
+	}
+	return &cfg, nil
+}
+
 func (j *Job) GetGithubJobAgentConfig() (*GithubJobAgentConfig, error) {
 	cfgJson, err := json.Marshal(j.JobAgentConfig)
 	if err != nil {

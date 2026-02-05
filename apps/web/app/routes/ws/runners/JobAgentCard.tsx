@@ -10,6 +10,10 @@ import {
   ArgoCDConfig,
   argoCdJobAgentConfig,
 } from "./card-contents/ArgoCDConfig";
+import {
+  ArgoWorkflowsConfig,
+  argoWorkflowsJobAgentConfig,
+} from "./card-contents/ArgoWorkflowsConfig";
 import { CopyIdSection } from "./card-contents/CopyID";
 import {
   GithubConfig,
@@ -28,6 +32,15 @@ function ConfigSection({ config, id }: { config: JobAgentConfig; id: string }) {
       <div className="space-y-2 text-xs">
         <CopyIdSection id={id} />
         <ArgoCDConfig config={argoCdParseResult.data} />
+      </div>
+    );
+
+  const argoWorkflowsParseResult = argoWorkflowsJobAgentConfig.safeParse(config);
+  if (argoWorkflowsParseResult.success)
+    return (
+      <div className="space-y-2 text-xs">
+        <CopyIdSection id={id} />
+        <ArgoWorkflowsConfig config={argoWorkflowsParseResult.data} />
       </div>
     );
 
@@ -123,6 +136,11 @@ function TypeIcon({ config }: { config: JobAgentConfig }) {
 
   const argoCdParseResult = argoCdJobAgentConfig.safeParse(config);
   if (argoCdParseResult.success)
+    return <SiArgo className="size-4 text-orange-400" />;
+
+  const argoWorkflowsParseResult =
+    argoWorkflowsJobAgentConfig.safeParse(config);
+  if (argoWorkflowsParseResult.success)
     return <SiArgo className="size-4 text-orange-400" />;
 
   const tfeParseResult = tfeJobAgentConfig.safeParse(config);
