@@ -48,7 +48,7 @@ function JobDetailDialog(
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">External ID</span>
-            <span>{job.externalId != null ? job.externalId : "—"}</span>
+            <span>{job.externalId != null ? job.externalId : "-"}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Created At</span>
@@ -56,7 +56,7 @@ function JobDetailDialog(
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Completed At</span>
-            <span>{job.completedAt != null ? format(new Date(job.completedAt), "yyyy-MM-dd HH:mm:ss") : "—"}</span>
+            <span>{job.completedAt != null ? format(new Date(job.completedAt), "yyyy-MM-dd HH:mm:ss") : "-"}</span>
           </div>
         </div>
       </DialogContent>
