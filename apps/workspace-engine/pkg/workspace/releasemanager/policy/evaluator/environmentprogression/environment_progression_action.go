@@ -210,8 +210,7 @@ func (a *EnvironmentProgressionAction) didThresholdJustCross(
 		minPercentage = *rule.MinimumSuccessPercentage
 	}
 
-	requireVerificationPassed := rule.RequireVerificationPassed != nil && *rule.RequireVerificationPassed
-	tracker := NewReleaseTargetJobTracker(ctx, a.store, dependencyEnv, version, successStatuses, requireVerificationPassed)
+	tracker := NewReleaseTargetJobTracker(ctx, a.store, dependencyEnv, version, successStatuses)
 
 	if len(tracker.ReleaseTargets) == 0 {
 		return false
@@ -223,10 +222,11 @@ func (a *EnvironmentProgressionAction) didThresholdJustCross(
 	}
 
 	successCompletedAt := job.CompletedAt
-	if requireVerificationPassed {
-		if a.store.JobVerifications.GetJobVerificationStatus(job.Id) != oapi.JobVerificationStatusPassed {
-			return false
-		}
+	verificationStatus := a.store.JobVerifications.GetJobVerificationStatus(job.Id)
+	if verificationStatus != "" && verificationStatus != oapi.JobVerificationStatusPassed {
+		return false
+	}
+	if verificationStatus == oapi.JobVerificationStatusPassed {
 		if verificationCompletedAt := a.getLatestVerificationCompletedAt(job.Id); verificationCompletedAt != nil {
 			successCompletedAt = verificationCompletedAt
 		}

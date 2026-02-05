@@ -40,9 +40,6 @@ type ReleaseTargetJobTracker struct {
 	Version         *oapi.DeploymentVersion
 	ReleaseTargets  []*oapi.ReleaseTarget
 	SuccessStatuses map[oapi.JobStatus]bool
-	// RequireVerificationPassed controls whether jobs must have passed verification
-	// before being counted as successful for progression.
-	RequireVerificationPassed bool
 
 	// Cached computed values
 	jobsByStatus             map[oapi.JobStatus]int
@@ -59,7 +56,6 @@ func NewReleaseTargetJobTracker(
 	environment *oapi.Environment,
 	version *oapi.DeploymentVersion,
 	successStatuses map[oapi.JobStatus]bool,
-	requireVerificationPassed ...bool,
 ) *ReleaseTargetJobTracker {
 	ctx, span := jobTrackerTracer.Start(ctx, "NewReleaseTargetJobTracker", trace.WithAttributes(
 		attribute.String("environment.id", environment.Id),
@@ -67,11 +63,6 @@ func NewReleaseTargetJobTracker(
 		attribute.String("version.id", version.Id),
 	))
 	defer span.End()
-
-	requireVerification := false
-	if len(requireVerificationPassed) > 0 {
-		requireVerification = requireVerificationPassed[0]
-	}
 
 	// Default success statuses
 	if successStatuses == nil {
@@ -85,12 +76,11 @@ func NewReleaseTargetJobTracker(
 	span.SetAttributes(attribute.Int("release_targets.count", len(releaseTargets)))
 
 	rtt := &ReleaseTargetJobTracker{
-		store:                     store,
-		Environment:               environment,
-		Version:                   version,
-		ReleaseTargets:            releaseTargets,
-		SuccessStatuses:           successStatuses,
-		RequireVerificationPassed: requireVerification,
+		store:           store,
+		Environment:     environment,
+		Version:         version,
+		ReleaseTargets:  releaseTargets,
+		SuccessStatuses: successStatuses,
 
 		jobs:                     make([]*oapi.Job, 0),
 		jobsByStatus:             make(map[oapi.JobStatus]int, 0),
@@ -157,17 +147,15 @@ func (t *ReleaseTargetJobTracker) successCompletionTime(job *oapi.Job) (*time.Ti
 		return nil, false
 	}
 
-	if !t.RequireVerificationPassed {
-		return job.CompletedAt, true
-	}
-
 	verificationStatus := t.store.JobVerifications.GetJobVerificationStatus(job.Id)
-	if verificationStatus != oapi.JobVerificationStatusPassed {
+	if verificationStatus != "" && verificationStatus != oapi.JobVerificationStatusPassed {
 		return nil, false
 	}
 
-	if completedAt := t.getLatestVerificationCompletedAt(job.Id); completedAt != nil {
-		return completedAt, true
+	if verificationStatus == oapi.JobVerificationStatusPassed {
+		if completedAt := t.getLatestVerificationCompletedAt(job.Id); completedAt != nil {
+			return completedAt, true
+		}
 	}
 
 	return job.CompletedAt, true

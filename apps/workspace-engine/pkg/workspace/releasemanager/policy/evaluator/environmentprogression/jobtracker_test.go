@@ -281,7 +281,7 @@ func TestReleaseTargetJobTracker_GetSuccessPercentage_WithSuccesses(t *testing.T
 	assert.InDelta(t, expected, percentage, 0.1, "expected ~33.33%% success")
 }
 
-func TestReleaseTargetJobTracker_RequireVerificationPassed(t *testing.T) {
+func TestReleaseTargetJobTracker_VerificationStatus(t *testing.T) {
 	st := setupTestStoreForJobTracker()
 	ctx := context.Background()
 
@@ -316,23 +316,18 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed(t *testing.T) {
 	}
 	st.Jobs.Upsert(ctx, job1)
 
+	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	assert.Equal(t, float32(100.0), tracker.GetSuccessPercentage(), "expected 100%% with no verification")
+
 	upsertVerificationWithStatus(st, ctx, job1.Id, oapi.JobVerificationStatusFailed, completedAt.Add(1*time.Minute))
 
-	tracker := NewReleaseTargetJobTracker(ctx, st, env, version, nil, true)
-	assert.Equal(t, float32(0.0), tracker.GetSuccessPercentage(), "expected 0%% when verification failed")
-
-	release2 := &oapi.Release{
-		ReleaseTarget: *rt,
-		Version:       *version,
-		Variables:     map[string]oapi.LiteralValue{},
-		CreatedAt:     time.Now().Format(time.RFC3339),
-	}
-	_ = st.Releases.Upsert(ctx, release2)
+	tracker2 := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	assert.Equal(t, float32(0.0), tracker2.GetSuccessPercentage(), "expected 0%% when verification failed")
 
 	completedAt2 := time.Now().Add(-5 * time.Minute)
 	job2 := &oapi.Job{
 		Id:             "job-2",
-		ReleaseId:      release2.ID(),
+		ReleaseId:      release.ID(),
 		JobAgentId:     "agent-1",
 		Status:         oapi.JobStatusSuccessful,
 		CreatedAt:      completedAt2.Add(-1 * time.Minute),
@@ -344,12 +339,12 @@ func TestReleaseTargetJobTracker_RequireVerificationPassed(t *testing.T) {
 
 	verification := upsertVerificationWithStatus(st, ctx, job2.Id, oapi.JobVerificationStatusPassed, completedAt2.Add(1*time.Minute))
 
-	tracker2 := NewReleaseTargetJobTracker(ctx, st, env, version, nil, true)
-	assert.Equal(t, float32(100.0), tracker2.GetSuccessPercentage(), "expected 100%% with passed verification")
+	tracker3 := NewReleaseTargetJobTracker(ctx, st, env, version, nil)
+	assert.Equal(t, float32(100.0), tracker3.GetSuccessPercentage(), "expected 100%% with passed verification")
 
 	expectedCompletedAt := verification.CompletedAt()
 	if assert.NotNil(t, expectedCompletedAt) {
-		assert.True(t, tracker2.GetEarliestSuccess().Equal(*expectedCompletedAt))
+		assert.True(t, tracker3.GetEarliestSuccess().Equal(*expectedCompletedAt))
 	}
 }
 
