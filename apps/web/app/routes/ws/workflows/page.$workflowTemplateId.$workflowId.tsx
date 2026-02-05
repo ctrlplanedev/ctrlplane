@@ -12,6 +12,7 @@ import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useWorkflowTemplate } from "./_components/WorkflowTemplateProvider";
 import { WorkflowJobCard } from "./_components/WorkflowCard";
+import { Label } from "~/components/ui/label";
 
 export function meta() {
   return [
@@ -74,10 +75,19 @@ export default function WorkflowPage() {
       <PageHeader />
       <div className="p-4 space-y-4">
         <h1 className="text-xl font-semibold">Workflow {workflowId}</h1>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {workflow.jobs.map((job) => (
-            <WorkflowJobCard key={job.id} workflowJob={job} />
-          ))}
+
+        <div className="space-y-2 w-96">
+          <Label>Inputs</Label>
+          <pre className="text-sm bg-muted p-2 rounded-md">{JSON.stringify(workflow.inputs, null, 2)}</pre>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Workflow Jobs</Label>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {workflow.jobs.map((job) => (
+              <WorkflowJobCard key={job.id} workflowJob={job} />
+            ))}
+          </div>
         </div>
       </div>
     </>
