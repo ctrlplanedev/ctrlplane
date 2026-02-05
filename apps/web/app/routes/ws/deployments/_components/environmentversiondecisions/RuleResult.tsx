@@ -19,12 +19,44 @@ import {
 } from "./rule-results/GradualRolloutDetail";
 
 type RuleEvaluation = WorkspaceEngine["schemas"]["RuleEvaluation"];
+type RruleDetails = {
+  rrule: string;
+  next_window_start?: string;
+  next_deny_window_start?: string;
+  window_end?: string;
+  window_type?: string;
+};
+
+type WindowInfo = {
+  label: string;
+  date: Date;
+};
+
+function parseTimestamp(value: string | undefined): Date | null {
+  if (value == null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function formatDateTime(date: Date): string {
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 function Message({ ruleResult }: { ruleResult: RuleEvaluation }) {
+  const rruleDetails = ruleResult.details as Partial<RruleDetails>;
   return (
     <div>
       <div>{String(ruleResult.message)}</div>
-      {typeof ruleResult.details.rrule === "string" && (
-        <Rrule {...(ruleResult.details as any)} />
+      {typeof rruleDetails.rrule === "string" && (
+        <Rrule {...rruleDetails} rrule={rruleDetails.rrule} />
       )}
     </div>
   );
@@ -79,9 +111,12 @@ function ActionButton({
   );
 }
 
-const Rrule: React.FC<{ rrule: string; next_window_start: string }> = ({
+const Rrule: React.FC<RruleDetails> = ({
   rrule,
   next_window_start,
+  next_deny_window_start,
+  window_end,
+  window_type,
 }) => {
   let ruleText: string;
   try {
@@ -91,7 +126,18 @@ const Rrule: React.FC<{ rrule: string; next_window_start: string }> = ({
     ruleText = rrule;
   }
 
-  const nextWindowStart = new Date(next_window_start);
+  const windowEnd = parseTimestamp(window_end);
+  const nextWindowStart = parseTimestamp(next_window_start);
+  const nextDenyWindowStart = parseTimestamp(next_deny_window_start);
+  let windowInfo: WindowInfo | null = null;
+
+  if (window_type === "deny" && windowEnd != null) {
+    windowInfo = { label: "Deny Window Ends", date: windowEnd };
+  } else if (window_type === "deny" && nextDenyWindowStart != null) {
+    windowInfo = { label: "Next Deny Window", date: nextDenyWindowStart };
+  } else if (nextWindowStart != null) {
+    windowInfo = { label: "Next Window", date: nextWindowStart };
+  }
 
   return (
     <div>
@@ -99,15 +145,12 @@ const Rrule: React.FC<{ rrule: string; next_window_start: string }> = ({
         <span>
           <strong>Schedule:</strong> {ruleText}
         </span>
-        , <strong>Next Window:</strong>{" "}
-        {nextWindowStart.toLocaleString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })}
+        {windowInfo && (
+          <>
+            {", "}
+            <strong>{windowInfo.label}:</strong> {formatDateTime(windowInfo.date)}
+          </>
+        )}
       </div>
     </div>
   );
