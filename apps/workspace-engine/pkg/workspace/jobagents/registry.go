@@ -26,7 +26,7 @@ func NewRegistry(store *store.Store, verifications *verification.Manager) *Regis
 
 	r.Register(testrunner.New(store))
 	r.Register(argo.NewArgoApplication(store, verifications))
-	r.Register(terraformcloud.NewTFE(store))
+	r.Register(terraformcloud.NewTFE(store, verifications))
 	r.Register(github.NewGithubAction(store))
 
 	return r
