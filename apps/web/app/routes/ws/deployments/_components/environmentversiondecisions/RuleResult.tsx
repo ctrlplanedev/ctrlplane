@@ -1,5 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import type React from "react";
+import { format, isValid, parseISO } from "date-fns";
 import { AlertCircleIcon, Check, X } from "lucide-react";
 import { rrulestr } from "rrule";
 
@@ -34,20 +35,13 @@ type WindowInfo = {
 
 function parseTimestamp(value: string | undefined): Date | null {
   if (value == null) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return null;
+  const parsed = parseISO(value);
+  if (!isValid(parsed)) return null;
   return parsed;
 }
 
 function formatDateTime(date: Date): string {
-  return date.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  return format(date, "MMM d, yyyy HH:mm");
 }
 
 function Message({ ruleResult }: { ruleResult: RuleEvaluation }) {
