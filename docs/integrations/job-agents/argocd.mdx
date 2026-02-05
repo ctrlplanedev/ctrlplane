@@ -84,7 +84,9 @@ jobAgentConfig:
 ## Template Context
 
 The template has access to all job context. Variables are accessed using Go template
-syntax: `{{.variable.property}}`.
+syntax: `{{.variable.property}}`. The job context is derived from the resources
+returned by the deployment selector (and narrowed by the environment selector),
+so the data available to the template reflects that specific target.
 
 ### Top-Level Variables
 
@@ -98,6 +100,10 @@ syntax: `{{.variable.property}}`.
 | `.variables`   | Merged deployment variables (key-value strings) |
 
 ### Resource Properties
+
+Each job invocation is tied to a specific resource instance returned by 
+your selector, so the `.resource` values can differ for every ArgoCD 
+template invocation.
 
 | Property               | Type              | Description                           |
 | ---------------------- | ----------------- | ------------------------------------- |
@@ -116,6 +122,9 @@ syntax: `{{.variable.property}}`.
 
 ### Deployment Properties
 
+Each job invocation is tied to a specific deployment, so `.deployment` values can differ 
+for every ArgoCD template invocation.
+
 | Property                      | Type              | Description                        |
 | ----------------------------- | ----------------- | ---------------------------------- |
 | `.deployment.id`              | string            | Unique deployment ID               |
@@ -128,6 +137,9 @@ syntax: `{{.variable.property}}`.
 | `.deployment.resourceSelector`| object            | Resource selector for targeting    |
 
 ### Environment Properties
+
+Each job invocation is tied to a specific environment, so `.environment` values can differ 
+for every ArgoCD template invocation.
 
 | Property                        | Type      | Description                     |
 | ------------------------------- | --------- | ------------------------------- |

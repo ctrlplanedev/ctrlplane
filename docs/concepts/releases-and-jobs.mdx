@@ -3,7 +3,8 @@ title: "Releases and Jobs"
 description: "How Ctrlplane turns deployment versions into actual deployments"
 ---
 
-This guide explains how Ctrlplane turns deployment versions into actual deployments through **releases** and **jobs**.
+This guide explains how Ctrlplane turns deployment versions into actual 
+deployments through **releases** and **jobs**.
 
 ## Overview
 
@@ -21,7 +22,14 @@ Job Agent (executes the deployment)
 
 ## Release
 
-A **Release** represents the intent to deploy a specific version to a specific release target (Deployment × Environment × Resource).
+A **Release** represents the intent to deploy a 
+specific version to a specific release target 
+(Deployment × Environment × Resource).
+
+Ctrlplane creates one release per target. A target is a single resource that 
+matches the deployment's resource selector and is also included in an 
+environment (via the environment's selector). When a release is approved, 
+Ctrlplane creates a job for that same target.
 
 ### Release Properties
 
