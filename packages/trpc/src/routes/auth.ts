@@ -2,6 +2,7 @@ import {
   isCredentialsAuthEnabled,
   isGoogleAuthEnabled,
   isOIDCAuthEnabled,
+  isOktaAuthEnabled,
 } from "@ctrlplane/auth/server";
 
 import { publicProcedure, router } from "../trpc.js";
@@ -11,5 +12,6 @@ export const authRouter = router({
     credentialsEnabled: isCredentialsAuthEnabled,
     googleEnabled: isGoogleAuthEnabled,
     oidcEnabled: isOIDCAuthEnabled,
+    oktaEnabled: isOktaAuthEnabled,
   })),
 });
