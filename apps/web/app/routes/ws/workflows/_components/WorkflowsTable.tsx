@@ -9,6 +9,9 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { useWorkflowTemplate } from "./WorkflowTemplateProvider";
+import { formatDistanceToNowStrict } from "date-fns";
+import _ from "lodash";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 
 const WorkflowStatusDisplayName = {
   successful: "Successful",
@@ -68,6 +71,12 @@ function getWorkflowStatus(
   return "pending";
 }
 
+function workflowCreatedAt(workflow: WorkspaceEngine["schemas"]["WorkflowWithJobs"]) {
+ const dateStr = _.chain(workflow.jobs).flatMap((wfJob) => wfJob.jobs).map((job) => job.createdAt).min().value();
+ if (dateStr == null) return null;
+ return new Date(dateStr);
+}
+
 function WorkflowStatusBadge({
   workflow,
 }: {
@@ -83,6 +92,34 @@ function WorkflowStatusBadge({
   );
 }
 
+function useWorkflowLink(workflowId: string) {
+  const { workspace } = useWorkspace();
+  const { workflowTemplate } = useWorkflowTemplate();
+  return `/${workspace.slug}/workflows/${workflowTemplate.id}/${workflowId}`;
+}
+
+function WorkflowRow({ workflow }: { workflow: WorkspaceEngine["schemas"]["WorkflowWithJobs"] }) {
+  const createdAt = workflowCreatedAt(workflow);
+  const workflowLink = useWorkflowLink(workflow.id);
+
+  return (
+    <TableRow key={workflow.id}>
+      <TableCell>
+        <a href={workflowLink} className="cursor-pointer hover:underline">
+          {workflow.id}
+        </a>
+      </TableCell>
+      <TableCell>{workflow.jobs.length}</TableCell>
+      <TableCell>
+        <WorkflowStatusBadge workflow={workflow} />
+      </TableCell>
+      <TableCell>
+        {createdAt != null ? formatDistanceToNowStrict(createdAt, { addSuffix: true }) : <span className="text-muted-foreground">—</span>}
+      </TableCell>
+    </TableRow>
+  )
+}
+
 export function WorkflowsTable() {
   const { workflowTemplate } = useWorkflowTemplate();
   const { workflows } = workflowTemplate
@@ -92,20 +129,15 @@ export function WorkflowsTable() {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>ID</TableHead>
-          <TableHead>Jobs</TableHead>
+          <TableHead>Workflow ID</TableHead>
+          <TableHead>Workflow Jobs</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Created</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {wfsReversed.map((workflow) => (
-          <TableRow key={workflow.id}>
-            <TableCell>{workflow.id}</TableCell>
-            <TableCell>{workflow.jobs.length}</TableCell>
-            <TableCell>
-              <WorkflowStatusBadge workflow={workflow} />
-            </TableCell>
-          </TableRow>
+          <WorkflowRow key={workflow.id} workflow={workflow} />
         ))}
       </TableBody>
     </Table>

@@ -66,6 +66,7 @@
           {
             "group": "Job Agents",
             "pages": [
+              "integrations/job-agents/ansible",
               "integrations/job-agents/github",
               "integrations/job-agents/argocd",
               "integrations/job-agents/terraform-cloud"
