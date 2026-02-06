@@ -30,6 +30,20 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release': {
+    get: {
+      summary: 'Get job with release',
+      operationId: 'getJobWithRelease',
+      description: 'Returns a specific job by ID with its release.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.jobIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('JobWithRelease'), 'Get job with release')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
   '/v1/workspaces/{workspaceId}/jobs/{jobId}/status': {
     put: {
       summary: 'Update job status',

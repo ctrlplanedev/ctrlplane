@@ -51,6 +51,26 @@ const getJob: AsyncTypedHandler<
   res.status(200).json(response.data);
 };
 
+const getJobWithRelease: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, jobId } = req.params;
+
+  const response = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release",
+    { params: { path: { workspaceId, jobId } } },
+  );
+
+  if (response.error != null)
+    throw new ApiError(
+      response.error.error ?? "Failed to get job with release",
+      response.response.status,
+    );
+
+  res.status(200).json(response.data);
+};
+
 const updateJobStatus: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/jobs/{jobId}/status",
   "put"
@@ -86,4 +106,5 @@ const updateJobStatus: AsyncTypedHandler<
 export const jobsRouter = Router({ mergeParams: true })
   .get("/", asyncHandler(getJobs))
   .get("/:jobId", asyncHandler(getJob))
+  .get("/:jobId/with-release", asyncHandler(getJobWithRelease))
   .put("/:jobId/status", asyncHandler(updateJobStatus));
