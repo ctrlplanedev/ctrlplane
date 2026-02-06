@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -13,9 +12,6 @@ func init() {
 	if err := envconfig.Process("", &Global); err != nil {
 		log.Fatal(err)
 	}
-
-	// Allow POSTGRES_URL to reference other env vars like ${POSTGRES_USER}.
-	Global.PostgresURL = os.ExpandEnv(Global.PostgresURL)
 }
 
 type Config struct {
