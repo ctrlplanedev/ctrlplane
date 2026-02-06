@@ -24,6 +24,11 @@ export const errorHandler = (
     body: req.body,
   });
 
+  // Handle ApiError instances
+  if (error instanceof ApiError) {
+    return res.status(error.statusCode).json(error.toJSON());
+  }
+
   // Handle validation errors from express-openapi-validator
   if (error.name === "ValidationError") {
     return res.status(400).json({
@@ -33,11 +38,14 @@ export const errorHandler = (
     });
   }
 
-  // Handle ApiError instances
-  if (error instanceof ApiError) {
-    return res.status(error.statusCode).json(error.toJSON());
+  const openApiStatus = 'status' in error ? error.status : 'statusCode' in error ? error.statusCode : undefined;
+  if (typeof openApiStatus === "number") {
+    return res.status(openApiStatus).json({
+      message: error.message,
+      code: error.name,
+      details: (error as any).errors ?? null,
+    });
   }
-
 
   // Handle generic errors
   return res
