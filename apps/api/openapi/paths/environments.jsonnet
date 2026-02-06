@@ -65,7 +65,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.okResponse(openapi.schemaRef('Environment'))
+      responses: openapi.acceptedResponse(openapi.schemaRef('Environment'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

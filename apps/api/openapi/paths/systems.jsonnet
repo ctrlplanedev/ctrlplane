@@ -56,7 +56,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.okResponse(openapi.schemaRef('System')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('System')),
     },
     delete: {
       summary: 'Delete system',

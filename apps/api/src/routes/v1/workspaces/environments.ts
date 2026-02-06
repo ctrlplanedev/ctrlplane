@@ -135,7 +135,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
     data: mergedEnvironment,
   });
 
-  res.status(200).json(mergedEnvironment);
+  res.status(202).json(mergedEnvironment);
   return;
 };
 

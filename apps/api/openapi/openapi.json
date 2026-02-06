@@ -4280,7 +4280,7 @@
                "required": true
             },
             "responses": {
-               "200": {
+               "202": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -4288,7 +4288,7 @@
                         }
                      }
                   },
-                  "description": "OK response"
+                  "description": "Accepted response"
                },
                "400": {
                   "content": {
@@ -6618,7 +6618,7 @@
                "required": true
             },
             "responses": {
-               "200": {
+               "202": {
                   "content": {
                      "application/json": {
                         "schema": {
@@ -6626,7 +6626,7 @@
                         }
                      }
                   },
-                  "description": "OK response"
+                  "description": "Accepted response"
                }
             },
             "summary": "Upsert system"

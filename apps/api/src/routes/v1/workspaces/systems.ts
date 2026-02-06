@@ -48,7 +48,7 @@ export const upsertSystem: AsyncTypedHandler<
       data: { id: systemId, name, description, workspaceId },
     });
 
-    res.status(200).json({ message: "System updated successfully" });
+    res.status(202).json({ message: "System updated successfully" });
   } catch {
     res.status(500).json({ message: "Failed to update system" });
     return;
