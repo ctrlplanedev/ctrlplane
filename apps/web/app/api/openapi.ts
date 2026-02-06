@@ -278,7 +278,7 @@ export interface paths {
         get: operations["listEnvironments"];
         put?: never;
         /** Create environment */
-        post: operations["createEnvironment"];
+        post: operations["requestEnvironmentCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -295,10 +295,10 @@ export interface paths {
         /** Get environment */
         get: operations["getEnvironment"];
         /** Upsert environment */
-        put: operations["upsertEnvironmentById"];
+        put: operations["requestEnvironmentUpdate"];
         post?: never;
         /** Delete environment */
-        delete: operations["deleteEnvironment"];
+        delete: operations["requestEnvironmentDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1046,6 +1046,10 @@ export interface components {
              */
             minimumSuccessPercentage: number;
             successStatuses?: components["schemas"]["JobStatus"][];
+        };
+        EnvironmentRequestAccepted: {
+            id: string;
+            message: string;
         };
         Error: {
             /** @description Error code */
@@ -2714,7 +2718,7 @@ export interface operations {
             };
         };
     };
-    createEnvironment: {
+    requestEnvironmentCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -2736,7 +2740,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentRequestAccepted"];
                 };
             };
         };
@@ -2784,7 +2788,7 @@ export interface operations {
             };
         };
     };
-    upsertEnvironmentById: {
+    requestEnvironmentUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2808,7 +2812,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -2831,7 +2835,7 @@ export interface operations {
             };
         };
     };
-    deleteEnvironment: {
+    requestEnvironmentDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2851,7 +2855,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

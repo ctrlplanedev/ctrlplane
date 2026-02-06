@@ -129,6 +129,7 @@ export const createSystem: AsyncTypedHandler<
     throw new ApiError("Failed to create system", 500);
   }
 };
+
 export const systemRouter = Router({ mergeParams: true })
   .post("/", asyncHandler(createSystem))
   .get("/", asyncHandler(getSystems))

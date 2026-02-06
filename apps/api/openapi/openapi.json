@@ -673,6 +673,21 @@
             ],
             "type": "object"
          },
+         "EnvironmentRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
          "Error": {
             "properties": {
                "code": {
@@ -4192,7 +4207,7 @@
             "summary": "List environments"
          },
          "post": {
-            "operationId": "createEnvironment",
+            "operationId": "requestEnvironmentCreation",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4219,7 +4234,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Environment"
+                           "$ref": "#/components/schemas/EnvironmentRequestAccepted"
                         }
                      }
                   },
@@ -4231,7 +4246,7 @@
       },
       "/v1/workspaces/{workspaceId}/environments/{environmentId}": {
          "delete": {
-            "operationId": "deleteEnvironment",
+            "operationId": "requestEnvironmentDeletion",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4257,11 +4272,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Environment"
+                           "$ref": "#/components/schemas/EnvironmentRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Delete environment"
@@ -4323,7 +4358,7 @@
             "summary": "Get environment"
          },
          "put": {
-            "operationId": "upsertEnvironmentById",
+            "operationId": "requestEnvironmentUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4359,7 +4394,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Environment"
+                           "$ref": "#/components/schemas/EnvironmentRequestAccepted"
                         }
                      }
                   },

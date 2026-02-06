@@ -14,7 +14,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     post: {
       summary: 'Create environment',
-      operationId: 'createEnvironment',
+      operationId: 'requestEnvironmentCreation',
       parameters: [
         openapi.workspaceIdParam(),
       ],
@@ -26,7 +26,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Environment')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('EnvironmentRequestAccepted')),
     },
   },
   '/v1/workspaces/{workspaceId}/environments/{environmentId}': {
@@ -43,16 +43,18 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     delete: {
       summary: 'Delete environment',
-      operationId: 'deleteEnvironment',
+      operationId: 'requestEnvironmentDeletion',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.environmentIdParam(),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('Environment')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('EnvironmentRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
     put: {
       summary: 'Upsert environment',
-      operationId: 'upsertEnvironmentById',
+      operationId: 'requestEnvironmentUpdate',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.environmentIdParam(),
@@ -65,7 +67,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Environment'))
+      responses: openapi.acceptedResponse(openapi.schemaRef('EnvironmentRequestAccepted'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
