@@ -34,39 +34,9 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
   '/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set': {
-    // Adding patch for backwards compatibility with existing code. Should be remove after 30 days.
-    patch: {
-      summary: 'Set the resources for a provider',
-      operationId: 'requestResourceProvidersResourcesPatch',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.providerIdParam(),
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              required: ['resources'],
-              properties: {
-                resources: {
-                  type: 'array',
-                  items: openapi.schemaRef('ResourceProviderResource'),
-                },
-              },
-            },
-          },
-        },
-      },
-      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProviderRequestAccepted'))
-                 + openapi.badRequestResponse()
-                 + openapi.notFoundResponse(),
-    },
-
     put: {
       summary: 'Set the resources for a provider',
-      operationId: 'requestResourceProvidersResources',
+      operationId: 'setResourceProviderResources',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.providerIdParam(),

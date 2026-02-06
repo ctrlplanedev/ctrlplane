@@ -6108,85 +6108,8 @@
          }
       },
       "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set": {
-         "patch": {
-            "operationId": "requestResourceProvidersResourcesPatch",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the resource provider",
-                  "in": "path",
-                  "name": "providerId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "requestBody": {
-               "content": {
-                  "application/json": {
-                     "schema": {
-                        "properties": {
-                           "resources": {
-                              "items": {
-                                 "$ref": "#/components/schemas/ResourceProviderResource"
-                              },
-                              "type": "array"
-                           }
-                        },
-                        "required": [
-                           "resources"
-                        ],
-                        "type": "object"
-                     }
-                  }
-               },
-               "required": true
-            },
-            "responses": {
-               "202": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
-                        }
-                     }
-                  },
-                  "description": "Accepted response"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Set the resources for a provider"
-         },
          "put": {
-            "operationId": "requestResourceProvidersResources",
+            "operationId": "setResourceProviderResources",
             "parameters": [
                {
                   "description": "ID of the workspace",

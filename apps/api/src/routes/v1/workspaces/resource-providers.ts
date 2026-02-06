@@ -107,5 +107,4 @@ const setResourceProviderResources: AsyncTypedHandler<
 export const resourceProvidersRouter = Router({ mergeParams: true })
   .put("/", asyncHandler(upsertResourceProvider))
   .get("/name/:name", asyncHandler(getResourceProviderByName))
-  .patch("/:providerId/set", asyncHandler(setResourceProviderResources))
   .put("/:providerId/set", asyncHandler(setResourceProviderResources));

@@ -619,13 +619,12 @@ export interface paths {
         };
         get?: never;
         /** Set the resources for a provider */
-        put: operations["requestResourceProvidersResources"];
+        put: operations["setResourceProviderResources"];
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Set the resources for a provider */
-        patch: operations["requestResourceProvidersResourcesPatch"];
+        patch?: never;
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources": {
@@ -3947,56 +3946,7 @@ export interface operations {
             };
         };
     };
-    requestResourceProvidersResources: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the resource provider */
-                providerId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    resources: components["schemas"]["ResourceProviderResource"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    requestResourceProvidersResourcesPatch: {
+    setResourceProviderResources: {
         parameters: {
             query?: never;
             header?: never;
