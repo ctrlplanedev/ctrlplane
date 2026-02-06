@@ -96,7 +96,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert deployment variable value',
-      operationId: 'requestDeploymentVariableValueUpdate',
+      operationId: 'requestDeploymentVariableValueUpsert',
       description: 'Creates or updates a variable value override by ID.',
       parameters: [
         openapi.workspaceIdParam(),

@@ -27,7 +27,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert a job agent',
-      operationId: 'requestJobAgentUpdate',
+      operationId: 'requestJobAgentUpsert',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.jobAgentIdParam(),

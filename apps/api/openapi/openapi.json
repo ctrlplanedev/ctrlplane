@@ -3165,7 +3165,7 @@
       },
       "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records": {
          "put": {
-            "operationId": "requestUserApprovalRecordUpdate",
+            "operationId": "requestUserApprovalRecordUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3460,7 +3460,7 @@
             "summary": "Get deployment"
          },
          "put": {
-            "operationId": "requestDeploymentUpdate",
+            "operationId": "requestDeploymentUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4054,7 +4054,7 @@
          },
          "put": {
             "description": "Creates or updates a variable value override by ID.",
-            "operationId": "requestDeploymentVariableValueUpdate",
+            "operationId": "requestDeploymentVariableValueUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4303,7 +4303,7 @@
       },
       "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}": {
          "patch": {
-            "operationId": "updateDeploymentVersion",
+            "operationId": "requestDeploymentVersionUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4588,7 +4588,7 @@
             "summary": "Get environment"
          },
          "put": {
-            "operationId": "requestEnvironmentUpdate",
+            "operationId": "requestEnvironmentUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4837,7 +4837,7 @@
             "summary": "Get a job agent"
          },
          "put": {
-            "operationId": "requestJobAgentUpdate",
+            "operationId": "requestJobAgentUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -5064,7 +5064,7 @@
       "/v1/workspaces/{workspaceId}/jobs/{jobId}/status": {
          "put": {
             "description": "Updates the status of a specific job by ID.",
-            "operationId": "requestJobStatusUpdate",
+            "operationId": "requestJobStatusUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -5428,7 +5428,7 @@
             "summary": "Get a policy by ID"
          },
          "put": {
-            "operationId": "requestPolicyUpdate",
+            "operationId": "requestPolicyUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -5657,7 +5657,7 @@
             "summary": "Get relationship"
          },
          "put": {
-            "operationId": "upsertRelationshipById",
+            "operationId": "requestRelationshipRuleUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6938,7 +6938,7 @@
             "summary": "Get system"
          },
          "put": {
-            "operationId": "requestSystemUpdate",
+            "operationId": "requestSystemUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",

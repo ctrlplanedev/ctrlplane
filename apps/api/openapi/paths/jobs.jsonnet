@@ -47,7 +47,7 @@ local openapi = import '../lib/openapi.libsonnet';
   '/v1/workspaces/{workspaceId}/jobs/{jobId}/status': {
     put: {
       summary: 'Update job status',
-      operationId: 'requestJobStatusUpdate',
+      operationId: 'requestJobStatusUpsert',
       description: 'Updates the status of a specific job by ID.',
       parameters: [
         openapi.workspaceIdParam(),

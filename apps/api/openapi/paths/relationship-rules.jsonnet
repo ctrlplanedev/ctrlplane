@@ -34,7 +34,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert relationship',
-      operationId: 'upsertRelationshipById',
+      operationId: 'requestRelationshipRuleUpsert',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.relationshipRuleIdParam(),

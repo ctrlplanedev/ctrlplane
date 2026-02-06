@@ -91,7 +91,7 @@ export interface paths {
         };
         get?: never;
         /** Upsert user approval record */
-        put: operations["requestUserApprovalRecordUpdate"];
+        put: operations["requestUserApprovalRecordUpsert"];
         post?: never;
         delete?: never;
         options?: never;
@@ -127,7 +127,7 @@ export interface paths {
         /** Get deployment */
         get: operations["getDeployment"];
         /** Upsert deployment */
-        put: operations["requestDeploymentUpdate"];
+        put: operations["requestDeploymentUpsert"];
         post?: never;
         /** Delete deployment */
         delete: operations["requestDeploymentDeletion"];
@@ -220,7 +220,7 @@ export interface paths {
          * Upsert deployment variable value
          * @description Creates or updates a variable value override by ID.
          */
-        put: operations["requestDeploymentVariableValueUpdate"];
+        put: operations["requestDeploymentVariableValueUpsert"];
         post?: never;
         /**
          * Delete deployment variable value
@@ -264,7 +264,7 @@ export interface paths {
         options?: never;
         head?: never;
         /** Update deployment version */
-        patch: operations["updateDeploymentVersion"];
+        patch: operations["requestDeploymentVersionUpdate"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/environments": {
@@ -295,7 +295,7 @@ export interface paths {
         /** Get environment */
         get: operations["getEnvironment"];
         /** Upsert environment */
-        put: operations["requestEnvironmentUpdate"];
+        put: operations["requestEnvironmentUpsert"];
         post?: never;
         /** Delete environment */
         delete: operations["requestEnvironmentDeletion"];
@@ -334,7 +334,7 @@ export interface paths {
         /** Get a job agent */
         get: operations["getJobAgent"];
         /** Upsert a job agent */
-        put: operations["requestJobAgentUpdate"];
+        put: operations["requestJobAgentUpsert"];
         post?: never;
         /** Delete a job agent */
         delete: operations["requestJobAgentDeletion"];
@@ -395,7 +395,7 @@ export interface paths {
          * Update job status
          * @description Updates the status of a specific job by ID.
          */
-        put: operations["requestJobStatusUpdate"];
+        put: operations["requestJobStatusUpsert"];
         post?: never;
         delete?: never;
         options?: never;
@@ -451,7 +451,7 @@ export interface paths {
         /** Get a policy by ID */
         get: operations["getPolicy"];
         /** Upsert a policy by ID */
-        put: operations["requestPolicyUpdate"];
+        put: operations["requestPolicyUpsert"];
         post?: never;
         /** Delete a policy by ID */
         delete: operations["requestPolicyDeletion"];
@@ -487,7 +487,7 @@ export interface paths {
         /** Get relationship */
         get: operations["getRelationshipRule"];
         /** Upsert relationship */
-        put: operations["upsertRelationshipById"];
+        put: operations["requestRelationshipRuleUpsert"];
         post?: never;
         /** Delete relationship */
         delete: operations["deleteRelationship"];
@@ -744,7 +744,7 @@ export interface paths {
         /** Get system */
         get: operations["getSystem"];
         /** Upsert system */
-        put: operations["requestSystemUpdate"];
+        put: operations["requestSystemUpsert"];
         post?: never;
         /** Delete system */
         delete: operations["requestSystemDeletion"];
@@ -2067,7 +2067,7 @@ export interface operations {
             };
         };
     };
-    requestUserApprovalRecordUpdate: {
+    requestUserApprovalRecordUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2220,7 +2220,7 @@ export interface operations {
             };
         };
     };
-    requestDeploymentUpdate: {
+    requestDeploymentUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2556,7 +2556,7 @@ export interface operations {
             };
         };
     };
-    requestDeploymentVariableValueUpdate: {
+    requestDeploymentVariableValueUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2748,7 +2748,7 @@ export interface operations {
             };
         };
     };
-    updateDeploymentVersion: {
+    requestDeploymentVersionUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2892,7 +2892,7 @@ export interface operations {
             };
         };
     };
-    requestEnvironmentUpdate: {
+    requestEnvironmentUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3052,7 +3052,7 @@ export interface operations {
             };
         };
     };
-    requestJobAgentUpdate: {
+    requestJobAgentUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3239,7 +3239,7 @@ export interface operations {
             };
         };
     };
-    requestJobStatusUpdate: {
+    requestJobStatusUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3444,7 +3444,7 @@ export interface operations {
             };
         };
     };
-    requestPolicyUpdate: {
+    requestPolicyUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3613,7 +3613,7 @@ export interface operations {
             };
         };
     };
-    upsertRelationshipById: {
+    requestRelationshipRuleUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -4407,7 +4407,7 @@ export interface operations {
             };
         };
     };
-    requestSystemUpdate: {
+    requestSystemUpsert: {
         parameters: {
             query?: never;
             header?: never;

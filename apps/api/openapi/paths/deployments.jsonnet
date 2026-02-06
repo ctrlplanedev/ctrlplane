@@ -43,7 +43,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert deployment',
-      operationId: 'requestDeploymentUpdate',
+      operationId: 'requestDeploymentUpsert',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),

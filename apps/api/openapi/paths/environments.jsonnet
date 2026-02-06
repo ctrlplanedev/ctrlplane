@@ -54,7 +54,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert environment',
-      operationId: 'requestEnvironmentUpdate',
+      operationId: 'requestEnvironmentUpsert',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.environmentIdParam(),

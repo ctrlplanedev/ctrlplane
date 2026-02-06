@@ -37,7 +37,7 @@ local openapi = import '../lib/openapi.libsonnet';
   '/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}': {
     patch: {
       summary: 'Update deployment version',
-      operationId: 'updateDeploymentVersion',
+      operationId: 'requestDeploymentVersionUpdate',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentVersionIdParam(),
