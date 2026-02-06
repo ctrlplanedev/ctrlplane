@@ -7,9 +7,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/log"
 )
+
+const AES_256_PREFIX = "aes256:"
 
 type Encryption interface {
 	Encrypt(plaintext string) (string, error)
@@ -48,7 +51,7 @@ func NewEncryption() Encryption {
 	return &AES256Encryption{gcm: gcm}
 }
 
-// Encrypt encrypts plaintext and returns base64-encoded ciphertext
+// Encrypt encrypts plaintext and returns base64-encoded ciphertext with aes256: prefix
 func (e *AES256Encryption) Encrypt(plaintext string) (string, error) {
 	nonce := make([]byte, e.gcm.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
@@ -56,12 +59,17 @@ func (e *AES256Encryption) Encrypt(plaintext string) (string, error) {
 	}
 
 	ciphertext := e.gcm.Seal(nonce, nonce, []byte(plaintext), nil)
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	return AES_256_PREFIX + base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// Decrypt decrypts base64-encoded ciphertext and returns plaintext
+// Decrypt decrypts base64-encoded ciphertext (with aes256: prefix) and returns plaintext
 func (e *AES256Encryption) Decrypt(ciphertext string) (string, error) {
-	data, err := base64.StdEncoding.DecodeString(ciphertext)
+	if !strings.HasPrefix(ciphertext, AES_256_PREFIX) {
+		return "", fmt.Errorf("invalid ciphertext: missing %s prefix", AES_256_PREFIX)
+	}
+
+	encoded := strings.TrimPrefix(ciphertext, AES_256_PREFIX)
+	data, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode base64: %w", err)
 	}
