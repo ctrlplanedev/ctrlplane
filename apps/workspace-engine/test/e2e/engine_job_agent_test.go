@@ -671,3 +671,47 @@ func TestEngine_JobAgentNameUniqueness(t *testing.T) {
 		t.Fatal("agents should have different IDs")
 	}
 }
+
+func TestEngine_JobAgentApiKeyEncryption(t *testing.T) {
+	t.Setenv("CTRLPLANE_AES_256_KEY", "01234567890123456789012345678901")
+
+	jobAgentID := "job-agent-encrypted"
+	originalApiKey := "super-secret-api-key"
+
+	engine := integration.NewTestWorkspace(t)
+	ctx := context.Background()
+
+	ja := c.NewJobAgent(engine.Workspace().ID)
+	ja.Id = jobAgentID
+	ja.Name = "Encrypted Agent"
+	ja.WorkspaceId = engine.Workspace().ID
+	ja.Config = map[string]any{
+		"serverUrl": "https://argocd.example.com",
+		"apiKey":    originalApiKey,
+		"template":  "my-app-template",
+	}
+
+	engine.PushEvent(ctx, handler.JobAgentCreate, ja)
+
+	retrievedJa, exists := engine.Workspace().JobAgents().Get(jobAgentID)
+	if !exists {
+		t.Fatal("job agent not found")
+	}
+
+	storedApiKey, ok := retrievedJa.Config["apiKey"].(string)
+	if !ok {
+		t.Fatal("apiKey not found in config")
+	}
+
+	if storedApiKey == originalApiKey {
+		t.Fatal("apiKey should be encrypted, but it matches the original plaintext")
+	}
+
+	if retrievedJa.Config["serverUrl"] != "https://argocd.example.com" {
+		t.Fatalf("serverUrl should not be encrypted: got %v", retrievedJa.Config["serverUrl"])
+	}
+
+	if retrievedJa.Config["template"] != "my-app-template" {
+		t.Fatalf("template should not be encrypted: got %v", retrievedJa.Config["template"])
+	}
+}
