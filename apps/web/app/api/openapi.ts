@@ -110,7 +110,7 @@ export interface paths {
         get: operations["listDeployments"];
         put?: never;
         /** Create deployment */
-        post: operations["createDeployment"];
+        post: operations["requestDeploymentCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -127,10 +127,10 @@ export interface paths {
         /** Get deployment */
         get: operations["getDeployment"];
         /** Upsert deployment */
-        put: operations["upsertDeployment"];
+        put: operations["requestDeploymentUpdate"];
         post?: never;
         /** Delete deployment */
-        delete: operations["deleteDeployment"];
+        delete: operations["requestDeploymentDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -954,6 +954,10 @@ export interface components {
         };
         DeploymentDependencyRule: {
             dependsOnDeploymentSelector: components["schemas"]["Selector"];
+        };
+        DeploymentRequestAccepted: {
+            id: string;
+            message: string;
         };
         DeploymentVariable: {
             defaultValue?: components["schemas"]["LiteralValue"];
@@ -2136,7 +2140,7 @@ export interface operations {
             };
         };
     };
-    createDeployment: {
+    requestDeploymentCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -2158,7 +2162,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Deployment"];
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
                 };
             };
         };
@@ -2206,7 +2210,7 @@ export interface operations {
             };
         };
     };
-    upsertDeployment: {
+    requestDeploymentUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2230,12 +2234,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Deployment"];
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
                 };
             };
         };
     };
-    deleteDeployment: {
+    requestDeploymentDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2255,7 +2259,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Deployment"];
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

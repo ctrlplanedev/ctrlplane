@@ -422,6 +422,21 @@
             ],
             "type": "object"
          },
+         "DeploymentRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
          "DeploymentVariable": {
             "properties": {
                "defaultValue": {
@@ -3179,7 +3194,7 @@
             "summary": "List deployments"
          },
          "post": {
-            "operationId": "createDeployment",
+            "operationId": "requestDeploymentCreation",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3206,7 +3221,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Deployment"
+                           "$ref": "#/components/schemas/DeploymentRequestAccepted"
                         }
                      }
                   },
@@ -3218,7 +3233,7 @@
       },
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}": {
          "delete": {
-            "operationId": "deleteDeployment",
+            "operationId": "requestDeploymentDeletion",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3244,11 +3259,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Deployment"
+                           "$ref": "#/components/schemas/DeploymentRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Delete deployment"
@@ -3310,7 +3345,7 @@
             "summary": "Get deployment"
          },
          "put": {
-            "operationId": "upsertDeployment",
+            "operationId": "requestDeploymentUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3346,7 +3381,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Deployment"
+                           "$ref": "#/components/schemas/DeploymentRequestAccepted"
                         }
                      }
                   },

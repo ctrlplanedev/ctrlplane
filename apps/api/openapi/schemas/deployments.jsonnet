@@ -36,6 +36,15 @@ local jobAgentConfig = {
     },
   },
 
+  DeploymentRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
+    },
+  },
+
   Deployment: {
     type: 'object',
     required: ['id', 'name', 'slug', 'systemId', 'jobAgentConfig'],

@@ -90,15 +90,20 @@ const deleteDeployment: AsyncTypedHandler<
     throw new ApiError("Deployment not found", 404);
   }
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentDeleted,
-    timestamp: Date.now(),
-    data: deployment,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.DeploymentDeleted,
+      timestamp: Date.now(),
+      data: deployment,
+    });
+  } catch {
+    throw new ApiError("Failed to delete deployment", 500);
+  }
 
-  res.status(204).json({ message: "Deployment deleted successfully" });
-  return;
+  res
+    .status(202)
+    .json({ id: deploymentId, message: "Deployment delete requested" });
 };
 
 const postDeployment: AsyncTypedHandler<
@@ -117,16 +122,20 @@ const postDeployment: AsyncTypedHandler<
   const isValid = await validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentCreated,
-    timestamp: Date.now(),
-    data: deployment,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.DeploymentCreated,
+      timestamp: Date.now(),
+      data: deployment,
+    });
+  } catch {
+    throw new ApiError("Failed to create deployment", 500);
+  }
 
-  res.status(202).json(deployment);
-
-  return;
+  res
+    .status(202)
+    .json({ id: deployment.id, message: "Deployment creation requested" });
 };
 
 const upsertDeployment: AsyncTypedHandler<
@@ -145,36 +154,48 @@ const upsertDeployment: AsyncTypedHandler<
   const { deployment } = existingDeploymentResponse ?? {};
 
   if (deployment == null) {
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.DeploymentCreated,
-      timestamp: Date.now(),
-      data: {
-        ...body,
-        id: deploymentId,
-        jobAgentConfig: body.jobAgentConfig ?? {},
-      },
-    });
+    try {
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.DeploymentCreated,
+        timestamp: Date.now(),
+        data: {
+          ...body,
+          id: deploymentId,
+          jobAgentConfig: body.jobAgentConfig ?? {},
+        },
+      });
+    } catch {
+      throw new ApiError("Failed to create deployment", 500);
+    }
 
-    res.status(202).json({ id: deploymentId, ...body });
+    res
+      .status(202)
+      .json({ id: deploymentId, message: "Deployment creation requested" });
     return;
   }
 
   const isValid = await validResourceSelector(body.resourceSelector);
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.DeploymentUpdated,
-    timestamp: Date.now(),
-    data: {
-      ...deployment,
-      ...body,
-      jobAgentConfig: body.jobAgentConfig ?? {},
-    },
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.DeploymentUpdated,
+      timestamp: Date.now(),
+      data: {
+        ...deployment,
+        ...body,
+        jobAgentConfig: body.jobAgentConfig ?? {},
+      },
+    });
+  } catch {
+    throw new ApiError("Failed to update deployment", 500);
+  }
 
-  res.status(202).json(deployment);
+  res
+    .status(202)
+    .json({ id: deploymentId, message: "Deployment update requested" });
 };
 
 const listDeploymentVersions: AsyncTypedHandler<
