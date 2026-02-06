@@ -413,6 +413,34 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 	assert.True(t, hasResourceSelectorChange, "Should detect resourceSelector change")
 }
 
+func TestHasDeploymentChanges_MetadataChanged(t *testing.T) {
+	old := &oapi.Deployment{
+		Name:           "api-deployment",
+		Slug:           "api-deployment",
+		SystemId:       "sys-123",
+		JobAgentConfig: oapi.JobAgentConfig{},
+		Metadata: map[string]string{
+			"tier": "backend",
+		},
+		Id: "deploy-123",
+	}
+
+	new := &oapi.Deployment{
+		Name:           "api-deployment",
+		Slug:           "api-deployment",
+		SystemId:       "sys-123",
+		JobAgentConfig: oapi.JobAgentConfig{},
+		Metadata: map[string]string{
+			"tier": "frontend",
+		},
+		Id: "deploy-123",
+	}
+
+	changes := HasDeploymentChanges(old, new)
+	assert.Len(t, changes, 1, "Should detect metadata change")
+	assert.True(t, changes["metadata.tier"], "Should detect metadata.tier change")
+}
+
 func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 	oldDesc := "old description"
 	newDesc := "new description"

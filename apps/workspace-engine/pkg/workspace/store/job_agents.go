@@ -19,6 +19,10 @@ type JobAgents struct {
 }
 
 func (j *JobAgents) Upsert(ctx context.Context, jobAgent *oapi.JobAgent) {
+	if jobAgent.Metadata == nil {
+		jobAgent.Metadata = map[string]string{}
+	}
+
 	j.repo.JobAgents.Set(jobAgent.Id, jobAgent)
 	j.store.changeset.RecordUpsert(jobAgent)
 }

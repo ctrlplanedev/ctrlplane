@@ -192,12 +192,13 @@ func resourceToMap(r *oapi.Resource) map[string]any {
 }
 
 func deploymentToMap(d *oapi.Deployment) map[string]any {
-	m := make(map[string]any, 8)
+	m := make(map[string]any, 9)
 	m["id"] = d.Id
 	m["name"] = d.Name
 	m["slug"] = d.Slug
 	m["systemId"] = d.SystemId
 	m["jobAgentConfig"] = d.JobAgentConfig
+	m["metadata"] = d.Metadata
 	if d.Description != nil {
 		m["description"] = *d.Description
 	}
@@ -211,11 +212,12 @@ func deploymentToMap(d *oapi.Deployment) map[string]any {
 }
 
 func environmentToMap(e *oapi.Environment) map[string]any {
-	m := make(map[string]any, 6)
+	m := make(map[string]any, 7)
 	m["id"] = e.Id
 	m["name"] = e.Name
 	m["systemId"] = e.SystemId
 	m["createdAt"] = e.CreatedAt
+	m["metadata"] = e.Metadata
 	if e.Description != nil {
 		m["description"] = *e.Description
 	}

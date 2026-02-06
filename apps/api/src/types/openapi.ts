@@ -816,6 +816,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -839,6 +842,9 @@ export interface components {
         };
         CreateEnvironmentRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -871,6 +877,9 @@ export interface components {
         };
         CreateSystemRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
         };
         CreateWorkspaceRequest: {
@@ -930,6 +939,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -1007,6 +1019,9 @@ export interface components {
             createdAt: string;
             description?: string;
             id: string;
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -1346,6 +1361,9 @@ export interface components {
         System: {
             description?: string;
             id: string;
+            metadata: {
+                [key: string]: string;
+            };
             name: string;
             slug: string;
             workspaceId: string;
@@ -1400,6 +1418,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -1435,6 +1456,9 @@ export interface components {
         };
         UpsertEnvironmentRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -1485,6 +1509,9 @@ export interface components {
         };
         UpsertSystemRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
         };
         UpsertUserApprovalRecordRequest: {

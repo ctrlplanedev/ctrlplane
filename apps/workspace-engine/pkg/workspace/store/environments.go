@@ -29,6 +29,10 @@ func (e *Environments) Get(id string) (*oapi.Environment, bool) {
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
+	if environment.Metadata == nil {
+		environment.Metadata = map[string]string{}
+	}
+
 	e.repo.Environments.Set(environment.Id, environment)
 	e.store.changeset.RecordUpsert(environment)
 
