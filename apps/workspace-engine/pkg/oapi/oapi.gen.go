@@ -279,14 +279,15 @@ type DeployDecision struct {
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description      *string        `json:"description,omitempty"`
-	Id               string         `json:"id"`
-	JobAgentConfig   JobAgentConfig `json:"jobAgentConfig"`
-	JobAgentId       *string        `json:"jobAgentId,omitempty"`
-	Name             string         `json:"name"`
-	ResourceSelector *Selector      `json:"resourceSelector,omitempty"`
-	Slug             string         `json:"slug"`
-	SystemId         string         `json:"systemId"`
+	Description      *string            `json:"description,omitempty"`
+	Id               string             `json:"id"`
+	JobAgentConfig   JobAgentConfig     `json:"jobAgentConfig"`
+	JobAgentId       *string            `json:"jobAgentId,omitempty"`
+	Metadata         *map[string]string `json:"metadata,omitempty"`
+	Name             string             `json:"name"`
+	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
+	Slug             string             `json:"slug"`
+	SystemId         string             `json:"systemId"`
 }
 
 // DeploymentAndSystem defines model for DeploymentAndSystem.
@@ -378,12 +379,13 @@ type EntityRelation struct {
 
 // Environment defines model for Environment.
 type Environment struct {
-	CreatedAt        time.Time `json:"createdAt"`
-	Description      *string   `json:"description,omitempty"`
-	Id               string    `json:"id"`
-	Name             string    `json:"name"`
-	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
-	SystemId         string    `json:"systemId"`
+	CreatedAt        time.Time          `json:"createdAt"`
+	Description      *string            `json:"description,omitempty"`
+	Id               string             `json:"id"`
+	Metadata         *map[string]string `json:"metadata,omitempty"`
+	Name             string             `json:"name"`
+	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
+	SystemId         string             `json:"systemId"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -502,11 +504,12 @@ type Job struct {
 
 // JobAgent defines model for JobAgent.
 type JobAgent struct {
-	Config      JobAgentConfig `json:"config"`
-	Id          string         `json:"id"`
-	Name        string         `json:"name"`
-	Type        string         `json:"type"`
-	WorkspaceId string         `json:"workspaceId"`
+	Config      JobAgentConfig     `json:"config"`
+	Id          string             `json:"id"`
+	Metadata    *map[string]string `json:"metadata,omitempty"`
+	Name        string             `json:"name"`
+	Type        string             `json:"type"`
+	WorkspaceId string             `json:"workspaceId"`
 }
 
 // JobAgentConfig defines model for JobAgentConfig.
@@ -890,10 +893,11 @@ type StringValue = string
 
 // System defines model for System.
 type System struct {
-	Description *string `json:"description,omitempty"`
-	Id          string  `json:"id"`
-	Name        string  `json:"name"`
-	WorkspaceId string  `json:"workspaceId"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Metadata    *map[string]string `json:"metadata,omitempty"`
+	Name        string             `json:"name"`
+	WorkspaceId string             `json:"workspaceId"`
 }
 
 // TerraformCloudJobAgentConfig defines model for TerraformCloudJobAgentConfig.

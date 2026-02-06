@@ -871,6 +871,9 @@ export interface components {
         };
         CreateSystemRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
         };
         CreateWorkspaceRequest: {
@@ -1346,8 +1349,10 @@ export interface components {
         System: {
             description?: string;
             id: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
-            slug: string;
             workspaceId: string;
         };
         TerraformCloudRunMetricProvider: {
@@ -1485,6 +1490,9 @@ export interface components {
         };
         UpsertSystemRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
         };
         UpsertUserApprovalRecordRequest: {

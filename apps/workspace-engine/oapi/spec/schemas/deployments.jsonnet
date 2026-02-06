@@ -13,6 +13,7 @@ local openapi = import '../lib/openapi.libsonnet';
       jobAgentId: { type: 'string' },
       jobAgentConfig: openapi.schemaRef('JobAgentConfig'),
       resourceSelector: openapi.schemaRef('Selector'),
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 

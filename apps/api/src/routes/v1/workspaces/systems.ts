@@ -43,13 +43,13 @@ export const upsertSystem: AsyncTypedHandler<
   "put"
 > = async (req, res) => {
   const { workspaceId, systemId } = req.params;
-  const { name, description } = req.body;
+  const { name, description, metadata } = req.body;
   try {
     await sendGoEvent({
       workspaceId,
       eventType: Event.SystemUpdated,
       timestamp: Date.now(),
-      data: { id: systemId, name, description, workspaceId },
+      data: { id: systemId, name, description, metadata, workspaceId },
     });
 
     res.status(202).json({ message: "System updated successfully" });

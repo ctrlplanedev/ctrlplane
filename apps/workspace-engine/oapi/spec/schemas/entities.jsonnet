@@ -72,6 +72,7 @@ local openapi = import '../lib/openapi.libsonnet';
       systemId: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
       createdAt: { type: 'string', format: 'date-time' },
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 
@@ -83,6 +84,7 @@ local openapi = import '../lib/openapi.libsonnet';
       workspaceId: { type: 'string' },
       name: { type: 'string' },
       description: { type: 'string' },
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 
@@ -95,6 +97,7 @@ local openapi = import '../lib/openapi.libsonnet';
       name: { type: 'string' },
       type: { type: 'string' },
       config: openapi.schemaRef('JobAgentConfig'),
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 

@@ -24,11 +24,6 @@ export const errorHandler = (
     body: req.body,
   });
 
-  // Handle ApiError instances
-  if (error instanceof ApiError) {
-    return res.status(error.statusCode).json(error.toJSON());
-  }
-
   // Handle validation errors from express-openapi-validator
   if (error.name === "ValidationError") {
     return res.status(400).json({
@@ -38,8 +33,14 @@ export const errorHandler = (
     });
   }
 
+  // Handle ApiError instances
+  if (error instanceof ApiError) {
+    return res.status(error.statusCode).json(error.toJSON());
+  }
+
+
   // Handle generic errors
   return res
     .status(500)
-    .json({ message: "Internal server error", code: "INTERNAL_ERROR" });
+    .json({ message: "Internal server error: " + error.message, code: "INTERNAL_ERROR", details: error.stack });
 };

@@ -1189,6 +1189,9 @@ export interface components {
             id: string;
             jobAgentConfig: components["schemas"]["JobAgentConfig"];
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -1274,6 +1277,9 @@ export interface components {
             createdAt: string;
             description?: string;
             id: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -1399,6 +1405,9 @@ export interface components {
         JobAgent: {
             config: components["schemas"]["JobAgentConfig"];
             id: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             type: string;
             workspaceId: string;
@@ -1718,6 +1727,9 @@ export interface components {
         System: {
             description?: string;
             id: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             workspaceId: string;
         };
