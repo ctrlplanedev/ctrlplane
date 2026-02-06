@@ -434,7 +434,7 @@ export interface paths {
         get: operations["listPolicies"];
         put?: never;
         /** Create a policy */
-        post: operations["createPolicy"];
+        post: operations["requestPolicyCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -451,10 +451,10 @@ export interface paths {
         /** Get a policy by ID */
         get: operations["getPolicy"];
         /** Upsert a policy by ID */
-        put: operations["upsertPolicy"];
+        put: operations["requestPolicyUpdate"];
         post?: never;
         /** Delete a policy by ID */
-        delete: operations["deletePolicy"];
+        delete: operations["requestPolicyDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1203,6 +1203,10 @@ export interface components {
             rules: components["schemas"]["PolicyRule"][];
             selectors: components["schemas"]["PolicyTargetSelector"][];
             workspaceId: string;
+        };
+        PolicyRequestAccepted: {
+            id: string;
+            message: string;
         };
         PolicyRule: {
             anyApproval?: components["schemas"]["AnyApprovalRule"];
@@ -3289,7 +3293,7 @@ export interface operations {
             };
         };
     };
-    createPolicy: {
+    requestPolicyCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -3311,7 +3315,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Policy"];
+                    "application/json": components["schemas"]["PolicyRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3368,7 +3372,7 @@ export interface operations {
             };
         };
     };
-    upsertPolicy: {
+    requestPolicyUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -3392,7 +3396,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Policy"];
+                    "application/json": components["schemas"]["PolicyRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3415,7 +3419,7 @@ export interface operations {
             };
         };
     };
-    deletePolicy: {
+    requestPolicyDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -3435,7 +3439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Policy"];
+                    "application/json": components["schemas"]["PolicyRequestAccepted"];
                 };
             };
             /** @description Invalid request */

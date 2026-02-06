@@ -1171,6 +1171,21 @@
             ],
             "type": "object"
          },
+         "PolicyRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
          "PolicyRule": {
             "properties": {
                "anyApproval": {
@@ -5097,7 +5112,7 @@
             "summary": "List policies"
          },
          "post": {
-            "operationId": "createPolicy",
+            "operationId": "requestPolicyCreation",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -5124,7 +5139,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Policy"
+                           "$ref": "#/components/schemas/PolicyRequestAccepted"
                         }
                      }
                   },
@@ -5146,7 +5161,7 @@
       },
       "/v1/workspaces/{workspaceId}/policies/{policyId}": {
          "delete": {
-            "operationId": "deletePolicy",
+            "operationId": "requestPolicyDeletion",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -5172,7 +5187,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Policy"
+                           "$ref": "#/components/schemas/PolicyRequestAccepted"
                         }
                      }
                   },
@@ -5258,7 +5273,7 @@
             "summary": "Get a policy by ID"
          },
          "put": {
-            "operationId": "upsertPolicy",
+            "operationId": "requestPolicyUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -5294,7 +5309,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Policy"
+                           "$ref": "#/components/schemas/PolicyRequestAccepted"
                         }
                      }
                   },
