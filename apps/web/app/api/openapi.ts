@@ -747,7 +747,7 @@ export interface paths {
         get: operations["listSystems"];
         put?: never;
         /** Create system */
-        post: operations["createSystem"];
+        post: operations["requestSystemCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -764,10 +764,10 @@ export interface paths {
         /** Get system */
         get: operations["getSystem"];
         /** Upsert system */
-        put: operations["upsertSystemById"];
+        put: operations["requestSystemUpdate"];
         post?: never;
         /** Delete system */
-        delete: operations["deleteSystem"];
+        delete: operations["requestSystemDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -881,6 +881,7 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+            slug?: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -1365,7 +1366,12 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+            slug: string;
             workspaceId: string;
+        };
+        SystemRequestAccepted: {
+            id: string;
+            message: string;
         };
         TerraformCloudRunMetricProvider: {
             /**
@@ -1512,6 +1518,7 @@ export interface components {
                 [key: string]: string;
             };
             name: string;
+            slug?: string;
         };
         UpsertUserApprovalRecordRequest: {
             environmentIds?: string[];
@@ -4184,7 +4191,7 @@ export interface operations {
             };
         };
     };
-    createSystem: {
+    requestSystemCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -4206,7 +4213,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
                 };
             };
         };
@@ -4254,7 +4261,7 @@ export interface operations {
             };
         };
     };
-    upsertSystemById: {
+    requestSystemUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -4278,12 +4285,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
                 };
             };
         };
     };
-    deleteSystem: {
+    requestSystemDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -4303,7 +4310,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
                 };
             };
             /** @description Invalid request */

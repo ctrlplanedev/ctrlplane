@@ -14,7 +14,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     post: {
       summary: 'Create system',
-      operationId: 'createSystem',
+      operationId: 'requestSystemCreation',
       parameters: [
         openapi.workspaceIdParam(),
       ],
@@ -26,7 +26,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('System')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('SystemRequestAccepted')),
     },
   },
   '/v1/workspaces/{workspaceId}/systems/{systemId}': {
@@ -43,7 +43,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert system',
-      operationId: 'upsertSystemById',
+      operationId: 'requestSystemUpdate',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.systemIdParam(),
@@ -56,16 +56,16 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('System')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('SystemRequestAccepted')),
     },
     delete: {
       summary: 'Delete system',
-      operationId: 'deleteSystem',
+      operationId: 'requestSystemDeletion',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.systemIdParam(),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('System'))
+      responses: openapi.acceptedResponse(openapi.schemaRef('SystemRequestAccepted'))
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },

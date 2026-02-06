@@ -18,24 +18,18 @@ export const getSystem: AsyncTypedHandler<
     "/v1/workspaces/{workspaceId}/systems/{systemId}",
     {
       params: {
-        path: {
-          workspaceId,
-          systemId,
-        },
+        path: { workspaceId, systemId },
       },
     },
   );
 
-  if (!system.data) {
-    res.status(404).json({ message: "System not found" });
-    return;
-  }
+  if (system.error != null)
+    throw new ApiError(
+      system.error.error ?? "System not found",
+      system.response.status,
+    );
 
-  res.status(200).json({
-    ...system.data.system,
-    environments: system.data.environments,
-    deployments: system.data.deployments,
-  });
+  res.status(200).json(system.data.system);
 };
 
 export const upsertSystem: AsyncTypedHandler<
@@ -52,10 +46,11 @@ export const upsertSystem: AsyncTypedHandler<
       data: { id: systemId, name, description, metadata, workspaceId },
     });
 
-    res.status(202).json({ message: "System updated successfully" });
+    res
+      .status(202)
+      .json({ id: systemId, message: "System update requested" });
   } catch {
-    res.status(500).json({ message: "Failed to update system" });
-    return;
+    throw new ApiError("Failed to update system", 500);
   }
 };
 
@@ -84,11 +79,10 @@ export const deleteSystem: AsyncTypedHandler<
       data: systemResponse.data.system,
     });
   } catch {
-    res.status(500).json({ message: "Failed to delete system" });
-    return;
+    throw new ApiError("Failed to send delete request", 500);
   }
 
-  res.status(204).json({ message: "System deleted successfully" });
+  res.status(202).json({ id: systemId, message: "System delete requested" });
 };
 
 export const getSystems: AsyncTypedHandler<
@@ -130,10 +124,9 @@ export const createSystem: AsyncTypedHandler<
       timestamp: Date.now(),
       data: { id, workspaceId, ...req.body },
     });
-    res.status(202).json({ id, ...req.body });
+    res.status(202).json({ id, message: "System creation requested" });
   } catch {
-    res.status(500).json({ message: "Failed to create system" });
-    return;
+    throw new ApiError("Failed to create system", 500);
   }
 };
 export const systemRouter = Router({ mergeParams: true })

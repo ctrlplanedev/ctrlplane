@@ -4,10 +4,7 @@ import { Kafka } from "kafkajs";
 
 import { logger, SpanStatusCode } from "@ctrlplane/logger";
 
-import type {
-  GoEventPayload,
-  GoMessage,
-} from "./events.js";
+import type { GoEventPayload, GoMessage } from "./events.js";
 import { env } from "../config.js";
 import { createSpanWrapper } from "../span.js";
 
@@ -16,10 +13,11 @@ const log = logger.child({ component: "kafka-client" });
 let kafka: Kafka | null = null;
 let producer: Producer | null = null;
 
-const getKafka = () => (kafka ??= new Kafka({
-  clientId: "ctrlplane-events",
-  brokers: env.KAFKA_BROKERS.split(","),
-}));
+const getKafka = () =>
+  (kafka ??= new Kafka({
+    clientId: "ctrlplane-events",
+    brokers: env.KAFKA_BROKERS.split(","),
+  }));
 
 const getProducer = async () => {
   if (producer == null) {
@@ -60,4 +58,3 @@ export const sendGoEvent = createSpanWrapper(
     }
   },
 );
-

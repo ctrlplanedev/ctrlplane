@@ -95,7 +95,6 @@ export type FullReleaseTarget = schema.ReleaseTarget & {
   deployment: schema.Deployment;
 };
 
-
 export type GoEventPayload = {
   [Event.WorkspaceSave]: object;
   [Event.SystemCreated]: WorkspaceEngine["schemas"]["System"];
@@ -147,7 +146,6 @@ export type GoEventPayload = {
   [Event.WorkflowTemplateCreated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
   [Event.WorkflowCreated]: WorkspaceEngine["schemas"]["Workflow"];
 };
-
 
 export type GoMessage<T extends keyof GoEventPayload> = {
   workspaceId: string;

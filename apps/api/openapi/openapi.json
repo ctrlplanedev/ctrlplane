@@ -251,6 +251,9 @@
                },
                "name": {
                   "type": "string"
+               },
+               "slug": {
+                  "type": "string"
                }
             },
             "required": [
@@ -1638,6 +1641,9 @@
                "name": {
                   "type": "string"
                },
+               "slug": {
+                  "type": "string"
+               },
                "workspaceId": {
                   "type": "string"
                }
@@ -1647,6 +1653,21 @@
                "workspaceId",
                "name",
                "slug"
+            ],
+            "type": "object"
+         },
+         "SystemRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
             ],
             "type": "object"
          },
@@ -2026,6 +2047,9 @@
                   "type": "object"
                },
                "name": {
+                  "type": "string"
+               },
+               "slug": {
                   "type": "string"
                }
             },
@@ -6486,7 +6510,7 @@
             "summary": "List systems"
          },
          "post": {
-            "operationId": "createSystem",
+            "operationId": "requestSystemCreation",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6513,7 +6537,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/System"
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
                         }
                      }
                   },
@@ -6525,7 +6549,7 @@
       },
       "/v1/workspaces/{workspaceId}/systems/{systemId}": {
          "delete": {
-            "operationId": "deleteSystem",
+            "operationId": "requestSystemDeletion",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6551,7 +6575,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/System"
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
                         }
                      }
                   },
@@ -6637,7 +6661,7 @@
             "summary": "Get system"
          },
          "put": {
-            "operationId": "upsertSystemById",
+            "operationId": "requestSystemUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6673,7 +6697,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/System"
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
                         }
                      }
                   },
