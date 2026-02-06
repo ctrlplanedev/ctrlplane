@@ -31,7 +31,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert deployment variable',
-      operationId: 'upsertDeploymentVariable',
+      operationId: 'requestDeploymentVariableUpdate',
       description: 'Creates or updates a deployment variable by ID.',
       parameters: [
         openapi.workspaceIdParam(),
@@ -46,18 +46,22 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariable')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariableRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
     delete: {
       summary: 'Delete deployment variable',
-      operationId: 'deleteDeploymentVariable',
+      operationId: 'requestDeploymentVariableDeletion',
       description: 'Deletes a deployment variable by ID.',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
         openapi.stringParam('variableId', 'ID of the deployment variable'),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariable')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariableRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values': {
@@ -92,7 +96,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert deployment variable value',
-      operationId: 'upsertDeploymentVariableValue',
+      operationId: 'requestDeploymentVariableValueUpdate',
       description: 'Creates or updates a variable value override by ID.',
       parameters: [
         openapi.workspaceIdParam(),
@@ -108,11 +112,13 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariableValue')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariableValueRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
     delete: {
       summary: 'Delete deployment variable value',
-      operationId: 'deleteDeploymentVariableValue',
+      operationId: 'requestDeploymentVariableValueDeletion',
       description: 'Deletes a variable value override by ID.',
       parameters: [
         openapi.workspaceIdParam(),
@@ -120,7 +126,9 @@ local openapi = import '../lib/openapi.libsonnet';
         openapi.stringParam('variableId', 'ID of the deployment variable'),
         openapi.stringParam('valueId', 'ID of the variable value'),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariableValue')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentVariableValueRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }

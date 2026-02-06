@@ -83,14 +83,21 @@ const deleteResourceByIdentifier: AsyncTypedHandler<
     );
   }
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.ResourceDeleted,
-    timestamp: Date.now(),
-    data: resourceResponse.data,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.ResourceDeleted,
+      timestamp: Date.now(),
+      data: resourceResponse.data,
+    });
+  } catch {
+    throw new ApiError("Failed to delete resource", 500);
+  }
 
-  res.status(204).end();
+  res.status(202).json({
+    id: resourceResponse.data.id,
+    message: "Resource delete requested",
+  });
 };
 
 const getVariablesForResource: AsyncTypedHandler<
@@ -138,14 +145,21 @@ const updateVariablesForResource: AsyncTypedHandler<
     );
   }
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.ResourceVariablesBulkUpdated,
-    timestamp: Date.now(),
-    data: { resourceId: resourceResponse.data.id, variables: body },
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.ResourceVariablesBulkUpdated,
+      timestamp: Date.now(),
+      data: { resourceId: resourceResponse.data.id, variables: body },
+    });
+  } catch {
+    throw new ApiError("Failed to update resource variables", 500);
+  }
 
-  res.status(204).end();
+  res.status(202).json({
+    id: resourceResponse.data.id,
+    message: "Resource variables update requested",
+  });
 };
 
 const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<

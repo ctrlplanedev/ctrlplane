@@ -34,6 +34,24 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  DeploymentVariableRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
+    },
+  },
+
+  DeploymentVariableValueRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
+    },
+  },
+
   UpsertDeploymentVariableRequest: {
     type: 'object',
     required: ['key'],

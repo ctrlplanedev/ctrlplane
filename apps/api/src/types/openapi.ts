@@ -172,13 +172,13 @@ export interface paths {
          * Upsert deployment variable
          * @description Creates or updates a deployment variable by ID.
          */
-        put: operations["upsertDeploymentVariable"];
+        put: operations["requestDeploymentVariableUpdate"];
         post?: never;
         /**
          * Delete deployment variable
          * @description Deletes a deployment variable by ID.
          */
-        delete: operations["deleteDeploymentVariable"];
+        delete: operations["requestDeploymentVariableDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -220,13 +220,13 @@ export interface paths {
          * Upsert deployment variable value
          * @description Creates or updates a variable value override by ID.
          */
-        put: operations["upsertDeploymentVariableValue"];
+        put: operations["requestDeploymentVariableValueUpdate"];
         post?: never;
         /**
          * Delete deployment variable value
          * @description Deletes a variable value override by ID.
          */
-        delete: operations["deleteDeploymentVariableValue"];
+        delete: operations["requestDeploymentVariableValueDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -395,27 +395,7 @@ export interface paths {
          * Update job status
          * @description Updates the status of a specific job by ID.
          */
-        put: operations["updateJobStatus"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get job with release
-         * @description Returns a specific job by ID with its release.
-         */
-        get: operations["getJobWithRelease"];
-        put?: never;
+        put: operations["requestJobStatusUpdate"];
         post?: never;
         delete?: never;
         options?: never;
@@ -576,26 +556,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get release verifications
-         * @description Returns all verifications for jobs belonging to this release.
-         */
-        get: operations["getReleaseVerifications"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/workspaces/{workspaceId}/resource-providers": {
         parameters: {
             query?: never;
@@ -605,7 +565,7 @@ export interface paths {
         };
         get?: never;
         /** Upsert resource provider */
-        put: operations["upsertResourceProvider"];
+        put: operations["requestResourceProviderUpsert"];
         post?: never;
         delete?: never;
         options?: never;
@@ -639,13 +599,13 @@ export interface paths {
         };
         get?: never;
         /** Set the resources for a provider */
-        put: operations["setResourceProvidersResources"];
+        put: operations["requestResourceProvidersResources"];
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         /** Set the resources for a provider */
-        patch: operations["setResourceProvidersResourcesPatch"];
+        patch: operations["requestResourceProvidersResourcesPatch"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources": {
@@ -686,7 +646,7 @@ export interface paths {
          * Delete resource by identifier
          * @description Deletes a resource by its identifier.
          */
-        delete: operations["deleteResourceByIdentifier"];
+        delete: operations["requestResourceDeletionByIdentifier"];
         options?: never;
         head?: never;
         patch?: never;
@@ -713,7 +673,7 @@ export interface paths {
          * Update variables for a resource
          * @description Updates the variables for a resource
          */
-        patch: operations["updateVariablesForResource"];
+        patch: operations["requestResourceVariablesUpdate"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
@@ -966,6 +926,10 @@ export interface components {
             id: string;
             key: string;
         };
+        DeploymentVariableRequestAccepted: {
+            id: string;
+            message: string;
+        };
         DeploymentVariableValue: {
             deploymentVariableId: string;
             id: string;
@@ -973,6 +937,10 @@ export interface components {
             priority: number;
             resourceSelector?: components["schemas"]["Selector"];
             value: components["schemas"]["Value"];
+        };
+        DeploymentVariableValueRequestAccepted: {
+            id: string;
+            message: string;
         };
         DeploymentVariableWithValues: {
             values: components["schemas"]["DeploymentVariableValue"][];
@@ -1147,6 +1115,10 @@ export interface components {
         };
         /** @enum {string} */
         JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
+        JobStatusRequestAccepted: {
+            id: string;
+            message: string;
+        };
         JobUpdateEvent: {
             agentId?: string;
             externalId?: string;
@@ -1308,6 +1280,10 @@ export interface components {
             /** Format: uuid */
             workspaceId: string;
         };
+        ResourceProviderRequestAccepted: {
+            id: string;
+            message: string;
+        };
         ResourceProviderResource: {
             config: {
                 [key: string]: unknown;
@@ -1327,6 +1303,10 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
             version: string;
+        };
+        ResourceRequestAccepted: {
+            id: string;
+            message: string;
         };
         ResourceVariable: {
             key: string;
@@ -2375,7 +2355,7 @@ export interface operations {
             };
         };
     };
-    upsertDeploymentVariable: {
+    requestDeploymentVariableUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2401,12 +2381,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariable"];
+                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteDeploymentVariable: {
+    requestDeploymentVariableDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2428,7 +2426,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariable"];
+                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -2520,7 +2536,7 @@ export interface operations {
             };
         };
     };
-    upsertDeploymentVariableValue: {
+    requestDeploymentVariableValueUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2548,12 +2564,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariableValue"];
+                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteDeploymentVariableValue: {
+    requestDeploymentVariableValueDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2577,7 +2611,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariableValue"];
+                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -3167,7 +3219,7 @@ export interface operations {
             };
         };
     };
-    updateJobStatus: {
+    requestJobStatusUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -3186,55 +3238,12 @@ export interface operations {
         };
         responses: {
             /** @description Update job status */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getJobWithRelease: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the job */
-                jobId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Get job with release */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JobWithRelease"];
+                    "application/json": components["schemas"]["JobStatusRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3814,50 +3823,7 @@ export interface operations {
             };
         };
     };
-    getReleaseVerifications: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the release */
-                releaseId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of verifications for the release */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JobVerification"][];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    upsertResourceProvider: {
+    requestResourceProviderUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3873,13 +3839,22 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProvider"];
+                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -3909,7 +3884,7 @@ export interface operations {
             };
         };
     };
-    setResourceProvidersResources: {
+    requestResourceProvidersResources: {
         parameters: {
             query?: never;
             header?: never;
@@ -3935,12 +3910,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    setResourceProvidersResourcesPatch: {
+    requestResourceProvidersResourcesPatch: {
         parameters: {
             query?: never;
             header?: never;
@@ -3966,7 +3959,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -4034,7 +4045,7 @@ export interface operations {
             };
         };
     };
-    deleteResourceByIdentifier: {
+    requestResourceDeletionByIdentifier: {
         parameters: {
             query?: never;
             header?: never;
@@ -4048,12 +4059,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No content */
-            204: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResourceRequestAccepted"];
+                };
             };
             /** @description Invalid request */
             400: {
@@ -4131,7 +4144,7 @@ export interface operations {
             };
         };
     };
-    updateVariablesForResource: {
+    requestResourceVariablesUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -4157,9 +4170,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ResourceRequestAccepted"];
                 };
             };
             /** @description Invalid request */

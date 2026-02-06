@@ -32,13 +32,15 @@ local openapi = import '../lib/openapi.libsonnet';
     delete: {
       tags: ['Resources'],
       summary: 'Delete resource by identifier',
-      operationId: 'deleteResourceByIdentifier',
+      operationId: 'requestResourceDeletionByIdentifier',
       description: 'Deletes a resource by its identifier.',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.identifierParam(),
       ],
-      responses: openapi.noContent() + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/variables': {
@@ -60,7 +62,7 @@ local openapi = import '../lib/openapi.libsonnet';
     patch: {
       tags: ['Resources'],
       summary: 'Update variables for a resource',
-      operationId: 'updateVariablesForResource',
+      operationId: 'requestResourceVariablesUpdate',
       description: 'Updates the variables for a resource',
       parameters: [
         openapi.workspaceIdParam(),
@@ -77,13 +79,9 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(
-        {
-          type: 'object',
-          additionalProperties: true,
-        },
-        'The updated variables'
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceRequestAccepted'), 'The updated variables')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}': {

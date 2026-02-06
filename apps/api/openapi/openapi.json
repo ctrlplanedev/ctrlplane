@@ -462,6 +462,21 @@
             ],
             "type": "object"
          },
+         "DeploymentVariableRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
          "DeploymentVariableValue": {
             "properties": {
                "deploymentVariableId": {
@@ -486,6 +501,21 @@
                "deploymentVariableId",
                "priority",
                "value"
+            ],
+            "type": "object"
+         },
+         "DeploymentVariableValueRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
             ],
             "type": "object"
          },
@@ -925,6 +955,21 @@
                "successful"
             ],
             "type": "string"
+         },
+         "JobStatusRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
          },
          "JobUpdateEvent": {
             "oneOf": [
@@ -1524,6 +1569,21 @@
             ],
             "type": "object"
          },
+         "ResourceProviderRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
          "ResourceProviderResource": {
             "properties": {
                "config": {
@@ -1573,6 +1633,21 @@
                "createdAt",
                "config",
                "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
             ],
             "type": "object"
          },
@@ -3522,7 +3597,7 @@
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}": {
          "delete": {
             "description": "Deletes a deployment variable by ID.",
-            "operationId": "deleteDeploymentVariable",
+            "operationId": "requestDeploymentVariableDeletion",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3557,11 +3632,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/DeploymentVariable"
+                           "$ref": "#/components/schemas/DeploymentVariableRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Delete deployment variable"
@@ -3634,7 +3729,7 @@
          },
          "put": {
             "description": "Creates or updates a deployment variable by ID.",
-            "operationId": "upsertDeploymentVariable",
+            "operationId": "requestDeploymentVariableUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3679,11 +3774,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/DeploymentVariable"
+                           "$ref": "#/components/schemas/DeploymentVariableRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Upsert deployment variable"
@@ -3789,7 +3904,7 @@
       "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/variables/{variableId}/values/{valueId}": {
          "delete": {
             "description": "Deletes a variable value override by ID.",
-            "operationId": "deleteDeploymentVariableValue",
+            "operationId": "requestDeploymentVariableValueDeletion",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3833,11 +3948,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/DeploymentVariableValue"
+                           "$ref": "#/components/schemas/DeploymentVariableValueRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Delete deployment variable value"
@@ -3919,7 +4054,7 @@
          },
          "put": {
             "description": "Creates or updates a variable value override by ID.",
-            "operationId": "upsertDeploymentVariableValue",
+            "operationId": "requestDeploymentVariableValueUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3973,11 +4108,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/DeploymentVariableValue"
+                           "$ref": "#/components/schemas/DeploymentVariableValueRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Upsert deployment variable value"
@@ -4909,7 +5064,7 @@
       "/v1/workspaces/{workspaceId}/jobs/{jobId}/status": {
          "put": {
             "description": "Updates the status of a specific job by ID.",
-            "operationId": "updateJobStatus",
+            "operationId": "requestJobStatusUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4941,11 +5096,11 @@
                "required": true
             },
             "responses": {
-               "200": {
+               "202": {
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Job"
+                           "$ref": "#/components/schemas/JobStatusRequestAccepted"
                         }
                      }
                   },
@@ -4973,65 +5128,6 @@
                }
             },
             "summary": "Update job status"
-         }
-      },
-      "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release": {
-         "get": {
-            "description": "Returns a specific job by ID with its release.",
-            "operationId": "getJobWithRelease",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the job",
-                  "in": "path",
-                  "name": "jobId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/JobWithRelease"
-                        }
-                     }
-                  },
-                  "description": "Get job with release"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get job with release"
          }
       },
       "/v1/workspaces/{workspaceId}/policies": {
@@ -5865,71 +5961,9 @@
             "summary": "Get release"
          }
       },
-      "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications": {
-         "get": {
-            "description": "Returns all verifications for jobs belonging to this release.",
-            "operationId": "getReleaseVerifications",
-            "parameters": [
-               {
-                  "description": "ID of the workspace",
-                  "in": "path",
-                  "name": "workspaceId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               },
-               {
-                  "description": "ID of the release",
-                  "in": "path",
-                  "name": "releaseId",
-                  "required": true,
-                  "schema": {
-                     "type": "string"
-                  }
-               }
-            ],
-            "responses": {
-               "200": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "items": {
-                              "$ref": "#/components/schemas/JobVerification"
-                           },
-                           "type": "array"
-                        }
-                     }
-                  },
-                  "description": "List of verifications for the release"
-               },
-               "400": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Invalid request"
-               },
-               "404": {
-                  "content": {
-                     "application/json": {
-                        "schema": {
-                           "$ref": "#/components/schemas/ErrorResponse"
-                        }
-                     }
-                  },
-                  "description": "Resource not found"
-               }
-            },
-            "summary": "Get release verifications"
-         }
-      },
       "/v1/workspaces/{workspaceId}/resource-providers": {
          "put": {
-            "operationId": "upsertResourceProvider",
+            "operationId": "requestResourceProviderUpsert",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -5952,15 +5986,25 @@
                "required": true
             },
             "responses": {
-               "200": {
+               "202": {
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ResourceProvider"
+                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
                         }
                      }
                   },
-                  "description": "OK response"
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
                }
             },
             "summary": "Upsert resource provider"
@@ -6006,7 +6050,7 @@
       },
       "/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set": {
          "patch": {
-            "operationId": "setResourceProvidersResourcesPatch",
+            "operationId": "requestResourceProvidersResourcesPatch",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6053,18 +6097,37 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "properties": { },
-                           "type": "object"
+                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Set the resources for a provider"
          },
          "put": {
-            "operationId": "setResourceProvidersResources",
+            "operationId": "requestResourceProvidersResources",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6111,12 +6174,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "properties": { },
-                           "type": "object"
+                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Set the resources for a provider"
@@ -6216,7 +6298,7 @@
       "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}": {
          "delete": {
             "description": "Deletes a resource by its identifier.",
-            "operationId": "deleteResourceByIdentifier",
+            "operationId": "requestResourceDeletionByIdentifier",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6238,8 +6320,15 @@
                }
             ],
             "responses": {
-               "204": {
-                  "description": "No content"
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ResourceRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
                },
                "400": {
                   "content": {
@@ -6420,7 +6509,7 @@
          },
          "patch": {
             "description": "Updates the variables for a resource",
-            "operationId": "updateVariablesForResource",
+            "operationId": "requestResourceVariablesUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -6457,8 +6546,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "additionalProperties": true,
-                           "type": "object"
+                           "$ref": "#/components/schemas/ResourceRequestAccepted"
                         }
                      }
                   },

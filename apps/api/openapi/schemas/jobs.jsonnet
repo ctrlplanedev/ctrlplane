@@ -56,6 +56,15 @@ local JobPropertyKeys = std.objectFields(Job.properties);
     ],
   },
 
+  JobStatusRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
+    },
+  },
+
   JobWithRelease: {
     type: 'object',
     required: ['job', 'release'],
