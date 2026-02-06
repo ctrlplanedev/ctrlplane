@@ -50,9 +50,9 @@ const getEnvironmentIds = async (
   return environments.map((environment) => environment.id);
 };
 
-const createUserApprovalRecord: AsyncTypedHandler<
+const upsertUserApprovalRecord: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records",
-  "post"
+  "put"
 > = async (req, res) => {
   const { workspaceId, deploymentVersionId } = req.params;
   if (req.apiContext == null) throw new ApiError("Unauthorized", 401);
@@ -71,15 +71,22 @@ const createUserApprovalRecord: AsyncTypedHandler<
     req.body.environmentIds ??
     (await getEnvironmentIds(workspaceId, deploymentVersionId));
 
-  for (const environmentId of environmentIds)
-    await sendGoEvent({
-      workspaceId,
-      eventType: Event.UserApprovalRecordCreated,
-      timestamp: Date.now(),
-      data: { ...record, environmentId },
-    });
+  try {
+    for (const environmentId of environmentIds)
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.UserApprovalRecordCreated,
+        timestamp: Date.now(),
+        data: { ...record, environmentId },
+      });
+  } catch {
+    throw new ApiError("Failed to update user approval record", 500);
+  }
 
-  res.status(200).json({ success: true });
+  res.status(202).json({
+    id: deploymentVersionId,
+    message: "User approval record update requested",
+  });
 };
 
 const updateDeploymentVersion: AsyncTypedHandler<
@@ -115,12 +122,8 @@ const updateDeploymentVersion: AsyncTypedHandler<
 };
 
 export const deploymentVersionsRouter = Router({ mergeParams: true })
-  .post(
-    "/:deploymentVersionId/user-approval-records",
-    asyncHandler(createUserApprovalRecord),
-  )
   .put(
     "/:deploymentVersionId/user-approval-records",
-    asyncHandler(createUserApprovalRecord),
+    asyncHandler(upsertUserApprovalRecord),
   )
   .patch("/:deploymentVersionId", asyncHandler(updateDeploymentVersion));

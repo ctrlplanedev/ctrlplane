@@ -90,9 +90,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
-        /** Create user approval record */
-        post: operations["createUserApprovalRecord"];
+        /** Upsert user approval record */
+        put: operations["requestUserApprovalRecordUpdate"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -334,10 +334,10 @@ export interface paths {
         /** Get a job agent */
         get: operations["getJobAgent"];
         /** Upsert a job agent */
-        put: operations["upsertJobAgent"];
+        put: operations["requestJobAgentUpdate"];
         post?: never;
         /** Delete a job agent */
-        delete: operations["deleteJobAgent"];
+        delete: operations["requestJobAgentDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1141,6 +1141,10 @@ export interface components {
             name: string;
             type: string;
         };
+        JobAgentRequestAccepted: {
+            id: string;
+            message: string;
+        };
         /** @enum {string} */
         JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
         JobUpdateEvent: {
@@ -1541,6 +1545,10 @@ export interface components {
             status: components["schemas"]["ApprovalStatus"];
             userId: string;
             versionId: string;
+        };
+        UserApprovalRecordRequestAccepted: {
+            id: string;
+            message: string;
         };
         Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
         VerificationMeasurement: {
@@ -2055,7 +2063,7 @@ export interface operations {
             };
         };
     };
-    createUserApprovalRecord: {
+    requestUserApprovalRecordUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2073,15 +2081,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
+                    "application/json": components["schemas"]["UserApprovalRecordRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -2970,7 +2976,7 @@ export interface operations {
             };
         };
     };
-    upsertJobAgent: {
+    requestJobAgentUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2994,12 +3000,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobAgent"];
+                    "application/json": components["schemas"]["JobAgentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteJobAgent: {
+    requestJobAgentDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -3019,7 +3043,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobAgent"];
+                    "application/json": components["schemas"]["JobAgentRequestAccepted"];
                 };
             };
             /** @description Invalid request */

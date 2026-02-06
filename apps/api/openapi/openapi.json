@@ -896,6 +896,21 @@
             ],
             "type": "object"
          },
+         "JobAgentRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
          "JobStatus": {
             "enum": [
                "cancelled",
@@ -2139,6 +2154,21 @@
             ],
             "type": "object"
          },
+         "UserApprovalRecordRequestAccepted": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "message": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "message"
+            ],
+            "type": "object"
+         },
          "Value": {
             "oneOf": [
                {
@@ -3044,8 +3074,8 @@
          }
       },
       "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records": {
-         "post": {
-            "operationId": "createUserApprovalRecord",
+         "put": {
+            "operationId": "requestUserApprovalRecordUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -3077,20 +3107,15 @@
                "required": true
             },
             "responses": {
-               "200": {
+               "202": {
                   "content": {
                      "application/json": {
                         "schema": {
-                           "properties": {
-                              "success": {
-                                 "type": "boolean"
-                              }
-                           },
-                           "type": "object"
+                           "$ref": "#/components/schemas/UserApprovalRecordRequestAccepted"
                         }
                      }
                   },
-                  "description": "OK response"
+                  "description": "Accepted response"
                },
                "400": {
                   "content": {
@@ -3113,7 +3138,7 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Create user approval record"
+            "summary": "Upsert user approval record"
          }
       },
       "/v1/workspaces/{workspaceId}/deployments": {
@@ -4550,7 +4575,7 @@
       },
       "/v1/workspaces/{workspaceId}/job-agents/{jobAgentId}": {
          "delete": {
-            "operationId": "deleteJobAgent",
+            "operationId": "requestJobAgentDeletion",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4576,7 +4601,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/JobAgent"
+                           "$ref": "#/components/schemas/JobAgentRequestAccepted"
                         }
                      }
                   },
@@ -4642,7 +4667,7 @@
             "summary": "Get a job agent"
          },
          "put": {
-            "operationId": "upsertJobAgent",
+            "operationId": "requestJobAgentUpdate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -4678,11 +4703,31 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/JobAgent"
+                           "$ref": "#/components/schemas/JobAgentRequestAccepted"
                         }
                      }
                   },
                   "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
                }
             },
             "summary": "Upsert a job agent"

@@ -27,7 +27,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert a job agent',
-      operationId: 'upsertJobAgent',
+      operationId: 'requestJobAgentUpdate',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.jobAgentIdParam(),
@@ -40,16 +40,18 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('JobAgent')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('JobAgentRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
     delete: {
       summary: 'Delete a job agent',
-      operationId: 'deleteJobAgent',
+      operationId: 'requestJobAgentDeletion',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.jobAgentIdParam(),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('JobAgent'), 'Job agent deleted')
+      responses: openapi.acceptedResponse(openapi.schemaRef('JobAgentRequestAccepted'), 'Job agent deleted')
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
