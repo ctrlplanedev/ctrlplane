@@ -17,6 +17,7 @@ local jobAgentConfig = {
       jobAgentId: { type: 'string' },
       jobAgentConfig: jobAgentConfig,
       resourceSelector: openapi.schemaRef('Selector'),
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 
@@ -31,6 +32,7 @@ local jobAgentConfig = {
       jobAgentId: { type: 'string' },
       jobAgentConfig: jobAgentConfig,
       resourceSelector: openapi.schemaRef('Selector'),
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 
@@ -46,6 +48,7 @@ local jobAgentConfig = {
       jobAgentId: { type: 'string' },
       jobAgentConfig: jobAgentConfig,
       resourceSelector: openapi.schemaRef('Selector'),
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 
@@ -57,6 +60,7 @@ local jobAgentConfig = {
       system: openapi.schemaRef('System'),
     },
   },
+
   DeploymentWithVariables: {
     type: 'object',
     required: ['deployment', 'variables'],
@@ -65,6 +69,7 @@ local jobAgentConfig = {
       variables: { type: 'array', items: openapi.schemaRef('DeploymentVariableWithValues') },
     },
   },
+
   DeploymentVariableWithValues: {
     type: 'object',
     required: ['variable', 'values'],

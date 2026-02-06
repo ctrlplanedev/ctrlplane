@@ -9,6 +9,7 @@ local openapi = import '../lib/openapi.libsonnet';
       name: { type: 'string' },
       description: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
   UpsertEnvironmentRequest: {
@@ -19,6 +20,7 @@ local openapi = import '../lib/openapi.libsonnet';
       name: { type: 'string' },
       description: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 
@@ -32,6 +34,7 @@ local openapi = import '../lib/openapi.libsonnet';
       systemId: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
       createdAt: { type: 'string', format: 'date-time' },
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 }

@@ -58,6 +58,12 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
                "name": {
                   "type": "string"
                },
@@ -119,6 +125,12 @@
             "properties": {
                "description": {
                   "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
                },
                "name": {
                   "type": "string"
@@ -352,6 +364,12 @@
                },
                "jobAgentId": {
                   "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
                },
                "name": {
                   "type": "string"
@@ -590,6 +608,12 @@
                },
                "id": {
                   "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
                },
                "name": {
                   "type": "string"
@@ -1724,6 +1748,12 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
                "name": {
                   "type": "string"
                },
@@ -1823,6 +1853,12 @@
             "properties": {
                "description": {
                   "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
                },
                "name": {
                   "type": "string"

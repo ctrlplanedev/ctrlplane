@@ -816,6 +816,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -839,6 +842,9 @@ export interface components {
         };
         CreateEnvironmentRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -933,6 +939,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -1010,6 +1019,9 @@ export interface components {
             createdAt: string;
             description?: string;
             id: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -1405,6 +1417,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -1440,6 +1455,9 @@ export interface components {
         };
         UpsertEnvironmentRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
