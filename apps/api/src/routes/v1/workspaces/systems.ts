@@ -31,7 +31,11 @@ export const getSystem: AsyncTypedHandler<
     return;
   }
 
-  res.status(200).json(system);
+  res.status(200).json({
+    ...system.data.system,
+    environments: system.data.environments,
+    deployments: system.data.deployments,
+  });
 };
 
 export const upsertSystem: AsyncTypedHandler<
