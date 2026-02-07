@@ -4,10 +4,7 @@ import {
   ChevronRight,
   ChevronsUpDown,
   Cpu,
-  Eye,
-  FileText,
   LayoutDashboard,
-  LayoutGrid,
   Link2,
   LogOut,
   Moon,
@@ -87,9 +84,9 @@ const navigationGroups = [
     items: [
       { title: "Resources", to: "/resources", icon: Server },
       { title: "Providers", to: "/providers", icon: Plug },
-      { title: "Groupings", to: "/groupings", icon: LayoutGrid },
+      // { title: "Groupings", to: "/groupings", icon: LayoutGrid },
       { title: "Relationship Rules", to: "/relationship-rules", icon: Link2 },
-      { title: "Views", to: "/views", icon: Eye },
+      // { title: "Views", to: "/views", icon: Eye },
     ],
   },
 ];

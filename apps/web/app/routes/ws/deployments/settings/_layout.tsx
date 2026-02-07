@@ -87,14 +87,14 @@ export default function DeploymentsSettingsLayout() {
           >
             Job Agent
           </NavLink>
-          <NavLink
+          {/* <NavLink
             to={`${baseUrl}/hooks`}
             className={
               isActive(`${baseUrl}/hooks`) ? activeLinkStyle : defaultLinkStyle
             }
           >
             Hooks
-          </NavLink>
+          </NavLink> */}
         </div>
         <div className="grow">
           <Outlet />
