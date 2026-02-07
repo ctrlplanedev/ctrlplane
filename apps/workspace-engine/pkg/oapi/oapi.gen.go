@@ -1377,6 +1377,15 @@ type QueryResourcesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// GetDeploymentsForResourceParams defines parameters for GetDeploymentsForResource.
+type GetDeploymentsForResourceParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // GetReleaseTargetsForResourceParams defines parameters for GetReleaseTargetsForResource.
 type GetReleaseTargetsForResourceParams struct {
 	// Limit Maximum number of items to return
@@ -2572,6 +2581,9 @@ type ServerInterface interface {
 	// Get resource by identifier
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
 	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
+	// Get deployments for a resource
+	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments)
+	GetDeploymentsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params GetDeploymentsForResourceParams)
 	// Get relationships for a resource
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships)
 	GetRelationshipsForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
@@ -4337,6 +4349,58 @@ func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
 	siw.Handler.GetResourceByIdentifier(c, workspaceId, resourceIdentifier)
 }
 
+// GetDeploymentsForResource operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentsForResource(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "resourceIdentifier" -------------
+	var resourceIdentifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDeploymentsForResourceParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeploymentsForResource(c, workspaceId, resourceIdentifier, params)
+}
+
 // GetRelationshipsForResource operation middleware
 func (siw *ServerInterfaceWrapper) GetRelationshipsForResource(c *gin.Context) {
 
@@ -4798,6 +4862,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/kinds", wrapper.GetKindsForWorkspace)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/deployments", wrapper.GetDeploymentsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/relationships", wrapper.GetRelationshipsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets", wrapper.GetReleaseTargetsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets/deployment/:deploymentId", wrapper.GetReleaseTargetForResourceInDeployment)

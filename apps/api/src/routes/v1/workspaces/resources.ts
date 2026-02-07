@@ -162,6 +162,33 @@ const updateVariablesForResource: AsyncTypedHandler<
   });
 };
 
+const getDeploymentsForResource: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/deployments",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, identifier } = req.params;
+  const { limit, offset } = req.query;
+
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const result = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments",
+    {
+      params: {
+        path: { workspaceId, resourceIdentifier },
+        query: { limit, offset },
+      },
+    },
+  );
+
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Failed to get deployments for resource",
+      result.response.status,
+    );
+
+  res.status(200).json(result.data);
+};
+
 const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}",
   "get"
@@ -204,6 +231,10 @@ export const resourceRouter = Router({ mergeParams: true })
   .patch(
     "/identifier/:identifier/variables",
     asyncHandler(updateVariablesForResource),
+  )
+  .get(
+    "/identifier/:identifier/deployments",
+    asyncHandler(getDeploymentsForResource),
   )
   .get(
     "/identifier/:identifier/release-targets/deployment/:deploymentId",
