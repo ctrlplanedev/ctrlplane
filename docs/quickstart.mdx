@@ -45,18 +45,11 @@ flowchart LR
 A system groups related deployments. This is typically a product, platform, or
 bounded context.
 
-
-```yaml YAML
-# ctrlc apply -f system.yaml
-type: System
-name: Tutorial Quickstart
-description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
-metadata:
-  tutorial: quickstart
-```
-
-```bash
-ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/1-system.yaml
+```hcl Terraform
+resource "ctrlplane_system" "quickstart" {
+  name        = "Tutorial Quickstart"
+  description = "A tutorial on how to use Ctrlplane found in the Quickstart guide."
+}
 ```
 
 ## Step 2: Register Resources
@@ -64,7 +57,8 @@ ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/exa
 Resources are your deployment targets. In production, you'd sync these from
 Kubernetes or cloud providers. For this quickstart, we'll create them manually.
 
-```yaml
+<CodeGroup>
+```yaml YAML
 # ctrlc apply -f resource.yaml
 ---
 type: Resource
@@ -104,6 +98,50 @@ config:
     - three
 ```
 
+```hcl Terraform
+resource "ctrlplane_resource" "quickstart_staging" {
+  identifier = "tutorial-quickstart-resource-staging"
+  kind       = "KubernetesCluster"
+  name       = "quickstart-staging-cluster"
+  version    = "tutorial/quickstart/v1"
+
+  metadata = {
+    tutorial    = "quickstart"
+    environment = "staging"
+    region      = "us-east-1"
+  }
+
+  config = jsonencode({
+    number  = 1
+    string  = "one"
+    boolean = true
+    array   = ["one", "two", "three"]
+  })
+}
+
+resource "ctrlplane_resource" "quickstart_production" {
+  identifier = "tutorial-quickstart-resource-production"
+  kind       = "KubernetesCluster"
+  name       = "quickstart-production-cluster"
+  version    = "tutorial/quickstart/v1"
+
+  metadata = {
+    tutorial    = "quickstart"
+    environment = "production"
+    region      = "us-east-1"
+  }
+
+  config = jsonencode({
+    number  = 1
+    string  = "one"
+    boolean = true
+    array   = ["one", "two", "three"]
+  })
+}
+```
+
+</CodeGroup>
+
 ```bash
 ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/2-resources.yaml
 ```
@@ -113,41 +151,34 @@ ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/exa
 Environments use selectors to dynamically match resources. When you add new
 clusters with matching metadata, they're automatically included.
 
-```yaml YAML
-# Staging environment
-type: Environment
-name: Staging
-description: Pre-production validation
-resourceSelector: resource.metadata["environment"] == "staging"
----
-# Production environment
-type: Environment
-name: Production
-description: Live production environment
-resourceSelector: resource.metadata["environment"] == "production"
-```
+```hcl Terraform
+resource "ctrlplane_environment" "staging" {
+  name              = "Staging"
+  description       = "Pre-production validation"
+  resource_selector = "resource.metadata['environment'] == 'staging'"
+}
 
-
-```bash
-ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/3-environments.yaml
+resource "ctrlplane_environment" "production" {
+  name              = "Production"
+  description       = "Live production environment"
+  resource_selector = "resource.metadata['environment'] == 'production'"
+}
 ```
 
 ## Step 4: Create a Job Agent
 
-Job agents execute your deployments. We'll use a simple test runner, but Ctrlplane
-supports GitHub Actions, Kubernetes jobs, ArgoCD, or custom agents.
+Job agents execute your deployments. We'll use a simple test runner, but
+Ctrlplane supports GitHub Actions, Kubernetes jobs, ArgoCD, or custom agents.
 
-```yaml YAML
-# Production environment
-type: JobAgent
-name: Tutorial Quickstart Job Agent
-description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
-metadata:
-  tutorial: quickstart
-agent:
-  type: test-runner
-  config:
-    sleep: 5s
+```hcl Terraform
+resource "ctrlplane_job_agent" "quickstart" {
+  name        = "Tutorial Quickstart Job Agent"
+  description = "A tutorial on how to use Ctrlplane found in the Quickstart guide."
+
+  test_runner {
+    sleep = "5s"
+  }
+}
 ```
 
 ```bash
@@ -159,19 +190,16 @@ ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/exa
 A deployment represents your application. The job agent config tells Ctrlplane
 how to trigger deployments.
 
-```yaml YAML
+```hcl Terraform
 # Production environment
-type: Deployment
-name: Tutorial Quickstart Deployment
-description: A tutorial on how to use Ctrlplane found in the Quickstart guide.
-metadata:
-  tutorial: quickstart
-jobAgent:
-  ref: Tutorial Quickstart Job Agent
-```
+resource "ctrlplane_deployment" "quickstart" {
+  name        = "Tutorial Quickstart Deployment"
+  description = "A tutorial on how to use Ctrlplane found in the Quickstart guide."
 
-```bash
-ctrlc apply -f https://raw.githubusercontent.com/ctrlplanedev/ctrlplane/main/examples/quickstart/5-deployment.yaml
+  job_agent {
+    id = ctrlplane_job_agent.quickstart.id
+  }
+}
 ```
 
 ## Step 6: Add Deployment Workflow
@@ -245,18 +273,19 @@ Add version creation to your build workflow (`.github/workflows/build.yml`):
 
 Create a policy requiring approval before production deployments
 
-```yaml
-# ctrlc apply -f policy.yaml
-type: Policy
-name: production-approval-policy
-description: Production Approval Policy
-metadata:
-  tutorial: quickstart
-selectors:
-  - environments: environment.metadata["requires-approval"] == "true"
-rules:
-  - approval:
-      required: 1
+```hcl Terraform
+resource "ctrlplane_policy" "production_approval" {
+  name        = "Production Approval Policy"
+  description = "Production Approval Policy"
+
+  selector {
+    environments = "environment.metadata['requires-approval'] == 'true'"
+  }
+
+  approval {
+    required = 1
+  }
+}
 ```
 
 ## Step 9: Test the Pipeline

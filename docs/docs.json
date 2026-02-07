@@ -41,6 +41,12 @@
             ]
           },
           {
+            "group": "Workspace",
+            "pages": [
+              "workspaces/domain-matching"
+            ]
+          },
+          {
             "group": "Concepts",
             "pages": [
               "concepts/overview",

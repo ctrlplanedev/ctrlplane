@@ -309,6 +309,48 @@ export const deploymentsRouter = router({
       return version;
     }),
 
+  deleteVariable: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string(),
+        deploymentId: z.string(),
+        variableId: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, deploymentId, variableId } = input;
+
+      const deployment = await getClientFor(workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        { params: { path: { workspaceId, deploymentId } } },
+      );
+
+      if (!deployment.data)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment not found",
+        });
+
+      const variable = deployment.data.variables.find(
+        (v) => v.variable.id === variableId,
+      );
+
+      if (!variable)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment variable not found",
+        });
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: Event.DeploymentVariableDeleted,
+        timestamp: Date.now(),
+        data: variable.variable,
+      });
+
+      return { success: true };
+    }),
+
   policies: protectedProcedure
     .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
     .query(async ({ input }) => {
