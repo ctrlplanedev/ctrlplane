@@ -1,8 +1,9 @@
 import { useState } from "react";
-import prettyMilliseconds from "pretty-ms";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -21,14 +22,150 @@ import {
 } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+
+const DomainMatchingCard: React.FC = () => {
+  const { workspace } = useWorkspace();
+  const { id: workspaceId } = workspace;
+
+  const [domain, setDomain] = useState("");
+  const [roleId, setRoleId] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState("");
+
+  const utils = trpc.useUtils();
+  const { data: domainRules } = trpc.workspace.domainMatchingList.useQuery({
+    workspaceId,
+  });
+  const { data: roles } = trpc.workspace.roles.useQuery({ workspaceId });
+
+  const createMutation = trpc.workspace.domainMatchingCreate.useMutation({
+    onSuccess: () => {
+      toast.success("Domain matching rule added");
+      setDomain("");
+      setRoleId("");
+      setVerificationEmail("");
+      utils.workspace.domainMatchingList.invalidate({ workspaceId });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteMutation = trpc.workspace.domainMatchingDelete.useMutation({
+    onSuccess: () => {
+      toast.success("Domain matching rule removed");
+      utils.workspace.domainMatchingList.invalidate({ workspaceId });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleCreate = () => {
+    if (!domain || !roleId || !verificationEmail) return;
+    createMutation.mutate({ workspaceId, domain, roleId, verificationEmail });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Domain Matching</CardTitle>
+        <CardDescription>
+          Automatically assign roles to users whose email matches a verified
+          domain.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <FieldGroup>
+            <div className="flex items-end gap-2">
+              <Field>
+                <FieldLabel>Domain</FieldLabel>
+                <FieldContent>
+                  <Input
+                    placeholder="example.com"
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                  />
+                </FieldContent>
+              </Field>
+              <Field>
+                <FieldLabel>Role</FieldLabel>
+                <FieldContent>
+                  <Select value={roleId} onValueChange={setRoleId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles?.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+              <Field>
+                <FieldLabel>Verification Email</FieldLabel>
+                <FieldContent>
+                  <Input
+                    type="email"
+                    placeholder="admin@example.com"
+                    value={verificationEmail}
+                    onChange={(e) => setVerificationEmail(e.target.value)}
+                  />
+                </FieldContent>
+              </Field>
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  createMutation.isPending ||
+                  !domain ||
+                  !roleId ||
+                  !verificationEmail
+                }
+              >
+                Add
+              </Button>
+            </div>
+          </FieldGroup>
+
+          {domainRules != null && domainRules.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {domainRules.map((rule) => (
+                <div
+                  key={rule.id}
+                  className="flex items-center gap-3 rounded-md border px-4 py-3"
+                >
+                  <span className="font-medium">{rule.domain}</span>
+                  <Badge variant={rule.verified ? "default" : "outline"}>
+                    {rule.verified ? "Verified" : "Unverified"}
+                  </Badge>
+                  <span className="grow text-sm text-muted-foreground">
+                    {rule.roleName}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      deleteMutation.mutate({ id: rule.id, workspaceId })
+                    }
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function GeneralSettingsPage() {
   const { workspace } = useWorkspace();
@@ -38,26 +175,6 @@ export default function GeneralSettingsPage() {
     name?: string;
     slug?: string;
   }>({});
-
-  const utils = trpc.useUtils();
-  const saveHistoryQuery = trpc.workspace.saveHistory.useQuery({
-    workspaceId: workspace.id,
-  });
-
-  const saveWorkspace = trpc.workspace.save.useMutation({
-    onSuccess: () => {
-      toast.success("Workspace saved sucessfully");
-      void utils.workspace.saveHistory.invalidate({
-        workspaceId: workspace.id,
-      });
-    },
-
-    onError: (error: unknown) => {
-      const message =
-        error instanceof Error ? error.message : "Failed to update workspace";
-      toast.error(message);
-    },
-  });
 
   const updateWorkspace = trpc.workspace.update.useMutation({
     onSuccess: () => {
@@ -194,50 +311,7 @@ export default function GeneralSettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>State</CardTitle>
-          <CardDescription>
-            Update your workspace name and URL slug
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={() => saveWorkspace.mutate({ workspaceId: workspace.id })}
-          >
-            Force Save Workspace
-          </Button>
-
-          <div className="mt-5 max-h-[500px] overflow-y-auto rounded-md border bg-muted/50">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Partition</TableHead>
-                  <TableHead>Offset</TableHead>
-                  <TableHead>Num Partitions</TableHead>
-                  <TableHead>Path</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="font-mono text-xs">
-                {saveHistoryQuery.data?.map(({ workspace_snapshot }) => (
-                  <TableRow key={workspace_snapshot.id}>
-                    <TableCell>
-                      {prettyMilliseconds(
-                        Date.now() - workspace_snapshot.timestamp.getTime(),
-                      )}
-                    </TableCell>
-                    <TableCell>{workspace_snapshot.partition}</TableCell>
-                    <TableCell>{workspace_snapshot.offset}</TableCell>
-                    <TableCell>{workspace_snapshot.numPartitions}</TableCell>
-                    <TableCell>{workspace_snapshot.path}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <DomainMatchingCard />
     </div>
   );
 }
