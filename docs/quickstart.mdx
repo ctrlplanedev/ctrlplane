@@ -111,12 +111,12 @@ resource "ctrlplane_resource" "quickstart_staging" {
     region      = "us-east-1"
   }
 
-  config = jsonencode({
+  config = {
     number  = 1
     string  = "one"
     boolean = true
     array   = ["one", "two", "three"]
-  })
+  }
 }
 
 resource "ctrlplane_resource" "quickstart_production" {
@@ -131,12 +131,12 @@ resource "ctrlplane_resource" "quickstart_production" {
     region      = "us-east-1"
   }
 
-  config = jsonencode({
+  config = {
     number  = 1
     string  = "one"
     boolean = true
     array   = ["one", "two", "three"]
-  })
+  }
 }
 ```
 
