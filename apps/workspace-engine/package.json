@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "air",
     "build": "go build -o ./bin/workspace-engine main.go",
-    "lint": "golangci-lint run",
+    "lint": "bash -c 'golangci-lint run --allow-parallel-runners'",
     "lint:fix": "golangci-lint run --fix",
     "start": "./bin/workspace-engine",
     "test": "go test ./...",

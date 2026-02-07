@@ -148,4 +148,3 @@ func setJobMetadata(job *oapi.Job, metadataJSON []byte) error {
 	}
 	return nil
 }
-

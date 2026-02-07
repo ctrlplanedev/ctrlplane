@@ -3125,7 +3125,7 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 
 	// Version created inside the deny window (3am, inside 2am-6am deny window)
 	versionCreatedAt := time.Date(2025, 1, 5, 3, 0, 0, 0, time.UTC)
-	denyWindowEnd := time.Date(2025, 1, 5, 6, 0, 0, 0, time.UTC)   // 6am
+	denyWindowEnd := time.Date(2025, 1, 5, 6, 0, 0, 0, time.UTC) // 6am
 
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
 
