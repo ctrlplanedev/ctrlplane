@@ -4,5135 +4,5194 @@
  */
 
 export interface paths {
-    "/api/v1/cloud-locations/{provider}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get all regions for a specific cloud provider
-         * @description Returns geographic data for all regions of a specific cloud provider
-         */
-        get: operations["getCloudProviderRegions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/api/v1/cloud-locations/{provider}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployment-versions/{deploymentVersionId}/approve/environment/{environmentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve a deployment version for an environment */
-        post: operations["approveDeploymentVersionForEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get all regions for a specific cloud provider
+     * @description Returns geographic data for all regions of a specific cloud provider
+     */
+    get: operations["getCloudProviderRegions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/approve/environment/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployment-versions/{deploymentVersionId}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve a deployment version */
-        post: operations["approveDeploymentVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Approve a deployment version for an environment */
+    post: operations["approveDeploymentVersionForEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get the rollout information across all release targets for a given deployment version and environment */
-        get: operations["getRolloutInfo"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Approve a deployment version */
+    post: operations["approveDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/environments/{environmentId}/rollout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployment-versions/{deploymentVersionId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Updates a deployment version */
-        patch: operations["updateDeploymentVersion"];
-        trace?: never;
+    /** Get the rollout information across all release targets for a given deployment version and environment */
+    get: operations["getRolloutInfo"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployment-versions/{deploymentVersionId}/reject/environment/{environmentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reject a deployment version for an environment */
-        post: operations["rejectDeploymentVersionForEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Updates a deployment version */
+    patch: operations["updateDeploymentVersion"];
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/reject/environment/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployment-versions/{deploymentVersionId}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reject a deployment version */
-        post: operations["rejectDeploymentVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Reject a deployment version for an environment */
+    post: operations["rejectDeploymentVersionForEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions/{deploymentVersionId}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployment-versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Upserts a deployment version */
-        post: operations["upsertDeploymentVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Reject a deployment version */
+    post: operations["rejectDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployment-versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployments/{deploymentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a deployment */
-        get: operations["getDeployment"];
-        put?: never;
-        post?: never;
-        /** Delete a deployment */
-        delete: operations["deleteDeployment"];
-        options?: never;
-        head?: never;
-        /** Update a deployment */
-        patch: operations["updateDeployment"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Upserts a deployment version */
+    post: operations["upsertDeploymentVersion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployments/{deploymentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployments/{deploymentId}/resources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get resources for a deployment */
-        get: operations["getResourcesForDeployment"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a deployment */
+    get: operations["getDeployment"];
+    put?: never;
+    post?: never;
+    /** Delete a deployment */
+    delete: operations["deleteDeployment"];
+    options?: never;
+    head?: never;
+    /** Update a deployment */
+    patch: operations["updateDeployment"];
+    trace?: never;
+  };
+  "/v1/deployments/{deploymentId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployments/{deploymentId}/variables": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get all variables for a deployment */
-        get: operations["getDeploymentVariables"];
-        put?: never;
-        /** Create a new variable for a deployment */
-        post: operations["createDeploymentVariable"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get resources for a deployment */
+    get: operations["getResourcesForDeployment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployments/{deploymentId}/variables": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployments/{deploymentId}/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List deployment versions */
-        get: operations["listDeploymentVersions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get all variables for a deployment */
+    get: operations["getDeploymentVariables"];
+    put?: never;
+    /** Create a new variable for a deployment */
+    post: operations["createDeploymentVariable"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployments/{deploymentId}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/deployments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a deployment */
-        post: operations["createDeployment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List deployment versions */
+    get: operations["listDeploymentVersions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/deployments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get an environment */
-        get: operations["getEnvironment"];
-        put?: never;
-        post?: never;
-        /** Delete an environment */
-        delete: operations["deleteEnvironment"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a deployment */
+    post: operations["createDeployment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments/{environmentId}/resources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get resources for an environment */
-        get: operations["getResourcesForEnvironment"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get an environment */
+    get: operations["getEnvironment"];
+    put?: never;
+    post?: never;
+    /** Delete an environment */
+    delete: operations["deleteEnvironment"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/environments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create an environment */
-        post: operations["createEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get resources for an environment */
+    get: operations["getResourcesForEnvironment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/job-agents/{agentId}/jobs/running": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a agents running jobs */
-        get: operations["getAgentRunningJobs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create an environment */
+    post: operations["createEnvironment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/job-agents/{agentId}/jobs/running": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/job-agents/{agentId}/queue/acknowledge": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Acknowledge a job for an agent
-         * @description Marks a job as acknowledged by the agent
-         */
-        post: operations["acknowledgeAgentJob"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a agents running jobs */
+    get: operations["getAgentRunningJobs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/job-agents/{agentId}/queue/acknowledge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/job-agents/{agentId}/queue/next": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get the next jobs */
-        get: operations["getNextJobs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Acknowledge a job for an agent
+     * @description Marks a job as acknowledged by the agent
+     */
+    post: operations["acknowledgeAgentJob"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/job-agents/{agentId}/queue/next": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/job-agents/name": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Upserts the agent */
-        patch: operations["upsertJobAgent"];
-        trace?: never;
+    /** Get the next jobs */
+    get: operations["getNextJobs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/job-agents/name": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/jobs/{jobId}/acknowledge": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Acknowledge a job */
-        post: operations["acknowledgeJob"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Upserts the agent */
+    patch: operations["upsertJobAgent"];
+    trace?: never;
+  };
+  "/v1/jobs/{jobId}/acknowledge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/jobs/{jobId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a Job */
-        get: operations["getJob"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update a job */
-        patch: operations["updateJob"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Acknowledge a job */
+    post: operations["acknowledgeJob"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/jobs/{jobId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/policies/{policyId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a policy */
-        get: operations["getPolicy"];
-        put?: never;
-        post?: never;
-        /** Delete a policy */
-        delete: operations["deletePolicy"];
-        options?: never;
-        head?: never;
-        /** Update a policy */
-        patch: operations["updatePolicy"];
-        trace?: never;
+    /** Get a Job */
+    get: operations["getJob"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update a job */
+    patch: operations["updateJob"];
+    trace?: never;
+  };
+  "/v1/policies/{policyId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/policies/{policyId}/release-targets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get release targets for a policy */
-        get: operations["getReleaseTargetsForPolicy"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a policy */
+    get: operations["getPolicy"];
+    put?: never;
+    post?: never;
+    /** Delete a policy */
+    delete: operations["deletePolicy"];
+    options?: never;
+    head?: never;
+    /** Update a policy */
+    patch: operations["updatePolicy"];
+    trace?: never;
+  };
+  "/v1/policies/{policyId}/release-targets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/policies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Upsert a policy */
-        post: operations["upsertPolicy"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get release targets for a policy */
+    get: operations["getReleaseTargetsForPolicy"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/relationship/job-to-resource": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a relationship between a job and a resource */
-        post: operations["createJobToResourceRelationship"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Upsert a policy */
+    post: operations["upsertPolicy"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship/job-to-resource": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/relationship/resource-to-resource": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a relationship between two resources */
-        post: operations["createResourceToResourceRelationship"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a relationship between a job and a resource */
+    post: operations["createJobToResourceRelationship"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship/resource-to-resource": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}/latest-jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get the 10 latest jobs for a release target */
-        get: operations["getLatestJobs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a relationship between two resources */
+    post: operations["createResourceToResourceRelationship"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/latest-jobs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}/lock": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Lock a release target */
-        post: operations["lockReleaseTarget"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get the 10 latest jobs for a release target */
+    get: operations["getLatestJobs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/lock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a release target */
-        get: operations["getReleaseTarget"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Lock a release target */
+    post: operations["lockReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}/pin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pin a version to a release target */
-        post: operations["pinReleaseTarget"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a release target */
+    get: operations["getReleaseTarget"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/pin": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}/redeploy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Redeploy a release target */
-        post: operations["redeployReleaseTarget"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Pin a version to a release target */
+    post: operations["pinReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/redeploy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}/releases": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get the latest 100 releases for a release target */
-        get: operations["getReleaseTargetReleases"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Redeploy a release target */
+    post: operations["redeployReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/releases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}/unlock": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Unlock a release target */
-        post: operations["unlockReleaseTarget"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get the latest 100 releases for a release target */
+    get: operations["getReleaseTargetReleases"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/unlock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/release-targets/{releaseTargetId}/unpin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Unpin a version from a release target */
-        post: operations["unpinReleaseTarget"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Unlock a release target */
+    post: operations["unlockReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/release-targets/{releaseTargetId}/unpin": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/releases/{releaseId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Updates a release */
-        patch: operations["updateRelease"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Unpin a version from a release target */
+    post: operations["unpinReleaseTarget"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/releases/{releaseId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/releases": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Upserts a release */
-        post: operations["upsertRelease"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Updates a release */
+    patch: operations["updateRelease"];
+    trace?: never;
+  };
+  "/v1/releases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resource-providers/{providerId}/set": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Sets the resource for a provider. */
-        patch: operations["setResourceProvidersResources"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Upserts a release */
+    post: operations["upsertRelease"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/resource-providers/{providerId}/set": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resource-relationship-rules/{ruleId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a resource relationship rule */
-        delete: operations["deleteResourceRelationshipRule"];
-        options?: never;
-        head?: never;
-        /** Update a resource relationship rule */
-        patch: operations["updateResourceRelationshipRule"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Sets the resource for a provider. */
+    patch: operations["setResourceProvidersResources"];
+    trace?: never;
+  };
+  "/v1/resource-relationship-rules/{ruleId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resource-relationship-rules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a resource relationship rule */
-        post: operations["createResourceRelationshipRule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a resource relationship rule */
+    delete: operations["deleteResourceRelationshipRule"];
+    options?: never;
+    head?: never;
+    /** Update a resource relationship rule */
+    patch: operations["updateResourceRelationshipRule"];
+    trace?: never;
+  };
+  "/v1/resource-relationship-rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resource-schemas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a resource schema */
-        post: operations["createResourceSchema"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a resource relationship rule */
+    post: operations["createResourceRelationshipRule"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/resource-schemas": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resource-schemas/{schemaId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a resource schema */
-        delete: operations["deleteResourceSchema"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a resource schema */
+    post: operations["createResourceSchema"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/resource-schemas/{schemaId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resources/{resourceId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a resource */
-        get: operations["getResource"];
-        put?: never;
-        post?: never;
-        /** Delete a resource */
-        delete: operations["deleteResource"];
-        options?: never;
-        head?: never;
-        /** Update a resource */
-        patch: operations["updateResource"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a resource schema */
+    delete: operations["deleteResourceSchema"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/resources/{resourceId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resources/{resourceId}/release-targets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get release targets for a resource */
-        get: operations["getReleaseTargets"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a resource */
+    get: operations["getResource"];
+    put?: never;
+    post?: never;
+    /** Delete a resource */
+    delete: operations["deleteResource"];
+    options?: never;
+    head?: never;
+    /** Update a resource */
+    patch: operations["updateResource"];
+    trace?: never;
+  };
+  "/v1/resources/{resourceId}/release-targets": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/resources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create or update a resource */
-        post: operations["upsertResource"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get release targets for a resource */
+    get: operations["getReleaseTargets"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/systems/{systemId}/environments/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete an environment */
-        delete: operations["deleteEnvironmentByName"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create or update a resource */
+    post: operations["upsertResource"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/systems/{systemId}/environments/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/systems/{systemId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a system */
-        get: operations["getSystem"];
-        put?: never;
-        post?: never;
-        /** Delete a system */
-        delete: operations["deleteSystem"];
-        options?: never;
-        head?: never;
-        /** Update a system */
-        patch: operations["updateSystem"];
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete an environment */
+    delete: operations["deleteEnvironmentByName"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/systems/{systemId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/systems": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a system */
-        post: operations["createSystem"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a system */
+    get: operations["getSystem"];
+    put?: never;
+    post?: never;
+    /** Delete a system */
+    delete: operations["deleteSystem"];
+    options?: never;
+    head?: never;
+    /** Update a system */
+    patch: operations["updateSystem"];
+    trace?: never;
+  };
+  "/v1/systems": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/deployments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        /** List all deployments */
-        get: operations["listDeployments"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a system */
+    post: operations["createSystem"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/deployments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/environments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        /** List all environments */
-        get: operations["listEnvironments"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List all deployments */
+    get: operations["listDeployments"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/environments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/events/{action}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-                action: string;
-            };
-            cookie?: never;
-        };
-        /** Get events by action */
-        get: operations["getEventsByAction"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List all environments */
+    get: operations["listEnvironments"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/events/{action}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+        action: string;
+      };
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a workspace */
-        get: operations["getWorkspace"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get events by action */
+    get: operations["getEventsByAction"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/policies/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a policy by name */
-        delete: operations["deletePolicyByName"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a workspace */
+    get: operations["getWorkspace"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/policies/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Upserts a resource provider. */
-        get: operations["upsertResourceProvider"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a policy by name */
+    delete: operations["deletePolicyByName"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a resource by identifier */
-        get: operations["getResourceByIdentifier"];
-        put?: never;
-        post?: never;
-        /** Delete a resource by identifier */
-        delete: operations["deleteResourceByIdentifier"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Upserts a resource provider. */
+    get: operations["upsertResourceProvider"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/resources/metadata-grouped-counts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Get grouped counts of resources */
-        post: operations["getGroupedCounts"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get a resource by identifier */
+    get: operations["getResourceByIdentifier"];
+    put?: never;
+    post?: never;
+    /** Delete a resource by identifier */
+    delete: operations["deleteResourceByIdentifier"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/resources/metadata-grouped-counts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/resources": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        /** List all resources */
-        get: operations["listResources"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Get grouped counts of resources */
+    post: operations["getGroupedCounts"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
     };
-    "/v1/workspaces/{workspaceId}/systems": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        /** List all systems */
-        get: operations["listSystems"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List all resources */
+    get: operations["listResources"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/systems": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
     };
-    "/v1/workspaces/slug/{workspaceSlug}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a workspace by slug */
-        get: operations["getWorkspaceBySlug"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List all systems */
+    get: operations["listSystems"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/slug/{workspaceSlug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    /** Get a workspace by slug */
+    get: operations["getWorkspaceBySlug"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        CloudRegionGeoData: {
-            /**
-             * @description Timezone of the region in UTC format
-             * @example UTC+1
-             */
-            timezone: string;
-            /**
-             * Format: float
-             * @description Latitude coordinate for the region
-             * @example 50.1109
-             */
-            latitude: number;
-            /**
-             * Format: float
-             * @description Longitude coordinate for the region
-             * @example 8.6821
-             */
-            longitude: number;
-        };
-        ApprovalRecord: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            deploymentVersionId: string;
-            /** Format: uuid */
-            environmentId: string;
-            /** Format: uuid */
-            userId: string;
-            /** @enum {string} */
-            status: "approved" | "rejected";
-            /** Format: date-time */
-            approvedAt: string | null;
-            reason?: string;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-        };
-        BaseDeploymentVariableValue: {
-            resourceSelector?: {
-                [key: string]: unknown;
-            } | null;
-            isDefault?: boolean;
-            priority?: number;
-        };
-        DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
-            value: (string | number | boolean | Record<string, never> | (string | number | boolean | Record<string, never>)[]) | null;
-            sensitive?: boolean;
-        };
-        DirectDeploymentVariableValueWithId: components["schemas"]["DirectDeploymentVariableValue"] & {
-            /** Format: uuid */
-            id: string;
-        };
-        ReferenceDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
-            path: string[];
-            reference: string;
-            defaultValue?: (string | number | boolean | Record<string, never> | (string | number | boolean | Record<string, never>)[]) | null;
-        };
-        ReferenceDeploymentVariableValueWithId: components["schemas"]["ReferenceDeploymentVariableValue"] & {
-            /** Format: uuid */
-            id: string;
-        };
-        DeploymentVariable: {
-            /** Format: uuid */
-            id: string;
-            key: string;
-            description: string;
-            directValues: components["schemas"]["DirectDeploymentVariableValueWithId"][];
-            referenceValues: components["schemas"]["ReferenceDeploymentVariableValueWithId"][];
-            defaultValue?: components["schemas"]["DirectDeploymentVariableValueWithId"] | components["schemas"]["ReferenceDeploymentVariableValueWithId"];
-            config: {
-                [key: string]: unknown;
-            };
-        };
-        ExitHook: {
-            /**
-             * @description The name of the exit hook
-             * @example my-exit-hook
-             */
-            name: string;
-            /**
-             * Format: uuid
-             * @description The ID of the job agent to use for the exit hook
-             * @example 123e4567-e89b-12d3-a456-426614174000
-             */
-            jobAgentId: string;
-            /**
-             * @description The configuration for the job agent
-             * @example {
-             *       "key": "value"
-             *     }
-             */
-            jobAgentConfig: {
-                [key: string]: unknown;
-            };
-        };
-        JobWithTrigger: components["schemas"]["Job"] & {
-            links?: {
-                [key: string]: string;
-            };
-            metadata?: {
-                [key: string]: string;
-            };
-            release?: components["schemas"]["Release"];
-            version?: components["schemas"]["DeploymentVersion"];
-            deployment?: components["schemas"]["Deployment"];
-            runbook?: components["schemas"]["Runbook"];
-            resource?: components["schemas"]["ResourceWithVariablesAndMetadata"] & {
-                relationships?: {
-                    [key: string]: components["schemas"]["Resource"];
-                };
-            };
-            environment?: components["schemas"]["Environment"];
-            variables: components["schemas"]["VariableMap"];
-            approval?: {
-                id: string;
-                /** @enum {string} */
-                status: "pending" | "approved" | "rejected";
-                /** @description Null when status is pending, contains approver details when approved or rejected */
-                approver?: {
-                    id: string;
-                    name: string;
-                } | null;
-            } | null;
-        };
-        Workspace: {
-            /**
-             * Format: uuid
-             * @description The workspace ID
-             */
-            id: string;
-            /** @description The name of the workspace */
-            name: string;
-            /** @description The slug of the workspace */
-            slug: string;
-            /**
-             * @description The email of the Google service account attached to the workspace
-             * @example ctrlplane@ctrlplane-workspace.iam.gserviceaccount.com
-             */
-            googleServiceAccountEmail?: string | null;
-            /**
-             * @description The ARN of the AWS role attached to the workspace
-             * @example arn:aws:iam::123456789012:role/ctrlplane-workspace-role
-             */
-            awsRoleArn?: string | null;
-        };
-        System: {
-            /**
-             * Format: uuid
-             * @description The system ID
-             */
-            id: string;
-            /**
-             * Format: uuid
-             * @description The workspace ID of the system
-             */
-            workspaceId: string;
-            /** @description The name of the system */
-            name: string;
-            /** @description The slug of the system */
-            slug: string;
-            /** @description The description of the system */
-            description?: string;
-        };
-        Deployment: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            slug: string;
-            description: string;
-            /** Format: uuid */
-            systemId: string;
-            /** Format: uuid */
-            jobAgentId?: string | null;
-            jobAgentConfig: {
-                [key: string]: unknown;
-            };
-            retryCount?: number;
-            timeout?: number | null;
-        };
-        /** @description Schema for updating a deployment (all fields optional) */
-        UpdateDeployment: {
-            [key: string]: unknown;
-        } & (WithRequired<components["schemas"]["Deployment"], "id"> & {
-            [key: string]: unknown;
-        });
-        Release: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            version: string;
-            config: {
-                [key: string]: unknown;
-            };
-            jobAgentConfig: {
-                [key: string]: unknown;
-            };
-            /** Format: uuid */
-            deploymentId: string;
-            /** Format: date-time */
-            createdAt: string;
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        VersionDependency: {
-            /** Format: uuid */
-            deploymentId: string;
-            versionSelector?: {
-                [key: string]: unknown;
-            };
-        };
-        DeploymentVersion: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            tag: string;
-            config: {
-                [key: string]: unknown;
-            };
-            jobAgentConfig: {
-                [key: string]: unknown;
-            };
-            /** Format: uuid */
-            deploymentId: string;
-            /** Format: date-time */
-            createdAt: string;
-            metadata?: {
-                [key: string]: string;
-            };
-            dependencies?: components["schemas"]["VersionDependency"][];
-            /** @enum {string} */
-            status?: "building" | "ready" | "failed";
-        };
-        Environment: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            systemId: string;
-            name: string;
-            description?: string;
-            /** Format: uuid */
-            policyId?: string | null;
-            resourceSelector?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * @description The directory path of the environment
-             * @default
-             * @example my/env/path
-             */
-            directory: string;
-            /** Format: date-time */
-            createdAt: string;
-            metadata?: {
-                [key: string]: string;
-            };
-            policy?: components["schemas"]["Policy"];
-        };
-        Runbook: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            /** Format: uuid */
-            systemId: string;
-            /** Format: uuid */
-            jobAgentId: string;
-        };
-        Resource: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            version: string;
-            kind: string;
-            identifier: string;
-            config: {
-                [key: string]: unknown;
-            };
-            metadata: {
-                [key: string]: unknown;
-            };
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            /** Format: date-time */
-            deletedAt: string | null;
-            /** Format: uuid */
-            workspaceId: string;
-            /** Format: uuid */
-            providerId?: string;
-        };
-        ResourceWithVariables: components["schemas"]["Resource"] & {
-            variables?: components["schemas"]["VariableMap"];
-        };
-        ResourceWithMetadata: components["schemas"]["Resource"] & {
-            metadata?: components["schemas"]["MetadataMap"];
-        };
-        ResourceWithVariablesAndMetadata: components["schemas"]["ResourceWithVariables"] & components["schemas"]["ResourceWithMetadata"];
-        CreateResource: {
-            identifier: string;
-            name: string;
-            version: string;
-            kind: string;
-            config: {
-                [key: string]: unknown;
-            };
-            metadata: {
-                [key: string]: string;
-            };
-            variables?: components["schemas"]["Variable"][];
-        };
-        /** @enum {string} */
-        JobStatus: "successful" | "cancelled" | "skipped" | "in_progress" | "action_required" | "pending" | "failure" | "invalid_job_agent" | "invalid_integration" | "external_run_not_found";
-        Job: {
-            /** Format: uuid */
-            id: string;
-            status: components["schemas"]["JobStatus"];
-            /** @description External job identifier (e.g. GitHub workflow run ID) */
-            externalId?: string | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            /** Format: date-time */
-            startedAt?: string | null;
-            /** Format: date-time */
-            completedAt?: string | null;
-            /** Format: uuid */
-            jobAgentId?: string;
-            /** @description Configuration for the Job Agent */
-            jobAgentConfig: {
-                [key: string]: unknown;
-            };
-            message?: string;
-            reason?: string;
-        };
-        MetadataMap: {
-            [key: string]: string;
-        };
-        VariableMap: {
-            [key: string]: (string | boolean | number | Record<string, never> | (string | boolean | number | Record<string, never>)[]) | null;
-        };
-        ReferenceVariable: {
-            key: string;
-            reference: string;
-            path: string[];
-            defaultValue?: string | number | boolean | Record<string, never> | (string | number | boolean | Record<string, never>)[];
-        };
-        DirectVariable: {
-            key: string;
-            value: string | number | boolean | Record<string, never> | (string | number | boolean | Record<string, never>)[];
-            sensitive?: boolean;
-        };
-        Variable: components["schemas"]["DirectVariable"] | components["schemas"]["ReferenceVariable"];
-        PolicyTarget: {
-            deploymentSelector?: {
-                [key: string]: unknown;
-            } | null;
-            environmentSelector?: {
-                [key: string]: unknown;
-            } | null;
-            resourceSelector?: {
-                [key: string]: unknown;
-            } | null;
-        };
-        DenyWindow: {
-            timeZone: string;
-            rrule: {
-                [key: string]: unknown;
-            };
-            /** Format: date-time */
-            dtend?: string;
-        };
-        DeploymentVersionSelector: {
-            name: string;
-            deploymentVersionSelector: {
-                [key: string]: unknown;
-            };
-            description?: string;
-        };
-        VersionAnyApproval: {
-            requiredApprovalsCount: number;
-        };
-        VersionUserApproval: {
-            userId: string;
-        };
-        VersionRoleApproval: {
-            roleId: string;
-            requiredApprovalsCount: number;
-        };
-        /** Format: int32 */
-        PolicyConcurrency: number | null;
-        /** Format: int32 */
-        MaxRetries: number | null;
-        EnvironmentVersionRollout: {
-            /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. */
-            positionGrowthFactor: number;
-            /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
-            timeScaleInterval: number;
-            /**
-             * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
-             * @enum {string}
-             */
-            rolloutType: "linear" | "linear-normalized" | "exponential" | "exponential-normalized";
-        };
-        InsertEnvironmentVersionRollout: {
-            /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. Defaults to 1 if not specified. */
-            positionGrowthFactor?: number;
-            /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
-            timeScaleInterval: number;
-            /**
-             * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
-             * @enum {string}
-             */
-            rolloutType?: "linear" | "linear-normalized" | "exponential" | "exponential-normalized";
-        };
-        Policy: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            description?: string;
-            priority: number;
-            /** Format: date-time */
-            createdAt: string;
-            enabled: boolean;
-            /** Format: uuid */
-            workspaceId: string;
-            targets: components["schemas"]["PolicyTarget"][];
-            denyWindows: components["schemas"]["DenyWindow"][];
-            deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-            versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
-            versionUserApprovals: components["schemas"]["VersionUserApproval"][];
-            versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
-            concurrency?: components["schemas"]["PolicyConcurrency"];
-            environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
-            maxRetries?: components["schemas"]["MaxRetries"];
-        };
-        ReleaseTargetLockRecord: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            releaseTargetId: string;
-            /** Format: date-time */
-            lockedAt: string;
-            /** Format: date-time */
-            unlockedAt: string | null;
-            lockedBy: {
-                /** Format: uuid */
-                id: string;
-                name?: string;
-                email: string;
-            };
-        };
-        UpdateResourceRelationshipRule: {
-            name?: string;
-            reference?: string;
-            dependencyType?: components["schemas"]["ResourceRelationshipRuleDependencyType"];
-            dependencyDescription?: string;
-            description?: string;
-            sourceKind?: string;
-            sourceVersion?: string;
-            targetKind?: string;
-            targetVersion?: string;
-            metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
-            targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
-            sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
-        };
-        ResourceRelationshipRuleDependencyType: string;
-        MetadataEqualsConstraint: {
-            key?: string;
-            value?: string;
-        };
-        MetadataKeyMatchConstraint: {
-            sourceKey: string;
-            targetKey: string;
-        };
-        ResourceRelationshipRule: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            workspaceId: string;
-            name: string;
-            reference: string;
-            dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
-            dependencyDescription?: string;
-            description?: string;
-            sourceKind: string;
-            sourceVersion: string;
-            sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
-            targetKind?: string;
-            targetVersion?: string;
-            targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
-            metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
-        };
-        CreateResourceRelationshipRule: {
-            workspaceId: string;
-            name: string;
-            reference: string;
-            dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
-            dependencyDescription?: string;
-            description?: string;
-            sourceKind: string;
-            sourceVersion: string;
-            targetKind?: string;
-            targetVersion?: string;
-            metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
-            targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
-            sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
-        };
-        ReleaseTarget: {
-            /** Format: uuid */
-            id: string;
-            resource: components["schemas"]["Resource"];
-            environment: components["schemas"]["Environment"];
-            deployment: components["schemas"]["Deployment"];
-        };
-        Event: {
-            /** Format: uuid */
-            id: string;
-            action: string;
-            payload: {
-                [key: string]: unknown;
-            };
-            /** Format: date-time */
-            createdAt: string;
-        };
+  schemas: {
+    CloudRegionGeoData: {
+      /**
+       * @description Timezone of the region in UTC format
+       * @example UTC+1
+       */
+      timezone: string;
+      /**
+       * Format: float
+       * @description Latitude coordinate for the region
+       * @example 50.1109
+       */
+      latitude: number;
+      /**
+       * Format: float
+       * @description Longitude coordinate for the region
+       * @example 8.6821
+       */
+      longitude: number;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    ApprovalRecord: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      deploymentVersionId: string;
+      /** Format: uuid */
+      environmentId: string;
+      /** Format: uuid */
+      userId: string;
+      /** @enum {string} */
+      status: "approved" | "rejected";
+      /** Format: date-time */
+      approvedAt: string | null;
+      reason?: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    BaseDeploymentVariableValue: {
+      resourceSelector?: {
+        [key: string]: unknown;
+      } | null;
+      isDefault?: boolean;
+      priority?: number;
+    };
+    DirectDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
+      value:
+        | (
+            | string
+            | number
+            | boolean
+            | Record<string, never>
+            | (string | number | boolean | Record<string, never>)[]
+          )
+        | null;
+      sensitive?: boolean;
+    };
+    DirectDeploymentVariableValueWithId: components["schemas"]["DirectDeploymentVariableValue"] & {
+      /** Format: uuid */
+      id: string;
+    };
+    ReferenceDeploymentVariableValue: components["schemas"]["BaseDeploymentVariableValue"] & {
+      path: string[];
+      reference: string;
+      defaultValue?:
+        | (
+            | string
+            | number
+            | boolean
+            | Record<string, never>
+            | (string | number | boolean | Record<string, never>)[]
+          )
+        | null;
+    };
+    ReferenceDeploymentVariableValueWithId: components["schemas"]["ReferenceDeploymentVariableValue"] & {
+      /** Format: uuid */
+      id: string;
+    };
+    DeploymentVariable: {
+      /** Format: uuid */
+      id: string;
+      key: string;
+      description: string;
+      directValues: components["schemas"]["DirectDeploymentVariableValueWithId"][];
+      referenceValues: components["schemas"]["ReferenceDeploymentVariableValueWithId"][];
+      defaultValue?:
+        | components["schemas"]["DirectDeploymentVariableValueWithId"]
+        | components["schemas"]["ReferenceDeploymentVariableValueWithId"];
+      config: {
+        [key: string]: unknown;
+      };
+    };
+    ExitHook: {
+      /**
+       * @description The name of the exit hook
+       * @example my-exit-hook
+       */
+      name: string;
+      /**
+       * Format: uuid
+       * @description The ID of the job agent to use for the exit hook
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      jobAgentId: string;
+      /**
+       * @description The configuration for the job agent
+       * @example {
+       *       "key": "value"
+       *     }
+       */
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+    };
+    JobWithTrigger: components["schemas"]["Job"] & {
+      links?: {
+        [key: string]: string;
+      };
+      metadata?: {
+        [key: string]: string;
+      };
+      release?: components["schemas"]["Release"];
+      version?: components["schemas"]["DeploymentVersion"];
+      deployment?: components["schemas"]["Deployment"];
+      runbook?: components["schemas"]["Runbook"];
+      resource?: components["schemas"]["ResourceWithVariablesAndMetadata"] & {
+        relationships?: {
+          [key: string]: components["schemas"]["Resource"];
+        };
+      };
+      environment?: components["schemas"]["Environment"];
+      variables: components["schemas"]["VariableMap"];
+      approval?: {
+        id: string;
+        /** @enum {string} */
+        status: "pending" | "approved" | "rejected";
+        /** @description Null when status is pending, contains approver details when approved or rejected */
+        approver?: {
+          id: string;
+          name: string;
+        } | null;
+      } | null;
+    };
+    Workspace: {
+      /**
+       * Format: uuid
+       * @description The workspace ID
+       */
+      id: string;
+      /** @description The name of the workspace */
+      name: string;
+      /** @description The slug of the workspace */
+      slug: string;
+      /**
+       * @description The email of the Google service account attached to the workspace
+       * @example ctrlplane@ctrlplane-workspace.iam.gserviceaccount.com
+       */
+      googleServiceAccountEmail?: string | null;
+      /**
+       * @description The ARN of the AWS role attached to the workspace
+       * @example arn:aws:iam::123456789012:role/ctrlplane-workspace-role
+       */
+      awsRoleArn?: string | null;
+    };
+    System: {
+      /**
+       * Format: uuid
+       * @description The system ID
+       */
+      id: string;
+      /**
+       * Format: uuid
+       * @description The workspace ID of the system
+       */
+      workspaceId: string;
+      /** @description The name of the system */
+      name: string;
+      /** @description The slug of the system */
+      slug: string;
+      /** @description The description of the system */
+      description?: string;
+    };
+    Deployment: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      slug: string;
+      description: string;
+      /** Format: uuid */
+      systemId: string;
+      /** Format: uuid */
+      jobAgentId?: string | null;
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+      retryCount?: number;
+      timeout?: number | null;
+    };
+    /** @description Schema for updating a deployment (all fields optional) */
+    UpdateDeployment: {
+      [key: string]: unknown;
+    } & (WithRequired<components["schemas"]["Deployment"], "id"> & {
+      [key: string]: unknown;
+    });
+    Release: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      version: string;
+      config: {
+        [key: string]: unknown;
+      };
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+      /** Format: uuid */
+      deploymentId: string;
+      /** Format: date-time */
+      createdAt: string;
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+    VersionDependency: {
+      /** Format: uuid */
+      deploymentId: string;
+      versionSelector?: {
+        [key: string]: unknown;
+      };
+    };
+    DeploymentVersion: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      tag: string;
+      config: {
+        [key: string]: unknown;
+      };
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+      /** Format: uuid */
+      deploymentId: string;
+      /** Format: date-time */
+      createdAt: string;
+      metadata?: {
+        [key: string]: string;
+      };
+      dependencies?: components["schemas"]["VersionDependency"][];
+      /** @enum {string} */
+      status?: "building" | "ready" | "failed";
+    };
+    Environment: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      systemId: string;
+      name: string;
+      description?: string;
+      /** Format: uuid */
+      policyId?: string | null;
+      resourceSelector?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * @description The directory path of the environment
+       * @default
+       * @example my/env/path
+       */
+      directory: string;
+      /** Format: date-time */
+      createdAt: string;
+      metadata?: {
+        [key: string]: string;
+      };
+      policy?: components["schemas"]["Policy"];
+    };
+    Runbook: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      /** Format: uuid */
+      systemId: string;
+      /** Format: uuid */
+      jobAgentId: string;
+    };
+    Resource: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      version: string;
+      kind: string;
+      identifier: string;
+      config: {
+        [key: string]: unknown;
+      };
+      metadata: {
+        [key: string]: unknown;
+      };
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: date-time */
+      deletedAt: string | null;
+      /** Format: uuid */
+      workspaceId: string;
+      /** Format: uuid */
+      providerId?: string;
+    };
+    ResourceWithVariables: components["schemas"]["Resource"] & {
+      variables?: components["schemas"]["VariableMap"];
+    };
+    ResourceWithMetadata: components["schemas"]["Resource"] & {
+      metadata?: components["schemas"]["MetadataMap"];
+    };
+    ResourceWithVariablesAndMetadata: components["schemas"]["ResourceWithVariables"] &
+      components["schemas"]["ResourceWithMetadata"];
+    CreateResource: {
+      identifier: string;
+      name: string;
+      version: string;
+      kind: string;
+      config: {
+        [key: string]: unknown;
+      };
+      metadata: {
+        [key: string]: string;
+      };
+      variables?: components["schemas"]["Variable"][];
+    };
+    /** @enum {string} */
+    JobStatus:
+      | "successful"
+      | "cancelled"
+      | "skipped"
+      | "in_progress"
+      | "action_required"
+      | "pending"
+      | "failure"
+      | "invalid_job_agent"
+      | "invalid_integration"
+      | "external_run_not_found";
+    Job: {
+      /** Format: uuid */
+      id: string;
+      status: components["schemas"]["JobStatus"];
+      /** @description External job identifier (e.g. GitHub workflow run ID) */
+      externalId?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: date-time */
+      startedAt?: string | null;
+      /** Format: date-time */
+      completedAt?: string | null;
+      /** Format: uuid */
+      jobAgentId?: string;
+      /** @description Configuration for the Job Agent */
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+      message?: string;
+      reason?: string;
+    };
+    MetadataMap: {
+      [key: string]: string;
+    };
+    VariableMap: {
+      [key: string]:
+        | (
+            | string
+            | boolean
+            | number
+            | Record<string, never>
+            | (string | boolean | number | Record<string, never>)[]
+          )
+        | null;
+    };
+    ReferenceVariable: {
+      key: string;
+      reference: string;
+      path: string[];
+      defaultValue?:
+        | string
+        | number
+        | boolean
+        | Record<string, never>
+        | (string | number | boolean | Record<string, never>)[];
+    };
+    DirectVariable: {
+      key: string;
+      value:
+        | string
+        | number
+        | boolean
+        | Record<string, never>
+        | (string | number | boolean | Record<string, never>)[];
+      sensitive?: boolean;
+    };
+    Variable:
+      | components["schemas"]["DirectVariable"]
+      | components["schemas"]["ReferenceVariable"];
+    PolicyTarget: {
+      deploymentSelector?: {
+        [key: string]: unknown;
+      } | null;
+      environmentSelector?: {
+        [key: string]: unknown;
+      } | null;
+      resourceSelector?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    DenyWindow: {
+      timeZone: string;
+      rrule: {
+        [key: string]: unknown;
+      };
+      /** Format: date-time */
+      dtend?: string;
+    };
+    DeploymentVersionSelector: {
+      name: string;
+      deploymentVersionSelector: {
+        [key: string]: unknown;
+      };
+      description?: string;
+    };
+    VersionAnyApproval: {
+      requiredApprovalsCount: number;
+    };
+    VersionUserApproval: {
+      userId: string;
+    };
+    VersionRoleApproval: {
+      roleId: string;
+      requiredApprovalsCount: number;
+    };
+    /** Format: int32 */
+    PolicyConcurrency: number | null;
+    /** Format: int32 */
+    MaxRetries: number | null;
+    EnvironmentVersionRollout: {
+      /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. */
+      positionGrowthFactor: number;
+      /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
+      timeScaleInterval: number;
+      /**
+       * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval.
+       * @enum {string}
+       */
+      rolloutType:
+        | "linear"
+        | "linear-normalized"
+        | "exponential"
+        | "exponential-normalized";
+    };
+    InsertEnvironmentVersionRollout: {
+      /** @description Controls how strongly queue position influences delay — higher values result in a smoother, slower rollout curve. Defaults to 1 if not specified. */
+      positionGrowthFactor?: number;
+      /** @description Defines the base time interval that each unit of rollout progression is scaled by — larger values stretch the deployment timeline. */
+      timeScaleInterval: number;
+      /**
+       * @description Determines the shape of the rollout curve — linear, exponential, or normalized versions of each. A normalized rollout curve limits the maximum delay to the time scale interval, and scales the rollout progression to fit within that interval. Defaults to a linear rollout if not specified.
+       * @enum {string}
+       */
+      rolloutType?:
+        | "linear"
+        | "linear-normalized"
+        | "exponential"
+        | "exponential-normalized";
+    };
+    Policy: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      description?: string;
+      priority: number;
+      /** Format: date-time */
+      createdAt: string;
+      enabled: boolean;
+      /** Format: uuid */
+      workspaceId: string;
+      targets: components["schemas"]["PolicyTarget"][];
+      denyWindows: components["schemas"]["DenyWindow"][];
+      deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
+      versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
+      versionUserApprovals: components["schemas"]["VersionUserApproval"][];
+      versionRoleApprovals: components["schemas"]["VersionRoleApproval"][];
+      concurrency?: components["schemas"]["PolicyConcurrency"];
+      environmentVersionRollout?: components["schemas"]["EnvironmentVersionRollout"];
+      maxRetries?: components["schemas"]["MaxRetries"];
+    };
+    ReleaseTargetLockRecord: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      releaseTargetId: string;
+      /** Format: date-time */
+      lockedAt: string;
+      /** Format: date-time */
+      unlockedAt: string | null;
+      lockedBy: {
+        /** Format: uuid */
+        id: string;
+        name?: string;
+        email: string;
+      };
+    };
+    UpdateResourceRelationshipRule: {
+      name?: string;
+      reference?: string;
+      dependencyType?: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyDescription?: string;
+      description?: string;
+      sourceKind?: string;
+      sourceVersion?: string;
+      targetKind?: string;
+      targetVersion?: string;
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+    };
+    ResourceRelationshipRuleDependencyType: string;
+    MetadataEqualsConstraint: {
+      key?: string;
+      value?: string;
+    };
+    MetadataKeyMatchConstraint: {
+      sourceKey: string;
+      targetKey: string;
+    };
+    ResourceRelationshipRule: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      workspaceId: string;
+      name: string;
+      reference: string;
+      dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyDescription?: string;
+      description?: string;
+      sourceKind: string;
+      sourceVersion: string;
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      targetKind?: string;
+      targetVersion?: string;
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
+    };
+    CreateResourceRelationshipRule: {
+      workspaceId: string;
+      name: string;
+      reference: string;
+      dependencyType: components["schemas"]["ResourceRelationshipRuleDependencyType"];
+      dependencyDescription?: string;
+      description?: string;
+      sourceKind: string;
+      sourceVersion: string;
+      targetKind?: string;
+      targetVersion?: string;
+      metadataKeysMatches?: components["schemas"]["MetadataKeyMatchConstraint"][];
+      targetMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+      sourceMetadataEquals?: components["schemas"]["MetadataEqualsConstraint"][];
+    };
+    ReleaseTarget: {
+      /** Format: uuid */
+      id: string;
+      resource: components["schemas"]["Resource"];
+      environment: components["schemas"]["Environment"];
+      deployment: components["schemas"]["Deployment"];
+    };
+    Event: {
+      /** Format: uuid */
+      id: string;
+      action: string;
+      payload: {
+        [key: string]: unknown;
+      };
+      /** Format: date-time */
+      createdAt: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getCloudProviderRegions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Cloud provider (aws, gcp, azure) */
-                provider: "aws" | "gcp" | "azure";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully returned geographic data for cloud provider regions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: components["schemas"]["CloudRegionGeoData"];
-                    };
-                };
-            };
-            /** @description Cloud provider not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Cloud provider 'unknown' not found */
-                        error?: string;
-                    };
-                };
-            };
-        };
+  getCloudProviderRegions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cloud provider (aws, gcp, azure) */
+        provider: "aws" | "gcp" | "azure";
+      };
+      cookie?: never;
     };
-    approveDeploymentVersionForEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                deploymentVersionId: string;
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successfully returned geographic data for cloud provider regions */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    reason?: string;
-                    /** Format: date-time */
-                    approvedAt?: string;
-                };
-            };
+        content: {
+          "application/json": {
+            [key: string]: components["schemas"]["CloudRegionGeoData"];
+          };
         };
-        responses: {
-            /** @description Approval record created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalRecord"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Deployment version or environment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+      };
+      /** @description Cloud provider not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            /** @example Cloud provider 'unknown' not found */
+            error?: string;
+          };
+        };
+      };
     };
-    approveDeploymentVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The deployment version ID */
-                deploymentVersionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    reason?: string;
-                    /** Format: date-time */
-                    approvedAt?: string | null;
-                };
-            };
-        };
-        responses: {
-            /** @description Deployment version approved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalRecord"];
-                };
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Deployment version not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  approveDeploymentVersionForEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentVersionId: string;
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    getRolloutInfo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The deployment version ID */
-                deploymentVersionId: string;
-                /** @description The environment ID */
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
+          /** Format: date-time */
+          approvedAt?: string;
         };
-        requestBody?: never;
-        responses: {
-            /** @description The rollout information */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": (components["schemas"]["ReleaseTarget"] & {
-                        /** Format: date-time */
-                        rolloutTime: string | null;
-                        rolloutPosition: number;
-                    })[];
-                };
-            };
-            /** @description The deployment version or environment was not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    updateDeploymentVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The deployment version ID */
-                deploymentVersionId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Approval record created */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    tag?: string;
-                    deploymentId?: string;
-                    /** Format: date-time */
-                    createdAt?: string;
-                    name?: string;
-                    config?: {
-                        [key: string]: unknown;
-                    };
-                    jobAgentConfig?: {
-                        [key: string]: unknown;
-                    };
-                    /** @enum {string} */
-                    status?: "ready" | "building" | "failed" | "rejected";
-                    message?: string;
-                    metadata?: {
-                        [key: string]: string;
-                    };
-                    dependencies?: components["schemas"]["VersionDependency"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVersion"];
-                };
-            };
-            /** @description Deployment version not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version or environment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    rejectDeploymentVersionForEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                deploymentVersionId: string;
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    reason?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Rejection record created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalRecord"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Deployment version or environment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  approveDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
     };
-    rejectDeploymentVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The deployment version ID */
-                deploymentVersionId: string;
-            };
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
+          /** Format: date-time */
+          approvedAt?: string | null;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    reason?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Deployment version rejected */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApprovalRecord"];
-                };
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Deployment version not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    upsertDeploymentVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Deployment version approved */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    tag: string;
-                    deploymentId: string;
-                    /** Format: date-time */
-                    createdAt?: string;
-                    name?: string;
-                    config?: {
-                        [key: string]: unknown;
-                    };
-                    jobAgentConfig?: {
-                        [key: string]: unknown;
-                    };
-                    /** @enum {string} */
-                    status?: "ready" | "building" | "failed" | "rejected";
-                    message?: string;
-                    metadata?: {
-                        [key: string]: string;
-                    };
-                    dependencies?: components["schemas"]["VersionDependency"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
         };
-        responses: {
-            /** @description OK */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVersion"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    getDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                deploymentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deployment found */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Deployment"];
-                };
-            };
-            /** @description Deployment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  getRolloutInfo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+        /** @description The environment ID */
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    deleteDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                deploymentId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description The rollout information */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Deployment deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Deployment"];
-                };
-            };
-            /** @description Deployment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Failed to delete deployment */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": (components["schemas"]["ReleaseTarget"] & {
+            /** Format: date-time */
+            rolloutTime: string | null;
+            rolloutPosition: number;
+          })[];
         };
+      };
+      /** @description The deployment version or environment was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    updateDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                deploymentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name?: string;
-                    slug?: string;
-                    description?: string;
-                    /** Format: uuid */
-                    systemId?: string;
-                    /** Format: uuid */
-                    jobAgentId?: string | null;
-                    jobAgentConfig?: {
-                        [key: string]: unknown;
-                    };
-                    retryCount?: number;
-                    timeout?: number | null;
-                    resourceSelector?: {
-                        [key: string]: unknown;
-                    } | null;
-                    exitHooks?: components["schemas"]["ExitHook"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Deployment updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Deployment"];
-                };
-            };
-            /** @description Deployment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Failed to update deployment */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  updateDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
     };
-    getResourcesForDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the deployment */
-                deploymentId: string;
-            };
-            cookie?: never;
+    requestBody: {
+      content: {
+        "application/json": {
+          tag?: string;
+          deploymentId?: string;
+          /** Format: date-time */
+          createdAt?: string;
+          name?: string;
+          config?: {
+            [key: string]: unknown;
+          };
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          /** @enum {string} */
+          status?: "ready" | "building" | "failed" | "rejected";
+          message?: string;
+          metadata?: {
+            [key: string]: string;
+          };
+          dependencies?: components["schemas"]["VersionDependency"][];
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        resources?: components["schemas"]["Resource"][];
-                        count?: number;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    getDeploymentVariables: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                deploymentId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Variables fetched successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariable"][];
-                };
-            };
-            /** @description Deployment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Failed to fetch variables */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["DeploymentVersion"];
         };
+      };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    createDeploymentVariable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                deploymentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    key: string;
-                    description?: string;
-                    config: {
-                        [key: string]: unknown;
-                    };
-                    directValues?: components["schemas"]["DirectDeploymentVariableValue"][];
-                    referenceValues?: components["schemas"]["ReferenceDeploymentVariableValue"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Variable created successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVariable"];
-                };
-            };
-            /** @description Invalid request body */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Deployment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Failed to create variable */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  rejectDeploymentVersionForEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentVersionId: string;
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    listDeploymentVersions: {
-        parameters: {
-            query?: {
-                status?: "ready" | "building" | "failed" | "rejected";
-            };
-            header?: never;
-            path: {
-                deploymentId: string;
-            };
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Deployment versions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeploymentVersion"][];
-                };
-            };
-            /** @description Deployment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    createDeployment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Rejection record created */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description The ID of the system to create the deployment for
-                     * @example 123e4567-e89b-12d3-a456-426614174000
-                     */
-                    systemId: string;
-                    /**
-                     * @description The name of the deployment
-                     * @example My Deployment
-                     */
-                    name: string;
-                    /**
-                     * @description The slug of the deployment
-                     * @example my-deployment
-                     */
-                    slug: string;
-                    /**
-                     * @description The description of the deployment
-                     * @example This is a deployment for my system
-                     */
-                    description?: string;
-                    /**
-                     * Format: uuid
-                     * @description The ID of the job agent to use for the deployment
-                     * @example 123e4567-e89b-12d3-a456-426614174000
-                     */
-                    jobAgentId?: string;
-                    /**
-                     * @description The configuration for the job agent
-                     * @example {
-                     *       "key": "value"
-                     *     }
-                     */
-                    jobAgentConfig?: Record<string, never>;
-                    /**
-                     * @description The number of times to retry the deployment
-                     * @example 3
-                     */
-                    retryCount?: number;
-                    /**
-                     * @description The timeout for the deployment
-                     * @example 60
-                     */
-                    timeout?: number;
-                    /**
-                     * @description The resource selector for the deployment
-                     * @example {
-                     *       "key": "value"
-                     *     }
-                     */
-                    resourceSelector?: {
-                        [key: string]: unknown;
-                    };
-                    exitHooks?: components["schemas"]["ExitHook"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
         };
-        responses: {
-            /** @description Deployment updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Deployment"];
-                };
-            };
-            /** @description Deployment created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Deployment"];
-                };
-            };
-            /** @description Deployment already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        /** Format: uuid */
-                        id: string;
-                    };
-                };
-            };
-            /** @description Failed to create deployment */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
+      };
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version or environment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    getEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the environment */
-                environmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            /** @description Environment not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Environment not found */
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  rejectDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The deployment version ID */
+        deploymentVersionId: string;
+      };
+      cookie?: never;
     };
-    deleteEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the environment */
-                environmentId: string;
-            };
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          reason?: string;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Environment deleted successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+      };
     };
-    getResourcesForEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the environment */
-                environmentId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Deployment version rejected */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        resources?: components["schemas"]["Resource"][];
-                        count?: number;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ApprovalRecord"];
         };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Deployment version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    createEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * @description The directory path of the environment
-                     * @default
-                     * @example my/env/path
-                     */
-                    directory?: string;
-                    systemId: string;
-                    name: string;
-                    description?: string;
-                    resourceSelector?: {
-                        [key: string]: unknown;
-                    };
-                    metadata?: {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description Environment created successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            /** @description Environment already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                        id?: string;
-                    };
-                };
-            };
-            /** @description Failed to create environment */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  upsertDeploymentVersion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getAgentRunningJobs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The execution ID */
-                agentId: string;
-            };
-            cookie?: never;
+    requestBody: {
+      content: {
+        "application/json": {
+          tag: string;
+          deploymentId: string;
+          /** Format: date-time */
+          createdAt?: string;
+          name?: string;
+          config?: {
+            [key: string]: unknown;
+          };
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          /** @enum {string} */
+          status?: "ready" | "building" | "failed" | "rejected";
+          message?: string;
+          metadata?: {
+            [key: string]: string;
+          };
+          dependencies?: components["schemas"]["VersionDependency"][];
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        jobs: components["schemas"]["Job"][];
-                    };
-                };
-            };
-        };
+      };
     };
-    acknowledgeAgentJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the job agent */
-                agentId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully acknowledged job */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        job?: components["schemas"]["Job"];
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Workspace not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["DeploymentVersion"];
         };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    getNextJobs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The agent ID */
-                agentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        jobs?: components["schemas"]["Job"][];
-                    };
-                };
-            };
-        };
+  };
+  getDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
     };
-    upsertJobAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Deployment found */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    workspaceId: string;
-                    name: string;
-                    type: string;
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
         };
-        responses: {
-            /** @description Successfully retrieved or created the agent */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        name: string;
-                        workspaceId: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
-    acknowledgeJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The job ID */
-                jobId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sucess: boolean;
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  deleteDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
     };
-    getJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The job ID */
-                jobId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Deployment deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JobWithTrigger"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Job not found. */
-                        error?: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
         };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to delete deployment */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
-    updateJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The execution ID */
-                jobId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    status?: components["schemas"]["JobStatus"];
-                    message?: string | null;
-                    externalId?: string | null;
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                        message: string;
-                    };
-                };
-            };
-        };
+  };
+  updateDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
     };
-    getPolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                policyId: string;
-            };
-            cookie?: never;
+    requestBody: {
+      content: {
+        "application/json": {
+          name?: string;
+          slug?: string;
+          description?: string;
+          /** Format: uuid */
+          systemId?: string;
+          /** Format: uuid */
+          jobAgentId?: string | null;
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          retryCount?: number;
+          timeout?: number | null;
+          resourceSelector?: {
+            [key: string]: unknown;
+          } | null;
+          exitHooks?: components["schemas"]["ExitHook"][];
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Policy"];
-                };
-            };
-            /** @description Policy not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    deletePolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                policyId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Deployment updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        count?: number;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
         };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to update deployment */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
-    updatePolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                policyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name?: string;
-                    description?: string;
-                    priority?: number;
-                    enabled?: boolean;
-                    workspaceId?: string;
-                    targets?: components["schemas"]["PolicyTarget"][];
-                    denyWindows?: {
-                        timeZone: string;
-                        rrule?: {
-                            [key: string]: unknown;
-                        };
-                        /** Format: date-time */
-                        dtend?: string;
-                    }[];
-                    deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-                    versionAnyApprovals?: {
-                        requiredApprovalsCount?: number;
-                    }[];
-                    versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
-                    versionRoleApprovals?: {
-                        roleId: string;
-                        requiredApprovalsCount?: number;
-                    }[];
-                    concurrency?: components["schemas"]["PolicyConcurrency"];
-                    environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
-                    maxRetries?: components["schemas"]["MaxRetries"];
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Policy"];
-                };
-            };
-            /** @description Policy not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  getResourcesForDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the deployment */
+        deploymentId: string;
+      };
+      cookie?: never;
     };
-    getReleaseTargetsForPolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the policy */
-                policyId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        releaseTargets?: components["schemas"]["ReleaseTarget"][];
-                        count?: number;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": {
+            resources?: components["schemas"]["Resource"][];
+            count?: number;
+          };
         };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    upsertPolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name: string;
-                    description?: string;
-                    priority?: number;
-                    enabled?: boolean;
-                    workspaceId: string;
-                    targets: components["schemas"]["PolicyTarget"][];
-                    denyWindows?: {
-                        timeZone: string;
-                        rrule?: {
-                            [key: string]: unknown;
-                        };
-                        /** Format: date-time */
-                        dtend?: string;
-                    }[];
-                    deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
-                    versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
-                    versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
-                    versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
-                    concurrency?: components["schemas"]["PolicyConcurrency"];
-                    environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
-                    maxRetries?: components["schemas"]["MaxRetries"];
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Policy"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  getDeploymentVariables: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
     };
-    createJobToResourceRelationship: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Variables fetched successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description Unique identifier of the job
-                     * @example 123e4567-e89b-12d3-a456-426614174000
-                     */
-                    jobId: string;
-                    /**
-                     * @description Unique identifier of the resource
-                     * @example resource-123
-                     */
-                    resourceIdentifier: string;
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["DeploymentVariable"][];
         };
-        responses: {
-            /** @description Relationship created successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Relationship created successfully */
-                        message?: string;
-                    };
-                };
-            };
-            /** @description Invalid request body */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Invalid jobId format */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Job or resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Job with specified ID not found */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Relationship already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Relationship between job and resource already exists */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Internal server error occurred */
-                        error?: string;
-                    };
-                };
-            };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to fetch variables */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
-    createResourceToResourceRelationship: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description The workspace ID
-                     * @example 123e4567-e89b-12d3-a456-426614174000
-                     */
-                    workspaceId: string;
-                    /**
-                     * @description The identifier of the resource to connect
-                     * @example my-resource
-                     */
-                    fromIdentifier: string;
-                    /**
-                     * @description The identifier of the resource to connect to
-                     * @example my-resource
-                     */
-                    toIdentifier: string;
-                    /**
-                     * @description The type of relationship
-                     * @example depends_on
-                     */
-                    type: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Relationship created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Relationship created successfully */
-                        message?: string;
-                    };
-                };
-            };
-            /** @description Invalid request body */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Relationship already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  createDeploymentVariable: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
     };
-    getLatestJobs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The release target ID */
-                releaseTargetId: string;
-            };
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          key: string;
+          description?: string;
+          config: {
+            [key: string]: unknown;
+          };
+          directValues?: components["schemas"]["DirectDeploymentVariableValue"][];
+          referenceValues?: components["schemas"]["ReferenceDeploymentVariableValue"][];
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JobWithTrigger"][];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Job not found. */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Internal server error. */
-                        error?: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    lockReleaseTarget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                releaseTargetId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Variable created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Release target locked */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReleaseTargetLockRecord"];
-                };
-            };
-            /** @description Release target is already locked */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["DeploymentVariable"];
         };
+      };
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to create variable */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
-    getReleaseTarget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                releaseTargetId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The release target */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReleaseTarget"];
-                };
-            };
-            /** @description Release target not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  listDeploymentVersions: {
+    parameters: {
+      query?: {
+        status?: "ready" | "building" | "failed" | "rejected";
+      };
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
     };
-    pinReleaseTarget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                releaseTargetId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Deployment versions */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description The ID of the version to pin
-                     * @example 123e4567-e89b-12d3-a456-426614174000
-                     */
-                    versionId: string;
-                } | {
-                    /**
-                     * @description The tag of the version to pin
-                     * @example 1.0.0
-                     */
-                    versionTag: string;
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["DeploymentVersion"][];
         };
-        responses: {
-            /** @description Version pinned */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            /** @description Bad request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Version not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
-    redeployReleaseTarget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                releaseTargetId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            /** @description Release target not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  createDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getReleaseTargetReleases: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                releaseTargetId: string;
-            };
-            cookie?: never;
+    requestBody?: {
+      content: {
+        "application/json": {
+          /**
+           * Format: uuid
+           * @description The ID of the system to create the deployment for
+           * @example 123e4567-e89b-12d3-a456-426614174000
+           */
+          systemId: string;
+          /**
+           * @description The name of the deployment
+           * @example My Deployment
+           */
+          name: string;
+          /**
+           * @description The slug of the deployment
+           * @example my-deployment
+           */
+          slug: string;
+          /**
+           * @description The description of the deployment
+           * @example This is a deployment for my system
+           */
+          description?: string;
+          /**
+           * Format: uuid
+           * @description The ID of the job agent to use for the deployment
+           * @example 123e4567-e89b-12d3-a456-426614174000
+           */
+          jobAgentId?: string;
+          /**
+           * @description The configuration for the job agent
+           * @example {
+           *       "key": "value"
+           *     }
+           */
+          jobAgentConfig?: Record<string, never>;
+          /**
+           * @description The number of times to retry the deployment
+           * @example 3
+           */
+          retryCount?: number;
+          /**
+           * @description The timeout for the deployment
+           * @example 60
+           */
+          timeout?: number;
+          /**
+           * @description The resource selector for the deployment
+           * @example {
+           *       "key": "value"
+           *     }
+           */
+          resourceSelector?: {
+            [key: string]: unknown;
+          };
+          exitHooks?: components["schemas"]["ExitHook"][];
         };
-        requestBody?: never;
-        responses: {
-            /** @description The latest 100 releases for the release target */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        deployment: components["schemas"]["Deployment"];
-                        version: components["schemas"]["DeploymentVersion"];
-                        variables: {
-                            key: string;
-                            value: string;
-                        }[];
-                    }[];
-                };
-            };
-            /** @description The release target was not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description An internal server error occurred */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    unlockReleaseTarget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                releaseTargetId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Deployment updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Release target unlocked */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReleaseTargetLockRecord"];
-                };
-            };
-            /** @description Release target is not locked */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Release target was not locked by the current user */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
         };
+      };
+      /** @description Deployment created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
+        };
+      };
+      /** @description Deployment already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+            /** Format: uuid */
+            id: string;
+          };
+        };
+      };
+      /** @description Failed to create deployment */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
-    unpinReleaseTarget: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                releaseTargetId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
+  };
+  getEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the environment */
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    updateRelease: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The release ID */
-                releaseId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    version?: string;
-                    deploymentId?: string;
-                    /** Format: date-time */
-                    createdAt?: string;
-                    name?: string;
-                    config?: {
-                        [key: string]: unknown;
-                    };
-                    jobAgentConfig?: {
-                        [key: string]: unknown;
-                    };
-                    /** @enum {string} */
-                    status?: "ready" | "building" | "failed" | "rejected";
-                    message?: string;
-                    metadata?: {
-                        [key: string]: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Environment"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Release"];
-                };
-            };
+      };
+      /** @description Environment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": {
+            /** @example Environment not found */
+            error: string;
+          };
+        };
+      };
     };
-    upsertRelease: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    version: string;
-                    deploymentId: string;
-                    /** Format: date-time */
-                    createdAt?: string;
-                    name?: string;
-                    config?: {
-                        [key: string]: unknown;
-                    };
-                    jobAgentConfig?: {
-                        [key: string]: unknown;
-                    };
-                    /** @enum {string} */
-                    status?: "ready" | "building" | "failed" | "rejected";
-                    message?: string;
-                    metadata?: {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Release"];
-                };
-            };
-            /** @description Release already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                        id?: string;
-                    };
-                };
-            };
-        };
+  };
+  deleteEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the environment */
+        environmentId: string;
+      };
+      cookie?: never;
     };
-    setResourceProvidersResources: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the scanner */
-                providerId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Environment deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    resources: components["schemas"]["CreateResource"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Successfully updated the deployment resources */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        resources?: {
-                            ignored?: {
-                                identifier?: string;
-                                name?: string;
-                                version?: string;
-                                kind?: string;
-                                workspaceId?: string;
-                            }[];
-                            inserted?: {
-                                id?: string;
-                                name?: string;
-                                version?: string;
-                                kind?: string;
-                                config?: {
-                                    [key: string]: unknown;
-                                };
-                            }[];
-                            updated?: {
-                                id?: string;
-                                name?: string;
-                                version?: string;
-                                kind?: string;
-                                config?: {
-                                    [key: string]: unknown;
-                                };
-                            }[];
-                            deleted?: {
-                                id?: string;
-                                name?: string;
-                                version?: string;
-                                kind?: string;
-                                config?: {
-                                    [key: string]: unknown;
-                                };
-                            }[];
-                        };
-                    };
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Deployment resources not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+        content?: never;
+      };
     };
-    deleteResourceRelationshipRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
+  };
+  getResourcesForEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the environment */
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            resources?: components["schemas"]["Resource"][];
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  createEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * @description The directory path of the environment
+           * @default
+           * @example my/env/path
+           */
+          directory?: string;
+          systemId: string;
+          name: string;
+          description?: string;
+          resourceSelector?: {
+            [key: string]: unknown;
+          };
+          metadata?: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Environment created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Environment"];
+        };
+      };
+      /** @description Environment already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+            id?: string;
+          };
+        };
+      };
+      /** @description Failed to create environment */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  getAgentRunningJobs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The execution ID */
+        agentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            jobs: components["schemas"]["Job"][];
+          };
+        };
+      };
+    };
+  };
+  acknowledgeAgentJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the job agent */
+        agentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully acknowledged job */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            job?: components["schemas"]["Job"];
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getNextJobs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The agent ID */
+        agentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            jobs?: components["schemas"]["Job"][];
+          };
+        };
+      };
+    };
+  };
+  upsertJobAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          workspaceId: string;
+          name: string;
+          type: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Successfully retrieved or created the agent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            name: string;
+            workspaceId: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  acknowledgeJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The job ID */
+        jobId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            sucess: boolean;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  getJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The job ID */
+        jobId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobWithTrigger"];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Job not found. */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  updateJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The execution ID */
+        jobId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          status?: components["schemas"]["JobStatus"];
+          message?: string | null;
+          externalId?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+            message: string;
+          };
+        };
+      };
+    };
+  };
+  getPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Policy"];
+        };
+      };
+      /** @description Policy not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  deletePolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  updatePolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name?: string;
+          description?: string;
+          priority?: number;
+          enabled?: boolean;
+          workspaceId?: string;
+          targets?: components["schemas"]["PolicyTarget"][];
+          denyWindows?: {
+            timeZone: string;
+            rrule?: {
+              [key: string]: unknown;
+            };
+            /** Format: date-time */
+            dtend?: string;
+          }[];
+          deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
+          versionAnyApprovals?: {
+            requiredApprovalsCount?: number;
+          }[];
+          versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
+          versionRoleApprovals?: {
+            roleId: string;
+            requiredApprovalsCount?: number;
+          }[];
+          concurrency?: components["schemas"]["PolicyConcurrency"];
+          environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
+          maxRetries?: components["schemas"]["MaxRetries"];
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Policy"];
+        };
+      };
+      /** @description Policy not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getReleaseTargetsForPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the policy */
+        policyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            releaseTargets?: components["schemas"]["ReleaseTarget"][];
+            count?: number;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  upsertPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          description?: string;
+          priority?: number;
+          enabled?: boolean;
+          workspaceId: string;
+          targets: components["schemas"]["PolicyTarget"][];
+          denyWindows?: {
+            timeZone: string;
+            rrule?: {
+              [key: string]: unknown;
+            };
+            /** Format: date-time */
+            dtend?: string;
+          }[];
+          deploymentVersionSelector?: components["schemas"]["DeploymentVersionSelector"];
+          versionAnyApprovals?: components["schemas"]["VersionAnyApproval"];
+          versionUserApprovals?: components["schemas"]["VersionUserApproval"][];
+          versionRoleApprovals?: components["schemas"]["VersionRoleApproval"][];
+          concurrency?: components["schemas"]["PolicyConcurrency"];
+          environmentVersionRollout?: components["schemas"]["InsertEnvironmentVersionRollout"];
+          maxRetries?: components["schemas"]["MaxRetries"];
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Policy"];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  createJobToResourceRelationship: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * Format: uuid
+           * @description Unique identifier of the job
+           * @example 123e4567-e89b-12d3-a456-426614174000
+           */
+          jobId: string;
+          /**
+           * @description Unique identifier of the resource
+           * @example resource-123
+           */
+          resourceIdentifier: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Relationship created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Relationship created successfully */
+            message?: string;
+          };
+        };
+      };
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Invalid jobId format */
+            error?: string;
+          };
+        };
+      };
+      /** @description Job or resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Job with specified ID not found */
+            error?: string;
+          };
+        };
+      };
+      /** @description Relationship already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Relationship between job and resource already exists */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal server error occurred */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  createResourceToResourceRelationship: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * Format: uuid
+           * @description The workspace ID
+           * @example 123e4567-e89b-12d3-a456-426614174000
+           */
+          workspaceId: string;
+          /**
+           * @description The identifier of the resource to connect
+           * @example my-resource
+           */
+          fromIdentifier: string;
+          /**
+           * @description The identifier of the resource to connect to
+           * @example my-resource
+           */
+          toIdentifier: string;
+          /**
+           * @description The type of relationship
+           * @example depends_on
+           */
+          type: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Relationship created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Relationship created successfully */
+            message?: string;
+          };
+        };
+      };
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Relationship already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getLatestJobs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The release target ID */
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["JobWithTrigger"][];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Job not found. */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal server error. */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  lockReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release target locked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTargetLockRecord"];
+        };
+      };
+      /** @description Release target is already locked */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The release target */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTarget"];
+        };
+      };
+      /** @description Release target not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  pinReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json":
+          | {
+              /**
+               * Format: uuid
+               * @description The ID of the version to pin
+               * @example 123e4567-e89b-12d3-a456-426614174000
+               */
+              versionId: string;
+            }
+          | {
+              /**
+               * @description The tag of the version to pin
+               * @example 1.0.0
+               */
+              versionTag: string;
+            };
+      };
+    };
+    responses: {
+      /** @description Version pinned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Version not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  redeployReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Release target not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getReleaseTargetReleases: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The latest 100 releases for the release target */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            deployment: components["schemas"]["Deployment"];
+            version: components["schemas"]["DeploymentVersion"];
+            variables: {
+              key: string;
+              value: string;
+            }[];
+          }[];
+        };
+      };
+      /** @description The release target was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An internal server error occurred */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  unlockReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release target unlocked */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTargetLockRecord"];
+        };
+      };
+      /** @description Release target is not locked */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Release target was not locked by the current user */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  unpinReleaseTarget: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        releaseTargetId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  updateRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The release ID */
+        releaseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          version?: string;
+          deploymentId?: string;
+          /** Format: date-time */
+          createdAt?: string;
+          name?: string;
+          config?: {
+            [key: string]: unknown;
+          };
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          /** @enum {string} */
+          status?: "ready" | "building" | "failed" | "rejected";
+          message?: string;
+          metadata?: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Release"];
+        };
+      };
+    };
+  };
+  upsertRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          version: string;
+          deploymentId: string;
+          /** Format: date-time */
+          createdAt?: string;
+          name?: string;
+          config?: {
+            [key: string]: unknown;
+          };
+          jobAgentConfig?: {
+            [key: string]: unknown;
+          };
+          /** @enum {string} */
+          status?: "ready" | "building" | "failed" | "rejected";
+          message?: string;
+          metadata?: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Release"];
+        };
+      };
+      /** @description Release already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+            id?: string;
+          };
+        };
+      };
+    };
+  };
+  setResourceProvidersResources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the scanner */
+        providerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          resources: components["schemas"]["CreateResource"][];
+        };
+      };
+    };
+    responses: {
+      /** @description Successfully updated the deployment resources */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            resources?: {
+              ignored?: {
+                identifier?: string;
+                name?: string;
+                version?: string;
+                kind?: string;
+                workspaceId?: string;
+              }[];
+              inserted?: {
+                id?: string;
+                name?: string;
+                version?: string;
+                kind?: string;
+                config?: {
+                  [key: string]: unknown;
+                };
+              }[];
+              updated?: {
+                id?: string;
+                name?: string;
+                version?: string;
+                kind?: string;
+                config?: {
+                  [key: string]: unknown;
+                };
+              }[];
+              deleted?: {
+                id?: string;
+                name?: string;
+                version?: string;
+                kind?: string;
+                config?: {
+                  [key: string]: unknown;
+                };
+              }[];
+            };
+          };
+        };
+      };
+      /** @description Invalid request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Deployment resources not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  deleteResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The deleted resource relationship rule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
+        };
+      };
+      /** @description The resource relationship rule was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An error occurred while deleting the resource relationship rule */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  updateResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["UpdateResourceRelationshipRule"];
+      };
+    };
+    responses: {
+      /** @description The updated resource relationship rule */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
+        };
+      };
+      /** @description The resource relationship rule was not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description An error occurred while updating the resource relationship rule */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  createResourceRelationshipRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateResourceRelationshipRule"];
+      };
+    };
+    responses: {
+      /** @description Resource relationship rule created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceRelationshipRule"];
+        };
+      };
+      /** @description Resource relationship rule already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Failed to create resource relationship rule */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  createResourceSchema: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * Format: uuid
+           * @description The ID of the workspace
+           */
+          workspaceId: string;
+          /** @description Version of the schema */
+          version: string;
+          /** @description Kind of resource this schema is for */
+          kind: string;
+          /** @description The JSON schema definition */
+          jsonSchema: Record<string, never>;
+        };
+      };
+    };
+    responses: {
+      /** @description Resource schema created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            workspaceId?: string;
+            version?: string;
+            kind?: string;
+            jsonSchema?: Record<string, never>;
+          };
+        };
+      };
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Schema already exists for this version and kind */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+            /** Format: uuid */
+            id?: string;
+          };
+        };
+      };
+    };
+  };
+  deleteResourceSchema: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the schema to delete */
+        schemaId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Schema deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** Format: uuid */
+            id?: string;
+          };
+        };
+      };
+      /** @description Schema not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Schema not found */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  getResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource ID */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Resource not found */
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  deleteResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource ID */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Resource deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  updateResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name?: string;
+          version?: string;
+          kind?: string;
+          identifier?: string;
+          workspaceId?: string;
+          metadata?: components["schemas"]["MetadataMap"];
+          config?: {
+            [key: string]: unknown;
+          };
+          variables?: components["schemas"]["DirectVariable"][];
+        };
+      };
+    };
+    responses: {
+      /** @description Resource updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  getReleaseTargets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource ID */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseTarget"][];
+        };
+      };
+    };
+  };
+  upsertResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** Format: uuid */
+          workspaceId: string;
+          name: string;
+          kind: string;
+          identifier: string;
+          version: string;
+          config: {
+            [key: string]: unknown;
+          };
+          metadata?: {
+            [key: string]: string;
+          };
+          variables?: components["schemas"]["Variable"][];
+        };
+      };
+    };
+    responses: {
+      /** @description The created or updated resource */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Resource"];
+        };
+      };
+    };
+  };
+  deleteEnvironmentByName: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the system */
+        systemId: string;
+        /** @description Name of the environment */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Environment deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSystem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the system */
+        systemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description System retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["System"] & {
+            environments?: components["schemas"]["Environment"][];
+            deployments?: components["schemas"]["Deployment"][];
+          };
+        };
+      };
+    };
+  };
+  deleteSystem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        systemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description System deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example System deleted */
+            message?: string;
+          };
+        };
+      };
+      /** @description System not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example System not found */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal server error */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  updateSystem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the system */
+        systemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description Name of the system */
+          name?: string;
+          /** @description Slug of the system */
+          slug?: string;
+          /** @description Description of the system */
+          description?: string;
+          /**
+           * Format: uuid
+           * @description UUID of the workspace
+           */
+          workspaceId?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description System updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["System"];
+        };
+      };
+      /** @description System not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example System not found */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal server error */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  createSystem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": {
+          /**
+           * Format: uuid
+           * @description The workspace ID of the system
+           */
+          workspaceId: string;
+          /** @description The name of the system */
+          name: string;
+          /** @description The slug of the system */
+          slug: string;
+          /** @description The description of the system */
+          description?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description System updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["System"];
+        };
+      };
+      /** @description System created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["System"];
+        };
+      };
+      /** @description Bad request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: {
+              /** @enum {string} */
+              code: "invalid_type" | "invalid_literal" | "custom";
+              message: string;
+              path: (string | number)[];
+            }[];
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal Server Error */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  listDeployments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All deployments */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["Deployment"][];
+          };
+        };
+      };
+    };
+  };
+  listEnvironments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All environments */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["Environment"][];
+          };
+        };
+      };
+    };
+  };
+  getEventsByAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+        action: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Events */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Event"][];
+        };
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  getWorkspace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Workspace found */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Workspace"];
+        };
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  deletePolicyByName: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Name of the policy */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully deleted the policy */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example true */
+            success?: boolean;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Policy not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Policy not found */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  upsertResourceProvider: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Name of the workspace */
+        workspaceId: string;
+        /** @description Name of the resource provider */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully retrieved or created the resource provider */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            name: string;
+            workspaceId: string;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getResourceByIdentifier: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Identifier of the resource */
+        identifier: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully retrieved the resource */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"] & {
+            relationships?: {
+              [key: string]: {
                 ruleId: string;
+                type: string;
+                reference: string;
+                source: components["schemas"]["Resource"];
+              };
             };
-            cookie?: never;
+          };
         };
-        requestBody?: never;
-        responses: {
-            /** @description The deleted resource relationship rule */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceRelationshipRule"];
-                };
-            };
-            /** @description The resource relationship rule was not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description An error occurred while deleting the resource relationship rule */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Resource not found */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    updateResourceRelationshipRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ruleId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["UpdateResourceRelationshipRule"];
-            };
-        };
-        responses: {
-            /** @description The updated resource relationship rule */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceRelationshipRule"];
-                };
-            };
-            /** @description The resource relationship rule was not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description An error occurred while updating the resource relationship rule */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  deleteResourceByIdentifier: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+        /** @description Identifier of the resource */
+        identifier: string;
+      };
+      cookie?: never;
     };
-    createResourceRelationshipRule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successfully deleted the resource */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateResourceRelationshipRule"];
-            };
+        content: {
+          "application/json": {
+            /** @example true */
+            success?: boolean;
+          };
         };
-        responses: {
-            /** @description Resource relationship rule created successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceRelationshipRule"];
-                };
-            };
-            /** @description Resource relationship rule already exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Failed to create resource relationship rule */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Resource not found */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
-    createResourceSchema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description The ID of the workspace
-                     */
-                    workspaceId: string;
-                    /** @description Version of the schema */
-                    version: string;
-                    /** @description Kind of resource this schema is for */
-                    kind: string;
-                    /** @description The JSON schema definition */
-                    jsonSchema: Record<string, never>;
-                };
-            };
-        };
-        responses: {
-            /** @description Resource schema created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        id?: string;
-                        /** Format: uuid */
-                        workspaceId?: string;
-                        version?: string;
-                        kind?: string;
-                        jsonSchema?: Record<string, never>;
-                    };
-                };
-            };
-            /** @description Invalid request body */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Schema already exists for this version and kind */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                        /** Format: uuid */
-                        id?: string;
-                    };
-                };
-            };
-        };
+  };
+  getGroupedCounts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
     };
-    deleteResourceSchema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the schema to delete */
-                schemaId: string;
-            };
-            cookie?: never;
+    requestBody: {
+      content: {
+        "application/json": {
+          metadataKeys: string[];
+          allowNullCombinations: boolean;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Schema deleted successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        id?: string;
-                    };
-                };
-            };
-            /** @description Schema not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Schema not found */
-                        error?: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    getResource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The resource ID */
-                resourceId: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Resource not found */
-                        error: string;
-                    };
-                };
-            };
+        content: {
+          "application/json": {
+            keys: string[];
+            combinations: {
+              metadata: {
+                [key: string]: string;
+              };
+              resources: number;
+            }[];
+          };
         };
+      };
     };
-    deleteResource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The resource ID */
-                resourceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Resource deleted successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        success: boolean;
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+  };
+  listResources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
     };
-    updateResource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                resourceId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description All resources */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    name?: string;
-                    version?: string;
-                    kind?: string;
-                    identifier?: string;
-                    workspaceId?: string;
-                    metadata?: components["schemas"]["MetadataMap"];
-                    config?: {
-                        [key: string]: unknown;
-                    };
-                    variables?: components["schemas"]["DirectVariable"][];
-                };
-            };
+        content: {
+          "application/json": {
+            resources?: components["schemas"]["Resource"][];
+          };
         };
-        responses: {
-            /** @description Resource updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
+      };
     };
-    getReleaseTargets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The resource ID */
-                resourceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReleaseTarget"][];
-                };
-            };
-        };
+  };
+  listSystems: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
     };
-    upsertResource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description All systems */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    workspaceId: string;
-                    name: string;
-                    kind: string;
-                    identifier: string;
-                    version: string;
-                    config: {
-                        [key: string]: unknown;
-                    };
-                    metadata?: {
-                        [key: string]: string;
-                    };
-                    variables?: components["schemas"]["Variable"][];
-                };
-            };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["System"][];
+          };
         };
-        responses: {
-            /** @description The created or updated resource */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Resource"];
-                };
-            };
-        };
+      };
     };
-    deleteEnvironmentByName: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the system */
-                systemId: string;
-                /** @description Name of the environment */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Environment deleted successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  getWorkspaceBySlug: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        workspaceSlug: string;
+      };
+      cookie?: never;
     };
-    getSystem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the system */
-                systemId: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Workspace found */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description System retrieved successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System"] & {
-                        environments?: components["schemas"]["Environment"][];
-                        deployments?: components["schemas"]["Deployment"][];
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Workspace"];
         };
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
     };
-    deleteSystem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                systemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description System deleted successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example System deleted */
-                        message?: string;
-                    };
-                };
-            };
-            /** @description System not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example System not found */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Internal server error */
-                        error?: string;
-                    };
-                };
-            };
-        };
-    };
-    updateSystem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description UUID of the system */
-                systemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @description Name of the system */
-                    name?: string;
-                    /** @description Slug of the system */
-                    slug?: string;
-                    /** @description Description of the system */
-                    description?: string;
-                    /**
-                     * Format: uuid
-                     * @description UUID of the workspace
-                     */
-                    workspaceId?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description System updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System"];
-                };
-            };
-            /** @description System not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example System not found */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Internal server error */
-                        error?: string;
-                    };
-                };
-            };
-        };
-    };
-    createSystem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description The workspace ID of the system
-                     */
-                    workspaceId: string;
-                    /** @description The name of the system */
-                    name: string;
-                    /** @description The slug of the system */
-                    slug: string;
-                    /** @description The description of the system */
-                    description?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description System updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System"];
-                };
-            };
-            /** @description System created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["System"];
-                };
-            };
-            /** @description Bad request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: {
-                            /** @enum {string} */
-                            code: "invalid_type" | "invalid_literal" | "custom";
-                            message: string;
-                            path: (string | number)[];
-                        }[];
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Internal Server Error */
-                        error?: string;
-                    };
-                };
-            };
-        };
-    };
-    listDeployments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description All deployments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["Deployment"][];
-                    };
-                };
-            };
-        };
-    };
-    listEnvironments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description All environments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["Environment"][];
-                    };
-                };
-            };
-        };
-    };
-    getEventsByAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-                action: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Event"][];
-                };
-            };
-            /** @description Workspace not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    getWorkspace: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Workspace found */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Workspace"];
-                };
-            };
-            /** @description Workspace not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
-    };
-    deletePolicyByName: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Name of the policy */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully deleted the policy */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example true */
-                        success?: boolean;
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Policy not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Policy not found */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    upsertResourceProvider: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Name of the workspace */
-                workspaceId: string;
-                /** @description Name of the resource provider */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully retrieved or created the resource provider */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        id: string;
-                        name: string;
-                        workspaceId: string;
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Workspace not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    getResourceByIdentifier: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                identifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully retrieved the resource */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceWithVariablesAndMetadata"] & {
-                        relationships?: {
-                            [key: string]: {
-                                ruleId: string;
-                                type: string;
-                                reference: string;
-                                source: components["schemas"]["Resource"];
-                            };
-                        };
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Resource not found */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    deleteResourceByIdentifier: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description Identifier of the resource */
-                identifier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully deleted the resource */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example true */
-                        success?: boolean;
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Permission denied */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @example Resource not found */
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    getGroupedCounts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    metadataKeys: string[];
-                    allowNullCombinations: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Success */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        keys: string[];
-                        combinations: {
-                            metadata: {
-                                [key: string]: string;
-                            };
-                            resources: number;
-                        }[];
-                    };
-                };
-            };
-        };
-    };
-    listResources: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description All resources */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        resources?: components["schemas"]["Resource"][];
-                    };
-                };
-            };
-        };
-    };
-    listSystems: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The ID of the workspace */
-                workspaceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description All systems */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data?: components["schemas"]["System"][];
-                    };
-                };
-            };
-        };
-    };
-    getWorkspaceBySlug: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspaceSlug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Workspace found */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Workspace"];
-                };
-            };
-            /** @description Workspace not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-        };
-    };
+  };
 }
 type WithRequired<T, K extends keyof T> = T & {
-    [P in K]-?: T[P];
+  [P in K]-?: T[P];
 };
