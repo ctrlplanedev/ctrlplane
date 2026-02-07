@@ -200,7 +200,8 @@
                "name",
                "slug",
                "systemId",
-               "jobAgentConfig"
+               "jobAgentConfig",
+               "metadata"
             ],
             "type": "object"
          },
@@ -472,7 +473,8 @@
                "id",
                "name",
                "systemId",
-               "createdAt"
+               "createdAt",
+               "metadata"
             ],
             "type": "object"
          },

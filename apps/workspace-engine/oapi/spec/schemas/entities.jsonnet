@@ -64,7 +64,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Environment: {
     type: 'object',
-    required: ['id', 'name', 'systemId', 'createdAt'],
+    required: ['id', 'name', 'systemId', 'createdAt', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },

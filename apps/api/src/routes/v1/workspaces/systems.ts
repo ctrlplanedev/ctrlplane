@@ -43,7 +43,7 @@ export const upsertSystem: AsyncTypedHandler<
       workspaceId,
       eventType: Event.SystemUpdated,
       timestamp: Date.now(),
-      data: { id: systemId, name, description, metadata, workspaceId },
+      data: { id: systemId, name, description, metadata: metadata ?? {}, workspaceId },
     });
 
     res
@@ -122,7 +122,7 @@ export const createSystem: AsyncTypedHandler<
       workspaceId,
       eventType: Event.SystemCreated,
       timestamp: Date.now(),
-      data: { id, workspaceId, ...req.body },
+      data: { id, workspaceId, metadata: {}, ...req.body },
     });
     res.status(202).json({ id, message: "System creation requested" });
   } catch {

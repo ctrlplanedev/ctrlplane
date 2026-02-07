@@ -97,6 +97,7 @@ const createEnvironment: AsyncTypedHandler<
   const environment: WorkspaceEngine["schemas"]["Environment"] = {
     id: uuidv4(),
     createdAt: new Date().toISOString(),
+    metadata: {},
     ...body,
   };
 
@@ -130,6 +131,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
   const mergedEnvironment = {
     id: environmentId,
     createdAt: new Date().toISOString(),
+    metadata: {},
     ...body,
   };
 

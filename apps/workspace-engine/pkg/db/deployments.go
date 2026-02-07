@@ -55,6 +55,8 @@ func getDeployments(ctx context.Context, workspaceID string) ([]*oapi.Deployment
 			return nil, err
 		}
 
+		deployment.Metadata = make(map[string]string)
+
 		// Wrap selector from unwrapped database format to JsonSelector format
 		deployment.ResourceSelector, err = wrapSelectorFromDB(rawSelector)
 		if err != nil {

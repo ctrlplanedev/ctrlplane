@@ -115,6 +115,8 @@ func scanJobAgentRow(rows pgx.Rows) (*oapi.JobAgent, error) {
 	}
 
 	jobAgent.Config = cfg
+	m := make(map[string]string)
+	jobAgent.Metadata = &m
 	return jobAgent, nil
 }
 

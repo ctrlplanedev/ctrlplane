@@ -3,7 +3,7 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   Deployment: {
     type: 'object',
-    required: ['id', 'name', 'slug', 'systemId', 'jobAgentConfig'],
+    required: ['id', 'name', 'slug', 'systemId', 'jobAgentConfig', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },

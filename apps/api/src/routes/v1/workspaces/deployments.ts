@@ -115,6 +115,7 @@ const postDeployment: AsyncTypedHandler<
 
   const deployment: WorkspaceEngine["schemas"]["Deployment"] = {
     id: uuidv4(),
+    metadata: {},
     ...body,
     jobAgentConfig: body.jobAgentConfig ?? {},
   };
@@ -160,6 +161,7 @@ const upsertDeployment: AsyncTypedHandler<
         eventType: Event.DeploymentCreated,
         timestamp: Date.now(),
         data: {
+          metadata: {},
           ...body,
           id: deploymentId,
           jobAgentConfig: body.jobAgentConfig ?? {},
@@ -184,6 +186,7 @@ const upsertDeployment: AsyncTypedHandler<
       eventType: Event.DeploymentUpdated,
       timestamp: Date.now(),
       data: {
+        metadata: {},
         ...deployment,
         ...body,
         jobAgentConfig: body.jobAgentConfig ?? {},

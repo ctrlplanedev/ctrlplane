@@ -279,15 +279,15 @@ type DeployDecision struct {
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description      *string            `json:"description,omitempty"`
-	Id               string             `json:"id"`
-	JobAgentConfig   JobAgentConfig     `json:"jobAgentConfig"`
-	JobAgentId       *string            `json:"jobAgentId,omitempty"`
-	Metadata         *map[string]string `json:"metadata,omitempty"`
-	Name             string             `json:"name"`
-	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	Slug             string             `json:"slug"`
-	SystemId         string             `json:"systemId"`
+	Description      *string           `json:"description,omitempty"`
+	Id               string            `json:"id"`
+	JobAgentConfig   JobAgentConfig    `json:"jobAgentConfig"`
+	JobAgentId       *string           `json:"jobAgentId,omitempty"`
+	Metadata         map[string]string `json:"metadata"`
+	Name             string            `json:"name"`
+	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
+	Slug             string            `json:"slug"`
+	SystemId         string            `json:"systemId"`
 }
 
 // DeploymentAndSystem defines model for DeploymentAndSystem.
@@ -379,13 +379,13 @@ type EntityRelation struct {
 
 // Environment defines model for Environment.
 type Environment struct {
-	CreatedAt        time.Time          `json:"createdAt"`
-	Description      *string            `json:"description,omitempty"`
-	Id               string             `json:"id"`
-	Metadata         *map[string]string `json:"metadata,omitempty"`
-	Name             string             `json:"name"`
-	ResourceSelector *Selector          `json:"resourceSelector,omitempty"`
-	SystemId         string             `json:"systemId"`
+	CreatedAt        time.Time         `json:"createdAt"`
+	Description      *string           `json:"description,omitempty"`
+	Id               string            `json:"id"`
+	Metadata         map[string]string `json:"metadata"`
+	Name             string            `json:"name"`
+	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
+	SystemId         string            `json:"systemId"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.

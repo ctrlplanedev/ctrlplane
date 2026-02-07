@@ -1189,7 +1189,7 @@ export interface components {
             id: string;
             jobAgentConfig: components["schemas"]["JobAgentConfig"];
             jobAgentId?: string;
-            metadata?: {
+            metadata: {
                 [key: string]: string;
             };
             name: string;
@@ -1277,7 +1277,7 @@ export interface components {
             createdAt: string;
             description?: string;
             id: string;
-            metadata?: {
+            metadata: {
                 [key: string]: string;
             };
             name: string;
