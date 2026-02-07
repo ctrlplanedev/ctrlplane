@@ -83,7 +83,7 @@ func TestSelector_Hash(t *testing.T) {
 
 		hash := s.Hash()
 		for i, c := range hash {
-			if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+			if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 				t.Errorf("Hash() contains non-hex char %q at position %d", c, i)
 			}
 		}

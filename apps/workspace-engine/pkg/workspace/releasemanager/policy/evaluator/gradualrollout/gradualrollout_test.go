@@ -3123,12 +3123,8 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 5, st)
 
-	// Version created at 1am (targets 60-240 would fall inside deny window without adjustment)
-	// Without adjustment: targets scheduled 2am-5am would all deploy at 6am (frontloading!)
-	versionCreatedAt := time.Date(2025, 1, 5, 1, 0, 0, 0, time.UTC) // 1am - outside window initially
-	// But we want to test when version is created INSIDE the deny window
-	// Let's use 3am instead
-	versionCreatedAt = time.Date(2025, 1, 5, 3, 0, 0, 0, time.UTC) // 3am - inside 2am-6am deny window
+	// Version created inside the deny window (3am, inside 2am-6am deny window)
+	versionCreatedAt := time.Date(2025, 1, 5, 3, 0, 0, 0, time.UTC)
 	denyWindowEnd := time.Date(2025, 1, 5, 6, 0, 0, 0, time.UTC)   // 6am
 
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
