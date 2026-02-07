@@ -338,9 +338,10 @@ func TestEngine_PolicySelectorUpdate_ReleaseTargetScope(t *testing.T) {
 		if !ok {
 			continue
 		}
-		if release.ReleaseTarget.EnvironmentId == environment1ID {
+		switch release.ReleaseTarget.EnvironmentId {
+		case environment1ID:
 			prodJobs++
-		} else if release.ReleaseTarget.EnvironmentId == environment2ID {
+		case environment2ID:
 			devJobs++
 		}
 	}

@@ -79,7 +79,7 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.Dispat
 			return
 		}
 
-		verification := newArgoApplicationVerification(a.verifications, dispatchCtx.Job, app.ObjectMeta.Name, serverAddr, apiKey)
+		verification := newArgoApplicationVerification(a.verifications, dispatchCtx.Job, app.Name, serverAddr, apiKey)
 		if err := verification.StartVerification(ctx, dispatchCtx.Job); err != nil {
 			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to start verification: %s", err.Error()))
 			return
@@ -139,10 +139,10 @@ func (a *ArgoApplication) getTemplatedApplication(ctx types.DispatchContext, tem
 }
 
 func (a *ArgoApplication) makeApplicationK8sCompatible(app *v1alpha1.Application) {
-	app.ObjectMeta.Name = getK8sCompatibleName(app.ObjectMeta.Name)
-	if app.ObjectMeta.Labels != nil {
-		for key, value := range app.ObjectMeta.Labels {
-			app.ObjectMeta.Labels[key] = getK8sCompatibleName(value)
+	app.Name = getK8sCompatibleName(app.Name)
+	if app.Labels != nil {
+		for key, value := range app.Labels {
+			app.Labels[key] = getK8sCompatibleName(value)
 		}
 	}
 }
@@ -257,7 +257,7 @@ func (a *ArgoApplication) sendJobFailureEvent(context types.DispatchContext, mes
 func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Application, context types.DispatchContext) error {
 	workspaceId := a.store.ID()
 
-	appUrl := fmt.Sprintf("%s/applications/%s/%s", serverAddr, app.ObjectMeta.Namespace, app.ObjectMeta.Name)
+	appUrl := fmt.Sprintf("%s/applications/%s/%s", serverAddr, app.Namespace, app.Name)
 	if !strings.HasPrefix(appUrl, "https://") {
 		appUrl = "https://" + appUrl
 	}

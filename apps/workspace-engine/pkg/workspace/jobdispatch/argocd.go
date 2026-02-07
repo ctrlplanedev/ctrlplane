@@ -265,7 +265,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 		return fmt.Errorf("failed to parse template output as ArgoCD Application: %w", err)
 	}
 
-	if app.ObjectMeta.Name == "" {
+	if app.Name == "" {
 		resourceName := ""
 		if templatableJobWithRelease.Resource != nil {
 			resourceName = templatableJobWithRelease.Resource.Name
@@ -281,18 +281,18 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	}
 
 	// Clean the application name to make it valid for Kubernetes
-	app.ObjectMeta.Name = getK8sCompatibleName(app.ObjectMeta.Name)
+	app.Name = getK8sCompatibleName(app.Name)
 
 	// Clean all label values to make them valid for Kubernetes
-	if app.ObjectMeta.Labels != nil {
-		for key, value := range app.ObjectMeta.Labels {
-			app.ObjectMeta.Labels[key] = getK8sCompatibleName(value)
+	if app.Labels != nil {
+		for key, value := range app.Labels {
+			app.Labels[key] = getK8sCompatibleName(value)
 		}
 	}
 
 	span.SetAttributes(
-		attribute.String("argocd.app_name", app.ObjectMeta.Name),
-		attribute.String("argocd.app_namespace", app.ObjectMeta.Namespace),
+		attribute.String("argocd.app_name", app.Name),
+		attribute.String("argocd.app_namespace", app.Namespace),
 	)
 
 	upsert := true
@@ -307,7 +307,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 				if isRetryableError(createErr) {
 					log.Warn("ArgoCD application creation failed with retryable error, will retry",
 						"job_id", job.Id,
-						"app_name", app.ObjectMeta.Name,
+						"app_name", app.Name,
 						"error", createErr)
 					return createErr // Return error to trigger retry
 				}
@@ -324,7 +324,7 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 			log.Warn("Retrying ArgoCD application creation",
 				"attempt", n+1,
 				"job_id", job.Id,
-				"app_name", app.ObjectMeta.Name,
+				"app_name", app.Name,
 				"error", err)
 			span.AddEvent("Retrying ArgoCD application creation")
 		}),
@@ -333,14 +333,14 @@ func (d *ArgoCDDispatcher) DispatchJob(ctx context.Context, job *oapi.Job) error
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create ArgoCD application")
-		message := fmt.Sprintf("Failed to create ArgoCD application '%s': %s", app.ObjectMeta.Name, err.Error())
+		message := fmt.Sprintf("Failed to create ArgoCD application '%s': %s", app.Name, err.Error())
 		if sendErr := d.sendJobFailureEvent(job, oapi.JobStatusFailure, message); sendErr != nil {
 			log.Error("Failed to send job failure event", "error", sendErr, "job_id", job.Id)
 		}
 		return fmt.Errorf("failed to create ArgoCD application: %w", err)
 	}
 
-	if err := d.startArgoApplicationVerification(ctx, jobWithRelease, cfg, app.ObjectMeta.Name); err != nil {
+	if err := d.startArgoApplicationVerification(ctx, jobWithRelease, cfg, app.Name); err != nil {
 		span.RecordError(err)
 		log.Error("Failed to start ArgoCD application verification",
 			"error", err,
@@ -440,12 +440,12 @@ func (d *ArgoCDDispatcher) sendJobUpdateEvent(job *oapi.Job, cfg *oapi.ArgoCDJob
 
 	span.SetAttributes(
 		attribute.String("job.id", job.Id),
-		attribute.String("argocd.app_name", app.ObjectMeta.Name),
+		attribute.String("argocd.app_name", app.Name),
 	)
 
 	workspaceId := d.store.ID()
 
-	appUrl := fmt.Sprintf("%s/applications/%s/%s", cfg.ServerUrl, app.ObjectMeta.Namespace, app.ObjectMeta.Name)
+	appUrl := fmt.Sprintf("%s/applications/%s/%s", cfg.ServerUrl, app.Namespace, app.Name)
 	if !strings.HasPrefix(appUrl, "https://") {
 		appUrl = "https://" + appUrl
 	}

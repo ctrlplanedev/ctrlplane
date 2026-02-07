@@ -503,20 +503,21 @@ func BenchmarkEnvironments_LargeScale(b *testing.B) {
 		env.ResourceSelector = &oapi.Selector{}
 
 		// Create varied selectors
-		if i%5 == 0 {
+		switch i % 5 {
+		case 0:
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{
 				Cel: fmt.Sprintf("metadata.tier == '%s'", tiers[i%len(tiers)]),
 			})
-		} else if i%5 == 1 {
+		case 1:
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{
 				Cel: fmt.Sprintf("metadata.region == '%s'", regions[i%len(regions)]),
 			})
-		} else if i%5 == 2 {
+		case 2:
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{
 				Cel: fmt.Sprintf("metadata.tier == '%s' && metadata.region == '%s'",
 					tiers[i%len(tiers)], regions[i%len(regions)]),
 			})
-		} else {
+		default:
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 		}
 

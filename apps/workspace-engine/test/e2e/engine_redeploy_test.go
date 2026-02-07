@@ -298,9 +298,10 @@ func TestEngine_Redeploy_MultipleReleaseTargets(t *testing.T) {
 	// Redeploy to specific release targets (resource 1 and 3 only)
 	var rt1, rt3 *oapi.ReleaseTarget
 	for _, rt := range releaseTargets {
-		if rt.ResourceId == resource1Id {
+		switch rt.ResourceId {
+		case resource1Id:
 			rt1 = rt
-		} else if rt.ResourceId == resource3Id {
+		case resource3Id:
 			rt3 = rt
 		}
 	}
