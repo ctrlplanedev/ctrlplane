@@ -386,7 +386,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 		CreatedAt:   time.Now().Format(time.RFC3339),
 		Metadata:    map[string]string{},
 		Rules:       []oapi.PolicyRule{},
-		Selectors:   []oapi.PolicyTargetSelector{},
+		Selector:    "true",
 	}
 
 	jobAgent := &oapi.JobAgent{

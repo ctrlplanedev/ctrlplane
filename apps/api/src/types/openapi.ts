@@ -858,7 +858,8 @@ export interface components {
             name: string;
             priority?: number;
             rules?: components["schemas"]["PolicyRule"][];
-            selectors?: components["schemas"]["PolicyTargetSelector"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector?: string;
         };
         CreateRelationshipRuleRequest: {
             description?: string;
@@ -1212,7 +1213,8 @@ export interface components {
             name: string;
             priority: number;
             rules: components["schemas"]["PolicyRule"][];
-            selectors: components["schemas"]["PolicyTargetSelector"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector: string;
             workspaceId: string;
         };
         PolicyRequestAccepted: {
@@ -1231,12 +1233,6 @@ export interface components {
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionCooldown?: components["schemas"]["VersionCooldownRule"];
-        };
-        PolicyTargetSelector: {
-            deploymentSelector?: components["schemas"]["Selector"];
-            environmentSelector?: components["schemas"]["Selector"];
-            id: string;
-            resourceSelector?: components["schemas"]["Selector"];
         };
         PropertyMatcher: {
             fromProperty: string[];
@@ -1515,15 +1511,16 @@ export interface components {
         };
         UpsertPolicyRequest: {
             description?: string;
-            enabled?: boolean;
+            enabled: boolean;
             /** @description Arbitrary metadata for the policy (record<string, string>) */
-            metadata?: {
+            metadata: {
                 [key: string]: string;
             };
             name: string;
-            priority?: number;
-            rules?: components["schemas"]["PolicyRule"][];
-            selectors?: components["schemas"]["PolicyTargetSelector"][];
+            priority: number;
+            rules: components["schemas"]["PolicyRule"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector: string;
         };
         UpsertRelationshipRuleRequest: {
             description?: string;

@@ -142,7 +142,7 @@ func createPolicyWithVerification(metrics []oapi.VerificationMetricSpec, trigger
 		Enabled:   true,
 		Priority:  1,
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        uuid.New().String(),
@@ -529,7 +529,7 @@ func createPolicyWithRules(rules []oapi.PolicyRule) *oapi.Policy {
 		Enabled:   true,
 		Priority:  1,
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{},
+		Selector:  "true",
 		Rules:     rules,
 		Metadata:  map[string]string{},
 	}

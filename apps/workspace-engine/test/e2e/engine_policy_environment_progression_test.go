@@ -50,11 +50,7 @@ func TestEngine_PolicyEnvironmentProgression_TriggersGradualRollout(t *testing.T
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("prod-depends-on-qa"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'prod'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'prod'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'qa'"),
@@ -158,11 +154,7 @@ func TestEngine_PolicyEnvironmentProgression_OnlyTriggersWhenThresholdCrossed(t 
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("prod-depends-on-qa"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'prod'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'prod'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'qa'"),
@@ -282,11 +274,7 @@ func TestEngine_PolicyEnvironmentProgression_TriggersAtPartialThreshold(t *testi
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("prod-depends-on-qa"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'prod'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'prod'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'qa'"),
@@ -396,11 +384,7 @@ func TestEngine_PolicyEnvironmentProgression_TriggersGradualRolloutStart(t *test
 		integration.WithPolicy(
 			integration.PolicyID(envProgressionPolicyID),
 			integration.PolicyName("prod-depends-on-qa"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'prod'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'prod'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'qa'"),
@@ -411,11 +395,7 @@ func TestEngine_PolicyEnvironmentProgression_TriggersGradualRolloutStart(t *test
 		integration.WithPolicy(
 			integration.PolicyID(gradualRolloutPolicyID),
 			integration.PolicyName("prod-gradual-rollout"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'prod'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'prod'"),
 			integration.WithPolicyRule(
 				integration.WithRuleGradualRollout(timeScaleInterval),
 			),

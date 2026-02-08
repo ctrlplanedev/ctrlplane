@@ -1497,7 +1497,8 @@ export interface components {
             name: string;
             priority: number;
             rules: components["schemas"]["PolicyRule"][];
-            selectors: components["schemas"]["PolicyTargetSelector"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector: string;
             workspaceId: string;
         };
         PolicyEvaluation: {
@@ -1547,12 +1548,6 @@ export interface components {
             versionId: string;
             /** @description Workspace this skip belongs to */
             workspaceId: string;
-        };
-        PolicyTargetSelector: {
-            deploymentSelector?: components["schemas"]["Selector"];
-            environmentSelector?: components["schemas"]["Selector"];
-            id: string;
-            resourceSelector?: components["schemas"]["Selector"];
         };
         PropertiesMatcher: {
             properties: components["schemas"]["PropertyMatcher"][];

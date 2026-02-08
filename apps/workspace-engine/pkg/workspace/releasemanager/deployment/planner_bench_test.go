@@ -99,7 +99,7 @@ func createTestPolicy(id, workspaceID, name string) *oapi.Policy {
 		Name:        name,
 		CreatedAt:   now,
 		Rules:       []oapi.PolicyRule{},
-		Selectors:   []oapi.PolicyTargetSelector{},
+		Selector:    "true",
 	}
 }
 
@@ -214,21 +214,6 @@ func setupBenchmarkPlanner(
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
 					DependsOnEnvironmentSelector: *dependsOnSelector,
 				},
-			})
-		}
-
-		// Add policy selectors targeting specific deployments
-		if i < len(deploymentIDs) {
-			deploymentSelector := &oapi.Selector{}
-			_ = deploymentSelector.FromJsonSelector(oapi.JsonSelector{
-				Json: map[string]any{
-					"type":     "id",
-					"operator": "equals",
-					"value":    deploymentIDs[i],
-				},
-			})
-			pol.Selectors = append(pol.Selectors, oapi.PolicyTargetSelector{
-				DeploymentSelector: deploymentSelector,
 			})
 		}
 

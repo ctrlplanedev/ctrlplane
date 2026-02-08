@@ -69,11 +69,7 @@ func TestEngine_PolicyDeploymentDependency(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("policy-1"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("deployment.id == 'deployment-cluster'"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("deployment.id == 'deployment-cluster'"),
 			integration.WithPolicyRule(
 				integration.WithRuleDeploymentDependency(
 					integration.DeploymentDependencyRuleDependsOnDeploymentSelector("deployment.id == 'deployment-vpc'"),

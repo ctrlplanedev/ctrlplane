@@ -7,7 +7,7 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/util"
 
-	"github.com/google/cel-go/cel"
+	celgo "github.com/google/cel-go/cel"
 )
 
 var compiledEnv, _ = celutil.NewEnvBuilder().
@@ -26,7 +26,7 @@ func Compile(expression string) (util.MatchableCondition, error) {
 }
 
 type CelSelector struct {
-	Program cel.Program
+	Program celgo.Program
 	Cel     string
 }
 
@@ -79,6 +79,34 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 	}
 
 	return celutil.EvalBool(s.Program, celCtx)
+}
+
+// BuildEntityContext constructs a CEL evaluation context containing resource,
+// deployment, and environment maps. Nil entities are represented as empty maps
+// so that CEL expressions referencing missing dimensions don't error.
+func BuildEntityContext(r *oapi.Resource, d *oapi.Deployment, e *oapi.Environment) map[string]any {
+	ctx := map[string]any{
+		"resource":    map[string]any{},
+		"deployment":  map[string]any{},
+		"environment": map[string]any{},
+	}
+	if r != nil {
+		ctx["resource"] = resourceToMap(r)
+	}
+	if d != nil {
+		ctx["deployment"] = deploymentToMap(d)
+	}
+	if e != nil {
+		ctx["environment"] = environmentToMap(e)
+	}
+	return ctx
+}
+
+// CompileProgram compiles a CEL expression into a Program using the shared
+// cached environment. This is useful when callers need direct access to the
+// compiled program for evaluation with a custom context.
+func CompileProgram(expression string) (celgo.Program, error) {
+	return compiledEnv.Compile(expression)
 }
 
 // structToMap converts a struct to a map.
@@ -141,6 +169,10 @@ func deploymentToMap(d *oapi.Deployment) map[string]any {
 	m["slug"] = d.Slug
 	m["systemId"] = d.SystemId
 	m["jobAgentConfig"] = d.JobAgentConfig
+	m["metadata"] = d.Metadata
+	if d.Metadata == nil {
+		m["metadata"] = make(map[string]any)
+	}
 	if d.Description != nil {
 		m["description"] = *d.Description
 	}
@@ -159,6 +191,10 @@ func environmentToMap(e *oapi.Environment) map[string]any {
 	m["name"] = e.Name
 	m["systemId"] = e.SystemId
 	m["createdAt"] = e.CreatedAt
+	m["metadata"] = e.Metadata
+	if e.Metadata == nil {
+		m["metadata"] = make(map[string]any)
+	}
 	if e.Description != nil {
 		m["description"] = *e.Description
 	}

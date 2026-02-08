@@ -69,8 +69,6 @@ const upsertPolicy: AsyncTypedHandler<
     { params: { path: { workspaceId, policyId } } },
   );
 
-  const selectors = Array.isArray(body.selectors) ? body.selectors : [];
-
   const policyIdResult = z.string().uuid().safeParse(policyId);
   if (!policyIdResult.success)
     throw new ApiError("Invalid policy ID: must be a valid UUID v4", 400);
@@ -82,11 +80,11 @@ const upsertPolicy: AsyncTypedHandler<
     createdAt: existingPolicy.data?.createdAt ?? new Date().toISOString(),
     name: body.name,
     description: body.description,
-    priority: body.priority ?? 0,
-    enabled: body.enabled ?? true,
-    metadata: body.metadata ?? {},
-    rules: body.rules ?? [],
-    selectors,
+    priority: body.priority,
+    enabled: body.enabled,
+    metadata: body.metadata,
+    rules: body.rules,
+    selector: body.selector,
   };
 
   // Determine if this is a create or update
@@ -142,7 +140,7 @@ const createPolicy: AsyncTypedHandler<
     priority: 0,
     createdAt: new Date().toISOString(),
     metadata: {},
-    selectors: [],
+    selector: "true",
     ...body,
     rules: body.rules ?? [],
   };

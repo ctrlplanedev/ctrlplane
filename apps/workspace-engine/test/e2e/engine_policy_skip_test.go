@@ -44,11 +44,7 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-approvals"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(2),
@@ -126,11 +122,7 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("multi-rule-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
@@ -223,11 +215,7 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
@@ -306,11 +294,7 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
@@ -386,11 +370,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy1ID),
 			integration.PolicyName("policy-1-approval"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(2),
@@ -400,11 +380,7 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy2ID),
 			integration.PolicyName("policy-2-approval"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.PolicyRuleID("rule-2"),
 				integration.WithRuleAnyApproval(1),
@@ -492,11 +468,7 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -563,11 +535,7 @@ func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.PolicyRuleID("rule-1"),
 				integration.WithRuleAnyApproval(1),
