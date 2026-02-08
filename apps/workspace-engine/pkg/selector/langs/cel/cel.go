@@ -1,54 +1,27 @@
 package cel
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/util"
 
-	"github.com/charmbracelet/log"
-	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/ext"
 )
 
-var (
-	compilationCache, _ = ristretto.NewCache(&ristretto.Config[string, cel.Program]{
-		NumCounters: 50000,
-		MaxCost:     1 << 30, // 1GB
-		BufferItems: 64,
-	})
-)
+var compiledEnv, _ = celutil.NewEnvBuilder().
+	WithMapVariables("resource", "deployment", "environment").
+	WithStandardExtensions().
+	BuildCached(12 * time.Hour)
 
-var Env, _ = cel.NewEnv(
-	cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	cel.Variable("deployment", cel.MapType(cel.StringType, cel.AnyType)),
-	cel.Variable("environment", cel.MapType(cel.StringType, cel.AnyType)),
-
-	ext.Strings(),
-	ext.Math(),
-	ext.Lists(),
-	ext.Sets(),
-)
+var Env = compiledEnv.Env()
 
 func Compile(expression string) (util.MatchableCondition, error) {
-	if program, ok := compilationCache.Get(expression); ok {
-		return &CelSelector{Program: program, Cel: expression}, nil
-	}
-
-	ast, iss := Env.Compile(expression)
-	if iss.Err() != nil {
-		return nil, iss.Err()
-	}
-	program, err := Env.Program(ast)
+	program, err := compiledEnv.Compile(expression)
 	if err != nil {
 		return nil, err
 	}
-
-	compilationCache.SetWithTTL(expression, program, 1, 12*time.Hour)
-
 	return &CelSelector{Program: program, Cel: expression}, nil
 }
 
@@ -105,34 +78,13 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 		celCtx["job"] = entityAsMap
 	}
 
-	val, _, err := s.Program.Eval(celCtx)
-	if err != nil {
-		// If the CEL expression fails due to a missing key, treat as non-match (false, nil)
-		if strings.Contains(err.Error(), "no such key:") {
-			return false, nil
-		}
-
-		log.Error("CEL Evaluation ERROR", "error", err)
-		return false, err
-	}
-
-	result := val.ConvertToType(cel.BoolType)
-	boolVal, ok := result.Value().(bool)
-	if !ok {
-		return false, fmt.Errorf("result is not a boolean")
-	}
-	return boolVal, nil
+	return celutil.EvalBool(s.Program, celCtx)
 }
 
-// structToMap converts a struct to a map using reflection
-// This is significantly faster than JSON marshal/unmarshal
+// structToMap converts a struct to a map.
+// Known oapi types use hand-written converters for speed; everything else
+// falls back to celutil.EntityToMap (JSON round-trip).
 func structToMap(v any) (map[string]any, error) {
-	// Fast path: already a map
-	if m, ok := v.(map[string]any); ok {
-		return m, nil
-	}
-
-	// For known types, we can use a specialized fast path
 	switch entity := v.(type) {
 	case *oapi.Resource:
 		return resourceToMap(entity), nil
@@ -152,16 +104,7 @@ func structToMap(v any) (map[string]any, error) {
 		return jobToMap(&entity), nil
 	}
 
-	// Fallback to JSON for unknown types
-	data, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	var result map[string]any
-	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, err
-	}
-	return result, nil
+	return celutil.EntityToMap(v)
 }
 
 // Specialized converters for known types (zero allocation for known types)
