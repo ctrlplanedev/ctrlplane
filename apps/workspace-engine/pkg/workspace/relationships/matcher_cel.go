@@ -3,8 +3,8 @@ package relationships
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
@@ -51,24 +51,14 @@ func (m *CelMatcher) Evaluate(ctx context.Context, from map[string]any, to map[s
 	_, span := tracer.Start(ctx, "Relationships.CelMatcher.Evaluate")
 	defer span.End()
 
-	// Convert entities to maps for CEL evaluation
 	celCtx := map[string]any{
 		"from": from,
 		"to":   to,
 	}
-	val, _, err := m.program.Eval(celCtx)
+	result, err := celutil.EvalBool(m.program, celCtx)
 	if err != nil {
-		if strings.Contains(err.Error(), "no such key:") {
-			return false
-		}
 		log.Warn("CEL evaluation error", "error", err)
 		return false
 	}
-	result := val.ConvertToType(cel.BoolType)
-	boolVal, ok := result.Value().(bool)
-	if !ok {
-		log.Warn("CEL result is not boolean", "result", result)
-		return false
-	}
-	return boolVal
+	return result
 }

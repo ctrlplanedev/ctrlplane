@@ -3,12 +3,11 @@ package cel
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector/langs/util"
 
-	"github.com/charmbracelet/log"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/ext"
@@ -105,23 +104,7 @@ func (s *CelSelector) Matches(entity any) (bool, error) {
 		celCtx["job"] = entityAsMap
 	}
 
-	val, _, err := s.Program.Eval(celCtx)
-	if err != nil {
-		// If the CEL expression fails due to a missing key, treat as non-match (false, nil)
-		if strings.Contains(err.Error(), "no such key:") {
-			return false, nil
-		}
-
-		log.Error("CEL Evaluation ERROR", "error", err)
-		return false, err
-	}
-
-	result := val.ConvertToType(cel.BoolType)
-	boolVal, ok := result.Value().(bool)
-	if !ok {
-		return false, fmt.Errorf("result is not a boolean")
-	}
-	return boolVal, nil
+	return celutil.EvalBool(s.Program, celCtx)
 }
 
 // structToMap converts a struct to a map using reflection
