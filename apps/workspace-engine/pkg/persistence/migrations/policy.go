@@ -67,7 +67,12 @@ func PolicySelectorsToSelector(entityType string, data map[string]any) (map[stri
 			continue
 		}
 
-		clause := strings.Join(andParts, " && ")
+		// Wrap each sub-selector in parens to preserve precedence when combined.
+		wrapped := make([]string, len(andParts))
+		for j, p := range andParts {
+			wrapped[j] = "(" + p + ")"
+		}
+		clause := strings.Join(wrapped, " && ")
 		orClauses = append(orClauses, clause)
 	}
 

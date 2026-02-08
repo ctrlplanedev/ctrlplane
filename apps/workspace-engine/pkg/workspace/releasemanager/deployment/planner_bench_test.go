@@ -217,8 +217,6 @@ func setupBenchmarkPlanner(
 			})
 		}
 
-		// Policy selector is already set to "true" which matches all targets
-
 		st.Policies.Upsert(ctx, pol)
 	}
 

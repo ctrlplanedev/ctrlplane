@@ -80,7 +80,7 @@ func TestPolicySelectorsToSelector_SingleSelector_AllDimensions(t *testing.T) {
 	result, err := migrations.PolicySelectorsToSelector("policy", data)
 	require.NoError(t, err)
 	assert.Equal(t,
-		"deployment.name == 'web' && environment.name == 'prod' && resource.kind == 'kubernetes'",
+		"(deployment.name == 'web') && (environment.name == 'prod') && (resource.kind == 'kubernetes')",
 		result["selector"],
 	)
 	assert.Nil(t, result["selectors"])
@@ -175,7 +175,25 @@ func TestPolicySelectorsToSelector_MultipleSelectors_ORed(t *testing.T) {
 	result, err := migrations.PolicySelectorsToSelector("policy", data)
 	require.NoError(t, err)
 	assert.Equal(t,
-		"(deployment.name == 'web' && environment.name == 'prod') || (resource.kind == 'kubernetes')",
+		"((deployment.name == 'web') && (environment.name == 'prod')) || (resource.kind == 'kubernetes')",
+		result["selector"],
+	)
+}
+
+func TestPolicySelectorsToSelector_SubSelectorWithOR(t *testing.T) {
+	data := toMap(t, `{
+		"id": "p1",
+		"selectors": [{
+			"id": "s1",
+			"deploymentSelector": {"cel": "deployment.name == 'a' || deployment.name == 'b'"},
+			"environmentSelector": {"cel": "environment.name == 'prod'"}
+		}]
+	}`)
+
+	result, err := migrations.PolicySelectorsToSelector("policy", data)
+	require.NoError(t, err)
+	assert.Equal(t,
+		"(deployment.name == 'a' || deployment.name == 'b') && (environment.name == 'prod')",
 		result["selector"],
 	)
 }

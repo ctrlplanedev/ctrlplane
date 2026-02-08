@@ -57,7 +57,7 @@ func (r *JSONEntityRegistry) RegisterMigration(entityType string, m Migration) {
 // registered the data is returned unchanged.
 func (r *JSONEntityRegistry) MigrateRaw(entityType string, data json.RawMessage) (json.RawMessage, error) {
 	r.mu.RLock()
-	migrations := r.migrations[entityType]
+	migrations := append([]Migration(nil), r.migrations[entityType]...)
 	r.mu.RUnlock()
 
 	if len(migrations) == 0 {
