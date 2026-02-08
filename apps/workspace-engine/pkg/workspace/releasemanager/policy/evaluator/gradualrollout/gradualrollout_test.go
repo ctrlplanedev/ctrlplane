@@ -28,14 +28,6 @@ func generateResourceSelector() *oapi.Selector {
 	return selector
 }
 
-func generateMatchAllSelector() *oapi.Selector {
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{
-		Cel: "true",
-	})
-	return selector
-}
-
 func generateEnvironment(ctx context.Context, systemID string, store *store.Store) *oapi.Environment {
 	environment := &oapi.Environment{
 		SystemId:         systemID,

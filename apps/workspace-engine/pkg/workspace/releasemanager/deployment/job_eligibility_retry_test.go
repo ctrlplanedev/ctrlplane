@@ -10,17 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper to create a selector that matches all resources/environments/deployments
-func createMatchAllSelector() *oapi.Selector {
-	selector := &oapi.Selector{}
-	// Empty AND condition matches everything
-	_ = selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{
-		"operator":   "and",
-		"conditions": []interface{}{},
-	}})
-	return selector
-}
-
 // TestRetryPolicy_MultipleRules tests how multiple rules in a policy interact
 func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 	st := setupStoreWithResourceForEligibility(t, "resource-1")

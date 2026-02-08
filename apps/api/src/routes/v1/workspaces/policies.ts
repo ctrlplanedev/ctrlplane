@@ -83,7 +83,7 @@ const upsertPolicy: AsyncTypedHandler<
     priority: body.priority,
     enabled: body.enabled,
     metadata: body.metadata,
-    rules: body.rules ?? [],
+    rules: body.rules,
     selector: body.selector,
   };
 
