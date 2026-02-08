@@ -17,7 +17,7 @@ func TestMatchPolicy_EmptySelector(t *testing.T) {
 		&oapi.Resource{Id: "r1", Name: "node1", Kind: "kubernetes"},
 	)
 
-	assert.True(t, selector.MatchPolicy(context.Background(), policy, rt))
+	assert.False(t, selector.MatchPolicy(context.Background(), policy, rt))
 }
 
 func TestMatchPolicy_TrueSelector(t *testing.T) {

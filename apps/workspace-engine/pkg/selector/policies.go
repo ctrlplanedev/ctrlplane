@@ -34,9 +34,14 @@ func (b *ResolvedReleaseTarget) Resource() *oapi.Resource {
 }
 
 // MatchPolicy evaluates a policy's CEL selector against a resolved release
-// target. An empty or "true" selector matches everything.
+// target. An empty selector does not match anything. A "true" selector matches
+// everything.
 func MatchPolicy(_ context.Context, policy *oapi.Policy, releaseTarget *ResolvedReleaseTarget) bool {
-	if policy.Selector == "" || policy.Selector == "true" {
+	if policy.Selector == "" {
+		return false
+	}
+
+	if policy.Selector == "true" {
 		return true
 	}
 

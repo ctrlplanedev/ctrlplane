@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 	ctx := context.Background()
 	cs := statechange.NewChangeSet[any]()
