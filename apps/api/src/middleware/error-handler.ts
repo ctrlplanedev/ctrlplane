@@ -38,8 +38,17 @@ export const errorHandler = (
     });
   }
 
+  const openApiStatus = 'status' in error ? error.status : 'statusCode' in error ? error.statusCode : undefined;
+  if (typeof openApiStatus === "number") {
+    return res.status(openApiStatus).json({
+      message: error.message,
+      code: error.name,
+      details: (error as any).errors ?? null,
+    });
+  }
+
   // Handle generic errors
   return res
     .status(500)
-    .json({ message: "Internal server error", code: "INTERNAL_ERROR" });
+    .json({ message: "Internal server error: " + error.message, code: "INTERNAL_ERROR", details: error.stack });
 };

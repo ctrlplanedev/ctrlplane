@@ -95,82 +95,6 @@ export type FullReleaseTarget = schema.ReleaseTarget & {
   deployment: schema.Deployment;
 };
 
-export type EventPayload = {
-  [Event.ResourceCreated]: FullResource;
-  [Event.ResourceUpdated]: {
-    previous: FullResource;
-    current: FullResource;
-  };
-  [Event.ResourceDeleted]: FullResource;
-  [Event.ResourceVariableCreated]: typeof schema.resourceVariable.$inferSelect;
-  [Event.ResourceVariableUpdated]: {
-    previous: typeof schema.resourceVariable.$inferSelect;
-    current: typeof schema.resourceVariable.$inferSelect;
-  };
-  [Event.ResourceVariablesBulkUpdated]: {
-    resourceId: string;
-    variables: Record<string, any>;
-  };
-  [Event.ResourceVariableDeleted]: typeof schema.resourceVariable.$inferSelect;
-  [Event.DeploymentCreated]: schema.Deployment;
-  [Event.DeploymentUpdated]: {
-    previous: schema.Deployment;
-    current: schema.Deployment;
-  };
-  [Event.DeploymentDeleted]: schema.Deployment;
-  [Event.DeploymentVariableCreated]: schema.DeploymentVariable;
-  [Event.DeploymentVariableUpdated]: {
-    previous: schema.DeploymentVariable;
-    current: schema.DeploymentVariable;
-  };
-  [Event.DeploymentVariableDeleted]: schema.DeploymentVariable;
-  [Event.DeploymentVariableValueCreated]: schema.DeploymentVariableValue;
-  [Event.DeploymentVariableValueUpdated]: {
-    previous: schema.DeploymentVariableValue;
-    current: schema.DeploymentVariableValue;
-  };
-  [Event.DeploymentVariableValueDeleted]: schema.DeploymentVariableValue;
-  [Event.DeploymentVersionCreated]: schema.DeploymentVersion;
-  [Event.DeploymentVersionUpdated]: {
-    previous: schema.DeploymentVersion;
-    current: schema.DeploymentVersion;
-  };
-  [Event.DeploymentVersionDeleted]: schema.DeploymentVersion;
-  [Event.JobAgentCreated]: schema.JobAgent;
-  [Event.JobAgentUpdated]: schema.JobAgent;
-  [Event.JobAgentDeleted]: schema.JobAgent;
-  [Event.EnvironmentCreated]: schema.Environment;
-  [Event.EnvironmentUpdated]: {
-    previous: schema.Environment;
-    current: schema.Environment;
-  };
-  [Event.EnvironmentDeleted]: schema.Environment;
-  [Event.PolicyCreated]: FullPolicy;
-  [Event.PolicyUpdated]: { previous: FullPolicy; current: FullPolicy };
-  [Event.PolicyDeleted]: FullPolicy;
-  [Event.JobUpdated]: { previous: schema.Job; current: schema.Job };
-  [Event.EvaluateReleaseTarget]: {
-    releaseTarget: FullReleaseTarget;
-    opts?: { skipDuplicateCheck?: boolean };
-  };
-  [Event.UserApprovalRecordCreated]: schema.PolicyRuleAnyApprovalRecord;
-  [Event.UserApprovalRecordUpdated]: schema.PolicyRuleAnyApprovalRecord;
-  [Event.UserApprovalRecordDeleted]: schema.PolicyRuleAnyApprovalRecord;
-  [Event.GithubEntityCreated]: schema.GithubEntity;
-  [Event.GithubEntityUpdated]: schema.GithubEntity;
-  [Event.GithubEntityDeleted]: schema.GithubEntity;
-  [Event.SystemCreated]: schema.System;
-  [Event.SystemUpdated]: schema.System;
-  [Event.SystemDeleted]: schema.System;
-  [Event.WorkflowTemplateCreated]: string;
-  [Event.WorkflowCreated]: string;
-  // [Event.JobCreated]: schema.Job;
-  // [Event.JobDeleted]: schema.Job;
-  // [Event.SystemCreated]: schema.System;
-  // [Event.SystemUpdated]: { previous: schema.System; current: schema.System };
-  // [Event.SystemDeleted]: schema.System;
-};
-
 export type GoEventPayload = {
   [Event.WorkspaceSave]: object;
   [Event.SystemCreated]: WorkspaceEngine["schemas"]["System"];
@@ -221,15 +145,6 @@ export type GoEventPayload = {
   };
   [Event.WorkflowTemplateCreated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
   [Event.WorkflowCreated]: WorkspaceEngine["schemas"]["Workflow"];
-};
-
-export type Message<T extends keyof EventPayload> = {
-  workspaceId: string;
-  eventType: T;
-  eventId: string;
-  timestamp: number;
-  source: "api" | "scheduler" | "user-action";
-  payload: EventPayload[T];
 };
 
 export type GoMessage<T extends keyof GoEventPayload> = {

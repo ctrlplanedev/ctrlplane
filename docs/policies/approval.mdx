@@ -34,14 +34,19 @@ Approval rules help you:
 
 Add an approval rule to your policy:
 
-```yaml
-policies:
-  - name: production-approval
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
+```hcl Terraform
+resource "ctrlplane_policy" "production_approval" {
+  name        = "Production Approval Policy"
+  description = "Production Approval Policy"
+
+  selector {
+    environments = "environment.metadata['requires-approval'] == 'true'"
+  }
+
+  approval {
+    required = 1
+  }
+}
 ```
 
 ## Properties
@@ -56,69 +61,96 @@ policies:
 
 Basic approval gate for production deployments:
 
-```yaml
-policies:
-  - name: production-gate
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
+```hcl Terraform
+resource "ctrlplane_policy" "production_gate" {
+  name        = "Production Gate Policy"
+  description = "Production Gate Policy"
+
+  selector {
+    environments = "environment.metadata['requires-approval'] == 'true'"
+  }
+
+  approval {
+    required = 1
+  }
+}
 ```
 
 ### Multiple Approvals for Critical Services
 
 Require multiple sign-offs for high-risk deployments:
 
-```yaml
-policies:
-  - name: critical-service-approval
-    selectors:
-      - deployment: deployment.metadata.tier == "critical"
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 2
+```hcl Terraform
+resource "ctrlplane_policy" "critical_service_approval" {
+  name        = "Critical Service Approval Policy"
+  description = "Critical Service Approval Policy"
+
+  selector {
+    environments = "environment.metadata['requires-approval'] == 'true'"
+  }
+
+  approval {
+    required = 2
+  }
+}
 ```
 
 ### Approval with Verification
 
 Combine approval with post-deployment verification:
 
-```yaml
-policies:
-  - name: production-full-gates
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
-      - verification:
-          metrics:
-            - name: health-check
-              interval: 30s
-              count: 5
-              provider:
-                type: http
-                url: "http://{{.resource.name}}/health"
-              successCondition: result.ok
+```hcl Terraform
+resource "ctrlplane_policy" "production_full_gates" {
+  name        = "Production Full Gates Policy"
+  description = "Production Full Gates Policy"
+
+  selector {
+    environments = "environment.metadata['requires-approval'] == 'true'"
+  }
+
+  approval {
+    required = 1
+  }
+
+  verification {
+    metrics = [
+      {
+        name = "health-check"
+        interval = "30s"
+        count = 5
+        provider = {
+          type = "http"
+          url = "http://{{.resource.name}}/health"
+        }
+        successCondition = "result.ok"
+      }
+    ]
+  }
+}
 ```
 
 ### Approval with Gradual Rollout
 
 Approve once, then roll out gradually:
 
-```yaml
-policies:
-  - name: controlled-production-release
-    selectors:
-      - environment: environment.name == "production"
-    rules:
-      - approval:
-          required: 1
-      - gradualRollout:
-          rolloutType: linear
-          timeScaleInterval: 300
+```hcl Terraform
+resource "ctrlplane_policy" "controlled_production_release" {
+  name        = "Controlled Production Release Policy"
+  description = "Controlled Production Release Policy"
+
+  selector {
+    environments = "environment.metadata['requires-approval'] == 'true'"
+  }
+
+  approval {
+    required = 1
+  }
+
+  gradualRollout {
+    rolloutType      = "linear"
+    timeScaleInterval = 300 # 5 minutes between each target
+  }
+}
 ```
 
 ## Approval Workflow

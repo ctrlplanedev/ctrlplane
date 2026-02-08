@@ -6,7 +6,9 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name'],
     properties: {
       name: { type: 'string' },
+      slug: { type: 'string' },
       description: { type: 'string' },
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 
@@ -15,7 +17,18 @@ local openapi = import '../lib/openapi.libsonnet';
     required: ['name'],
     properties: {
       name: { type: 'string' },
+      slug: { type: 'string' },
       description: { type: 'string' },
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
+    },
+  },
+
+  SystemRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
     },
   },
 
@@ -28,6 +41,7 @@ local openapi = import '../lib/openapi.libsonnet';
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
+      metadata: { type: 'object', additionalProperties: { type: 'string' } },
     },
   },
 }

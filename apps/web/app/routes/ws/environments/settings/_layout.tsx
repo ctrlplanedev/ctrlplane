@@ -69,7 +69,7 @@ export default function EnvironmentsSettingsLayout() {
         </div>
       </header>
       <div className="container mx-auto flex max-w-6xl gap-8 py-20">
-        <div className="flex flex-shrink-0 flex-col gap-2">
+        <div className="flex shrink-0 flex-col gap-2">
           <NavLink
             to={`${baseUrl}`}
             className={
@@ -88,16 +88,16 @@ export default function EnvironmentsSettingsLayout() {
           >
             Job Agent
           </NavLink>
-          <NavLink
+          {/* <NavLink
             to={`${baseUrl}/hooks`}
             className={
               isActive(`${baseUrl}/hooks`) ? activeLinkStyle : defaultLinkStyle
             }
           >
             Hooks
-          </NavLink>
+          </NavLink> */}
         </div>
-        <div className="flex-grow">
+        <div className="grow">
           <Outlet />
         </div>
       </div>

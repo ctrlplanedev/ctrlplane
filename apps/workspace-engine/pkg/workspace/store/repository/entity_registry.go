@@ -4,6 +4,7 @@ import (
 	"sync"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
+	"workspace-engine/pkg/persistence/migrations"
 )
 
 var (
@@ -27,6 +28,11 @@ func initGlobalRegistry() {
 		globalRegistry.Register("deployment_variable_value", func() persistence.Entity { return &oapi.DeploymentVariableValue{} })
 		globalRegistry.Register("environment", func() persistence.Entity { return &oapi.Environment{} })
 		globalRegistry.Register("policy", func() persistence.Entity { return &oapi.Policy{} })
+		globalRegistry.RegisterMigration("policy", persistence.Migration{
+			Name:    "selectors_to_selector",
+			Migrate: migrations.PolicySelectorsToSelector,
+		})
+
 		globalRegistry.Register("policy_skip", func() persistence.Entity { return &oapi.PolicySkip{} })
 		globalRegistry.Register("system", func() persistence.Entity { return &oapi.System{} })
 		globalRegistry.Register("release", func() persistence.Entity { return &oapi.Release{} })

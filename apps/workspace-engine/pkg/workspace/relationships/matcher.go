@@ -2,8 +2,7 @@ package relationships
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/charmbracelet/log"
@@ -51,9 +50,8 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 			return false
 		}
 
-		// Always convert entities to maps without any cache
-		fromMap, _ := entityToMap(from.Item())
-		toMap, _ := entityToMap(to.Item())
+		fromMap, _ := celutil.EntityToMap(from.Item())
+		toMap, _ := celutil.EntityToMap(to.Item())
 
 		return matcher.Evaluate(ctx, fromMap, toMap)
 	}
@@ -102,15 +100,15 @@ func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matche
 			var ok bool
 			fromMap, ok = cache[from.GetID()]
 			if !ok {
-				fromMap, _ = entityToMap(from.Item())
+				fromMap, _ = celutil.EntityToMap(from.Item())
 			}
 			toMap, ok = cache[to.GetID()]
 			if !ok {
-				toMap, _ = entityToMap(to.Item())
+				toMap, _ = celutil.EntityToMap(to.Item())
 			}
 		} else {
-			fromMap, _ = entityToMap(from.Item())
-			toMap, _ = entityToMap(to.Item())
+			fromMap, _ = celutil.EntityToMap(from.Item())
+			toMap, _ = celutil.EntityToMap(to.Item())
 		}
 
 		return matcher.Evaluate(ctx, fromMap, toMap)
@@ -125,31 +123,16 @@ func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matche
 func BuildEntityMapCache(entities []*oapi.RelatableEntity) EntityMapCache {
 	cache := make(EntityMapCache, len(entities))
 	for _, entity := range entities {
-		if entityMap, err := entityToMap(entity.Item()); err == nil {
+		if entityMap, err := celutil.EntityToMap(entity.Item()); err == nil {
 			cache[entity.GetID()] = entityMap
 		}
 	}
 	return cache
 }
 
-// EntityToMap converts an entity (Resource, Deployment, or Environment) to a map for CEL evaluation
-// This is exported for use in incremental relationship computation
+// EntityToMap converts an entity (Resource, Deployment, or Environment) to a map for CEL evaluation.
+// This is exported for use in incremental relationship computation.
+// Deprecated: Use celutil.EntityToMap directly.
 func EntityToMap(entity any) (map[string]any, error) {
-	return entityToMap(entity)
-}
-
-// entityToMap converts an entity (Resource, Deployment, or Environment) to a map for CEL evaluation
-func entityToMap(entity any) (map[string]any, error) {
-	// Marshal to JSON and back to map to ensure CEL-compatible structure
-	jsonBytes, err := json.Marshal(entity)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal entity: %w", err)
-	}
-
-	var result map[string]any
-	if err := json.Unmarshal(jsonBytes, &result); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal entity: %w", err)
-	}
-
-	return result, nil
+	return celutil.EntityToMap(entity)
 }

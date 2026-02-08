@@ -101,12 +101,6 @@
     },
   },
 
-  noContent():: {
-    '204': {
-      description: 'No content',
-    },
-  },
-
   notFoundResponse():: {
     '404': {
       description: 'Resource not found',

@@ -59,7 +59,7 @@ func (m *Manager) PlannerGlobalEvaluators() []evaluator.Evaluator {
 
 func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Evaluator {
 	return evaluator.CollectEvaluators(
-		deploymentwindow.NewEvaluator(m.store, rule),
+		deploymentwindow.NewSummaryEvaluator(m.store, rule),
 		approval.NewEvaluator(m.store, rule),
 		environmentprogression.NewEvaluator(m.store, rule),
 		gradualrollout.NewSummaryEvaluator(m.store, rule),

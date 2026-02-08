@@ -25,7 +25,7 @@ func (j *Jobs) Items() map[string]*oapi.Job {
 }
 
 func (j *Jobs) Upsert(ctx context.Context, job *oapi.Job) {
-	j.repo.Jobs.Set(job)
+	_ = j.repo.Jobs.Set(job)
 	j.store.changeset.RecordUpsert(job)
 }
 

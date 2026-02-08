@@ -1,10 +1,12 @@
 import { defineConfig } from "drizzle-kit";
 
-if (!process.env.POSTGRES_URL) {
+const postgresUrl = process.env.POSTGRES_URL;
+
+if (!postgresUrl) {
   throw new Error("Missing POSTGRES_URL");
 }
 
-const nonPoolingUrl = process.env.POSTGRES_URL.replace(":6543", ":5432");
+const nonPoolingUrl = postgresUrl.replace(":6543", ":5432");
 
 export default defineConfig({
   schema: "./dist/src/schema",

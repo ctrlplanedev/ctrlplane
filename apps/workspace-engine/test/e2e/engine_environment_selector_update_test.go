@@ -868,13 +868,14 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 			t.Fatalf("release %s not found for job %s", job.ReleaseId, job.Id)
 		}
 
-		if release.ReleaseTarget.ResourceId == r2.Id {
+		switch release.ReleaseTarget.ResourceId {
+		case r2.Id:
 			// This job was for r2, which was removed
 			// InProgress jobs SHOULD be cancelled
 			if job.Status != oapi.JobStatusCancelled {
 				t.Errorf("Job %s for removed resource r2 should be Cancelled, got %v", job.Id, job.Status)
 			}
-		} else if release.ReleaseTarget.ResourceId == r1.Id {
+		case r1.Id:
 			// This job is for r1, which is still in the environment
 			if job.Status != oapi.JobStatusInProgress {
 				t.Errorf("Job %s for resource r1 should still be InProgress, got %v", job.Id, job.Status)

@@ -11,6 +11,15 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  UserApprovalRecordRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
+    },
+  },
+
   UserApprovalRecord: {
     type: 'object',
     required: ['userId', 'versionId', 'environmentId', 'status', 'createdAt'],

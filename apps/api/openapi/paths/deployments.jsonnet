@@ -14,7 +14,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     post: {
       summary: 'Create deployment',
-      operationId: 'createDeployment',
+      operationId: 'requestDeploymentCreation',
       parameters: [
         openapi.workspaceIdParam(),
       ],
@@ -26,7 +26,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Deployment')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted')),
     },
   },
   '/v1/workspaces/{workspaceId}/deployments/{deploymentId}': {
@@ -43,7 +43,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     put: {
       summary: 'Upsert deployment',
-      operationId: 'upsertDeployment',
+      operationId: 'requestDeploymentUpsert',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
@@ -56,16 +56,18 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Deployment')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted')),
     },
     delete: {
       summary: 'Delete deployment',
-      operationId: 'deleteDeployment',
+      operationId: 'requestDeploymentDeletion',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentIdParam(),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('Deployment')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('DeploymentRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }

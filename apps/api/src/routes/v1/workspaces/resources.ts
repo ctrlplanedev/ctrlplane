@@ -83,14 +83,21 @@ const deleteResourceByIdentifier: AsyncTypedHandler<
     );
   }
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.ResourceDeleted,
-    timestamp: Date.now(),
-    data: resourceResponse.data,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.ResourceDeleted,
+      timestamp: Date.now(),
+      data: resourceResponse.data,
+    });
+  } catch {
+    throw new ApiError("Failed to delete resource", 500);
+  }
 
-  res.status(204).end();
+  res.status(202).json({
+    id: resourceResponse.data.id,
+    message: "Resource delete requested",
+  });
 };
 
 const getVariablesForResource: AsyncTypedHandler<
@@ -138,14 +145,48 @@ const updateVariablesForResource: AsyncTypedHandler<
     );
   }
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.ResourceVariablesBulkUpdated,
-    timestamp: Date.now(),
-    data: { resourceId: resourceResponse.data.id, variables: body },
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.ResourceVariablesBulkUpdated,
+      timestamp: Date.now(),
+      data: { resourceId: resourceResponse.data.id, variables: body },
+    });
+  } catch {
+    throw new ApiError("Failed to update resource variables", 500);
+  }
 
-  res.status(204).end();
+  res.status(202).json({
+    id: resourceResponse.data.id,
+    message: "Resource variables update requested",
+  });
+};
+
+const getDeploymentsForResource: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/deployments",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, identifier } = req.params;
+  const { limit, offset } = req.query;
+
+  const resourceIdentifier = encodeURIComponent(identifier);
+  const result = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments",
+    {
+      params: {
+        path: { workspaceId, resourceIdentifier },
+        query: { limit, offset },
+      },
+    },
+  );
+
+  if (result.error != null)
+    throw new ApiError(
+      result.error.error ?? "Failed to get deployments for resource",
+      result.response.status,
+    );
+
+  res.status(200).json(result.data);
 };
 
 const getReleaseTargetForResourceInDeployment: AsyncTypedHandler<
@@ -190,6 +231,10 @@ export const resourceRouter = Router({ mergeParams: true })
   .patch(
     "/identifier/:identifier/variables",
     asyncHandler(updateVariablesForResource),
+  )
+  .get(
+    "/identifier/:identifier/deployments",
+    asyncHandler(getDeploymentsForResource),
   )
   .get(
     "/identifier/:identifier/release-targets/deployment/:deploymentId",

@@ -2,6 +2,7 @@ package compute
 
 import (
 	"context"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
@@ -100,7 +101,7 @@ func FindRelationsForEntityAndRule(
 	var entityMapCache relationships.EntityMapCache
 	if cm, err := rule.Matcher.AsCelMatcher(); err == nil && cm.Cel != "" {
 		entityMapCache = make(relationships.EntityMapCache)
-		if entityMap, err := relationships.EntityToMap(changedEntity.Item()); err == nil {
+		if entityMap, err := celutil.EntityToMap(changedEntity.Item()); err == nil {
 			entityMapCache[changedEntity.GetID()] = entityMap
 		}
 	}
@@ -115,7 +116,7 @@ func FindRelationsForEntityAndRule(
 		if entityMapCache != nil {
 			for _, toEntity := range toEntities {
 				if _, exists := entityMapCache[toEntity.GetID()]; !exists {
-					if entityMap, err := relationships.EntityToMap(toEntity.Item()); err == nil {
+					if entityMap, err := celutil.EntityToMap(toEntity.Item()); err == nil {
 						entityMapCache[toEntity.GetID()] = entityMap
 					}
 				}
@@ -134,7 +135,7 @@ func FindRelationsForEntityAndRule(
 		if entityMapCache != nil {
 			for _, fromEntity := range fromEntities {
 				if _, exists := entityMapCache[fromEntity.GetID()]; !exists {
-					if entityMap, err := relationships.EntityToMap(fromEntity.Item()); err == nil {
+					if entityMap, err := celutil.EntityToMap(fromEntity.Item()); err == nil {
 						entityMapCache[fromEntity.GetID()] = entityMap
 					}
 				}

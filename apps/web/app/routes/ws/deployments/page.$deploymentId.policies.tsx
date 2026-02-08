@@ -36,8 +36,6 @@ type ReleaseTargetWithState =
   WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
 type PolicyRule = WorkspaceEngine["schemas"]["PolicyRule"];
 type Selector = WorkspaceEngine["schemas"]["Selector"];
-type PolicyTargetSelector =
-  WorkspaceEngine["schemas"]["PolicyTargetSelector"];
 
 const releaseTargetKey = (releaseTarget: ReleaseTarget) =>
   `${releaseTarget.resourceId}-${releaseTarget.environmentId}-${releaseTarget.deploymentId}`;
@@ -166,31 +164,10 @@ const getRuleDetails = (rule: PolicyRule): string[] => {
   return [];
 };
 
-const getPolicyTargetDescriptions = (selectors: PolicyTargetSelector[]) => {
-  return selectors
-    .map((selector, idx) => {
-      const parts: string[] = [];
-      if (selector.deploymentSelector != null) {
-        parts.push(
-          `deployment: ${truncateText(formatSelector(selector.deploymentSelector))}`,
-        );
-      }
-      if (selector.environmentSelector != null) {
-        parts.push(
-          `environment: ${truncateText(formatSelector(selector.environmentSelector))}`,
-        );
-      }
-      if (selector.resourceSelector != null) {
-        parts.push(
-          `resource: ${truncateText(formatSelector(selector.resourceSelector))}`,
-        );
-      }
-      if (parts.length === 0) return null;
-      return { id: selector.id ?? `selector-${idx}`, value: parts.join(" | ") };
-    })
-    .filter(
-      (item): item is { id: string; value: string } => item != null,
-    );
+const getPolicySelectorDescription = (selector?: string): string[] => {
+  const value = selector?.trim();
+  if (!value || value === "true") return [];
+  return [value];
 };
 
 type PolicyResourceRowProps = {
@@ -243,9 +220,7 @@ const PolicyReleaseTargetsGroup: React.FC<PolicyReleaseTargetsGroupProps> = ({
     name: getRuleDisplay(rule),
     details: getRuleDetails(rule),
   }));
-  const selectorSummaries = getPolicyTargetDescriptions(
-    policy.policy.selectors ?? [],
-  );
+  const selectorSummaries = getPolicySelectorDescription(policy.policy.selector);
   return (
     <Fragment>
       <TableRow>
@@ -293,10 +268,10 @@ const PolicyReleaseTargetsGroup: React.FC<PolicyReleaseTargetsGroupProps> = ({
               {selectorSummaries.length > 0 && (
                 <div className="space-y-1 text-xs text-muted-foreground">
                   <div className="text-xs font-medium uppercase tracking-wide text-foreground">
-                    Targets
+                    Target selector (CEL)
                   </div>
-                  {selectorSummaries.map((selector) => (
-                    <div key={selector.id}>{selector.value}</div>
+                  {selectorSummaries.map((value, idx) => (
+                    <div key={idx}>{value}</div>
                   ))}
                 </div>
               )}

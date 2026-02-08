@@ -3,6 +3,7 @@ package versionselector
 import (
 	"context"
 	"fmt"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -133,7 +134,7 @@ func (e *Evaluator) evaluateCEL(
 	}
 
 	// Build CEL context
-	versionMap, err := entityToMap(scope.Version)
+	versionMap, err := celutil.EntityToMap(scope.Version)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(
@@ -141,7 +142,7 @@ func (e *Evaluator) evaluateCEL(
 		).WithDetail("error", err.Error())
 	}
 
-	environmentMap, err := entityToMap(scope.Environment)
+	environmentMap, err := celutil.EntityToMap(scope.Environment)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(
@@ -149,7 +150,7 @@ func (e *Evaluator) evaluateCEL(
 		).WithDetail("error", err.Error())
 	}
 
-	resourceMap, err := entityToMap(resource)
+	resourceMap, err := celutil.EntityToMap(resource)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(
@@ -157,7 +158,7 @@ func (e *Evaluator) evaluateCEL(
 		).WithDetail("error", err.Error())
 	}
 
-	deploymentMap, err := entityToMap(deployment)
+	deploymentMap, err := celutil.EntityToMap(deployment)
 	if err != nil {
 		span.RecordError(err)
 		return results.NewDeniedResult(

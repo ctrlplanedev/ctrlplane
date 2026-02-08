@@ -31,11 +31,7 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-all"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 
@@ -93,15 +89,7 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-only"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "prod",
-				}),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("deployment.name.contains('prod')"),
 		),
 	)
 
@@ -190,20 +178,7 @@ func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
 	// Create a policy that only matches us-east environments by name
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-us-east-only"
-	selector := c.NewPolicyTargetSelector()
-	envSelector := &oapi.Selector{}
-	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "east",
-	}})
-	selector.EnvironmentSelector = envSelector
-	selector.DeploymentSelector = &oapi.Selector{}
-	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
-	selector.ResourceSelector = &oapi.Selector{}
-	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = `environment.name.contains("east")`
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Check which release targets match the policy
@@ -280,20 +255,7 @@ func TestEngine_PolicyResourceSelector(t *testing.T) {
 	// Create a policy that only matches critical resources
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-critical-only"
-	selector := c.NewPolicyTargetSelector()
-	resSelector := &oapi.Selector{}
-	_ = resSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"key":      "priority",
-		"value":    "critical",
-	}})
-	selector.ResourceSelector = resSelector
-	selector.DeploymentSelector = &oapi.Selector{}
-	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.EnvironmentSelector = &oapi.Selector{}
-	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = `resource.metadata["priority"] == "critical"`
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Check which release targets match the policy
@@ -388,30 +350,7 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 	// Create a policy with all three selectors: prod + us-east + critical
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-prod-east-critical"
-	selector := c.NewPolicyTargetSelector()
-	depSelector := &oapi.Selector{}
-	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "prod",
-	}})
-	selector.DeploymentSelector = depSelector
-	envSelector := &oapi.Selector{}
-	_ = envSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "east",
-	}})
-	selector.EnvironmentSelector = envSelector
-	resSelector := &oapi.Selector{}
-	_ = resSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"key":      "priority",
-		"value":    "critical",
-	}})
-	selector.ResourceSelector = resSelector
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = `deployment.name.contains("prod") && environment.name.contains("east") && resource.metadata["priority"] == "critical"`
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Only the release target with d1 + e1 + r1 should match
@@ -496,24 +435,7 @@ func TestEngine_PolicyMultipleSelectors(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-or-staging"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "prod",
-				}),
-			),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "staging",
-				}),
-			),
+			integration.WithPolicySelector("deployment.name.contains('prod') || deployment.name.contains('staging')"),
 		),
 	)
 
@@ -592,14 +514,7 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 	// Create a policy that matches all deployments initially
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-all"
-	selector := c.NewPolicyTargetSelector()
-	selector.DeploymentSelector = &oapi.Selector{}
-	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.EnvironmentSelector = &oapi.Selector{}
-	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.ResourceSelector = &oapi.Selector{}
-	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = "true"
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Both release targets should match
@@ -625,14 +540,7 @@ func TestEngine_PolicyUpdate(t *testing.T) {
 		t.Fatalf("expected policy to match dev release target initially, got %d policies", len(policiesDev))
 	}
 	// Update policy to only match prod deployments
-	depSelector := &oapi.Selector{}
-	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "prod",
-	}})
-	selector.DeploymentSelector = depSelector
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = `deployment.name.contains("prod")`
 	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Now only prod should match
@@ -679,14 +587,7 @@ func TestEngine_PolicyDelete(t *testing.T) {
 
 	// Create a policy
 	policy := c.NewPolicy(workspaceID)
-	selector := c.NewPolicyTargetSelector()
-	selector.DeploymentSelector = &oapi.Selector{}
-	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.EnvironmentSelector = &oapi.Selector{}
-	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.ResourceSelector = &oapi.Selector{}
-	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = "true"
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Verify policy matches the release target
@@ -750,50 +651,19 @@ func TestEngine_PolicyMultiplePoliciesOneReleaseTarget(t *testing.T) {
 	// Create policy 1 that matches prod
 	policy1 := c.NewPolicy(workspaceID)
 	policy1.Name = "policy-prod"
-	selector1 := c.NewPolicyTargetSelector()
-	dep1Selector := &oapi.Selector{}
-	_ = dep1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "prod",
-	}})
-	selector1.DeploymentSelector = dep1Selector
-	selector1.EnvironmentSelector = &oapi.Selector{}
-	_ = selector1.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector1.ResourceSelector = &oapi.Selector{}
-	_ = selector1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy1.Selectors = []oapi.PolicyTargetSelector{*selector1}
+	policy1.Selector = `deployment.name.contains("prod")`
 	engine.PushEvent(ctx, handler.PolicyCreate, policy1)
 
 	// Create policy 2 that matches high priority
 	policy2 := c.NewPolicy(workspaceID)
 	policy2.Name = "policy-high-priority"
-	selector2 := c.NewPolicyTargetSelector()
-	dep2Selector := &oapi.Selector{}
-	_ = dep2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "high",
-	}})
-	selector2.DeploymentSelector = dep2Selector
-	selector2.EnvironmentSelector = &oapi.Selector{}
-	_ = selector2.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector2.ResourceSelector = &oapi.Selector{}
-	_ = selector2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy2.Selectors = []oapi.PolicyTargetSelector{*selector2}
+	policy2.Selector = `deployment.name.contains("high")`
 	engine.PushEvent(ctx, handler.PolicyCreate, policy2)
 
 	// Create policy 3 that matches all
 	policy3 := c.NewPolicy(workspaceID)
 	policy3.Name = "policy-all"
-	selector3 := c.NewPolicyTargetSelector()
-	selector3.DeploymentSelector = &oapi.Selector{}
-	_ = selector3.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector3.EnvironmentSelector = &oapi.Selector{}
-	_ = selector3.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector3.ResourceSelector = &oapi.Selector{}
-	_ = selector3.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy3.Selectors = []oapi.PolicyTargetSelector{*selector3}
+	policy3.Selector = "true"
 	engine.PushEvent(ctx, handler.PolicyCreate, policy3)
 
 	// The release target should match all three policies
@@ -857,15 +727,7 @@ func TestEngine_PolicyNoMatchingReleaseTargets(t *testing.T) {
 	// Create a policy that matches prod only (won't match dev)
 	policy := c.NewPolicy(workspaceID)
 	policy.Name = "policy-prod-only"
-	selector := c.NewPolicyTargetSelector()
-	depSelector := &oapi.Selector{}
-	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "prod",
-	}})
-	selector.DeploymentSelector = depSelector
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = `deployment.name.contains("prod")`
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// The dev release target should NOT match the policy
@@ -911,8 +773,7 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 
 	// Create a policy with a selector
 	policy := c.NewPolicy(workspaceID)
-	selector := c.NewPolicyTargetSelector()
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = "true"
 	engine.PushEvent(ctx, handler.PolicyCreate, policy)
 
 	// Test with a non-existent release target
@@ -969,55 +830,11 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "east",
-				}),
-			),
+			integration.WithPolicySelector("deployment.name.contains('prod') && deployment.name.contains('web') && environment.name.contains('east')"),
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "dev",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "west",
-				}),
-			),
+			integration.WithPolicySelector("deployment.name.contains('dev') && deployment.name.contains('web') && environment.name.contains('west')"),
 		),
 	)
 
@@ -1077,24 +894,7 @@ func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
 	engine := integration.NewTestWorkspace(t,
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-or-staging"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "prod",
-				}),
-			),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "staging",
-				}),
-			),
+			integration.WithPolicySelector("deployment.name.contains('prod') || deployment.name.contains('staging')"),
 		),
 		integration.WithSystem(
 			integration.WithDeployment(

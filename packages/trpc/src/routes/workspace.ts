@@ -1,7 +1,8 @@
+import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { desc, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, isNull, or, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
@@ -25,35 +26,6 @@ export const workspaceRouter = router({
       );
 
       return response.data ?? { healthy: false, message: "Engine not found" };
-    }),
-
-  saveHistory: protectedProcedure
-    .input(z.object({ workspaceId: z.uuid() }))
-    .query(async ({ ctx, input }) => {
-      const snapshots = await ctx.db
-        .select()
-        .from(schema.workspace)
-        .innerJoin(
-          schema.workspaceSnapshot,
-          eq(schema.workspace.id, schema.workspaceSnapshot.workspaceId),
-        )
-        .where(eq(schema.workspace.id, input.workspaceId))
-        .limit(500)
-        .orderBy(desc(schema.workspaceSnapshot.timestamp));
-
-      return snapshots;
-    }),
-
-  save: protectedProcedure
-    .input(z.object({ workspaceId: z.uuid() }))
-    .mutation(async ({ input }) => {
-      await sendGoEvent({
-        workspaceId: input.workspaceId,
-        eventType: Event.WorkspaceSave,
-        timestamp: Date.now(),
-        data: {},
-      });
-      return true;
     }),
 
   create: protectedProcedure
@@ -266,6 +238,160 @@ export const workspaceRouter = router({
         entityType: "user",
         entityId: targetUser.id,
       });
+
+      return { success: true };
+    }),
+
+  members: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const { workspaceId } = input;
+
+      const members = await ctx.db
+        .select()
+        .from(schema.user)
+        .innerJoin(
+          schema.entityRole,
+          eq(schema.user.id, schema.entityRole.entityId),
+        )
+        .innerJoin(schema.role, eq(schema.entityRole.roleId, schema.role.id))
+        .where(eq(schema.entityRole.scopeId, workspaceId));
+
+      return members;
+    }),
+
+  roles: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db
+        .select()
+        .from(schema.role)
+        .where(
+          or(
+            eq(schema.role.workspaceId, input.workspaceId),
+            isNull(schema.role.workspaceId),
+          ),
+        );
+    }),
+
+  domainMatchingList: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid() }))
+    .query(async ({ ctx, input }) => {
+      const rules = await ctx.db
+        .select()
+        .from(schema.workspaceEmailDomainMatching)
+        .innerJoin(
+          schema.role,
+          eq(schema.workspaceEmailDomainMatching.roleId, schema.role.id),
+        )
+        .where(
+          eq(
+            schema.workspaceEmailDomainMatching.workspaceId,
+            input.workspaceId,
+          ),
+        );
+
+      return rules.map((r) => ({
+        ...r.workspace_email_domain_matching,
+        roleName: r.role.name,
+      }));
+    }),
+
+  domainMatchingCreate: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.uuid(),
+        domain: z
+          .string()
+          .min(1)
+          .regex(/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
+            message: "Invalid domain format",
+          }),
+        roleId: z.string().min(1),
+        verificationEmail: z.string().email(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { workspaceId, domain, roleId, verificationEmail } = input;
+
+      const verificationCode = crypto.randomBytes(16).toString("hex");
+
+      const rule = await ctx.db
+        .insert(schema.workspaceEmailDomainMatching)
+        .values({
+          workspaceId,
+          domain: domain.toLowerCase(),
+          roleId,
+          verificationCode,
+          verificationEmail,
+        })
+        .returning()
+        .then(takeFirst);
+
+      return rule;
+    }),
+
+  domainMatchingVerify: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        workspaceId: z.uuid(),
+        verificationCode: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const rule = await ctx.db
+        .select()
+        .from(schema.workspaceEmailDomainMatching)
+        .where(
+          and(
+            eq(schema.workspaceEmailDomainMatching.id, input.id),
+            eq(
+              schema.workspaceEmailDomainMatching.workspaceId,
+              input.workspaceId,
+            ),
+          ),
+        )
+        .then(takeFirstOrNull);
+
+      if (!rule) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Domain matching rule not found",
+        });
+      }
+
+      if (rule.verificationCode !== input.verificationCode) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid verification code",
+        });
+      }
+
+      const updated = await ctx.db
+        .update(schema.workspaceEmailDomainMatching)
+        .set({ verified: true })
+        .where(eq(schema.workspaceEmailDomainMatching.id, input.id))
+        .returning()
+        .then(takeFirst);
+
+      return updated;
+    }),
+
+  domainMatchingDelete: protectedProcedure
+    .input(z.object({ id: z.uuid(), workspaceId: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(schema.workspaceEmailDomainMatching)
+        .where(
+          and(
+            eq(schema.workspaceEmailDomainMatching.id, input.id),
+            eq(
+              schema.workspaceEmailDomainMatching.workspaceId,
+              input.workspaceId,
+            ),
+          ),
+        );
 
       return { success: true };
     }),

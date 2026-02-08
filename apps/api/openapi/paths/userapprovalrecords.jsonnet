@@ -2,9 +2,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
 {
   '/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records': {
-    post: {
-      summary: 'Create user approval record',
-      operationId: 'createUserApprovalRecord',
+    put: {
+      summary: 'Upsert user approval record',
+      operationId: 'requestUserApprovalRecordUpsert',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.deploymentVersionIdParam(),
@@ -17,12 +17,9 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.okResponse({
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-        },
-      }) + openapi.notFoundResponse() + openapi.badRequestResponse(),
+      responses: openapi.acceptedResponse(openapi.schemaRef('UserApprovalRecordRequestAccepted'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
     },
   },
 }

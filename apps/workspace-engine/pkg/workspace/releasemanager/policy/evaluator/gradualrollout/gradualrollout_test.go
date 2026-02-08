@@ -28,14 +28,6 @@ func generateResourceSelector() *oapi.Selector {
 	return selector
 }
 
-func generateMatchAllSelector() *oapi.Selector {
-	selector := &oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{
-		Cel: "true",
-	})
-	return selector
-}
-
 func generateEnvironment(ctx context.Context, systemID string, store *store.Store) *oapi.Environment {
 	environment := &oapi.Environment{
 		SystemId:         systemID,
@@ -467,14 +459,8 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	}
 
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -558,14 +544,8 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 	}
 
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -682,14 +662,8 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 	}
 
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "approval-rule",
@@ -800,14 +774,8 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 
 	minSuccessPercentage := float32(100.0)
 	environmentProgressionPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "environment-progression-rule",
@@ -925,14 +893,8 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 
 	minSuccessPercentage := float32(100.0)
 	envProgPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
@@ -1053,14 +1015,8 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 
 	soakMinutes := int32(30) // 30 minutes soak time
 	envProgPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
@@ -1171,14 +1127,8 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 	minSuccessPercentage := float32(100.0)
 	soakMinutes := int32(30)
 	envProgPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
@@ -1307,14 +1257,8 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 
 	minSuccessPercentage := float32(100.0)
 	envProgPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
@@ -1399,14 +1343,8 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 
 	minSuccessPercentage := float32(100.0)
 	policy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -1545,14 +1483,8 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 
 	minSuccessPercentage := float32(100.0)
 	policy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -1690,14 +1622,8 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 
 	minSuccessPercentage := float32(100.0)
 	policy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -1838,14 +1764,8 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 
 	minSuccessPercentage := float32(100.0)
 	policy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -1941,14 +1861,8 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 	}
 
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -2048,14 +1962,8 @@ func TestGradualRolloutEvaluator_GradualProgressionOverTime(t *testing.T) {
 	}
 
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -2188,14 +2096,8 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 
 	minSuccessPercentage := float32(100.0)
 	envProgPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
@@ -2435,14 +2337,8 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 
 	// Create approval policy requiring 2 approvals, but only provide 1
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -2539,14 +2435,8 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 
 	minSuccessPercentage := float32(100.0)
 	envProgPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				EnvironmentProgression: &oapi.EnvironmentProgressionRule{
@@ -2721,15 +2611,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_InsideAllowWindow(t *testing.T
 
 	// Create policy with deployment window (9am-5pm weekdays = allow window)
 	deploymentWindowPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "deployment-window-rule",
@@ -2810,15 +2694,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 
 	// Create policy with deployment window (9am-5pm daily = allow window)
 	deploymentWindowPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "deployment-window-rule",
@@ -2901,15 +2779,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVe
 	}
 
 	deploymentWindowPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "deployment-window-rule",
@@ -2978,15 +2850,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart(
 
 	// Create policy with DENY window (Sunday 2am-6am maintenance window)
 	deploymentWindowPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "deny-window-rule",
@@ -3062,15 +2928,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowOutsideNoChange(t *t
 
 	// Create policy with DENY window (Sunday 2am-6am maintenance window)
 	deploymentWindowPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "deny-window-rule",
@@ -3123,13 +2983,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 	deployment := generateDeployment(ctx, systemID, st)
 	resources := generateResources(ctx, 5, st)
 
-	// Version created at 1am (targets 60-240 would fall inside deny window without adjustment)
-	// Without adjustment: targets scheduled 2am-5am would all deploy at 6am (frontloading!)
-	versionCreatedAt := time.Date(2025, 1, 5, 1, 0, 0, 0, time.UTC) // 1am - outside window initially
-	// But we want to test when version is created INSIDE the deny window
-	// Let's use 3am instead
-	versionCreatedAt = time.Date(2025, 1, 5, 3, 0, 0, 0, time.UTC) // 3am - inside 2am-6am deny window
-	denyWindowEnd := time.Date(2025, 1, 5, 6, 0, 0, 0, time.UTC)   // 6am
+	// Version created inside the deny window (3am, inside 2am-6am deny window)
+	versionCreatedAt := time.Date(2025, 1, 5, 3, 0, 0, 0, time.UTC)
+	denyWindowEnd := time.Date(2025, 1, 5, 6, 0, 0, 0, time.UTC) // 6am
 
 	version := generateDeploymentVersion(ctx, deployment.Id, versionCreatedAt, st)
 
@@ -3153,15 +3009,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 
 	// Create policy with DENY window (2am-6am maintenance)
 	deploymentWindowPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "deny-window-rule",
@@ -3256,15 +3106,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_NoWindowsExistingBehavior(t *t
 
 	// NO deployment window policy - just a policy with other rules
 	otherPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "retry-rule",
@@ -3340,15 +3184,9 @@ func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testin
 
 	// Create policy with deployment window (9am-5pm daily)
 	deploymentWindowPolicy := &oapi.Policy{
-		Id:      uuid.New().String(),
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Id:       uuid.New().String(),
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id: "deployment-window-rule",

@@ -4,12 +4,7 @@ import { Kafka } from "kafkajs";
 
 import { logger, SpanStatusCode } from "@ctrlplane/logger";
 
-import type {
-  EventPayload,
-  GoEventPayload,
-  GoMessage,
-  Message,
-} from "./events.js";
+import type { GoEventPayload, GoMessage } from "./events.js";
 import { env } from "../config.js";
 import { createSpanWrapper } from "../span.js";
 
@@ -63,26 +58,3 @@ export const sendGoEvent = createSpanWrapper(
     }
   },
 );
-
-export const sendNodeEvent = async <T extends keyof EventPayload>(
-  message: Message<T> | Message<T>[],
-) => {
-  try {
-    const messages = Array.isArray(message) ? message : [message];
-    const producer = await getProducer();
-
-    const topic = "ctrlplane-events";
-    await producer.send({
-      topic,
-      messages: messages.map((message) => ({
-        key: message.workspaceId,
-        value: JSON.stringify(message),
-        timestamp: message.timestamp.toString(),
-      })),
-    });
-
-    log.info("Sent event", { messages });
-  } catch (error) {
-    log.error("Failed to send event", { error });
-  }
-};

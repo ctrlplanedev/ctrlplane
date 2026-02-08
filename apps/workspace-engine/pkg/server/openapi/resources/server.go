@@ -236,6 +236,65 @@ func (r *Resources) GetVariablesForResource(c *gin.Context, workspaceId string, 
 	c.JSON(http.StatusOK, variables)
 }
 
+func (r *Resources) GetDeploymentsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params oapi.GetDeploymentsForResourceParams) {
+	ws, err := utils.GetWorkspace(c, workspaceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get workspace: " + err.Error(),
+		})
+		return
+	}
+
+	allResources := ws.Resources().Items()
+	var resource *oapi.Resource
+	for _, r := range allResources {
+		if r.Identifier == resourceIdentifier {
+			resource = r
+			break
+		}
+	}
+
+	if resource == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Resource not found",
+		})
+		return
+	}
+
+	deployments, err := ws.Deployments().ForResource(c.Request.Context(), resource)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get deployments for resource: " + err.Error(),
+		})
+		return
+	}
+
+	sort.Slice(deployments, func(i, j int) bool {
+		return deployments[i].Name < deployments[j].Name
+	})
+
+	limit := 50
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	offset := 0
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	total := len(deployments)
+	start := min(offset, total)
+	end := min(start+limit, total)
+	paginatedDeployments := deployments[start:end]
+
+	c.JSON(http.StatusOK, gin.H{
+		"total":  total,
+		"offset": offset,
+		"limit":  limit,
+		"items":  paginatedDeployments,
+	})
+}
+
 func (r *Resources) GetReleaseTargetsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params oapi.GetReleaseTargetsForResourceParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {

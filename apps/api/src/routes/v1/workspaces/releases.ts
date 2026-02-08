@@ -21,21 +21,6 @@ const getRelease: AsyncTypedHandler<
   return;
 };
 
-const getReleaseVerifications: AsyncTypedHandler<
-  "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications",
-  "get"
-> = async (req, res) => {
-  const { workspaceId, releaseId } = req.params;
-  const response = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications",
-    { params: { path: { workspaceId, releaseId } } },
-  );
-  if (response.error != null)
-    throw new ApiError(response.error.error ?? "Failed to get release verifications", response.response.status);
-
-  res.json(response.data);
-};
 
 export const releaseRouter = Router({ mergeParams: true })
-  .get("/:releaseId", asyncHandler(getRelease))
-  .get("/:releaseId/verifications", asyncHandler(getReleaseVerifications));
+  .get("/:releaseId", asyncHandler(getRelease));

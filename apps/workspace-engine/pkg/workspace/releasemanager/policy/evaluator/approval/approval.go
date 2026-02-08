@@ -84,7 +84,7 @@ func (m *AnyApprovalEvaluator) Evaluate(
 	ctx context.Context,
 	scope evaluator.EvaluatorScope,
 ) *oapi.RuleEvaluation {
-	ctx, span := tracer.Start(ctx, "AnyApprovalEvaluator.Evaluate")
+	_, span := tracer.Start(ctx, "AnyApprovalEvaluator.Evaluate")
 	defer span.End()
 
 	environment := scope.Environment
