@@ -38,7 +38,7 @@ func TestGlobalRegistry_PolicyMigration_OldFormat(t *testing.T) {
 	require.True(t, ok, "should unmarshal into *oapi.Policy")
 	assert.Equal(t, "policy-test-1", policy.Id)
 	assert.Equal(t, "old-format-policy", policy.Name)
-	assert.Equal(t, "deployment.name == 'web' && environment.name == 'prod'", policy.Selector)
+	assert.Equal(t, "(deployment.name == 'web') && (environment.name == 'prod')", policy.Selector)
 }
 
 func TestGlobalRegistry_PolicyMigration_OldFormatMultipleSelectors(t *testing.T) {
