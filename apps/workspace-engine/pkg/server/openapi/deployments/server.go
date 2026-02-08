@@ -12,8 +12,6 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/releasemanager"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
@@ -50,44 +48,6 @@ func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, dep
 	}
 
 	return releaseTargetsList, nil
-}
-
-// precomputeResourceRelationships pre-computes relationships for unique resources
-// in the paginated targets to avoid redundant GetRelatedEntities calls during
-// PlanDeployment (which is called on cache miss in GetReleaseTargetState).
-func precomputeResourceRelationships(ctx context.Context, ws *workspace.Workspace, targets []*oapi.ReleaseTarget) map[string]map[string][]*oapi.EntityRelation {
-	uniqueResourceIds := make(map[string]bool, len(targets))
-	for _, target := range targets {
-		if target != nil {
-			uniqueResourceIds[target.ResourceId] = true
-		}
-	}
-
-	result := make(map[string]map[string][]*oapi.EntityRelation, len(uniqueResourceIds))
-	for resourceId := range uniqueResourceIds {
-		resource, exists := ws.Resources().Get(resourceId)
-		if !exists {
-			log.Warn("Resource not found during relationship pre-computation", "resourceId", resourceId)
-			continue
-		}
-
-		entity := relationships.NewResourceEntity(resource)
-		relatedEntities, err := ws.RelationshipRules().GetRelatedEntities(ctx, entity)
-		if err != nil {
-			log.Warn("Failed to pre-compute relationships for resource",
-				"resourceId", resourceId,
-				"error", err.Error())
-			continue
-		}
-
-		result[resourceId] = relatedEntities
-	}
-
-	log.Debug("Pre-computed resource relationships",
-		"uniqueResources", len(uniqueResourceIds),
-		"computed", len(result))
-
-	return result
 }
 
 type Deployments struct{}
@@ -354,13 +314,10 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		attribute.Int("release_targets.paginated_count", len(paginatedTargets)),
 	)
 
-	// Phase 3: Pre-compute resource relationships
-	_, relSpan := deploymentTracer.Start(ctx, "PrecomputeResourceRelationships")
-	resourceRelationships := precomputeResourceRelationships(ctx, ws, paginatedTargets)
-	relSpan.SetAttributes(attribute.Int("relationships.computed", len(resourceRelationships)))
-	relSpan.End()
-
-	// Phase 4: Compute state for each release target
+	// Phase 3: Compute state for each release target
+	// Relationships are already pre-computed in the store at boot time.
+	// PlanDeployment reads them from the store on cache miss — no need to
+	// pre-fetch here.
 	_, stateSpan := deploymentTracer.Start(ctx, "ComputeReleaseTargetStates")
 
 	type result struct {
@@ -375,15 +332,9 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}
 
-			var stateOpts []releasemanager.Option
-			if rels, ok := resourceRelationships[releaseTarget.ResourceId]; ok {
-				stateOpts = append(stateOpts, releasemanager.WithResourceRelationships(rels))
-			}
-
 			state, err := ws.ReleaseManager().GetReleaseTargetState(
 				chunkCtx,
 				releaseTarget,
-				stateOpts...,
 			)
 			if err != nil {
 				return result{nil, fmt.Errorf("error getting state for key=%s: %w", releaseTarget.Key(), err)}, nil
