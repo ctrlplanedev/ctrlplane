@@ -2,7 +2,9 @@ package selector
 
 import (
 	"context"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
+	celLang "workspace-engine/pkg/selector/langs/cel"
 )
 
 func NewResolvedReleaseTarget(environment *oapi.Environment, deployment *oapi.Deployment, resource *oapi.Resource) *ResolvedReleaseTarget {
@@ -31,27 +33,19 @@ func (b *ResolvedReleaseTarget) Resource() *oapi.Resource {
 	return b.resource
 }
 
-func MatchPolicy(ctx context.Context, policy *oapi.Policy, releaseTarget *ResolvedReleaseTarget) bool {
-	for _, policyTarget := range policy.Selectors {
-		if policyTarget.EnvironmentSelector == nil {
-			continue
-		}
-		if ok, _ := Match(ctx, policyTarget.EnvironmentSelector, releaseTarget.Environment()); !ok {
-			continue
-		}
-		if policyTarget.DeploymentSelector == nil {
-			continue
-		}
-		if ok, _ := Match(ctx, policyTarget.DeploymentSelector, releaseTarget.Deployment()); !ok {
-			continue
-		}
-		if policyTarget.ResourceSelector == nil {
-			continue
-		}
-		if ok, _ := Match(ctx, policyTarget.ResourceSelector, releaseTarget.Resource()); !ok {
-			continue
-		}
+// MatchPolicy evaluates a policy's CEL selector against a resolved release
+// target. An empty or "true" selector matches everything.
+func MatchPolicy(_ context.Context, policy *oapi.Policy, releaseTarget *ResolvedReleaseTarget) bool {
+	if policy.Selector == "" || policy.Selector == "true" {
 		return true
 	}
-	return false
+
+	program, err := celLang.CompileProgram(policy.Selector)
+	if err != nil {
+		return false
+	}
+
+	celCtx := celLang.BuildEntityContext(releaseTarget.Resource(), releaseTarget.Deployment(), releaseTarget.Environment())
+	result, _ := celutil.EvalBool(program, celCtx)
+	return result
 }

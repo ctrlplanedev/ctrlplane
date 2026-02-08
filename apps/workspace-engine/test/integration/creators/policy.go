@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// NewPolicy creates a test Policy with sensible defaults
-// All fields can be overridden via functional options
+// NewPolicy creates a test Policy with sensible defaults.
+// All fields can be overridden via functional options.
 func NewPolicy(workspaceId string) *oapi.Policy {
 	id := uuid.New().String()
 	idSubstring := id[:8]
@@ -22,19 +22,10 @@ func NewPolicy(workspaceId string) *oapi.Policy {
 		Description: &description,
 		CreatedAt:   time.Now().Format(time.RFC3339),
 		WorkspaceId: workspaceId,
-		Selectors:   []oapi.PolicyTargetSelector{},
+		Selector:    "true",
 		Rules:       []oapi.PolicyRule{},
 		Enabled:     true,
 	}
 
 	return p
-}
-
-// NewPolicyTargetSelector creates a test PolicyTargetSelector with optional selectors
-func NewPolicyTargetSelector() *oapi.PolicyTargetSelector {
-	id := uuid.New().String()
-
-	return &oapi.PolicyTargetSelector{
-		Id: id,
-	}
 }

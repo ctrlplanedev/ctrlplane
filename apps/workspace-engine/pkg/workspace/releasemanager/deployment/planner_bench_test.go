@@ -99,7 +99,7 @@ func createTestPolicy(id, workspaceID, name string) *oapi.Policy {
 		Name:        name,
 		CreatedAt:   now,
 		Rules:       []oapi.PolicyRule{},
-		Selectors:   []oapi.PolicyTargetSelector{},
+		Selector:    "true",
 	}
 }
 
@@ -217,20 +217,7 @@ func setupBenchmarkPlanner(
 			})
 		}
 
-		// Add policy selectors targeting specific deployments
-		if i < len(deploymentIDs) {
-			deploymentSelector := &oapi.Selector{}
-			_ = deploymentSelector.FromJsonSelector(oapi.JsonSelector{
-				Json: map[string]any{
-					"type":     "id",
-					"operator": "equals",
-					"value":    deploymentIDs[i],
-				},
-			})
-			pol.Selectors = append(pol.Selectors, oapi.PolicyTargetSelector{
-				DeploymentSelector: deploymentSelector,
-			})
-		}
+		// Policy selector is already set to "true" which matches all targets
 
 		st.Policies.Upsert(ctx, pol)
 	}

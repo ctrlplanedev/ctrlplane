@@ -114,7 +114,7 @@ func BenchmarkReconcileTargets_DeploymentVersionCreated(b *testing.B) {
 	// Phase 5: Create deployments
 	b.Logf("Phase 5: Creating %d deployments...", numDeployments)
 	deploymentIDs := make([]string, numDeployments)
-	for i := 0; i < numDeployments; i++ {
+	for i := range numDeployments {
 		depID := uuid.New().String()
 		deploymentIDs[i] = depID
 
@@ -143,15 +143,7 @@ func BenchmarkReconcileTargets_DeploymentVersionCreated(b *testing.B) {
 	policy1.Name = "prod-approval-policy"
 	policy1.Enabled = true
 
-	selector1 := c.NewPolicyTargetSelector()
-	selector1.DeploymentSelector = &oapi.Selector{}
-	_ = selector1.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector1.EnvironmentSelector = &oapi.Selector{}
-	_ = selector1.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: `environment.name.startsWith("env-1")`})
-	selector1.ResourceSelector = &oapi.Selector{}
-	_ = selector1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
-	policy1.Selectors = []oapi.PolicyTargetSelector{*selector1}
+	policy1.Selector = `environment.name.startsWith("env-1")`
 	policy1.Rules = []oapi.PolicyRule{
 		{
 			Id:       uuid.New().String(),
@@ -170,15 +162,7 @@ func BenchmarkReconcileTargets_DeploymentVersionCreated(b *testing.B) {
 	policy2.Name = "gradual-rollout-policy"
 	policy2.Enabled = true
 
-	selector2 := c.NewPolicyTargetSelector()
-	selector2.DeploymentSelector = &oapi.Selector{}
-	_ = selector2.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector2.EnvironmentSelector = &oapi.Selector{}
-	_ = selector2.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector2.ResourceSelector = &oapi.Selector{}
-	_ = selector2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-
-	policy2.Selectors = []oapi.PolicyTargetSelector{*selector2}
+	policy2.Selector = "true"
 	policy2.Rules = []oapi.PolicyRule{
 		{
 			Id:        uuid.New().String(),

@@ -1044,11 +1044,9 @@
                   },
                   "type": "array"
                },
-               "selectors": {
-                  "items": {
-                     "$ref": "#/components/schemas/PolicyTargetSelector"
-                  },
-                  "type": "array"
+               "selector": {
+                  "description": "CEL expression for matching release targets. Use \"true\" to match all targets.",
+                  "type": "string"
                },
                "workspaceId": {
                   "type": "string"
@@ -1059,7 +1057,7 @@
                "name",
                "createdAt",
                "workspaceId",
-               "selectors",
+               "selector",
                "rules",
                "metadata",
                "priority",
@@ -1190,26 +1188,6 @@
                "reason",
                "createdBy",
                "createdAt"
-            ],
-            "type": "object"
-         },
-         "PolicyTargetSelector": {
-            "properties": {
-               "deploymentSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               },
-               "environmentSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               },
-               "id": {
-                  "type": "string"
-               },
-               "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               }
-            },
-            "required": [
-               "id"
             ],
             "type": "object"
          },
