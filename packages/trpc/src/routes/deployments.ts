@@ -104,6 +104,15 @@ export const deploymentsRouter = router({
           },
         },
       );
+
+      if (response.error != null)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            response.error.error ??
+            "Failed to get release targets for deployment",
+        });
+
       return response.data;
     }),
 

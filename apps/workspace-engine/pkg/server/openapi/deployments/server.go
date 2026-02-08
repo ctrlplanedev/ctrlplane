@@ -11,6 +11,8 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/relationships"
+	"workspace-engine/pkg/workspace/releasemanager"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
@@ -42,6 +44,44 @@ func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, dep
 	}
 
 	return releaseTargetsList, nil
+}
+
+// precomputeResourceRelationships pre-computes relationships for unique resources
+// in the paginated targets to avoid redundant GetRelatedEntities calls during
+// PlanDeployment (which is called on cache miss in GetReleaseTargetState).
+func precomputeResourceRelationships(ctx context.Context, ws *workspace.Workspace, targets []*oapi.ReleaseTarget) map[string]map[string][]*oapi.EntityRelation {
+	uniqueResourceIds := make(map[string]bool, len(targets))
+	for _, target := range targets {
+		if target != nil {
+			uniqueResourceIds[target.ResourceId] = true
+		}
+	}
+
+	result := make(map[string]map[string][]*oapi.EntityRelation, len(uniqueResourceIds))
+	for resourceId := range uniqueResourceIds {
+		resource, exists := ws.Resources().Get(resourceId)
+		if !exists {
+			log.Warn("Resource not found during relationship pre-computation", "resourceId", resourceId)
+			continue
+		}
+
+		entity := relationships.NewResourceEntity(resource)
+		relatedEntities, err := ws.RelationshipRules().GetRelatedEntities(ctx, entity)
+		if err != nil {
+			log.Warn("Failed to pre-compute relationships for resource",
+				"resourceId", resourceId,
+				"error", err.Error())
+			continue
+		}
+
+		result[resourceId] = relatedEntities
+	}
+
+	log.Debug("Pre-computed resource relationships",
+		"uniqueResources", len(uniqueResourceIds),
+		"computed", len(result))
+
+	return result
 }
 
 type Deployments struct{}
@@ -239,8 +279,12 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetReleaseTargetsForDeploymentParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
+		log.Error("Failed to get workspace for release targets",
+			"workspaceId", workspaceId,
+			"deploymentId", deploymentId,
+			"error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": "Failed to get workspace: " + err.Error(),
 		})
 		return
 	}
@@ -257,11 +301,14 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 
 	log.Info("Getting release targets for deployment", "deploymentId", deploymentId, "query", params.Query)
 
-	// Build list of release targets for this deployment, filtering out any nils
 	releaseTargetsList, err := getReleaseTargetsForDeployment(c, ws, deploymentId, params.Query)
 	if err != nil {
+		log.Error("Failed to list release targets for deployment",
+			"workspaceId", workspaceId,
+			"deploymentId", deploymentId,
+			"error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": "Failed to list release targets: " + err.Error(),
 		})
 		return
 	}
@@ -274,10 +321,20 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	start := min(offset, total)
 	end := min(start+limit, total)
 
-	// Pre-compute relationships for unique resources to avoid redundant GetRelatedEntities calls
 	paginatedTargets := releaseTargetsList[start:end]
 
-	// Process each release target, logging errors but continuing with valid ones
+	log.Debug("Processing release targets for deployment",
+		"workspaceId", workspaceId,
+		"deploymentId", deploymentId,
+		"total", total,
+		"paginatedCount", len(paginatedTargets),
+		"offset", offset,
+		"limit", limit)
+
+	// Pre-compute resource relationships for unique resources to avoid redundant
+	// GetRelatedEntities calls during PlanDeployment (called on cache miss in GetReleaseTargetState).
+	resourceRelationships := precomputeResourceRelationships(c.Request.Context(), ws, paginatedTargets)
+
 	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
 
 	type result struct {
@@ -292,11 +349,22 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}
 
+			var stateOpts []releasemanager.Option
+			if rels, ok := resourceRelationships[releaseTarget.ResourceId]; ok {
+				stateOpts = append(stateOpts, releasemanager.WithResourceRelationships(rels))
+			}
+
 			state, err := ws.ReleaseManager().GetReleaseTargetState(
-				c.Request.Context(),
+				ctx,
 				releaseTarget,
+				stateOpts...,
 			)
 			if err != nil {
+				log.Warn("Failed to get release target state",
+					"workspaceId", workspaceId,
+					"deploymentId", deploymentId,
+					"releaseTargetKey", releaseTarget.Key(),
+					"error", err.Error())
 				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
 			}
 
@@ -327,16 +395,23 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	)
 
 	if err != nil {
+		log.Error("Failed to process release target states",
+			"workspaceId", workspaceId,
+			"deploymentId", deploymentId,
+			"paginatedCount", len(paginatedTargets),
+			"error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": "Failed to compute release target states: " + err.Error(),
 		})
 		return
 	}
 
-	// Filter out results with errors, log them
 	for _, r := range results {
 		if r.err != nil {
-			log.Warn("Skipping invalid release target", "error", r.err.Error())
+			log.Warn("Skipping invalid release target",
+				"workspaceId", workspaceId,
+				"deploymentId", deploymentId,
+				"error", r.err.Error())
 			continue
 		}
 		if r.item != nil {
