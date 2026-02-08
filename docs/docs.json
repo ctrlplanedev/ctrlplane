@@ -42,9 +42,7 @@
           },
           {
             "group": "Workspace",
-            "pages": [
-              "workspaces/domain-matching"
-            ]
+            "pages": ["workspaces/domain-matching"]
           },
           {
             "group": "Concepts",
@@ -134,11 +132,18 @@
         "icon": "code",
         "groups": [
           {
-            "group": "Concepts",
+            "group": "CLI",
             "pages": [
-              "reference/glossary",
-              "reference/cel"
+              "cli/overview",
+              "cli/sync",
+              "cli/sync-pipe",
+              "cli/apply",
+              "cli/api-upsert-version"
             ]
+          },
+          {
+            "group": "Concepts",
+            "pages": ["reference/glossary", "reference/cel"]
           }
         ]
       }
