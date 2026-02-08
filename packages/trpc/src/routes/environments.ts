@@ -104,6 +104,7 @@ export const environmentRouter = router({
       z.object({
         workspaceId: z.uuid(),
         environmentId: z.string(),
+        metadata: z.record(z.string(), z.string()).optional(),
         data: z.object({
           resourceSelectorCel: z.string().min(1).max(255),
         }),
@@ -169,6 +170,7 @@ export const environmentRouter = router({
         systemId: z.string(),
         name: z.string().min(1).max(255),
         description: z.string().max(500).optional(),
+        metadata: z.record(z.string(), z.string()).optional(),
         resourceSelectorCel: z.string().min(1).max(255),
       }),
     )
@@ -204,6 +206,7 @@ export const environmentRouter = router({
         resourceSelector: {
           cel: environmentData.resourceSelectorCel,
         },
+        metadata: input.metadata ?? {},
       };
 
       await sendGoEvent({

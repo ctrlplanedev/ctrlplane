@@ -144,6 +144,7 @@ export const deploymentsRouter = router({
         name: z.string().min(3).max(255),
         slug: z.string().min(3).max(255),
         description: z.string().max(255).optional(),
+        metadata: z.record(z.string(), z.string()).optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -154,7 +155,11 @@ export const deploymentsRouter = router({
         workspaceId: input.workspaceId,
         eventType: Event.DeploymentCreated,
         timestamp: Date.now(),
-        data: { ...deployment, jobAgentConfig: { type: "custom" } },
+        data: {
+          ...deployment,
+          jobAgentConfig: {},
+          metadata: input.metadata ?? {},
+        },
       });
 
       return deployment;

@@ -146,8 +146,6 @@ const upsertDeployment: AsyncTypedHandler<
   const { workspaceId, deploymentId } = req.params;
   const { body } = req;
 
-  console.log(body);
-
   const existingDeploymentResponse = await existingDeploymentById(
     workspaceId,
     deploymentId,
@@ -186,9 +184,9 @@ const upsertDeployment: AsyncTypedHandler<
       eventType: Event.DeploymentUpdated,
       timestamp: Date.now(),
       data: {
-        metadata: {},
         ...deployment,
         ...body,
+        metadata: body.metadata ?? {},
         jobAgentConfig: body.jobAgentConfig ?? {},
       },
     });
