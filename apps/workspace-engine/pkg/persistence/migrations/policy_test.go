@@ -346,10 +346,10 @@ func TestPolicySelectorsToSelector_TrueSubSelectorOmitted(t *testing.T) {
 		"name": "test",
 		"selectors": []any{
 			map[string]any{
-				"id":                    "s1",
-				"deploymentSelector":    map[string]any{"cel": "deployment.name == 'web'"},
-				"environmentSelector":   map[string]any{"cel": "true"},
-				"resourceSelector":      map[string]any{"cel": "true"},
+				"id":                  "s1",
+				"deploymentSelector":  map[string]any{"cel": "deployment.name == 'web'"},
+				"environmentSelector": map[string]any{"cel": "true"},
+				"resourceSelector":    map[string]any{"cel": "true"},
 			},
 		},
 	}
@@ -367,9 +367,9 @@ func TestPolicySelectorsToSelector_AllTrueSubSelectors(t *testing.T) {
 		"name": "test",
 		"selectors": []any{
 			map[string]any{
-				"id":                    "s1",
-				"deploymentSelector":    map[string]any{"cel": "true"},
-				"environmentSelector":   map[string]any{"cel": "true"},
+				"id":                  "s1",
+				"deploymentSelector":  map[string]any{"cel": "true"},
+				"environmentSelector": map[string]any{"cel": "true"},
 			},
 		},
 	}
