@@ -180,7 +180,7 @@ export const deploymentsRouter = router({
         workspaceId: z.uuid(),
         deploymentId: z.string(),
         data: z.object({
-          resourceSelectorCel: z.string().min(1).max(255),
+          resourceSelectorCel: z.string().min(1).max(512),
         }),
       }),
     )
@@ -198,7 +198,7 @@ export const deploymentsRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
+              validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });
