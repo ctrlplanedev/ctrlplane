@@ -322,6 +322,47 @@ func TestPolicySelectorsToSelector_NonPolicyEntityType(t *testing.T) {
 	assert.NotNil(t, result["selectors"])
 }
 
+func TestPolicySelectorsToSelector_TrueSubSelectorOmitted(t *testing.T) {
+	data := map[string]any{
+		"id":   "p1",
+		"name": "test",
+		"selectors": []any{
+			map[string]any{
+				"id":                    "s1",
+				"deploymentSelector":    map[string]any{"cel": "deployment.name == 'web'"},
+				"environmentSelector":   map[string]any{"cel": "true"},
+				"resourceSelector":      map[string]any{"cel": "true"},
+			},
+		},
+	}
+
+	result, err := migrations.PolicySelectorsToSelector("policy", data)
+	require.NoError(t, err)
+	// "true" sub-selectors should be omitted, leaving only the deployment part
+	assert.Equal(t, "deployment.name == 'web'", result["selector"])
+	assert.Nil(t, result["selectors"])
+}
+
+func TestPolicySelectorsToSelector_AllTrueSubSelectors(t *testing.T) {
+	data := map[string]any{
+		"id":   "p1",
+		"name": "test",
+		"selectors": []any{
+			map[string]any{
+				"id":                    "s1",
+				"deploymentSelector":    map[string]any{"cel": "true"},
+				"environmentSelector":   map[string]any{"cel": "true"},
+			},
+		},
+	}
+
+	result, err := migrations.PolicySelectorsToSelector("policy", data)
+	require.NoError(t, err)
+	// All sub-selectors are "true" → no parts → entry matches everything → "true"
+	assert.Equal(t, "true", result["selector"])
+	assert.Nil(t, result["selectors"])
+}
+
 func TestPolicySelectorsToSelector_Roundtrip_WithMigrateRaw(t *testing.T) {
 	input := `{
 		"id": "p1",

@@ -3,6 +3,8 @@ package migrations
 import (
 	"fmt"
 	"strings"
+
+	"github.com/charmbracelet/log"
 )
 
 // PolicySelectorsToSelector converts the old selectors[] array format to a
@@ -25,6 +27,9 @@ func PolicySelectorsToSelector(entityType string, data map[string]any) (map[stri
 	if _, ok := data["selector"]; ok {
 		return data, nil
 	}
+
+	policyID, _ := data["id"].(string)
+	log.Info("Running policy selectors-to-selector migration", "policyId", policyID)
 
 	selectorsRaw, ok := data["selectors"]
 	if !ok || selectorsRaw == nil {
@@ -115,7 +120,7 @@ func extractSelectorCELParts(entry map[string]any) ([]string, error) {
 		}
 
 		celStr = strings.TrimSpace(celStr)
-		if celStr == "" {
+		if celStr == "" || celStr == "true" {
 			continue
 		}
 
