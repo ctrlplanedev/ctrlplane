@@ -97,7 +97,7 @@ var eventProfiles = map[handler.EventType]EventProfile{
 
 	// --- Deployments ---
 	handler.DeploymentCreate: {
-		Reads:  []StateDomain{DomainSystems, DomainEnvironments, DomainResources, DomainRelationships, DomainReleaseTargets, DomainJobs, DomainReleases},
+		Reads:  []StateDomain{DomainSystems, DomainEnvironments, DomainResources, DomainRelationships, DomainReleaseTargets, DomainJobs},
 		Writes: []StateDomain{DomainDeployments, DomainRelationships, DomainReleaseTargets, DomainJobs},
 	},
 	handler.DeploymentUpdate: {

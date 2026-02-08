@@ -213,7 +213,7 @@ func TestGetProfile_DeploymentCreate(t *testing.T) {
 	p := GetProfile(handler.DeploymentCreate)
 	expectDomains(t, "reads", p.Reads,
 		DomainSystems, DomainEnvironments, DomainResources,
-		DomainRelationships, DomainReleaseTargets, DomainJobs, DomainReleases)
+		DomainRelationships, DomainReleaseTargets, DomainJobs)
 	expectDomains(t, "writes", p.Writes,
 		DomainDeployments, DomainRelationships, DomainReleaseTargets, DomainJobs)
 }
