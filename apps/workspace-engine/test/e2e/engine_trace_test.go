@@ -168,11 +168,7 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyId1),
 			integration.PolicyName("Approval Required"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"), // Added to ensure policy matches
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -181,11 +177,7 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyId2),
 			integration.PolicyName("Gradual Rollout"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"), // Added to ensure policy matches
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleGradualRollout(300),
 			),

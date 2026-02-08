@@ -57,11 +57,7 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("policy-initial"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 
@@ -99,19 +95,7 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 	policy.Rules = []oapi.PolicyRule{rule}
 
 	// Update selector to match only prod deployment
-	selector := c.NewPolicyTargetSelector()
-	depSelector := &oapi.Selector{}
-	_ = depSelector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "name",
-		"operator": "contains",
-		"value":    "prod",
-	}})
-	selector.DeploymentSelector = depSelector
-	selector.EnvironmentSelector = &oapi.Selector{}
-	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.ResourceSelector = &oapi.Selector{}
-	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = `deployment.name.contains("prod")`
 
 	// Update the policy
 	engine.PushEvent(ctx, handler.PolicyUpdate, policy)

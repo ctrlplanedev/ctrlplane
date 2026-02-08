@@ -47,11 +47,7 @@ func TestEngine_Rollback_OnJobFailure(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRollbackOnJobStatuses(oapi.JobStatusFailure),
 			),
@@ -137,11 +133,7 @@ func TestEngine_Rollback_OnJobFailure_NoRollbackForUnmatchedStatus(t *testing.T)
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				// Only rollback on JobStatusFailure, NOT JobStatusCancelled
 				integration.WithRuleRollbackOnJobStatuses(oapi.JobStatusFailure),
@@ -212,11 +204,7 @@ func TestEngine_Rollback_OnJobFailure_NoPreviousRelease(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRollbackOnJobStatuses(oapi.JobStatusFailure),
 			),
@@ -277,11 +265,7 @@ func TestEngine_Rollback_OnJobFailure_MultipleStatuses(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				// Rollback on both failure and invalidJobAgent
 				integration.WithRuleRollbackOnJobStatuses(oapi.JobStatusFailure, oapi.JobStatusInvalidJobAgent),
@@ -355,16 +339,8 @@ func TestEngine_Rollback_OnJobFailure_PolicyNotMatching(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				// This selector won't match the deployment
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "non-existent-deployment",
-				}),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			// This selector won't match the deployment
+			integration.WithPolicySelector("deployment.name == 'non-existent-deployment'"),
 			integration.WithPolicyRule(
 				integration.WithRuleRollbackOnJobStatuses(oapi.JobStatusFailure),
 			),
@@ -439,13 +415,7 @@ func TestEngine_Rollback_OnJobFailure_DisabledPolicy(t *testing.T) {
 	policy := c.NewPolicy(engine.Workspace().ID)
 	policy.Name = "rollback-policy"
 	policy.Enabled = false
-	selector := c.NewPolicyTargetSelector()
-	celSelector := &oapi.Selector{}
-	_ = celSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.DeploymentSelector = celSelector
-	selector.EnvironmentSelector = celSelector
-	selector.ResourceSelector = celSelector
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = "true"
 
 	rollBackStatuses := []oapi.JobStatus{oapi.JobStatusFailure}
 	policy.Rules = []oapi.PolicyRule{{
@@ -517,11 +487,7 @@ func TestEngine_Rollback_OnVerificationFailure(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRollbackOnVerificationFailure(),
 			),
@@ -621,11 +587,7 @@ func TestEngine_Rollback_OnVerificationFailure_NotConfigured(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				// Only rollback on job failure, NOT on verification failure
 				integration.WithRuleRollbackOnJobStatuses(oapi.JobStatusFailure),
@@ -717,11 +679,7 @@ func TestEngine_Rollback_OnVerificationFailure_NoPreviousRelease(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRollbackOnVerificationFailure(),
 			),
@@ -801,11 +759,7 @@ func TestEngine_Rollback_BothJobAndVerificationConfigured(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				// Both job and verification rollback configured
 				integration.WithRuleRollback(
@@ -882,22 +836,14 @@ func TestEngine_Rollback_NoRollbackWhenSameRelease(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("retry-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRetry(1, nil), // Allow 1 retry
 			),
 		),
 		integration.WithPolicy(
 			integration.PolicyName("rollback-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRollbackOnJobStatuses(oapi.JobStatusFailure),
 			),

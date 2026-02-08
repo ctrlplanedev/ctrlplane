@@ -762,11 +762,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJobIfRetryIsConfigured(t *testi
 		// Add retry policy with smart defaults so cancelled jobs don't block
 		integration.WithPolicy(
 			integration.PolicyName("retry-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRetry(0, nil), // maxRetries=0 with smart defaults
 			),

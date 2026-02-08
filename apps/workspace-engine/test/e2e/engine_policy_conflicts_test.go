@@ -45,11 +45,7 @@ func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy1ID),
 			integration.PolicyName("policy-approval-2"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(2),
 			),
@@ -58,11 +54,7 @@ func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy2ID),
 			integration.PolicyName("policy-approval-3"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(3),
 			),
@@ -156,15 +148,7 @@ func TestEngine_PolicyConflict_OverlappingSelectors(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy1ID),
 			integration.PolicyName("production-approvals"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "production",
-				}),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(2),
 			),
@@ -173,11 +157,7 @@ func TestEngine_PolicyConflict_OverlappingSelectors(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy2ID),
 			integration.PolicyName("all-deployments-approval"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -258,11 +238,7 @@ func TestEngine_PolicyConflict_PriorityOrdering(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(highPriorityPolicyID),
 			integration.PolicyName("high-priority-approval"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -271,11 +247,7 @@ func TestEngine_PolicyConflict_PriorityOrdering(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(lowPriorityPolicyID),
 			integration.PolicyName("low-priority-retry"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRetry(3, []oapi.JobStatus{oapi.JobStatusFailure}),
 			),
@@ -360,11 +332,7 @@ func TestEngine_PolicyConflict_ApprovalPlusRetry(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(approvalPolicyID),
 			integration.PolicyName("approval-required"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -373,11 +341,7 @@ func TestEngine_PolicyConflict_ApprovalPlusRetry(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(retryPolicyID),
 			integration.PolicyName("retry-on-failure"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRetry(3, []oapi.JobStatus{oapi.JobStatusFailure}),
 			),
@@ -461,11 +425,7 @@ func TestEngine_PolicyConflict_AllRulesMerged(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy1ID),
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -474,11 +434,7 @@ func TestEngine_PolicyConflict_AllRulesMerged(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policy2ID),
 			integration.PolicyName("rollout-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleGradualRollout(300), // 5 minute intervals
 			),

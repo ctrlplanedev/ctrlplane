@@ -169,16 +169,14 @@ func loadEnvironments(ctx context.Context, workspaceID string) ([]*oapi.Environm
 	return dbEnvironments, nil
 }
 
-func loadPolicies(ctx context.Context, workspaceID string) ([]*oapi.Policy, error) {
-	ctx, span := tracer.Start(ctx, "loadPolicies")
+func loadPolicies(ctx context.Context, _ string) ([]*oapi.Policy, error) {
+	_, span := tracer.Start(ctx, "loadPolicies")
 	defer span.End()
 
-	dbPolicies, err := getPolicies(ctx, workspaceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get policies: %w", err)
-	}
-	span.SetAttributes(attribute.Int("count", len(dbPolicies)))
-	return dbPolicies, nil
+	// Policies are now loaded via the persistence/changelog layer.
+	// This stub keeps the old DB loading path compilable.
+	span.SetAttributes(attribute.Int("count", 0))
+	return nil, nil
 }
 
 func loadJobAgents(ctx context.Context, workspaceID string) ([]*oapi.JobAgent, error) {

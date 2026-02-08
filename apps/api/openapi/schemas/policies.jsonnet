@@ -9,9 +9,9 @@ local openapi = import '../lib/openapi.libsonnet';
       description: { type: 'string' },
       priority: { type: 'integer' },
       enabled: { type: 'boolean' },
-      selectors: {
-        type: 'array',
-        items: openapi.schemaRef('PolicyTargetSelector'),
+      selector: {
+        type: 'string',
+        description: 'CEL expression for matching release targets. Use "true" to match all targets.',
       },
       rules: {
         type: 'array',
@@ -27,15 +27,15 @@ local openapi = import '../lib/openapi.libsonnet';
 
   UpsertPolicyRequest: {
     type: 'object',
-    required: ['name'],
+    required: ['name', 'selector', 'rules', 'priority', 'enabled', 'metadata'],
     properties: {
       name: { type: 'string' },
       description: { type: 'string' },
       priority: { type: 'integer' },
       enabled: { type: 'boolean' },
-      selectors: {
-        type: 'array',
-        items: openapi.schemaRef('PolicyTargetSelector'),
+      selector: {
+        type: 'string',
+        description: 'CEL expression for matching release targets. Use "true" to match all targets.',
       },
       rules: {
         type: 'array',
@@ -60,7 +60,7 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Policy: {
     type: 'object',
-    required: ['id', 'name', 'createdAt', 'workspaceId', 'selectors', 'rules', 'metadata', 'priority', 'enabled'],
+    required: ['id', 'name', 'createdAt', 'workspaceId', 'selector', 'rules', 'metadata', 'priority', 'enabled'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
@@ -69,9 +69,9 @@ local openapi = import '../lib/openapi.libsonnet';
       workspaceId: { type: 'string' },
       priority: { type: 'integer' },
       enabled: { type: 'boolean' },
-      selectors: {
-        type: 'array',
-        items: openapi.schemaRef('PolicyTargetSelector'),
+      selector: {
+        type: 'string',
+        description: 'CEL expression for matching release targets. Use "true" to match all targets.',
       },
       rules: {
         type: 'array',
@@ -82,17 +82,6 @@ local openapi = import '../lib/openapi.libsonnet';
         additionalProperties: { type: 'string' },
         description: 'Arbitrary metadata for the policy (record<string, string>)',
       },
-    },
-  },
-
-  PolicyTargetSelector: {
-    type: 'object',
-    required: ['id'],
-    properties: {
-      id: { type: 'string' },
-      deploymentSelector: openapi.schemaRef('Selector'),
-      environmentSelector: openapi.schemaRef('Selector'),
-      resourceSelector: openapi.schemaRef('Selector'),
     },
   },
 

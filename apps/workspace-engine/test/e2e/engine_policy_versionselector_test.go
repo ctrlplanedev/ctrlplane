@@ -49,12 +49,7 @@ func TestEngine_VersionSelectorPolicy_CEL_BasicMatching(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("version-selector-policy"),
-			integration.WithPolicyTargetSelector(
-				// Target all release targets
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 
@@ -151,11 +146,7 @@ func TestEngine_VersionSelectorPolicy_BlockingVersion(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("version-selector-prod"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 
@@ -237,21 +228,13 @@ func TestEngine_VersionSelectorPolicy_CombinedWithOtherPolicies(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(versionSelectorPolicyID),
 			integration.PolicyName("version-selector"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 		// Approval policy
 		integration.WithPolicy(
 			integration.PolicyID(approvalPolicyID),
 			integration.PolicyName("approval-required"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 

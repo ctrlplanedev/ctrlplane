@@ -603,12 +603,14 @@ type Policy struct {
 	Id          string  `json:"id"`
 
 	// Metadata Arbitrary metadata for the policy (record<string, string>)
-	Metadata    map[string]string      `json:"metadata"`
-	Name        string                 `json:"name"`
-	Priority    int                    `json:"priority"`
-	Rules       []PolicyRule           `json:"rules"`
-	Selectors   []PolicyTargetSelector `json:"selectors"`
-	WorkspaceId string                 `json:"workspaceId"`
+	Metadata map[string]string `json:"metadata"`
+	Name     string            `json:"name"`
+	Priority int               `json:"priority"`
+	Rules    []PolicyRule      `json:"rules"`
+
+	// Selector CEL expression for matching release targets. Use "true" to match all targets.
+	Selector    string `json:"selector"`
+	WorkspaceId string `json:"workspaceId"`
 }
 
 // PolicyEvaluation defines model for PolicyEvaluation.
@@ -666,14 +668,6 @@ type PolicySkip struct {
 
 	// WorkspaceId Workspace this skip belongs to
 	WorkspaceId string `json:"workspaceId"`
-}
-
-// PolicyTargetSelector defines model for PolicyTargetSelector.
-type PolicyTargetSelector struct {
-	DeploymentSelector  *Selector `json:"deploymentSelector,omitempty"`
-	EnvironmentSelector *Selector `json:"environmentSelector,omitempty"`
-	Id                  string    `json:"id"`
-	ResourceSelector    *Selector `json:"resourceSelector,omitempty"`
 }
 
 // PropertiesMatcher defines model for PropertiesMatcher.

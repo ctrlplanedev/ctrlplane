@@ -99,11 +99,7 @@ func TestEngine_VersionCooldown_AllowsFirstVersion(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
@@ -151,11 +147,7 @@ func TestEngine_VersionCooldown_BlocksRapidVersions(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
@@ -223,11 +215,7 @@ func TestEngine_VersionCooldown_AllowsSameVersionRedeploy(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
@@ -292,11 +280,7 @@ func TestEngine_VersionCooldown_ZeroIntervalAllowsAll(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(0), // Zero interval
 			),
@@ -359,11 +343,7 @@ func TestEngine_VersionCooldown_BatchesMultipleVersions(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
@@ -428,11 +408,7 @@ func TestEngine_VersionCooldown_UsesVersionCreationTime(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(60), // 1 minute cooldown
 			),
@@ -502,11 +478,7 @@ func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(cooldownPolicyID),
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
@@ -515,11 +487,7 @@ func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(approvalPolicyID),
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -614,11 +582,7 @@ func TestEngine_VersionCooldown_MultipleEnvironments(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),
@@ -684,11 +648,7 @@ func TestEngine_VersionCooldown_InProgressDeploymentBlocks(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("version-cooldown-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleVersionCooldown(3600), // 1 hour cooldown
 			),

@@ -41,11 +41,7 @@ func TestEngine_PolicyVersionStatusReady(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 
@@ -156,11 +152,7 @@ func TestEngine_PolicyVersionStatusReady_StatusUpdate(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 
@@ -250,11 +242,7 @@ func TestEngine_PolicyVersionStatusReady_MultipleDeployments(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 		),
 	)
 
@@ -365,15 +353,7 @@ func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("ready-versions-only-prod"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "prod",
-				}),
-			),
+			integration.WithPolicySelector("deployment.name.contains('prod')"),
 		),
 	)
 

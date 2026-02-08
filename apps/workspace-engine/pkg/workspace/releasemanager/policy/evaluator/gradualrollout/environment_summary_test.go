@@ -176,14 +176,8 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_AllDenied(t *testing.T) {
 
 	// Create approval policy that is not satisfied
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{
@@ -619,14 +613,8 @@ func TestGradualRolloutEnvironmentSummaryEvaluator_WithApprovalPolicy(t *testing
 
 	// Create approval policy
 	approvalPolicy := &oapi.Policy{
-		Enabled: true,
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				ResourceSelector:    generateResourceSelector(),
-				DeploymentSelector:  generateMatchAllSelector(),
-				EnvironmentSelector: generateMatchAllSelector(),
-			},
-		},
+		Enabled:  true,
+		Selector: "true",
 		Rules: []oapi.PolicyRule{
 			{
 				AnyApproval: &oapi.AnyApprovalRule{

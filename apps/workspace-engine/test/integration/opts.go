@@ -41,9 +41,6 @@ type ReleaseOption func(*TestWorkspace, *oapi.Release)
 // PolicyOption configures a Policy
 type PolicyOption func(*TestWorkspace, *oapi.Policy, *eventsBuilder)
 
-// PolicyTargetSelectorOption configures a PolicyTargetSelector
-type PolicyTargetSelectorOption func(*TestWorkspace, *oapi.PolicyTargetSelector)
-
 // PolicyRuleOption configures a PolicyRule
 type PolicyRuleOption func(*TestWorkspace, *oapi.PolicyRule) error
 
@@ -727,15 +724,10 @@ func PolicyID(id string) PolicyOption {
 	}
 }
 
-func WithPolicyTargetSelector(options ...PolicyTargetSelectorOption) PolicyOption {
-	return func(ws *TestWorkspace, p *oapi.Policy, _ *eventsBuilder) {
-		selector := c.NewPolicyTargetSelector()
-
-		for _, option := range options {
-			option(ws, selector)
-		}
-
-		p.Selectors = append(p.Selectors, *selector)
+// WithPolicySelector sets the policy's CEL selector expression.
+func WithPolicySelector(cel string) PolicyOption {
+	return func(_ *TestWorkspace, p *oapi.Policy, _ *eventsBuilder) {
+		p.Selector = cel
 	}
 }
 
@@ -755,62 +747,6 @@ func WithPolicyRule(options ...PolicyRuleOption) PolicyOption {
 		}
 
 		p.Rules = append(p.Rules, *rule)
-	}
-}
-
-// ===== PolicyTargetSelector Options =====
-
-func PolicyTargetSelectorID(id string) PolicyTargetSelectorOption {
-	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
-		s.Id = id
-	}
-}
-
-func PolicyTargetJsonDeploymentSelector(selector map[string]any) PolicyTargetSelectorOption {
-	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
-		sel := &oapi.Selector{}
-		_ = sel.FromJsonSelector(oapi.JsonSelector{Json: selector})
-		s.DeploymentSelector = sel
-	}
-}
-
-func PolicyTargetCelDeploymentSelector(cel string) PolicyTargetSelectorOption {
-	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
-		sel := &oapi.Selector{}
-		_ = sel.FromCelSelector(oapi.CelSelector{Cel: cel})
-		s.DeploymentSelector = sel
-	}
-}
-
-func PolicyTargetCelEnvironmentSelector(cel string) PolicyTargetSelectorOption {
-	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
-		sel := &oapi.Selector{}
-		_ = sel.FromCelSelector(oapi.CelSelector{Cel: cel})
-		s.EnvironmentSelector = sel
-	}
-}
-
-func PolicyTargetJsonEnvironmentSelector(selector map[string]any) PolicyTargetSelectorOption {
-	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
-		sel := &oapi.Selector{}
-		_ = sel.FromJsonSelector(oapi.JsonSelector{Json: selector})
-		s.EnvironmentSelector = sel
-	}
-}
-
-func PolicyTargetJsonResourceSelector(selector map[string]any) PolicyTargetSelectorOption {
-	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
-		sel := &oapi.Selector{}
-		_ = sel.FromJsonSelector(oapi.JsonSelector{Json: selector})
-		s.ResourceSelector = sel
-	}
-}
-
-func PolicyTargetCelResourceSelector(cel string) PolicyTargetSelectorOption {
-	return func(_ *TestWorkspace, s *oapi.PolicyTargetSelector) {
-		sel := &oapi.Selector{}
-		_ = sel.FromCelSelector(oapi.CelSelector{Cel: cel})
-		s.ResourceSelector = sel
 	}
 }
 

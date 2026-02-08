@@ -131,11 +131,7 @@ func TestEngine_RetryPolicy_SmartDefaults(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("retry-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRetry(0, nil), // maxRetries=0 BUT with explicit policy
 			),
@@ -221,11 +217,7 @@ func TestEngine_RetryPolicy_WithMaxRetries(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("retry-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRetry(2, nil), // maxRetries=2, smart defaults apply
 			),
@@ -330,11 +322,7 @@ func TestEngine_RetryPolicy_SuccessDoesNotCountWithRetries(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("retry-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleRetry(1, nil), // maxRetries=1
 			),

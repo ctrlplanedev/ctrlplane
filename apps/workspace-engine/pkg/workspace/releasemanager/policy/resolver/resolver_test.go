@@ -12,16 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper to create a selector that matches all
-func createMatchAllSelector() *oapi.Selector {
-	selector := &oapi.Selector{}
-	_ = selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{
-		"operator":   "and",
-		"conditions": []interface{}{},
-	}})
-	return selector
-}
-
 func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 	ctx := context.Background()
 	cs := statechange.NewChangeSet[any]()
@@ -69,14 +59,7 @@ func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -173,14 +156,7 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -252,14 +228,7 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -331,14 +300,7 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -360,14 +322,7 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 		Priority:  2,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-2",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-2",
@@ -396,6 +351,164 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 	policyNames := []string{rules[0].PolicyName, rules[1].PolicyName}
 	assert.Contains(t, policyNames, "lenient-retry")
 	assert.Contains(t, policyNames, "strict-retry")
+}
+
+func TestPolicyResolver_GetRules_SelectorFilters(t *testing.T) {
+	ctx := context.Background()
+	cs := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", cs)
+
+	system := &oapi.System{Id: "system-1", Name: "test-system"}
+	_ = st.Systems.Upsert(ctx, system)
+
+	environment := &oapi.Environment{
+		Id:       "env-1",
+		Name:     "production",
+		SystemId: "system-1",
+	}
+	_ = st.Environments.Upsert(ctx, environment)
+
+	deployment := &oapi.Deployment{
+		Id:             "deployment-1",
+		Name:           "web-app",
+		Slug:           "web-app",
+		SystemId:       "system-1",
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	resource := &oapi.Resource{
+		Id:         "resource-1",
+		Name:       "test-resource",
+		Kind:       "server",
+		Identifier: "resource-1",
+		Config:     map[string]any{},
+		Metadata:   map[string]string{},
+		Version:    "v1",
+		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	_, _ = st.Resources.Upsert(ctx, resource)
+
+	maxRetries := int32(3)
+
+	// Policy that matches — selector targets deployment name "web-app"
+	matchingPolicy := &oapi.Policy{
+		Id:        "policy-match",
+		Name:      "matching-policy",
+		Enabled:   true,
+		Priority:  1,
+		Metadata:  map[string]string{},
+		CreatedAt: time.Now().Format(time.RFC3339),
+		Selector:  "deployment.name == 'web-app'",
+		Rules: []oapi.PolicyRule{
+			{
+				Id:        "rule-match",
+				PolicyId:  "policy-match",
+				CreatedAt: time.Now().Format(time.RFC3339),
+				Retry:     &oapi.RetryRule{MaxRetries: maxRetries},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, matchingPolicy)
+
+	// Policy that does NOT match — selector targets deployment name "api-server"
+	nonMatchingPolicy := &oapi.Policy{
+		Id:        "policy-no-match",
+		Name:      "non-matching-policy",
+		Enabled:   true,
+		Priority:  2,
+		Metadata:  map[string]string{},
+		CreatedAt: time.Now().Format(time.RFC3339),
+		Selector:  "deployment.name == 'api-server'",
+		Rules: []oapi.PolicyRule{
+			{
+				Id:        "rule-no-match",
+				PolicyId:  "policy-no-match",
+				CreatedAt: time.Now().Format(time.RFC3339),
+				Retry:     &oapi.RetryRule{MaxRetries: int32(5)},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, nonMatchingPolicy)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+
+	rules, err := GetRules(ctx, st, releaseTarget, RetryRuleExtractor, nil)
+	require.NoError(t, err)
+	assert.Len(t, rules, 1, "Should only return rules from the matching policy")
+	assert.Equal(t, "matching-policy", rules[0].PolicyName)
+	assert.Equal(t, maxRetries, rules[0].Rule.MaxRetries)
+}
+
+func TestPolicyResolver_GetRules_SelectorWithEnvironment(t *testing.T) {
+	ctx := context.Background()
+	cs := statechange.NewChangeSet[any]()
+	st := store.New("test-workspace", cs)
+
+	system := &oapi.System{Id: "system-1", Name: "test-system"}
+	_ = st.Systems.Upsert(ctx, system)
+
+	environment := &oapi.Environment{
+		Id:       "env-1",
+		Name:     "staging",
+		SystemId: "system-1",
+	}
+	_ = st.Environments.Upsert(ctx, environment)
+
+	deployment := &oapi.Deployment{
+		Id:             "deployment-1",
+		Name:           "web",
+		Slug:           "web",
+		SystemId:       "system-1",
+		JobAgentConfig: oapi.JobAgentConfig{},
+	}
+	_ = st.Deployments.Upsert(ctx, deployment)
+
+	resource := &oapi.Resource{
+		Id:         "resource-1",
+		Name:       "test-resource",
+		Kind:       "server",
+		Identifier: "resource-1",
+		Config:     map[string]any{},
+		Metadata:   map[string]string{},
+		Version:    "v1",
+		CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+	_, _ = st.Resources.Upsert(ctx, resource)
+
+	// Policy targets "production" only — should NOT match "staging"
+	policy := &oapi.Policy{
+		Id:        "policy-prod",
+		Name:      "prod-only",
+		Enabled:   true,
+		Priority:  1,
+		Metadata:  map[string]string{},
+		CreatedAt: time.Now().Format(time.RFC3339),
+		Selector:  "environment.name == 'production'",
+		Rules: []oapi.PolicyRule{
+			{
+				Id:        "rule-1",
+				PolicyId:  "policy-prod",
+				CreatedAt: time.Now().Format(time.RFC3339),
+				Retry:     &oapi.RetryRule{MaxRetries: int32(3)},
+			},
+		},
+	}
+	st.Policies.Upsert(ctx, policy)
+
+	releaseTarget := &oapi.ReleaseTarget{
+		DeploymentId:  "deployment-1",
+		EnvironmentId: "env-1",
+		ResourceId:    "resource-1",
+	}
+
+	rules, err := GetRules(ctx, st, releaseTarget, RetryRuleExtractor, nil)
+	require.NoError(t, err)
+	assert.Len(t, rules, 0, "Policy targeting 'production' should not match 'staging' environment")
 }
 
 func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
@@ -444,14 +557,7 @@ func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",

@@ -88,16 +88,6 @@ func IsPolicy(entity any) (*Policy, bool) {
 	return policy, true
 }
 
-// ConvertToOapiPolicyTargetSelector converts a generic entity to a PolicyTargetSelector type.
-// Returns an error if the entity is not a *PolicyTargetSelector.
-func IsPolicyTargetSelector(entity any) (*PolicyTargetSelector, bool) {
-	policyTargetSelector, ok := entity.(*PolicyTargetSelector)
-	if !ok {
-		return nil, false
-	}
-	return policyTargetSelector, true
-}
-
 // ConvertToOapiPolicyRule converts a generic entity to a PolicyRule type.
 // Returns an error if the entity is not a *PolicyRule.
 func IsPolicyRule(entity any) (*PolicyRule, bool) {

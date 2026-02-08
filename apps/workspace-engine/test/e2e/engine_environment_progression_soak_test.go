@@ -51,16 +51,7 @@ func TestEngine_EnvironmentProgression_SoakTimeNotMet(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
-			integration.WithPolicyTargetSelector(
-				// Only apply to production environment
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "production",
-				}),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
@@ -162,12 +153,7 @@ func TestEngine_EnvironmentProgression_SoakTimeMet(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
-			integration.WithPolicyTargetSelector(
-				// Only apply to production environment
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
@@ -271,11 +257,7 @@ func TestEngine_EnvironmentProgression_MultipleDependencyEnvironments(t *testing
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name.startsWith('staging')"),
@@ -382,15 +364,7 @@ func TestEngine_EnvironmentProgression_SoakTimeWithMinimumSuccessPercentage(t *t
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "production",
-				}),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
@@ -493,11 +467,7 @@ func TestEngine_EnvironmentProgression_MaximumAge(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),
@@ -590,11 +560,7 @@ func TestEngine_EnvironmentProgression_MultipleVersions(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("production-progression"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("environment.name == 'production'"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleEnvironmentProgression(
 					integration.EnvironmentProgressionDependsOnEnvironmentSelector("environment.name == 'staging'"),

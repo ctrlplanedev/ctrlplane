@@ -127,13 +127,7 @@ func createTestData(s *store.Store, ctx context.Context) (*oapi.Release, *oapi.P
 		Priority:    1,
 		Metadata:    map[string]string{},
 		Rules:       []oapi.PolicyRule{},
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				DeploymentSelector:  deploymentSelector,
-				EnvironmentSelector: selector,
-				ResourceSelector:    selector,
-			},
-		},
+		Selector:    "true",
 	}
 	s.Policies.Upsert(ctx, policy)
 

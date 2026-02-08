@@ -175,11 +175,9 @@
                   },
                   "type": "array"
                },
-               "selectors": {
-                  "items": {
-                     "$ref": "#/components/schemas/PolicyTargetSelector"
-                  },
-                  "type": "array"
+               "selector": {
+                  "description": "CEL expression for matching release targets. Use \"true\" to match all targets.",
+                  "type": "string"
                }
             },
             "required": [
@@ -1193,11 +1191,9 @@
                   },
                   "type": "array"
                },
-               "selectors": {
-                  "items": {
-                     "$ref": "#/components/schemas/PolicyTargetSelector"
-                  },
-                  "type": "array"
+               "selector": {
+                  "description": "CEL expression for matching release targets. Use \"true\" to match all targets.",
+                  "type": "string"
                },
                "workspaceId": {
                   "type": "string"
@@ -1208,7 +1204,7 @@
                "name",
                "createdAt",
                "workspaceId",
-               "selectors",
+               "selector",
                "rules",
                "metadata",
                "priority",
@@ -1271,26 +1267,6 @@
                "id",
                "policyId",
                "createdAt"
-            ],
-            "type": "object"
-         },
-         "PolicyTargetSelector": {
-            "properties": {
-               "deploymentSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               },
-               "environmentSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               },
-               "id": {
-                  "type": "string"
-               },
-               "resourceSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               }
-            },
-            "required": [
-               "id"
             ],
             "type": "object"
          },
@@ -2085,15 +2061,18 @@
                   },
                   "type": "array"
                },
-               "selectors": {
-                  "items": {
-                     "$ref": "#/components/schemas/PolicyTargetSelector"
-                  },
-                  "type": "array"
+               "selector": {
+                  "description": "CEL expression for matching release targets. Use \"true\" to match all targets.",
+                  "type": "string"
                }
             },
             "required": [
-               "name"
+               "name",
+               "selector",
+               "rules",
+               "priority",
+               "enabled",
+               "metadata"
             ],
             "type": "object"
          },

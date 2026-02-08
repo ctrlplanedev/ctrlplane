@@ -357,11 +357,7 @@ func TestEngine_Persistence_ReleaseshipsAndPolicies(t *testing.T) {
 			integration.PolicyID(policyID),
 			integration.PolicyName("approval-required"),
 			integration.PolicyDescription("Requires approval for frontend deployments"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector(`deployment.name == "frontend"`),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector(`deployment.name == "frontend"`),
 		),
 		integration.WithRelationshipRule(
 			integration.RelationshipRuleID(relationshipRuleID),
@@ -386,7 +382,7 @@ func TestEngine_Persistence_ReleaseshipsAndPolicies(t *testing.T) {
 	require.True(t, ok, "Policy should be loaded")
 	assert.Equal(t, "approval-required", loadedPolicy.Name)
 	assert.Equal(t, "Requires approval for frontend deployments", *loadedPolicy.Description)
-	assert.Len(t, loadedPolicy.Selectors, 1)
+	assert.NotEmpty(t, loadedPolicy.Selector)
 
 	// Verify relationship rule
 	loadedRelRule, ok := ws.RelationshipRules().Get(relationshipRuleID)

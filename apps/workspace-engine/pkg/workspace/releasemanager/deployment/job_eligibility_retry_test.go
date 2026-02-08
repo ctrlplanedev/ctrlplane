@@ -55,14 +55,7 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -166,14 +159,7 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -196,14 +182,7 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		Priority:  2,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-2",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-2",
@@ -292,14 +271,7 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -384,14 +356,7 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
