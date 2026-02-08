@@ -58,6 +58,32 @@ func TestNewPropertyMatcher(t *testing.T) {
 	}
 }
 
+func TestBuildEntityMapCache_DedupesIDs(t *testing.T) {
+	resource1 := &oapi.Resource{
+		Id:          "resource-1",
+		Name:        "Resource One",
+		WorkspaceId: "workspace-1",
+	}
+	resource2 := &oapi.Resource{
+		Id:          "resource-1",
+		Name:        "Resource Two",
+		WorkspaceId: "workspace-1",
+	}
+
+	entities := []*oapi.RelatableEntity{
+		NewResourceEntity(resource1),
+		NewResourceEntity(resource2),
+	}
+
+	cache := BuildEntityMapCache(entities)
+	if len(cache) != 1 {
+		t.Fatalf("expected cache to dedupe IDs, got %d entries", len(cache))
+	}
+	if _, ok := cache["resource-1"]; !ok {
+		t.Fatal("expected cache to contain resource-1")
+	}
+}
+
 // TestPropertyMatcher_Evaluate_Equals tests the equals operator
 func TestPropertyMatcher_Evaluate_Equals(t *testing.T) {
 	tests := []struct {

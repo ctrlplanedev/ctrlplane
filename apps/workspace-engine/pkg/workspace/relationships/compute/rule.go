@@ -27,7 +27,13 @@ func FindRuleRelationships(ctx context.Context, rule *oapi.RelationshipRule, ent
 		return nil, nil
 	}
 
-	entityMapCache := relationships.BuildEntityMapCache(entities)
+	var entityMapCache relationships.EntityMapCache
+	if matcherUsesCel(rule) {
+		cacheEntities := make([]*oapi.RelatableEntity, 0, len(fromEntities)+len(toEntities))
+		cacheEntities = append(cacheEntities, fromEntities...)
+		cacheEntities = append(cacheEntities, toEntities...)
+		entityMapCache = relationships.BuildEntityMapCache(cacheEntities)
+	}
 
 	// For small datasets, use serial processing
 	totalPairs := len(fromEntities) * len(toEntities)
@@ -62,6 +68,14 @@ func FindRuleRelationships(ctx context.Context, rule *oapi.RelationshipRule, ent
 	}
 
 	return allRelations, nil
+}
+
+func matcherUsesCel(rule *oapi.RelationshipRule) bool {
+	if rule == nil {
+		return false
+	}
+	cm, err := rule.Matcher.AsCelMatcher()
+	return err == nil && cm.Cel != ""
 }
 
 // matchFromEntityToAll matches a single fromEntity against all toEntities.
