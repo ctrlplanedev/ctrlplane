@@ -39,14 +39,20 @@ const deletePolicy: AsyncTypedHandler<
   if (policy.error != null)
     throw new ApiError(policy.error.error ?? "Policy not found", policy.response.status);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.PolicyDeleted,
-    timestamp: Date.now(),
-    data: policy.data,
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.PolicyDeleted,
+      timestamp: Date.now(),
+      data: policy.data,
+    });
+  } catch {
+    throw new ApiError("Failed to delete policy", 500);
+  }
+  res.status(202).json({
+    id: policyId,
+    message: "Policy delete requested",
   });
-  res.status(202).json(policy.data);
-  return;
 };
 
 const upsertPolicy: AsyncTypedHandler<
@@ -63,8 +69,6 @@ const upsertPolicy: AsyncTypedHandler<
     { params: { path: { workspaceId, policyId } } },
   );
 
-  const selectors = Array.isArray(body.selectors) ? body.selectors : [];
-
   const policyIdResult = z.string().uuid().safeParse(policyId);
   if (!policyIdResult.success)
     throw new ApiError("Invalid policy ID: must be a valid UUID v4", 400);
@@ -76,25 +80,31 @@ const upsertPolicy: AsyncTypedHandler<
     createdAt: existingPolicy.data?.createdAt ?? new Date().toISOString(),
     name: body.name,
     description: body.description,
-    priority: body.priority ?? 0,
-    enabled: body.enabled ?? true,
-    metadata: body.metadata ?? {},
-    rules: body.rules ?? [],
-    selectors,
+    priority: body.priority,
+    enabled: body.enabled,
+    metadata: body.metadata,
+    rules: body.rules,
+    selector: body.selector,
   };
 
   // Determine if this is a create or update
   const isUpdate = existingPolicy.data != null;
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: isUpdate ? Event.PolicyUpdated : Event.PolicyCreated,
-    timestamp: Date.now(),
-    data: policy,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: isUpdate ? Event.PolicyUpdated : Event.PolicyCreated,
+      timestamp: Date.now(),
+      data: policy,
+    });
+  } catch {
+    throw new ApiError("Failed to update policy", 500);
+  }
 
-  res.status(202).json(policy);
-  return;
+  res.status(202).json({
+    id: policyId,
+    message: "Policy update requested",
+  });
 };
 
 const getPolicy: AsyncTypedHandler<
@@ -130,20 +140,26 @@ const createPolicy: AsyncTypedHandler<
     priority: 0,
     createdAt: new Date().toISOString(),
     metadata: {},
-    selectors: [],
+    selector: "true",
     ...body,
     rules: body.rules ?? [],
   };
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.PolicyCreated,
-    timestamp: Date.now(),
-    data: policy,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.PolicyCreated,
+      timestamp: Date.now(),
+      data: policy,
+    });
+  } catch {
+    throw new ApiError("Failed to create policy", 500);
+  }
 
-  res.status(202).json(policy);
-  return;
+  res.status(202).json({
+    id: policy.id,
+    message: "Policy creation requested",
+  });
 };
 
 export const policiesRouter = Router({ mergeParams: true })

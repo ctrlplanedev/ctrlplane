@@ -214,7 +214,7 @@ spec:
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.expectName, app.ObjectMeta.Name)
+				require.Equal(t, tt.expectName, app.Name)
 			}
 		})
 	}
@@ -568,10 +568,10 @@ spec:
 	var app v1alpha1.Application
 	err = unmarshalApplication([]byte(result), &app)
 	require.NoError(t, err)
-	require.Equal(t, "my-app", app.ObjectMeta.Name)
-	require.Equal(t, "argocd", app.ObjectMeta.Namespace)
-	require.Equal(t, "my-app", app.ObjectMeta.Labels["app"])
-	require.Equal(t, "production", app.ObjectMeta.Labels["env"])
+	require.Equal(t, "my-app", app.Name)
+	require.Equal(t, "argocd", app.Namespace)
+	require.Equal(t, "my-app", app.Labels["app"])
+	require.Equal(t, "production", app.Labels["env"])
 }
 
 func TestTemplateExecution_NilResource(t *testing.T) {
@@ -809,9 +809,9 @@ spec:
 	require.Len(t, mockClient.createdApps, 1)
 	createdApp := mockClient.createdApps[0]
 	require.NotNil(t, createdApp.Application)
-	require.Equal(t, "my-app", createdApp.Application.ObjectMeta.Name)
-	require.Equal(t, "argocd", createdApp.Application.ObjectMeta.Namespace)
-	require.Equal(t, "production", createdApp.Application.ObjectMeta.Labels["env"])
+	require.Equal(t, "my-app", createdApp.Application.Name)
+	require.Equal(t, "argocd", createdApp.Application.Namespace)
+	require.Equal(t, "production", createdApp.Application.Labels["env"])
 	require.True(t, *createdApp.Upsert)
 
 	// Verify Kafka message was published
@@ -875,9 +875,9 @@ metadata:
 	// Verify the application name was cleaned
 	require.Len(t, mockClient.createdApps, 1)
 	createdApp := mockClient.createdApps[0]
-	require.Equal(t, "namespace-my-app-v1", createdApp.Application.ObjectMeta.Name)
+	require.Equal(t, "namespace-my-app-v1", createdApp.Application.Name)
 	// Labels should also be cleaned
-	require.Equal(t, "namespace-my-app-v1", createdApp.Application.ObjectMeta.Labels["original-name"])
+	require.Equal(t, "namespace-my-app-v1", createdApp.Application.Labels["original-name"])
 }
 
 func TestArgoCDDispatcher_DispatchJob_MissingResource(t *testing.T) {

@@ -116,19 +116,20 @@ func setupVariableBenchmark(
 
 			// Create selector that matches based on tier and region
 			var selector *oapi.Selector
-			if j%3 == 0 {
+			switch j % 3 {
+			case 0:
 				// Matches production tier
 				selector = &oapi.Selector{}
 				_ = selector.FromCelSelector(oapi.CelSelector{
 					Cel: "resource.metadata.tier == 'production'",
 				})
-			} else if j%3 == 1 {
+			case 1:
 				// Matches specific region
 				selector = &oapi.Selector{}
 				_ = selector.FromCelSelector(oapi.CelSelector{
 					Cel: "resource.metadata.region == 'us-west-1'",
 				})
-			} else {
+			default:
 				// Matches both
 				selector = &oapi.Selector{}
 				_ = selector.FromCelSelector(oapi.CelSelector{

@@ -1,14 +1,5 @@
 import { useState } from "react";
-import _ from "lodash";
-import {
-  Cloud,
-  Database,
-  MoreVertical,
-  Plus,
-  RefreshCw,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { Cloud, MoreVertical, Plus, Search, Trash2 } from "lucide-react";
 
 import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
@@ -48,208 +39,44 @@ export function meta() {
   ];
 }
 
-type ProviderType =
-  | "aws"
-  | "google"
-  | "azure"
-  | "kubernetes"
-  | "terraform"
-  | "salesforce"
-  | "github"
-  | "custom";
+const formatRelativeTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
-type Provider = {
-  id: string;
-  name: string;
-  type: ProviderType;
-  resourceCount: number;
-  kinds: string[];
-  lastSyncedAt: string | null;
-  status: "active" | "syncing" | "error" | "idle";
-  metadata?: Record<string, string>;
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
 };
-
-// Mock data representing different types of providers
-const mockProviders: Provider[] = [
-  {
-    id: "1",
-    name: "AWS Production",
-    type: "aws",
-    resourceCount: 342,
-    kinds: ["EC2", "RDS", "S3", "Lambda", "ECS"],
-    lastSyncedAt: "2025-10-20T10:30:00",
-    status: "active",
-    metadata: {
-      region: "us-east-1",
-      accountId: "123456789012",
-    },
-  },
-  {
-    id: "2",
-    name: "Google Cloud Platform",
-    type: "google",
-    resourceCount: 156,
-    kinds: ["Compute Engine", "Cloud Storage", "Cloud SQL", "GKE"],
-    lastSyncedAt: "2025-10-20T09:15:00",
-    status: "active",
-    metadata: {
-      projectId: "ctrlplane-prod",
-    },
-  },
-  {
-    id: "3",
-    name: "Production Kubernetes Cluster",
-    type: "kubernetes",
-    resourceCount: 89,
-    kinds: ["Pod", "Deployment", "Service", "ConfigMap", "Secret"],
-    lastSyncedAt: "2025-10-20T10:45:00",
-    status: "syncing",
-    metadata: {
-      cluster: "prod-k8s-01",
-      namespace: "all",
-    },
-  },
-  {
-    id: "4",
-    name: "Azure Staging",
-    type: "azure",
-    resourceCount: 67,
-    kinds: [
-      "Virtual Machine",
-      "Storage Account",
-      "SQL Database",
-      "App Service",
-    ],
-    lastSyncedAt: "2025-10-19T16:20:00",
-    status: "active",
-    metadata: {
-      subscriptionId: "abc-def-ghi",
-      resourceGroup: "staging",
-    },
-  },
-  {
-    id: "5",
-    name: "Terraform Cloud",
-    type: "terraform",
-    resourceCount: 234,
-    kinds: ["Workspace", "State", "Module"],
-    lastSyncedAt: "2025-10-20T08:00:00",
-    status: "active",
-    metadata: {
-      organization: "acme-corp",
-    },
-  },
-  {
-    id: "6",
-    name: "Salesforce Production",
-    type: "salesforce",
-    resourceCount: 45,
-    kinds: ["Account", "Contact", "Opportunity", "Lead"],
-    lastSyncedAt: "2025-10-20T07:30:00",
-    status: "active",
-    metadata: {
-      instanceUrl: "https://acme.salesforce.com",
-    },
-  },
-  {
-    id: "7",
-    name: "GitHub Organization",
-    type: "github",
-    resourceCount: 128,
-    kinds: ["Repository", "Team", "Action", "Environment"],
-    lastSyncedAt: null,
-    status: "idle",
-    metadata: {
-      org: "acme-corp",
-    },
-  },
-  {
-    id: "8",
-    name: "Custom API Provider",
-    type: "custom",
-    resourceCount: 23,
-    kinds: ["CustomResource"],
-    lastSyncedAt: "2025-10-18T14:00:00",
-    status: "error",
-    metadata: {},
-  },
-];
 
 export default function Providers() {
   const { workspace } = useWorkspace();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const providers = trpc.resourceProviders.list.useQuery({
     workspaceId: workspace.id,
-    limit: 100,
+    limit: 1000,
     offset: 0,
   });
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const items = providers.data?.items ?? [];
 
-  const filteredProviders = mockProviders.filter(
+  const getMetadata = (provider: (typeof items)[number]) =>
+    (provider.metadata as Record<string, string> | null | undefined) ?? {};
+
+  const filteredProviders = items.filter(
     (provider) =>
       provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      provider.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      provider.kinds.some((kind) =>
-        kind.toLowerCase().includes(searchQuery.toLowerCase()),
+      Object.entries(getMetadata(provider)).some(
+        ([key, value]) =>
+          key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(value).toLowerCase().includes(searchQuery.toLowerCase()),
       ),
   );
-
-  const getProviderTypeColor = (type: ProviderType) => {
-    switch (type) {
-      case "aws":
-        return "bg-orange-500/10 text-orange-500 hover:bg-orange-500/20";
-      case "google":
-        return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20";
-      case "azure":
-        return "bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20";
-      case "kubernetes":
-        return "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20";
-      case "terraform":
-        return "bg-violet-500/10 text-violet-500 hover:bg-violet-500/20";
-      case "salesforce":
-        return "bg-sky-500/10 text-sky-500 hover:bg-sky-500/20";
-      case "github":
-        return "bg-neutral-500/10 text-neutral-500 hover:bg-neutral-500/20";
-      case "custom":
-        return "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20";
-      default:
-        return "";
-    }
-  };
-
-  const getStatusColor = (status: Provider["status"]) => {
-    switch (status) {
-      case "active":
-        return "bg-green-500/10 text-green-500 hover:bg-green-500/20";
-      case "syncing":
-        return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20";
-      case "error":
-        return "bg-red-500/10 text-red-500 hover:bg-red-500/20";
-      case "idle":
-        return "bg-neutral-500/10 text-neutral-500 hover:bg-neutral-500/20";
-      default:
-        return "";
-    }
-  };
-
-  const formatRelativeTime = (dateString: string | null) => {
-    if (!dateString) return "Never";
-
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
-
-  const groupByType = _.groupBy(filteredProviders, (m) => m.type);
 
   return (
     <>
@@ -283,9 +110,6 @@ export default function Providers() {
       </header>
 
       <div className="flex flex-1 flex-col gap-4">
-        {providers.data?.items.map((provider) => (
-          <div key={provider.id}>{provider.name}</div>
-        ))}
         {filteredProviders.length === 0 ? (
           <div className="flex flex-1 items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -316,133 +140,78 @@ export default function Providers() {
                   Provider
                 </TableHead>
                 <TableHead className="text-muted-foreground">
-                  Resources
+                  Metadata
                 </TableHead>
-                <TableHead className="text-muted-foreground">
-                  Resource Kinds
-                </TableHead>
-                <TableHead className="text-muted-foreground">Status</TableHead>
-                <TableHead className="text-muted-foreground">
-                  Last Synced
-                </TableHead>
+                <TableHead className="text-muted-foreground">Created</TableHead>
                 <TableHead className="text-right text-muted-foreground">
                   Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Object.entries(groupByType).map(([type, providers]) => (
-                <>
-                  <TableRow
-                    key={`header-${type}`}
-                    className="bg-muted/30 text-xs hover:bg-muted/30"
-                  >
-                    <TableCell colSpan={6} className="py-2">
-                      <div className="flex items-center gap-3">
-                        <Badge
-                          variant="secondary"
-                          className={getProviderTypeColor(type as ProviderType)}
-                        >
-                          {type.toUpperCase()}
-                        </Badge>
-                        <span className="text-muted-foreground">
-                          {providers.length} provider
-                          {providers.length !== 1 ? "s" : ""}
-                        </span>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-muted-foreground">
-                          {providers.reduce(
-                            (sum, p) => sum + p.resourceCount,
-                            0,
-                          )}{" "}
-                          resources
-                        </span>
+              {filteredProviders.map((provider) => (
+                <TableRow key={provider.id} className="hover:bg-muted/30">
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                        <Cloud className="h-5 w-5 text-muted-foreground" />
                       </div>
-                    </TableCell>
-                  </TableRow>
-                  {providers.map((provider) => (
-                    <TableRow key={provider.id} className="hover:bg-muted/30">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                            {provider.type === "kubernetes" ? (
-                              <Database className="h-5 w-5 text-muted-foreground" />
-                            ) : (
-                              <Cloud className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium">{provider.name}</div>
-                            {provider.metadata &&
-                              Object.keys(provider.metadata).length > 0 && (
-                                <div className="text-xs text-muted-foreground">
-                                  {Object.entries(provider.metadata)[0][0]}:{" "}
-                                  {Object.entries(provider.metadata)[0][1]}
-                                </div>
-                              )}
-                          </div>
+                      <div>
+                        <div className="font-medium">{provider.name}</div>
+                        <div className="font-mono text-xs text-muted-foreground">
+                          {provider.id.slice(0, 8)}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {provider.resourceCount}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            resources
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const metadata = getMetadata(provider);
+                      const entries = Object.entries(metadata);
+                      return (
                         <div className="flex flex-wrap gap-1">
-                          {provider.kinds.slice(0, 3).map((kind) => (
+                          {entries.slice(0, 3).map(([key, value]) => (
                             <Badge
-                              key={kind}
+                              key={key}
                               variant="outline"
                               className="text-xs"
                             >
-                              {kind}
+                              {key}: {String(value)}
                             </Badge>
                           ))}
-                          {provider.kinds.length > 3 && (
+                          {entries.length > 3 && (
                             <Badge variant="outline" className="text-xs">
-                              +{provider.kinds.length - 3}
+                              +{entries.length - 3}
                             </Badge>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={getStatusColor(provider.status)}
-                        >
-                          {provider.status === "syncing" && (
-                            <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                          {entries.length === 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              No metadata
+                            </span>
                           )}
-                          {provider.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatRelativeTime(provider.lastSyncedAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </>
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatRelativeTime(provider.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
               ))}
             </TableBody>
           </Table>

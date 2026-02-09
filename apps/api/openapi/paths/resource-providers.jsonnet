@@ -17,7 +17,7 @@ local openapi = import '../lib/openapi.libsonnet';
   '/v1/workspaces/{workspaceId}/resource-providers': {
     put: {
       summary: 'Upsert resource provider',
-      operationId: 'upsertResourceProvider',
+      operationId: 'requestResourceProviderUpsert',
       parameters: [
         openapi.workspaceIdParam(),
       ],
@@ -29,43 +29,14 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.okResponse(openapi.schemaRef('ResourceProvider')),
+      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProviderRequestAccepted'))
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/resource-providers/{providerId}/set': {
-    // Adding patch for backwards compatibility with existing code. Should be remove after 30 days.
-    patch: {
-      summary: 'Set the resources for a provider',
-      operationId: 'setResourceProvidersResourcesPatch',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.providerIdParam(),
-      ],
-      requestBody: {
-        required: true,
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              required: ['resources'],
-              properties: {
-                resources: {
-                  type: 'array',
-                  items: openapi.schemaRef('ResourceProviderResource'),
-                },
-              },
-            },
-          },
-        },
-      },
-      responses: openapi.acceptedResponse(
-        { type: 'object', properties: {} },
-      ),
-    },
-
     put: {
       summary: 'Set the resources for a provider',
-      operationId: 'setResourceProvidersResources',
+      operationId: 'setResourceProviderResources',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.providerIdParam(),
@@ -87,9 +58,9 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(
-        { type: 'object', properties: {} },
-      ),
+      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProviderRequestAccepted'))
+                 + openapi.badRequestResponse()
+                 + openapi.notFoundResponse(),
     },
   },
 }

@@ -52,6 +52,8 @@ func scanSystemRow(rows pgx.Rows) (*oapi.System, error) {
 	if err != nil {
 		return nil, err
 	}
+	m := make(map[string]string)
+	system.Metadata = &m
 	return system, nil
 }
 

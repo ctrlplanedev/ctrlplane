@@ -1,0 +1,66 @@
+---
+title: "ctrlc sync"
+description: "Sync infrastructure resources into Ctrlplane's inventory"
+---
+
+{/* TODO: Expand with full documentation */}
+
+The `ctrlc sync` command discovers and syncs infrastructure resources into
+Ctrlplane. Each subcommand targets a specific provider or input method.
+
+## Usage
+
+```bash
+ctrlc sync <subcommand> [flags]
+```
+
+## Subcommands
+
+| Subcommand                                                      | Description                         |
+| --------------------------------------------------------------- | ----------------------------------- |
+| [`pipe`](/cli/sync-pipe)                                        | Read resources from stdin as JSON   |
+| [`kubernetes`](/integrations/resource-providers/kubernetes)     | Sync Kubernetes cluster resources   |
+| [`aws`](/integrations/resource-providers/aws)                   | Sync AWS resources (EKS, ECS, etc.) |
+| [`google-cloud`](/integrations/resource-providers/google-cloud) | Sync Google Cloud resources         |
+| [`azure`](/integrations/resource-providers/azure)               | Sync Azure resources                |
+| [`terraform`](/integrations/resource-providers/terraform)       | Sync Terraform state resources      |
+| [`helm`](/integrations/resource-providers/helm)                 | Sync Helm releases                  |
+| [`github`](/integrations/resource-providers/github)             | Sync GitHub repositories            |
+| [`vcluster`](/integrations/resource-providers/vcluster)         | Sync virtual clusters               |
+
+## Common Flags
+
+Most sync subcommands support these flags:
+
+| Flag         | Description                                        |
+| ------------ | -------------------------------------------------- |
+| `--provider` | Resource provider name                             |
+| `--interval` | Run continuously on an interval (e.g., `5m`, `1h`) |
+
+## Examples
+
+```bash
+# One-time sync
+ctrlc sync kubernetes --cluster-name prod --cluster-identifier prod-us-east-1
+
+# Continuous sync every 5 minutes
+ctrlc sync kubernetes --cluster-name prod --cluster-identifier prod-us-east-1 --interval 5m
+
+# Pipe custom resources from stdin
+./discover.sh | ctrlc sync pipe --provider "custom"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Sync Pipe" icon="pipe-section" href="/cli/sync-pipe">
+    Sync from stdin
+  </Card>
+  <Card
+    title="Resource Providers"
+    icon="database"
+    href="/integrations/resource-providers/overview"
+  >
+    All resource providers
+  </Card>
+</CardGroup>

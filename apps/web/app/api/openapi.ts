@@ -90,9 +90,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
-        /** Create user approval record */
-        post: operations["createUserApprovalRecord"];
+        /** Upsert user approval record */
+        put: operations["requestUserApprovalRecordUpsert"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -110,7 +110,7 @@ export interface paths {
         get: operations["listDeployments"];
         put?: never;
         /** Create deployment */
-        post: operations["createDeployment"];
+        post: operations["requestDeploymentCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -127,10 +127,10 @@ export interface paths {
         /** Get deployment */
         get: operations["getDeployment"];
         /** Upsert deployment */
-        put: operations["upsertDeployment"];
+        put: operations["requestDeploymentUpsert"];
         post?: never;
         /** Delete deployment */
-        delete: operations["deleteDeployment"];
+        delete: operations["requestDeploymentDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -172,13 +172,13 @@ export interface paths {
          * Upsert deployment variable
          * @description Creates or updates a deployment variable by ID.
          */
-        put: operations["upsertDeploymentVariable"];
+        put: operations["requestDeploymentVariableUpdate"];
         post?: never;
         /**
          * Delete deployment variable
          * @description Deletes a deployment variable by ID.
          */
-        delete: operations["deleteDeploymentVariable"];
+        delete: operations["requestDeploymentVariableDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -220,13 +220,13 @@ export interface paths {
          * Upsert deployment variable value
          * @description Creates or updates a variable value override by ID.
          */
-        put: operations["upsertDeploymentVariableValue"];
+        put: operations["requestDeploymentVariableValueUpsert"];
         post?: never;
         /**
          * Delete deployment variable value
          * @description Deletes a variable value override by ID.
          */
-        delete: operations["deleteDeploymentVariableValue"];
+        delete: operations["requestDeploymentVariableValueDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -264,7 +264,7 @@ export interface paths {
         options?: never;
         head?: never;
         /** Update deployment version */
-        patch: operations["updateDeploymentVersion"];
+        patch: operations["requestDeploymentVersionUpdate"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/environments": {
@@ -278,7 +278,7 @@ export interface paths {
         get: operations["listEnvironments"];
         put?: never;
         /** Create environment */
-        post: operations["createEnvironment"];
+        post: operations["requestEnvironmentCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -295,10 +295,10 @@ export interface paths {
         /** Get environment */
         get: operations["getEnvironment"];
         /** Upsert environment */
-        put: operations["upsertEnvironmentById"];
+        put: operations["requestEnvironmentUpsert"];
         post?: never;
         /** Delete environment */
-        delete: operations["deleteEnvironment"];
+        delete: operations["requestEnvironmentDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -334,10 +334,10 @@ export interface paths {
         /** Get a job agent */
         get: operations["getJobAgent"];
         /** Upsert a job agent */
-        put: operations["upsertJobAgent"];
+        put: operations["requestJobAgentUpsert"];
         post?: never;
         /** Delete a job agent */
-        delete: operations["deleteJobAgent"];
+        delete: operations["requestJobAgentDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -395,7 +395,7 @@ export interface paths {
          * Update job status
          * @description Updates the status of a specific job by ID.
          */
-        put: operations["updateJobStatus"];
+        put: operations["requestJobStatusUpsert"];
         post?: never;
         delete?: never;
         options?: never;
@@ -434,7 +434,7 @@ export interface paths {
         get: operations["listPolicies"];
         put?: never;
         /** Create a policy */
-        post: operations["createPolicy"];
+        post: operations["requestPolicyCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -451,10 +451,10 @@ export interface paths {
         /** Get a policy by ID */
         get: operations["getPolicy"];
         /** Upsert a policy by ID */
-        put: operations["upsertPolicy"];
+        put: operations["requestPolicyUpsert"];
         post?: never;
         /** Delete a policy by ID */
-        delete: operations["deletePolicy"];
+        delete: operations["requestPolicyDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -487,7 +487,7 @@ export interface paths {
         /** Get relationship */
         get: operations["getRelationshipRule"];
         /** Upsert relationship */
-        put: operations["upsertRelationshipById"];
+        put: operations["requestRelationshipRuleUpsert"];
         post?: never;
         /** Delete relationship */
         delete: operations["deleteRelationship"];
@@ -576,26 +576,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get release verifications
-         * @description Returns all verifications for jobs belonging to this release.
-         */
-        get: operations["getReleaseVerifications"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/workspaces/{workspaceId}/resource-providers": {
         parameters: {
             query?: never;
@@ -605,7 +585,7 @@ export interface paths {
         };
         get?: never;
         /** Upsert resource provider */
-        put: operations["upsertResourceProvider"];
+        put: operations["requestResourceProviderUpsert"];
         post?: never;
         delete?: never;
         options?: never;
@@ -639,13 +619,12 @@ export interface paths {
         };
         get?: never;
         /** Set the resources for a provider */
-        put: operations["setResourceProvidersResources"];
+        put: operations["setResourceProviderResources"];
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Set the resources for a provider */
-        patch: operations["setResourceProvidersResourcesPatch"];
+        patch?: never;
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources": {
@@ -686,7 +665,27 @@ export interface paths {
          * Delete resource by identifier
          * @description Deletes a resource by its identifier.
          */
-        delete: operations["deleteResourceByIdentifier"];
+        delete: operations["requestResourceDeletionByIdentifier"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}/deployments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get deployments for a resource
+         * @description Returns a paginated list of deployments that match the given resource.
+         */
+        get: operations["getDeploymentsForResource"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -713,7 +712,7 @@ export interface paths {
          * Update variables for a resource
          * @description Updates the variables for a resource
          */
-        patch: operations["updateVariablesForResource"];
+        patch: operations["requestResourceVariablesUpdate"];
         trace?: never;
     };
     "/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets/deployment/{deploymentId}": {
@@ -747,7 +746,7 @@ export interface paths {
         get: operations["listSystems"];
         put?: never;
         /** Create system */
-        post: operations["createSystem"];
+        post: operations["requestSystemCreation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -764,10 +763,10 @@ export interface paths {
         /** Get system */
         get: operations["getSystem"];
         /** Upsert system */
-        put: operations["upsertSystemById"];
+        put: operations["requestSystemUpsert"];
         post?: never;
         /** Delete system */
-        delete: operations["deleteSystem"];
+        delete: operations["requestSystemDeletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -816,6 +815,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -839,6 +841,9 @@ export interface components {
         };
         CreateEnvironmentRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -853,7 +858,8 @@ export interface components {
             name: string;
             priority?: number;
             rules?: components["schemas"]["PolicyRule"][];
-            selectors?: components["schemas"]["PolicyTargetSelector"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector?: string;
         };
         CreateRelationshipRuleRequest: {
             description?: string;
@@ -871,7 +877,11 @@ export interface components {
         };
         CreateSystemRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
+            slug?: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -930,6 +940,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -942,12 +955,20 @@ export interface components {
         DeploymentDependencyRule: {
             dependsOnDeploymentSelector: components["schemas"]["Selector"];
         };
+        DeploymentRequestAccepted: {
+            id: string;
+            message: string;
+        };
         DeploymentVariable: {
             defaultValue?: components["schemas"]["LiteralValue"];
             deploymentId: string;
             description?: string;
             id: string;
             key: string;
+        };
+        DeploymentVariableRequestAccepted: {
+            id: string;
+            message: string;
         };
         DeploymentVariableValue: {
             deploymentVariableId: string;
@@ -956,6 +977,10 @@ export interface components {
             priority: number;
             resourceSelector?: components["schemas"]["Selector"];
             value: components["schemas"]["Value"];
+        };
+        DeploymentVariableValueRequestAccepted: {
+            id: string;
+            message: string;
         };
         DeploymentVariableWithValues: {
             values: components["schemas"]["DeploymentVariableValue"][];
@@ -1007,6 +1032,9 @@ export interface components {
             createdAt: string;
             description?: string;
             id: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -1030,6 +1058,10 @@ export interface components {
              */
             minimumSuccessPercentage: number;
             successStatuses?: components["schemas"]["JobStatus"][];
+        };
+        EnvironmentRequestAccepted: {
+            id: string;
+            message: string;
         };
         Error: {
             /** @description Error code */
@@ -1117,8 +1149,16 @@ export interface components {
             name: string;
             type: string;
         };
+        JobAgentRequestAccepted: {
+            id: string;
+            message: string;
+        };
         /** @enum {string} */
         JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
+        JobStatusRequestAccepted: {
+            id: string;
+            message: string;
+        };
         JobUpdateEvent: {
             agentId?: string;
             externalId?: string;
@@ -1173,8 +1213,13 @@ export interface components {
             name: string;
             priority: number;
             rules: components["schemas"]["PolicyRule"][];
-            selectors: components["schemas"]["PolicyTargetSelector"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector: string;
             workspaceId: string;
+        };
+        PolicyRequestAccepted: {
+            id: string;
+            message: string;
         };
         PolicyRule: {
             anyApproval?: components["schemas"]["AnyApprovalRule"];
@@ -1188,12 +1233,6 @@ export interface components {
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionCooldown?: components["schemas"]["VersionCooldownRule"];
-        };
-        PolicyTargetSelector: {
-            deploymentSelector?: components["schemas"]["Selector"];
-            environmentSelector?: components["schemas"]["Selector"];
-            id: string;
-            resourceSelector?: components["schemas"]["Selector"];
         };
         PropertyMatcher: {
             fromProperty: string[];
@@ -1276,6 +1315,10 @@ export interface components {
             /** Format: uuid */
             workspaceId: string;
         };
+        ResourceProviderRequestAccepted: {
+            id: string;
+            message: string;
+        };
         ResourceProviderResource: {
             config: {
                 [key: string]: unknown;
@@ -1295,6 +1338,10 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
             version: string;
+        };
+        ResourceRequestAccepted: {
+            id: string;
+            message: string;
         };
         ResourceVariable: {
             key: string;
@@ -1346,9 +1393,16 @@ export interface components {
         System: {
             description?: string;
             id: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             slug: string;
             workspaceId: string;
+        };
+        SystemRequestAccepted: {
+            id: string;
+            message: string;
         };
         TerraformCloudRunMetricProvider: {
             /**
@@ -1400,6 +1454,9 @@ export interface components {
                 [key: string]: unknown;
             };
             jobAgentId?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
@@ -1435,6 +1492,9 @@ export interface components {
         };
         UpsertEnvironmentRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             systemId: string;
@@ -1451,15 +1511,16 @@ export interface components {
         };
         UpsertPolicyRequest: {
             description?: string;
-            enabled?: boolean;
+            enabled: boolean;
             /** @description Arbitrary metadata for the policy (record<string, string>) */
-            metadata?: {
+            metadata: {
                 [key: string]: string;
             };
             name: string;
-            priority?: number;
-            rules?: components["schemas"]["PolicyRule"][];
-            selectors?: components["schemas"]["PolicyTargetSelector"][];
+            priority: number;
+            rules: components["schemas"]["PolicyRule"][];
+            /** @description CEL expression for matching release targets. Use "true" to match all targets. */
+            selector: string;
         };
         UpsertRelationshipRuleRequest: {
             description?: string;
@@ -1485,7 +1546,11 @@ export interface components {
         };
         UpsertSystemRequest: {
             description?: string;
+            metadata?: {
+                [key: string]: string;
+            };
             name: string;
+            slug?: string;
         };
         UpsertUserApprovalRecordRequest: {
             environmentIds?: string[];
@@ -1500,6 +1565,10 @@ export interface components {
             status: components["schemas"]["ApprovalStatus"];
             userId: string;
             versionId: string;
+        };
+        UserApprovalRecordRequestAccepted: {
+            id: string;
+            message: string;
         };
         Value: components["schemas"]["LiteralValue"] | components["schemas"]["ReferenceValue"] | components["schemas"]["SensitiveValue"];
         VerificationMeasurement: {
@@ -2014,7 +2083,7 @@ export interface operations {
             };
         };
     };
-    createUserApprovalRecord: {
+    requestUserApprovalRecordUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2032,15 +2101,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        success?: boolean;
-                    };
+                    "application/json": components["schemas"]["UserApprovalRecordRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -2099,7 +2166,7 @@ export interface operations {
             };
         };
     };
-    createDeployment: {
+    requestDeploymentCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -2121,7 +2188,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Deployment"];
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
                 };
             };
         };
@@ -2169,7 +2236,7 @@ export interface operations {
             };
         };
     };
-    upsertDeployment: {
+    requestDeploymentUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2193,12 +2260,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Deployment"];
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
                 };
             };
         };
     };
-    deleteDeployment: {
+    requestDeploymentDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2218,7 +2285,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Deployment"];
+                    "application/json": components["schemas"]["DeploymentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -2306,7 +2391,7 @@ export interface operations {
             };
         };
     };
-    upsertDeploymentVariable: {
+    requestDeploymentVariableUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2332,12 +2417,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariable"];
+                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteDeploymentVariable: {
+    requestDeploymentVariableDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2359,7 +2462,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariable"];
+                    "application/json": components["schemas"]["DeploymentVariableRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -2451,7 +2572,7 @@ export interface operations {
             };
         };
     };
-    upsertDeploymentVariableValue: {
+    requestDeploymentVariableValueUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2479,12 +2600,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariableValue"];
+                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteDeploymentVariableValue: {
+    requestDeploymentVariableValueDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2508,7 +2647,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentVariableValue"];
+                    "application/json": components["schemas"]["DeploymentVariableValueRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -2607,7 +2764,7 @@ export interface operations {
             };
         };
     };
-    updateDeploymentVersion: {
+    requestDeploymentVersionUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -2681,7 +2838,7 @@ export interface operations {
             };
         };
     };
-    createEnvironment: {
+    requestEnvironmentCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -2703,7 +2860,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentRequestAccepted"];
                 };
             };
         };
@@ -2751,7 +2908,7 @@ export interface operations {
             };
         };
     };
-    upsertEnvironmentById: {
+    requestEnvironmentUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2769,13 +2926,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -2798,7 +2955,7 @@ export interface operations {
             };
         };
     };
-    deleteEnvironment: {
+    requestEnvironmentDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2818,7 +2975,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -2893,7 +3068,7 @@ export interface operations {
             };
         };
     };
-    upsertJobAgent: {
+    requestJobAgentUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -2917,12 +3092,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobAgent"];
+                    "application/json": components["schemas"]["JobAgentRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    deleteJobAgent: {
+    requestJobAgentDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -2942,7 +3135,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobAgent"];
+                    "application/json": components["schemas"]["JobAgentRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3062,7 +3255,7 @@ export interface operations {
             };
         };
     };
-    updateJobStatus: {
+    requestJobStatusUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3081,12 +3274,12 @@ export interface operations {
         };
         responses: {
             /** @description Update job status */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
+                    "application/json": components["schemas"]["JobStatusRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3188,7 +3381,7 @@ export interface operations {
             };
         };
     };
-    createPolicy: {
+    requestPolicyCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -3210,7 +3403,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Policy"];
+                    "application/json": components["schemas"]["PolicyRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3267,7 +3460,7 @@ export interface operations {
             };
         };
     };
-    upsertPolicy: {
+    requestPolicyUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3291,7 +3484,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Policy"];
+                    "application/json": components["schemas"]["PolicyRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3314,7 +3507,7 @@ export interface operations {
             };
         };
     };
-    deletePolicy: {
+    requestPolicyDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -3334,7 +3527,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Policy"];
+                    "application/json": components["schemas"]["PolicyRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -3436,7 +3629,7 @@ export interface operations {
             };
         };
     };
-    upsertRelationshipById: {
+    requestRelationshipRuleUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3709,50 +3902,7 @@ export interface operations {
             };
         };
     };
-    getReleaseVerifications: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the release */
-                releaseId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of verifications for the release */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["JobVerification"][];
-                };
-            };
-            /** @description Invalid request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    upsertResourceProvider: {
+    requestResourceProviderUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -3768,13 +3918,22 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProvider"];
+                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -3804,7 +3963,7 @@ export interface operations {
             };
         };
     };
-    setResourceProvidersResources: {
+    setResourceProviderResources: {
         parameters: {
             query?: never;
             header?: never;
@@ -3830,38 +3989,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
                 };
             };
-        };
-    };
-    setResourceProvidersResourcesPatch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description ID of the workspace */
-                workspaceId: string;
-                /** @description ID of the resource provider */
-                providerId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    resources: components["schemas"]["ResourceProviderResource"][];
-                };
-            };
-        };
-        responses: {
-            /** @description Accepted response */
-            202: {
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -3929,7 +4075,7 @@ export interface operations {
             };
         };
     };
-    deleteResourceByIdentifier: {
+    requestResourceDeletionByIdentifier: {
         parameters: {
             query?: never;
             header?: never;
@@ -3943,12 +4089,70 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No content */
-            204: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResourceRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getDeploymentsForResource: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description Identifier of the resource */
+                identifier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The matching deployments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["Deployment"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
             };
             /** @description Invalid request */
             400: {
@@ -4026,7 +4230,7 @@ export interface operations {
             };
         };
     };
-    updateVariablesForResource: {
+    requestResourceVariablesUpdate: {
         parameters: {
             query?: never;
             header?: never;
@@ -4052,9 +4256,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ResourceRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -4158,7 +4360,7 @@ export interface operations {
             };
         };
     };
-    createSystem: {
+    requestSystemCreation: {
         parameters: {
             query?: never;
             header?: never;
@@ -4180,7 +4382,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
                 };
             };
         };
@@ -4228,7 +4430,7 @@ export interface operations {
             };
         };
     };
-    upsertSystemById: {
+    requestSystemUpsert: {
         parameters: {
             query?: never;
             header?: never;
@@ -4246,18 +4448,18 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
                 };
             };
         };
     };
-    deleteSystem: {
+    requestSystemDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -4277,7 +4479,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
                 };
             };
             /** @description Invalid request */

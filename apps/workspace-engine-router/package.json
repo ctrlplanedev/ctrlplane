@@ -5,6 +5,8 @@
     "build": "go build -o ./bin/workspace-engine-router main.go",
     "start": "./bin/workspace-engine-router",
     "test": "go test ./...",
+    "lint": "bash -c 'golangci-lint run --allow-parallel-runners'",
+    "lint:fix": "golangci-lint run --fix",
     "generate": "go generate ./...",
     "format": "bash -c 'go fmt ./...'",
     "clean": "go clean ./..."

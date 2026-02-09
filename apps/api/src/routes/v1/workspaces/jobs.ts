@@ -56,6 +56,7 @@ const getJobWithRelease: AsyncTypedHandler<
   "get"
 > = async (req, res) => {
   const { workspaceId, jobId } = req.params;
+
   const response = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/jobs/{jobId}/with-release",
     { params: { path: { workspaceId, jobId } } },
@@ -63,7 +64,7 @@ const getJobWithRelease: AsyncTypedHandler<
 
   if (response.error != null)
     throw new ApiError(
-      response.error.error ?? "Job not found",
+      response.error.error ?? "Failed to get job with release",
       response.response.status,
     );
 
@@ -77,21 +78,29 @@ const updateJobStatus: AsyncTypedHandler<
   const { workspaceId, jobId } = req.params;
   const { body: status } = req;
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.JobUpdated,
-    timestamp: Date.now(),
-    data: {
-      id: jobId,
-      job: {
-        id: jobId,
-        status,
-      } as WorkspaceEngine["schemas"]["Job"],
-      fieldsToUpdate: ["status"],
-    },
-  });
 
-  res.status(200).json({ message: "Job status update queued" });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.JobUpdated,
+      timestamp: Date.now(),
+      data: {
+        id: jobId,
+        job: {
+          id: jobId,
+          status,
+        } as WorkspaceEngine["schemas"]["Job"],
+        fieldsToUpdate: ["status"],
+      },
+    });
+  } catch {
+    throw new ApiError("Failed to update job status", 500);
+  }
+
+  res.status(202).json({
+    id: jobId,
+    message: "Job status update requested",
+  });
 };
 
 export const jobsRouter = Router({ mergeParams: true })

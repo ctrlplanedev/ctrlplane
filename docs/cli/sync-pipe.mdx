@@ -1,0 +1,310 @@
+---
+title: "ctrlc sync pipe"
+description: "Sync resources into Ctrlplane by piping JSON through stdin"
+---
+
+The `pipe` subcommand reads JSON resource data from stdin and upserts it into
+Ctrlplane via a resource provider. This is the most flexible sync method — use
+it to integrate any data source, script output, or API response without writing
+a dedicated provider.
+
+## Usage
+
+```bash
+<source> | ctrlc sync pipe --provider <provider-name>
+```
+
+The command reads from stdin, parses the JSON into one or more resources, and
+upserts them under the specified resource provider.
+
+## Flags
+
+| Flag         | Short | Required | Description                                                        |
+| ------------ | ----- | -------- | ------------------------------------------------------------------ |
+| `--provider` | `-p`  | Yes      | Resource provider name. Created automatically if it doesn't exist. |
+
+[Global flags](/cli/overview#global-flags) (`--api-key`, `--workspace`, `--url`)
+are also supported.
+
+## Input Format
+
+`ctrlc sync pipe` accepts JSON in two forms:
+
+### Array of Resources
+
+```json
+[
+  {
+    "name": "web-1",
+    "identifier": "web-1-prod",
+    "version": "custom/v1",
+    "kind": "Server",
+    "config": {},
+    "metadata": {}
+  },
+  {
+    "name": "web-2",
+    "identifier": "web-2-prod",
+    "version": "custom/v1",
+    "kind": "Server",
+    "config": {},
+    "metadata": {}
+  }
+]
+```
+
+### Single Resource Object
+
+A single object (without the array wrapper) is also accepted and is
+automatically normalized to a one-element array:
+
+```json
+{
+  "name": "web-1",
+  "identifier": "web-1-prod",
+  "version": "custom/v1",
+  "kind": "Server",
+  "config": {},
+  "metadata": {}
+}
+```
+
+### Required Fields
+
+Every resource must include these fields:
+
+| Field        | Type   | Description                                           |
+| ------------ | ------ | ----------------------------------------------------- |
+| `name`       | string | Human-readable display name                           |
+| `identifier` | string | Unique identifier for the resource                    |
+| `version`    | string | Resource version or schema version                    |
+| `kind`       | string | Resource type (e.g., `Server`, `Database/PostgreSQL`) |
+
+### Optional Fields
+
+| Field      | Type   | Description                                                  |
+| ---------- | ------ | ------------------------------------------------------------ |
+| `metadata` | object | Key-value pairs used for environment selectors and filtering |
+| `config`   | object | Configuration data passed to job agents during deployment    |
+
+For details on the distinction between metadata and config, see
+[Resource Schema](/integrations/resource-providers/overview#resource-schema).
+
+## Examples
+
+### Pipe from a Discovery Script
+
+Run a custom script that outputs JSON and pipe it directly:
+
+```bash
+./discover-databases.sh | ctrlc sync pipe --provider "custom-db"
+```
+
+### Inline JSON
+
+Quick one-liner to register resources:
+
+```bash
+echo '[{"name":"web-1","identifier":"web-1-prod","version":"custom/v1","kind":"Server","config":{},"metadata":{}}]' \
+  | ctrlc sync pipe --provider "my-servers"
+```
+
+### Single Resource
+
+No array wrapper needed for a single resource:
+
+```bash
+echo '{"name":"web-1","identifier":"web-1-prod","version":"custom/v1","kind":"Server"}' \
+  | ctrlc sync pipe --provider "my-servers"
+```
+
+### Transform API Responses with jq
+
+Fetch data from an internal API and reshape it into the expected schema:
+
+```bash
+curl -s https://cmdb.internal/api/servers \
+  | jq '[.[] | {
+      name,
+      identifier: .id,
+      version: "cmdb/v1",
+      kind: "Server",
+      config: .,
+      metadata: {}
+    }]' \
+  | ctrlc sync pipe --provider "cmdb"
+```
+
+### Sync from a CMDB with Metadata
+
+Include metadata so resources can be targeted by environment selectors:
+
+```bash
+curl -s https://cmdb.internal/api/servers \
+  | jq '[.[] | {
+      name: .hostname,
+      identifier: .asset_id,
+      version: "cmdb/v1",
+      kind: "Server/Linux",
+      config: {
+        host: .ip_address,
+        port: .ssh_port
+      },
+      metadata: {
+        environment: .env,
+        region: .datacenter,
+        team: .owner_team,
+        tier: .sla_tier
+      }
+    }]' \
+  | ctrlc sync pipe --provider "cmdb-servers"
+```
+
+### Database Inventory from PostgreSQL
+
+Query a database and pipe the results:
+
+```bash
+psql -h localhost -U admin -d inventory -t -A -c "
+  SELECT json_agg(json_build_object(
+    'name', hostname,
+    'identifier', instance_id,
+    'version', 'inventory/v1',
+    'kind', 'Database/' || engine,
+    'metadata', json_build_object('environment', env, 'region', region),
+    'config', json_build_object('host', endpoint, 'port', port)
+  )) FROM databases;
+" | ctrlc sync pipe --provider "db-inventory"
+```
+
+### Running on a Schedule with cron
+
+Sync resources every 5 minutes:
+
+```bash
+# crontab -e
+*/5 * * * * /usr/local/bin/discover-servers.sh | /usr/local/bin/ctrlc sync pipe --provider "cron-servers" 2>&1 >> /var/log/ctrlc-sync.log
+```
+
+### Running in CI/CD
+
+Use `sync pipe` in a GitHub Actions workflow to register build artifacts as
+resources:
+
+```yaml
+name: Sync Resources
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ctrlc
+        run: curl -fsSL https://get.ctrlplane.dev | sh
+
+      - name: Discover and sync
+        env:
+          CTRLPLANE_API_KEY: ${{ secrets.CTRLPLANE_API_KEY }}
+          CTRLPLANE_WORKSPACE: ${{ vars.CTRLPLANE_WORKSPACE }}
+        run: |
+          ./scripts/discover-resources.sh \
+            | ctrlc sync pipe --provider "ci-discovered"
+```
+
+## Behavior
+
+- **Provider auto-creation** — If the named provider doesn't exist, it is
+  created automatically.
+- **Upsert semantics** — Resources are matched by `identifier`. Existing
+  resources are updated; new ones are created.
+- **Stdin required** — The command exits with an error if no piped input is
+  detected or if stdin is empty.
+- **Validation** — Each resource is validated for the required fields (`name`,
+  `identifier`, `version`, `kind`) before the API call. Missing fields produce a
+  descriptive error message.
+
+## Error Handling
+
+| Error                       | Cause                                             | Fix                                                                  |
+| --------------------------- | ------------------------------------------------- | -------------------------------------------------------------------- |
+| `no piped input detected`   | Command was run interactively without piped input | Pipe JSON data to the command                                        |
+| `stdin is empty`            | Piped input contained no data                     | Ensure the upstream command produces output                          |
+| `invalid JSON input`        | Input is not valid JSON                           | Check the JSON syntax; a snippet of the input is shown for debugging |
+| `missing required field(s)` | One or more resources are missing required fields | Add the missing fields to each resource object                       |
+
+## Best Practices
+
+### Use Stable Identifiers
+
+Choose identifiers that won't change across syncs:
+
+```json
+{ "identifier": "db-prod-primary" }
+```
+
+Avoid identifiers derived from volatile attributes like IP addresses.
+
+### Include Rich Metadata
+
+Metadata powers Ctrlplane's environment selectors. Include attributes that are
+useful for targeting:
+
+```json
+{
+  "metadata": {
+    "environment": "production",
+    "region": "us-east-1",
+    "team": "platform",
+    "tier": "critical"
+  }
+}
+```
+
+### Follow the Kind Naming Convention
+
+Use a `Category/Type` format for consistency:
+
+```json
+{ "kind": "Server/Linux" }
+{ "kind": "Database/PostgreSQL" }
+{ "kind": "Cache/Redis" }
+```
+
+### Validate Before Syncing
+
+Pipe through `jq` to catch malformed JSON early:
+
+```bash
+./discover.sh | jq '.' | ctrlc sync pipe --provider "validated"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Resource Providers"
+    icon="database"
+    href="/integrations/resource-providers/overview"
+  >
+    Overview of all resource providers
+  </Card>
+  <Card
+    title="Custom Provider"
+    icon="code"
+    href="/integrations/resource-providers/custom"
+  >
+    Build a custom provider via API or SDK
+  </Card>
+  <Card title="Selectors" icon="filter" href="/concepts/selectors">
+    Target resources with environment selectors
+  </Card>
+  <Card title="Environments" icon="layer-group" href="/concepts/environments">
+    Create dynamic environments
+  </Card>
+</CardGroup>

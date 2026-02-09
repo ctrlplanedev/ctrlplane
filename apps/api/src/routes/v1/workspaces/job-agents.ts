@@ -37,14 +37,21 @@ const upsertJobAgent: AsyncTypedHandler<
     metadata: body.metadata ?? {},
   };
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.JobAgentUpdated,
-    timestamp: Date.now(),
-    data: agent,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.JobAgentUpdated,
+      timestamp: Date.now(),
+      data: agent,
+    });
+  } catch {
+    throw new ApiError("Failed to update job agent", 500);
+  }
 
-  res.status(202).json(agent);
+  res.status(202).json({
+    id: jobAgentId,
+    message: "Job agent update requested",
+  });
 };
 
 const deleteJobAgent: AsyncTypedHandler<
@@ -60,15 +67,21 @@ const deleteJobAgent: AsyncTypedHandler<
   if (jobAgentResponse.error != null)
     throw new ApiError(jobAgentResponse.error.error ?? "Job agent not found", jobAgentResponse.response.status);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.JobAgentDeleted,
-    timestamp: Date.now(),
-    data: jobAgentResponse.data,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.JobAgentDeleted,
+      timestamp: Date.now(),
+      data: jobAgentResponse.data,
+    });
+  } catch {
+    throw new ApiError("Failed to delete job agent", 500);
+  }
 
-  res.status(202).json(jobAgentResponse.data);
-  return;
+  res.status(202).json({
+    id: jobAgentId,
+    message: "Job agent delete requested",
+  });
 };
 
 const listJobAgents: AsyncTypedHandler<

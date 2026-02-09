@@ -359,9 +359,10 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 	successCount := 0
 	failCount := 0
 	for _, job := range allJobs {
-		if job.Status == oapi.JobStatusSuccessful {
+		switch job.Status {
+		case oapi.JobStatusSuccessful:
 			successCount++
-		} else if job.Status == oapi.JobStatusFailure {
+		case oapi.JobStatusFailure:
 			failCount++
 		}
 	}

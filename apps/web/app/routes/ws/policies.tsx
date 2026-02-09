@@ -1,10 +1,13 @@
 import type { RouterOutputs } from "@ctrlplane/trpc";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Editor from "@monaco-editor/react";
 import { format } from "date-fns";
+import yaml from "js-yaml";
 import { MoreVertical, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { trpc } from "~/api/trpc";
+import { useTheme } from "~/components/ThemeProvider";
 import { Badge } from "~/components/ui/badge";
 import {
   Breadcrumb,
@@ -112,7 +115,24 @@ function PolicyRow({
   );
 }
 
-function ViewPolicyDialog({
+/**
+ * Converts a policy object to an editable YAML representation,
+ * stripping read-only fields (id, workspaceId, createdAt) from
+ * both the policy and its rules.
+ */
+function policyToEditableYaml(policy: Policy): string {
+  const { id: _id, workspaceId: _wsId, createdAt: _ca, ...editable } = policy;
+  const rawRules: Record<string, unknown>[] = Array.isArray(editable.rules)
+    ? (editable.rules as Record<string, unknown>[])
+    : [];
+  const rules = rawRules.map((rule) => {
+    const { id: _rId, policyId: _pId, createdAt: _rCa, ...rest } = rule;
+    return rest;
+  });
+  return yaml.dump({ ...editable, rules }, { lineWidth: -1 });
+}
+
+function EditPolicyDialog({
   policy,
   open,
   onOpenChange,
@@ -121,6 +141,92 @@ function ViewPolicyDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { workspace } = useWorkspace();
+  const { theme } = useTheme();
+  const utils = trpc.useUtils();
+  const upsertMutation = trpc.policies.upsert.useMutation();
+
+  const [yamlValue, setYamlValue] = useState("");
+  const [parseError, setParseError] = useState<string | null>(null);
+
+  // Reset editor content when the policy changes
+  useEffect(() => {
+    if (policy) {
+      setYamlValue(policyToEditableYaml(policy));
+      setParseError(null);
+    }
+  }, [policy]);
+
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    const next = value ?? "";
+    setYamlValue(next);
+    try {
+      yaml.load(next);
+      setParseError(null);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Invalid YAML";
+      setParseError(message);
+    }
+  }, []);
+
+  const handleSave = useCallback(() => {
+    if (!policy) return;
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = yaml.load(yamlValue) as Record<string, unknown>;
+    } catch {
+      toast.error("Cannot save: YAML is invalid");
+      return;
+    }
+
+    const name = typeof parsed.name === "string" ? parsed.name : policy.name;
+    const description =
+      typeof parsed.description === "string"
+        ? parsed.description
+        : policy.description;
+    const enabled =
+      typeof parsed.enabled === "boolean" ? parsed.enabled : policy.enabled;
+    const priority =
+      typeof parsed.priority === "number" ? parsed.priority : policy.priority;
+    const metadata =
+      parsed.metadata != null &&
+      typeof parsed.metadata === "object" &&
+      !Array.isArray(parsed.metadata)
+        ? (parsed.metadata as Record<string, string>)
+        : (policy.metadata as Record<string, string>);
+    const rules = Array.isArray(parsed.rules)
+      ? (parsed.rules as Record<string, unknown>[])
+      : (policy.rules as unknown as Record<string, unknown>[]);
+    const selector =
+      typeof parsed.selector === "string" ? parsed.selector : policy.selector;
+
+    upsertMutation
+      .mutateAsync({
+        workspaceId: workspace.id,
+        policyId: policy.id,
+        body: {
+          name,
+          description,
+          enabled,
+          priority,
+          metadata,
+          rules,
+          selector,
+        },
+      })
+      .then(() => {
+        utils.policies.list.invalidate({ workspaceId: workspace.id });
+        toast.success("Policy update requested");
+        onOpenChange(false);
+      })
+      .catch((error: unknown) => {
+        const message =
+          error instanceof Error ? error.message : "Failed to update policy";
+        toast.error(message);
+      });
+  }, [policy, yamlValue, workspace.id, upsertMutation, utils, onOpenChange]);
+
   if (!policy) return null;
 
   return (
@@ -129,17 +235,40 @@ function ViewPolicyDialog({
         <DialogHeader>
           <DialogTitle>Policy: {policy.name}</DialogTitle>
           <DialogDescription>
-            View policy details in JSON format
+            Edit policy as YAML and save changes
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-auto rounded-md bg-muted p-4">
-          <pre className="wrap-break-word whitespace-pre-wrap font-mono text-xs">
-            {JSON.stringify(policy, null, 2)}
-          </pre>
+        <div className="flex-1 overflow-hidden rounded-md border">
+          <Editor
+            language="yaml"
+            theme={theme === "dark" ? "vs-dark" : "vs"}
+            value={yamlValue}
+            onChange={handleEditorChange}
+            height="500px"
+            options={{
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              fontSize: 13,
+              tabSize: 2,
+              wordWrap: "on",
+              automaticLayout: true,
+            }}
+          />
         </div>
+        {parseError && (
+          <div className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {parseError}
+          </div>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!!parseError || upsertMutation.isPending}
+          >
+            {upsertMutation.isPending ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -303,7 +432,7 @@ export default function Policies() {
         )}
       </main>
 
-      <ViewPolicyDialog
+      <EditPolicyDialog
         policy={policyToView}
         open={!!policyToView}
         onOpenChange={(open) => {

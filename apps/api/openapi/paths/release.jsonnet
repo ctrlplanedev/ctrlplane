@@ -15,22 +15,4 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
-  '/v1/workspaces/{workspaceId}/releases/{releaseId}/verifications': {
-    get: {
-      summary: 'Get release verifications',
-      operationId: 'getReleaseVerifications',
-      description: 'Returns all verifications for jobs belonging to this release.',
-      parameters: [
-        openapi.workspaceIdParam(),
-        openapi.releaseIdParam(),
-      ],
-      responses: openapi.okResponse(
-        {
-          type: 'array',
-          items: openapi.schemaRef('JobVerification'),
-        },
-        'List of verifications for the release',
-      ) + openapi.notFoundResponse() + openapi.badRequestResponse(),
-    },
-  },
 }

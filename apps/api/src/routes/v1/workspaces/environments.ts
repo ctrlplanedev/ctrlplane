@@ -32,7 +32,7 @@ const listEnvironments: AsyncTypedHandler<
       response.response.status,
     );
 
-  res.json(response.data);
+  res.status(200).json(response.data);
 };
 
 const getEnvironment: AsyncTypedHandler<
@@ -51,8 +51,7 @@ const getEnvironment: AsyncTypedHandler<
       response.response.status,
     );
 
-  res.json(response.data);
-  return;
+  res.status(200).json(response.data);
 };
 
 const deleteEnvironment: AsyncTypedHandler<
@@ -72,15 +71,20 @@ const deleteEnvironment: AsyncTypedHandler<
       environmentResponse.response.status,
     );
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.EnvironmentDeleted,
-    timestamp: Date.now(),
-    data: environmentResponse.data,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.EnvironmentDeleted,
+      timestamp: Date.now(),
+      data: environmentResponse.data,
+    });
+  } catch {
+    throw new ApiError("Failed to delete environment", 500);
+  }
 
-  res.status(204).json({ message: "Environment deleted successfully" });
-  return;
+  res
+    .status(202)
+    .json({ id: environmentId, message: "Environment delete requested" });
 };
 
 const createEnvironment: AsyncTypedHandler<
@@ -93,6 +97,7 @@ const createEnvironment: AsyncTypedHandler<
   const environment: WorkspaceEngine["schemas"]["Environment"] = {
     id: uuidv4(),
     createdAt: new Date().toISOString(),
+    metadata: {},
     ...body,
   };
 
@@ -100,15 +105,20 @@ const createEnvironment: AsyncTypedHandler<
 
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.EnvironmentCreated,
-    timestamp: Date.now(),
-    data: environment,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.EnvironmentCreated,
+      timestamp: Date.now(),
+      data: environment,
+    });
+  } catch {
+    throw new ApiError("Failed to create environment", 500);
+  }
 
-  res.status(202).json(environment);
-  return;
+  res
+    .status(202)
+    .json({ id: environment.id, message: "Environment creation requested" });
 };
 
 export const upsertEnvironmentById: AsyncTypedHandler<
@@ -121,6 +131,7 @@ export const upsertEnvironmentById: AsyncTypedHandler<
   const mergedEnvironment = {
     id: environmentId,
     createdAt: new Date().toISOString(),
+    metadata: {},
     ...body,
   };
 
@@ -128,15 +139,20 @@ export const upsertEnvironmentById: AsyncTypedHandler<
 
   if (!isValid) throw new ApiError("Invalid resource selector", 400);
 
-  await sendGoEvent({
-    workspaceId,
-    eventType: Event.EnvironmentUpdated,
-    timestamp: Date.now(),
-    data: mergedEnvironment,
-  });
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.EnvironmentUpdated,
+      timestamp: Date.now(),
+      data: mergedEnvironment,
+    });
+  } catch {
+    throw new ApiError("Failed to update environment", 500);
+  }
 
-  res.status(200).json(mergedEnvironment);
-  return;
+  res
+    .status(202)
+    .json({ id: environmentId, message: "Environment update requested" });
 };
 
 export const environmentsRouter = Router({ mergeParams: true })

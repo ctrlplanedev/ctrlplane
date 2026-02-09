@@ -1,0 +1,38 @@
+---
+title: "ctrlc apply"
+description: "Apply resource definitions from YAML files"
+---
+
+{/* TODO: Expand with full documentation */}
+
+The `ctrlc apply` command creates or updates resources in Ctrlplane from YAML
+definition files.
+
+## Usage
+
+```bash
+ctrlc apply -f <file>
+```
+
+## Flags
+
+| Flag     | Short | Required | Description                               |
+| -------- | ----- | -------- | ----------------------------------------- |
+| `--file` | `-f`  | Yes      | Path to the YAML resource definition file |
+
+## Example
+
+```bash
+ctrlc apply -f resource.yaml
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CLI Overview" icon="terminal" href="/cli/overview">
+    All CLI commands
+  </Card>
+  <Card title="Resources" icon="cube" href="/concepts/resources">
+    Learn about resources
+  </Card>
+</CardGroup>

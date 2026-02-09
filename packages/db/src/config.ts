@@ -2,11 +2,14 @@
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
+const postgresUrl =
+  process.env.POSTGRES_URL ??
+  process.env.DATABASE_URL ??
+  "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane";
+
 export const env = createEnv({
   server: {
-    POSTGRES_URL: z
-      .string()
-      .default("postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane"),
+    POSTGRES_URL: z.string().url(),
 
     POSTGRES_MAX_POOL_SIZE: z
       .string()
@@ -15,6 +18,9 @@ export const env = createEnv({
 
     POSTGRES_APPLICATION_NAME: z.string().default("ctrlplane"),
   },
-  runtimeEnv: process.env,
+  runtimeEnv: {
+    ...process.env,
+    POSTGRES_URL: postgresUrl,
+  },
   emptyStringAsUndefined: true,
 });

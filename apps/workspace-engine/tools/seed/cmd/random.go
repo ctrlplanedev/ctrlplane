@@ -146,21 +146,21 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 	resource.Metadata["cost-center"] = fmt.Sprintf("cc-%d", randomInt(1000, 9999))
 
 	// Add kind-specific metadata and config
-	switch {
-	case kind == "KubernetesCluster" || kind == "GKECluster":
+	switch kind {
+	case "KubernetesCluster", "GKECluster":
 		resource.Config["nodeCount"] = randomInt(1, 20)
 		resource.Config["version"] = fmt.Sprintf("1.%d.%d", randomInt(25, 29), randomInt(0, 5))
 		resource.Config["autoscaling"] = randomBool()
 		resource.Metadata["cluster-type"] = randomElement([]string{"production", "development", "testing"})
 
-	case kind == "KubernetesPod" || kind == "KubernetesDeployment":
+	case "KubernetesPod", "KubernetesDeployment":
 		resource.Config["replicas"] = randomInt(1, 10)
 		resource.Config["cpuRequest"] = fmt.Sprintf("%dm", randomInt(100, 2000))
 		resource.Config["memoryRequest"] = fmt.Sprintf("%dMi", randomInt(128, 4096))
 		resource.Metadata["namespace"] = fmt.Sprintf("%s-ns", env)
 		resource.Metadata["app"] = namePrefix
 
-	case kind == "EC2Instance" || kind == "AzureVirtualMachine" || kind == "GCEInstance":
+	case "EC2Instance", "AzureVirtualMachine", "GCEInstance":
 		instanceTypes := []string{"t3.micro", "t3.small", "t3.medium", "t3.large", "m5.large", "m5.xlarge"}
 		resource.Config["instanceType"] = randomElement(instanceTypes)
 		resource.Config["vcpus"] = randomInt(1, 16)
@@ -168,7 +168,7 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 		resource.Config["publicIP"] = fmt.Sprintf("52.%d.%d.%d", randomInt(0, 255), randomInt(0, 255), randomInt(0, 255))
 		resource.Metadata["os"] = randomElement([]string{"ubuntu-22.04", "amazon-linux-2", "rhel-8", "windows-server-2022"})
 
-	case kind == "RDSDatabase" || kind == "CloudSQLDatabase":
+	case "RDSDatabase", "CloudSQLDatabase":
 		resource.Config["engine"] = randomElement([]string{"postgres", "mysql", "mariadb"})
 		resource.Config["version"] = fmt.Sprintf("%d.%d", randomInt(10, 15), randomInt(0, 5))
 		resource.Config["instanceClass"] = randomElement([]string{"db.t3.micro", "db.t3.small", "db.m5.large"})
@@ -176,14 +176,14 @@ func generateRandomResource(workspaceID string, index int) *Resource {
 		resource.Config["multiAZ"] = randomBool()
 		resource.Metadata["backup-retention-days"] = fmt.Sprintf("%d", randomInt(7, 30))
 
-	case kind == "S3Bucket" || kind == "AzureStorageAccount":
+	case "S3Bucket", "AzureStorageAccount":
 		resource.Config["sizeGb"] = randomInt(1, 10000)
 		resource.Config["objectCount"] = randomInt(0, 1000000)
 		resource.Config["versioning"] = randomBool()
 		resource.Config["encryption"] = "AES256"
 		resource.Metadata["lifecycle-policy"] = randomElement([]string{"enabled", "disabled"})
 
-	case kind == "LambdaFunction":
+	case "LambdaFunction":
 		resource.Config["runtime"] = randomElement([]string{"nodejs18.x", "python3.11", "go1.x", "java17"})
 		resource.Config["memoryMb"] = randomIntFromSlice([]int{128, 256, 512, 1024, 2048, 3008})
 		resource.Config["timeoutSeconds"] = randomInt(3, 900)

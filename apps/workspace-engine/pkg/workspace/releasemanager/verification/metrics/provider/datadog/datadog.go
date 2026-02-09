@@ -218,21 +218,6 @@ func (p *Provider) Measure(ctx context.Context, providerCtx *provider.ProviderCo
 	return startTime, data, nil
 }
 
-// bytesReader is a simple io.Reader wrapper for a byte slice
-type bytesReader struct {
-	data []byte
-	pos  int
-}
-
-func (r *bytesReader) Read(p []byte) (n int, err error) {
-	if r.pos >= len(r.data) {
-		return 0, io.EOF
-	}
-	n = copy(p, r.data[r.pos:])
-	r.pos += n
-	return n, nil
-}
-
 // Resolve resolves Go templates in the config
 func Resolve(config *oapi.DatadogMetricProvider, providerCtx *provider.ProviderContext) *oapi.DatadogMetricProvider {
 	resolved := &oapi.DatadogMetricProvider{

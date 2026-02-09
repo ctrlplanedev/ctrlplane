@@ -23,8 +23,19 @@ func New(store *store.Store) *Manager {
 	}
 }
 
-// GetCandidateVersions returns all versions for a deployment, sorted newest to oldest.
-// The caller is responsible for filtering based on policies or other criteria.
+// GetCandidateVersions returns deployment versions eligible for evaluation,
+// sorted newest to oldest by CreatedAt (then by Id as a tiebreaker).
+//
+// earliestVersionForEvaluation is an optional lower bound that limits which
+// versions are considered. When non-nil, only versions created at or after the
+// given version are returned. This is used as a performance optimisation during
+// event-driven reconciliation: when a specific event triggers re-evaluation
+// (e.g. a new version is created, an approval is granted, or a policy skip is
+// added), only that version and newer ones could possibly change the deployment
+// decision, so older versions can be skipped entirely.
+//
+// When nil, all versions for the deployment are returned — this is the default
+// for full reconciliation and API-driven state computation.
 func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.ReleaseTarget, earliestVersionForEvaluation *oapi.DeploymentVersion) []*oapi.DeploymentVersion {
 	_, span := tracer.Start(ctx, "GetCandidateVersions",
 		trace.WithAttributes(
@@ -34,27 +45,13 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.
 		))
 	defer span.End()
 
-	span.AddEvent("Retrieving all versions from store")
-	allVersions := m.store.DeploymentVersions.Items()
-
-	span.SetAttributes(
-		attribute.Int("versions.all_count", len(allVersions)),
-	)
-
-	span.AddEvent("Filtering versions for deployment")
-	filtered := []*oapi.DeploymentVersion{}
-	for _, version := range allVersions {
-		if version.DeploymentId == releaseTarget.DeploymentId {
-			filtered = append(filtered, version)
-		}
+	filtered, err := m.store.DeploymentVersions.GetByDeploymentID(releaseTarget.DeploymentId)
+	if err != nil {
+		span.RecordError(err)
+		return nil
 	}
 
-	span.SetAttributes(
-		attribute.Int("versions.filtered_count", len(filtered)),
-	)
-
-	// Sort by CreatedAt (descending: newest first), then by Id (descending) if CreatedAt is the same
-	span.AddEvent("Sorting versions by CreatedAt (newest first)")
+	// Sort newest first; use Id as a stable tiebreaker when CreatedAt is equal
 	sort.Slice(filtered, func(i, j int) bool {
 		if filtered[i].CreatedAt.Equal(filtered[j].CreatedAt) {
 			return filtered[i].Id > filtered[j].Id
@@ -62,25 +59,30 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.
 		return filtered[i].CreatedAt.After(filtered[j].CreatedAt)
 	})
 
-	if len(filtered) > 0 {
-		span.SetAttributes(
-			attribute.String("versions.newest_id", filtered[0].Id),
-			attribute.String("versions.newest_tag", filtered[0].Tag),
-			attribute.String("versions.newest_created_at", filtered[0].CreatedAt.Format("2006-01-02T15:04:05Z")),
-		)
-	}
+	span.SetAttributes(
+		attribute.Int("versions.for_deployment", len(filtered)),
+	)
 
+	// If no lower bound is set, return all versions for this deployment.
 	if earliestVersionForEvaluation == nil {
 		return filtered
 	}
 
-	laterThanEarliestVersion := []*oapi.DeploymentVersion{}
+	// Truncate the sorted list at the lower bound — since versions are sorted
+	// newest-first, we keep everything until we hit a version older than the
+	// bound.
+	truncated := make([]*oapi.DeploymentVersion, 0, len(filtered))
 	for _, version := range filtered {
 		if version.CreatedAt.Before(earliestVersionForEvaluation.CreatedAt) {
 			break
 		}
-
-		laterThanEarliestVersion = append(laterThanEarliestVersion, version)
+		truncated = append(truncated, version)
 	}
-	return laterThanEarliestVersion
+
+	span.SetAttributes(
+		attribute.Int("versions.after_lower_bound", len(truncated)),
+		attribute.String("versions.lower_bound_id", earliestVersionForEvaluation.Id),
+	)
+
+	return truncated
 }

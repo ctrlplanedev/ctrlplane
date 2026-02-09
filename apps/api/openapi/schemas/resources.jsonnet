@@ -43,4 +43,13 @@ local openapi = import '../lib/openapi.libsonnet';
       value: openapi.schemaRef('Value'),
     },
   },
+
+  ResourceRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
+    },
+  },
 }

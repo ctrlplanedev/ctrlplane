@@ -10,17 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helper to create a selector that matches all resources/environments/deployments
-func createMatchAllSelector() *oapi.Selector {
-	selector := &oapi.Selector{}
-	// Empty AND condition matches everything
-	_ = selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]interface{}{
-		"operator":   "and",
-		"conditions": []interface{}{},
-	}})
-	return selector
-}
-
 // TestRetryPolicy_MultipleRules tests how multiple rules in a policy interact
 func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 	st := setupStoreWithResourceForEligibility(t, "resource-1")
@@ -55,14 +44,7 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -166,14 +148,7 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -196,14 +171,7 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		Priority:  2,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-2",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-2",
@@ -292,14 +260,7 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",
@@ -384,14 +345,7 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 		Priority:  1,
 		Metadata:  map[string]string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
-		Selectors: []oapi.PolicyTargetSelector{
-			{
-				Id:                  "selector-1",
-				DeploymentSelector:  createMatchAllSelector(),
-				EnvironmentSelector: createMatchAllSelector(),
-				ResourceSelector:    createMatchAllSelector(),
-			},
-		},
+		Selector:  "true",
 		Rules: []oapi.PolicyRule{
 			{
 				Id:        "rule-1",

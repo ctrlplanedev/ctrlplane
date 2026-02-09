@@ -221,6 +221,7 @@ export default function DeploymentDetail() {
             jobs,
             currentVersionsWithCounts,
             desiredVersionsWithCounts,
+            isLoading: releaseTargetsQuery.isLoading,
             onSelect: () => handleEnvironmentSelect(environment.id),
           },
         };
@@ -233,6 +234,7 @@ export default function DeploymentDetail() {
     releaseTargets,
     versionsQuery.data?.items,
     handleEnvironmentSelect,
+    releaseTargetsQuery.isLoading,
   ]);
 
   // Create edges showing deployment progression (left to right)

@@ -2,11 +2,17 @@ package validators
 
 import (
 	"net/http"
+	"time"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
-	celSelector "workspace-engine/pkg/selector/langs/cel"
 
 	"github.com/gin-gonic/gin"
 )
+
+var selectorEnv, _ = celutil.NewEnvBuilder().
+	WithMapVariables("resource", "deployment", "environment").
+	WithStandardExtensions().
+	BuildCached(12 * time.Hour)
 
 type Validator struct{}
 
@@ -28,8 +34,7 @@ func (v *Validator) ValidateResourceSelector(c *gin.Context) {
 		return
 	}
 
-	_, err = celSelector.Compile(cel.Cel)
-	if err != nil {
+	if err := selectorEnv.Validate(cel.Cel); err != nil {
 		c.JSON(http.StatusOK, gin.H{"valid": false, "errors": []string{err.Error()}})
 		return
 	}

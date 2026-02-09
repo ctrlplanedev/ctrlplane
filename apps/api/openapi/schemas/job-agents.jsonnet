@@ -16,6 +16,15 @@
     },
   },
 
+  JobAgentRequestAccepted: {
+    type: 'object',
+    required: ['id', 'message'],
+    properties: {
+      id: { type: 'string' },
+      message: { type: 'string' },
+    },
+  },
+
   JobAgent: {
     type: 'object',
     required: ['id', 'name', 'type', 'config', 'metadata'],

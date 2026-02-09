@@ -40,11 +40,7 @@ func TestEngine_PolicyPriorityChange_MidDeployment(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -123,11 +119,7 @@ func TestEngine_PolicyEnabledToggle_ActiveDeployments(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(2),
 			),
@@ -193,11 +185,7 @@ func TestEngine_PolicyRulesUpdate_ExistingApprovals(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(2),
 			),
@@ -307,15 +295,7 @@ func TestEngine_PolicySelectorUpdate_ReleaseTargetScope(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("prod-approval"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "equals",
-					"value":    "production",
-				}),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("environment.name == 'production'"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(1),
 			),
@@ -338,9 +318,10 @@ func TestEngine_PolicySelectorUpdate_ReleaseTargetScope(t *testing.T) {
 		if !ok {
 			continue
 		}
-		if release.ReleaseTarget.EnvironmentId == environment1ID {
+		switch release.ReleaseTarget.EnvironmentId {
+		case environment1ID:
 			prodJobs++
-		} else if release.ReleaseTarget.EnvironmentId == environment2ID {
+		case environment2ID:
 			devJobs++
 		}
 	}
@@ -354,9 +335,7 @@ func TestEngine_PolicySelectorUpdate_ReleaseTargetScope(t *testing.T) {
 
 	// Update policy selector to target ALL environments
 	policy, _ := engine.Workspace().Policies().Get(policyID)
-	selector := &policy.Selectors[0]
-	selector.EnvironmentSelector = &oapi.Selector{}
-	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	policy.Selector = "true"
 	engine.PushEvent(ctx, handler.PolicyUpdate, policy)
 
 	// Create new version
@@ -412,11 +391,7 @@ func TestEngine_PolicyDelete_WithPendingApprovals(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("approval-policy"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector("true"),
 			integration.WithPolicyRule(
 				integration.WithRuleAnyApproval(2),
 			),
@@ -519,15 +494,7 @@ func TestEngine_PolicyAdded_RetroactiveBlocking(t *testing.T) {
 	policy.Id = policyID
 	policy.Name = "new-approval-policy"
 	policy.Enabled = true
-
-	selector := c.NewPolicyTargetSelector()
-	selector.EnvironmentSelector = &oapi.Selector{}
-	_ = selector.EnvironmentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.DeploymentSelector = &oapi.Selector{}
-	_ = selector.DeploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	selector.ResourceSelector = &oapi.Selector{}
-	_ = selector.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	policy.Selectors = []oapi.PolicyTargetSelector{*selector}
+	policy.Selector = "true"
 
 	policy.Rules = []oapi.PolicyRule{
 		{

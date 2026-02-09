@@ -138,7 +138,8 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 		env := createTestEnvironment(systemID, environmentID, envName)
 
 		// Vary selectors for realism
-		if i%3 == 0 {
+		switch i % 3 {
+		case 0:
 			// Some environments filter by region
 			selector := &oapi.Selector{}
 			_ = selector.FromJsonSelector(oapi.JsonSelector{
@@ -150,7 +151,7 @@ func setupBenchmarkWorkspace(b *testing.B, numEnvironments, numDeployments int) 
 				},
 			})
 			env.ResourceSelector = selector
-		} else if i%3 == 1 {
+		case 1:
 			// Some filter by env metadata
 			selector := &oapi.Selector{}
 			_ = selector.FromJsonSelector(oapi.JsonSelector{

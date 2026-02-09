@@ -91,6 +91,23 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments': {
+    get: {
+      summary: 'Get deployments for a resource',
+      operationId: 'getDeploymentsForResource',
+      description: 'Returns a paginated list of deployments that match the given resource.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.resourceIdentifierParam(),
+        openapi.limitParam(),
+        openapi.offsetParam(),
+      ],
+      responses: openapi.paginatedResponse(openapi.schemaRef('Deployment'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+
   '/v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/release-targets': {
     get: {
       summary: 'Get release targets for a resource',

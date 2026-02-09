@@ -285,8 +285,3 @@ func TestGithubDispatcher_CreateGithubClient_MissingEnvVars(t *testing.T) {
 		t.Errorf("Expected error containing '%s', got: %v", expectedErr, err)
 	}
 }
-
-// Helper function
-func strPtr(s string) *string {
-	return &s
-}

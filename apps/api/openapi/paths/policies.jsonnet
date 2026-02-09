@@ -14,7 +14,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     post: {
       summary: 'Create a policy',
-      operationId: 'createPolicy',
+      operationId: 'requestPolicyCreation',
       parameters: [
         openapi.workspaceIdParam(),
       ],
@@ -24,7 +24,8 @@ local openapi = import '../lib/openapi.libsonnet';
           'application/json': { schema: openapi.schemaRef('CreatePolicyRequest') },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Policy')) + openapi.badRequestResponse(),
+      responses: openapi.acceptedResponse(openapi.schemaRef('PolicyRequestAccepted'))
+                 + openapi.badRequestResponse(),
     },
   },
   '/v1/workspaces/{workspaceId}/policies/{policyId}': {
@@ -39,18 +40,18 @@ local openapi = import '../lib/openapi.libsonnet';
     },
     delete: {
       summary: 'Delete a policy by ID',
-      operationId: 'deletePolicy',
+      operationId: 'requestPolicyDeletion',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.policyIdParam(),
       ],
-      responses: openapi.acceptedResponse(openapi.schemaRef('Policy'), 'Policy updated')
+      responses: openapi.acceptedResponse(openapi.schemaRef('PolicyRequestAccepted'), 'Policy updated')
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
     put: {
       summary: 'Upsert a policy by ID',
-      operationId: 'upsertPolicy',
+      operationId: 'requestPolicyUpsert',
       parameters: [
         openapi.workspaceIdParam(),
         openapi.policyIdParam(),
@@ -61,7 +62,7 @@ local openapi = import '../lib/openapi.libsonnet';
           'application/json': { schema: openapi.schemaRef('UpsertPolicyRequest') },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('Policy')) +
+      responses: openapi.acceptedResponse(openapi.schemaRef('PolicyRequestAccepted')) +
                  openapi.badRequestResponse() +
                  openapi.notFoundResponse(),
     },

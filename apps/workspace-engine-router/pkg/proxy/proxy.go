@@ -17,9 +17,9 @@ type ReverseProxy struct {
 }
 
 // NewReverseProxy creates a new ReverseProxy
-func NewReverseProxy(timeoutSeconds time.Duration) *ReverseProxy {
+func NewReverseProxy(timeout time.Duration) *ReverseProxy {
 	return &ReverseProxy{
-		timeout: timeoutSeconds,
+		timeout: timeout,
 	}
 }
 

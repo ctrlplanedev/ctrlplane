@@ -23,8 +23,6 @@
     "test:systems": "pnpm exec playwright test tests/systems.spec.ts",
     "clean": "rm -rf .turbo node_modules",
     "show-report": "pnpm exec playwright show-report",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
-    "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "install-browsers": "npx playwright install --with-deps",
     "generate": "pnpm dlx openapi-typescript ../openapi.v1.json -o api/schema.ts"
   },

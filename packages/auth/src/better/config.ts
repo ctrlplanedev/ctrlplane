@@ -2,11 +2,13 @@ import type { BetterAuthPlugin } from "better-auth";
 import type { GenericOAuthConfig } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware } from "better-auth/api";
 // Available OAuth helpers from better-auth/plugins:
 // auth0, keycloak, microsoftEntraId, okta, slack, hubspot, line
 import { genericOAuth, okta } from "better-auth/plugins";
 import { v4 as uuidv4 } from "uuid";
 
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 
@@ -56,6 +58,37 @@ if (oauthConfigs.length > 0) {
   plugins.push(genericOAuth({ config: oauthConfigs }));
 }
 
+async function assignWorkspacesByDomain(user: {
+  id: string;
+  email: string;
+}): Promise<void> {
+  const domain = user.email.split("@")[1];
+  if (!domain) return;
+
+  const matchingRules = await db
+    .select()
+    .from(schema.workspaceEmailDomainMatching)
+    .where(
+      eq(schema.workspaceEmailDomainMatching.domain, domain.toLowerCase()),
+    );
+  // .then((rows) => rows.filter((r) => r.verified)); // TODO: Add verification check
+
+  if (matchingRules.length === 0) return;
+
+  await db
+    .insert(schema.entityRole)
+    .values(
+      matchingRules.map((rule) => ({
+        roleId: rule.roleId,
+        entityType: "user" as const,
+        entityId: user.id,
+        scopeType: "workspace" as const,
+        scopeId: rule.workspaceId,
+      })),
+    )
+    .onConflictDoNothing();
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -79,6 +112,15 @@ export const auth = betterAuth({
     enabled: isCredentialsAuthEnabled,
   },
   trustedOrigins: [env.BASE_URL, "http://localhost:5173"],
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      const session = ctx.context.newSession ?? ctx.context.session;
+      if (!session) return;
+      const { user } = session;
+      if (!user.email) return;
+      await assignWorkspacesByDomain({ id: user.id, email: user.email });
+    }),
+  },
   advanced: {
     database: {
       generateId: () => uuidv4(),

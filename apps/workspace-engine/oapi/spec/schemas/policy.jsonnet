@@ -3,7 +3,7 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   Policy: {
     type: 'object',
-    required: ['id', 'name', 'createdAt', 'workspaceId', 'selectors', 'rules', 'metadata', 'priority', 'enabled'],
+    required: ['id', 'name', 'createdAt', 'workspaceId', 'selector', 'rules', 'metadata', 'priority', 'enabled'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
@@ -12,9 +12,9 @@ local openapi = import '../lib/openapi.libsonnet';
       workspaceId: { type: 'string' },
       priority: { type: 'integer' },
       enabled: { type: 'boolean' },
-      selectors: {
-        type: 'array',
-        items: openapi.schemaRef('PolicyTargetSelector'),
+      selector: {
+        type: 'string',
+        description: 'CEL expression for matching release targets. Use "true" to match all targets.',
       },
       rules: {
         type: 'array',
@@ -35,17 +35,6 @@ local openapi = import '../lib/openapi.libsonnet';
       policy: openapi.schemaRef('Policy'),
       environmentIds: { type: 'array', items: { type: 'string' } },
       releaseTargets: { type: 'array', items: openapi.schemaRef('ReleaseTarget') },
-    },
-  },
-
-  PolicyTargetSelector: {
-    type: 'object',
-    required: ['id'],
-    properties: {
-      id: { type: 'string' },
-      deploymentSelector: openapi.schemaRef('Selector'),
-      environmentSelector: openapi.schemaRef('Selector'),
-      resourceSelector: openapi.schemaRef('Selector'),
     },
   },
 

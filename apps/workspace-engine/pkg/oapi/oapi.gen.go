@@ -279,14 +279,15 @@ type DeployDecision struct {
 
 // Deployment defines model for Deployment.
 type Deployment struct {
-	Description      *string        `json:"description,omitempty"`
-	Id               string         `json:"id"`
-	JobAgentConfig   JobAgentConfig `json:"jobAgentConfig"`
-	JobAgentId       *string        `json:"jobAgentId,omitempty"`
-	Name             string         `json:"name"`
-	ResourceSelector *Selector      `json:"resourceSelector,omitempty"`
-	Slug             string         `json:"slug"`
-	SystemId         string         `json:"systemId"`
+	Description      *string           `json:"description,omitempty"`
+	Id               string            `json:"id"`
+	JobAgentConfig   JobAgentConfig    `json:"jobAgentConfig"`
+	JobAgentId       *string           `json:"jobAgentId,omitempty"`
+	Metadata         map[string]string `json:"metadata"`
+	Name             string            `json:"name"`
+	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
+	Slug             string            `json:"slug"`
+	SystemId         string            `json:"systemId"`
 }
 
 // DeploymentAndSystem defines model for DeploymentAndSystem.
@@ -378,12 +379,13 @@ type EntityRelation struct {
 
 // Environment defines model for Environment.
 type Environment struct {
-	CreatedAt        time.Time `json:"createdAt"`
-	Description      *string   `json:"description,omitempty"`
-	Id               string    `json:"id"`
-	Name             string    `json:"name"`
-	ResourceSelector *Selector `json:"resourceSelector,omitempty"`
-	SystemId         string    `json:"systemId"`
+	CreatedAt        time.Time         `json:"createdAt"`
+	Description      *string           `json:"description,omitempty"`
+	Id               string            `json:"id"`
+	Metadata         map[string]string `json:"metadata"`
+	Name             string            `json:"name"`
+	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
+	SystemId         string            `json:"systemId"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -502,11 +504,12 @@ type Job struct {
 
 // JobAgent defines model for JobAgent.
 type JobAgent struct {
-	Config      JobAgentConfig `json:"config"`
-	Id          string         `json:"id"`
-	Name        string         `json:"name"`
-	Type        string         `json:"type"`
-	WorkspaceId string         `json:"workspaceId"`
+	Config      JobAgentConfig     `json:"config"`
+	Id          string             `json:"id"`
+	Metadata    *map[string]string `json:"metadata,omitempty"`
+	Name        string             `json:"name"`
+	Type        string             `json:"type"`
+	WorkspaceId string             `json:"workspaceId"`
 }
 
 // JobAgentConfig defines model for JobAgentConfig.
@@ -600,12 +603,14 @@ type Policy struct {
 	Id          string  `json:"id"`
 
 	// Metadata Arbitrary metadata for the policy (record<string, string>)
-	Metadata    map[string]string      `json:"metadata"`
-	Name        string                 `json:"name"`
-	Priority    int                    `json:"priority"`
-	Rules       []PolicyRule           `json:"rules"`
-	Selectors   []PolicyTargetSelector `json:"selectors"`
-	WorkspaceId string                 `json:"workspaceId"`
+	Metadata map[string]string `json:"metadata"`
+	Name     string            `json:"name"`
+	Priority int               `json:"priority"`
+	Rules    []PolicyRule      `json:"rules"`
+
+	// Selector CEL expression for matching release targets. Use "true" to match all targets.
+	Selector    string `json:"selector"`
+	WorkspaceId string `json:"workspaceId"`
 }
 
 // PolicyEvaluation defines model for PolicyEvaluation.
@@ -663,14 +668,6 @@ type PolicySkip struct {
 
 	// WorkspaceId Workspace this skip belongs to
 	WorkspaceId string `json:"workspaceId"`
-}
-
-// PolicyTargetSelector defines model for PolicyTargetSelector.
-type PolicyTargetSelector struct {
-	DeploymentSelector  *Selector `json:"deploymentSelector,omitempty"`
-	EnvironmentSelector *Selector `json:"environmentSelector,omitempty"`
-	Id                  string    `json:"id"`
-	ResourceSelector    *Selector `json:"resourceSelector,omitempty"`
 }
 
 // PropertiesMatcher defines model for PropertiesMatcher.
@@ -890,10 +887,11 @@ type StringValue = string
 
 // System defines model for System.
 type System struct {
-	Description *string `json:"description,omitempty"`
-	Id          string  `json:"id"`
-	Name        string  `json:"name"`
-	WorkspaceId string  `json:"workspaceId"`
+	Description *string            `json:"description,omitempty"`
+	Id          string             `json:"id"`
+	Metadata    *map[string]string `json:"metadata,omitempty"`
+	Name        string             `json:"name"`
+	WorkspaceId string             `json:"workspaceId"`
 }
 
 // TerraformCloudJobAgentConfig defines model for TerraformCloudJobAgentConfig.
@@ -1366,6 +1364,15 @@ type QueryResourcesJSONBody struct {
 
 // QueryResourcesParams defines parameters for QueryResources.
 type QueryResourcesParams struct {
+	// Limit Maximum number of items to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of items to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetDeploymentsForResourceParams defines parameters for GetDeploymentsForResource.
+type GetDeploymentsForResourceParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -2568,6 +2575,9 @@ type ServerInterface interface {
 	// Get resource by identifier
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier})
 	GetResourceByIdentifier(c *gin.Context, workspaceId string, resourceIdentifier string)
+	// Get deployments for a resource
+	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/deployments)
+	GetDeploymentsForResource(c *gin.Context, workspaceId string, resourceIdentifier string, params GetDeploymentsForResourceParams)
 	// Get relationships for a resource
 	// (GET /v1/workspaces/{workspaceId}/resources/{resourceIdentifier}/relationships)
 	GetRelationshipsForResource(c *gin.Context, workspaceId string, resourceIdentifier string)
@@ -4333,6 +4343,58 @@ func (siw *ServerInterfaceWrapper) GetResourceByIdentifier(c *gin.Context) {
 	siw.Handler.GetResourceByIdentifier(c, workspaceId, resourceIdentifier)
 }
 
+// GetDeploymentsForResource operation middleware
+func (siw *ServerInterfaceWrapper) GetDeploymentsForResource(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "workspaceId" -------------
+	var workspaceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspaceId", c.Param("workspaceId"), &workspaceId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workspaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "resourceIdentifier" -------------
+	var resourceIdentifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "resourceIdentifier", c.Param("resourceIdentifier"), &resourceIdentifier, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter resourceIdentifier: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDeploymentsForResourceParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", c.Request.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", c.Request.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDeploymentsForResource(c, workspaceId, resourceIdentifier, params)
+}
+
 // GetRelationshipsForResource operation middleware
 func (siw *ServerInterfaceWrapper) GetRelationshipsForResource(c *gin.Context) {
 
@@ -4794,6 +4856,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/kinds", wrapper.GetKindsForWorkspace)
 	router.POST(options.BaseURL+"/v1/workspaces/:workspaceId/resources/query", wrapper.QueryResources)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier", wrapper.GetResourceByIdentifier)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/deployments", wrapper.GetDeploymentsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/relationships", wrapper.GetRelationshipsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets", wrapper.GetReleaseTargetsForResource)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/resources/:resourceIdentifier/release-targets/deployment/:deploymentId", wrapper.GetReleaseTargetForResourceInDeployment)

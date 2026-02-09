@@ -19,7 +19,6 @@ var _ evaluator.Evaluator = &DeploymentWindowSummaryEvaluator{}
 // DeploymentWindowSummaryEvaluator evaluates whether the current time is within a deployment window
 // defined by an rrule pattern.
 type DeploymentWindowSummaryEvaluator struct {
-	store    *store.Store
 	ruleId   string
 	rule     *oapi.DeploymentWindowRule
 	rrule    *rrule.RRule

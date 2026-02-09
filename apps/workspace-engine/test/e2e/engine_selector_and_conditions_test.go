@@ -302,25 +302,8 @@ func TestEngine_PolicyDeploymentSelectorAndCondition(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-web-only"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
-			),
+			integration.WithPolicySelector(
+				`deployment.name.contains("prod") && deployment.name.contains("web")`),
 		),
 	)
 
@@ -422,26 +405,8 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-prod-east-only"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelDeploymentSelector("true"),
-				integration.PolicyTargetCelEnvironmentSelector("true"),
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "us-east",
-						},
-					},
-				}),
-				integration.PolicyTargetCelResourceSelector("true"),
-			),
+			integration.WithPolicySelector(
+				`environment.name.contains("prod") && environment.name.contains("us-east")`),
 		),
 	)
 
@@ -524,20 +489,12 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-us-west"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -545,51 +502,9 @@ func TestEngine_PolicyComplexAndConditions(t *testing.T) {
 		),
 		integration.WithPolicy(
 			integration.PolicyName("policy-web-apps"),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "east",
-				}),
-			),
-			integration.WithPolicyTargetSelector(
-				integration.PolicyTargetCelResourceSelector("true"),
-				integration.PolicyTargetJsonDeploymentSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "dev",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
-				integration.PolicyTargetJsonEnvironmentSelector(map[string]any{
-					"type":     "name",
-					"operator": "contains",
-					"value":    "west",
-				}),
+			integration.WithPolicySelector(
+				`(deployment.name.contains("prod") && deployment.name.contains("web")  && environment.name.contains("east")) ||
+				(deployment.name.contains("dev") && deployment.name.contains("web")  && environment.name.contains("west"))`,
 			),
 		),
 	)
