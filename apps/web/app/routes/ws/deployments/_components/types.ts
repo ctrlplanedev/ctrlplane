@@ -90,9 +90,25 @@ export type ReleaseTargetWithState = {
     environmentId: string;
     resourceId: string;
   };
+  resource: {
+    id: string;
+    name: string;
+    identifier: string;
+  };
+  environment: {
+    id: string;
+    name: string;
+  };
   state: {
-    currentRelease?: { version: { tag: string } } | null;
-    desiredRelease?: { version: { tag: string } } | null;
+    currentRelease?: { version: { id: string; tag: string } } | null;
+    desiredRelease?: { version: { id: string; tag: string } } | null;
+    latestJob?: {
+      job: {
+        id: string;
+        status: JobStatus;
+        message?: string;
+      };
+    } | null;
   };
 };
 
