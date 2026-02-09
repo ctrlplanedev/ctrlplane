@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { Link } from "react-router";
+import Editor from "@monaco-editor/react";
+import yaml from "js-yaml";
+import { ChevronDown } from "lucide-react";
 
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
+import { useTheme } from "~/components/ThemeProvider";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,6 +14,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/components/ui/collapsible";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
@@ -81,6 +93,62 @@ export function ResourceHeader() {
   );
 }
 
+const ConfigSection: React.FC<{ config: Record<string, unknown> }> = ({
+  config,
+}) => {
+  const [open, setOpen] = useState(false);
+  const { theme } = useTheme();
+
+  const yamlValue = yaml.dump(config, {
+    indent: 2,
+    lineWidth: -1,
+    noRefs: true,
+  });
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium">Configuration</CardTitle>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+                />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            <div className="overflow-hidden rounded-md border">
+              <Editor
+                language="yaml"
+                theme={theme === "dark" ? "vs-dark" : "vs"}
+                value={yamlValue}
+                height="300px"
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 13,
+                  tabSize: 2,
+                  wordWrap: "on",
+                  automaticLayout: true,
+                  lineNumbers: "off",
+                  folding: true,
+                  renderLineHighlight: "none",
+                }}
+              />
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+};
+
 export default function ResourceDetail() {
   const { resource } = useResource();
   const displayMetadata = Object.fromEntries(
@@ -108,11 +176,7 @@ export default function ResourceDetail() {
           )}
 
           {Object.keys(resource.config).length > 0 && (
-            <MetadataSection
-              title="Configuration"
-              data={resource.config}
-              isOpen={false}
-            />
+            <ConfigSection config={resource.config} />
           )}
 
           <ResourceVariables />
