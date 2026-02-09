@@ -47,7 +47,7 @@ func NewStateCache(store *store.Store, planner *deployment.Planner) *StateCache 
 // If resourceRelationships are provided, they will be passed to the planner to avoid recomputation.
 // If bypassCache is true, always computes fresh state.
 func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
-	ctx, span := stateCacheTracer.Start(ctx, "Get")
+	ctx, span := stateCacheTracer.Start(ctx, "ReleaseManager.StateCache.Get")
 	defer span.End()
 
 	options := &options{}
@@ -102,7 +102,7 @@ func (sc *StateCache) getJobWithVerifications(job *oapi.Job) *oapi.JobWithVerifi
 // This involves gathering current release and job information.
 // Callers can provide already-known information via options to avoid redundant queries.
 func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (rts *oapi.ReleaseTargetState, err error) {
-	ctx, span := stateCacheTracer.Start(ctx, "compute")
+	ctx, span := stateCacheTracer.Start(ctx, "ReleaseManager.StateCache.compute")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("release_target.key", releaseTarget.Key()))
