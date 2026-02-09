@@ -93,11 +93,11 @@ func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.
 	if err != nil {
 		return time.Time{}, nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	if err := setHeaders(req, resolvedProvider); err != nil {
+	client := buildHTTPClient(resolvedProvider)
+
+	if err := setHeaders(req, resolvedProvider, client); err != nil {
 		return time.Time{}, nil, err
 	}
-
-	client := buildHTTPClient(resolvedProvider)
 	resp, err := client.Do(req)
 	duration := time.Since(startTime)
 	if err != nil {
@@ -218,8 +218,8 @@ func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string
 	return address + "/api/v1/query?" + params.Encode(), nil
 }
 
-func setHeaders(req *http.Request, config *oapi.PrometheusMetricProvider) error {
-	if err := setAuthHeader(req, config.Authentication); err != nil {
+func setHeaders(req *http.Request, config *oapi.PrometheusMetricProvider, client *http.Client) error {
+	if err := setAuthHeader(req, config.Authentication, client); err != nil {
 		return err
 	}
 
@@ -233,13 +233,13 @@ func setHeaders(req *http.Request, config *oapi.PrometheusMetricProvider) error 
 	return nil
 }
 
-func setAuthHeader(req *http.Request, auth *prometheusAuth) error {
+func setAuthHeader(req *http.Request, auth *prometheusAuth, client *http.Client) error {
 	if auth == nil {
 		return nil
 	}
 
 	if auth.Oauth2 != nil {
-		token, err := fetchOAuth2Token(req.Context(), auth.Oauth2)
+		token, err := fetchOAuth2Token(req.Context(), auth.Oauth2, client)
 		if err != nil {
 			return fmt.Errorf("oauth2 token fetch failed: %w", err)
 		}
@@ -253,7 +253,7 @@ func setAuthHeader(req *http.Request, auth *prometheusAuth) error {
 	return nil
 }
 
-func fetchOAuth2Token(ctx context.Context, oauth2 *prometheusOAuth2) (string, error) {
+func fetchOAuth2Token(ctx context.Context, oauth2 *prometheusOAuth2, client *http.Client) (string, error) {
 	data := url.Values{
 		"grant_type":    {"client_credentials"},
 		"client_id":     {oauth2.ClientId},
@@ -269,7 +269,7 @@ func fetchOAuth2Token(ctx context.Context, oauth2 *prometheusOAuth2) (string, er
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("token request failed: %w", err)
 	}
@@ -382,7 +382,7 @@ func extractVectorResults(raw json.RawMessage) (*float64, []map[string]any, erro
 			log.Warn("Could not parse vector value", "index", i, "error", err)
 			continue
 		}
-		if i == 0 {
+		if primary == nil {
 			primary = &val
 		}
 		results = append(results, map[string]any{
@@ -417,7 +417,7 @@ func extractMatrixResults(raw json.RawMessage) (*float64, []map[string]any, erro
 			log.Warn("Could not parse matrix value", "index", i, "error", err)
 			continue
 		}
-		if i == 0 {
+		if primary == nil {
 			primary = &val
 		}
 

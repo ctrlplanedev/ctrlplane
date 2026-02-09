@@ -9,9 +9,15 @@ export const prometheusProviderConfig = z.object({
 
 export type PrometheusProviderConfig = z.infer<typeof prometheusProviderConfig>;
 
+const prometheusTimeSeriesPoint = z.object({
+  timestamp: z.number(),
+  value: z.number(),
+});
+
 const prometheusResultEntry = z.object({
   metric: z.record(z.string()).optional(),
   value: z.number(),
+  values: z.array(prometheusTimeSeriesPoint).optional(),
 });
 
 export const prometheusMeasurementData = z.object({
