@@ -38,6 +38,96 @@ func (a *entityStoreAdapter) GetEntity(_ context.Context, entityID string) (*oap
 	return nil, fmt.Errorf("entity not found: %s", entityID)
 }
 
+// GetEntityMap returns the entity as a map[string]any built directly from struct
+// fields, avoiding the JSON marshal/unmarshal round-trip used by GetEntity +
+// RelatableEntity. This is the hot-path method used during relationship
+// index recomputation.
+func (a *entityStoreAdapter) GetEntityMap(_ context.Context, entityID string) (map[string]any, error) {
+	if r, ok := a.store.Resources.Get(entityID); ok {
+		return resourceToMap(r), nil
+	}
+	if d, ok := a.store.Deployments.Get(entityID); ok {
+		return deploymentToMap(d), nil
+	}
+	if e, ok := a.store.Environments.Get(entityID); ok {
+		return environmentToMap(e), nil
+	}
+	return nil, fmt.Errorf("entity not found: %s", entityID)
+}
+
+func stringMapToAnyMap(m map[string]string) map[string]any {
+	if m == nil {
+		return nil
+	}
+	result := make(map[string]any, len(m))
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
+}
+
+func resourceToMap(r *oapi.Resource) map[string]any {
+	m := map[string]any{
+		"type":        "resource",
+		"id":          r.Id,
+		"name":        r.Name,
+		"kind":        r.Kind,
+		"version":     r.Version,
+		"identifier":  r.Identifier,
+		"workspaceId": r.WorkspaceId,
+		"config":      r.Config,
+		"metadata":    stringMapToAnyMap(r.Metadata),
+		"createdAt":   r.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+	}
+	if r.DeletedAt != nil {
+		m["deletedAt"] = r.DeletedAt.Format("2006-01-02T15:04:05.999Z07:00")
+	}
+	if r.LockedAt != nil {
+		m["lockedAt"] = r.LockedAt.Format("2006-01-02T15:04:05.999Z07:00")
+	}
+	if r.UpdatedAt != nil {
+		m["updatedAt"] = r.UpdatedAt.Format("2006-01-02T15:04:05.999Z07:00")
+	}
+	if r.ProviderId != nil {
+		m["providerId"] = *r.ProviderId
+	}
+	return m
+}
+
+func deploymentToMap(d *oapi.Deployment) map[string]any {
+	m := map[string]any{
+		"type":           "deployment",
+		"id":             d.Id,
+		"name":           d.Name,
+		"slug":           d.Slug,
+		"systemId":       d.SystemId,
+		"jobAgentConfig": d.JobAgentConfig,
+		"metadata":       stringMapToAnyMap(d.Metadata),
+	}
+	if d.Description != nil {
+		m["description"] = *d.Description
+	}
+	if d.JobAgentId != nil {
+		m["jobAgentId"] = *d.JobAgentId
+	}
+	return m
+}
+
+func environmentToMap(e *oapi.Environment) map[string]any {
+	m := map[string]any{
+		"type":      "environment",
+		"id":        e.Id,
+		"name":      e.Name,
+		"systemId":  e.SystemId,
+		"metadata":  stringMapToAnyMap(e.Metadata),
+		"createdAt": e.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
+	}
+	if e.Description != nil {
+		m["description"] = *e.Description
+	}
+	return m
+}
+
 // indexEntry pairs a v2 relationship index with its original oapi rule.
 type indexEntry struct {
 	index    *v2.RelationshipIndex
@@ -159,7 +249,11 @@ func (ri *RelationshipIndexes) AddRule(ctx context.Context, rule *oapi.Relations
 		attribute.String("rule.to_type", string(rule.ToType)),
 	)
 
-	idx := v2.NewRelationshipIndex(ri.entityStore, v2Rule)
+	idx, err := v2.NewRelationshipIndex(ri.entityStore, v2Rule)
+	if err != nil {
+		span.SetStatus(codes.Error, "failed to compile index matcher: "+err.Error())
+		return
+	}
 
 	log.Info("Adding resources to rule", "rule.id", rule.Id)
 	for _, r := range ri.store.Resources.Items() {

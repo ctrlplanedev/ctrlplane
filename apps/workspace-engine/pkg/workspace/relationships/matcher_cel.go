@@ -2,6 +2,7 @@ package relationships
 
 import (
 	"fmt"
+	"sync"
 	"time"
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
@@ -13,6 +14,12 @@ import (
 var compiledEnv, _ = celutil.NewEnvBuilder().
 	WithMapVariables("from", "to").
 	BuildCached(24 * time.Hour)
+
+var activationPool = sync.Pool{
+	New: func() any {
+		return make(map[string]any, 2)
+	},
+}
 
 func NewCelMatcher(cm *oapi.CelMatcher) (*CelMatcher, error) {
 	program, err := compiledEnv.Compile(cm.Cel)
@@ -28,11 +35,16 @@ type CelMatcher struct {
 }
 
 func (m *CelMatcher) Evaluate(from map[string]any, to map[string]any) bool {
-	celCtx := map[string]any{
-		"from": from,
-		"to":   to,
-	}
+	celCtx := activationPool.Get().(map[string]any)
+	celCtx["from"] = from
+	celCtx["to"] = to
+
 	result, err := celutil.EvalBool(m.program, celCtx)
+
+	delete(celCtx, "from")
+	delete(celCtx, "to")
+	activationPool.Put(celCtx)
+
 	if err != nil {
 		log.Warn("CEL evaluation error", "error", err)
 		return false

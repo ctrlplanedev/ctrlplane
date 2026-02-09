@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/relationships"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,16 +12,18 @@ import (
 
 // mockStore implements the Store interface for testing.
 type mockStore struct {
-	entities map[string]*oapi.RelatableEntity
-	err      error
+	entities   map[string]*oapi.RelatableEntity
+	entityMaps map[string]map[string]any
+	err        error
 	// errOnID lets specific IDs return an error
 	errOnID map[string]error
 }
 
 func newMockStore() *mockStore {
 	return &mockStore{
-		entities: make(map[string]*oapi.RelatableEntity),
-		errOnID:  make(map[string]error),
+		entities:   make(map[string]*oapi.RelatableEntity),
+		entityMaps: make(map[string]map[string]any),
+		errOnID:    make(map[string]error),
 	}
 }
 
@@ -36,12 +37,38 @@ func (m *mockStore) GetEntity(_ context.Context, entityID string) (*oapi.Relatab
 	return m.entities[entityID], nil
 }
 
+func (m *mockStore) GetEntityMap(_ context.Context, entityID string) (map[string]any, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if err, ok := m.errOnID[entityID]; ok {
+		return nil, err
+	}
+	if em, ok := m.entityMaps[entityID]; ok {
+		return em, nil
+	}
+	return nil, nil
+}
+
 func (m *mockStore) addResource(r *oapi.Resource) {
-	m.entities[r.Id] = relationships.NewResourceEntity(r)
+	m.entityMaps[r.Id] = map[string]any{
+		"type":        "resource",
+		"id":          r.Id,
+		"name":        r.Name,
+		"kind":        r.Kind,
+		"version":     r.Version,
+		"workspaceId": r.WorkspaceId,
+	}
 }
 
 func (m *mockStore) addDeployment(d *oapi.Deployment) {
-	m.entities[d.Id] = relationships.NewDeploymentEntity(d)
+	m.entityMaps[d.Id] = map[string]any{
+		"type":     "deployment",
+		"id":       d.Id,
+		"name":     d.Name,
+		"slug":     d.Slug,
+		"systemId": d.SystemId,
+	}
 }
 
 func makeResource(id, name string) *oapi.Resource {
@@ -77,8 +104,9 @@ func celRule(expr string) *RelationshipRule {
 func TestNewRelationshipIndex(t *testing.T) {
 	store := newMockStore()
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
 
+	require.NoError(t, err)
 	assert.NotNil(t, idx)
 	assert.Equal(t, rule, idx.Rule())
 }
@@ -93,7 +121,8 @@ func TestRelationshipIndex_AddEntityAndRecompute(t *testing.T) {
 	store.addDeployment(d)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -122,7 +151,8 @@ func TestRelationshipIndex_NoMatchWhenNamesDiffer(t *testing.T) {
 	store.addDeployment(d)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -142,7 +172,8 @@ func TestRelationshipIndex_RemoveEntity(t *testing.T) {
 	store.addDeployment(d)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -164,7 +195,8 @@ func TestRelationshipIndex_DirtyEntity(t *testing.T) {
 	store.addDeployment(d)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -190,7 +222,8 @@ func TestRelationshipIndex_DirtyAll(t *testing.T) {
 	store.addDeployment(d)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -214,7 +247,8 @@ func TestRelationshipIndex_SelfMatchExcluded(t *testing.T) {
 
 	// "true" would match everything, but self should be excluded
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.Recompute(ctx)
@@ -231,7 +265,8 @@ func TestRelationshipIndex_MatchStoreErrorFrom(t *testing.T) {
 	store.errOnID["r1"] = errors.New("not found")
 
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -250,7 +285,8 @@ func TestRelationshipIndex_MatchStoreErrorTo(t *testing.T) {
 	store.errOnID["d1"] = errors.New("not found")
 
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -263,12 +299,13 @@ func TestRelationshipIndex_MatchNilFrom(t *testing.T) {
 	ctx := context.Background()
 	store := newMockStore()
 
-	// r1 is registered in the index but NOT in the store, so GetEntity returns nil
+	// r1 is registered in the index but NOT in the store, so GetEntityMap returns nil
 	d := makeDeployment("d1", "app")
 	store.addDeployment(d)
 
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -286,7 +323,8 @@ func TestRelationshipIndex_MatchNilTo(t *testing.T) {
 	// d1 not in store
 
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -299,7 +337,8 @@ func TestRelationshipIndex_IsDirtyFalseWhenEmpty(t *testing.T) {
 	ctx := context.Background()
 	store := newMockStore()
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	assert.False(t, idx.IsDirty(ctx))
 }
@@ -308,7 +347,8 @@ func TestRelationshipIndex_RecomputeNoEntities(t *testing.T) {
 	ctx := context.Background()
 	store := newMockStore()
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	evals := idx.Recompute(ctx)
 	assert.Equal(t, 0, evals)
@@ -318,7 +358,8 @@ func TestRelationshipIndex_GetChildrenEmpty(t *testing.T) {
 	ctx := context.Background()
 	store := newMockStore()
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	assert.Empty(t, idx.GetChildren(ctx, "nonexistent"))
 }
@@ -327,7 +368,8 @@ func TestRelationshipIndex_GetParentsEmpty(t *testing.T) {
 	ctx := context.Background()
 	store := newMockStore()
 	rule := celRule("true")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	assert.Empty(t, idx.GetParents(ctx, "nonexistent"))
 }
@@ -346,7 +388,8 @@ func TestRelationshipIndex_MultipleEntities(t *testing.T) {
 	store.addDeployment(d2)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "r2")
@@ -375,7 +418,8 @@ func TestRelationshipIndex_DirtyEntityAfterUpdate(t *testing.T) {
 	store.addDeployment(d)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -403,7 +447,8 @@ func TestRelationshipIndex_RemoveAndReaddEntity(t *testing.T) {
 	store.addDeployment(d)
 
 	rule := celRule("from.name == to.name")
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	idx.AddEntity(ctx, "r1")
 	idx.AddEntity(ctx, "d1")
@@ -428,7 +473,8 @@ func TestRelationshipIndex_RuleGetter(t *testing.T) {
 		Reference:   "ref",
 		Matcher:     oapi.CelMatcher{Cel: "true"},
 	}
-	idx := NewRelationshipIndex(store, rule)
+	idx, err := NewRelationshipIndex(store, rule)
+	require.NoError(t, err)
 
 	got := idx.Rule()
 	require.NotNil(t, got)
@@ -436,4 +482,14 @@ func TestRelationshipIndex_RuleGetter(t *testing.T) {
 	assert.Equal(t, "my-rule", got.Name)
 	assert.Equal(t, "desc", got.Description)
 	assert.Equal(t, "ref", got.Reference)
+}
+
+func TestNewRelationshipIndex_InvalidCEL(t *testing.T) {
+	store := newMockStore()
+	rule := &RelationshipRule{
+		ID:      "bad-rule",
+		Matcher: oapi.CelMatcher{Cel: "invalid $$$ expression"},
+	}
+	_, err := NewRelationshipIndex(store, rule)
+	assert.Error(t, err)
 }
