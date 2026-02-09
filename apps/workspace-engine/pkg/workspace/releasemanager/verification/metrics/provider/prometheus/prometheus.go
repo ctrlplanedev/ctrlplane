@@ -45,14 +45,16 @@ type prometheusHeader = struct {
 	Value string `json:"value"`
 }
 
+type prometheusOAuth2 = struct {
+	ClientId     string    `json:"clientId"`
+	ClientSecret string    `json:"clientSecret"`
+	Scopes       *[]string `json:"scopes,omitempty"`
+	TokenUrl     string    `json:"tokenUrl"`
+}
+
 type prometheusAuth = struct {
-	BearerToken *string `json:"bearerToken,omitempty"`
-	Oauth2      *struct {
-		ClientId     string    `json:"clientId"`
-		ClientSecret string    `json:"clientSecret"`
-		Scopes       *[]string `json:"scopes,omitempty"`
-		TokenUrl     string    `json:"tokenUrl"`
-	} `json:"oauth2,omitempty"`
+	BearerToken *string           `json:"bearerToken,omitempty"`
+	Oauth2      *prometheusOAuth2 `json:"oauth2,omitempty"`
 }
 
 type PrometheusProvider struct {
@@ -91,7 +93,9 @@ func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.
 	if err != nil {
 		return time.Time{}, nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	setHeaders(req, resolvedProvider)
+	if err := setHeaders(req, resolvedProvider); err != nil {
+		return time.Time{}, nil, err
+	}
 
 	client := buildHTTPClient(resolvedProvider)
 	resp, err := client.Do(req)
@@ -214,16 +218,83 @@ func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string
 	return address + "/api/v1/query?" + params.Encode(), nil
 }
 
-func setHeaders(req *http.Request, config *oapi.PrometheusMetricProvider) {
-	if config.Authentication != nil && config.Authentication.BearerToken != nil && *config.Authentication.BearerToken != "" {
-		req.Header.Set("Authorization", "Bearer "+*config.Authentication.BearerToken)
+func setHeaders(req *http.Request, config *oapi.PrometheusMetricProvider) error {
+	if err := setAuthHeader(req, config.Authentication); err != nil {
+		return err
 	}
 
-	if config.Headers != nil {
-		for _, h := range *config.Headers {
-			req.Header.Set(h.Key, h.Value)
-		}
+	if config.Headers == nil {
+		return nil
 	}
+
+	for _, h := range *config.Headers {
+		req.Header.Set(h.Key, h.Value)
+	}
+	return nil
+}
+
+func setAuthHeader(req *http.Request, auth *prometheusAuth) error {
+	if auth == nil {
+		return nil
+	}
+
+	if auth.Oauth2 != nil {
+		token, err := fetchOAuth2Token(req.Context(), auth.Oauth2)
+		if err != nil {
+			return fmt.Errorf("oauth2 token fetch failed: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		return nil
+	}
+
+	if auth.BearerToken != nil && *auth.BearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+*auth.BearerToken)
+	}
+	return nil
+}
+
+func fetchOAuth2Token(ctx context.Context, oauth2 *prometheusOAuth2) (string, error) {
+	data := url.Values{
+		"grant_type":    {"client_credentials"},
+		"client_id":     {oauth2.ClientId},
+		"client_secret": {oauth2.ClientSecret},
+	}
+	if oauth2.Scopes != nil && len(*oauth2.Scopes) > 0 {
+		data.Set("scope", strings.Join(*oauth2.Scopes, " "))
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, oauth2.TokenUrl, strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("failed to create token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("token request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024*1024))
+	if err != nil {
+		return "", fmt.Errorf("failed to read token response: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("token endpoint returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResp struct {
+		AccessToken string `json:"access_token"`
+	}
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		return "", fmt.Errorf("failed to parse token response: %w", err)
+	}
+	if tokenResp.AccessToken == "" {
+		return "", fmt.Errorf("token response missing access_token")
+	}
+
+	return tokenResp.AccessToken, nil
 }
 
 func buildHTTPClient(config *oapi.PrometheusMetricProvider) *http.Client {
