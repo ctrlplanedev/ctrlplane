@@ -1277,34 +1277,109 @@
          "PrometheusMetricProvider": {
             "properties": {
                "address": {
-                  "description": "Prometheus server address (supports Go templates for variable references)",
-                  "example": "{{.variables.prometheus_address}}",
+                  "description": "Prometheus server address (supports Go templates)",
+                  "example": "http://prometheus.example.com:9090",
                   "type": "string"
                },
-               "bearerToken": {
-                  "description": "Bearer token for authentication (supports Go templates for variable references)",
-                  "example": "{{.variables.prometheus_token}}",
-                  "type": "string"
+               "authentication": {
+                  "description": "Authentication configuration for Prometheus",
+                  "properties": {
+                     "bearerToken": {
+                        "description": "Bearer token for authentication (supports Go templates for variable references)",
+                        "example": "{{.variables.prometheus_token}}",
+                        "type": "string"
+                     },
+                     "oauth2": {
+                        "description": "OAuth2 client credentials flow",
+                        "properties": {
+                           "clientId": {
+                              "description": "OAuth2 client ID (supports Go templates)",
+                              "type": "string"
+                           },
+                           "clientSecret": {
+                              "description": "OAuth2 client secret (supports Go templates)",
+                              "type": "string"
+                           },
+                           "scopes": {
+                              "description": "OAuth2 scopes",
+                              "items": {
+                                 "type": "string"
+                              },
+                              "type": "array"
+                           },
+                           "tokenUrl": {
+                              "description": "Token endpoint URL",
+                              "type": "string"
+                           }
+                        },
+                        "required": [
+                           "tokenUrl",
+                           "clientId",
+                           "clientSecret"
+                        ],
+                        "type": "object"
+                     }
+                  },
+                  "type": "object"
                },
-               "insecureSkipVerify": {
+               "headers": {
+                  "description": "Additional HTTP headers for the Prometheus request (values support Go templates)",
+                  "items": {
+                     "properties": {
+                        "key": {
+                           "example": "X-Scope-OrgID",
+                           "type": "string"
+                        },
+                        "value": {
+                           "example": "tenant_a",
+                           "type": "string"
+                        }
+                     },
+                     "required": [
+                        "key",
+                        "value"
+                     ],
+                     "type": "object"
+                  },
+                  "type": "array"
+               },
+               "insecure": {
                   "default": false,
                   "description": "Skip TLS certificate verification",
                   "type": "boolean"
                },
                "query": {
                   "description": "PromQL query expression (supports Go templates)",
-                  "example": "sum(rate(http_requests_total{service=\"{{.resource.name}}\",code=~\"5..\"}[5m]))",
+                  "example": "sum(irate(istio_requests_total{reporter=\"source\",destination_service=~\"{{.resource.name}}\",response_code!~\"5.*\"}[5m]))",
                   "type": "string"
                },
-               "step": {
-                  "description": "Query resolution step width for range queries (e.g., \"15s\", \"1m\"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).",
-                  "example": "15s",
-                  "type": "string"
+               "rangeQuery": {
+                  "description": "If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)",
+                  "properties": {
+                     "end": {
+                        "description": "Range query end (e.g., \"now()\"). Defaults to now.",
+                        "type": "string"
+                     },
+                     "start": {
+                        "description": "Range query start (e.g., \"now() - duration(5m)\"). Defaults to now minus 10 * step.",
+                        "type": "string"
+                     },
+                     "step": {
+                        "description": "Query resolution step width (e.g., \"15s\", \"1m\")",
+                        "example": "1m",
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "step"
+                  ],
+                  "type": "object"
                },
                "timeout": {
-                  "default": "30s",
-                  "description": "Query evaluation timeout (e.g., \"30s\")",
-                  "type": "string"
+                  "description": "Query timeout in seconds",
+                  "example": 30,
+                  "format": "int64",
+                  "type": "integer"
                },
                "type": {
                   "description": "Provider type",

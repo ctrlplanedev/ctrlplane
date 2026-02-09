@@ -13,6 +13,8 @@ import (
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
+
+	"github.com/charmbracelet/log"
 )
 
 var _ provider.Provider = (*PrometheusProvider)(nil)
@@ -35,6 +37,21 @@ type vectorResult struct {
 type matrixResult struct {
 	Metric map[string]string    `json:"metric"`
 	Values [][2]json.RawMessage `json:"values"`
+}
+
+type prometheusHeader = struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type prometheusAuth = struct {
+	BearerToken *string `json:"bearerToken,omitempty"`
+	Oauth2      *struct {
+		ClientId     string    `json:"clientId"`
+		ClientSecret string    `json:"clientSecret"`
+		Scopes       *[]string `json:"scopes,omitempty"`
+		TokenUrl     string    `json:"tokenUrl"`
+	} `json:"oauth2,omitempty"`
 }
 
 type PrometheusProvider struct {
@@ -62,9 +79,9 @@ func (p *PrometheusProvider) Type() string {
 func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.ProviderContext) (time.Time, map[string]any, error) {
 	startTime := time.Now()
 
-	resolved := resolveQueryTemplate(p.config, providerCtx)
+	resolvedProvider := resolveProviderTemplates(p.config, providerCtx)
 
-	reqURL, err := buildQueryURL(resolved, startTime)
+	reqURL, err := buildQueryURL(resolvedProvider, startTime)
 	if err != nil {
 		return time.Time{}, nil, fmt.Errorf("failed to build query URL: %w", err)
 	}
@@ -73,12 +90,13 @@ func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.
 	if err != nil {
 		return time.Time{}, nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	setAuth(req, resolved)
+	setHeaders(req, resolvedProvider)
 
-	client := buildHTTPClient(resolved)
+	client := buildHTTPClient(resolvedProvider)
 	resp, err := client.Do(req)
 	duration := time.Since(startTime)
 	if err != nil {
+		log.Error("Prometheus metric request failed", "address", resolvedProvider.Address, "error", err)
 		return time.Time{}, nil, fmt.Errorf("prometheus request failed: %w", err)
 	}
 	defer resp.Body.Close()
@@ -93,25 +111,61 @@ func (p *PrometheusProvider) Measure(ctx context.Context, providerCtx *provider.
 		return time.Time{}, nil, err
 	}
 
+	log.Debug("Prometheus metric measurement",
+		"address", resolvedProvider.Address,
+		"query", resolvedProvider.Query,
+		"status", resp.StatusCode,
+		"duration", duration)
+
 	return startTime, data, nil
 }
 
-func resolveQueryTemplate(config *oapi.PrometheusMetricProvider, providerCtx *provider.ProviderContext) *oapi.PrometheusMetricProvider {
+func resolveProviderTemplates(config *oapi.PrometheusMetricProvider, providerCtx *provider.ProviderContext) *oapi.PrometheusMetricProvider {
 	resolved := &oapi.PrometheusMetricProvider{
-		Address:            providerCtx.Template(config.Address),
-		Query:              providerCtx.Template(config.Query),
-		Type:               config.Type,
-		Step:               config.Step,
-		Timeout:            config.Timeout,
-		InsecureSkipVerify: config.InsecureSkipVerify,
+		Address:    providerCtx.Template(config.Address),
+		Query:      providerCtx.Template(config.Query),
+		Type:       config.Type,
+		Timeout:    config.Timeout,
+		Insecure:   config.Insecure,
+		RangeQuery: config.RangeQuery,
 	}
 
-	if config.BearerToken != nil {
-		token := providerCtx.Template(*config.BearerToken)
-		resolved.BearerToken = &token
-	}
+	resolved.Headers = resolveHeaders(config.Headers, providerCtx)
+	resolved.Authentication = resolveAuthentication(config.Authentication, providerCtx)
 
 	return resolved
+}
+
+func resolveHeaders(headers *[]prometheusHeader, providerCtx *provider.ProviderContext) *[]prometheusHeader {
+	if headers == nil {
+		return nil
+	}
+
+	resolved := make([]prometheusHeader, len(*headers))
+	for i, h := range *headers {
+		resolved[i] = prometheusHeader{Key: h.Key, Value: providerCtx.Template(h.Value)}
+	}
+	return &resolved
+}
+
+func resolveAuthentication(auth *prometheusAuth, providerCtx *provider.ProviderContext) *prometheusAuth {
+	if auth == nil {
+		return nil
+	}
+
+	resolved := *auth
+	if resolved.BearerToken != nil {
+		token := providerCtx.Template(*resolved.BearerToken)
+		resolved.BearerToken = &token
+	}
+	if resolved.Oauth2 != nil {
+		oauth2 := *resolved.Oauth2
+		oauth2.ClientId = providerCtx.Template(oauth2.ClientId)
+		oauth2.ClientSecret = providerCtx.Template(oauth2.ClientSecret)
+		oauth2.TokenUrl = providerCtx.Template(oauth2.TokenUrl)
+		resolved.Oauth2 = &oauth2
+	}
+	return &resolved
 }
 
 func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string, error) {
@@ -120,18 +174,28 @@ func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string
 	params.Set("query", config.Query)
 
 	if config.Timeout != nil {
-		params.Set("timeout", *config.Timeout)
+		params.Set("timeout", fmt.Sprintf("%ds", *config.Timeout))
 	}
 
-	if config.Step != nil && *config.Step != "" {
-		params.Set("step", *config.Step)
+	if config.RangeQuery != nil {
+		step := config.RangeQuery.Step
+		params.Set("step", step)
 
-		step, err := parsePrometheusDuration(*config.Step)
+		stepDuration, err := parsePrometheusDuration(step)
 		if err != nil {
-			return "", fmt.Errorf("invalid step duration %q: %w", *config.Step, err)
+			return "", fmt.Errorf("invalid step duration %q: %w", step, err)
 		}
+
 		end := now
-		start := end.Add(-step * 10) // look back 10 steps by default
+		start := end.Add(-stepDuration * 10)
+
+		if config.RangeQuery.Start != nil && *config.RangeQuery.Start != "" {
+			if d, err := parsePrometheusDuration(*config.RangeQuery.Start); err == nil {
+				start = now.Add(-d)
+			}
+		}
+		if config.RangeQuery.End != nil && *config.RangeQuery.End != "" {
+		}
 
 		params.Set("start", formatTimestamp(start))
 		params.Set("end", formatTimestamp(end))
@@ -142,23 +206,27 @@ func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string
 	return address + "/api/v1/query?" + params.Encode(), nil
 }
 
-func setAuth(req *http.Request, config *oapi.PrometheusMetricProvider) {
-	if config.BearerToken != nil && *config.BearerToken != "" {
-		req.Header.Set("Authorization", "Bearer "+*config.BearerToken)
+func setHeaders(req *http.Request, config *oapi.PrometheusMetricProvider) {
+	if config.Authentication != nil && config.Authentication.BearerToken != nil && *config.Authentication.BearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+*config.Authentication.BearerToken)
+	}
+
+	if config.Headers != nil {
+		for _, h := range *config.Headers {
+			req.Header.Set(h.Key, h.Value)
+		}
 	}
 }
 
 func buildHTTPClient(config *oapi.PrometheusMetricProvider) *http.Client {
 	timeout := 30 * time.Second
 	if config.Timeout != nil {
-		if d, err := parsePrometheusDuration(*config.Timeout); err == nil {
-			timeout = d
-		}
+		timeout = time.Duration(*config.Timeout) * time.Second
 	}
 
 	client := &http.Client{Timeout: timeout}
 
-	if config.InsecureSkipVerify != nil && *config.InsecureSkipVerify {
+	if config.Insecure != nil && *config.Insecure {
 		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 		}
@@ -194,7 +262,7 @@ func buildResultData(statusCode int, respBody []byte, duration time.Duration) (m
 
 	value, results, err := extractResults(promResp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract Prometheus result values: %w", err)
+		log.Warn("Could not extract Prometheus result values", "error", err)
 	}
 
 	data["value"] = value
@@ -232,7 +300,8 @@ func extractVectorResults(raw json.RawMessage) (*float64, []map[string]any, erro
 	for i, v := range vectors {
 		val, err := parseScalarValue(v.Value[1])
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse vector value: %w", err)
+			log.Warn("Could not parse vector value", "index", i, "error", err)
+			continue
 		}
 		if i == 0 {
 			primary = &val
@@ -266,7 +335,8 @@ func extractMatrixResults(raw json.RawMessage) (*float64, []map[string]any, erro
 		lastPair := m.Values[len(m.Values)-1]
 		val, err := parseScalarValue(lastPair[1])
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse matrix value: %w", err)
+			log.Warn("Could not parse matrix value", "index", i, "error", err)
+			continue
 		}
 		if i == 0 {
 			primary = &val

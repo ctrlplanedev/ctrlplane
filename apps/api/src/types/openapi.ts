@@ -1236,35 +1236,64 @@ export interface components {
         };
         PrometheusMetricProvider: {
             /**
-             * @description Prometheus server address (supports Go templates for variable references)
-             * @example {{.variables.prometheus_address}}
+             * @description Prometheus server address (supports Go templates)
+             * @example http://prometheus.example.com:9090
              */
             address: string;
-            /**
-             * @description Bearer token for authentication (supports Go templates for variable references)
-             * @example {{.variables.prometheus_token}}
-             */
-            bearerToken?: string;
+            /** @description Authentication configuration for Prometheus */
+            authentication?: {
+                /**
+                 * @description Bearer token for authentication (supports Go templates for variable references)
+                 * @example {{.variables.prometheus_token}}
+                 */
+                bearerToken?: string;
+                /** @description OAuth2 client credentials flow */
+                oauth2?: {
+                    /** @description OAuth2 client ID (supports Go templates) */
+                    clientId: string;
+                    /** @description OAuth2 client secret (supports Go templates) */
+                    clientSecret: string;
+                    /** @description OAuth2 scopes */
+                    scopes?: string[];
+                    /** @description Token endpoint URL */
+                    tokenUrl: string;
+                };
+            };
+            /** @description Additional HTTP headers for the Prometheus request (values support Go templates) */
+            headers?: {
+                /** @example X-Scope-OrgID */
+                key: string;
+                /** @example tenant_a */
+                value: string;
+            }[];
             /**
              * @description Skip TLS certificate verification
              * @default false
              */
-            insecureSkipVerify: boolean;
+            insecure: boolean;
             /**
              * @description PromQL query expression (supports Go templates)
-             * @example sum(rate(http_requests_total{service="{{.resource.name}}",code=~"5.."}[5m]))
+             * @example sum(irate(istio_requests_total{reporter="source",destination_service=~"{{.resource.name}}",response_code!~"5.*"}[5m]))
              */
             query: string;
+            /** @description If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query) */
+            rangeQuery?: {
+                /** @description Range query end (e.g., "now()"). Defaults to now. */
+                end?: string;
+                /** @description Range query start (e.g., "now() - duration(5m)"). Defaults to now minus 10 * step. */
+                start?: string;
+                /**
+                 * @description Query resolution step width (e.g., "15s", "1m")
+                 * @example 1m
+                 */
+                step: string;
+            };
             /**
-             * @description Query resolution step width for range queries (e.g., "15s", "1m"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).
-             * @example 15s
+             * Format: int64
+             * @description Query timeout in seconds
+             * @example 30
              */
-            step?: string;
-            /**
-             * @description Query evaluation timeout (e.g., "30s")
-             * @default 30s
-             */
-            timeout: string;
+            timeout?: number;
             /**
              * @description Provider type (enum property replaced by openapi-typescript)
              * @enum {string}

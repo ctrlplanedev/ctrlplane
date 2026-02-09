@@ -677,23 +677,56 @@ type PolicySkip struct {
 
 // PrometheusMetricProvider defines model for PrometheusMetricProvider.
 type PrometheusMetricProvider struct {
-	// Address Prometheus server address (supports Go templates for variable references)
+	// Address Prometheus server address (supports Go templates)
 	Address string `json:"address"`
 
-	// BearerToken Bearer token for authentication (supports Go templates for variable references)
-	BearerToken *string `json:"bearerToken,omitempty"`
+	// Authentication Authentication configuration for Prometheus
+	Authentication *struct {
+		// BearerToken Bearer token for authentication (supports Go templates for variable references)
+		BearerToken *string `json:"bearerToken,omitempty"`
 
-	// InsecureSkipVerify Skip TLS certificate verification
-	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
+		// Oauth2 OAuth2 client credentials flow
+		Oauth2 *struct {
+			// ClientId OAuth2 client ID (supports Go templates)
+			ClientId string `json:"clientId"`
+
+			// ClientSecret OAuth2 client secret (supports Go templates)
+			ClientSecret string `json:"clientSecret"`
+
+			// Scopes OAuth2 scopes
+			Scopes *[]string `json:"scopes,omitempty"`
+
+			// TokenUrl Token endpoint URL
+			TokenUrl string `json:"tokenUrl"`
+		} `json:"oauth2,omitempty"`
+	} `json:"authentication,omitempty"`
+
+	// Headers Additional HTTP headers for the Prometheus request (values support Go templates)
+	Headers *[]struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"headers,omitempty"`
+
+	// Insecure Skip TLS certificate verification
+	Insecure *bool `json:"insecure,omitempty"`
 
 	// Query PromQL query expression (supports Go templates)
 	Query string `json:"query"`
 
-	// Step Query resolution step width for range queries (e.g., "15s", "1m"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).
-	Step *string `json:"step,omitempty"`
+	// RangeQuery If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)
+	RangeQuery *struct {
+		// End Range query end (e.g., "now()"). Defaults to now.
+		End *string `json:"end,omitempty"`
 
-	// Timeout Query evaluation timeout (e.g., "30s")
-	Timeout *string `json:"timeout,omitempty"`
+		// Start Range query start (e.g., "now() - duration(5m)"). Defaults to now minus 10 * step.
+		Start *string `json:"start,omitempty"`
+
+		// Step Query resolution step width (e.g., "15s", "1m")
+		Step string `json:"step"`
+	} `json:"rangeQuery,omitempty"`
+
+	// Timeout Query timeout in seconds
+	Timeout *int64 `json:"timeout,omitempty"`
 
 	// Type Provider type
 	Type PrometheusMetricProviderType `json:"type"`

@@ -252,33 +252,78 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       address: {
         type: 'string',
-        description: 'Prometheus server address (supports Go templates for variable references)',
-        example: '{{.variables.prometheus_address}}',
+        description: 'Prometheus server address (supports Go templates)',
+        example: 'http://prometheus.example.com:9090',
       },
       query: {
         type: 'string',
         description: 'PromQL query expression (supports Go templates)',
-        example: 'sum(rate(http_requests_total{service="{{.resource.name}}",code=~"5.."}[5m]))',
-      },
-      step: {
-        type: 'string',
-        description: 'Query resolution step width for range queries (e.g., "15s", "1m"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).',
-        example: '15s',
+        example: 'sum(irate(istio_requests_total{reporter="source",destination_service=~"{{.resource.name}}",response_code!~"5.*"}[5m]))',
       },
       timeout: {
-        type: 'string',
-        description: 'Query evaluation timeout (e.g., "30s")',
-        default: '30s',
+        type: 'integer',
+        format: 'int64',
+        description: 'Query timeout in seconds',
+        example: 30,
       },
-      bearerToken: {
-        type: 'string',
-        description: 'Bearer token for authentication (supports Go templates for variable references)',
-        example: '{{.variables.prometheus_token}}',
-      },
-      insecureSkipVerify: {
+      insecure: {
         type: 'boolean',
         description: 'Skip TLS certificate verification',
         default: false,
+      },
+      headers: {
+        type: 'array',
+        description: 'Additional HTTP headers for the Prometheus request (values support Go templates)',
+        items: {
+          type: 'object',
+          required: ['key', 'value'],
+          properties: {
+            key: { type: 'string', example: 'X-Scope-OrgID' },
+            value: { type: 'string', example: 'tenant_a' },
+          },
+        },
+      },
+      authentication: {
+        type: 'object',
+        description: 'Authentication configuration for Prometheus',
+        properties: {
+          bearerToken: {
+            type: 'string',
+            description: 'Bearer token for authentication (supports Go templates for variable references)',
+            example: '{{.variables.prometheus_token}}',
+          },
+          oauth2: {
+            type: 'object',
+            description: 'OAuth2 client credentials flow',
+            required: ['tokenUrl', 'clientId', 'clientSecret'],
+            properties: {
+              tokenUrl: { type: 'string', description: 'Token endpoint URL' },
+              clientId: { type: 'string', description: 'OAuth2 client ID (supports Go templates)' },
+              clientSecret: { type: 'string', description: 'OAuth2 client secret (supports Go templates)' },
+              scopes: { type: 'array', items: { type: 'string' }, description: 'OAuth2 scopes' },
+            },
+          },
+        },
+      },
+      rangeQuery: {
+        type: 'object',
+        description: 'If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)',
+        required: ['step'],
+        properties: {
+          start: {
+            type: 'string',
+            description: 'Range query start (e.g., "now() - duration(5m)"). Defaults to now minus 10 * step.',
+          },
+          end: {
+            type: 'string',
+            description: 'Range query end (e.g., "now()"). Defaults to now.',
+          },
+          step: {
+            type: 'string',
+            description: 'Query resolution step width (e.g., "15s", "1m")',
+            example: '1m',
+          },
+        },
       },
     },
   },
