@@ -10,7 +10,6 @@ type options struct {
 	// ReleaseManager options
 	skipEligibilityCheck         bool
 	trigger                      trace.TriggerReason
-	resourceRelationships        map[string][]*oapi.EntityRelation
 	earliestVersionForEvaluation *oapi.DeploymentVersion
 
 	// StateCache options
@@ -43,12 +42,6 @@ func WithVersionAndNewer(version *oapi.DeploymentVersion) Option {
 }
 
 // StateCache options
-
-func WithResourceRelationships(relationships map[string][]*oapi.EntityRelation) Option {
-	return func(opts *options) {
-		opts.resourceRelationships = relationships
-	}
-}
 
 // WithBypassCache forces a fresh computation, bypassing the cache.
 func WithBypassCache() Option {

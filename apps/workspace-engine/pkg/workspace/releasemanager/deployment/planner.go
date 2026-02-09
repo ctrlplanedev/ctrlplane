@@ -55,15 +55,8 @@ func NewPlanner(
 type planDeploymentOptions func(*planDeploymentConfig)
 
 type planDeploymentConfig struct {
-	resourceRelatedEntities      map[string][]*oapi.EntityRelation
 	recorder                     *trace.ReconcileTarget
 	earliestVersionForEvaluation *oapi.DeploymentVersion
-}
-
-func WithResourceRelatedEntities(entities map[string][]*oapi.EntityRelation) planDeploymentOptions {
-	return func(cfg *planDeploymentConfig) {
-		cfg.resourceRelatedEntities = entities
-	}
 }
 
 func WithTraceRecorder(recorder *trace.ReconcileTarget) planDeploymentOptions {
@@ -147,44 +140,26 @@ func (p *Planner) PlanDeployment(ctx context.Context, releaseTarget *oapi.Releas
 		attribute.String("deployable_version.created_at", deployableVersion.CreatedAt.Format("2006-01-02T15:04:05Z")),
 	)
 
-	resourceRelatedEntities := cfg.resourceRelatedEntities
-	if resourceRelatedEntities == nil {
-		span.AddEvent("Computing resource relationships")
-		resource, exists := p.store.Resources.Get(releaseTarget.ResourceId)
-		if !exists {
-			err := fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "resource not found")
-			return nil, err
-		}
-		entity := relationships.NewResourceEntity(resource)
-		resourceRelatedEntities, _ = p.store.Relationships.GetRelatedEntities(ctx, entity)
-
-		// Count total related entities
-		totalRelatedEntities := 0
-		uniqueRefs := 0
-		for _, entities := range resourceRelatedEntities {
-			totalRelatedEntities += len(entities)
-			uniqueRefs++
-		}
-		span.SetAttributes(
-			attribute.Int("related_entities.count", totalRelatedEntities),
-			attribute.Int("related_entities.unique_refs", uniqueRefs),
-		)
-	} else {
-		span.AddEvent("Using pre-computed resource relationships")
-		totalRelatedEntities := 0
-		uniqueRefs := 0
-		for _, entities := range resourceRelatedEntities {
-			totalRelatedEntities += len(entities)
-			uniqueRefs++
-		}
-		span.SetAttributes(
-			attribute.Int("related_entities.count", totalRelatedEntities),
-			attribute.Int("related_entities.unique_refs", uniqueRefs),
-			attribute.Bool("relationships.precomputed", true),
-		)
+	// Get resource relationships (cheap - reads from materialized indexes)
+	span.AddEvent("Step 2b: Getting resource relationships")
+	resource, exists := p.store.Resources.Get(releaseTarget.ResourceId)
+	if !exists {
+		err := fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "resource not found")
+		return nil, err
 	}
+	entity := relationships.NewResourceEntity(resource)
+	resourceRelatedEntities, _ := p.store.Relationships.GetRelatedEntities(ctx, entity)
+
+	totalRelatedEntities := 0
+	for _, entities := range resourceRelatedEntities {
+		totalRelatedEntities += len(entities)
+	}
+	span.SetAttributes(
+		attribute.Int("related_entities.count", totalRelatedEntities),
+		attribute.Int("related_entities.unique_refs", len(resourceRelatedEntities)),
+	)
 
 	// Step 3: Resolve variables for this deployment
 	span.AddEvent("Step 3: Evaluating variables")
