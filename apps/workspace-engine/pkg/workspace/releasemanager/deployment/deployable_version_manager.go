@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
@@ -95,22 +96,63 @@ func (m *DeployableVersionManager) getEvaluators(ctx context.Context, policies [
 	return evaluators, nil
 }
 
-func (m *DeployableVersionManager) filterBypassedEvaluators(evaluators []evaluator.Evaluator, versionId string) []evaluator.Evaluator {
-	allBypasses := m.store.PolicySkips.GetAllForTarget(versionId, m.releaseTarget.EnvironmentId, m.releaseTarget.ResourceId)
+// precomputeBypasses scans all policy skips once and returns a map from
+// versionId to the set of skipped rule IDs for this release target's
+// (environmentId, resourceId) pair. This replaces calling GetAllForTarget
+// per candidate version, reducing O(N × S) to O(S) where N = candidate
+// versions and S = total policy skips in the store.
+func (m *DeployableVersionManager) precomputeBypasses() map[string]map[string]bool {
+	now := time.Now()
+	envId := m.releaseTarget.EnvironmentId
+	resId := m.releaseTarget.ResourceId
 
-	skippedRules := make(map[string]bool)
-	for _, bypass := range allBypasses {
-		skippedRules[bypass.RuleId] = true
-	}
+	result := make(map[string]map[string]bool)
 
-	filteredEvaluators := make([]evaluator.Evaluator, 0, len(evaluators))
-	for _, evaluator := range evaluators {
-		if _, ok := skippedRules[evaluator.RuleId()]; ok {
+	for _, skip := range m.store.PolicySkips.Items() {
+		if skip.ExpiresAt != nil && skip.ExpiresAt.Before(now) {
 			continue
 		}
-		filteredEvaluators = append(filteredEvaluators, evaluator)
+
+		// Match logic mirrors PolicySkips.GetAllForTarget:
+		//   - environment exact match + (resource wildcard or exact match)
+		//   - environment wildcard (nil) = full wildcard
+		matched := false
+		if skip.EnvironmentId != nil && *skip.EnvironmentId == envId {
+			if skip.ResourceId == nil || *skip.ResourceId == resId {
+				matched = true
+			}
+		} else if skip.EnvironmentId == nil {
+			matched = true
+		}
+
+		if !matched {
+			continue
+		}
+
+		if result[skip.VersionId] == nil {
+			result[skip.VersionId] = make(map[string]bool)
+		}
+		result[skip.VersionId][skip.RuleId] = true
 	}
-	return filteredEvaluators
+
+	return result
+}
+
+// applyBypasses filters evaluators by removing those whose RuleId is in the
+// skipped set. Returns the original slice unchanged (zero allocation) when
+// no bypasses apply — the common case.
+func (m *DeployableVersionManager) applyBypasses(evaluators []evaluator.Evaluator, skippedRules map[string]bool) []evaluator.Evaluator {
+	if len(skippedRules) == 0 {
+		return evaluators
+	}
+
+	filtered := make([]evaluator.Evaluator, 0, len(evaluators))
+	for _, eval := range evaluators {
+		if !skippedRules[eval.RuleId()] {
+			filtered = append(filtered, eval)
+		}
+	}
+	return filtered
 }
 
 func (m *DeployableVersionManager) recordVersionBlockedToSpan(span oteltrace.Span, version *oapi.DeploymentVersion, evalIdx int, result *oapi.RuleEvaluation) {
@@ -175,8 +217,14 @@ func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions [
 	ctx, span := deployableVersionTracer.Start(ctx, "FindDeployableVersion",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", m.releaseTarget.Key()),
+			attribute.Int("candidate_versions.count", len(candidateVersions)),
 		))
 	defer span.End()
+
+	if len(candidateVersions) == 0 {
+		span.SetStatus(codes.Ok, "no candidate versions")
+		return nil
+	}
 
 	policies, err := m.getPolicies(ctx)
 	if err != nil {
@@ -193,6 +241,10 @@ func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions [
 		return nil
 	}
 
+	// Pre-compute all policy skip rule IDs indexed by version ID in a single
+	// pass over the store, rather than scanning all skips per candidate version.
+	bypassesByVersion := m.precomputeBypasses()
+
 	scope := evaluator.EvaluatorScope{
 		Environment:   environment,
 		ReleaseTarget: m.releaseTarget,
@@ -204,10 +256,11 @@ func (m *DeployableVersionManager) Find(ctx context.Context, candidateVersions [
 	for idx, version := range candidateVersions {
 		eligible := true
 		scope.Version = version
-		results := make([]*oapi.RuleEvaluation, 0)
 
-		filteredEvaluators := m.filterBypassedEvaluators(evaluators, version.Id)
-		for evalIdx, eval := range filteredEvaluators {
+		activeEvaluators := m.applyBypasses(evaluators, bypassesByVersion[version.Id])
+		results := make([]*oapi.RuleEvaluation, 0, len(activeEvaluators))
+
+		for evalIdx, eval := range activeEvaluators {
 			result := eval.Evaluate(ctx, scope)
 			results = append(results, result)
 			if !result.Allowed {
