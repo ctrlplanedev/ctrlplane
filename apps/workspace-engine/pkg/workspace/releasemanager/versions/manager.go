@@ -45,14 +45,10 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.
 		))
 	defer span.End()
 
-	allVersions := m.store.DeploymentVersions.Items()
-
-	// Filter to only versions belonging to this deployment
-	filtered := make([]*oapi.DeploymentVersion, 0, len(allVersions))
-	for _, version := range allVersions {
-		if version.DeploymentId == releaseTarget.DeploymentId {
-			filtered = append(filtered, version)
-		}
+	filtered, err := m.store.DeploymentVersions.GetByDeploymentID(releaseTarget.DeploymentId)
+	if err != nil {
+		span.RecordError(err)
+		return nil
 	}
 
 	// Sort newest first; use Id as a stable tiebreaker when CreatedAt is equal
@@ -64,7 +60,6 @@ func (m *Manager) GetCandidateVersions(ctx context.Context, releaseTarget *oapi.
 	})
 
 	span.SetAttributes(
-		attribute.Int("versions.total_in_store", len(allVersions)),
 		attribute.Int("versions.for_deployment", len(filtered)),
 	)
 

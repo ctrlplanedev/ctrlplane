@@ -26,8 +26,12 @@ func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
 	return d.repo.DeploymentVersions.Get(id)
 }
 
+func (d *DeploymentVersions) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
+	return d.repo.DeploymentVersions.GetBy("deployment_id", deploymentID)
+}
+
 func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
-	d.repo.DeploymentVersions.Set(id, version)
+	d.repo.DeploymentVersions.Set(version)
 	d.store.changeset.RecordUpsert(version)
 }
 
