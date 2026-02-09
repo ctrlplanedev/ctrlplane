@@ -170,16 +170,6 @@ func (m *DeployableVersionManager) applyBypasses(evaluators []evaluator.Evaluato
 	return filtered
 }
 
-func (m *DeployableVersionManager) recordVersionBlockedToSpan(span oteltrace.Span, version *oapi.DeploymentVersion, evalIdx int, result *oapi.RuleEvaluation) {
-	span.AddEvent("Version blocked by policy",
-		oteltrace.WithAttributes(
-			attribute.String("version.id", version.Id),
-			attribute.String("version.tag", version.Tag),
-			attribute.Int("evaluator_index", evalIdx),
-			attribute.String("message", result.Message),
-		))
-}
-
 func (m *DeployableVersionManager) recordAllowedVersionEvaluationsToPlanning(version *oapi.DeploymentVersion, results []*oapi.RuleEvaluation) {
 	if m.planning == nil {
 		return
