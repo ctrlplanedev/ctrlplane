@@ -3,6 +3,7 @@ package versioncooldown
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -122,9 +123,8 @@ func (e *VersionCooldownEvaluator) resolveReferenceVersion(ctx context.Context, 
 
 func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context, releaseTarget *oapi.ReleaseTarget) *referenceResult {
 	// Fetch all jobs for this release target once and derive both in-progress
-	// and current release from the same data set, avoiding the duplicate
-	// GetJobsForReleaseTarget calls that GetJobsInProcessingStateForReleaseTarget
-	// and GetCurrentRelease would each make independently.
+	// and current release from the same data set, avoiding duplicate
+	// GetJobsForReleaseTarget calls.
 	allJobs := e.store.Jobs.GetJobsForReleaseTarget(releaseTarget)
 
 	// Check for in-progress deployments first — these take precedence.
@@ -145,13 +145,33 @@ func (e *VersionCooldownEvaluator) doResolveReferenceVersion(ctx context.Context
 		}
 	}
 
-	// No in-progress deployment — fall back to GetCurrentRelease which handles
-	// verification status checks (we can't easily replicate that logic here).
-	currentRelease, _, err := e.store.ReleaseTargets.GetCurrentRelease(ctx, releaseTarget)
-	if err != nil || currentRelease == nil {
-		return &referenceResult{version: nil, source: ""}
+	// No in-progress deployment — find the current release from the same job
+	// set. This inlines the GetCurrentRelease logic to avoid refetching all
+	// jobs from the store a second time.
+	successfulJobs := make([]*oapi.Job, 0, len(allJobs))
+	for _, job := range allJobs {
+		if job.Status == oapi.JobStatusSuccessful && job.CompletedAt != nil {
+			successfulJobs = append(successfulJobs, job)
+		}
 	}
-	return &referenceResult{version: &currentRelease.Version, source: "deployed"}
+
+	sort.Slice(successfulJobs, func(i, j int) bool {
+		return successfulJobs[i].CompletedAt.After(*successfulJobs[j].CompletedAt)
+	})
+
+	for _, job := range successfulJobs {
+		release, ok := e.store.Releases.Get(job.ReleaseId)
+		if !ok || release == nil {
+			continue
+		}
+
+		status := e.store.JobVerifications.GetJobVerificationStatus(job.Id)
+		if status == "" || status == oapi.JobVerificationStatusPassed {
+			return &referenceResult{version: &release.Version, source: "deployed"}
+		}
+	}
+
+	return &referenceResult{version: nil, source: ""}
 }
 
 // Evaluate checks if the candidate version should be allowed based on whether
