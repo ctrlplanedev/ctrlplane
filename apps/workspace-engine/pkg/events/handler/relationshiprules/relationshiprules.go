@@ -2,13 +2,12 @@ package relationshiprules
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/relationships/compute"
-
-	"encoding/json"
 )
 
 func HandleRelationshipRuleCreated(
@@ -25,16 +24,13 @@ func HandleRelationshipRuleCreated(
 		return errors.New("relationship rule workspace id does not match workspace id")
 	}
 
-	entities := ws.Relations().GetRelatableEntities(ctx)
-	relations, err := compute.FindRuleRelationships(ctx, relationshipRule, entities)
-	if err != nil {
+	if err := ws.RelationshipRules().Upsert(ctx, relationshipRule); err != nil {
 		return err
 	}
-	for _, relation := range relations {
-		_ = ws.Relations().Upsert(ctx, relation)
-	}
 
-	return ws.RelationshipRules().Upsert(ctx, relationshipRule)
+	ws.Store().RelationshipIndexes.AddRule(ctx, relationshipRule)
+
+	return nil
 }
 
 func HandleRelationshipRuleUpdated(
@@ -47,21 +43,13 @@ func HandleRelationshipRuleUpdated(
 		return err
 	}
 
-	entities := ws.Relations().GetRelatableEntities(ctx)
-	oldRelations := ws.Relations().ForRule(relationshipRule)
-	newRelations, err := compute.FindRuleRelationships(ctx, relationshipRule, entities)
-	if err != nil {
+	if err := ws.RelationshipRules().Upsert(ctx, relationshipRule); err != nil {
 		return err
 	}
-	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
-	for _, relation := range newRelations {
-		_ = ws.Relations().Upsert(ctx, relation)
-	}
-	for _, relation := range removedRelations {
-		ws.Relations().Remove(relation.Key())
-	}
 
-	return ws.RelationshipRules().Upsert(ctx, relationshipRule)
+	ws.Store().RelationshipIndexes.UpdateRule(ctx, relationshipRule)
+
+	return nil
 }
 
 func HandleRelationshipRuleDeleted(
@@ -74,12 +62,7 @@ func HandleRelationshipRuleDeleted(
 		return err
 	}
 
-	for _, relation := range ws.Relations().Items() {
-		if relation.Rule.Id == relationshipRule.Id {
-			ws.Relations().Remove(relation.Key())
-		}
-	}
-
+	ws.Store().RelationshipIndexes.RemoveRule(relationshipRule.Id)
 	_ = ws.RelationshipRules().Remove(ctx, relationshipRule.Id)
 
 	return nil

@@ -6,7 +6,6 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -142,20 +141,13 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		}
 	}
 
-	allEntities := s.Relations.GetRelatableEntities(ctx)
 	for _, rule := range s.Relationships.Items() {
 		if setStatus != nil {
 			setStatus("Computing relationships for rule: " + rule.Name)
 		}
-
-		relations, err := compute.FindRuleRelationships(ctx, rule, allEntities)
-		if err != nil {
-			return err
-		}
-		for _, relation := range relations {
-			_ = s.Relations.Upsert(ctx, relation)
-		}
+		s.RelationshipIndexes.AddRule(ctx, rule)
 	}
+	s.RelationshipIndexes.Recompute(ctx)
 
 	s.changeset.Clear()
 

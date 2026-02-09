@@ -178,6 +178,10 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return ws, fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
+	// Recompute relationship indexes so dirty indexes are materialized
+	// before ProcessChanges reads them.
+	ws.Store().RelationshipIndexes.Recompute(ctx)
+
 	if err := ws.ReleaseManager().ProcessChanges(ctx, ws.Changeset()); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to process target changes")

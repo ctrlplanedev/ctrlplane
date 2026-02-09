@@ -64,17 +64,42 @@ func NewRelationshipIndexes(store *Store) *RelationshipIndexes {
 // Rule-to-CEL conversion
 // ============================================================================
 
+// selectorToCel converts a Selector into a CEL fragment by extracting its CEL
+// expression and replacing the entity-type variable (e.g. "resource", "deployment",
+// "environment") with the given prefix ("from" or "to").
+func selectorToCel(sel *oapi.Selector, entityType oapi.RelatableEntityType, prefix string) string {
+	if sel == nil {
+		return ""
+	}
+	cs, err := sel.AsCelSelector()
+	if err != nil || cs.Cel == "" {
+		return ""
+	}
+	// Replace the entity type variable name with the from/to prefix.
+	// e.g. "resource.kind == 'vpc'" → "from.kind == 'vpc'"
+	replaced := strings.ReplaceAll(cs.Cel, string(entityType)+".", prefix+".")
+	return replaced
+}
+
 // ruleToCelExpression converts a full oapi.RelationshipRule into a single CEL
-// expression string that encodes type filters and the matcher logic. This
-// allows the v2 index to evaluate everything in one CEL pass.
+// expression string that encodes type filters, selector filters, and the matcher
+// logic. This allows the v2 index to evaluate everything in one CEL pass.
 func ruleToCelExpression(rule *oapi.RelationshipRule) string {
-	parts := make([]string, 0, 4)
+	parts := make([]string, 0, 6)
 
 	// Type filters
 	parts = append(parts,
 		fmt.Sprintf(`from.type == "%s"`, rule.FromType),
 		fmt.Sprintf(`to.type == "%s"`, rule.ToType),
 	)
+
+	// Selector filters (convert entity-type prefixed selectors to from/to prefixed)
+	if fromSel := selectorToCel(rule.FromSelector, rule.FromType, "from"); fromSel != "" {
+		parts = append(parts, "("+fromSel+")")
+	}
+	if toSel := selectorToCel(rule.ToSelector, rule.ToType, "to"); toSel != "" {
+		parts = append(parts, "("+toSel+")")
+	}
 
 	// Matcher -- try CEL first, then property matcher
 	cm, cmErr := rule.Matcher.AsCelMatcher()
