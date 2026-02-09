@@ -23,7 +23,7 @@ import { useDeployment } from "./_components/DeploymentProvider";
 import { DeploymentsNavbarTabs } from "./_components/DeploymentsNavbarTabs";
 import { EnvironmentVersionDecisions } from "./_components/environmentversiondecisions/EnvironmentVersionDecisions";
 import { VersionActionsPanel } from "./_components/VersionActionsPanel";
-import { VersionCard } from "./_components/VersionCard";
+import { VersionCard } from "./_components/versioncard/VersionCard";
 
 export function meta() {
   return [
