@@ -19,6 +19,9 @@ import {
 import { cn } from "~/lib/utils";
 import { ArgoCDVerificationDisplay } from "./argocd/ArgoCD";
 import { isArgoCDMeasurement } from "./argocd/argocd-metric";
+import { PrometheusVerificationDisplay } from "./prometheus/Prometheus";
+import { PrometheusIcon } from "./prometheus/PrometheusIcon";
+import { isPrometheusProvider } from "./prometheus/prometheus-metric";
 import { VerificationMetricStatus } from "./VerificationMetricStatus";
 
 type JobVerification = WorkspaceEngine["schemas"]["JobVerification"];
@@ -152,6 +155,7 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
 
   const isArgoCD =
     latestMeasurement != null && isArgoCDMeasurement(latestMeasurement.data);
+  const isPrometheus = isPrometheusProvider(metric.provider);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -163,6 +167,9 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
               open ? "rotate-90" : "",
             )}
           />
+          {isPrometheus && (
+            <PrometheusIcon className="h-4 w-4 text-orange-500" />
+          )}
           <span className="text-sm font-medium">{metric.name}</span>
           <div className="grow" />
           <VerificationMetricStatus metric={metric} />
@@ -171,7 +178,8 @@ function MetricDisplay({ metric }: { metric: VerificationMetricStatus }) {
 
       <CollapsibleContent className="space-y-2 pl-6 text-xs">
         {isArgoCD && <ArgoCDVerificationDisplay metric={metric} />}
-        {!isArgoCD && (
+        {isPrometheus && <PrometheusVerificationDisplay metric={metric} />}
+        {!isArgoCD && !isPrometheus && (
           <>
             <MetricSummaryDisplay metric={metric} />
             {sortedMeasurements.map((measurement, idx) => (
