@@ -118,6 +118,7 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('HTTPMetricProvider'),
       openapi.schemaRef('SleepMetricProvider'),
       openapi.schemaRef('DatadogMetricProvider'),
+      openapi.schemaRef('PrometheusMetricProvider'),
       openapi.schemaRef('TerraformCloudRunMetricProvider'),
     ],
     discriminator: {
@@ -126,6 +127,7 @@ local openapi = import '../lib/openapi.libsonnet';
         http: '#/components/schemas/HTTPMetricProvider',
         sleep: '#/components/schemas/SleepMetricProvider',
         datadog: '#/components/schemas/DatadogMetricProvider',
+        prometheus: '#/components/schemas/PrometheusMetricProvider',
         terraformCloudRun: '#/components/schemas/TerraformCloudRunMetricProvider',
       },
     },
@@ -235,6 +237,95 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'string',
         description: 'Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)',
         default: 'datadoghq.com',
+      },
+    },
+  },
+
+  PrometheusMetricProvider: {
+    type: 'object',
+    required: ['type', 'address', 'query'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['prometheus'],
+        description: 'Provider type',
+      },
+      address: {
+        type: 'string',
+        description: 'Prometheus server address (supports Go templates)',
+        example: 'http://prometheus.example.com:9090',
+      },
+      query: {
+        type: 'string',
+        description: 'PromQL query expression (supports Go templates)',
+        example: 'sum(irate(istio_requests_total{reporter="source",destination_service=~"{{.resource.name}}",response_code!~"5.*"}[5m]))',
+      },
+      timeout: {
+        type: 'integer',
+        format: 'int64',
+        description: 'Query timeout in seconds',
+        example: 30,
+      },
+      insecure: {
+        type: 'boolean',
+        description: 'Skip TLS certificate verification',
+        default: false,
+      },
+      headers: {
+        type: 'array',
+        description: 'Additional HTTP headers for the Prometheus request (values support Go templates)',
+        items: {
+          type: 'object',
+          required: ['key', 'value'],
+          properties: {
+            key: { type: 'string', example: 'X-Scope-OrgID' },
+            value: { type: 'string', example: 'tenant_a' },
+          },
+        },
+      },
+      authentication: {
+        type: 'object',
+        description: 'Authentication configuration for Prometheus',
+        properties: {
+          bearerToken: {
+            type: 'string',
+            description: 'Bearer token for authentication (supports Go templates for variable references)',
+            example: '{{.variables.prometheus_token}}',
+          },
+          oauth2: {
+            type: 'object',
+            description: 'OAuth2 client credentials flow',
+            required: ['tokenUrl', 'clientId', 'clientSecret'],
+            properties: {
+              tokenUrl: { type: 'string', description: 'Token endpoint URL' },
+              clientId: { type: 'string', description: 'OAuth2 client ID (supports Go templates)' },
+              clientSecret: { type: 'string', description: 'OAuth2 client secret (supports Go templates)' },
+              scopes: { type: 'array', items: { type: 'string' }, description: 'OAuth2 scopes' },
+            },
+          },
+        },
+      },
+      rangeQuery: {
+        type: 'object',
+        description: 'If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)',
+        required: ['step'],
+        properties: {
+          start: {
+            type: 'string',
+            description: 'How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.',
+            example: '5m',
+          },
+          end: {
+            type: 'string',
+            description: 'How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.',
+            example: '0s',
+          },
+          step: {
+            type: 'string',
+            description: 'Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")',
+            example: '1m',
+          },
+        },
       },
     },
   },

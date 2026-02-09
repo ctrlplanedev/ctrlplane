@@ -116,6 +116,11 @@ const (
 	True NullValue = true
 )
 
+// Defines values for PrometheusMetricProviderType.
+const (
+	Prometheus PrometheusMetricProviderType = "prometheus"
+)
+
 // Defines values for PropertyMatcherOperator.
 const (
 	Contains   PropertyMatcherOperator = "contains"
@@ -669,6 +674,66 @@ type PolicySkip struct {
 	// WorkspaceId Workspace this skip belongs to
 	WorkspaceId string `json:"workspaceId"`
 }
+
+// PrometheusMetricProvider defines model for PrometheusMetricProvider.
+type PrometheusMetricProvider struct {
+	// Address Prometheus server address (supports Go templates)
+	Address string `json:"address"`
+
+	// Authentication Authentication configuration for Prometheus
+	Authentication *struct {
+		// BearerToken Bearer token for authentication (supports Go templates for variable references)
+		BearerToken *string `json:"bearerToken,omitempty"`
+
+		// Oauth2 OAuth2 client credentials flow
+		Oauth2 *struct {
+			// ClientId OAuth2 client ID (supports Go templates)
+			ClientId string `json:"clientId"`
+
+			// ClientSecret OAuth2 client secret (supports Go templates)
+			ClientSecret string `json:"clientSecret"`
+
+			// Scopes OAuth2 scopes
+			Scopes *[]string `json:"scopes,omitempty"`
+
+			// TokenUrl Token endpoint URL
+			TokenUrl string `json:"tokenUrl"`
+		} `json:"oauth2,omitempty"`
+	} `json:"authentication,omitempty"`
+
+	// Headers Additional HTTP headers for the Prometheus request (values support Go templates)
+	Headers *[]struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"headers,omitempty"`
+
+	// Insecure Skip TLS certificate verification
+	Insecure *bool `json:"insecure,omitempty"`
+
+	// Query PromQL query expression (supports Go templates)
+	Query string `json:"query"`
+
+	// RangeQuery If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)
+	RangeQuery *struct {
+		// End How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
+		End *string `json:"end,omitempty"`
+
+		// Start How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
+		Start *string `json:"start,omitempty"`
+
+		// Step Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
+		Step string `json:"step"`
+	} `json:"rangeQuery,omitempty"`
+
+	// Timeout Query timeout in seconds
+	Timeout *int64 `json:"timeout,omitempty"`
+
+	// Type Provider type
+	Type PrometheusMetricProviderType `json:"type"`
+}
+
+// PrometheusMetricProviderType Provider type
+type PrometheusMetricProviderType string
 
 // PropertiesMatcher defines model for PropertiesMatcher.
 type PropertiesMatcher struct {
@@ -1832,6 +1897,34 @@ func (t *MetricProvider) MergeDatadogMetricProvider(v DatadogMetricProvider) err
 	return err
 }
 
+// AsPrometheusMetricProvider returns the union data inside the MetricProvider as a PrometheusMetricProvider
+func (t MetricProvider) AsPrometheusMetricProvider() (PrometheusMetricProvider, error) {
+	var body PrometheusMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPrometheusMetricProvider overwrites any union data inside the MetricProvider as the provided PrometheusMetricProvider
+func (t *MetricProvider) FromPrometheusMetricProvider(v PrometheusMetricProvider) error {
+	v.Type = "prometheus"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePrometheusMetricProvider performs a merge with any union data inside the MetricProvider, using the provided PrometheusMetricProvider
+func (t *MetricProvider) MergePrometheusMetricProvider(v PrometheusMetricProvider) error {
+	v.Type = "prometheus"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsTerraformCloudRunMetricProvider returns the union data inside the MetricProvider as a TerraformCloudRunMetricProvider
 func (t MetricProvider) AsTerraformCloudRunMetricProvider() (TerraformCloudRunMetricProvider, error) {
 	var body TerraformCloudRunMetricProvider
@@ -1878,6 +1971,8 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 		return t.AsDatadogMetricProvider()
 	case "http":
 		return t.AsHTTPMetricProvider()
+	case "prometheus":
+		return t.AsPrometheusMetricProvider()
 	case "sleep":
 		return t.AsSleepMetricProvider()
 	case "terraformCloudRun":
