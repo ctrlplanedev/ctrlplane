@@ -105,7 +105,7 @@ func TestBuildQueryURL_InstantQueryWithTimeout(t *testing.T) {
 	}
 }
 
-func TestBuildQueryURL_RangeQuery(t *testing.T) {
+func TestBuildQueryURL_RangeQueryDefaults(t *testing.T) {
 	now := time.Date(2026, 2, 9, 12, 0, 0, 0, time.UTC)
 
 	config := &oapi.PrometheusMetricProvider{
@@ -131,11 +131,15 @@ func TestBuildQueryURL_RangeQuery(t *testing.T) {
 	if !strings.Contains(u, "step=1m") {
 		t.Errorf("expected step=1m, got %s", u)
 	}
-	if !strings.Contains(u, "start=") {
-		t.Error("expected start param for range query")
+
+	expectedEnd := formatTimestamp(now)
+	if !strings.Contains(u, "end="+expectedEnd) {
+		t.Errorf("expected end=now, got URL %s", u)
 	}
-	if !strings.Contains(u, "end=") {
-		t.Error("expected end param for range query")
+
+	expectedStart := formatTimestamp(now.Add(-10 * time.Minute))
+	if !strings.Contains(u, "start="+expectedStart) {
+		t.Errorf("expected default start of 10*step (10m) before now, got URL %s", u)
 	}
 }
 
@@ -160,8 +164,36 @@ func TestBuildQueryURL_RangeQueryWithExplicitStart(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(u, "/api/v1/query_range?") {
-		t.Errorf("expected range query path, got %s", u)
+	expectedStart := formatTimestamp(now.Add(-5 * time.Minute))
+	if !strings.Contains(u, "start="+expectedStart) {
+		t.Errorf("expected start=5m ago, got URL %s", u)
+	}
+}
+
+func TestBuildQueryURL_RangeQueryWithExplicitEnd(t *testing.T) {
+	now := time.Date(2026, 2, 9, 12, 0, 0, 0, time.UTC)
+
+	config := &oapi.PrometheusMetricProvider{
+		Address: "http://prometheus:9090",
+		Query:   "up",
+		RangeQuery: &struct {
+			End   *string `json:"end,omitempty"`
+			Start *string `json:"start,omitempty"`
+			Step  string  `json:"step"`
+		}{
+			Step: "15s",
+			End:  ptr("1m"),
+		},
+	}
+
+	u, err := buildQueryURL(config, now)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectedEnd := formatTimestamp(now.Add(-1 * time.Minute))
+	if !strings.Contains(u, "end="+expectedEnd) {
+		t.Errorf("expected end=1m ago, got URL %s", u)
 	}
 }
 
@@ -186,6 +218,56 @@ func TestBuildQueryURL_InvalidStep(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "invalid step duration") {
 		t.Errorf("expected 'invalid step duration' error, got %q", err.Error())
+	}
+}
+
+func TestBuildQueryURL_InvalidStart(t *testing.T) {
+	now := time.Now()
+
+	config := &oapi.PrometheusMetricProvider{
+		Address: "http://prometheus:9090",
+		Query:   "up",
+		RangeQuery: &struct {
+			End   *string `json:"end,omitempty"`
+			Start *string `json:"start,omitempty"`
+			Step  string  `json:"step"`
+		}{
+			Step:  "15s",
+			Start: ptr("invalid"),
+		},
+	}
+
+	_, err := buildQueryURL(config, now)
+	if err == nil {
+		t.Fatal("expected error for invalid start duration")
+	}
+	if !strings.Contains(err.Error(), "invalid start duration") {
+		t.Errorf("expected 'invalid start duration' error, got %q", err.Error())
+	}
+}
+
+func TestBuildQueryURL_InvalidEnd(t *testing.T) {
+	now := time.Now()
+
+	config := &oapi.PrometheusMetricProvider{
+		Address: "http://prometheus:9090",
+		Query:   "up",
+		RangeQuery: &struct {
+			End   *string `json:"end,omitempty"`
+			Start *string `json:"start,omitempty"`
+			Step  string  `json:"step"`
+		}{
+			Step: "15s",
+			End:  ptr("invalid"),
+		},
+	}
+
+	_, err := buildQueryURL(config, now)
+	if err == nil {
+		t.Fatal("expected error for invalid end duration")
+	}
+	if !strings.Contains(err.Error(), "invalid end duration") {
+		t.Errorf("expected 'invalid end duration' error, got %q", err.Error())
 	}
 }
 

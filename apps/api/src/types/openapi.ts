@@ -1278,12 +1278,18 @@ export interface components {
             query: string;
             /** @description If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query) */
             rangeQuery?: {
-                /** @description Range query end (e.g., "now()"). Defaults to now. */
+                /**
+                 * @description How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
+                 * @example 0s
+                 */
                 end?: string;
-                /** @description Range query start (e.g., "now() - duration(5m)"). Defaults to now minus 10 * step. */
+                /**
+                 * @description How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
+                 * @example 5m
+                 */
                 start?: string;
                 /**
-                 * @description Query resolution step width (e.g., "15s", "1m")
+                 * @description Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
                  * @example 1m
                  */
                 step: string;

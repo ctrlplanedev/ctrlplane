@@ -715,13 +715,13 @@ type PrometheusMetricProvider struct {
 
 	// RangeQuery If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)
 	RangeQuery *struct {
-		// End Range query end (e.g., "now()"). Defaults to now.
+		// End How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
 		End *string `json:"end,omitempty"`
 
-		// Start Range query start (e.g., "now() - duration(5m)"). Defaults to now minus 10 * step.
+		// Start How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
 		Start *string `json:"start,omitempty"`
 
-		// Step Query resolution step width (e.g., "15s", "1m")
+		// Step Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
 		Step string `json:"step"`
 	} `json:"rangeQuery,omitempty"`
 

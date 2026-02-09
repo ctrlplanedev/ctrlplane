@@ -188,14 +188,21 @@ func buildQueryURL(config *oapi.PrometheusMetricProvider, now time.Time) (string
 		}
 
 		end := now
-		start := end.Add(-stepDuration * 10)
-
-		if config.RangeQuery.Start != nil && *config.RangeQuery.Start != "" {
-			if d, err := parsePrometheusDuration(*config.RangeQuery.Start); err == nil {
-				start = now.Add(-d)
-			}
-		}
 		if config.RangeQuery.End != nil && *config.RangeQuery.End != "" {
+			d, err := parsePrometheusDuration(*config.RangeQuery.End)
+			if err != nil {
+				return "", fmt.Errorf("invalid end duration %q: %w", *config.RangeQuery.End, err)
+			}
+			end = now.Add(-d)
+		}
+
+		start := end.Add(-stepDuration * 10)
+		if config.RangeQuery.Start != nil && *config.RangeQuery.Start != "" {
+			d, err := parsePrometheusDuration(*config.RangeQuery.Start)
+			if err != nil {
+				return "", fmt.Errorf("invalid start duration %q: %w", *config.RangeQuery.Start, err)
+			}
+			start = now.Add(-d)
 		}
 
 		params.Set("start", formatTimestamp(start))
