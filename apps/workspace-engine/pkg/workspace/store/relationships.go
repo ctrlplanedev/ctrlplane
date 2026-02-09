@@ -9,10 +9,12 @@ import (
 )
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
-	return &RelationshipRules{
+	rr := &RelationshipRules{
 		repo:  store.repo,
 		store: store,
 	}
+
+	return rr
 }
 
 type RelationshipRules struct {

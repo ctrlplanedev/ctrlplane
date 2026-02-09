@@ -544,7 +544,7 @@ func TestStats(t *testing.T) {
 
 	idx.Recompute(context.Background())
 
-	assert.Equal(t, 3, idx.MatchCount())  // sel1->entityA, sel2->entityA, sel2->entityB
+	assert.Equal(t, 3, idx.MatchCount()) // sel1->entityA, sel2->entityA, sel2->entityB
 	assert.Equal(t, 0, idx.DirtyCount())
 
 	idx.DirtyEntity("entityA")
