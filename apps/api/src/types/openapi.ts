@@ -1192,7 +1192,7 @@ export interface components {
             };
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
-        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
+        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
         /** @enum {boolean} */
         NullValue: true;
         NumberValue: number;
@@ -1233,6 +1233,43 @@ export interface components {
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionCooldown?: components["schemas"]["VersionCooldownRule"];
+        };
+        PrometheusMetricProvider: {
+            /**
+             * @description Prometheus server address (supports Go templates for variable references)
+             * @example {{.variables.prometheus_address}}
+             */
+            address: string;
+            /**
+             * @description Bearer token for authentication (supports Go templates for variable references)
+             * @example {{.variables.prometheus_token}}
+             */
+            bearerToken?: string;
+            /**
+             * @description Skip TLS certificate verification
+             * @default false
+             */
+            insecureSkipVerify: boolean;
+            /**
+             * @description PromQL query expression (supports Go templates)
+             * @example sum(rate(http_requests_total{service="{{.resource.name}}",code=~"5.."}[5m]))
+             */
+            query: string;
+            /**
+             * @description Query resolution step width for range queries (e.g., "15s", "1m"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).
+             * @example 15s
+             */
+            step?: string;
+            /**
+             * @description Query evaluation timeout (e.g., "30s")
+             * @default 30s
+             */
+            timeout: string;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "prometheus";
         };
         PropertyMatcher: {
             fromProperty: string[];

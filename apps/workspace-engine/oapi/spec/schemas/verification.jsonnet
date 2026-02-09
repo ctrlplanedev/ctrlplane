@@ -118,6 +118,7 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('HTTPMetricProvider'),
       openapi.schemaRef('SleepMetricProvider'),
       openapi.schemaRef('DatadogMetricProvider'),
+      openapi.schemaRef('PrometheusMetricProvider'),
       openapi.schemaRef('TerraformCloudRunMetricProvider'),
     ],
     discriminator: {
@@ -126,6 +127,7 @@ local openapi = import '../lib/openapi.libsonnet';
         http: '#/components/schemas/HTTPMetricProvider',
         sleep: '#/components/schemas/SleepMetricProvider',
         datadog: '#/components/schemas/DatadogMetricProvider',
+        prometheus: '#/components/schemas/PrometheusMetricProvider',
         terraformCloudRun: '#/components/schemas/TerraformCloudRunMetricProvider',
       },
     },
@@ -235,6 +237,48 @@ local openapi = import '../lib/openapi.libsonnet';
         type: 'string',
         description: 'Datadog site URL (e.g., datadoghq.com, datadoghq.eu, us3.datadoghq.com)',
         default: 'datadoghq.com',
+      },
+    },
+  },
+
+  PrometheusMetricProvider: {
+    type: 'object',
+    required: ['type', 'address', 'query'],
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['prometheus'],
+        description: 'Provider type',
+      },
+      address: {
+        type: 'string',
+        description: 'Prometheus server address (supports Go templates for variable references)',
+        example: '{{.variables.prometheus_address}}',
+      },
+      query: {
+        type: 'string',
+        description: 'PromQL query expression (supports Go templates)',
+        example: 'sum(rate(http_requests_total{service="{{.resource.name}}",code=~"5.."}[5m]))',
+      },
+      step: {
+        type: 'string',
+        description: 'Query resolution step width for range queries (e.g., "15s", "1m"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).',
+        example: '15s',
+      },
+      timeout: {
+        type: 'string',
+        description: 'Query evaluation timeout (e.g., "30s")',
+        default: '30s',
+      },
+      bearerToken: {
+        type: 'string',
+        description: 'Bearer token for authentication (supports Go templates for variable references)',
+        example: '{{.variables.prometheus_token}}',
+      },
+      insecureSkipVerify: {
+        type: 'boolean',
+        description: 'Skip TLS certificate verification',
+        default: false,
       },
     },
   },

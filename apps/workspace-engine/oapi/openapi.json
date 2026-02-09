@@ -970,6 +970,7 @@
                "mapping": {
                   "datadog": "#/components/schemas/DatadogMetricProvider",
                   "http": "#/components/schemas/HTTPMetricProvider",
+                  "prometheus": "#/components/schemas/PrometheusMetricProvider",
                   "sleep": "#/components/schemas/SleepMetricProvider",
                   "terraformCloudRun": "#/components/schemas/TerraformCloudRunMetricProvider"
                },
@@ -984,6 +985,9 @@
                },
                {
                   "$ref": "#/components/schemas/DatadogMetricProvider"
+               },
+               {
+                  "$ref": "#/components/schemas/PrometheusMetricProvider"
                },
                {
                   "$ref": "#/components/schemas/TerraformCloudRunMetricProvider"
@@ -1188,6 +1192,53 @@
                "reason",
                "createdBy",
                "createdAt"
+            ],
+            "type": "object"
+         },
+         "PrometheusMetricProvider": {
+            "properties": {
+               "address": {
+                  "description": "Prometheus server address (supports Go templates for variable references)",
+                  "example": "{{.variables.prometheus_address}}",
+                  "type": "string"
+               },
+               "bearerToken": {
+                  "description": "Bearer token for authentication (supports Go templates for variable references)",
+                  "example": "{{.variables.prometheus_token}}",
+                  "type": "string"
+               },
+               "insecureSkipVerify": {
+                  "default": false,
+                  "description": "Skip TLS certificate verification",
+                  "type": "boolean"
+               },
+               "query": {
+                  "description": "PromQL query expression (supports Go templates)",
+                  "example": "sum(rate(http_requests_total{service=\"{{.resource.name}}\",code=~\"5..\"}[5m]))",
+                  "type": "string"
+               },
+               "step": {
+                  "description": "Query resolution step width for range queries (e.g., \"15s\", \"1m\"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).",
+                  "example": "15s",
+                  "type": "string"
+               },
+               "timeout": {
+                  "default": "30s",
+                  "description": "Query evaluation timeout (e.g., \"30s\")",
+                  "type": "string"
+               },
+               "type": {
+                  "description": "Provider type",
+                  "enum": [
+                     "prometheus"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "address",
+               "query"
             ],
             "type": "object"
          },

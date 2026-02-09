@@ -116,6 +116,11 @@ const (
 	True NullValue = true
 )
 
+// Defines values for PrometheusMetricProviderType.
+const (
+	Prometheus PrometheusMetricProviderType = "prometheus"
+)
+
 // Defines values for PropertyMatcherOperator.
 const (
 	Contains   PropertyMatcherOperator = "contains"
@@ -669,6 +674,33 @@ type PolicySkip struct {
 	// WorkspaceId Workspace this skip belongs to
 	WorkspaceId string `json:"workspaceId"`
 }
+
+// PrometheusMetricProvider defines model for PrometheusMetricProvider.
+type PrometheusMetricProvider struct {
+	// Address Prometheus server address (supports Go templates for variable references)
+	Address string `json:"address"`
+
+	// BearerToken Bearer token for authentication (supports Go templates for variable references)
+	BearerToken *string `json:"bearerToken,omitempty"`
+
+	// InsecureSkipVerify Skip TLS certificate verification
+	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
+
+	// Query PromQL query expression (supports Go templates)
+	Query string `json:"query"`
+
+	// Step Query resolution step width for range queries (e.g., "15s", "1m"). If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query).
+	Step *string `json:"step,omitempty"`
+
+	// Timeout Query evaluation timeout (e.g., "30s")
+	Timeout *string `json:"timeout,omitempty"`
+
+	// Type Provider type
+	Type PrometheusMetricProviderType `json:"type"`
+}
+
+// PrometheusMetricProviderType Provider type
+type PrometheusMetricProviderType string
 
 // PropertiesMatcher defines model for PropertiesMatcher.
 type PropertiesMatcher struct {
@@ -1832,6 +1864,34 @@ func (t *MetricProvider) MergeDatadogMetricProvider(v DatadogMetricProvider) err
 	return err
 }
 
+// AsPrometheusMetricProvider returns the union data inside the MetricProvider as a PrometheusMetricProvider
+func (t MetricProvider) AsPrometheusMetricProvider() (PrometheusMetricProvider, error) {
+	var body PrometheusMetricProvider
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPrometheusMetricProvider overwrites any union data inside the MetricProvider as the provided PrometheusMetricProvider
+func (t *MetricProvider) FromPrometheusMetricProvider(v PrometheusMetricProvider) error {
+	v.Type = "prometheus"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePrometheusMetricProvider performs a merge with any union data inside the MetricProvider, using the provided PrometheusMetricProvider
+func (t *MetricProvider) MergePrometheusMetricProvider(v PrometheusMetricProvider) error {
+	v.Type = "prometheus"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsTerraformCloudRunMetricProvider returns the union data inside the MetricProvider as a TerraformCloudRunMetricProvider
 func (t MetricProvider) AsTerraformCloudRunMetricProvider() (TerraformCloudRunMetricProvider, error) {
 	var body TerraformCloudRunMetricProvider
@@ -1878,6 +1938,8 @@ func (t MetricProvider) ValueByDiscriminator() (interface{}, error) {
 		return t.AsDatadogMetricProvider()
 	case "http":
 		return t.AsHTTPMetricProvider()
+	case "prometheus":
+		return t.AsPrometheusMetricProvider()
 	case "sleep":
 		return t.AsSleepMetricProvider()
 	case "terraformCloudRun":
