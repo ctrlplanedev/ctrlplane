@@ -65,10 +65,13 @@ export default function Providers() {
 
   const items = providers.data?.items ?? [];
 
+  const getMetadata = (provider: (typeof items)[number]) =>
+    (provider.metadata as Record<string, string> | null | undefined) ?? {};
+
   const filteredProviders = items.filter(
     (provider) =>
       provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      Object.entries(provider.metadata).some(
+      Object.entries(getMetadata(provider)).some(
         ([key, value]) =>
           key.toLowerCase().includes(searchQuery.toLowerCase()) ||
           String(value).toLowerCase().includes(searchQuery.toLowerCase()),
@@ -162,29 +165,33 @@ export default function Providers() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {Object.entries(provider.metadata)
-                        .slice(0, 3)
-                        .map(([key, value]) => (
-                          <Badge
-                            key={key}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {key}: {String(value)}
-                          </Badge>
-                        ))}
-                      {Object.keys(provider.metadata).length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{Object.keys(provider.metadata).length - 3}
-                        </Badge>
-                      )}
-                      {Object.keys(provider.metadata).length === 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          No metadata
-                        </span>
-                      )}
-                    </div>
+                    {(() => {
+                      const metadata = getMetadata(provider);
+                      const entries = Object.entries(metadata);
+                      return (
+                        <div className="flex flex-wrap gap-1">
+                          {entries.slice(0, 3).map(([key, value]) => (
+                            <Badge
+                              key={key}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {key}: {String(value)}
+                            </Badge>
+                          ))}
+                          {entries.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{entries.length - 3}
+                            </Badge>
+                          )}
+                          {entries.length === 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              No metadata
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatRelativeTime(provider.createdAt)}
