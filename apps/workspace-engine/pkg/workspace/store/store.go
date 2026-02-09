@@ -6,7 +6,6 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
@@ -34,6 +33,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.ResourceProviders = NewResourceProviders(store)
 	store.GithubEntities = NewGithubEntities(store)
 	store.Relations = NewRelations(store)
+	store.RelationshipIndexes = NewRelationshipIndexes(store)
 	store.JobVerifications = NewJobVerifications(store)
 	store.WorkflowTemplates = NewWorkflowTemplates(store)
 	store.WorkflowJobTemplates = NewWorkflowJobTemplates(store)
@@ -68,6 +68,7 @@ type Store struct {
 	Variables                *Variables
 	GithubEntities           *GithubEntities
 	Relations                *Relations
+	RelationshipIndexes      *RelationshipIndexes
 	JobVerifications         *JobVerifications
 	WorkflowTemplates        *WorkflowTemplates
 	WorkflowJobTemplates     *WorkflowJobTemplates
@@ -140,20 +141,13 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		}
 	}
 
-	allEntities := s.Relations.GetRelatableEntities(ctx)
 	for _, rule := range s.Relationships.Items() {
 		if setStatus != nil {
 			setStatus("Computing relationships for rule: " + rule.Name)
 		}
-
-		relations, err := compute.FindRuleRelationships(ctx, rule, allEntities)
-		if err != nil {
-			return err
-		}
-		for _, relation := range relations {
-			_ = s.Relations.Upsert(ctx, relation)
-		}
+		s.RelationshipIndexes.AddRule(ctx, rule)
 	}
+	s.RelationshipIndexes.Recompute(ctx)
 
 	s.changeset.Clear()
 

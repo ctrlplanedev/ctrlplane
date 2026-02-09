@@ -1,7 +1,6 @@
 package relationships
 
 import (
-	"context"
 	"fmt"
 	"time"
 	"workspace-engine/pkg/celutil"
@@ -28,10 +27,7 @@ type CelMatcher struct {
 	program cel.Program
 }
 
-func (m *CelMatcher) Evaluate(ctx context.Context, from map[string]any, to map[string]any) bool {
-	_, span := tracer.Start(ctx, "Relationships.CelMatcher.Evaluate")
-	defer span.End()
-
+func (m *CelMatcher) Evaluate(from map[string]any, to map[string]any) bool {
 	celCtx := map[string]any{
 		"from": from,
 		"to":   to,

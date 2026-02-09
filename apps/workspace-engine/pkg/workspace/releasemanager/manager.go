@@ -27,10 +27,13 @@ import (
 // It coordinates between the state cache and deployment orchestrator to manage release targets.
 type Manager struct {
 	store        *store.Store
-	cache        *StateCache
 	deployment   *DeploymentOrchestrator
 	verification *verification.Manager
 	traceStore   PersistenceStore
+
+	// Deprecated: WIP: Use stateIndex instead
+	cache      *StateCache
+	stateIndex *StateIndex
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
@@ -46,6 +49,7 @@ func New(store *store.Store, traceStore PersistenceStore, verificationManager *v
 	}
 
 	deploymentOrch := NewDeploymentOrchestrator(store, jobAgentRegistry)
+	stateIndex := NewStateIndex(store, deploymentOrch.Planner())
 	stateCache := NewStateCache(store, deploymentOrch.Planner())
 
 	releaseManagerHooks := newReleaseManagerVerificationHooks(store, stateCache)
@@ -59,6 +63,7 @@ func New(store *store.Store, traceStore PersistenceStore, verificationManager *v
 		deployment:   deploymentOrch,
 		verification: verificationManager,
 		traceStore:   traceStore,
+		stateIndex:   stateIndex,
 	}
 }
 

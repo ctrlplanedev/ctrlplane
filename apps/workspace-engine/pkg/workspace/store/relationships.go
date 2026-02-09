@@ -4,15 +4,15 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
-
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
-	return &RelationshipRules{
+	rr := &RelationshipRules{
 		repo:  store.repo,
 		store: store,
 	}
+
+	return rr
 }
 
 type RelationshipRules struct {
@@ -47,47 +47,5 @@ func (r *RelationshipRules) Items() map[string]*oapi.RelationshipRule {
 }
 
 func (r *RelationshipRules) GetRelatedEntities(ctx context.Context, entity *oapi.RelatableEntity) (map[string][]*oapi.EntityRelation, error) {
-	_, span := tracer.Start(ctx, "GetRelatedEntities")
-	defer span.End()
-
-	entityRelations := r.store.Relations.ForEntity(entity)
-
-	relationsByRule := make(map[string][]*oapi.EntityRelation)
-
-	entityID := entity.GetID()
-	entityType := entity.GetType()
-
-	for _, rel := range entityRelations {
-		ruleReference := rel.Rule.Reference
-
-		var direction oapi.RelationDirection
-		var relatedEntity *oapi.RelatableEntity
-
-		if rel.From.GetID() == entityID && rel.From.GetType() == entityType {
-			direction = oapi.From
-			relatedEntity = rel.To
-		} else {
-			direction = oapi.To
-			relatedEntity = rel.From
-		}
-
-		entityRelation := &oapi.EntityRelation{
-			Direction:  direction,
-			Entity:     *relatedEntity,
-			EntityId:   relatedEntity.GetID(),
-			EntityType: relatedEntity.GetType(),
-			Rule:       *rel.Rule,
-		}
-
-		relationsByRule[ruleReference] = append(relationsByRule[ruleReference], entityRelation)
-	}
-
-	span.SetAttributes(
-		attribute.String("entity.id", entityID),
-		attribute.String("entity.type", string(entityType)),
-		attribute.Int("relations.total", len(entityRelations)),
-		attribute.Int("relations.rules", len(relationsByRule)),
-	)
-
-	return relationsByRule, nil
+	return r.store.RelationshipIndexes.GetRelatedEntities(ctx, entity)
 }
