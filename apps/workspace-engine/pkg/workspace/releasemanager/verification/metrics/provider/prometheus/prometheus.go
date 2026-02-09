@@ -15,6 +15,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 
 	"github.com/charmbracelet/log"
+	"github.com/prometheus/common/model"
 )
 
 var _ provider.Provider = (*PrometheusProvider)(nil)
@@ -393,30 +394,11 @@ func parseScalarValue(raw json.RawMessage) (float64, error) {
 }
 
 func parsePrometheusDuration(s string) (time.Duration, error) {
-	if len(s) < 2 {
-		return 0, fmt.Errorf("duration too short: %q", s)
-	}
-
-	unit := s[len(s)-1]
-	numStr := s[:len(s)-1]
-
-	num, err := strconv.ParseFloat(numStr, 64)
+	d, err := model.ParseDuration(s)
 	if err != nil {
-		return 0, fmt.Errorf("invalid duration number: %w", err)
+		return 0, fmt.Errorf("invalid prometheus duration %q: %w", s, err)
 	}
-
-	switch unit {
-	case 's':
-		return time.Duration(num * float64(time.Second)), nil
-	case 'm':
-		return time.Duration(num * float64(time.Minute)), nil
-	case 'h':
-		return time.Duration(num * float64(time.Hour)), nil
-	case 'd':
-		return time.Duration(num * 24 * float64(time.Hour)), nil
-	default:
-		return 0, fmt.Errorf("unknown duration unit: %c", unit)
-	}
+	return time.Duration(d), nil
 }
 
 func formatTimestamp(t time.Time) string {
