@@ -334,7 +334,7 @@ func TestSetHeaders_BearerToken(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", "http://example.com", nil)
-	setHeaders(req, config)
+	setHeaders(req, config, http.DefaultClient)
 
 	got := req.Header.Get("Authorization")
 	want := "Bearer my-secret-token"
@@ -353,7 +353,7 @@ func TestSetHeaders_CustomHeaders(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", "http://example.com", nil)
-	setHeaders(req, config)
+	setHeaders(req, config, http.DefaultClient)
 
 	if got := req.Header.Get("X-Scope-OrgID"); got != "tenant_a" {
 		t.Errorf("expected X-Scope-OrgID=tenant_a, got %q", got)
@@ -367,7 +367,7 @@ func TestSetHeaders_NoAuth(t *testing.T) {
 	config := &oapi.PrometheusMetricProvider{}
 
 	req, _ := http.NewRequest("GET", "http://example.com", nil)
-	setHeaders(req, config)
+	setHeaders(req, config, http.DefaultClient)
 
 	if got := req.Header.Get("Authorization"); got != "" {
 		t.Errorf("expected no Authorization header, got %q", got)
@@ -500,6 +500,32 @@ func TestBuildResultData_VectorEmpty(t *testing.T) {
 	}
 }
 
+func TestBuildResultData_VectorFirstElementUnparseable(t *testing.T) {
+	body := `{
+		"status": "success",
+		"data": {
+			"resultType": "vector",
+			"result": [
+				{"metric": {"instance": "a"}, "value": [1700000000, "not_a_number"]},
+				{"metric": {"instance": "b"}, "value": [1700000000, "0.5"]}
+			]
+		}
+	}`
+
+	data, err := buildResultData(200, []byte(body), time.Millisecond)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	val, ok := data["value"].(*float64)
+	if !ok || val == nil {
+		t.Fatal("expected non-nil primary value from second element")
+	}
+	if *val != 0.5 {
+		t.Errorf("expected primary value=0.5 (first valid element), got %v", *val)
+	}
+}
+
 func TestBuildResultData_MatrixSuccess(t *testing.T) {
 	body := `{
 		"status": "success",
@@ -541,6 +567,38 @@ func TestBuildResultData_MatrixSuccess(t *testing.T) {
 	}
 	if len(values) != 3 {
 		t.Errorf("expected 3 data points, got %d", len(values))
+	}
+}
+
+func TestBuildResultData_MatrixFirstSeriesEmpty(t *testing.T) {
+	body := `{
+		"status": "success",
+		"data": {
+			"resultType": "matrix",
+			"result": [
+				{
+					"metric": {"instance": "a"},
+					"values": []
+				},
+				{
+					"metric": {"instance": "b"},
+					"values": [[1700000000, "0.7"]]
+				}
+			]
+		}
+	}`
+
+	data, err := buildResultData(200, []byte(body), time.Millisecond)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	val, ok := data["value"].(*float64)
+	if !ok || val == nil {
+		t.Fatal("expected non-nil primary value from second series")
+	}
+	if *val != 0.7 {
+		t.Errorf("expected primary value=0.7 (first valid series), got %v", *val)
 	}
 }
 
