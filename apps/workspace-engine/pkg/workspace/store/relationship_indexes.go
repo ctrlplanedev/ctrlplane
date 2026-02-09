@@ -9,8 +9,11 @@ import (
 	"workspace-engine/pkg/workspace/relationships"
 	v2 "workspace-engine/pkg/workspace/relationships/v2"
 
+	"github.com/charmbracelet/log"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 var relationshipIndexesTracer = otel.Tracer("workspace/store/relationship_indexes")
@@ -139,19 +142,34 @@ func ruleToV2(rule *oapi.RelationshipRule) *v2.RelationshipRule {
 // with all entities currently in the store. The index is marked dirty and must
 // be recomputed via Recompute before queries return correct results.
 func (ri *RelationshipIndexes) AddRule(ctx context.Context, rule *oapi.RelationshipRule) {
+	ctx, span := relationshipIndexesTracer.Start(ctx, "RelationshipIndexes.AddRule")
+	defer span.End()
+
 	v2Rule := ruleToV2(rule)
 	if v2Rule == nil {
+		span.SetStatus(codes.Error, "failed to convert rule to v2")
 		return
 	}
 
+	span.SetAttributes(
+		attribute.String("rule.id", rule.Id),
+		attribute.String("rule.name", rule.Name),
+		attribute.String("rule.reference", rule.Reference),
+		attribute.String("rule.from_type", string(rule.FromType)),
+		attribute.String("rule.to_type", string(rule.ToType)),
+	)
+
 	idx := v2.NewRelationshipIndex(ri.entityStore, v2Rule)
 
+    log.Info("Adding resources to rule", "rule.id", rule.Id)
 	for _, r := range ri.store.Resources.Items() {
 		idx.AddEntity(ctx, r.Id)
 	}
+	log.Info("Adding deployments to rule", "rule.id", rule.Id)
 	for _, d := range ri.store.Deployments.Items() {
 		idx.AddEntity(ctx, d.Id)
 	}
+	log.Info("Adding environments to rule", "rule.id", rule.Id)
 	for _, e := range ri.store.Environments.Items() {
 		idx.AddEntity(ctx, e.Id)
 	}

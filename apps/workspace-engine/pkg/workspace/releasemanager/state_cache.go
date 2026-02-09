@@ -44,7 +44,6 @@ func NewStateCache(store *store.Store, planner *deployment.Planner) *StateCache 
 }
 
 // Get retrieves a release target state from cache, computing it if not present.
-// If resourceRelationships are provided, they will be passed to the planner to avoid recomputation.
 // If bypassCache is true, always computes fresh state.
 func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
 	ctx, span := stateCacheTracer.Start(ctx, "ReleaseManager.StateCache.Get")
@@ -67,7 +66,7 @@ func (sc *StateCache) Get(ctx context.Context, releaseTarget *oapi.ReleaseTarget
 		}
 	}
 
-	return sc.compute(ctx, releaseTarget, WithResourceRelationships(options.resourceRelationships))
+	return sc.compute(ctx, releaseTarget)
 }
 
 // Set stores a release target state in the cache with a TTL.
@@ -115,16 +114,9 @@ func (sc *StateCache) compute(ctx context.Context, releaseTarget *oapi.ReleaseTa
 	// Get desired release (compute if not provided)
 	desiredRelease := options.desiredRelease
 	if desiredRelease == nil {
-		if options.resourceRelationships != nil {
-			desiredRelease, err = sc.planner.PlanDeployment(ctx, releaseTarget, deployment.WithResourceRelatedEntities(options.resourceRelationships))
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			desiredRelease, err = sc.planner.PlanDeployment(ctx, releaseTarget)
-			if err != nil {
-				return nil, err
-			}
+		desiredRelease, err = sc.planner.PlanDeployment(ctx, releaseTarget)
+		if err != nil {
+			return nil, err
 		}
 	}
 

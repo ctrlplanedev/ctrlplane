@@ -9,7 +9,6 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/jobagents"
-	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
@@ -134,11 +133,6 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		attribute.Int("target_states.deletes", deleteCount),
 	)
 
-	// Pre-compute resource relationships for all unique resources
-	// This avoids recomputing relationships for every release target that shares the same resource
-	span.AddEvent("Pre-computing resource relationships")
-	resourceRelationships := m.computeResourceRelationships(ctx, targetStates)
-
 	processFn := func(ctx context.Context, state targetState) (targetState, error) {
 		if state.isDelete {
 			// Handle deletion - cancel pending jobs
@@ -160,8 +154,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			return state, nil
 		}
 
-		// Handle upsert - reconcile the target with pre-computed relationships
-		// Create a recorder for this target
+		// Handle upsert - reconcile the target
 		workspaceID := m.store.ID()
 		recorder := trace.NewReconcileTarget(workspaceID, state.entity.Key(), trace.TriggerScheduled)
 		defer func() {
@@ -174,10 +167,7 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 			}
 		}()
 
-		relationships := resourceRelationships[state.entity.ResourceId]
-		// Pass options directly - trigger is TriggerScheduled (set in recorder creation above)
-		if err := m.reconcileTargetWithRelationships(ctx, state.entity, recorder,
-			WithResourceRelationships(relationships)); err != nil {
+		if err := m.reconcileTargetWithRecorder(ctx, state.entity, recorder); err != nil {
 			log.Warn("error reconciling release target",
 				"release_target", state.entity.Key(),
 				"error", err.Error())
@@ -202,56 +192,6 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 
 	span.AddEvent("Completed processing changes")
 	return nil
-}
-
-// computeResourceRelationships pre-computes relationships for all unique resources in the target states.
-// This optimization avoids redundant relationship computation when multiple release targets share the same resource.
-func (m *Manager) computeResourceRelationships(ctx context.Context, targetStates map[string]targetState) map[string]map[string][]*oapi.EntityRelation {
-	ctx, span := tracer.Start(ctx, "computeResourceRelationships")
-	defer span.End()
-
-	// Collect unique resource IDs
-	span.AddEvent("Collecting unique resource IDs")
-	uniqueResourceIds := make(map[string]bool)
-	for _, state := range targetStates {
-		if !state.isDelete {
-			uniqueResourceIds[state.entity.ResourceId] = true
-		}
-	}
-	span.SetAttributes(attribute.Int("unique_resources", len(uniqueResourceIds)))
-
-	// Pre-compute relationships for all unique resources
-	span.AddEvent("Computing relationships for unique resources")
-	resourceRelationships := make(map[string]map[string][]*oapi.EntityRelation)
-	successCount := 0
-	errorCount := 0
-
-	for resourceId := range uniqueResourceIds {
-		resource, exists := m.store.Resources.Get(resourceId)
-		if !exists {
-			log.Warn("resource not found during relationship computation", "resourceId", resourceId)
-			errorCount++
-			continue
-		}
-
-		entity := relationships.NewResourceEntity(resource)
-		relatedEntities, err := m.store.Relationships.GetRelatedEntities(ctx, entity)
-		if err != nil {
-			log.Warn("error getting related entities", "resourceId", resourceId, "error", err.Error())
-			errorCount++
-			continue
-		}
-
-		resourceRelationships[resourceId] = relatedEntities
-		successCount++
-	}
-
-	span.SetAttributes(
-		attribute.Int("relationships.computed_successfully", successCount),
-		attribute.Int("relationships.errors", errorCount),
-	)
-
-	return resourceRelationships
 }
 
 // Redeploy forces a new deployment for a release target, skipping eligibility checks (WRITES TO STORE).
@@ -300,30 +240,20 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		WithTrigger(trace.TriggerManual))
 }
 
-// reconcileTargetWithRelationships is like ReconcileTarget but accepts pre-computed resource relationships.
-// This is an optimization to avoid recomputing relationships for multiple release targets that share the same resource.
-// After reconciliation completes, it caches the computed state for use by other APIs.
-func (m *Manager) reconcileTargetWithRelationships(
+// reconcileTargetWithRecorder runs the three-phase deployment process and caches the result.
+func (m *Manager) reconcileTargetWithRecorder(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
 	recorder *trace.ReconcileTarget,
 	opts ...Option,
 ) error {
-	// Extract options for logging only
-	options := &options{}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	ctx, span := tracer.Start(ctx, "reconcileTargetWithRelationships",
+	ctx, span := tracer.Start(ctx, "reconcileTargetWithRecorder",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
-			attribute.Bool("skip_eligibility_check", options.skipEligibilityCheck),
 		))
 	defer span.End()
 
 	// Delegate to deployment orchestrator for the three-phase deployment process
-	// Pass opts directly to Reconcile
 	desiredRelease, job, err := m.deployment.Reconcile(ctx, releaseTarget, recorder, opts...)
 	if err != nil {
 		span.RecordError(err)
@@ -441,41 +371,11 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 		}
 	}()
 
-	// Compute relationships on-demand for this single resource
-	span.AddEvent("Getting resource and relationships")
-	resource, exists := m.store.Resources.Get(releaseTarget.ResourceId)
-	if !exists {
-		err := fmt.Errorf("resource %q not found", releaseTarget.ResourceId)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "resource not found")
-		recorder.Complete(trace.StatusFailed)
-		return err
-	}
-
-	entity := relationships.NewResourceEntity(resource)
-	resourceRelationships, err := m.store.Relationships.GetRelatedEntities(ctx, entity)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to get relationships")
-		recorder.Complete(trace.StatusFailed)
-		return err
-	}
-
-	// Count total related entities
-	totalRelatedEntities := 0
-	for _, entities := range resourceRelationships {
-		totalRelatedEntities += len(entities)
-	}
-	span.SetAttributes(attribute.Int("related_entities.count", totalRelatedEntities))
-
-	// Delegate to the implementation that accepts pre-computed relationships
-	// Pass opts directly and add the pre-computed relationships
-	return m.reconcileTargetWithRelationships(ctx, releaseTarget, recorder,
-		append(opts, WithResourceRelationships(resourceRelationships))...)
+	// Delegate to the implementation with the recorder
+	return m.reconcileTargetWithRecorder(ctx, releaseTarget, recorder, opts...)
 }
 
-// GetReleaseTargetStateWithRelationships computes and returns the release target state,
-// optionally using pre-computed resource relationships.
+// GetReleaseTargetState computes and returns the release target state.
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
 	ctx, span := tracer.Start(ctx, "GetReleaseTargetState",
 		oteltrace.WithAttributes(

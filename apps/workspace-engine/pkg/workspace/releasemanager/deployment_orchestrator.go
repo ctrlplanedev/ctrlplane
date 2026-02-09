@@ -58,7 +58,6 @@ func NewDeploymentOrchestrator(store *store.Store, jobAgentRegistry *jobagents.R
 //
 // Options:
 //   - WithSkipEligibilityCheck: if true, skips Phase 2 eligibility checks
-//   - WithResourceRelationships: pre-computed relationships to avoid redundant computation
 //
 // Returns:
 //   - desiredRelease: the desired release computed during planning (may be nil)
@@ -87,12 +86,10 @@ func (o *DeploymentOrchestrator) Reconcile(
 	defer span.End()
 
 	// Phase 1: PLANNING - What should be deployed? (READ-ONLY)
-	// Pass pre-computed relationships to avoid redundant computation
 	span.AddEvent("Phase 1: Planning deployment")
 	desiredRelease, err := o.planner.PlanDeployment(
 		ctx,
 		releaseTarget,
-		deployment.WithResourceRelatedEntities(options.resourceRelationships),
 		deployment.WithTraceRecorder(recorder),
 		deployment.WithVersionAndNewer(options.earliestVersionForEvaluation),
 	)

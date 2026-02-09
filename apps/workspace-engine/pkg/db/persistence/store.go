@@ -9,7 +9,6 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/workspace/store/repository"
 
-	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
@@ -173,7 +172,6 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 
 		entity, err := jsonEntityRegistry.Unmarshal(entityType, entityData)
 		if err != nil {
-			log.Warnf("failed to unmarshal entity type %s with id %s: %v", entityType, entityID, err)
 			continue
 		}
 

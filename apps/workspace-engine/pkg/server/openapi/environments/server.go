@@ -12,8 +12,6 @@ import (
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/releasemanager"
 )
 
 type Environments struct{}
@@ -204,24 +202,7 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 	start := min(offset, total)
 	end := min(start+limit, total)
 
-	// Pre-compute relationships for unique resources to avoid redundant GetRelatedEntities calls
 	paginatedTargets := releaseTargetsList[start:end]
-	uniqueResourceIds := make(map[string]bool)
-	for _, rt := range paginatedTargets {
-		uniqueResourceIds[rt.ResourceId] = true
-	}
-
-	// Batch compute relationships
-	resourceRelationshipsMap := make(map[string]map[string][]*oapi.EntityRelation)
-	for resourceId := range uniqueResourceIds {
-		resource, exists := ws.Resources().Get(resourceId)
-		if !exists {
-			continue
-		}
-		entity := relationships.NewResourceEntity(resource)
-		relatedEntities, _ := ws.Store().Relationships.GetRelatedEntities(c.Request.Context(), entity)
-		resourceRelationshipsMap[resourceId] = relatedEntities
-	}
 
 	// Process each release target, logging errors but continuing with valid ones
 	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
@@ -240,12 +221,9 @@ func (s *Environments) GetReleaseTargetsForEnvironment(c *gin.Context, workspace
 				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}
 
-			// Use pre-computed relationships
-			resourceRelationships := resourceRelationshipsMap[releaseTarget.ResourceId]
 			state, err := ws.ReleaseManager().GetReleaseTargetState(
 				c.Request.Context(),
 				releaseTarget,
-				releasemanager.WithResourceRelationships(resourceRelationships),
 			)
 			if err != nil {
 				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
