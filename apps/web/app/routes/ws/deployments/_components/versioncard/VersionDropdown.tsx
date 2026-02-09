@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { useDeployment } from "./DeploymentProvider";
+import { useDeployment } from "../DeploymentProvider";
 
 type VersionStatus = WorkspaceEngine["schemas"]["DeploymentVersionStatus"];
 type Version = { id: string; status: VersionStatus };
