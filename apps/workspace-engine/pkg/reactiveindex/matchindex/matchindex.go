@@ -3,6 +3,8 @@ package matchindex
 import (
 	"context"
 	"sync"
+
+	"workspace-engine/pkg/concurrency"
 )
 
 // Compile-time interface checks.
@@ -293,10 +295,33 @@ type pair struct {
 	entity   string
 }
 
+// parallelThreshold is the minimum number of pairs before we fan out to
+// a worker pool. Below this, the goroutine scheduling + span overhead
+// exceeds the benefit.
+const parallelThreshold = 256
+
+// evalResult is the outcome of a single (selector, entity) evaluation.
+type evalResult struct {
+	p       pair
+	matches bool
+	err     error
+}
+
 // Recompute processes all dirty flags and updates the membership.
 // It snapshots dirty state under the lock, evaluates outside the lock (since
 // MatchFunc may be expensive), then applies results under the lock.
 // Returns the number of evaluations performed.
+//
+// Pair deduplication uses algebraic set subtraction instead of materializing a
+// map of all pairs. The three dirty sources are processed in order:
+//
+//  1. dirtySelectors × allEntities       (unconditional)
+//  2. allSelectors   × dirtyEntities     (skip selector ∈ dirtySelectors)
+//  3. dirtyPairs                         (skip selector ∈ dirtySelectors OR entity ∈ dirtyEntities)
+//
+// Each pair is produced by exactly one step, so no intermediate set is needed.
+// When the pair count exceeds parallelThreshold, evaluation is distributed
+// across a worker pool via ProcessInChunks.
 func (idx *MatchIndex) Recompute(ctx context.Context) int {
 	idx.mu.Lock()
 
@@ -308,54 +333,114 @@ func (idx *MatchIndex) Recompute(ctx context.Context) int {
 	idx.dirtySelectors = make(map[string]bool)
 	idx.dirtyPairs = make(map[[2]string]bool)
 
-	// Build the set of (selectorID, entityID) pairs to evaluate, deduplicating
-	// across the three dirty sources.
-	toEval := make(map[pair]bool)
-
-	// Dirty selectors -> evaluate against ALL entities
-	for selectorID := range dirtySelectors {
-		if !idx.selectors[selectorID] {
-			continue
-		}
-		for entityID := range idx.entities {
-			toEval[pair{selectorID, entityID}] = true
-		}
+	if len(dirtyEntities) == 0 && len(dirtySelectors) == 0 && len(dirtyPairs) == 0 {
+		idx.mu.Unlock()
+		return 0
 	}
 
-	// Dirty entities -> evaluate against ALL selectors
-	for entityID := range dirtyEntities {
-		if !idx.entities[entityID] {
-			continue
-		}
-		for selectorID := range idx.selectors {
-			toEval[pair{selectorID, entityID}] = true
-		}
+	// Snapshot registered selectors/entities for stable iteration and O(1)
+	// membership checks outside the lock.
+	selectorSnap := make(map[string]bool, len(idx.selectors))
+	for s := range idx.selectors {
+		selectorSnap[s] = true
+	}
+	entitySnap := make(map[string]bool, len(idx.entities))
+	for e := range idx.entities {
+		entitySnap[e] = true
 	}
 
-	// Dirty pairs -> targeted re-evaluation
+	// Pre-compute the exact pair count so the pairs slice is allocated once.
+	validDirtySelectorCount := 0
+	for s := range dirtySelectors {
+		if selectorSnap[s] {
+			validDirtySelectorCount++
+		}
+	}
+	validDirtyEntityCount := 0
+	for e := range dirtyEntities {
+		if entitySnap[e] {
+			validDirtyEntityCount++
+		}
+	}
+	dirtyPairCount := 0
 	for p := range dirtyPairs {
-		selectorID, entityID := p[0], p[1]
-		if idx.selectors[selectorID] && idx.entities[entityID] {
-			toEval[pair{selectorID, entityID}] = true
+		s, e := p[0], p[1]
+		if !dirtySelectors[s] && !dirtyEntities[e] && selectorSnap[s] && entitySnap[e] {
+			dirtyPairCount++
 		}
+	}
+	totalPairs := validDirtySelectorCount*len(entitySnap) +
+		validDirtyEntityCount*(len(selectorSnap)-validDirtySelectorCount) +
+		dirtyPairCount
+
+	if totalPairs == 0 {
+		idx.mu.Unlock()
+		return 0
 	}
 
 	idx.mu.Unlock()
 
-	if len(toEval) == 0 {
+	// Generate all pairs using algebraic dedup.
+	pairs := make([]pair, 0, totalPairs)
+
+	// Step 1: dirty selectors × all entities
+	for s := range dirtySelectors {
+		if !selectorSnap[s] {
+			continue
+		}
+		for e := range entitySnap {
+			pairs = append(pairs, pair{s, e})
+		}
+	}
+
+	// Step 2: all selectors × dirty entities, skipping selectors covered by step 1
+	for e := range dirtyEntities {
+		if !entitySnap[e] {
+			continue
+		}
+		for s := range selectorSnap {
+			if dirtySelectors[s] {
+				continue
+			}
+			pairs = append(pairs, pair{s, e})
+		}
+	}
+
+	// Step 3: explicit dirty pairs, skipping any covered by steps 1 or 2
+	for p := range dirtyPairs {
+		s, e := p[0], p[1]
+		if dirtySelectors[s] || dirtyEntities[e] {
+			continue
+		}
+		if !selectorSnap[s] || !entitySnap[e] {
+			continue
+		}
+		pairs = append(pairs, pair{s, e})
+	}
+
+	if len(pairs) == 0 {
 		return 0
 	}
 
-	// Evaluate outside the lock — MatchFunc is read-only against the store
-	type evalResult struct {
-		p       pair
-		matches bool
-		err     error
-	}
-	results := make([]evalResult, 0, len(toEval))
-	for p := range toEval {
-		matches, err := idx.eval(ctx, p.selector, p.entity)
-		results = append(results, evalResult{p, matches, err})
+	// Evaluate — sequential for small workloads, parallel for large.
+	var results []evalResult
+	if len(pairs) <= parallelThreshold {
+		results = make([]evalResult, len(pairs))
+		for i, p := range pairs {
+			matches, err := idx.eval(ctx, p.selector, p.entity)
+			results[i] = evalResult{p, matches, err}
+		}
+	} else {
+		var err error
+		results, err = concurrency.ProcessInChunks(ctx, pairs,
+			func(ctx context.Context, p pair) (evalResult, error) {
+				matches, err := idx.eval(ctx, p.selector, p.entity)
+				return evalResult{p, matches, err}, nil
+			},
+		)
+		if err != nil {
+			return 0
+		}
 	}
 
 	// Apply results under the lock
@@ -367,11 +452,7 @@ func (idx *MatchIndex) Recompute(ctx context.Context) int {
 			continue
 		}
 
-		// Double-check: selector or entity may have been removed during evaluation
-		if !idx.selectors[r.p.selector] {
-			continue
-		}
-		if !idx.entities[r.p.entity] {
+		if !idx.selectors[r.p.selector] || !idx.entities[r.p.entity] {
 			continue
 		}
 

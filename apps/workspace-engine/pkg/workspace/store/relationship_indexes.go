@@ -161,7 +161,7 @@ func (ri *RelationshipIndexes) AddRule(ctx context.Context, rule *oapi.Relations
 
 	idx := v2.NewRelationshipIndex(ri.entityStore, v2Rule)
 
-    log.Info("Adding resources to rule", "rule.id", rule.Id)
+	log.Info("Adding resources to rule", "rule.id", rule.Id)
 	for _, r := range ri.store.Resources.Items() {
 		idx.AddEntity(ctx, r.Id)
 	}
