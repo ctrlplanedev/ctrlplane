@@ -5,6 +5,7 @@ This directory contains a ready-to-use `sqlc` setup for generating typed Go quer
 ## Layout
 
 - `../sqlc.yaml`: sqlc project config
+- `schema/workspace_engine.sql`: schema snapshot used by sqlc code generation
 - `queries/workspace_engine.sql`: starter queries for workspace-engine tables
 - `templates/query.template.sql`: copy/paste template for new query files
 - `templates/schema.template.sql`: minimal schema template for isolated local experiments
@@ -32,6 +33,11 @@ $(go env GOPATH)/bin/sqlc generate -f sqlc.yaml
 ```bash
 make sqlc-compile
 ```
+
+## Keeping schema current
+
+The `schema/workspace_engine.sql` file is a stable schema snapshot for sqlc.
+When Drizzle migrations change tables used by sqlc queries, update this snapshot.
 
 ## Verify against a live database
 

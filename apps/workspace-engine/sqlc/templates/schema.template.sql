@@ -1,5 +1,5 @@
 -- Minimal schema template for local sqlc experiments.
--- For production code generation in this repo we use ../../packages/db/drizzle.
+-- For workspace-engine sqlc generation in this repo see sqlc/schema/workspace_engine.sql.
 
 CREATE TABLE workspace (
     id uuid PRIMARY KEY,

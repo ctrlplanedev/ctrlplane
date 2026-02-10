@@ -2,7 +2,7 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "sqlc/queries"
-    schema: "../../packages/db/drizzle"
+    schema: "sqlc/schema/workspace_engine.sql"
     database:
       uri: "${POSTGRES_URL}"
     gen:
