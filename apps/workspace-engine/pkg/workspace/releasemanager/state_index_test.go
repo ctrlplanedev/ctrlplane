@@ -36,37 +36,39 @@ func seedStoreWithReleaseTarget(t *testing.T, m *Manager) *oapi.ReleaseTarget {
 }
 
 // --------------------------------------------------------------------------
-// StateIndex.Get — lazy registration
+// RestoreAll — eager boot-time registration
 // --------------------------------------------------------------------------
 
-// TestStateIndex_Get_LazilyRegistersUnknownEntity verifies that Get returns a
-// valid (non-nil) ReleaseTargetState even when the release target was never
-// registered via AddReleaseTarget. This is the critical path for release
-// targets loaded from persistence.
-func TestStateIndex_Get_LazilyRegistersUnknownEntity(t *testing.T) {
+// TestRestoreAll_RegistersAllTargets verifies that RestoreAll registers every
+// release target in the store so that subsequent Get calls succeed.
+func TestRestoreAll_RegistersAllTargets(t *testing.T) {
 	manager, _ := setupTestManager(t)
 	ctx := context.Background()
-	rt := seedStoreWithReleaseTarget(t, manager)
 
-	// Confirm the entity is NOT in the state index yet.
-	assert.False(t, manager.stateIndex.isComputed(*rt),
-		"entity should not be computed before Get is called")
+	rt1 := seedStoreWithReleaseTarget(t, manager)
+	rt2 := seedStoreWithReleaseTarget(t, manager)
 
-	// Call Get — should lazily register + compute.
-	state := manager.stateIndex.Get(ctx, *rt)
+	// Before RestoreAll, Get returns empty state (no desired/current/latest).
+	stateBefore := manager.stateIndex.Get(*rt1)
+	require.NotNil(t, stateBefore)
+	assert.Nil(t, stateBefore.DesiredRelease)
+	assert.Nil(t, stateBefore.CurrentRelease)
+	assert.Nil(t, stateBefore.LatestJob)
 
-	require.NotNil(t, state,
-		"Get must return a non-nil state even for a previously-unregistered entity")
+	// Restore — simulates boot.
+	manager.stateIndex.RestoreAll(ctx)
 
-	// After Get, the entity should be registered.
-	assert.True(t, manager.stateIndex.isComputed(*rt),
-		"entity should be computed after Get")
+	// After RestoreAll, Get should return valid state for both targets.
+	state1 := manager.stateIndex.Get(*rt1)
+	require.NotNil(t, state1)
+
+	state2 := manager.stateIndex.Get(*rt2)
+	require.NotNil(t, state2)
 }
 
-// TestStateIndex_Get_ReturnsDataForUnregisteredEntityWithJob verifies that
-// Get correctly computes and returns LatestJob for an unregistered entity
-// when jobs exist in the store.
-func TestStateIndex_Get_ReturnsDataForUnregisteredEntityWithJob(t *testing.T) {
+// TestRestoreAll_ComputesLatestJob verifies that RestoreAll correctly computes
+// LatestJob for release targets that have jobs in the store.
+func TestRestoreAll_ComputesLatestJob(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
 	rt := seedStoreWithReleaseTarget(t, manager)
@@ -96,32 +98,52 @@ func TestStateIndex_Get_ReturnsDataForUnregisteredEntityWithJob(t *testing.T) {
 	}
 	testStore.Jobs.Upsert(ctx, job)
 
-	// Do NOT register the entity — simulate persistence load.
-	state := manager.stateIndex.Get(ctx, *rt)
+	// Simulate boot.
+	manager.stateIndex.RestoreAll(ctx)
 
+	state := manager.stateIndex.Get(*rt)
 	require.NotNil(t, state)
 	require.NotNil(t, state.LatestJob,
-		"LatestJob should be populated for unregistered entity when a job exists in the store")
-	assert.Equal(t, oapi.JobStatusSuccessful, state.LatestJob.Job.Status)
+		"LatestJob should be populated after RestoreAll when a job exists")
 	assert.Equal(t, job.Id, state.LatestJob.Job.Id)
+	assert.Equal(t, oapi.JobStatusSuccessful, state.LatestJob.Job.Status)
 }
 
-// TestStateIndex_Get_SkipsRegistrationForKnownEntity confirms that Get does
-// NOT re-register an entity that was already registered through the normal
-// ProcessChanges path.
-func TestStateIndex_Get_SkipsRegistrationForKnownEntity(t *testing.T) {
+// TestRestoreAll_Idempotent verifies that calling RestoreAll multiple times
+// does not corrupt state.
+func TestRestoreAll_Idempotent(t *testing.T) {
 	manager, _ := setupTestManager(t)
 	ctx := context.Background()
 	rt := seedStoreWithReleaseTarget(t, manager)
 
-	// Register normally (like ProcessChanges would).
-	manager.stateIndex.AddReleaseTarget(*rt)
-	manager.stateIndex.Recompute(ctx)
+	manager.stateIndex.RestoreAll(ctx)
+	state1 := manager.stateIndex.Get(*rt)
 
-	assert.True(t, manager.stateIndex.isComputed(*rt))
+	manager.stateIndex.RestoreAll(ctx)
+	state2 := manager.stateIndex.Get(*rt)
 
-	// Calling Get should return immediately without re-registering.
-	state := manager.stateIndex.Get(ctx, *rt)
+	require.NotNil(t, state1)
+	require.NotNil(t, state2)
+}
+
+// --------------------------------------------------------------------------
+// Manager.Restore — integration with the boot sequence
+// --------------------------------------------------------------------------
+
+// TestManagerRestore_PopulatesStateIndex verifies that the Manager.Restore
+// method (called during boot) populates the state index.
+func TestManagerRestore_PopulatesStateIndex(t *testing.T) {
+	manager, _ := setupTestManager(t)
+	ctx := context.Background()
+	rt := seedStoreWithReleaseTarget(t, manager)
+
+	// Simulate the boot sequence: call Restore.
+	err := manager.Restore(ctx)
+	require.NoError(t, err)
+
+	// The public API should now return a valid state.
+	state, err := manager.GetReleaseTargetState(ctx, rt)
+	require.NoError(t, err)
 	require.NotNil(t, state)
 }
 
@@ -129,34 +151,14 @@ func TestStateIndex_Get_SkipsRegistrationForKnownEntity(t *testing.T) {
 // GetReleaseTargetState — public API used by OpenAPI endpoints
 // --------------------------------------------------------------------------
 
-// TestGetReleaseTargetState_WorksForUnregisteredEntity verifies the Manager's
-// public GetReleaseTargetState method (called by every OpenAPI endpoint) works
-// for release targets that were never registered in the state index.
-func TestGetReleaseTargetState_WorksForUnregisteredEntity(t *testing.T) {
-	manager, _ := setupTestManager(t)
-	ctx := context.Background()
-	rt := seedStoreWithReleaseTarget(t, manager)
-
-	// Do NOT register. Call the public API directly.
-	state, err := manager.GetReleaseTargetState(ctx, rt)
-	require.NoError(t, err)
-	require.NotNil(t, state,
-		"GetReleaseTargetState must return a non-nil state for an unregistered entity")
-}
-
-// --------------------------------------------------------------------------
-// RecomputeEntity — used by the BypassCache endpoint param
-// --------------------------------------------------------------------------
-
-// TestRecomputeEntity_WorksForUnregisteredEntity verifies that
-// RecomputeEntity (used by the ?bypassCache=true endpoint parameter) works
-// even when the entity was never registered.
-func TestRecomputeEntity_WorksForUnregisteredEntity(t *testing.T) {
+// TestGetReleaseTargetState_AfterRestore verifies the Manager's public
+// GetReleaseTargetState method works after Restore.
+func TestGetReleaseTargetState_AfterRestore(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
 	rt := seedStoreWithReleaseTarget(t, manager)
 
-	// Add a job so we can verify the recompute picked it up.
+	// Add a job so we can verify state is fully populated.
 	release := &oapi.Release{
 		ReleaseTarget: *rt,
 		Version: oapi.DeploymentVersion{
@@ -180,36 +182,36 @@ func TestRecomputeEntity_WorksForUnregisteredEntity(t *testing.T) {
 	}
 	testStore.Jobs.Upsert(ctx, job)
 
-	// Do NOT register. Call RecomputeEntity (the BypassCache path).
-	manager.stateIndex.RecomputeEntity(ctx, *rt)
+	// Boot.
+	err := manager.Restore(ctx)
+	require.NoError(t, err)
 
-	// Verify the entity is now registered and has data.
-	assert.True(t, manager.stateIndex.isComputed(*rt))
-
-	state := manager.stateIndex.Get(ctx, *rt)
+	state, err := manager.GetReleaseTargetState(ctx, rt)
+	require.NoError(t, err)
 	require.NotNil(t, state)
-	require.NotNil(t, state.LatestJob,
-		"LatestJob should be populated after RecomputeEntity")
+	require.NotNil(t, state.LatestJob)
 	assert.Equal(t, job.Id, state.LatestJob.Job.Id)
 }
 
-// TestRecomputeEntity_RefreshesRegisteredEntity verifies that
-// RecomputeEntity forces fresh data even when the entity is already
-// registered (normal bypass-cache behaviour).
-func TestRecomputeEntity_RefreshesRegisteredEntity(t *testing.T) {
+// --------------------------------------------------------------------------
+// RecomputeEntity — bypass-cache endpoint
+// --------------------------------------------------------------------------
+
+// TestRecomputeEntity_RefreshesAfterRestore verifies that RecomputeEntity
+// picks up new data added after boot (the bypass-cache path).
+func TestRecomputeEntity_RefreshesAfterRestore(t *testing.T) {
 	manager, testStore := setupTestManager(t)
 	ctx := context.Background()
 	rt := seedStoreWithReleaseTarget(t, manager)
 
-	// Register normally — no jobs yet.
-	manager.stateIndex.AddReleaseTarget(*rt)
-	manager.stateIndex.Recompute(ctx)
+	// Boot — no jobs yet.
+	manager.stateIndex.RestoreAll(ctx)
 
-	state := manager.stateIndex.Get(ctx, *rt)
+	state := manager.stateIndex.Get(*rt)
 	require.NotNil(t, state)
 	assert.Nil(t, state.LatestJob, "no jobs yet")
 
-	// Now add a job to the store.
+	// Now add a job to the store (simulates a new job arriving after boot).
 	release := &oapi.Release{
 		ReleaseTarget: *rt,
 		Version: oapi.DeploymentVersion{
@@ -236,7 +238,7 @@ func TestRecomputeEntity_RefreshesRegisteredEntity(t *testing.T) {
 	// RecomputeEntity should refresh the cached state.
 	manager.stateIndex.RecomputeEntity(ctx, *rt)
 
-	state = manager.stateIndex.Get(ctx, *rt)
+	state = manager.stateIndex.Get(*rt)
 	require.NotNil(t, state)
 	require.NotNil(t, state.LatestJob,
 		"LatestJob should appear after RecomputeEntity refreshes a registered entity")

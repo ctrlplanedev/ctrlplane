@@ -484,7 +484,7 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 		))
 	defer span.End()
 
-	state := m.stateIndex.Get(ctx, *releaseTarget)
+	state := m.stateIndex.Get(*releaseTarget)
 	return state, nil
 }
 
@@ -531,6 +531,11 @@ func (m *Manager) Restore(ctx context.Context) error {
 		span.SetStatus(codes.Error, "failed to restore verifications")
 		log.Error("failed to restore verifications", "error", err.Error())
 	}
+
+	// Pre-compute the state index for every release target that was restored
+	// from persistence.  This avoids per-request lazy registration and ensures
+	// the first API read is fast.
+	m.stateIndex.RestoreAll(ctx)
 
 	return nil
 }

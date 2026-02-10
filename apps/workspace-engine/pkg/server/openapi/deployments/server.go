@@ -377,6 +377,7 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		return
 	}
 
+	_, countSpan := deploymentTracer.Start(ctx, "CountReleaseTargetsWithState")
 	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
 	skipped := 0
 	for _, r := range results {
@@ -392,6 +393,7 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 			releaseTargetsWithState = append(releaseTargetsWithState, r.item)
 		}
 	}
+	countSpan.End()
 
 	span.SetAttributes(
 		attribute.Int("results.returned", len(releaseTargetsWithState)),

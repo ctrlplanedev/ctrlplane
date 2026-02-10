@@ -169,29 +169,10 @@ func (si *StateIndex) GetDesiredRelease(rt oapi.ReleaseTarget) *oapi.Release {
 	return desired
 }
 
-// isComputed checks whether a release target has been registered and computed
-// in the state index. It uses the desiredRelease index as a proxy — all three
-// indexes are registered/removed together.
-func (si *StateIndex) isComputed(rt oapi.ReleaseTarget) bool {
-	_, ok := si.desiredRelease.Get(rt.Key())
-	return ok
-}
-
-// ensureComputed lazily registers and computes a release target if it has not
-// been seen before. This handles release targets that exist in the store but
-// were loaded outside of ProcessChanges (e.g. persisted state on restart).
-func (si *StateIndex) ensureComputed(ctx context.Context, rt oapi.ReleaseTarget) {
-	if si.isComputed(rt) {
-		return
-	}
-	si.AddReleaseTarget(rt) // registers + marks dirty
-	si.Recompute(ctx)
-}
-
 // Get assembles a composite ReleaseTargetState from the three indexes.
-func (si *StateIndex) Get(ctx context.Context, rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
-	si.ensureComputed(ctx, rt)
-
+// All release targets are registered at boot via RestoreAll, so Get is a
+// simple read with no lazy registration.
+func (si *StateIndex) Get(rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
 	desired, _ := si.desiredRelease.Get(rt.Key())
 	current, _ := si.currentRelease.Get(rt.Key())
 	latest, _ := si.latestJob.Get(rt.Key())
@@ -201,6 +182,27 @@ func (si *StateIndex) Get(ctx context.Context, rt oapi.ReleaseTarget) *oapi.Rele
 		CurrentRelease: current,
 		LatestJob:      latest,
 	}
+}
+
+// RestoreAll registers every release target currently in the store and
+// performs a single batch recompute.  Call this once during boot after the
+// store has been restored from persistence.
+func (si *StateIndex) RestoreAll(ctx context.Context) {
+	ctx, span := stateIndexTracer.Start(ctx, "StateIndex.RestoreAll")
+	defer span.End()
+
+	targets, err := si.store.ReleaseTargets.Items()
+	if err != nil {
+		log.Error("failed to list release targets for state index restore", "error", err.Error())
+		return
+	}
+
+	for _, rt := range targets {
+		si.AddReleaseTarget(*rt)
+	}
+
+	si.Recompute(ctx)
+	log.Info("state index restored", "release_targets", len(targets))
 }
 
 // --- Recompute ---
