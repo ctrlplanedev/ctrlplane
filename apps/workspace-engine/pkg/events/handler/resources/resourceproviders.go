@@ -8,7 +8,6 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store"
 	"workspace-engine/pkg/workspace/store/diffcheck"
 
@@ -136,18 +135,9 @@ func HandleResourceProviderSetResources(
 
 	// Delete removed resources and their relationships
 	for _, resourceId := range resourcesToDelete {
-		resource, ok := ws.Resources().Get(resourceId)
-		if !ok || resource == nil {
-			continue
-		}
-
-		// Remove relationships involving this resource
-		entity := relationships.NewResourceEntity(resource)
-		ws.Relations().RemoveForEntity(ctx, entity)
-
-		// Remove the resource
+		ws.Store().RelationshipIndexes.RemoveEntity(ctx, resourceId)
 		ws.Resources().Remove(ctx, resourceId)
-		ws.ReleaseTargets().RemoveForResource(ctx, resource.Id)
+		ws.ReleaseTargets().RemoveForResource(ctx, resourceId)
 	}
 
 	// Upsert new/updated resources
@@ -194,13 +184,11 @@ func HandleResourceProviderSetResources(
 			continue
 		}
 
-		// Compute and update relationships for this resource
-		entity := relationships.NewResourceEntity(resource)
-		ws.Relations().RemoveForEntity(ctx, entity)
-		newRelations := computeRelations(ctx, ws, resource)
-
-		for _, relation := range newRelations {
-			_ = ws.Relations().Upsert(ctx, relation)
+		// Register or mark entity dirty so relationships are recomputed on next Recompute
+		if exists {
+			ws.Store().RelationshipIndexes.DirtyEntity(ctx, resource.Id)
+		} else {
+			ws.Store().RelationshipIndexes.AddEntity(ctx, resource.Id)
 		}
 
 		// Compute and upsert release targets for this resource

@@ -53,7 +53,7 @@ func Matches(ctx context.Context, matcher *oapi.RelationshipRule_Matcher, from *
 		fromMap, _ := celutil.EntityToMap(from.Item())
 		toMap, _ := celutil.EntityToMap(to.Item())
 
-		return matcher.Evaluate(ctx, fromMap, toMap)
+		return matcher.Evaluate(fromMap, toMap)
 	}
 
 	// No matcher specified - match by selectors only
@@ -111,7 +111,7 @@ func MatchesWithCache(ctx context.Context, matcher *oapi.RelationshipRule_Matche
 			toMap, _ = celutil.EntityToMap(to.Item())
 		}
 
-		return matcher.Evaluate(ctx, fromMap, toMap)
+		return matcher.Evaluate(fromMap, toMap)
 	}
 
 	// No matcher specified - match by selectors only

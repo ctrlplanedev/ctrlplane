@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/manager"
 
 	"workspace-engine/pkg/server/openapi"
 
@@ -16,6 +15,7 @@ import (
 	ginswagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -64,15 +64,6 @@ func (s *Server) HealthCheck(c *gin.Context) {
 	})
 }
 
-// ListWorkspaceIds implements the OpenAPI workspaces endpoint
-// (GET /v1/workspaces)
-func (s *Server) ListWorkspaceIds(c *gin.Context) {
-	workspaceIds := manager.Workspaces().Keys()
-	c.JSON(http.StatusOK, gin.H{
-		"workspaceIds": workspaceIds,
-	})
-}
-
 func LoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -87,12 +78,19 @@ func LoggerMiddleware() gin.HandlerFunc {
 		statusCode := c.Writer.Status()
 
 		if statusCode >= 400 {
+			// Collect any errors set via c.Error() by the handler
+			var errMsg string
+			if len(c.Errors) > 0 {
+				errMsg = c.Errors.String()
+			}
+
 			log.Error("request",
 				"method", method,
 				"path", path,
 				"status", statusCode,
 				"duration_ms", duration.Milliseconds(),
 				"client_ip", c.ClientIP(),
+				"error", errMsg,
 			)
 		}
 	}
@@ -114,9 +112,21 @@ func TracingMiddleware() gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 
-		span.SetAttributes(attribute.Int("http.status_code", c.Writer.Status()))
-		if c.Writer.Status() >= 400 {
-			span.RecordError(fmt.Errorf("HTTP %d", c.Writer.Status()))
+		statusCode := c.Writer.Status()
+		span.SetAttributes(attribute.Int("http.status_code", statusCode))
+
+		if statusCode >= 400 {
+			// Record actual error details from the handler (set via c.Error()),
+			// not a generic "HTTP 500" that loses all context.
+			if len(c.Errors) > 0 {
+				for _, ginErr := range c.Errors {
+					span.RecordError(ginErr.Err)
+				}
+				span.SetAttributes(attribute.String("error.message", c.Errors.String()))
+			} else {
+				span.RecordError(fmt.Errorf("HTTP %d (no error detail from handler)", statusCode))
+			}
+			span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", statusCode))
 		}
 	}
 }

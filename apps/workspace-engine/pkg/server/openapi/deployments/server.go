@@ -2,10 +2,12 @@ package deployments
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
@@ -14,7 +16,12 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var deploymentTracer = otel.Tracer("workspace-engine/deployments")
 
 func getReleaseTargetsForDeployment(_ *gin.Context, ws *workspace.Workspace, deploymentId string, resourceName *string) ([]*oapi.ReleaseTarget, error) {
 	releaseTargets, err := ws.ReleaseTargets().Items()
@@ -237,11 +244,29 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 }
 
 func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetReleaseTargetsForDeploymentParams) {
+	ctx := c.Request.Context()
+	ctx, span := deploymentTracer.Start(ctx, "GetReleaseTargetsForDeployment")
+	span.SetAttributes(
+		attribute.String("workspace.id", workspaceId),
+		attribute.String("deployment.id", deploymentId),
+	)
+	defer span.End()
+
+	// Apply a request-scoped timeout to prevent unbounded execution
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	c.Request = c.Request.WithContext(ctx)
+
+	// Phase 1: Get workspace
+	_, wsSpan := deploymentTracer.Start(ctx, "GetWorkspace")
 	ws, err := utils.GetWorkspace(c, workspaceId)
+	wsSpan.End()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		errMsg := "Failed to get workspace: " + err.Error()
+		span.RecordError(err)
+		span.SetStatus(codes.Error, errMsg)
+		_ = c.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
 		return
 	}
 
@@ -249,20 +274,30 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	if params.Limit != nil {
 		limit = *params.Limit
 	}
-
 	offset := 0
 	if params.Offset != nil {
 		offset = *params.Offset
 	}
 
-	log.Info("Getting release targets for deployment", "deploymentId", deploymentId, "query", params.Query)
+	span.SetAttributes(
+		attribute.Int("params.limit", limit),
+		attribute.Int("params.offset", offset),
+	)
+	if params.Query != nil {
+		span.SetAttributes(attribute.String("params.query", *params.Query))
+	}
 
-	// Build list of release targets for this deployment, filtering out any nils
+	// Phase 2: List release targets for deployment
+	_, listSpan := deploymentTracer.Start(ctx, "ListReleaseTargetsForDeployment")
 	releaseTargetsList, err := getReleaseTargetsForDeployment(c, ws, deploymentId, params.Query)
+	listSpan.SetAttributes(attribute.Int("release_targets.count", len(releaseTargetsList)))
+	listSpan.End()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		errMsg := "Failed to list release targets: " + err.Error()
+		span.RecordError(err)
+		span.SetStatus(codes.Error, errMsg)
+		_ = c.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
 		return
 	}
 
@@ -273,83 +308,134 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	total := len(releaseTargetsList)
 	start := min(offset, total)
 	end := min(start+limit, total)
-
-	// Pre-compute relationships for unique resources to avoid redundant GetRelatedEntities calls
 	paginatedTargets := releaseTargetsList[start:end]
 
-	// Process each release target, logging errors but continuing with valid ones
-	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
+	span.SetAttributes(
+		attribute.Int("release_targets.total", total),
+		attribute.Int("release_targets.paginated_count", len(paginatedTargets)),
+	)
+
+	// Phase 3: Compute state for each release target
+	// Relationships are already pre-computed in the store at boot time.
+	// PlanDeployment reads them from the store on cache miss — no need to
+	// pre-fetch here.
+	_, stateSpan := deploymentTracer.Start(ctx, "ComputeReleaseTargetStates")
 
 	type result struct {
-		item *oapi.ReleaseTargetWithState
+		item *oapi.ReleaseTargetSummary
 		err  error
 	}
 	results, err := concurrency.ProcessInChunks(
-		c.Request.Context(),
+		ctx,
 		paginatedTargets,
-		func(ctx context.Context, releaseTarget *oapi.ReleaseTarget) (result, error) {
+		func(chunkCtx context.Context, releaseTarget *oapi.ReleaseTarget) (result, error) {
 			if releaseTarget == nil {
 				return result{nil, fmt.Errorf("release target is nil")}, nil
 			}
 
 			state, err := ws.ReleaseManager().GetReleaseTargetState(
-				c.Request.Context(),
+				chunkCtx,
 				releaseTarget,
 			)
 			if err != nil {
-				return result{nil, fmt.Errorf("error getting release target state for key=%s: %w", releaseTarget.Key(), err)}, nil
+				return result{nil, fmt.Errorf("error getting state for key=%s: %w", releaseTarget.Key(), err)}, nil
 			}
 
 			environment, ok := ws.Environments().Get(releaseTarget.EnvironmentId)
 			if !ok {
-				return result{nil, fmt.Errorf("environment not found: environmentId=%s for release target key=%s", releaseTarget.EnvironmentId, releaseTarget.Key())}, nil
+				return result{nil, fmt.Errorf("environment not found: environmentId=%s for key=%s", releaseTarget.EnvironmentId, releaseTarget.Key())}, nil
 			}
 
 			resource, ok := ws.Resources().Get(releaseTarget.ResourceId)
 			if !ok {
-				return result{nil, fmt.Errorf("resource not found: resourceId=%s for release target key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
+				return result{nil, fmt.Errorf("resource not found: resourceId=%s for key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
 			}
 
-			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
-			if !ok {
-				return result{nil, fmt.Errorf("deployment not found: deploymentId=%s for release target key=%s", releaseTarget.DeploymentId, releaseTarget.Key())}, nil
+			item := &oapi.ReleaseTargetSummary{}
+			item.ReleaseTarget = *releaseTarget
+			item.Resource = oapi.ResourceSummary{
+				Id:         resource.Id,
+				Name:       resource.Name,
+				Kind:       resource.Kind,
+				Version:    resource.Version,
+				Identifier: resource.Identifier,
 			}
+			item.Environment = oapi.EnvironmentSummary{
+				Id:   environment.Id,
+				Name: environment.Name,
+			}
+			if state.DesiredRelease != nil {
+				item.DesiredVersion = &oapi.VersionSummary{
+					Id:   state.DesiredRelease.Version.Id,
+					Tag:  state.DesiredRelease.Version.Tag,
+					Name: state.DesiredRelease.Version.Name,
+				}
+			}
+			if state.CurrentRelease != nil {
+				item.CurrentVersion = &oapi.VersionSummary{
+					Id:   state.CurrentRelease.Version.Id,
+					Tag:  state.CurrentRelease.Version.Tag,
+					Name: state.CurrentRelease.Version.Name,
+				}
+			}
+			if state.LatestJob != nil {
+				item.LatestJob = &oapi.JobSummary{
+					Id:            state.LatestJob.Job.Id,
+					Links:         &map[string]string{},
+					Status:        state.LatestJob.Job.Status,
+					Verifications: state.LatestJob.Verifications,
+				}
 
-			item := &oapi.ReleaseTargetWithState{
-				ReleaseTarget: *releaseTarget,
-				State:         *state,
-				Environment:   *environment,
-				Resource:      *resource,
-				Deployment:    *deployment,
+				metadata := state.LatestJob.Job.Metadata
+				if metadata != nil {
+					linksJson := metadata["ctrlplane/links"]
+					json.Unmarshal([]byte(linksJson), &item.LatestJob.Links)
+				}
 			}
 			return result{item, nil}, nil
 		},
 	)
 
+	stateSpan.End()
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		errMsg := "Failed to compute release target states: " + err.Error()
+		span.RecordError(err)
+		span.SetStatus(codes.Error, errMsg)
+		_ = c.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
 		return
 	}
 
-	// Filter out results with errors, log them
+	releaseTargetsAndState := make([]*oapi.ReleaseTargetSummary, 0, end-start)
+	skipped := 0
 	for _, r := range results {
 		if r.err != nil {
-			log.Warn("Skipping invalid release target", "error", r.err.Error())
+			skipped++
+			log.Warn("Skipping invalid release target",
+				"workspaceId", workspaceId,
+				"deploymentId", deploymentId,
+				"error", r.err.Error())
 			continue
 		}
 		if r.item != nil {
-			releaseTargetsWithState = append(releaseTargetsWithState, r.item)
+			releaseTargetsAndState = append(releaseTargetsAndState, r.item)
 		}
 	}
 
+	span.SetAttributes(
+		attribute.Int("results.returned", len(releaseTargetsAndState)),
+		attribute.Int("results.skipped", skipped),
+	)
+
+	_, jsonSpan := deploymentTracer.Start(ctx, "SerializeResponse")
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  releaseTargetsWithState,
+		"items":  releaseTargetsAndState,
 	})
+	jsonSpan.End()
 }
 
 func (s *Deployments) GetVersionsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetVersionsForDeploymentParams) {

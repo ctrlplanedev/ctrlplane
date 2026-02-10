@@ -7,6 +7,7 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/datadog"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/http"
+	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/prometheus"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider/sleep"
 
 	"github.com/charmbracelet/log"
@@ -40,6 +41,13 @@ func CreateProvider(providerCfg oapi.MetricProvider) (provider.Provider, error) 
 			return nil, fmt.Errorf("failed to parse Datadog provider: %w", err)
 		}
 		return datadog.NewFromOAPI(datadogProvider)
+
+	case "prometheus":
+		prometheusProvider, err := providerCfg.AsPrometheusMetricProvider()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse Prometheus provider: %w", err)
+		}
+		return prometheus.NewFromOAPI(prometheusProvider)
 
 	// case "terraformCloudRun":
 	// 	terraformCloudRunProvider, err := providerCfg.AsTerraformCloudRunMetricProvider()

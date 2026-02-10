@@ -1324,6 +1324,10 @@ export interface components {
             minimumSuccessPercentage: number;
             successStatuses?: components["schemas"]["JobStatus"][];
         };
+        EnvironmentSummary: {
+            id: string;
+            name: string;
+        };
         ErrorResponse: {
             /** @example Workspace not found */
             error?: string;
@@ -1437,6 +1441,16 @@ export interface components {
         };
         /** @enum {string} */
         JobStatus: "cancelled" | "skipped" | "inProgress" | "actionRequired" | "pending" | "failure" | "invalidJobAgent" | "invalidIntegration" | "externalRunNotFound" | "successful";
+        JobSummary: {
+            id: string;
+            /** @description External links extracted from job metadata */
+            links?: {
+                [key: string]: string;
+            };
+            message?: string;
+            status: components["schemas"]["JobStatus"];
+            verifications: components["schemas"]["JobVerification"][];
+        };
         JobUpdateEvent: {
             agentId?: string;
             externalId?: string;
@@ -1476,7 +1490,7 @@ export interface components {
             };
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
-        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
+        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
         /** @enum {boolean} */
         NullValue: true;
         NumberValue: number;
@@ -1549,6 +1563,78 @@ export interface components {
             /** @description Workspace this skip belongs to */
             workspaceId: string;
         };
+        PrometheusMetricProvider: {
+            /**
+             * @description Prometheus server address (supports Go templates)
+             * @example http://prometheus.example.com:9090
+             */
+            address: string;
+            /** @description Authentication configuration for Prometheus */
+            authentication?: {
+                /**
+                 * @description Bearer token for authentication (supports Go templates for variable references)
+                 * @example {{.variables.prometheus_token}}
+                 */
+                bearerToken?: string;
+                /** @description OAuth2 client credentials flow */
+                oauth2?: {
+                    /** @description OAuth2 client ID (supports Go templates) */
+                    clientId: string;
+                    /** @description OAuth2 client secret (supports Go templates) */
+                    clientSecret: string;
+                    /** @description OAuth2 scopes */
+                    scopes?: string[];
+                    /** @description Token endpoint URL */
+                    tokenUrl: string;
+                };
+            };
+            /** @description Additional HTTP headers for the Prometheus request (values support Go templates) */
+            headers?: {
+                /** @example X-Scope-OrgID */
+                key: string;
+                /** @example tenant_a */
+                value: string;
+            }[];
+            /**
+             * @description Skip TLS certificate verification
+             * @default false
+             */
+            insecure: boolean;
+            /**
+             * @description PromQL query expression (supports Go templates)
+             * @example sum(irate(istio_requests_total{reporter="source",destination_service=~"{{.resource.name}}",response_code!~"5.*"}[5m]))
+             */
+            query: string;
+            /** @description If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query) */
+            rangeQuery?: {
+                /**
+                 * @description How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
+                 * @example 0s
+                 */
+                end?: string;
+                /**
+                 * @description How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
+                 * @example 5m
+                 */
+                start?: string;
+                /**
+                 * @description Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
+                 * @example 1m
+                 */
+                step: string;
+            };
+            /**
+             * Format: int64
+             * @description Query timeout in seconds
+             * @example 30
+             */
+            timeout?: number;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "prometheus";
+        };
         PropertiesMatcher: {
             properties: components["schemas"]["PropertyMatcher"][];
         };
@@ -1597,10 +1683,22 @@ export interface components {
             environmentId: string;
             resourceId: string;
         };
+        ReleaseTargetAndState: {
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            state: components["schemas"]["ReleaseTargetState"];
+        };
         ReleaseTargetState: {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
             latestJob?: components["schemas"]["JobWithVerifications"];
+        };
+        ReleaseTargetSummary: {
+            currentVersion?: components["schemas"]["VersionSummary"];
+            desiredVersion?: components["schemas"]["VersionSummary"];
+            environment: components["schemas"]["EnvironmentSummary"];
+            latestJob?: components["schemas"]["JobSummary"];
+            releaseTarget: components["schemas"]["ReleaseTarget"];
+            resource: components["schemas"]["ResourceSummary"];
         };
         ReleaseTargetWithState: {
             deployment: components["schemas"]["Deployment"];
@@ -1647,6 +1745,13 @@ export interface components {
             name: string;
             /** Format: uuid */
             workspaceId: string;
+        };
+        ResourceSummary: {
+            id: string;
+            identifier: string;
+            kind: string;
+            name: string;
+            version: string;
         };
         ResourceVariable: {
             key: string;
@@ -1877,6 +1982,11 @@ export interface components {
             /** @description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments" */
             description?: string;
             selector: components["schemas"]["Selector"];
+        };
+        VersionSummary: {
+            id: string;
+            name: string;
+            tag: string;
         };
         Workflow: {
             id: string;
@@ -2265,7 +2375,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["ReleaseTargetWithState"][];
+                        items: components["schemas"]["ReleaseTargetSummary"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

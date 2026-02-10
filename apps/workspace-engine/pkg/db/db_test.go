@@ -90,15 +90,3 @@ func setupTestWithWorkspace(t *testing.T) (string, *pgxpool.Conn) {
 
 	return workspaceID, testDB
 }
-
-func compareStrPtr(t *testing.T, actual *string, expected *string) {
-	if actual == nil && expected == nil {
-		return
-	}
-	if actual == nil || expected == nil {
-		t.Fatalf("expected %v, got %v", expected, actual)
-	}
-	if *actual != *expected {
-		t.Fatalf("expected %v, got %v", expected, actual)
-	}
-}

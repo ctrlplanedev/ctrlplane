@@ -155,7 +155,7 @@ export default function DeploymentTraces() {
   const releaseTargetsMap = useMemo(() => {
     return Object.fromEntries(
       releaseTargetsQuery.data?.items.map((rt) => [
-        `${rt.resource.id}-${rt.environment.id}-${rt.deployment.id}`,
+        `${rt.resource.id}-${rt.environment.id}-${rt.releaseTarget.deploymentId}`,
         rt,
       ]) ?? [],
     );

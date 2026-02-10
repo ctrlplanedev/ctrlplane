@@ -142,6 +142,13 @@ func HandleWorkspaceTick(ctx context.Context, ws *workspace.Workspace, event han
 	// Clear processed schedules
 	scheduler.Clear(dueKeys)
 
+	// Re-plan targets whose scheduled time has arrived — time-based evaluators
+	// (cooldowns, gradual rollout windows, soak times) may now produce different results.
+	for _, rt := range targetsToReconcile {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
 	// Determine trigger reason based on whether this is first boot
 	trigger := trace.TriggerScheduled
 	if isFirstBoot {

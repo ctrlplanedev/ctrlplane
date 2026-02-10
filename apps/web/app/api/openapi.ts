@@ -782,10 +782,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a workflow template from a YAML definition
-         * @description Creates a workflow template from a YAML definition.
+         * Create a workflow template
+         * @description Creates a workflow template.
          */
-        post: operations["createWorkflowTemplateFromYaml"];
+        post: operations["createWorkflowTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -882,6 +882,21 @@ export interface components {
             };
             name: string;
             slug?: string;
+        };
+        CreateWorkflowJobTemplate: {
+            /** @description Configuration for the job agent */
+            config: {
+                [key: string]: unknown;
+            };
+            matrix?: components["schemas"]["WorkflowJobMatrix"];
+            name: string;
+            /** @description Reference to the job agent */
+            ref: string;
+        };
+        CreateWorkflowTemplate: {
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            name: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -1192,7 +1207,7 @@ export interface components {
             };
         };
         LiteralValue: components["schemas"]["BooleanValue"] | components["schemas"]["NumberValue"] | components["schemas"]["IntegerValue"] | components["schemas"]["StringValue"] | components["schemas"]["ObjectValue"] | components["schemas"]["NullValue"];
-        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
+        MetricProvider: components["schemas"]["HTTPMetricProvider"] | components["schemas"]["SleepMetricProvider"] | components["schemas"]["DatadogMetricProvider"] | components["schemas"]["PrometheusMetricProvider"] | components["schemas"]["TerraformCloudRunMetricProvider"];
         /** @enum {boolean} */
         NullValue: true;
         NumberValue: number;
@@ -1233,6 +1248,78 @@ export interface components {
             retry?: components["schemas"]["RetryRule"];
             verification?: components["schemas"]["VerificationRule"];
             versionCooldown?: components["schemas"]["VersionCooldownRule"];
+        };
+        PrometheusMetricProvider: {
+            /**
+             * @description Prometheus server address (supports Go templates)
+             * @example http://prometheus.example.com:9090
+             */
+            address: string;
+            /** @description Authentication configuration for Prometheus */
+            authentication?: {
+                /**
+                 * @description Bearer token for authentication (supports Go templates for variable references)
+                 * @example {{.variables.prometheus_token}}
+                 */
+                bearerToken?: string;
+                /** @description OAuth2 client credentials flow */
+                oauth2?: {
+                    /** @description OAuth2 client ID (supports Go templates) */
+                    clientId: string;
+                    /** @description OAuth2 client secret (supports Go templates) */
+                    clientSecret: string;
+                    /** @description OAuth2 scopes */
+                    scopes?: string[];
+                    /** @description Token endpoint URL */
+                    tokenUrl: string;
+                };
+            };
+            /** @description Additional HTTP headers for the Prometheus request (values support Go templates) */
+            headers?: {
+                /** @example X-Scope-OrgID */
+                key: string;
+                /** @example tenant_a */
+                value: string;
+            }[];
+            /**
+             * @description Skip TLS certificate verification
+             * @default false
+             */
+            insecure: boolean;
+            /**
+             * @description PromQL query expression (supports Go templates)
+             * @example sum(irate(istio_requests_total{reporter="source",destination_service=~"{{.resource.name}}",response_code!~"5.*"}[5m]))
+             */
+            query: string;
+            /** @description If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query) */
+            rangeQuery?: {
+                /**
+                 * @description How far back from now for the query end, as a Prometheus duration (e.g., "0s" for now, "1m" for 1 minute ago). Defaults to "0s" (now) if unset.
+                 * @example 0s
+                 */
+                end?: string;
+                /**
+                 * @description How far back from now to start the query, as a Prometheus duration (e.g., "5m", "1h"). Defaults to 10 * step if unset.
+                 * @example 5m
+                 */
+                start?: string;
+                /**
+                 * @description Query resolution step width as a Prometheus duration (e.g., "15s", "1m", "500ms")
+                 * @example 1m
+                 */
+                step: string;
+            };
+            /**
+             * Format: int64
+             * @description Query timeout in seconds
+             * @example 30
+             */
+            timeout?: number;
+            /**
+             * @description Provider type (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "prometheus";
         };
         PropertyMatcher: {
             fromProperty: string[];
@@ -4502,7 +4589,7 @@ export interface operations {
             };
         };
     };
-    createWorkflowTemplateFromYaml: {
+    createWorkflowTemplate: {
         parameters: {
             query?: never;
             header?: never;
@@ -4514,10 +4601,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    /** @description The workflow definition in YAML format */
-                    yaml: string;
-                };
+                "application/json": components["schemas"]["CreateWorkflowTemplate"];
             };
         };
         responses: {

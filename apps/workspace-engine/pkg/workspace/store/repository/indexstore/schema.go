@@ -42,9 +42,10 @@ var JobSchema = &memdb.TableSchema{
 
 var Schema = &memdb.DBSchema{
 	Tables: map[string]*memdb.TableSchema{
-		"job":            JobSchema,
-		"release":        ReleaseSchema,
-		"release_target": ReleaseTargetsSchema,
+		"job":                JobSchema,
+		"release":            ReleaseSchema,
+		"release_target":     ReleaseTargetsSchema,
+		"deployment_version": DeploymentVersionSchema,
 	},
 }
 

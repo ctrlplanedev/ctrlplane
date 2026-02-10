@@ -1,8 +1,22 @@
+import { Link } from "react-router";
+
+import { trpc } from "~/api/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useResource } from "./ResourceProvider";
 
 export function ResourceBasicInfo() {
   const { resource } = useResource();
+  const { workspace } = useWorkspace();
+
+  const { data: providersData } = trpc.resourceProviders.list.useQuery(
+    { workspaceId: resource.workspaceId, limit: 1000, offset: 0 },
+    { enabled: resource.providerId != null },
+  );
+
+  const provider = providersData?.items.find(
+    (p) => p.id === resource.providerId,
+  );
 
   return (
     <Card>
@@ -31,6 +45,19 @@ export function ResourceBasicInfo() {
               {resource.version}
             </div>
           </div>
+          {provider != null && (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-sm text-muted-foreground">Provider</div>
+              <div className="col-span-2 text-sm">
+                <Link
+                  to={`/${workspace.slug}/providers`}
+                  className="text-blue-500 hover:underline"
+                >
+                  {provider.name}
+                </Link>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-2">
             <div className="text-sm text-muted-foreground">Created</div>
             <div className="col-span-2 text-sm">

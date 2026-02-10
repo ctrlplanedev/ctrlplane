@@ -6,8 +6,9 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
@@ -34,6 +35,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.ResourceProviders = NewResourceProviders(store)
 	store.GithubEntities = NewGithubEntities(store)
 	store.Relations = NewRelations(store)
+	store.RelationshipIndexes = NewRelationshipIndexes(store)
 	store.JobVerifications = NewJobVerifications(store)
 	store.WorkflowTemplates = NewWorkflowTemplates(store)
 	store.WorkflowJobTemplates = NewWorkflowJobTemplates(store)
@@ -68,6 +70,7 @@ type Store struct {
 	Variables                *Variables
 	GithubEntities           *GithubEntities
 	Relations                *Relations
+	RelationshipIndexes      *RelationshipIndexes
 	JobVerifications         *JobVerifications
 	WorkflowTemplates        *WorkflowTemplates
 	WorkflowJobTemplates     *WorkflowJobTemplates
@@ -84,6 +87,11 @@ func (s *Store) Repo() *repository.InMemoryStore {
 }
 
 func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setStatus func(status string)) error {
+	ctx, span := tracer.Start(ctx, "Store.Restore")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int("changes.count", len(changes)))
+
 	err := s.repo.Router().Apply(ctx, changes)
 	if err != nil {
 		return err
@@ -140,20 +148,15 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		}
 	}
 
-	allEntities := s.Relations.GetRelatableEntities(ctx)
+	_, span = relationshipIndexesTracer.Start(ctx, "Store.Restore.RelationshipIndexes")
 	for _, rule := range s.Relationships.Items() {
 		if setStatus != nil {
 			setStatus("Computing relationships for rule: " + rule.Name)
 		}
-
-		relations, err := compute.FindRuleRelationships(ctx, rule, allEntities)
-		if err != nil {
-			return err
-		}
-		for _, relation := range relations {
-			_ = s.Relations.Upsert(ctx, relation)
-		}
+		s.RelationshipIndexes.AddRule(ctx, rule)
 	}
+	s.RelationshipIndexes.Recompute(ctx)
+	span.End()
 
 	s.changeset.Clear()
 

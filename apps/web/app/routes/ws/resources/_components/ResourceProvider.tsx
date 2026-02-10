@@ -10,6 +10,7 @@ type Resource = {
   metadata: Record<string, string>;
   config: Record<string, unknown>;
   workspaceId: string;
+  providerId?: string;
   createdAt: string;
   updatedAt?: string;
 };

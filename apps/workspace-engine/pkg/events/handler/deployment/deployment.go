@@ -11,8 +11,6 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/jobs"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 
@@ -44,15 +42,6 @@ func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment
 	return releaseTargets, nil
 }
 
-func computeRelations(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) []*relationships.EntityRelation {
-	rules := make([]*oapi.RelationshipRule, 0)
-	for _, rule := range ws.RelationshipRules().Items() {
-		rules = append(rules, rule)
-	}
-	entity := relationships.NewDeploymentEntity(deployment)
-	return compute.FindRelationsForEntity(ctx, rules, entity, ws.Relations().GetRelatableEntities(ctx))
-}
-
 func HandleDeploymentCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -67,10 +56,7 @@ func HandleDeploymentCreated(
 		return err
 	}
 
-	relations := computeRelations(ctx, ws, deployment)
-	for _, relation := range relations {
-		_ = ws.Relations().Upsert(ctx, relation)
-	}
+	ws.Store().RelationshipIndexes.AddEntity(ctx, deployment.Id)
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
 	if err != nil {
@@ -88,6 +74,11 @@ func HandleDeploymentCreated(
 			reconileReleaseTargets = append(reconileReleaseTargets, releaseTarget)
 		}
 	}
+
+	for _, rt := range reconileReleaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerDeploymentCreated))
@@ -129,24 +120,6 @@ func getAddedReleaseTargets(oldReleaseTargets []*oapi.ReleaseTarget, newReleaseT
 	return addedReleaseTargets
 }
 
-func updateDeploymentRelations(
-	ctx context.Context,
-	ws *workspace.Workspace,
-	deployment *oapi.Deployment,
-) {
-	oldRelations := ws.Relations().ForEntity(relationships.NewDeploymentEntity(deployment))
-	newRelations := computeRelations(ctx, ws, deployment)
-	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
-
-	for _, removedRelation := range removedRelations {
-		ws.Relations().Remove(removedRelation.Key())
-	}
-
-	for _, relation := range newRelations {
-		_ = ws.Relations().Upsert(ctx, relation)
-	}
-}
-
 func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets []*oapi.ReleaseTarget) error {
 	for _, releaseTarget := range releaseTargets {
 		err := ws.ReleaseTargets().Upsert(ctx, releaseTarget)
@@ -159,6 +132,11 @@ func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets 
 
 func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
+		for _, rt := range releaseTargets {
+			ws.ReleaseManager().DirtyDesiredRelease(rt)
+		}
+		ws.ReleaseManager().RecomputeState(ctx)
+
 		for _, releaseTarget := range releaseTargets {
 			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
@@ -182,7 +160,7 @@ func HandleDeploymentUpdated(
 		return err
 	}
 
-	updateDeploymentRelations(ctx, ws, deployment)
+	ws.Store().RelationshipIndexes.DirtyEntity(ctx, deployment.Id)
 
 	releaseTargets, err := makeReleaseTargets(ctx, ws, deployment)
 	if err != nil {
@@ -233,12 +211,7 @@ func HandleDeploymentDeleted(
 		return err
 	}
 
-	entity := relationships.NewDeploymentEntity(deployment)
-	oldRelations := ws.Relations().ForEntity(entity)
-	for _, oldRelation := range oldRelations {
-		ws.Relations().Remove(oldRelation.Key())
-	}
-
+	ws.Store().RelationshipIndexes.RemoveEntity(ctx, deployment.Id)
 	ws.Deployments().Remove(ctx, deployment.Id)
 
 	for _, oldReleaseTarget := range oldReleaseTargets {

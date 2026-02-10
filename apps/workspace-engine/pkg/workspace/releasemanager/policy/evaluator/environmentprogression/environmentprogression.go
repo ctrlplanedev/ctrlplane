@@ -177,9 +177,6 @@ func (e *EnvironmentProgressionEvaluator) checkDependencyEnvironments(
 	version *oapi.DeploymentVersion,
 	dependencyEnvs []*oapi.Environment,
 ) *oapi.RuleEvaluation {
-	ctx, span := tracer.Start(ctx, "EnvironmentProgressionEvaluator.checkDependencyEnvironments")
-	defer span.End()
-
 	allowedResults := make(map[string]*oapi.RuleEvaluation)
 	failedResults := make(map[string]*oapi.RuleEvaluation)
 

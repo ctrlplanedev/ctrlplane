@@ -515,6 +515,21 @@
             ],
             "type": "object"
          },
+         "EnvironmentSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name"
+            ],
+            "type": "object"
+         },
          "ErrorResponse": {
             "properties": {
                "error": {
@@ -792,6 +807,38 @@
             ],
             "type": "string"
          },
+         "JobSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "links": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "External links extracted from job metadata",
+                  "type": "object"
+               },
+               "message": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/JobStatus"
+               },
+               "verifications": {
+                  "items": {
+                     "$ref": "#/components/schemas/JobVerification"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "id",
+               "status",
+               "verifications"
+            ],
+            "type": "object"
+         },
          "JobUpdateEvent": {
             "oneOf": [
                {
@@ -970,6 +1017,7 @@
                "mapping": {
                   "datadog": "#/components/schemas/DatadogMetricProvider",
                   "http": "#/components/schemas/HTTPMetricProvider",
+                  "prometheus": "#/components/schemas/PrometheusMetricProvider",
                   "sleep": "#/components/schemas/SleepMetricProvider",
                   "terraformCloudRun": "#/components/schemas/TerraformCloudRunMetricProvider"
                },
@@ -984,6 +1032,9 @@
                },
                {
                   "$ref": "#/components/schemas/DatadogMetricProvider"
+               },
+               {
+                  "$ref": "#/components/schemas/PrometheusMetricProvider"
                },
                {
                   "$ref": "#/components/schemas/TerraformCloudRunMetricProvider"
@@ -1188,6 +1239,130 @@
                "reason",
                "createdBy",
                "createdAt"
+            ],
+            "type": "object"
+         },
+         "PrometheusMetricProvider": {
+            "properties": {
+               "address": {
+                  "description": "Prometheus server address (supports Go templates)",
+                  "example": "http://prometheus.example.com:9090",
+                  "type": "string"
+               },
+               "authentication": {
+                  "description": "Authentication configuration for Prometheus",
+                  "properties": {
+                     "bearerToken": {
+                        "description": "Bearer token for authentication (supports Go templates for variable references)",
+                        "example": "{{.variables.prometheus_token}}",
+                        "type": "string"
+                     },
+                     "oauth2": {
+                        "description": "OAuth2 client credentials flow",
+                        "properties": {
+                           "clientId": {
+                              "description": "OAuth2 client ID (supports Go templates)",
+                              "type": "string"
+                           },
+                           "clientSecret": {
+                              "description": "OAuth2 client secret (supports Go templates)",
+                              "type": "string"
+                           },
+                           "scopes": {
+                              "description": "OAuth2 scopes",
+                              "items": {
+                                 "type": "string"
+                              },
+                              "type": "array"
+                           },
+                           "tokenUrl": {
+                              "description": "Token endpoint URL",
+                              "type": "string"
+                           }
+                        },
+                        "required": [
+                           "tokenUrl",
+                           "clientId",
+                           "clientSecret"
+                        ],
+                        "type": "object"
+                     }
+                  },
+                  "type": "object"
+               },
+               "headers": {
+                  "description": "Additional HTTP headers for the Prometheus request (values support Go templates)",
+                  "items": {
+                     "properties": {
+                        "key": {
+                           "example": "X-Scope-OrgID",
+                           "type": "string"
+                        },
+                        "value": {
+                           "example": "tenant_a",
+                           "type": "string"
+                        }
+                     },
+                     "required": [
+                        "key",
+                        "value"
+                     ],
+                     "type": "object"
+                  },
+                  "type": "array"
+               },
+               "insecure": {
+                  "default": false,
+                  "description": "Skip TLS certificate verification",
+                  "type": "boolean"
+               },
+               "query": {
+                  "description": "PromQL query expression (supports Go templates)",
+                  "example": "sum(irate(istio_requests_total{reporter=\"source\",destination_service=~\"{{.resource.name}}\",response_code!~\"5.*\"}[5m]))",
+                  "type": "string"
+               },
+               "rangeQuery": {
+                  "description": "If provided, a range query (/api/v1/query_range) is used instead of an instant query (/api/v1/query)",
+                  "properties": {
+                     "end": {
+                        "description": "How far back from now for the query end, as a Prometheus duration (e.g., \"0s\" for now, \"1m\" for 1 minute ago). Defaults to \"0s\" (now) if unset.",
+                        "example": "0s",
+                        "type": "string"
+                     },
+                     "start": {
+                        "description": "How far back from now to start the query, as a Prometheus duration (e.g., \"5m\", \"1h\"). Defaults to 10 * step if unset.",
+                        "example": "5m",
+                        "type": "string"
+                     },
+                     "step": {
+                        "description": "Query resolution step width as a Prometheus duration (e.g., \"15s\", \"1m\", \"500ms\")",
+                        "example": "1m",
+                        "type": "string"
+                     }
+                  },
+                  "required": [
+                     "step"
+                  ],
+                  "type": "object"
+               },
+               "timeout": {
+                  "description": "Query timeout in seconds",
+                  "example": 30,
+                  "format": "int64",
+                  "type": "integer"
+               },
+               "type": {
+                  "description": "Provider type",
+                  "enum": [
+                     "prometheus"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "type",
+               "address",
+               "query"
             ],
             "type": "object"
          },
@@ -1398,6 +1573,21 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetAndState": {
+            "properties": {
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "state": {
+                  "$ref": "#/components/schemas/ReleaseTargetState"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "state"
+            ],
+            "type": "object"
+         },
          "ReleaseTargetState": {
             "properties": {
                "currentRelease": {
@@ -1410,6 +1600,34 @@
                   "$ref": "#/components/schemas/JobWithVerifications"
                }
             },
+            "type": "object"
+         },
+         "ReleaseTargetSummary": {
+            "properties": {
+               "currentVersion": {
+                  "$ref": "#/components/schemas/VersionSummary"
+               },
+               "desiredVersion": {
+                  "$ref": "#/components/schemas/VersionSummary"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/EnvironmentSummary"
+               },
+               "latestJob": {
+                  "$ref": "#/components/schemas/JobSummary"
+               },
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/ResourceSummary"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "resource",
+               "environment"
+            ],
             "type": "object"
          },
          "ReleaseTargetWithState": {
@@ -1556,6 +1774,33 @@
                "name",
                "createdAt",
                "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "identifier": {
+                  "type": "string"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "version": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "kind",
+               "version",
+               "identifier"
             ],
             "type": "object"
          },
@@ -2061,6 +2306,25 @@
             },
             "required": [
                "selector"
+            ],
+            "type": "object"
+         },
+         "VersionSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "tag": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "tag",
+               "name"
             ],
             "type": "object"
          },
@@ -2917,7 +3181,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/ReleaseTargetWithState"
+                                    "$ref": "#/components/schemas/ReleaseTargetSummary"
                                  },
                                  "type": "array"
                               },

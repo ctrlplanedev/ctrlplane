@@ -1,0 +1,57 @@
+---
+title: "ctrlc api upsert version"
+description: "Create or update a deployment version"
+---
+
+{/* TODO: Expand with full documentation */}
+
+The `ctrlc api upsert version` command creates or updates a deployment version
+in Ctrlplane. This is typically called from CI/CD pipelines after a successful
+build.
+
+## Usage
+
+```bash
+ctrlc api upsert version \
+  --workspace <workspace> \
+  --deployment <deployment-id> \
+  --tag <version-tag> \
+  [--name "<version-name>"] \
+  [--metadata key=value ...]
+```
+
+## Flags
+
+| Flag           | Required | Description                     |
+| -------------- | -------- | ------------------------------- |
+| `--workspace`  | Yes      | Workspace name or ID            |
+| `--deployment` | Yes      | Deployment ID                   |
+| `--tag`        | Yes      | Unique version identifier       |
+| `--name`       | No       | Human-readable version name     |
+| `--metadata`   | No       | Key-value metadata (repeatable) |
+
+## Example
+
+```bash
+ctrlc api upsert version \
+  --workspace my-workspace \
+  --deployment dep_abc123 \
+  --tag v1.2.3 \
+  --name "Release 1.2.3" \
+  --metadata git/commit=abc123 \
+  --metadata git/branch=main
+```
+
+The command is idempotent — running it again with the same `--tag` updates the
+existing version rather than creating a duplicate.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CI/CD Integration" icon="rotate" href="/integrations/cicd">
+    Full CI/CD setup guide
+  </Card>
+  <Card title="CLI Overview" icon="terminal" href="/cli/overview">
+    All CLI commands
+  </Card>
+</CardGroup>

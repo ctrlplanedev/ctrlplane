@@ -104,6 +104,15 @@ export const deploymentsRouter = router({
           },
         },
       );
+
+      if (response.error != null)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            response.error.error ??
+            "Failed to get release targets for deployment",
+        });
+
       return response.data;
     }),
 
@@ -171,7 +180,7 @@ export const deploymentsRouter = router({
         workspaceId: z.uuid(),
         deploymentId: z.string(),
         data: z.object({
-          resourceSelectorCel: z.string().min(1).max(255),
+          resourceSelectorCel: z.string().min(1).max(512),
         }),
       }),
     )

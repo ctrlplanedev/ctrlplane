@@ -64,18 +64,6 @@ func murmur2(data []byte) uint32 {
 	return h
 }
 
-// FilterWorkspaceIDsForPartition filters the given workspaceIDs and returns only those
-// that would be routed to the specified partition out of numPartitions.
-func FilterWorkspaceIDsForPartition(workspaceIDs []string, targetPartition int32, numPartitions int32) []string {
-	var result []string
-	for _, workspaceID := range workspaceIDs {
-		if PartitionForWorkspace(workspaceID, numPartitions) == targetPartition {
-			result = append(result, workspaceID)
-		}
-	}
-	return result
-}
-
 type WorkspaceIDDiscoverer func(ctx context.Context, targetPartition int32, numPartitions int32) ([]string, error)
 
 func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, numPartitions int32) (map[int32][]string, error) {
@@ -86,7 +74,7 @@ func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, nu
 	span.SetAttributes(attribute.Int("num.partitions", int(numPartitions)))
 	span.SetAttributes(attribute.String("assigned.partitions", fmt.Sprintf("%+v", assignedPartitions)))
 
-	workspaceIDs, err := db.GetAllWorkspaceIDs(ctx)
+	workspaceIDs, err := db.GetQueries(ctx).ListWorkspaceIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,15 +86,15 @@ func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, nu
 
 	result := make(map[int32][]string)
 	for _, workspaceID := range workspaceIDs {
-		partition := PartitionForWorkspace(workspaceID, numPartitions)
+		partition := PartitionForWorkspace(workspaceID.String(), numPartitions)
 		if assignedSet[partition] {
 			span.AddEvent("workspace ID discovered",
 				trace.WithAttributes(
-					attribute.String("workspaceID", workspaceID),
+					attribute.String("workspaceID", workspaceID.String()),
 					attribute.Int("partition", int(partition)),
 				),
 			)
-			result[partition] = append(result[partition], workspaceID)
+			result[partition] = append(result[partition], workspaceID.String())
 		}
 	}
 

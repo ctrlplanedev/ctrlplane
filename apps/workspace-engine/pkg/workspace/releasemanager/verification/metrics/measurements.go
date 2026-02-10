@@ -12,33 +12,11 @@ func NewMeasurements(measurements []oapi.VerificationMeasurement) Measurements {
 	return measurements
 }
 
-// PassedCount returns the number of passed measurements
-func (m Measurements) PassedCount() int {
-	count := 0
-	for _, measurement := range m {
-		if measurement.Status == oapi.Passed {
-			count++
-		}
-	}
-	return count
-}
-
 // FailedCount returns the number of failed measurements (excludes inconclusive)
 func (m Measurements) FailedCount() int {
 	count := 0
 	for _, measurement := range m {
 		if measurement.Status == oapi.Failed {
-			count++
-		}
-	}
-	return count
-}
-
-// InconclusiveCount returns the number of inconclusive measurements
-func (m Measurements) InconclusiveCount() int {
-	count := 0
-	for _, measurement := range m {
-		if measurement.Status == oapi.Inconclusive {
 			count++
 		}
 	}

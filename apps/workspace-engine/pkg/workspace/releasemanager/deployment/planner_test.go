@@ -465,12 +465,8 @@ func TestPlanDeployment_WithPrecomputedRelationships(t *testing.T) {
 
 	releaseTarget := createTestReleaseTargetForPlanner(environmentID, deploymentID, resourceID)
 
-	// Create precomputed relationships
-	precomputedRelations := make(map[string][]*oapi.EntityRelation)
-	// Empty relationships for simplicity
-
 	// Act
-	release, err := planner.PlanDeployment(ctx, releaseTarget, WithResourceRelatedEntities(precomputedRelations))
+	release, err := planner.PlanDeployment(ctx, releaseTarget)
 
 	// Assert
 	require.NoError(t, err)

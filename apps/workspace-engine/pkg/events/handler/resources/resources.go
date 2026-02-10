@@ -7,8 +7,6 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace"
-	"workspace-engine/pkg/workspace/relationships"
-	"workspace-engine/pkg/workspace/relationships/compute"
 	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
@@ -41,15 +39,6 @@ func computeReleaseTargets(ctx context.Context, ws *workspace.Workspace, resourc
 	return releaseTargets, nil
 }
 
-func computeRelations(ctx context.Context, ws *workspace.Workspace, resource *oapi.Resource) []*relationships.EntityRelation {
-	rules := make([]*oapi.RelationshipRule, 0)
-	for _, rule := range ws.RelationshipRules().Items() {
-		rules = append(rules, rule)
-	}
-	entity := relationships.NewResourceEntity(resource)
-	return compute.FindRelationsForEntity(ctx, rules, entity, ws.Relations().GetRelatableEntities(ctx))
-}
-
 func HandleResourceCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -66,10 +55,7 @@ func HandleResourceCreated(
 		return err
 	}
 
-	relations := computeRelations(ctx, ws, resource)
-	for _, relation := range relations {
-		_ = ws.Relations().Upsert(ctx, relation)
-	}
+	ws.Store().RelationshipIndexes.AddEntity(ctx, resource.Id)
 
 	releaseTargets, err := computeReleaseTargets(ctx, ws, resource)
 	if err != nil {
@@ -114,15 +100,9 @@ func HandleResourceUpdated(
 		return err
 	}
 
+	ws.Store().RelationshipIndexes.DirtyEntity(ctx, resource.Id)
+
 	oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
-	oldRelations := ws.Relations().ForEntity(relationships.NewResourceEntity(resource))
-	newRelations := computeRelations(ctx, ws, resource)
-	removedRelations := compute.FindRemovedRelations(ctx, oldRelations, newRelations)
-
-	for _, removedRelation := range removedRelations {
-		ws.Relations().Remove(removedRelation.Key())
-	}
-
 	releaseTargets, err := computeReleaseTargets(ctx, ws, resource)
 	if err != nil {
 		return err
@@ -138,7 +118,14 @@ func HandleResourceUpdated(
 		if err != nil {
 			return err
 		}
+	}
 
+	for _, rt := range releaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
+	for _, releaseTarget := range releaseTargets {
 		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerResourceCreated))
 	}
@@ -157,12 +144,8 @@ func HandleResourceDeleted(
 	}
 
 	oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
-	entity := relationships.NewResourceEntity(resource)
-	oldRelations := ws.Relations().ForEntity(entity)
-	for _, oldRelation := range oldRelations {
-		ws.Relations().Remove(oldRelation.Key())
-	}
 
+	ws.Store().RelationshipIndexes.RemoveEntity(ctx, resource.Id)
 	ws.Resources().Remove(ctx, resource.Id)
 
 	for _, oldReleaseTarget := range oldReleaseTargets {

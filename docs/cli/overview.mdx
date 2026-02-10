@@ -1,0 +1,105 @@
+---
+title: "CLI Reference"
+description: "Install and use the ctrlc command-line interface"
+---
+
+The `ctrlc` CLI is the primary tool for interacting with Ctrlplane from your
+terminal, CI/CD pipelines, and automation scripts. It supports syncing
+resources, managing deployments, and applying configuration.
+
+## Installation
+
+<CodeGroup>
+```bash curl
+curl -fsSL https://get.ctrlplane.dev | sh
+```
+
+```bash npm
+npm install -g @ctrlplane/cli
+```
+
+</CodeGroup>
+
+## Authentication
+
+Set your API key and workspace as environment variables or pass them as flags:
+
+```bash
+# Environment variables (recommended)
+export CTRLPLANE_API_KEY="your-api-key"
+export CTRLPLANE_WORKSPACE="your-workspace-id"
+export CTRLPLANE_URL="https://app.ctrlplane.dev"
+
+# Or pass as flags
+ctrlc --api-key "your-api-key" --workspace "your-workspace-id" <command>
+```
+
+## Commands
+
+### `ctrlc sync`
+
+Sync infrastructure resources into Ctrlplane's inventory. Each subcommand
+targets a specific provider or input method.
+
+| Subcommand                                                           | Description                       |
+| -------------------------------------------------------------------- | --------------------------------- |
+| [`sync pipe`](/cli/sync-pipe)                                        | Read resources from stdin (JSON)  |
+| [`sync kubernetes`](/integrations/resource-providers/kubernetes)     | Sync Kubernetes cluster resources |
+| [`sync aws`](/integrations/resource-providers/aws)                   | Sync AWS resources                |
+| [`sync google-cloud`](/integrations/resource-providers/google-cloud) | Sync Google Cloud resources       |
+| [`sync azure`](/integrations/resource-providers/azure)               | Sync Azure resources              |
+| [`sync terraform`](/integrations/resource-providers/terraform)       | Sync Terraform state resources    |
+| [`sync helm`](/integrations/resource-providers/helm)                 | Sync Helm releases                |
+| [`sync github`](/integrations/resource-providers/github)             | Sync GitHub repositories          |
+| [`sync vcluster`](/integrations/resource-providers/vcluster)         | Sync virtual clusters             |
+
+### `ctrlc api`
+
+Interact directly with the Ctrlplane API.
+
+| Subcommand           | Description                           |
+| -------------------- | ------------------------------------- |
+| `api upsert version` | Create or update a deployment version |
+
+See [CI/CD Integration](/integrations/cicd) for detailed usage.
+
+### `ctrlc apply`
+
+Apply resource definitions from YAML files.
+
+```bash
+ctrlc apply -f resource.yaml
+```
+
+## Global Flags
+
+| Flag          | Environment Variable  | Description                                              |
+| ------------- | --------------------- | -------------------------------------------------------- |
+| `--api-key`   | `CTRLPLANE_API_KEY`   | API key for authentication                               |
+| `--workspace` | `CTRLPLANE_WORKSPACE` | Workspace name or ID                                     |
+| `--url`       | `CTRLPLANE_URL`       | Ctrlplane API URL (default: `https://app.ctrlplane.dev`) |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Sync Pipe" icon="pipe-section" href="/cli/sync-pipe">
+    Sync resources from stdin
+  </Card>
+  <Card title="CI/CD Integration" icon="rotate" href="/integrations/cicd">
+    Use the CLI in CI/CD pipelines
+  </Card>
+  <Card
+    title="Resource Providers"
+    icon="database"
+    href="/integrations/resource-providers/overview"
+  >
+    Built-in resource providers
+  </Card>
+  <Card
+    title="Custom Provider"
+    icon="code"
+    href="/integrations/resource-providers/custom"
+  >
+    Build your own provider
+  </Card>
+</CardGroup>

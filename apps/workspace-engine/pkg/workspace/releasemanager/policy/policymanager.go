@@ -3,6 +3,7 @@ package policy
 import (
 	"context"
 
+	"workspace-engine/pkg/concurrency"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator/approval"
@@ -67,6 +68,13 @@ func (m *Manager) SummaryPolicyEvaluators(rule *oapi.PolicyRule) []evaluator.Eva
 	)
 }
 
+// evalTask pairs an evaluator with the rule ID it belongs to, so results can
+// be attributed back to their originating rule after parallel execution.
+type evalTask struct {
+	eval   evaluator.Evaluator
+	ruleId string
+}
+
 func (m *Manager) EvaluateWithPolicy(
 	ctx context.Context,
 	policy *oapi.Policy,
@@ -79,18 +87,41 @@ func (m *Manager) EvaluateWithPolicy(
 		))
 	defer span.End()
 
-	policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
+	// Pre-collect all evaluator tasks, filtering out nils and scope mismatches
+	// up-front so the parallel dispatch only contains actionable work.
+	var tasks []evalTask
 	for _, rule := range policy.Rules {
-		for _, evaluator := range evaluators(&rule) {
-			if evaluator == nil {
+		for _, eval := range evaluators(&rule) {
+			if eval == nil {
 				continue
 			}
-			if !scope.HasFields(evaluator.ScopeFields()) {
+			if !scope.HasFields(eval.ScopeFields()) {
 				continue
 			}
-			result := evaluator.Evaluate(ctx, scope)
-			policyResult.AddRuleResult(*result.WithRuleId(rule.Id))
+			tasks = append(tasks, evalTask{eval: eval, ruleId: rule.Id})
 		}
+	}
+
+	span.SetAttributes(attribute.Int("evaluator_count", len(tasks)))
+
+	// Run all evaluations in parallel using ProcessInChunks. Each evaluator is
+	// a freshly created instance with no shared mutable state — they only read
+	// from the store — so concurrent execution is safe.
+	evalResults, err := concurrency.ProcessInChunks(ctx, tasks,
+		func(ctx context.Context, t evalTask) (oapi.RuleEvaluation, error) {
+			result := t.eval.Evaluate(ctx, scope)
+			return *result.WithRuleId(t.ruleId), nil
+		},
+		concurrency.WithChunkSize(1),
+	)
+
+	policyResult := results.NewPolicyEvaluation(results.WithPolicy(policy))
+	if err != nil {
+		span.RecordError(err)
+		return policyResult
+	}
+	for _, result := range evalResults {
+		policyResult.AddRuleResult(result)
 	}
 
 	return policyResult

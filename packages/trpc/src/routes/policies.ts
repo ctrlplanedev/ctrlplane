@@ -1,3 +1,4 @@
+import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -86,6 +87,58 @@ export const policiesRouter = router({
       });
 
       return policy;
+    }),
+
+  upsert: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        policyId: z.string().uuid(),
+        body: z.object({
+          name: z.string(),
+          description: z.string().optional(),
+          enabled: z.boolean(),
+          priority: z.number(),
+          metadata: z.record(z.string(), z.string()),
+          rules: z.array(z.record(z.string(), z.any())),
+          selector: z.string(),
+        }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { workspaceId, policyId, body } = input;
+      const client = getClientFor(workspaceId);
+
+      // Check if policy already exists
+      const existingPolicy = await client.GET(
+        "/v1/workspaces/{workspaceId}/policies/{policyId}",
+        { params: { path: { workspaceId, policyId } } },
+      );
+
+      const isUpdate = existingPolicy.data != null;
+
+      const policy: WorkspaceEngine["schemas"]["Policy"] = {
+        id: policyId,
+        workspaceId,
+        createdAt: existingPolicy.data?.createdAt ?? new Date().toISOString(),
+        name: body.name,
+        description: body.description,
+        priority: body.priority,
+        enabled: body.enabled,
+        metadata: body.metadata,
+        rules:
+          body.rules as unknown as WorkspaceEngine["schemas"]["PolicyRule"][],
+        selector: body.selector,
+      };
+
+      await sendGoEvent({
+        workspaceId,
+        eventType: isUpdate ? Event.PolicyUpdated : Event.PolicyCreated,
+        timestamp: Date.now(),
+        data: policy,
+      });
+
+      return { id: policyId, message: "Policy update requested" };
     }),
 
   releaseTargets: protectedProcedure

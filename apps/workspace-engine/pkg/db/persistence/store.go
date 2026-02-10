@@ -9,7 +9,6 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/workspace/store/repository"
 
-	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
@@ -145,6 +144,11 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 }
 
 func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes, error) {
+	ctx, span := tracer.Start(ctx, "PersistenceStore.Load")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("namespace", namespace))
+
 	sql := `
 		SELECT entity_type, entity_id, entity_data, created_at
 		FROM changelog_entry
@@ -173,7 +177,6 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 
 		entity, err := jsonEntityRegistry.Unmarshal(entityType, entityData)
 		if err != nil {
-			log.Warnf("failed to unmarshal entity type %s with id %s: %v", entityType, entityID, err)
 			continue
 		}
 

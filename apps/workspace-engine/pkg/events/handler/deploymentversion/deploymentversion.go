@@ -39,9 +39,13 @@ func HandleDeploymentVersionCreated(
 		return err
 	}
 
+	for _, rt := range releaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
-		releasemanager.WithTrigger(trace.TriggerVersionCreated),
-		releasemanager.WithVersionAndNewer(deploymentVersion))
+		releasemanager.WithTrigger(trace.TriggerVersionCreated))
 
 	return nil
 }
@@ -68,9 +72,13 @@ func HandleDeploymentVersionUpdated(
 	if err != nil {
 		return err
 	}
+	for _, rt := range releaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
-		releasemanager.WithTrigger(trace.TriggerVersionCreated),
-		releasemanager.WithVersionAndNewer(deploymentVersion))
+		releasemanager.WithTrigger(trace.TriggerVersionCreated))
 
 	return nil
 }
@@ -97,6 +105,11 @@ func HandleDeploymentVersionDeleted(
 	if err != nil {
 		return err
 	}
+
+	for _, rt := range releaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVersionCreated))
