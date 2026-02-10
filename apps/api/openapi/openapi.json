@@ -259,6 +259,56 @@
             ],
             "type": "object"
          },
+         "CreateWorkflowJobTemplate": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "description": "Configuration for the job agent",
+                  "type": "object"
+               },
+               "matrix": {
+                  "$ref": "#/components/schemas/WorkflowJobMatrix"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "ref": {
+                  "description": "Reference to the job agent",
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "ref",
+               "config"
+            ],
+            "type": "object"
+         },
+         "CreateWorkflowTemplate": {
+            "properties": {
+               "inputs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowInput"
+                  },
+                  "type": "array"
+               },
+               "jobs": {
+                  "items": {
+                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
+                  },
+                  "type": "array"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "inputs",
+               "jobs"
+            ],
+            "type": "object"
+         },
          "CreateWorkspaceRequest": {
             "properties": {
                "name": {
@@ -7127,8 +7177,8 @@
       },
       "/v1/workspaces/{workspaceId}/workflow-templates": {
          "post": {
-            "description": "Creates a workflow template from a YAML definition.",
-            "operationId": "createWorkflowTemplateFromYaml",
+            "description": "Creates a workflow template.",
+            "operationId": "createWorkflowTemplate",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -7144,16 +7194,7 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "properties": {
-                           "yaml": {
-                              "description": "The workflow definition in YAML format",
-                              "type": "string"
-                           }
-                        },
-                        "required": [
-                           "yaml"
-                        ],
-                        "type": "object"
+                        "$ref": "#/components/schemas/CreateWorkflowTemplate"
                      }
                   }
                },
@@ -7181,7 +7222,7 @@
                   "description": "Invalid request"
                }
             },
-            "summary": "Create a workflow template from a YAML definition",
+            "summary": "Create a workflow template",
             "tags": [
                "Workflows"
             ]
