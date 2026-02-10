@@ -15,10 +15,10 @@ import type { ReleaseTargetWithState } from "../types";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "~/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
 import { cn } from "~/lib/utils";
 import { VersionDropdown } from "./VersionDropdown";
 import { useDeploymentStats } from "./useDeploymentStats";
@@ -165,7 +165,7 @@ const DeploymentProgress: React.FC<{
   </div>
 );
 
-const PendingTooltipContent: React.FC<{
+const PendingPopoverContent: React.FC<{
   targets: ReleaseTargetWithState[];
 }> = ({ targets }) => {
   if (targets.length <= 10)
@@ -208,7 +208,7 @@ const formatJobStatus = (status: string) => {
   }
 };
 
-const FailedTooltipContent: React.FC<{
+const FailedPopoverContent: React.FC<{
   targets: ReleaseTargetWithState[];
 }> = ({ targets }) => (
   <div className="space-y-1.5">
@@ -242,34 +242,34 @@ const DeploymentIssues: React.FC<{
   return (
     <div className="space-y-1.5 border-t pt-2">
       {pending > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-1.5 text-xs">
+        <Popover>
+          <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1.5 text-xs cursor-pointer">
               <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
               <span className="text-muted-foreground">
                 {pending} waiting to deploy
               </span>
             </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-64">
-            <PendingTooltipContent targets={pendingTargets} />
-          </TooltipContent>
-        </Tooltip>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" className="max-w-64 text-sm" onClick={(e) => e.stopPropagation()}>
+            <PendingPopoverContent targets={pendingTargets} />
+          </PopoverContent>
+        </Popover>
       )}
       {failed > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-1.5 text-xs">
+        <Popover>
+          <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1.5 text-xs cursor-pointer">
               <XCircle className="h-3.5 w-3.5 shrink-0 text-red-600" />
               <span className="text-red-600">
                 {failed} deployment{failed !== 1 ? "s" : ""} failed
               </span>
             </div>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-64">
-            <FailedTooltipContent targets={failedTargets} />
-          </TooltipContent>
-        </Tooltip>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" className="max-w-64 text-sm" onClick={(e) => e.stopPropagation()}>
+            <FailedPopoverContent targets={failedTargets} />
+          </PopoverContent>
+        </Popover>
       )}
     </div>
   );
