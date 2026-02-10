@@ -134,6 +134,22 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  UpdateWorkflowTemplate: {
+    type: 'object',
+    required: ['name', 'inputs', 'jobs'],
+    properties: {
+      name: { type: 'string' },
+      inputs: {
+        type: 'array',
+        items: openapi.schemaRef('WorkflowInput'),
+      },
+      jobs: {
+        type: 'array',
+        items: openapi.schemaRef('CreateWorkflowJobTemplate'),
+      },
+    },
+  },
+
   WorkflowTemplate: {
     type: 'object',
     required: ['id', 'name', 'inputs', 'jobs'],

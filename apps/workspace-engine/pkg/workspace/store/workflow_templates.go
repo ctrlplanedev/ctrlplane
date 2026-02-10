@@ -37,5 +37,11 @@ func (w *WorkflowTemplates) Remove(ctx context.Context, id string) {
 		return
 	}
 	w.repo.WorkflowTemplates.Remove(id)
+
+	workflows := w.store.Workflows.GetByTemplateID(id)
+	for _, workflow := range workflows {
+		w.store.Workflows.Remove(ctx, workflow.Id)
+	}
+
 	w.store.changeset.RecordDelete(workflowTemplate)
 }

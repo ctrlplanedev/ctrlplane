@@ -406,3 +406,89 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 	assert.NotNil(t, wfv2)
 	assert.True(t, wfv2.IsComplete())
 }
+
+func TestEngine_Workflow_DeleteTemplateCascade(t *testing.T) {
+	jobAgentID := uuid.New().String()
+	workflowTemplateID := uuid.New().String()
+	workflowJobTemplateID1 := uuid.New().String()
+	workflowJobTemplateID2 := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(t,
+		integration.WithJobAgent(
+			integration.JobAgentID(jobAgentID),
+			integration.JobAgentName("Test Agent"),
+		),
+		integration.WithWorkflowTemplate(
+			integration.WorkflowTemplateID(workflowTemplateID),
+			integration.WithWorkflowStringInput(
+				integration.WorkflowStringInputName("input-1"),
+				integration.WorkflowStringInputDefault("default-1"),
+			),
+			integration.WithWorkflowJobTemplate(
+				integration.WorkflowJobTemplateID(workflowJobTemplateID1),
+				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
+					"delaySeconds": 10,
+				}),
+				integration.WorkflowJobTemplateName("Test Job 1"),
+			),
+			integration.WithWorkflowJobTemplate(
+				integration.WorkflowJobTemplateID(workflowJobTemplateID2),
+				integration.WorkflowJobTemplateJobAgentID(jobAgentID),
+				integration.WorkflowJobTemplateJobAgentConfig(map[string]any{
+					"delaySeconds": 20,
+				}),
+				integration.WorkflowJobTemplateName("Test Job 2"),
+			),
+		),
+	)
+
+	ctx := context.Background()
+
+	engine.PushEvent(ctx, handler.WorkflowCreate, &oapi.Workflow{
+		WorkflowTemplateId: workflowTemplateID,
+		Inputs:             map[string]any{"input-1": "value-1"},
+	})
+	engine.PushEvent(ctx, handler.WorkflowCreate, &oapi.Workflow{
+		WorkflowTemplateId: workflowTemplateID,
+		Inputs:             map[string]any{"input-1": "value-2"},
+	})
+
+	workflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
+	assert.Len(t, workflows, 2)
+
+	allWorkflowJobIDs := make([]string, 0)
+	allJobIDs := make([]string, 0)
+	for _, wf := range workflows {
+		wfJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(wf.Id)
+		assert.Len(t, wfJobs, 2, "each workflow should have 2 workflow jobs")
+		for _, wfJob := range wfJobs {
+			allWorkflowJobIDs = append(allWorkflowJobIDs, wfJob.Id)
+			jobs := engine.Workspace().Jobs().GetByWorkflowJobId(wfJob.Id)
+			assert.Len(t, jobs, 1, "each workflow job should have 1 job")
+			allJobIDs = append(allJobIDs, jobs[0].Id)
+		}
+	}
+	assert.Len(t, allWorkflowJobIDs, 4, "should have 4 workflow jobs total")
+	assert.Len(t, allJobIDs, 4, "should have 4 jobs total")
+
+	workflowTemplate, ok := engine.Workspace().WorkflowTemplates().Get(workflowTemplateID)
+	assert.True(t, ok)
+	engine.PushEvent(ctx, handler.WorkflowTemplateDelete, workflowTemplate)
+
+	_, ok = engine.Workspace().WorkflowTemplates().Get(workflowTemplateID)
+	assert.False(t, ok, "workflow template should be removed")
+
+	remainingWorkflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
+	assert.Empty(t, remainingWorkflows, "all workflows should be removed")
+
+	for _, wfJobID := range allWorkflowJobIDs {
+		_, ok := engine.Workspace().WorkflowJobs().Get(wfJobID)
+		assert.False(t, ok, "workflow job %s should be removed", wfJobID)
+	}
+
+	for _, jobID := range allJobIDs {
+		_, ok := engine.Workspace().Jobs().Get(jobID)
+		assert.False(t, ok, "job %s should be removed", jobID)
+	}
+}

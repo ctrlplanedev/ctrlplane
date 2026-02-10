@@ -90,6 +90,8 @@ var handlers = handler.HandlerRegistry{
 	handler.ReleaseTargetDeploy: redeploy.HandleReleaseTargetDeploy,
 
 	handler.WorkflowTemplateCreate: workflows.HandleWorkflowTemplateCreated,
+	handler.WorkflowTemplateUpdate: workflows.HandleWorkflowTemplateUpdated,
+	handler.WorkflowTemplateDelete: workflows.HandleWorkflowTemplateDeleted,
 	handler.WorkflowCreate:         workflows.HandleWorkflowCreated,
 }
 

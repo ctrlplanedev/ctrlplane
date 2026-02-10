@@ -33,6 +33,15 @@ func (j *Jobs) Get(id string) (*oapi.Job, bool) {
 	return j.repo.Jobs.Get(id)
 }
 
+func (j *Jobs) Remove(ctx context.Context, id string) {
+	job, ok := j.repo.Jobs.Get(id)
+	if !ok || job == nil {
+		return
+	}
+	_ = j.repo.Jobs.Remove(id)
+	j.store.changeset.RecordDelete(job)
+}
+
 func (j *Jobs) GetPending() map[string]*oapi.Job {
 	jobs := make(map[string]*oapi.Job)
 	for _, job := range j.repo.Jobs.Items() {

@@ -92,6 +92,8 @@ const (
 	ReleaseTargetDeploy EventType = "release-target.deploy"
 
 	WorkflowTemplateCreate EventType = "workflow-template.created"
+	WorkflowTemplateUpdate EventType = "workflow-template.updated"
+	WorkflowTemplateDelete EventType = "workflow-template.deleted"
 	WorkflowCreate         EventType = "workflow.created"
 )
 

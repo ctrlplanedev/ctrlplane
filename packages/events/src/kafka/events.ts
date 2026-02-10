@@ -70,6 +70,8 @@ export enum Event {
   ResourceProviderSetResources = "resource-provider.set-resources",
 
   WorkflowTemplateCreated = "workflow-template.created",
+  WorkflowTemplateUpdated = "workflow-template.updated",
+  WorkflowTemplateDeleted = "workflow-template.deleted",
   WorkflowCreated = "workflow.created",
 }
 
@@ -144,6 +146,8 @@ export type GoEventPayload = {
     batchId: string;
   };
   [Event.WorkflowTemplateCreated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
+  [Event.WorkflowTemplateUpdated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
+  [Event.WorkflowTemplateDeleted]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
   [Event.WorkflowCreated]: WorkspaceEngine["schemas"]["Workflow"];
 };
 

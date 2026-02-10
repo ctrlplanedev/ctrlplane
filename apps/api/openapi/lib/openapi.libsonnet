@@ -24,6 +24,7 @@
   identifierParam():: self.stringParam('identifier', 'Identifier of the resource'),
   providerIdParam():: self.stringParam('providerId', 'ID of the resource provider'),
   relationshipRuleIdParam():: self.stringParam('relationshipRuleId', 'ID of the relationship rule'),
+  workflowTemplateIdParam():: self.stringParam('workflowTemplateId', 'ID of the workflow template'),
 
   limitParam(defaultValue=50):: {
     name: 'limit',

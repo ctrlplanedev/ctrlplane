@@ -38,6 +38,12 @@ func (w *WorkflowJobs) Remove(ctx context.Context, id string) {
 		return
 	}
 	w.repo.WorkflowJobs.Remove(id)
+
+	jobs := w.store.Jobs.GetByWorkflowJobId(id)
+	for _, job := range jobs {
+		w.store.Jobs.Remove(ctx, job.Id)
+	}
+
 	w.store.changeset.RecordDelete(workflowJob)
 }
 

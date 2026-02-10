@@ -21,6 +21,32 @@ func HandleWorkflowTemplateCreated(
 	return nil
 }
 
+func HandleWorkflowTemplateUpdated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	workflowTemplate := &oapi.WorkflowTemplate{}
+	if err := json.Unmarshal(event.Data, workflowTemplate); err != nil {
+		return err
+	}
+	ws.WorkflowTemplates().Upsert(ctx, workflowTemplate)
+	return nil
+}
+
+func HandleWorkflowTemplateDeleted(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	workflowTemplate := &oapi.WorkflowTemplate{}
+	if err := json.Unmarshal(event.Data, workflowTemplate); err != nil {
+		return err
+	}
+	ws.WorkflowTemplates().Remove(ctx, workflowTemplate.Id)
+	return nil
+}
+
 func HandleWorkflowCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
