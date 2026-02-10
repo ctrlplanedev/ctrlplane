@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
@@ -85,6 +87,11 @@ func (s *Store) Repo() *repository.InMemoryStore {
 }
 
 func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setStatus func(status string)) error {
+	ctx, span := tracer.Start(ctx, "Store.Restore")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int("changes.count", len(changes)))
+
 	err := s.repo.Router().Apply(ctx, changes)
 	if err != nil {
 		return err
@@ -141,6 +148,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		}
 	}
 
+	_, span = relationshipIndexesTracer.Start(ctx, "Store.Restore.RelationshipIndexes")
 	for _, rule := range s.Relationships.Items() {
 		if setStatus != nil {
 			setStatus("Computing relationships for rule: " + rule.Name)
@@ -148,6 +156,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		s.RelationshipIndexes.AddRule(ctx, rule)
 	}
 	s.RelationshipIndexes.Recompute(ctx)
+	span.End()
 
 	s.changeset.Clear()
 

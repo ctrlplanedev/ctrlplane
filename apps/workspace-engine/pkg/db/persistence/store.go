@@ -144,6 +144,11 @@ func (s *Store) Save(ctx context.Context, changes persistence.Changes) error {
 }
 
 func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes, error) {
+	ctx, span := tracer.Start(ctx, "PersistenceStore.Load")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("namespace", namespace))
+
 	sql := `
 		SELECT entity_type, entity_id, entity_data, created_at
 		FROM changelog_entry

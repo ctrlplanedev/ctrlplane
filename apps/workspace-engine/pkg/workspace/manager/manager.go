@@ -9,7 +9,11 @@ import (
 	"workspace-engine/pkg/workspace/status"
 
 	"github.com/charmbracelet/log"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("workspace/manager")
 
 var globalManager = &manager{
 	persistentStore:        memory.NewStore(),
@@ -44,6 +48,9 @@ func Configure(options ...ManagerOption) {
 }
 
 func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
+	ctx, span := tracer.Start(ctx, "GetOrLoad")
+	defer span.End()
+
 	ws, ok := globalManager.workspaces.Get(id)
 	if !ok {
 		// Track workspace loading status
@@ -56,6 +63,9 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 		workspaceStatus.SetState(status.StateLoadingFromPersistence, "Loading workspace from persistent store")
 		changes, err := globalManager.persistentStore.Load(ctx, id)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to load workspace from persistent store")
+			log.Error("Failed to load workspace from persistent store", "error", err)
 			workspaceStatus.SetError(err)
 			return nil, err
 		}
@@ -67,6 +77,8 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 			workspaceStatus.SetState(status.StateRestoringFromSnapshot, msg)
 		}
 		if err := ws.Store().Restore(ctx, changes, setStatusMessage); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to restore workspace from snapshot")
 			workspaceStatus.SetError(err)
 			log.Error("Failed to restore workspace from snapshot", "error", err)
 			return nil, err
@@ -74,10 +86,14 @@ func GetOrLoad(ctx context.Context, id string) (*workspace.Workspace, error) {
 
 		if err := ws.ReleaseManager().Restore(ctx); err != nil {
 			workspaceStatus.SetError(err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to restore verifications")
 			log.Error("Failed to restore verifications", "error", err)
 			return nil, err
 		}
 
+		// Remove resources whose map key is out of sync with their actual Id.
+		// This can happen when persistence contains stale or corrupted entries.
 		for id, resource := range ws.Resources().Items() {
 			if resource.Id != id {
 				ws.Resources().Remove(ctx, id)
