@@ -210,38 +210,46 @@ func TestEngine_Trace_MultiplePolicyEvaluations(t *testing.T) {
 		t.Fatal("no traces captured")
 	}
 
-	// Count evaluation spans
-	// We expect:
-	// - 1 global evaluator (deployableVersions - handles ready and paused statuses)
-	// - 2 policy-specific evaluators (approval + gradual rollout, both with matching selectors)
-	// Total: at least 3 evaluations
-	evaluationCount := integration.CountSpansByType(spans, trace.NodeTypeEvaluation)
-	if evaluationCount < 3 {
-		t.Errorf("expected at least 3 policy evaluations (1 global + 2 policy-specific), got %d", evaluationCount)
-	}
+	// With the index-based planning architecture, policy evaluations happen
+	// during StateIndex.Recompute (not in the reconciliation trace). The
+	// reconciliation trace records index-lookup decisions instead.
 
-	// Verify planning phase contains evaluations
+	// Verify planning phase contains decision spans (index-based decisions)
 	planningSpans := integration.FindSpansByPhase(spans, trace.PhasePlanning)
-	hasEvaluations := false
+	hasDecisions := false
 	for _, span := range planningSpans {
 		nodeType, hasType := integration.GetSpanAttribute(span, "ctrlplane.node_type")
-		if hasType && nodeType.AsString() == string(trace.NodeTypeEvaluation) {
-			hasEvaluations = true
+		if hasType && nodeType.AsString() == string(trace.NodeTypeDecision) {
+			hasDecisions = true
 			break
 		}
 	}
 
-	if !hasEvaluations {
-		t.Error("planning phase should contain evaluation spans")
+	if !hasDecisions {
+		t.Error("planning phase should contain decision spans")
 	}
 
-	// Verify decision span exists
+	// Verify decision spans exist — we expect at least:
+	// - "No desired release in index" (version.created, blocked by approval)
+	// - "Desired release resolved from index" (approval.created, policies pass)
 	decisionCount := integration.CountSpansByType(spans, trace.NodeTypeDecision)
-	if decisionCount == 0 {
-		t.Error("expected at least one decision span")
+	if decisionCount < 2 {
+		t.Errorf("expected at least 2 decision spans (blocked + approved), got %d", decisionCount)
 	}
 
-	t.Logf("Captured %d evaluations and %d decisions", evaluationCount, decisionCount)
+	// Verify eligibility and execution phases exist in the successful reconciliation
+	eligibilitySpans := integration.FindSpansByPhase(spans, trace.PhaseEligibility)
+	if len(eligibilitySpans) == 0 {
+		t.Error("expected eligibility phase in trace")
+	}
+
+	executionSpans := integration.FindSpansByPhase(spans, trace.PhaseExecution)
+	if len(executionSpans) == 0 {
+		t.Error("expected execution phase in trace")
+	}
+
+	t.Logf("Captured %d decisions, %d eligibility spans, %d execution spans",
+		decisionCount, len(eligibilitySpans), len(executionSpans))
 	integration.DumpTrace(t, spans)
 }
 

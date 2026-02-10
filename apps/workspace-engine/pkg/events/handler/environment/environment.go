@@ -57,6 +57,12 @@ func HandleEnvironmentCreated(
 	if err != nil {
 		return err
 	}
+
+	for _, rt := range releaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
 	for _, releaseTarget := range releaseTargets {
 		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerEnvironmentCreated))
@@ -140,6 +146,11 @@ func HandleEnvironmentUpdated(
 		}
 		reconileReleaseTargets = append(reconileReleaseTargets, addedReleaseTarget)
 	}
+
+	for _, rt := range reconileReleaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerEnvironmentUpdated))

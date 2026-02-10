@@ -31,6 +31,11 @@ func HandleResourceVariableCreated(
 		}
 	}
 
+	for _, rt := range reconileReleaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 
@@ -56,6 +61,11 @@ func HandleResourceVariableUpdated(
 			reconileReleaseTargets = append(reconileReleaseTargets, releaseTarget)
 		}
 	}
+
+	for _, rt := range reconileReleaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
@@ -83,6 +93,11 @@ func HandleResourceVariableDeleted(
 		}
 	}
 
+	for _, rt := range reconileReleaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerVariablesUpdated))
 
@@ -106,6 +121,10 @@ func HandleResourceVariablesBulkUpdated(
 
 	if hasChanges {
 		releaseTargets := ws.ReleaseTargets().GetForResource(ctx, resourceVariablesBulkUpdateEvent.ResourceId)
+		for _, rt := range releaseTargets {
+			ws.ReleaseManager().DirtyDesiredRelease(rt)
+		}
+		ws.ReleaseManager().RecomputeState(ctx)
 		if err := ws.ReleaseManager().ReconcileTargets(ctx, releaseTargets,
 			releasemanager.WithTrigger(trace.TriggerVariablesUpdated)); err != nil {
 			return err

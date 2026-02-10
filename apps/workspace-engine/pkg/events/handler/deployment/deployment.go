@@ -75,6 +75,11 @@ func HandleDeploymentCreated(
 		}
 	}
 
+	for _, rt := range reconileReleaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, reconileReleaseTargets,
 		releasemanager.WithTrigger(trace.TriggerDeploymentCreated))
 
@@ -127,6 +132,11 @@ func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets 
 
 func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
+		for _, rt := range releaseTargets {
+			ws.ReleaseManager().DirtyDesiredRelease(rt)
+		}
+		ws.ReleaseManager().RecomputeState(ctx)
+
 		for _, releaseTarget := range releaseTargets {
 			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),

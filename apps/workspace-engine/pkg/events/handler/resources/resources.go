@@ -118,7 +118,14 @@ func HandleResourceUpdated(
 		if err != nil {
 			return err
 		}
+	}
 
+	for _, rt := range releaseTargets {
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
+	}
+	ws.ReleaseManager().RecomputeState(ctx)
+
+	for _, releaseTarget := range releaseTargets {
 		_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 			releasemanager.WithTrigger(trace.TriggerResourceCreated))
 	}

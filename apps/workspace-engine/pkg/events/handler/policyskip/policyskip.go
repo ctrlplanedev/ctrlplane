@@ -15,15 +15,15 @@ func getRelevantTargets(
 	ctx context.Context,
 	ws *workspace.Workspace,
 	skip *oapi.PolicySkip,
-) ([]*oapi.ReleaseTarget, *oapi.DeploymentVersion, error) {
+) ([]*oapi.ReleaseTarget, error) {
 	version, ok := ws.DeploymentVersions().Get(skip.VersionId)
 	if !ok {
-		return nil, nil, fmt.Errorf("version %s not found", skip.VersionId)
+		return nil, fmt.Errorf("version %s not found", skip.VersionId)
 	}
 
 	releaseTargets, err := ws.ReleaseTargets().GetForDeployment(ctx, version.DeploymentId)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	filteredTargets := make([]*oapi.ReleaseTarget, 0, len(releaseTargets))
@@ -37,7 +37,7 @@ func getRelevantTargets(
 		filteredTargets = append(filteredTargets, target)
 	}
 
-	return filteredTargets, version, nil
+	return filteredTargets, nil
 }
 
 func HandlePolicySkipCreated(
@@ -52,18 +52,18 @@ func HandlePolicySkipCreated(
 
 	ws.Store().PolicySkips.Upsert(ctx, skip)
 
-	relevantTargets, version, err := getRelevantTargets(ctx, ws, skip)
+	relevantTargets, err := getRelevantTargets(ctx, ws, skip)
 	if err != nil {
 		return err
 	}
 
 	for _, target := range relevantTargets {
-		ws.ReleaseManager().InvalidateReleaseTargetState(target)
+		ws.ReleaseManager().DirtyDesiredRelease(target)
 	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
-		releasemanager.WithTrigger(trace.TriggerPolicyUpdated),
-		releasemanager.WithVersionAndNewer(version))
+		releasemanager.WithTrigger(trace.TriggerPolicyUpdated))
 	return nil
 }
 

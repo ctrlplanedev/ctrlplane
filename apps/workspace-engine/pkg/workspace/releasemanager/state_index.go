@@ -163,6 +163,12 @@ func (si *StateIndex) DirtyAll(rt oapi.ReleaseTarget) {
 
 // --- Read path ---
 
+// GetDesiredRelease returns the cached desired release for a release target.
+func (si *StateIndex) GetDesiredRelease(rt oapi.ReleaseTarget) *oapi.Release {
+	desired, _ := si.desiredRelease.Get(rt.Key())
+	return desired
+}
+
 // Get assembles a composite ReleaseTargetState from the three indexes.
 func (si *StateIndex) Get(rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
 	desired, _ := si.desiredRelease.Get(rt.Key())
@@ -177,6 +183,13 @@ func (si *StateIndex) Get(rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
 }
 
 // --- Recompute ---
+
+// RecomputeEntity forces a full recompute for a single entity.
+// Use for bypass-cache scenarios where fresh state is needed immediately.
+func (si *StateIndex) RecomputeEntity(ctx context.Context, rt oapi.ReleaseTarget) {
+	si.DirtyAll(rt)
+	si.Recompute(ctx)
+}
 
 // Recompute processes dirty entities across all three indexes.
 // Returns the total number of evaluations performed.

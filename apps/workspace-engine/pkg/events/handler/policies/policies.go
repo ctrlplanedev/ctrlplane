@@ -47,10 +47,11 @@ func HandlePolicyCreated(
 		}
 	}
 
-	// Invalidate cache for affected targets so planning phase re-evaluates
+	// Mark desired release dirty for affected targets so planning phase re-evaluates
 	for _, rt := range affectedTargets {
-		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	// Reconcile all affected targets to re-evaluate with the new policy
 	log.Info("Policy created - reconciling affected targets",
@@ -97,10 +98,11 @@ func HandlePolicyUpdated(
 		}
 	}
 
-	// Invalidate cache for affected targets so planning phase re-evaluates
+	// Mark desired release dirty for affected targets so planning phase re-evaluates
 	for _, rt := range affectedTargets {
-		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	// Reconcile all affected targets to re-evaluate with the updated policy
 	log.Info("Policy updated - reconciling affected targets",
@@ -147,10 +149,11 @@ func HandlePolicyDeleted(
 	// Now remove the policy
 	ws.Policies().Remove(ctx, policy.Id)
 
-	// Invalidate cache for affected targets so planning phase re-evaluates
+	// Mark desired release dirty for affected targets so planning phase re-evaluates
 	for _, rt := range affectedTargets {
-		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	// Reconcile all affected targets so previously blocked deployments can proceed
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, affectedTargets,
