@@ -14,6 +14,7 @@ import (
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/messaging/confluent"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/secrets"
 	"workspace-engine/pkg/templatefuncs"
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
@@ -34,10 +35,12 @@ var _ types.Dispatchable = &ArgoApplication{}
 type ArgoApplication struct {
 	store         *store.Store
 	verifications *verification.Manager
+	secrets       secrets.Encryption
 }
 
 func NewArgoApplication(store *store.Store, verifications *verification.Manager) *ArgoApplication {
-	return &ArgoApplication{store: store, verifications: verifications}
+	secrets := secrets.NewEncryption()
+	return &ArgoApplication{store: store, verifications: verifications, secrets: secrets}
 }
 
 func (a *ArgoApplication) Type() string {
@@ -91,15 +94,26 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.Dispat
 	return nil
 }
 
+func (a *ArgoApplication) decryptOrPlaintext(value string) string {
+	decrypted, err := a.secrets.Decrypt(value)
+	if err != nil {
+		return value
+	}
+	return decrypted
+}
+
 func (a *ArgoApplication) parseJobAgentConfig(jobAgentConfig oapi.JobAgentConfig) (string, string, string, error) {
 	serverAddr, ok := jobAgentConfig["serverUrl"].(string)
 	if !ok {
 		return "", "", "", fmt.Errorf("serverUrl is required")
 	}
-	apiKey, ok := jobAgentConfig["apiKey"].(string)
+	apiKeyRaw, ok := jobAgentConfig["apiKey"].(string)
 	if !ok {
 		return "", "", "", fmt.Errorf("apiKey is required")
 	}
+
+	apiKey := a.decryptOrPlaintext(apiKeyRaw)
+
 	template, ok := jobAgentConfig["template"].(string)
 	if !ok {
 		return "", "", "", fmt.Errorf("template is required")

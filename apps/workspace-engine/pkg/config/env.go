@@ -40,4 +40,6 @@ type Config struct {
 	RegisterAddress string `envconfig:"REGISTER_ADDRESS" default:""`
 
 	TraceTokenSecret string `envconfig:"TRACE_TOKEN_SECRET" default:"secret"`
+
+	AES256Key string `envconfig:"AES_256_KEY" default:""`
 }
