@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/secrets"
 	"workspace-engine/pkg/workspace/store/repository"
@@ -28,7 +30,14 @@ func (j *JobAgents) encryptCredentials(jobAgent *oapi.JobAgent) error {
 	jobAgentConfig := jobAgent.Config
 	for k, v := range jobAgentConfig {
 		if k == "apiKey" {
-			encrypted, err := j.secrets.Encrypt(v.(string))
+			plaintext, ok := v.(string)
+			if !ok {
+				return fmt.Errorf("apiKey is not a string: %v", v)
+			}
+			if strings.HasPrefix(plaintext, secrets.AES_256_PREFIX) {
+				continue
+			}
+			encrypted, err := j.secrets.Encrypt(plaintext)
 			if err != nil {
 				return err
 			}

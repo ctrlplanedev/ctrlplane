@@ -38,13 +38,13 @@ func NewEncryption() Encryption {
 	key := []byte(keyStr)
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		log.Error("failed to create cipher: %w", err)
+		log.Error("failed to create cipher", "error", err)
 		return &NoopEncryption{}
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		log.Error("failed to create GCM: %w", err)
+		log.Error("failed to create GCM", "error", err)
 		return &NoopEncryption{}
 	}
 
