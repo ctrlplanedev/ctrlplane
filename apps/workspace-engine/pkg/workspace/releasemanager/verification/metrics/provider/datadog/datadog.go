@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"reflect"
-	"strconv"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/verification/metrics/provider"
@@ -290,13 +288,3 @@ func extractQueryValue(response datadogResponseV2) (map[string]*float64, error) 
 // 		return 0, fmt.Errorf("unsupported type: %T", v)
 // 	}
 // }
-
-// BuildURL constructs the Datadog API URL for metrics query (used for testing)
-func BuildURL(site, query string, from, to time.Time) string {
-	baseURL := fmt.Sprintf("https://api.%s/api/v1/query", site)
-	params := url.Values{}
-	params.Set("query", query)
-	params.Set("from", strconv.FormatInt(from.Unix(), 10))
-	params.Set("to", strconv.FormatInt(to.Unix(), 10))
-	return baseURL + "?" + params.Encode()
-}
