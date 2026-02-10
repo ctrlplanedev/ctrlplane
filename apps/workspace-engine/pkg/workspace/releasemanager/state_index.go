@@ -169,8 +169,29 @@ func (si *StateIndex) GetDesiredRelease(rt oapi.ReleaseTarget) *oapi.Release {
 	return desired
 }
 
+// isComputed checks whether a release target has been registered and computed
+// in the state index. It uses the desiredRelease index as a proxy — all three
+// indexes are registered/removed together.
+func (si *StateIndex) isComputed(rt oapi.ReleaseTarget) bool {
+	_, ok := si.desiredRelease.Get(rt.Key())
+	return ok
+}
+
+// ensureComputed lazily registers and computes a release target if it has not
+// been seen before. This handles release targets that exist in the store but
+// were loaded outside of ProcessChanges (e.g. persisted state on restart).
+func (si *StateIndex) ensureComputed(ctx context.Context, rt oapi.ReleaseTarget) {
+	if si.isComputed(rt) {
+		return
+	}
+	si.AddReleaseTarget(rt) // registers + marks dirty
+	si.Recompute(ctx)
+}
+
 // Get assembles a composite ReleaseTargetState from the three indexes.
-func (si *StateIndex) Get(rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
+func (si *StateIndex) Get(ctx context.Context, rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
+	si.ensureComputed(ctx, rt)
+
 	desired, _ := si.desiredRelease.Get(rt.Key())
 	current, _ := si.currentRelease.Get(rt.Key())
 	latest, _ := si.latestJob.Get(rt.Key())
@@ -186,8 +207,10 @@ func (si *StateIndex) Get(rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
 
 // RecomputeEntity forces a full recompute for a single entity.
 // Use for bypass-cache scenarios where fresh state is needed immediately.
+// Uses AddReleaseTarget (not DirtyAll) to ensure the entity is registered
+// — DirtyEntity silently no-ops for unregistered entities.
 func (si *StateIndex) RecomputeEntity(ctx context.Context, rt oapi.ReleaseTarget) {
-	si.DirtyAll(rt)
+	si.AddReleaseTarget(rt)
 	si.Recompute(ctx)
 }
 

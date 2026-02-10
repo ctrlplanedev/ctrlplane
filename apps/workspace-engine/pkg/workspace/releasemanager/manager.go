@@ -484,7 +484,7 @@ func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi
 		))
 	defer span.End()
 
-	state := m.stateIndex.Get(*releaseTarget)
+	state := m.stateIndex.Get(ctx, *releaseTarget)
 	return state, nil
 }
 
