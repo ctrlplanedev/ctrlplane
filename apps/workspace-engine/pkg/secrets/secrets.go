@@ -6,8 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"strings"
+	"workspace-engine/pkg/config"
 
 	"github.com/charmbracelet/log"
 )
@@ -24,14 +24,14 @@ type AES256Encryption struct {
 }
 
 func NewEncryption() Encryption {
-	keyStr := os.Getenv("CTRLPLANE_AES_256_KEY")
+	keyStr := config.Global.AES256Key
 	if keyStr == "" {
-		log.Error("CTRLPLANE_AES_256_KEY is not set, using noop encryption")
+		log.Error("AES_256_KEY is not set, using noop encryption")
 		return &NoopEncryption{}
 	}
 
 	if len(keyStr) != 32 {
-		log.Error("CTRLPLANE_AES_256_KEY must be 32 bytes, using noop encryption")
+		log.Error("AES_256_KEY must be 32 bytes, using noop encryption")
 		return &NoopEncryption{}
 	}
 
