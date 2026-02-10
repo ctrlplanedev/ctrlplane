@@ -3,8 +3,6 @@ sql:
   - engine: "postgresql"
     queries: "sqlc/queries"
     schema: "sqlc/schema/workspace_engine.sql"
-    database:
-      uri: "${POSTGRES_URL}"
     gen:
       go:
         package: "sqlcgen"

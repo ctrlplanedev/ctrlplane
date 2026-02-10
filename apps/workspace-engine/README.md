@@ -87,7 +87,7 @@ make test-coverage    # Run tests with coverage report
 make lint             # Run linter
 make sqlc-generate    # Generate typed Go query code from sqlc files
 make sqlc-compile     # Validate sqlc config, schema, and queries
-make sqlc-verify      # Verify queries against live DB (POSTGRES_URL required)
+make sqlc-verify      # Run local compile checks and show sqlc Cloud verify hint
 make fmt              # Format code
 make clean            # Clean build artifacts
 make install-tools    # Install development tools

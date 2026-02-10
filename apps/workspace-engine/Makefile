@@ -86,17 +86,9 @@ sqlc-compile:
 	$$SQLC_BIN compile -f sqlc.yaml
 
 sqlc-verify:
-	@echo "Verifying sqlc queries against live database..."
-	@if [ -z "$$POSTGRES_URL" ]; then \
-		echo "POSTGRES_URL is required for sqlc verify"; \
-		exit 1; \
-	fi
-	@SQLC_BIN=$$(go env GOPATH)/bin/sqlc; \
-	if [ ! -x "$$SQLC_BIN" ]; then \
-		echo "sqlc not found. Installing..."; \
-		$(GO) install github.com/sqlc-dev/sqlc/cmd/sqlc@latest; \
-	fi; \
-	$$SQLC_BIN verify -f sqlc.yaml
+	@$(MAKE) sqlc-compile
+	@echo "sqlc verify uses sqlc Cloud project settings."
+	@echo "Run '$$(go env GOPATH)/bin/sqlc verify -f sqlc.yaml' after configuring sqlc Cloud."
 
 # Format code
 fmt:
@@ -139,7 +131,7 @@ help:
 	@echo "  make sqlc-install     - Install sqlc CLI"
 	@echo "  make sqlc-generate    - Generate typed Go query code from sqlc files"
 	@echo "  make sqlc-compile     - Validate sqlc config, schema, and queries"
-	@echo "  make sqlc-verify      - Verify queries against a live DB (POSTGRES_URL required)"
+	@echo "  make sqlc-verify      - Run local compile checks and show sqlc Cloud verify hint"
 	@echo "  make fmt              - Format code"
 	@echo "  make clean            - Clean build artifacts"
 	@echo "  make install-tools    - Install development tools"

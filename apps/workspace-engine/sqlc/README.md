@@ -39,16 +39,13 @@ make sqlc-compile
 The `schema/workspace_engine.sql` file is a stable schema snapshot for sqlc.
 When Drizzle migrations change tables used by sqlc queries, update this snapshot.
 
-## Verify against a live database
+## Verification modes
 
-`sqlc generate` uses the `schema` path and does **not** need a database connection.
+`sqlc generate` and `sqlc compile` use the local `schema` file and do **not** need
+a database connection.
 
-`database.uri` is used for database-backed checks (for example `sqlc verify`).
-
-```bash
-POSTGRES_URL="postgres://postgres:password@localhost:5432/postgres?sslmode=disable" \
-  make sqlc-verify
-```
+`sqlc verify` is a sqlc Cloud workflow and requires cloud project configuration.
+`make sqlc-verify` runs local compile checks and prints the cloud verify command.
 
 ## Adding new queries
 
