@@ -29,6 +29,7 @@ local openapi = import '../lib/openapi.libsonnet';
       ref: { type: 'string', description: 'Reference to the job agent' },
       config: { type: 'object', additionalProperties: true, description: 'Configuration for the job agent' },
       matrix: openapi.schemaRef('WorkflowJobMatrix'),
+      'if': { type: 'string', description: 'CEL expression to determine if the job should run' },
     },
   },
 
