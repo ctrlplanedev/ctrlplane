@@ -137,6 +137,15 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  ReleaseTargetAndState: {
+    type: 'object',
+    required: ['releaseTarget', 'state'],
+    properties: {
+      releaseTarget: openapi.schemaRef('ReleaseTarget'),
+      state: openapi.schemaRef('ReleaseTargetState'),
+    },
+  },
+
   Release: {
     type: 'object',
     required: ['version', 'variables', 'encryptedVariables', 'releaseTarget', 'createdAt'],
@@ -152,6 +161,71 @@ local openapi = import '../lib/openapi.libsonnet';
       },
       releaseTarget: openapi.schemaRef('ReleaseTarget'),
       createdAt: { type: 'string' },
+    },
+  },
+
+  // --- Lightweight summary types for list endpoints ---
+
+  ResourceSummary: {
+    type: 'object',
+    required: ['id', 'name', 'kind', 'version', 'identifier'],
+    properties: {
+      id: { type: 'string' },
+      name: { type: 'string' },
+      kind: { type: 'string' },
+      version: { type: 'string' },
+      identifier: { type: 'string' },
+    },
+  },
+
+  EnvironmentSummary: {
+    type: 'object',
+    required: ['id', 'name'],
+    properties: {
+      id: { type: 'string' },
+      name: { type: 'string' },
+    },
+  },
+
+  VersionSummary: {
+    type: 'object',
+    required: ['id', 'tag', 'name'],
+    properties: {
+      id: { type: 'string' },
+      tag: { type: 'string' },
+      name: { type: 'string' },
+    },
+  },
+
+  JobSummary: {
+    type: 'object',
+    required: ['id', 'status', 'verifications'],
+    properties: {
+      id: { type: 'string' },
+      status: openapi.schemaRef('JobStatus'),
+      message: { type: 'string' },
+      links: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+        description: 'External links extracted from job metadata',
+      },
+      verifications: {
+        type: 'array',
+        items: openapi.schemaRef('JobVerification'),
+      },
+    },
+  },
+
+  ReleaseTargetSummary: {
+    type: 'object',
+    required: ['releaseTarget', 'resource', 'environment'],
+    properties: {
+      releaseTarget: openapi.schemaRef('ReleaseTarget'),
+      resource: openapi.schemaRef('ResourceSummary'),
+      environment: openapi.schemaRef('EnvironmentSummary'),
+      desiredVersion: openapi.schemaRef('VersionSummary'),
+      currentVersion: openapi.schemaRef('VersionSummary'),
+      latestJob: openapi.schemaRef('JobSummary'),
     },
   },
 

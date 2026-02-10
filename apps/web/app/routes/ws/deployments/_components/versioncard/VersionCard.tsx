@@ -216,15 +216,15 @@ const FailedPopoverContent: React.FC<{
     {targets.map((rt) => (
       <div key={rt.releaseTarget.resourceId} className="text-xs">
         <span className="font-medium">{rt.resource.name}</span>
-        {rt.state.latestJob?.job.status && (
+        {rt.latestJob?.status && (
           <span className="text-muted-foreground">
             {" "}
-            — {formatJobStatus(rt.state.latestJob.job.status)}
+            — {formatJobStatus(rt.latestJob.status)}
           </span>
         )}
-        {rt.state.latestJob?.job.message && (
+        {rt.latestJob?.message && (
           <div className="mt-0.5 text-muted-foreground">
-            {rt.state.latestJob.job.message}
+            {rt.latestJob.message}
           </div>
         )}
       </div>

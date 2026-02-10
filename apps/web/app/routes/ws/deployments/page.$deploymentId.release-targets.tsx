@@ -111,7 +111,7 @@ export default function ReleaseTargetsPage() {
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];
   const filteredReleaseTargets = releaseTargets.filter((rt) => {
     if (jobStatus == null) return true;
-    return rt.state.latestJob?.job.status === jobStatus;
+    return rt.latestJob?.status === jobStatus;
   });
 
   const groupByEnvironmentId = _.groupBy(

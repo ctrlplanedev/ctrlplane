@@ -406,6 +406,12 @@ type EnvironmentProgressionRule struct {
 	SuccessStatuses          *[]JobStatus `json:"successStatuses,omitempty"`
 }
 
+// EnvironmentSummary defines model for EnvironmentSummary.
+type EnvironmentSummary struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error *string `json:"error,omitempty"`
@@ -522,6 +528,17 @@ type JobAgentConfig map[string]interface{}
 
 // JobStatus defines model for JobStatus.
 type JobStatus string
+
+// JobSummary defines model for JobSummary.
+type JobSummary struct {
+	Id string `json:"id"`
+
+	// Links External links extracted from job metadata
+	Links         *map[string]string `json:"links,omitempty"`
+	Message       *string            `json:"message,omitempty"`
+	Status        JobStatus          `json:"status"`
+	Verifications []JobVerification  `json:"verifications"`
+}
 
 // JobUpdateEvent defines model for JobUpdateEvent.
 type JobUpdateEvent struct {
@@ -804,11 +821,27 @@ type ReleaseTarget struct {
 	ResourceId    string `json:"resourceId"`
 }
 
+// ReleaseTargetAndState defines model for ReleaseTargetAndState.
+type ReleaseTargetAndState struct {
+	ReleaseTarget ReleaseTarget      `json:"releaseTarget"`
+	State         ReleaseTargetState `json:"state"`
+}
+
 // ReleaseTargetState defines model for ReleaseTargetState.
 type ReleaseTargetState struct {
 	CurrentRelease *Release              `json:"currentRelease,omitempty"`
 	DesiredRelease *Release              `json:"desiredRelease,omitempty"`
 	LatestJob      *JobWithVerifications `json:"latestJob,omitempty"`
+}
+
+// ReleaseTargetSummary defines model for ReleaseTargetSummary.
+type ReleaseTargetSummary struct {
+	CurrentVersion *VersionSummary    `json:"currentVersion,omitempty"`
+	DesiredVersion *VersionSummary    `json:"desiredVersion,omitempty"`
+	Environment    EnvironmentSummary `json:"environment"`
+	LatestJob      *JobSummary        `json:"latestJob,omitempty"`
+	ReleaseTarget  ReleaseTarget      `json:"releaseTarget"`
+	Resource       ResourceSummary    `json:"resource"`
 }
 
 // ReleaseTargetWithState defines model for ReleaseTargetWithState.
@@ -851,6 +884,15 @@ type ResourceProvider struct {
 	Metadata    map[string]string  `json:"metadata"`
 	Name        string             `json:"name"`
 	WorkspaceId openapi_types.UUID `json:"workspaceId"`
+}
+
+// ResourceSummary defines model for ResourceSummary.
+type ResourceSummary struct {
+	Id         string `json:"id"`
+	Identifier string `json:"identifier"`
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
+	Version    string `json:"version"`
 }
 
 // ResourceVariable defines model for ResourceVariable.
@@ -1113,6 +1155,13 @@ type VersionSelectorRule struct {
 	// Description Human-readable description of what this version selector does. Example: "Only deploy v2.x versions to staging environments"
 	Description *string  `json:"description,omitempty"`
 	Selector    Selector `json:"selector"`
+}
+
+// VersionSummary defines model for VersionSummary.
+type VersionSummary struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Tag  string `json:"tag"`
 }
 
 // Workflow defines model for Workflow.

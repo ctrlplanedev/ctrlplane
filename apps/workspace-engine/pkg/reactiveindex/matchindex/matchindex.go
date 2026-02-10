@@ -288,12 +288,6 @@ func (idx *MatchIndex) IsDirty() bool {
 	return len(idx.dirtyEntities) > 0 || len(idx.dirtySelectors) > 0 || len(idx.dirtyPairs) > 0
 }
 
-// pair is an internal type for tracking (selector, entity) evaluation work.
-type pair struct {
-	selector string
-	entity   string
-}
-
 // parallelThreshold is the minimum number of pairs before we fan out to
 // a worker pool. Below this, the goroutine scheduling + span overhead
 // exceeds the benefit.

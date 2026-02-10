@@ -27,9 +27,6 @@ type JobStatus =
 type Job = {
   id: string;
   status: JobStatus;
-  createdAt: string;
-  startedAt?: string;
-  completedAt?: string;
 };
 
 type VersionWithCount = {

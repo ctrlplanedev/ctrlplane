@@ -30,7 +30,7 @@ export const useDeploymentStats = (
 
     // Failed: check latestJob status for failure states
     const failedTargets = desiredReleaseTargets.filter((rt) => {
-      const status = rt.state.latestJob?.job.status;
+      const status = rt.latestJob?.status;
       return status != null && failureStatuses.includes(status as any);
     });
 

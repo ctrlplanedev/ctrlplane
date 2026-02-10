@@ -94,22 +94,28 @@ export type ReleaseTargetWithState = {
     id: string;
     name: string;
     identifier: string;
+    kind: string;
+    version: string;
   };
   environment: {
     id: string;
     name: string;
   };
-  state: {
-    currentRelease?: { version: { id: string; tag: string } } | null;
-    desiredRelease?: { version: { id: string; tag: string } } | null;
-    latestJob?: {
-      job: {
-        id: string;
-        status: JobStatus;
-        message?: string;
-      };
-    } | null;
-  };
+  currentVersion?: { id: string; tag: string; name: string } | null;
+  desiredVersion?: { id: string; tag: string; name: string } | null;
+  latestJob?: {
+    id: string;
+    status: JobStatus;
+    message?: string;
+    links?: Record<string, string>;
+    verifications: Array<{
+      id: string;
+      jobId: string;
+      metrics: Array<unknown>;
+      message?: string;
+      createdAt: string;
+    }>;
+  } | null;
 };
 
 export const rtid = (rt: ReleaseTarget) => {
