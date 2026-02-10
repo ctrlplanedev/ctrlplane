@@ -3,8 +3,6 @@ package db
 import (
 	"context"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
 const WORKSPACE_SELECT_QUERY = `
@@ -95,45 +93,6 @@ type WorkspaceSnapshot struct {
 	Partition     int32
 	NumPartitions int32
 	Offset        int64
-}
-
-const WORKSPACE_SNAPSHOT_SELECT_QUERY = `
-	SELECT 
-		workspace_id, 
-		path, 
-		timestamp, 
-		partition, 
-		num_partitions, 
-		"offset" 
-	FROM workspace_snapshot
-	WHERE workspace_id = $1
-	ORDER BY "offset" DESC, timestamp DESC
-	LIMIT 1
-`
-
-func GetWorkspaceSnapshot(ctx context.Context, workspaceID string) (*WorkspaceSnapshot, error) {
-	db, err := GetDB(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Release()
-
-	workspaceSnapshot := &WorkspaceSnapshot{}
-	err = db.QueryRow(ctx, WORKSPACE_SNAPSHOT_SELECT_QUERY, workspaceID).Scan(
-		&workspaceSnapshot.WorkspaceID,
-		&workspaceSnapshot.Path,
-		&workspaceSnapshot.Timestamp,
-		&workspaceSnapshot.Partition,
-		&workspaceSnapshot.NumPartitions,
-		&workspaceSnapshot.Offset,
-	)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return workspaceSnapshot, nil
 }
 
 func GetLatestWorkspaceSnapshots(ctx context.Context, workspaceIDs []string) (map[string]*WorkspaceSnapshot, error) {

@@ -129,10 +129,3 @@ func (c *ResourceProviderCache) Retrieve(ctx context.Context, batchId string) (*
 
 	return batch, nil
 }
-
-// Close closes the cache and releases resources
-func (c *ResourceProviderCache) Close() {
-	if c.cache != nil {
-		c.cache.Close()
-	}
-}

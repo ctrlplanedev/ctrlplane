@@ -64,18 +64,6 @@ func murmur2(data []byte) uint32 {
 	return h
 }
 
-// FilterWorkspaceIDsForPartition filters the given workspaceIDs and returns only those
-// that would be routed to the specified partition out of numPartitions.
-func FilterWorkspaceIDsForPartition(workspaceIDs []string, targetPartition int32, numPartitions int32) []string {
-	var result []string
-	for _, workspaceID := range workspaceIDs {
-		if PartitionForWorkspace(workspaceID, numPartitions) == targetPartition {
-			result = append(result, workspaceID)
-		}
-	}
-	return result
-}
-
 type WorkspaceIDDiscoverer func(ctx context.Context, targetPartition int32, numPartitions int32) ([]string, error)
 
 func GetAssignedWorkspaceIDs(ctx context.Context, assignedPartitions []int32, numPartitions int32) (map[int32][]string, error) {

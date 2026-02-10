@@ -31,12 +31,6 @@ func initFuncMap() template.FuncMap {
 	return f
 }
 
-// FuncMap returns a template.FuncMap that includes all sprig text functions
-// plus custom Helm-like functions (required, fail, etc.).
-func FuncMap() template.FuncMap {
-	return funcs
-}
-
 // New creates a new template with all custom functions pre-registered
 // and standard options applied (missingkey=zero).
 //

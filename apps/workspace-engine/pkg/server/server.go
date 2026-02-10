@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/manager"
 
 	"workspace-engine/pkg/server/openapi"
 
@@ -62,15 +61,6 @@ func (s *Server) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",
 		"service": "workspace-engine",
-	})
-}
-
-// ListWorkspaceIds implements the OpenAPI workspaces endpoint
-// (GET /v1/workspaces)
-func (s *Server) ListWorkspaceIds(c *gin.Context) {
-	workspaceIds := manager.Workspaces().Keys()
-	c.JSON(http.StatusOK, gin.H{
-		"workspaceIds": workspaceIds,
 	})
 }
 
