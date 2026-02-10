@@ -9,9 +9,16 @@ import {
 import prettyMs from "pretty-ms";
 import { useSearchParams } from "react-router";
 
+import _ from "lodash";
+
 import type { ReleaseTargetWithState } from "../types";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
 import { cn } from "~/lib/utils";
 import { VersionDropdown } from "./VersionDropdown";
 import { useDeploymentStats } from "./useDeploymentStats";
@@ -158,28 +165,111 @@ const DeploymentProgress: React.FC<{
   </div>
 );
 
+const PendingPopoverContent: React.FC<{
+  targets: ReleaseTargetWithState[];
+}> = ({ targets }) => {
+  if (targets.length <= 10)
+    return (
+      <div className="space-y-1">
+        <div className="font-medium">Waiting to deploy:</div>
+        {targets.map((rt) => (
+          <div key={rt.releaseTarget.resourceId} className="text-xs">
+            {rt.resource.name}
+          </div>
+        ))}
+      </div>
+    );
+
+  const grouped = _.groupBy(targets, (rt) => rt.environment.name);
+  return (
+    <div className="space-y-1">
+      <div className="font-medium">Waiting to deploy:</div>
+      {Object.entries(grouped).map(([envName, rts]) => (
+        <div key={envName} className="text-xs">
+          {envName}: {rts.length} resource{rts.length !== 1 ? "s" : ""}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const formatJobStatus = (status: string) => {
+  switch (status) {
+    case "failure":
+      return "Job failed";
+    case "invalidJobAgent":
+      return "Invalid job agent";
+    case "invalidIntegration":
+      return "Invalid integration";
+    case "externalRunNotFound":
+      return "External run not found";
+    default:
+      return status;
+  }
+};
+
+const FailedPopoverContent: React.FC<{
+  targets: ReleaseTargetWithState[];
+}> = ({ targets }) => (
+  <div className="space-y-1.5">
+    <div className="font-medium">Failed deployments:</div>
+    {targets.map((rt) => (
+      <div key={rt.releaseTarget.resourceId} className="text-xs">
+        <span className="font-medium">{rt.resource.name}</span>
+        {rt.latestJob?.status && (
+          <span className="text-muted-foreground">
+            {" "}
+            — {formatJobStatus(rt.latestJob.status)}
+          </span>
+        )}
+        {rt.latestJob?.message && (
+          <div className="mt-0.5 text-muted-foreground">
+            {rt.latestJob.message}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+);
+
 const DeploymentIssues: React.FC<{
   pending: number;
+  pendingTargets: ReleaseTargetWithState[];
   failed: number;
-}> = ({ pending, failed }) => {
+  failedTargets: ReleaseTargetWithState[];
+}> = ({ pending, pendingTargets, failed, failedTargets }) => {
   if (pending === 0 && failed === 0) return null;
   return (
     <div className="space-y-1.5 border-t pt-2">
       {pending > 0 && (
-        <div className="flex items-center gap-1.5 text-xs">
-          <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-          <span className="text-muted-foreground">
-            {pending} waiting to deploy
-          </span>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+              <span className="text-muted-foreground">
+                {pending} waiting to deploy
+              </span>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" className="max-w-64 text-sm" onClick={(e) => e.stopPropagation()}>
+            <PendingPopoverContent targets={pendingTargets} />
+          </PopoverContent>
+        </Popover>
       )}
       {failed > 0 && (
-        <div className="flex items-center gap-1.5 text-xs">
-          <XCircle className="h-3.5 w-3.5 shrink-0 text-red-600" />
-          <span className="text-red-600">
-            {failed} deployment{failed !== 1 ? "s" : ""} failed
-          </span>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <XCircle className="h-3.5 w-3.5 shrink-0 text-red-600" />
+              <span className="text-red-600">
+                {failed} deployment{failed !== 1 ? "s" : ""} failed
+              </span>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" className="max-w-64 text-sm" onClick={(e) => e.stopPropagation()}>
+            <FailedPopoverContent targets={failedTargets} />
+          </PopoverContent>
+        </Popover>
       )}
     </div>
   );

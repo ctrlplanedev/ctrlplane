@@ -515,6 +515,21 @@
             ],
             "type": "object"
          },
+         "EnvironmentSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name"
+            ],
+            "type": "object"
+         },
          "ErrorResponse": {
             "properties": {
                "error": {
@@ -791,6 +806,38 @@
                "successful"
             ],
             "type": "string"
+         },
+         "JobSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "links": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "description": "External links extracted from job metadata",
+                  "type": "object"
+               },
+               "message": {
+                  "type": "string"
+               },
+               "status": {
+                  "$ref": "#/components/schemas/JobStatus"
+               },
+               "verifications": {
+                  "items": {
+                     "$ref": "#/components/schemas/JobVerification"
+                  },
+                  "type": "array"
+               }
+            },
+            "required": [
+               "id",
+               "status",
+               "verifications"
+            ],
+            "type": "object"
          },
          "JobUpdateEvent": {
             "oneOf": [
@@ -1526,6 +1573,21 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetAndState": {
+            "properties": {
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "state": {
+                  "$ref": "#/components/schemas/ReleaseTargetState"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "state"
+            ],
+            "type": "object"
+         },
          "ReleaseTargetState": {
             "properties": {
                "currentRelease": {
@@ -1538,6 +1600,34 @@
                   "$ref": "#/components/schemas/JobWithVerifications"
                }
             },
+            "type": "object"
+         },
+         "ReleaseTargetSummary": {
+            "properties": {
+               "currentVersion": {
+                  "$ref": "#/components/schemas/VersionSummary"
+               },
+               "desiredVersion": {
+                  "$ref": "#/components/schemas/VersionSummary"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/EnvironmentSummary"
+               },
+               "latestJob": {
+                  "$ref": "#/components/schemas/JobSummary"
+               },
+               "releaseTarget": {
+                  "$ref": "#/components/schemas/ReleaseTarget"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/ResourceSummary"
+               }
+            },
+            "required": [
+               "releaseTarget",
+               "resource",
+               "environment"
+            ],
             "type": "object"
          },
          "ReleaseTargetWithState": {
@@ -1684,6 +1774,33 @@
                "name",
                "createdAt",
                "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "identifier": {
+                  "type": "string"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "version": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "name",
+               "kind",
+               "version",
+               "identifier"
             ],
             "type": "object"
          },
@@ -2189,6 +2306,25 @@
             },
             "required": [
                "selector"
+            ],
+            "type": "object"
+         },
+         "VersionSummary": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "tag": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "tag",
+               "name"
             ],
             "type": "object"
          },
@@ -3045,7 +3181,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/ReleaseTargetWithState"
+                                    "$ref": "#/components/schemas/ReleaseTargetSummary"
                                  },
                                  "type": "array"
                               },

@@ -66,11 +66,6 @@ func HandleUserApprovalRecordCreated(
 		return err
 	}
 
-	version, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
-	if !ok {
-		return fmt.Errorf("version %s not found", userApprovalRecord.VersionId)
-	}
-
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
 
 	relevantTargets, err := getRelevantTargets(ctx, ws, userApprovalRecord)
@@ -78,10 +73,11 @@ func HandleUserApprovalRecordCreated(
 		return err
 	}
 
-	// Invalidate cache for affected targets so planning phase re-evaluates with new approval
+	// Mark desired release dirty for affected targets so planning phase re-evaluates with new approval
 	for _, rt := range relevantTargets {
-		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	log.Info("Approval created - reconciling affected targets",
 		"version_id", userApprovalRecord.VersionId,
@@ -89,8 +85,7 @@ func HandleUserApprovalRecordCreated(
 		"affected_targets_count", len(relevantTargets))
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
-		releasemanager.WithTrigger(trace.TriggerApprovalCreated),
-		releasemanager.WithVersionAndNewer(version))
+		releasemanager.WithTrigger(trace.TriggerApprovalCreated))
 
 	return nil
 }
@@ -111,11 +106,6 @@ func HandleUserApprovalRecordUpdated(
 		return err
 	}
 
-	version, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
-	if !ok {
-		return fmt.Errorf("version %s not found", userApprovalRecord.VersionId)
-	}
-
 	ws.UserApprovalRecords().Upsert(ctx, userApprovalRecord)
 
 	relevantTargets, err := getRelevantTargets(ctx, ws, userApprovalRecord)
@@ -123,14 +113,14 @@ func HandleUserApprovalRecordUpdated(
 		return err
 	}
 
-	// Invalidate cache for affected targets so planning phase re-evaluates with new approval
+	// Mark desired release dirty for affected targets so planning phase re-evaluates with updated approval
 	for _, rt := range relevantTargets {
-		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
-		releasemanager.WithTrigger(trace.TriggerApprovalUpdated),
-		releasemanager.WithVersionAndNewer(version))
+		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
 
 	return nil
 }
@@ -151,11 +141,6 @@ func HandleUserApprovalRecordDeleted(
 		return err
 	}
 
-	version, ok := ws.DeploymentVersions().Get(userApprovalRecord.VersionId)
-	if !ok {
-		return fmt.Errorf("version %s not found", userApprovalRecord.VersionId)
-	}
-
 	ws.UserApprovalRecords().Remove(ctx, userApprovalRecord.Key())
 
 	relevantTargets, err := getRelevantTargets(ctx, ws, userApprovalRecord)
@@ -163,14 +148,14 @@ func HandleUserApprovalRecordDeleted(
 		return err
 	}
 
-	// Invalidate cache for affected targets so planning phase re-evaluates without the approval
+	// Mark desired release dirty for affected targets so planning phase re-evaluates without the approval
 	for _, rt := range relevantTargets {
-		ws.ReleaseManager().InvalidateReleaseTargetState(rt)
+		ws.ReleaseManager().DirtyDesiredRelease(rt)
 	}
+	ws.ReleaseManager().RecomputeState(ctx)
 
 	_ = ws.ReleaseManager().ReconcileTargets(ctx, relevantTargets,
-		releasemanager.WithTrigger(trace.TriggerApprovalUpdated),
-		releasemanager.WithVersionAndNewer(version))
+		releasemanager.WithTrigger(trace.TriggerApprovalUpdated))
 
 	return nil
 }

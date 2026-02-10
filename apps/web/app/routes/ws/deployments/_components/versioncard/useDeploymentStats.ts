@@ -1,7 +1,17 @@
 import { useMemo } from "react";
 import type { ReleaseTargetWithState } from "../types";
 
-export const useDeploymentStats = (currentReleaseTargets: ReleaseTargetWithState[], desiredReleaseTargets: ReleaseTargetWithState[]) => {
+const failureStatuses = [
+  "failure",
+  "invalidJobAgent",
+  "invalidIntegration",
+  "externalRunNotFound",
+] as const;
+
+export const useDeploymentStats = (
+  currentReleaseTargets: ReleaseTargetWithState[],
+  desiredReleaseTargets: ReleaseTargetWithState[],
+) => {
   return useMemo(() => {
     const currentTargetIds = new Set(
       currentReleaseTargets.map(
@@ -19,16 +29,9 @@ export const useDeploymentStats = (currentReleaseTargets: ReleaseTargetWithState
     );
 
     // Failed: check latestJob status for failure states
-    const failureStatuses = [
-      "failure",
-      "invalidJobAgent",
-      "invalidIntegration",
-      "externalRunNotFound",
-    ];
     const failedTargets = desiredReleaseTargets.filter((rt) => {
-      // Check if state has latestJob with a failure status
-      const latestJob = (rt.state as any).latestJob;
-      return latestJob && failureStatuses.includes(latestJob.job?.status);
+      const status = rt.latestJob?.status;
+      return status != null && failureStatuses.includes(status as any);
     });
 
     // Get unique environment IDs
@@ -42,9 +45,11 @@ export const useDeploymentStats = (currentReleaseTargets: ReleaseTargetWithState
     return {
       deployed: currentReleaseTargets.length,
       pending: pendingTargets.length,
+      pendingTargets,
       failed: failedTargets.length,
+      failedTargets,
       totalTargets: desiredReleaseTargets.length,
       environmentCount: new Set([...currentEnvIds, ...desiredEnvIds]).size,
     };
   }, [currentReleaseTargets, desiredReleaseTargets]);
-}
+};

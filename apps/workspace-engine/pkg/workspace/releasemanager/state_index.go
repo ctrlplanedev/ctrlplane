@@ -163,7 +163,15 @@ func (si *StateIndex) DirtyAll(rt oapi.ReleaseTarget) {
 
 // --- Read path ---
 
+// GetDesiredRelease returns the cached desired release for a release target.
+func (si *StateIndex) GetDesiredRelease(rt oapi.ReleaseTarget) *oapi.Release {
+	desired, _ := si.desiredRelease.Get(rt.Key())
+	return desired
+}
+
 // Get assembles a composite ReleaseTargetState from the three indexes.
+// All release targets are registered at boot via RestoreAll, so Get is a
+// simple read with no lazy registration.
 func (si *StateIndex) Get(rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
 	desired, _ := si.desiredRelease.Get(rt.Key())
 	current, _ := si.currentRelease.Get(rt.Key())
@@ -176,7 +184,37 @@ func (si *StateIndex) Get(rt oapi.ReleaseTarget) *oapi.ReleaseTargetState {
 	}
 }
 
+// RestoreAll registers every release target currently in the store and
+// performs a single batch recompute.  Call this once during boot after the
+// store has been restored from persistence.
+func (si *StateIndex) RestoreAll(ctx context.Context) {
+	ctx, span := stateIndexTracer.Start(ctx, "StateIndex.RestoreAll")
+	defer span.End()
+
+	targets, err := si.store.ReleaseTargets.Items()
+	if err != nil {
+		log.Error("failed to list release targets for state index restore", "error", err.Error())
+		return
+	}
+
+	for _, rt := range targets {
+		si.AddReleaseTarget(*rt)
+	}
+
+	si.Recompute(ctx)
+	log.Info("state index restored", "release_targets", len(targets))
+}
+
 // --- Recompute ---
+
+// RecomputeEntity forces a full recompute for a single entity.
+// Use for bypass-cache scenarios where fresh state is needed immediately.
+// Uses AddReleaseTarget (not DirtyAll) to ensure the entity is registered
+// — DirtyEntity silently no-ops for unregistered entities.
+func (si *StateIndex) RecomputeEntity(ctx context.Context, rt oapi.ReleaseTarget) {
+	si.AddReleaseTarget(rt)
+	si.Recompute(ctx)
+}
 
 // Recompute processes dirty entities across all three indexes.
 // Returns the total number of evaluations performed.

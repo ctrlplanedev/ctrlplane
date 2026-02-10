@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo } from "react";
 import _ from "lodash";
@@ -77,6 +78,8 @@ export default function DeploymentDetail() {
     limit: 1000,
     offset: 0,
   });
+
+  console.log(releaseTargetsQuery.data?.items);
 
   const releaseTargets = useMemo(
     () => releaseTargetsQuery.data?.items ?? [],
@@ -171,7 +174,7 @@ export default function DeploymentDetail() {
         // Count resources per version (current)
         const currentVersionCounts: Record<string, number> = {};
         envReleaseTargets.forEach((rt) => {
-          const versionId = rt.state.currentRelease?.version.id;
+          const versionId = rt.currentVersion?.id;
           if (versionId) {
             currentVersionCounts[versionId] =
               (currentVersionCounts[versionId] ?? 0) + 1;
@@ -181,7 +184,7 @@ export default function DeploymentDetail() {
         // Count resources per version (desired)
         const desiredVersionCounts: Record<string, number> = {};
         envReleaseTargets.forEach((rt) => {
-          const versionId = rt.state.desiredRelease?.version.id;
+          const versionId = rt.desiredVersion?.id;
           if (versionId) {
             desiredVersionCounts[versionId] =
               (desiredVersionCounts[versionId] ?? 0) + 1;
@@ -207,7 +210,7 @@ export default function DeploymentDetail() {
 
         // Collect jobs from latest job in each release target
         const jobs = envReleaseTargets
-          .map((rt) => rt.state.latestJob?.job)
+          .map((rt) => rt.latestJob)
           .filter((job): job is NonNullable<typeof job> => job != null);
 
         return {
@@ -320,10 +323,10 @@ export default function DeploymentDetail() {
               <div className="flex min-h-[175px] min-w-full grow gap-2 overflow-x-auto p-4">
                 {versions.map((version) => {
                   const currentReleaseTargets = releaseTargets.filter(
-                    (rt) => rt.state.currentRelease?.version.id === version.id,
+                    (rt) => rt.currentVersion?.id === version.id,
                   );
                   const desiredReleaseTargets = releaseTargets.filter(
-                    (rt) => rt.state.desiredRelease?.version.id === version.id,
+                    (rt) => rt.desiredVersion?.id === version.id,
                   );
                   const isSelected = selectedVersionId === version.id;
 

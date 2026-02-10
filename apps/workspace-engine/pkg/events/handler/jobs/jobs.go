@@ -67,7 +67,7 @@ func HandleJobUpdated(
 	// No fields specified - replace entire job
 	if jobUpdateEvent.FieldsToUpdate == nil || len(*jobUpdateEvent.FieldsToUpdate) == 0 {
 		ws.Jobs().Upsert(ctx, &jobUpdateEvent.Job)
-		invalidateCacheForJob(ws, &jobUpdateEvent.Job)
+		dirtyStateForJob(ctx, ws, &jobUpdateEvent.Job)
 		// Trigger actions on status change
 		triggerActionsOnStatusChange(ctx, ws, &jobUpdateEvent.Job, previousStatus)
 		return nil
@@ -83,7 +83,7 @@ func HandleJobUpdated(
 	}
 
 	ws.Jobs().Upsert(ctx, mergedJob)
-	invalidateCacheForJob(ws, mergedJob)
+	dirtyStateForJob(ctx, ws, mergedJob)
 
 	// Trigger actions on status change
 	triggerActionsOnStatusChange(ctx, ws, mergedJob, previousStatus)
@@ -124,17 +124,16 @@ func triggerActionsOnStatusChange(ctx context.Context, ws *workspace.Workspace, 
 	}
 }
 
-// invalidateCacheForJob invalidates the release target state cache for the job's release target.
-// This ensures that subsequent calls to GetReleaseTargetState return fresh data.
-func invalidateCacheForJob(ws *workspace.Workspace, job *oapi.Job) {
-	// Get the release for this job
+// dirtyStateForJob marks the current release and latest job dirty for the job's release target,
+// then recomputes the state index so subsequent reads return fresh data.
+func dirtyStateForJob(ctx context.Context, ws *workspace.Workspace, job *oapi.Job) {
 	release, exists := ws.Releases().Get(job.ReleaseId)
 	if !exists {
 		return
 	}
 
-	// Invalidate the cache for this release target
-	ws.ReleaseManager().InvalidateReleaseTargetState(&release.ReleaseTarget)
+	ws.ReleaseManager().DirtyCurrentAndJob(&release.ReleaseTarget)
+	ws.ReleaseManager().RecomputeState(ctx)
 }
 
 func getJob(ws *workspace.Workspace, job *oapi.JobUpdateEvent) (*oapi.Job, bool) {

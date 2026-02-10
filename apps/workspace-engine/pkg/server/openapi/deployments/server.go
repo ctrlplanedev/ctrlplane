@@ -2,6 +2,7 @@ package deployments
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -321,7 +322,7 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 	_, stateSpan := deploymentTracer.Start(ctx, "ComputeReleaseTargetStates")
 
 	type result struct {
-		item *oapi.ReleaseTargetWithState
+		item *oapi.ReleaseTargetSummary
 		err  error
 	}
 	results, err := concurrency.ProcessInChunks(
@@ -350,17 +351,46 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 				return result{nil, fmt.Errorf("resource not found: resourceId=%s for key=%s", releaseTarget.ResourceId, releaseTarget.Key())}, nil
 			}
 
-			deployment, ok := ws.Deployments().Get(releaseTarget.DeploymentId)
-			if !ok {
-				return result{nil, fmt.Errorf("deployment not found: deploymentId=%s for key=%s", releaseTarget.DeploymentId, releaseTarget.Key())}, nil
+			item := &oapi.ReleaseTargetSummary{}
+			item.ReleaseTarget = *releaseTarget
+			item.Resource = oapi.ResourceSummary{
+				Id:         resource.Id,
+				Name:       resource.Name,
+				Kind:       resource.Kind,
+				Version:    resource.Version,
+				Identifier: resource.Identifier,
 			}
+			item.Environment = oapi.EnvironmentSummary{
+				Id:   environment.Id,
+				Name: environment.Name,
+			}
+			if state.DesiredRelease != nil {
+				item.DesiredVersion = &oapi.VersionSummary{
+					Id:   state.DesiredRelease.Version.Id,
+					Tag:  state.DesiredRelease.Version.Tag,
+					Name: state.DesiredRelease.Version.Name,
+				}
+			}
+			if state.CurrentRelease != nil {
+				item.CurrentVersion = &oapi.VersionSummary{
+					Id:   state.CurrentRelease.Version.Id,
+					Tag:  state.CurrentRelease.Version.Tag,
+					Name: state.CurrentRelease.Version.Name,
+				}
+			}
+			if state.LatestJob != nil {
+				item.LatestJob = &oapi.JobSummary{
+					Id:            state.LatestJob.Job.Id,
+					Links:         &map[string]string{},
+					Status:        state.LatestJob.Job.Status,
+					Verifications: state.LatestJob.Verifications,
+				}
 
-			item := &oapi.ReleaseTargetWithState{
-				ReleaseTarget: *releaseTarget,
-				State:         *state,
-				Environment:   *environment,
-				Resource:      *resource,
-				Deployment:    *deployment,
+				metadata := state.LatestJob.Job.Metadata
+				if metadata != nil {
+					linksJson := metadata["ctrlplane/links"]
+					json.Unmarshal([]byte(linksJson), &item.LatestJob.Links)
+				}
 			}
 			return result{item, nil}, nil
 		},
@@ -377,7 +407,7 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 		return
 	}
 
-	releaseTargetsWithState := make([]*oapi.ReleaseTargetWithState, 0, end-start)
+	releaseTargetsAndState := make([]*oapi.ReleaseTargetSummary, 0, end-start)
 	skipped := 0
 	for _, r := range results {
 		if r.err != nil {
@@ -389,21 +419,23 @@ func (s *Deployments) GetReleaseTargetsForDeployment(c *gin.Context, workspaceId
 			continue
 		}
 		if r.item != nil {
-			releaseTargetsWithState = append(releaseTargetsWithState, r.item)
+			releaseTargetsAndState = append(releaseTargetsAndState, r.item)
 		}
 	}
 
 	span.SetAttributes(
-		attribute.Int("results.returned", len(releaseTargetsWithState)),
+		attribute.Int("results.returned", len(releaseTargetsAndState)),
 		attribute.Int("results.skipped", skipped),
 	)
 
+	_, jsonSpan := deploymentTracer.Start(ctx, "SerializeResponse")
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  releaseTargetsWithState,
+		"items":  releaseTargetsAndState,
 	})
+	jsonSpan.End()
 }
 
 func (s *Deployments) GetVersionsForDeployment(c *gin.Context, workspaceId string, deploymentId string, params oapi.GetVersionsForDeploymentParams) {

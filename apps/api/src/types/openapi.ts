@@ -782,10 +782,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a workflow template from a YAML definition
-         * @description Creates a workflow template from a YAML definition.
+         * Create a workflow template
+         * @description Creates a workflow template.
          */
-        post: operations["createWorkflowTemplateFromYaml"];
+        post: operations["createWorkflowTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -882,6 +882,21 @@ export interface components {
             };
             name: string;
             slug?: string;
+        };
+        CreateWorkflowJobTemplate: {
+            /** @description Configuration for the job agent */
+            config: {
+                [key: string]: unknown;
+            };
+            matrix?: components["schemas"]["WorkflowJobMatrix"];
+            name: string;
+            /** @description Reference to the job agent */
+            ref: string;
+        };
+        CreateWorkflowTemplate: {
+            inputs: components["schemas"]["WorkflowInput"][];
+            jobs: components["schemas"]["CreateWorkflowJobTemplate"][];
+            name: string;
         };
         CreateWorkspaceRequest: {
             /** @description Display name of the workspace */
@@ -4574,7 +4589,7 @@ export interface operations {
             };
         };
     };
-    createWorkflowTemplateFromYaml: {
+    createWorkflowTemplate: {
         parameters: {
             query?: never;
             header?: never;
@@ -4586,10 +4601,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    /** @description The workflow definition in YAML format */
-                    yaml: string;
-                };
+                "application/json": components["schemas"]["CreateWorkflowTemplate"];
             };
         };
         responses: {

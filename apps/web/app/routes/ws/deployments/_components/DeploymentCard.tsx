@@ -415,17 +415,17 @@ export function LazyLoadDeploymentCard({
   const deploymentsLast24h = last24hDeployments?.length ?? 0;
 
   const isOutOfSync = releaseTargets.some(
-    ({ state }) =>
-      state.desiredRelease?.version.tag !== state.currentRelease?.version.tag,
+    ({ desiredVersion, currentVersion }) =>
+      desiredVersion?.tag !== currentVersion?.tag,
   );
 
   const syncedCount = releaseTargets.filter(
-    ({ state }) =>
-      state.desiredRelease?.version.tag === state.currentRelease?.version.tag,
+    ({ desiredVersion, currentVersion }) =>
+      desiredVersion?.tag === currentVersion?.tag,
   ).length;
 
   const jobStatusSummary = _.chain(releaseTargets)
-    .groupBy(({ state }) => state.latestJob?.job.status ?? "unknown")
+    .groupBy(({ latestJob }) => latestJob?.status ?? "unknown")
     .entries()
     .map(([status, releaseTargets]) => [status, releaseTargets.length])
     .fromPairs()

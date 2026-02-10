@@ -7,7 +7,6 @@ import (
 	celselector "workspace-engine/pkg/selector/langs/cel"
 	"workspace-engine/pkg/selector/langs/util"
 	"workspace-engine/pkg/server/openapi/utils"
-	"workspace-engine/pkg/workspace/releasemanager"
 	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/policy/evaluator"
 
@@ -233,25 +232,17 @@ func (s *ReleaseTargets) GetReleaseTargetState(c *gin.Context, workspaceId strin
 		return
 	}
 
-	var state *oapi.ReleaseTargetState
+	// When bypass is requested, force a full recompute for this entity before reading
 	if params.BypassCache != nil && *params.BypassCache {
-		state, err = ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), releaseTarget, releasemanager.WithBypassCache())
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to get release target state: " + err.Error(),
-			})
-			return
-		}
+		ws.ReleaseManager().RecomputeEntity(c.Request.Context(), releaseTarget)
 	}
 
-	if params.BypassCache == nil || !*params.BypassCache {
-		state, err = ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), releaseTarget)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to get release target state: " + err.Error(),
-			})
-			return
-		}
+	state, err := ws.ReleaseManager().GetReleaseTargetState(c.Request.Context(), releaseTarget)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get release target state: " + err.Error(),
+		})
+		return
 	}
 
 	if state == nil {

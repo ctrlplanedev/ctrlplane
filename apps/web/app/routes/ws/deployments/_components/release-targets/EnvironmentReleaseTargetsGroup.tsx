@@ -3,8 +3,6 @@ import { useState } from "react";
 import { Fragment } from "react/jsx-runtime";
 import { ChevronRight, ExternalLink } from "lucide-react";
 
-import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-
 import type { JobStatusDisplayName } from "../../../_components/JobStatusBadge";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { ResourceIcon } from "~/components/ui/resource-icon";
@@ -14,40 +12,27 @@ import { JobStatusBadge } from "../../../_components/JobStatusBadge";
 import { RedeployDialog } from "../RedeployDialog";
 import { RedeployAllDialog } from "./RedeployAllDialog";
 import { VerificationStatusBadge, verificationSummary } from "./Verifications";
-import { VersionDisplay } from "./VersionDisplay";
 
-type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
-type ReleaseTargetState = WorkspaceEngine["schemas"]["ReleaseTargetState"];
-type Resource = WorkspaceEngine["schemas"]["Resource"];
-type Job = WorkspaceEngine["schemas"]["Job"];
+type ReleaseTargetSummary = WorkspaceEngine["schemas"]["ReleaseTargetSummary"];
+type Resource = WorkspaceEngine["schemas"]["ResourceSummary"];
 
 type Environment = WorkspaceEngine["schemas"]["Environment"];
 type EnvironmentReleaseTargetsGroupProps = {
-  releaseTargets: ReleaseTarget[];
+  releaseTargets: ReleaseTargetSummary[];
   environment: Environment;
 };
 
 type ReleaseTargetRowProps = {
-  releaseTarget: {
-    deploymentId: string;
-    environmentId: string;
-    resourceId: string;
-  };
-  state: ReleaseTargetState;
-  resource: Resource;
+  rt: ReleaseTargetSummary;
 };
 
-function JobLinks({ job }: { job?: Job }) {
-  const { metadata } = job ?? {};
-  const links: Record<string, string> =
-    metadata?.[ReservedMetadataKey.Links] != null
-      ? JSON.parse(metadata[ReservedMetadataKey.Links])
-      : {};
+function JobLinks({ links }: { links?: Record<string, string> }) {
+  const entries = Object.entries(links ?? {});
 
   return (
     <TableCell>
       <div className="flex gap-1">
-        {Object.entries(links).map(([label, url]) => (
+        {entries.map(([label, url]) => (
           <a
             key={label}
             href={url}
@@ -67,28 +52,44 @@ function JobLinks({ job }: { job?: Job }) {
   );
 }
 
-function ReleaseTargetRow({
-  releaseTarget,
-  state,
-  resource,
-}: ReleaseTargetRowProps) {
-  const verifications = state.latestJob?.verifications ?? [];
+function ReleaseTargetRow({ rt }: ReleaseTargetRowProps) {
+  const verifications = rt.latestJob?.verifications ?? [];
   const summaries = verifications.map(verificationSummary).flat();
 
+  const currentVersionTag =
+    rt.currentVersion?.name || rt.currentVersion?.tag || "Not yet deployed";
+  const desiredVersionTag =
+    rt.desiredVersion?.name || rt.desiredVersion?.tag || "unknown";
+  const isInSync =
+    currentVersionTag === desiredVersionTag || rt.desiredVersion == null;
+
+  const jobStatus = rt.latestJob?.status;
+  const isProgressing =
+    jobStatus === "inProgress" || jobStatus === "pending";
+  const isUnhealthy =
+    jobStatus === "failure" ||
+    jobStatus === "invalidJobAgent" ||
+    jobStatus === "invalidIntegration" ||
+    jobStatus === "externalRunNotFound";
+
+  const tag = isInSync
+    ? currentVersionTag
+    : `${currentVersionTag} → ${desiredVersionTag}`;
+
   return (
-    <TableRow key={releaseTarget.resourceId}>
+    <TableRow key={rt.releaseTarget.resourceId}>
       <TableCell>
         <div className="flex items-center gap-2">
-          <ResourceIcon kind={resource.kind} version={resource.version} />
-          {resource.name}
+          <ResourceIcon kind={rt.resource.kind} version={rt.resource.version} />
+          {rt.resource.name}
         </div>
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
           <JobStatusBadge
-            message={state.latestJob?.job.message}
+            message={rt.latestJob?.message}
             status={
-              (state.latestJob?.job.status ??
+              (rt.latestJob?.status ??
                 "unknown") as keyof typeof JobStatusDisplayName
             }
           />
@@ -98,12 +99,25 @@ function ReleaseTargetRow({
           />
         </div>
       </TableCell>
-      <JobLinks job={state.latestJob?.job} />
-      <VersionDisplay {...state} />
+      <JobLinks links={rt.latestJob?.links} />
+      <TableCell
+        className={cn(
+          "font-mono text-sm",
+          isInSync
+            ? "text-green-500"
+            : isProgressing
+              ? "text-blue-500"
+              : isUnhealthy
+                ? "text-red-500"
+                : "text-neutral-500",
+        )}
+      >
+        {tag}
+      </TableCell>
       <TableCell className="text-right">
         <RedeployDialog
-          releaseTarget={releaseTarget}
-          resourceIdentifier={resource.identifier}
+          releaseTarget={rt.releaseTarget}
+          resourceIdentifier={rt.resource.identifier}
         />
       </TableCell>
     </TableRow>
@@ -137,12 +151,10 @@ export function EnvironmentReleaseTargetsGroup({
           </div>
         </TableCell>
       </TableRow>
-      {rts.map(({ releaseTarget, state, resource }) => (
+      {rts.map((rt) => (
         <ReleaseTargetRow
-          key={releaseTarget.resourceId}
-          releaseTarget={releaseTarget}
-          state={state}
-          resource={resource}
+          key={rt.releaseTarget.resourceId}
+          rt={rt}
         />
       ))}
     </Fragment>

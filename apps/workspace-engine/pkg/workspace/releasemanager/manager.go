@@ -11,8 +11,11 @@ import (
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/releasemanager/action/rollback"
 	"workspace-engine/pkg/workspace/releasemanager/deployment"
+	"workspace-engine/pkg/workspace/releasemanager/policy"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
+	"workspace-engine/pkg/workspace/releasemanager/variables"
 	"workspace-engine/pkg/workspace/releasemanager/verification"
+	"workspace-engine/pkg/workspace/releasemanager/versions"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
@@ -23,16 +26,15 @@ import (
 )
 
 // Manager handles the business logic for release target changes and deployment decisions.
-// It coordinates between the state cache and deployment orchestrator to manage release targets.
+// It coordinates the state index, eligibility checking, and execution to manage release targets.
 type Manager struct {
 	store        *store.Store
-	deployment   *DeploymentOrchestrator
+	planner      *deployment.Planner
+	eligibility  *deployment.JobEligibilityChecker
+	executor     *deployment.Executor
 	verification *verification.Manager
 	traceStore   PersistenceStore
-
-	// Deprecated: WIP: Use stateIndex instead
-	cache      *StateCache
-	stateIndex *StateIndex
+	stateIndex   *StateIndex
 }
 
 var tracer = otel.Tracer("workspace/releasemanager")
@@ -47,19 +49,25 @@ func New(store *store.Store, traceStore PersistenceStore, verificationManager *v
 		panic("traceStore cannot be nil - deployment tracing is mandatory")
 	}
 
-	deploymentOrch := NewDeploymentOrchestrator(store, jobAgentRegistry)
-	stateIndex := NewStateIndex(store, deploymentOrch.Planner())
-	stateCache := NewStateCache(store, deploymentOrch.Planner())
+	policyManager := policy.New(store)
+	versionManager := versions.New(store)
+	variableManager := variables.New(store)
 
-	releaseManagerHooks := newReleaseManagerVerificationHooks(store, stateCache)
+	planner := deployment.NewPlanner(store, policyManager, versionManager, variableManager)
+	eligibility := deployment.NewJobEligibilityChecker(store)
+	executor := deployment.NewExecutor(store, jobAgentRegistry)
+	stateIndex := NewStateIndex(store, planner)
+
+	releaseManagerHooks := newReleaseManagerVerificationHooks(store, stateIndex)
 	rollbackHooks := rollback.NewRollbackHooks(store, jobAgentRegistry)
 	compositeHooks := verification.NewCompositeHooks(releaseManagerHooks, rollbackHooks)
 	verificationManager.SetHooks(compositeHooks)
 
 	return &Manager{
 		store:        store,
-		cache:        stateCache,
-		deployment:   deploymentOrch,
+		planner:      planner,
+		eligibility:  eligibility,
+		executor:     executor,
 		verification: verificationManager,
 		traceStore:   traceStore,
 		stateIndex:   stateIndex,
@@ -133,9 +141,11 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		attribute.Int("target_states.deletes", deleteCount),
 	)
 
-	processFn := func(ctx context.Context, state targetState) (targetState, error) {
+	// Phase 1: Process deletes and register upserts (concurrent).
+	// Deletions cancel orphaned jobs and remove from the state index.
+	// Upserts register the entity in the state index (marks dirty) but do NOT reconcile yet.
+	registerFn := func(ctx context.Context, state targetState) (targetState, error) {
 		if state.isDelete {
-			// Handle deletion - cancel pending jobs
 			jobsCancelled := 0
 			for _, job := range m.store.Jobs.GetJobsForReleaseTarget(state.entity) {
 				if job != nil && job.IsInProcessingState() {
@@ -151,10 +161,40 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 					"release_target", state.entity.Key(),
 					"jobs_cancelled", jobsCancelled)
 			}
+			m.stateIndex.RemoveReleaseTarget(*state.entity)
 			return state, nil
 		}
 
-		// Handle upsert - reconcile the target
+		m.stateIndex.AddReleaseTarget(*state.entity)
+		return state, nil
+	}
+
+	allStates := make([]targetState, 0, len(targetStates))
+	upsertStates := make([]targetState, 0, upsertCount)
+	for _, state := range targetStates {
+		allStates = append(allStates, state)
+		if !state.isDelete {
+			upsertStates = append(upsertStates, state)
+		}
+	}
+
+	span.AddEvent("Phase 1: Registering/removing release targets",
+		oteltrace.WithAttributes(
+			attribute.Int("states.count", len(allStates)),
+		))
+	_, _ = concurrency.ProcessInChunks(ctx, allStates, registerFn)
+
+	// Phase 2: Batch recompute — materializes desired releases for all new/dirty targets.
+	// The index must be populated before reconciliation can read from it.
+	recomputed := m.stateIndex.Recompute(ctx)
+	span.AddEvent("Phase 2: Recomputed state index",
+		oteltrace.WithAttributes(
+			attribute.Int("recomputed.count", recomputed),
+		))
+
+	// Phase 3: Reconcile each upserted target (concurrent).
+	// Now that the index is populated, reconciliation reads desired releases from it.
+	reconcileFn := func(ctx context.Context, state targetState) (targetState, error) {
 		workspaceID := m.store.ID()
 		recorder := trace.NewReconcileTarget(workspaceID, state.entity.Key(), trace.TriggerScheduled)
 		defer func() {
@@ -177,18 +217,11 @@ func (m *Manager) ProcessChanges(ctx context.Context, changes *statechange.Chang
 		return state, nil
 	}
 
-	states := make([]targetState, 0, len(targetStates))
-	for _, state := range targetStates {
-		states = append(states, state)
-	}
-
-	span.AddEvent("Processing release target states",
+	span.AddEvent("Phase 3: Reconciling upserted targets",
 		oteltrace.WithAttributes(
-			attribute.Int("states.count", len(states)),
-			attribute.Int("chunk_size", 100),
-			attribute.Int("concurrency", 10),
+			attribute.Int("upsert_states.count", len(upsertStates)),
 		))
-	_, _ = concurrency.ProcessInChunks(ctx, states, processFn)
+	_, _ = concurrency.ProcessInChunks(ctx, upsertStates, reconcileFn)
 
 	span.AddEvent("Completed processing changes")
 	return nil
@@ -240,37 +273,102 @@ func (m *Manager) Redeploy(ctx context.Context, releaseTarget *oapi.ReleaseTarge
 		WithTrigger(trace.TriggerManual))
 }
 
-// reconcileTargetWithRecorder runs the three-phase deployment process and caches the result.
+// reconcileTargetWithRecorder reads the desired release from the pre-computed
+// state index, checks eligibility, and executes the deployment.
 func (m *Manager) reconcileTargetWithRecorder(
 	ctx context.Context,
 	releaseTarget *oapi.ReleaseTarget,
 	recorder *trace.ReconcileTarget,
 	opts ...Option,
 ) error {
+	options := &options{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	ctx, span := tracer.Start(ctx, "reconcileTargetWithRecorder",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
+			attribute.Bool("skip_eligibility_check", options.skipEligibilityCheck),
 		))
 	defer span.End()
 
-	// Delegate to deployment orchestrator for the three-phase deployment process
-	desiredRelease, job, err := m.deployment.Reconcile(ctx, releaseTarget, recorder, opts...)
+	// Phase 1: Read desired release from the pre-computed state index
+	desiredRelease := m.stateIndex.GetDesiredRelease(*releaseTarget)
+
+	planning := recorder.StartPlanning()
+	if desiredRelease != nil {
+		planning.MakeDecision(
+			fmt.Sprintf("Desired release resolved from index: %s", desiredRelease.ID()),
+			trace.DecisionApproved,
+		)
+	} else {
+		planning.MakeDecision("No desired release in index", trace.DecisionRejected)
+	}
+	planning.End()
+
+	if desiredRelease == nil {
+		span.AddEvent("No desired release in index")
+		span.SetAttributes(attribute.String("reconciliation_result", "no_desired_release"))
+		return nil
+	}
+
+	// Phase 2: Check eligibility (skip when explicitly requested, e.g. manual redeploys)
+	if !options.skipEligibilityCheck {
+		span.AddEvent("Checking job eligibility")
+		eligibilityResult, err := m.eligibility.ShouldCreateJob(ctx, desiredRelease, recorder)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "eligibility check failed")
+			return err
+		}
+
+		span.SetAttributes(
+			attribute.String("job_eligibility.decision", string(eligibilityResult.Decision)),
+			attribute.String("job_eligibility.reason", eligibilityResult.Reason),
+		)
+
+		if eligibilityResult.IsPending() {
+			span.AddEvent("Job creation pending, scheduling re-evaluation",
+				oteltrace.WithAttributes(attribute.String("reason", eligibilityResult.Reason)))
+
+			if eligibilityResult.ShouldScheduleRetry() {
+				scheduler := m.planner.Scheduler()
+				scheduler.Schedule(releaseTarget, *eligibilityResult.NextEvaluationTime)
+				span.SetAttributes(
+					attribute.String("next_evaluation_time", eligibilityResult.NextEvaluationTime.Format("2006-01-02T15:04:05Z07:00")),
+				)
+			}
+
+			span.SetAttributes(attribute.String("reconciliation_result", "job_pending"))
+			return nil
+		}
+
+		if eligibilityResult.IsDenied() {
+			span.AddEvent("Job should not be created",
+				oteltrace.WithAttributes(attribute.String("reason", eligibilityResult.Reason)))
+			span.SetAttributes(attribute.String("reconciliation_result", "job_denied"))
+			return nil
+		}
+	} else {
+		span.AddEvent("Skipping eligibility check (explicitly requested)")
+	}
+
+	// Phase 3: Execute release
+	span.AddEvent("Executing release")
+	_, err := m.executor.ExecuteRelease(ctx, desiredRelease, recorder)
 	if err != nil {
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "reconciliation failed")
-		// Still cache the state even on error if we have a desired release
-		if desiredRelease != nil {
-			_, _ = m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
-		}
+		span.SetStatus(codes.Error, "execution failed")
+		span.SetAttributes(attribute.String("reconciliation_result", "execution_failed"))
 		return err
 	}
 
-	// Cache the computed state for other APIs to use
-	// Do this after reconciliation completes so the state reflects the latest job
-	if desiredRelease != nil {
-		span.AddEvent("Caching release target state")
-		_, _ = m.cache.compute(ctx, releaseTarget, WithDesiredRelease(desiredRelease), WithLatestJob(job))
-	}
+	span.SetAttributes(attribute.String("reconciliation_result", "job_created"))
+
+	// Recompute state after execution so subsequent reads reflect the latest data.
+	m.stateIndex.DirtyAll(*releaseTarget)
+	m.stateIndex.Recompute(ctx)
 
 	return nil
 }
@@ -371,35 +469,57 @@ func (m *Manager) ReconcileTarget(ctx context.Context, releaseTarget *oapi.Relea
 		}
 	}()
 
-	// Delegate to the implementation with the recorder
+	// Delegate to the implementation with the recorder.
+	// Callers are responsible for dirtying the state index before calling ReconcileTarget
+	// when they change state that affects the desired release (versions, policies, variables, etc.).
+	// ProcessChanges uses the optimized 3-phase path (register → batch recompute → reconcile).
 	return m.reconcileTargetWithRecorder(ctx, releaseTarget, recorder, opts...)
 }
 
-// GetReleaseTargetState computes and returns the release target state.
+// GetReleaseTargetState returns the release target state from the pre-computed state index.
 func (m *Manager) GetReleaseTargetState(ctx context.Context, releaseTarget *oapi.ReleaseTarget, opts ...Option) (*oapi.ReleaseTargetState, error) {
-	ctx, span := tracer.Start(ctx, "GetReleaseTargetState",
+	_, span := tracer.Start(ctx, "GetReleaseTargetState",
 		oteltrace.WithAttributes(
 			attribute.String("release_target.key", releaseTarget.Key()),
 		))
 	defer span.End()
 
-	return m.cache.Get(ctx, releaseTarget, opts...)
+	state := m.stateIndex.Get(*releaseTarget)
+	return state, nil
 }
 
-// InvalidateReleaseTargetState removes the cached state for a release target.
-// This is useful when the underlying data has changed and a fresh computation is needed.
-func (m *Manager) InvalidateReleaseTargetState(releaseTarget *oapi.ReleaseTarget) {
-	m.cache.Invalidate(releaseTarget)
+// DirtyDesiredRelease marks the desired release for recompute.
+// Use when policies, versions, or approval records change.
+func (m *Manager) DirtyDesiredRelease(rt *oapi.ReleaseTarget) {
+	m.stateIndex.DirtyDesired(*rt)
+}
+
+// DirtyCurrentAndJob marks the current release and latest job for recompute.
+// Use when job status changes or verification hooks fire.
+func (m *Manager) DirtyCurrentAndJob(rt *oapi.ReleaseTarget) {
+	m.stateIndex.DirtyCurrentAndJob(*rt)
+}
+
+// RecomputeState processes all dirty entities in the state index.
+// Returns the total number of evaluations performed.
+func (m *Manager) RecomputeState(ctx context.Context) int {
+	return m.stateIndex.Recompute(ctx)
+}
+
+// RecomputeEntity forces a full recompute for a single release target.
+// Use for bypass-cache scenarios where fresh state is needed immediately.
+func (m *Manager) RecomputeEntity(ctx context.Context, rt *oapi.ReleaseTarget) {
+	m.stateIndex.RecomputeEntity(ctx, *rt)
 }
 
 // Planner returns the planner instance for API
 func (m *Manager) Planner() *deployment.Planner {
-	return m.deployment.Planner()
+	return m.planner
 }
 
 // Scheduler returns the reconciliation scheduler instance.
 func (m *Manager) Scheduler() *deployment.ReconciliationScheduler {
-	return m.deployment.Planner().Scheduler()
+	return m.planner.Scheduler()
 }
 
 func (m *Manager) Restore(ctx context.Context) error {
@@ -411,6 +531,11 @@ func (m *Manager) Restore(ctx context.Context) error {
 		span.SetStatus(codes.Error, "failed to restore verifications")
 		log.Error("failed to restore verifications", "error", err.Error())
 	}
+
+	// Pre-compute the state index for every release target that was restored
+	// from persistence.  This avoids per-request lazy registration and ensures
+	// the first API read is fast.
+	m.stateIndex.RestoreAll(ctx)
 
 	return nil
 }

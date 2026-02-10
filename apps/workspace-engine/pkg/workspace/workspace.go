@@ -42,6 +42,10 @@ func New(ctx context.Context, id string, options ...WorkspaceOption) *Workspace 
 	ws.workflowManager = workflowmanager.NewWorkflowManager(s, ws.jobAgentRegistry)
 
 	reconcileFn := func(ctx context.Context, targets []*oapi.ReleaseTarget) error {
+		for _, rt := range targets {
+			ws.releasemanager.DirtyDesiredRelease(rt)
+		}
+		ws.releasemanager.RecomputeState(ctx)
 		return ws.releasemanager.ReconcileTargets(ctx, targets, releasemanager.WithTrigger(trace.TriggerJobSuccess))
 	}
 

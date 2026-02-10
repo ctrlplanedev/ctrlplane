@@ -2,9 +2,8 @@ package matchindex
 
 import (
 	"context"
+	"runtime"
 	"sync"
-
-	"workspace-engine/pkg/concurrency"
 )
 
 // Compile-time interface checks.
@@ -289,23 +288,15 @@ func (idx *MatchIndex) IsDirty() bool {
 	return len(idx.dirtyEntities) > 0 || len(idx.dirtySelectors) > 0 || len(idx.dirtyPairs) > 0
 }
 
-// pair is an internal type for tracking (selector, entity) evaluation work.
-type pair struct {
-	selector string
-	entity   string
-}
-
 // parallelThreshold is the minimum number of pairs before we fan out to
 // a worker pool. Below this, the goroutine scheduling + span overhead
 // exceeds the benefit.
 const parallelThreshold = 256
 
-// evalResult is the outcome of a single (selector, entity) evaluation.
-type evalResult struct {
-	p       pair
-	matches bool
-	err     error
-}
+// maxPairsPerBatch limits the number of pairs materialized at once during
+// recomputation. This bounds peak memory to ~200 MB per batch regardless
+// of total entity count, enabling 20K+ entities without OOM.
+const maxPairsPerBatch = 2_000_000
 
 // Recompute processes all dirty flags and updates the membership.
 // It snapshots dirty state under the lock, evaluates outside the lock (since
@@ -320,8 +311,8 @@ type evalResult struct {
 //  3. dirtyPairs                         (skip selector ∈ dirtySelectors OR entity ∈ dirtyEntities)
 //
 // Each pair is produced by exactly one step, so no intermediate set is needed.
-// When the pair count exceeds parallelThreshold, evaluation is distributed
-// across a worker pool via ProcessInChunks.
+// Steps 1 and 2 are processed in memory-bounded batches via evaluateCross,
+// so peak allocation stays constant regardless of entity count.
 func (idx *MatchIndex) Recompute(ctx context.Context) int {
 	idx.mu.Lock()
 
@@ -338,135 +329,192 @@ func (idx *MatchIndex) Recompute(ctx context.Context) int {
 		return 0
 	}
 
-	// Snapshot registered selectors/entities for stable iteration and O(1)
-	// membership checks outside the lock.
-	selectorSnap := make(map[string]bool, len(idx.selectors))
+	// Snapshot registered selectors/entities into ordered slices and lookup
+	// sets for stable iteration outside the lock.
+	selectorSlice := make([]string, 0, len(idx.selectors))
+	selectorSet := make(map[string]bool, len(idx.selectors))
 	for s := range idx.selectors {
-		selectorSnap[s] = true
+		selectorSlice = append(selectorSlice, s)
+		selectorSet[s] = true
 	}
-	entitySnap := make(map[string]bool, len(idx.entities))
+	entitySlice := make([]string, 0, len(idx.entities))
+	entitySet := make(map[string]bool, len(idx.entities))
 	for e := range idx.entities {
-		entitySnap[e] = true
-	}
-
-	// Pre-compute the exact pair count so the pairs slice is allocated once.
-	validDirtySelectorCount := 0
-	for s := range dirtySelectors {
-		if selectorSnap[s] {
-			validDirtySelectorCount++
-		}
-	}
-	validDirtyEntityCount := 0
-	for e := range dirtyEntities {
-		if entitySnap[e] {
-			validDirtyEntityCount++
-		}
-	}
-	dirtyPairCount := 0
-	for p := range dirtyPairs {
-		s, e := p[0], p[1]
-		if !dirtySelectors[s] && !dirtyEntities[e] && selectorSnap[s] && entitySnap[e] {
-			dirtyPairCount++
-		}
-	}
-	totalPairs := validDirtySelectorCount*len(entitySnap) +
-		validDirtyEntityCount*(len(selectorSnap)-validDirtySelectorCount) +
-		dirtyPairCount
-
-	if totalPairs == 0 {
-		idx.mu.Unlock()
-		return 0
+		entitySlice = append(entitySlice, e)
+		entitySet[e] = true
 	}
 
 	idx.mu.Unlock()
 
-	// Generate all pairs using algebraic dedup.
-	pairs := make([]pair, 0, totalPairs)
+	totalEvals := 0
 
 	// Step 1: dirty selectors × all entities
+	var dirtySelectorSlice []string
 	for s := range dirtySelectors {
-		if !selectorSnap[s] {
-			continue
-		}
-		for e := range entitySnap {
-			pairs = append(pairs, pair{s, e})
+		if selectorSet[s] {
+			dirtySelectorSlice = append(dirtySelectorSlice, s)
 		}
 	}
+	if len(dirtySelectorSlice) > 0 && len(entitySlice) > 0 {
+		totalEvals += idx.evaluateCross(ctx, dirtySelectorSlice, entitySlice, true)
+	}
 
-	// Step 2: all selectors × dirty entities, skipping selectors covered by step 1
+	// Step 2: dirty entities × non-dirty selectors
+	nonDirtySelectors := make([]string, 0, len(selectorSlice))
+	for _, s := range selectorSlice {
+		if !dirtySelectors[s] {
+			nonDirtySelectors = append(nonDirtySelectors, s)
+		}
+	}
+	var dirtyEntitySlice []string
 	for e := range dirtyEntities {
-		if !entitySnap[e] {
-			continue
+		if entitySet[e] {
+			dirtyEntitySlice = append(dirtyEntitySlice, e)
 		}
-		for s := range selectorSnap {
-			if dirtySelectors[s] {
-				continue
-			}
-			pairs = append(pairs, pair{s, e})
-		}
+	}
+	if len(dirtyEntitySlice) > 0 && len(nonDirtySelectors) > 0 {
+		totalEvals += idx.evaluateCross(ctx, dirtyEntitySlice, nonDirtySelectors, false)
 	}
 
 	// Step 3: explicit dirty pairs, skipping any covered by steps 1 or 2
 	for p := range dirtyPairs {
 		s, e := p[0], p[1]
-		if dirtySelectors[s] || dirtyEntities[e] {
+		if dirtySelectors[s] || dirtyEntities[e] || !selectorSet[s] || !entitySet[e] {
 			continue
 		}
-		if !selectorSnap[s] || !entitySnap[e] {
+		matches, matchErr := idx.eval(ctx, s, e)
+		totalEvals++
+		if matchErr != nil {
 			continue
 		}
-		pairs = append(pairs, pair{s, e})
+		idx.mu.Lock()
+		if members := idx.membership[s]; members != nil && idx.selectors[s] && idx.entities[e] {
+			if matches {
+				members[e] = true
+			} else {
+				delete(members, e)
+			}
+		}
+		idx.mu.Unlock()
 	}
 
-	if len(pairs) == 0 {
+	return totalEvals
+}
+
+// Result byte values for compact storage in evaluateCross.
+const (
+	resultTrue byte = 1
+	resultErr  byte = 2
+)
+
+// evaluateCross evaluates a cross product of rows × cols in memory-bounded
+// batches. If selectorIsRow is true, rows are selectors and cols are entities;
+// otherwise rows are entities and cols are selectors.
+//
+// Results are stored in a compact []byte (one byte per pair) instead of
+// allocating pair/evalResult structs, reducing per-batch allocation from
+// ~300 MB to ~2 MB at 20K entities. Parallelism is achieved via a simple
+// WaitGroup-based worker pool partitioned by row ranges.
+func (idx *MatchIndex) evaluateCross(ctx context.Context, rows, cols []string, selectorIsRow bool) int {
+	if len(rows) == 0 || len(cols) == 0 {
 		return 0
 	}
 
-	// Evaluate — sequential for small workloads, parallel for large.
-	var results []evalResult
-	if len(pairs) <= parallelThreshold {
-		results = make([]evalResult, len(pairs))
-		for i, p := range pairs {
-			matches, err := idx.eval(ctx, p.selector, p.entity)
-			results[i] = evalResult{p, matches, err}
-		}
-	} else {
-		var err error
-		results, err = concurrency.ProcessInChunks(ctx, pairs,
-			func(ctx context.Context, p pair) (evalResult, error) {
-				matches, err := idx.eval(ctx, p.selector, p.entity)
-				return evalResult{p, matches, err}, nil
-			},
-		)
-		if err != nil {
-			return 0
-		}
+	rowsPerBatch := maxPairsPerBatch / len(cols)
+	if rowsPerBatch < 1 {
+		rowsPerBatch = 1
 	}
 
-	// Apply results under the lock
-	idx.mu.Lock()
-	defer idx.mu.Unlock()
+	numCols := len(cols)
+	totalEvals := 0
 
-	for _, r := range results {
-		if r.err != nil {
-			continue
-		}
+	for i := 0; i < len(rows); i += rowsPerBatch {
+		batchEnd := min(i+rowsPerBatch, len(rows))
+		batchRows := rows[i:batchEnd]
+		pairCount := len(batchRows) * numCols
 
-		if !idx.selectors[r.p.selector] || !idx.entities[r.p.entity] {
-			continue
-		}
+		results := make([]byte, pairCount)
 
-		members := idx.membership[r.p.selector]
-		if members == nil {
-			continue
-		}
-
-		if r.matches {
-			members[r.p.entity] = true
+		if pairCount <= parallelThreshold {
+			for ri, r := range batchRows {
+				for ci, c := range cols {
+					s, e := r, c
+					if !selectorIsRow {
+						s, e = c, r
+					}
+					m, err := idx.eval(ctx, s, e)
+					off := ri*numCols + ci
+					if err != nil {
+						results[off] = resultErr
+					} else if m {
+						results[off] = resultTrue
+					}
+				}
+			}
 		} else {
-			delete(members, r.p.entity)
+			numWorkers := runtime.GOMAXPROCS(0)
+			rowChunk := (len(batchRows) + numWorkers - 1) / numWorkers
+			var wg sync.WaitGroup
+
+			for w := range numWorkers {
+				wStart := w * rowChunk
+				if wStart >= len(batchRows) {
+					break
+				}
+				wEnd := min(wStart+rowChunk, len(batchRows))
+				wg.Add(1)
+				go func(rStart, rEnd int) {
+					defer wg.Done()
+					for ri := rStart; ri < rEnd; ri++ {
+						r := batchRows[ri]
+						for ci, c := range cols {
+							s, e := r, c
+							if !selectorIsRow {
+								s, e = c, r
+							}
+							m, err := idx.eval(ctx, s, e)
+							off := ri*numCols + ci
+							if err != nil {
+								results[off] = resultErr
+							} else if m {
+								results[off] = resultTrue
+							}
+						}
+					}
+				}(wStart, wEnd)
+			}
+			wg.Wait()
 		}
+
+		idx.mu.Lock()
+		for ri, r := range batchRows {
+			for ci, c := range cols {
+				off := ri*numCols + ci
+				if results[off] == resultErr {
+					continue
+				}
+				s, e := r, c
+				if !selectorIsRow {
+					s, e = c, r
+				}
+				if !idx.selectors[s] || !idx.entities[e] {
+					continue
+				}
+				members := idx.membership[s]
+				if members == nil {
+					continue
+				}
+				if results[off] == resultTrue {
+					members[e] = true
+				} else {
+					delete(members, e)
+				}
+			}
+		}
+		idx.mu.Unlock()
+
+		totalEvals += pairCount
 	}
 
-	return len(results)
+	return totalEvals
 }

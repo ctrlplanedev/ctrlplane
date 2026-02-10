@@ -29,7 +29,7 @@ import {
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { JobStatusDisplayName } from "../../../_components/JobStatusBadge";
 
-type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetWithState"];
+type ReleaseTarget = WorkspaceEngine["schemas"]["ReleaseTargetSummary"];
 
 function useRedeployAll(releaseTargets: ReleaseTarget[]) {
   const { workspace } = useWorkspace();
@@ -114,7 +114,7 @@ export function RedeployAllDialog({
   const environmentName = releaseTargets[0]?.environment.name ?? "";
   const [status, setStatus] = useState<JobStatus | "all">("all");
   const selectedTargets = releaseTargets.filter(
-    (rt) => status === "all" || rt.state.latestJob?.job.status === status,
+    (rt) => status === "all" || rt.latestJob?.status === status,
   );
   const { handleRedeployAll, isPending } = useRedeployAll(selectedTargets);
 
