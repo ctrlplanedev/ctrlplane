@@ -4,7 +4,6 @@ sql:
     schema:
       - queries/schema.sql
     queries:
-      - queries/systems.sql
       - queries/workspaces.sql
     gen:
       go:

@@ -5,9 +5,80 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type DeploymentVersionStatus string
+
+const (
+	DeploymentVersionStatusBuilding DeploymentVersionStatus = "building"
+	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
+	DeploymentVersionStatusFailed   DeploymentVersionStatus = "failed"
+	DeploymentVersionStatusRejected DeploymentVersionStatus = "rejected"
+)
+
+func (e *DeploymentVersionStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = DeploymentVersionStatus(s)
+	case string:
+		*e = DeploymentVersionStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for DeploymentVersionStatus: %T", src)
+	}
+	return nil
+}
+
+type NullDeploymentVersionStatus struct {
+	DeploymentVersionStatus DeploymentVersionStatus
+	Valid                   bool // Valid is true if DeploymentVersionStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullDeploymentVersionStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.DeploymentVersionStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.DeploymentVersionStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullDeploymentVersionStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.DeploymentVersionStatus), nil
+}
+
+type Deployment struct {
+	ID               uuid.UUID
+	Name             string
+	Slug             string
+	Description      string
+	SystemID         uuid.UUID
+	JobAgentID       uuid.UUID
+	JobAgentConfig   []byte
+	ResourceSelector []byte
+	CreatedAt        pgtype.Timestamptz
+}
+
+type DeploymentVersion struct {
+	ID             uuid.UUID
+	Name           string
+	Tag            string
+	Config         []byte
+	JobAgentConfig []byte
+	DeploymentID   uuid.UUID
+	Status         DeploymentVersionStatus
+	Message        pgtype.Text
+	CreatedAt      pgtype.Timestamptz
+}
 
 type Environment struct {
 	ID               uuid.UUID

@@ -26,6 +26,33 @@ CREATE TABLE resource (
     metadata JSONB NOT NULL DEFAULT '{}'
 );
 
+CREATE TYPE deployment_version_status AS ENUM ('building', 'ready', 'failed', 'rejected');
+
+CREATE TABLE deployment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    system_id UUID NOT NULL REFERENCES system(id) ON DELETE CASCADE,
+    job_agent_id UUID,
+    job_agent_config JSONB NOT NULL DEFAULT '{}',
+    resource_selector JSONB DEFAULT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE deployment_version (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    tag TEXT NOT NULL,
+    config JSONB NOT NULL DEFAULT '{}',
+    job_agent_config JSONB NOT NULL DEFAULT '{}',
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    status deployment_version_status NOT NULL DEFAULT 'ready',
+    message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT deployment_version_uniq UNIQUE (deployment_id, tag)
+);
+
 CREATE TABLE environment (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     system_id UUID NOT NULL REFERENCES system(id) ON DELETE CASCADE,
