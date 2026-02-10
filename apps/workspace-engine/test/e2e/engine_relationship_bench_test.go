@@ -117,7 +117,7 @@ func BenchmarkRelationshipIndex_AddRule_Resources(b *testing.B) {
 //
 //	go test -bench=BenchmarkRelationshipIndex_Recompute_DirtyAll -benchmem -benchtime=3x -timeout=30m ./test/e2e/
 func BenchmarkRelationshipIndex_Recompute_DirtyAll(b *testing.B) {
-	sizes := []int{1000}
+	sizes := []int{1000, 20000}
 
 	for _, n := range sizes {
 		b.Run(fmt.Sprintf("resources=%d", n), func(b *testing.B) {
