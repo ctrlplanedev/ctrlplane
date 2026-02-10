@@ -1228,8 +1228,11 @@ type WorkflowJobTemplate struct {
 	// Config Configuration for the job agent
 	Config map[string]interface{} `json:"config"`
 	Id     string                 `json:"id"`
-	Matrix *WorkflowJobMatrix     `json:"matrix,omitempty"`
-	Name   string                 `json:"name"`
+
+	// If CEL expression to determine if the job should run
+	If     *string            `json:"if,omitempty"`
+	Matrix *WorkflowJobMatrix `json:"matrix,omitempty"`
+	Name   string             `json:"name"`
 
 	// Ref Reference to the job agent
 	Ref string `json:"ref"`

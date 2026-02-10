@@ -2031,6 +2031,8 @@ export interface components {
                 [key: string]: unknown;
             };
             id: string;
+            /** @description CEL expression to determine if the job should run */
+            if?: string;
             matrix?: components["schemas"]["WorkflowJobMatrix"];
             name: string;
             /** @description Reference to the job agent */

@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"maps"
 	"time"
+	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
 )
+
+var workflowCelEnv, _ = celutil.NewEnvBuilder().
+	WithMapVariable("inputs").
+	BuildCached(24 * time.Hour)
 
 type Manager struct {
 	store            *store.Store
@@ -54,6 +59,18 @@ func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflowTemp
 	}
 }
 
+func (m *Manager) evaluateJobTemplateIf(jobTemplate oapi.WorkflowJobTemplate, inputs map[string]any) (bool, error) {
+	prg, err := workflowCelEnv.Compile(*jobTemplate.If)
+	if err != nil {
+		return false, fmt.Errorf("failed to compile CEL expression for job %q: %w", jobTemplate.Name, err)
+	}
+	result, err := celutil.EvalBool(prg, map[string]any{"inputs": inputs})
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate CEL expression for job %q: %w", jobTemplate.Name, err)
+	}
+	return result, nil
+}
+
 func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string, inputs map[string]any) (*oapi.Workflow, error) {
 	workflowTemplate, ok := m.store.WorkflowTemplates.Get(workflowTemplateId)
 	if !ok {
@@ -70,6 +87,16 @@ func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 
 	workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflowTemplate.Jobs))
 	for idx, jobTemplate := range workflowTemplate.Jobs {
+		if jobTemplate.If != nil {
+			shouldRun, err := m.evaluateJobTemplateIf(jobTemplate, inputs)
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate CEL expression for job %q: %w", jobTemplate.Name, err)
+			}
+			if !shouldRun {
+				continue
+			}
+		}
+
 		wfJob := &oapi.WorkflowJob{
 			Id:         uuid.New().String(),
 			WorkflowId: workflow.Id,

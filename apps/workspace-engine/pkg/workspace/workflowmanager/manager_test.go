@@ -228,6 +228,43 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 	assert.True(t, wfv.IsComplete())
 }
 
+func TestCreateWorkflow_SkipsJobWhenIfEvaluatesToFalse(t *testing.T) {
+	ctx := context.Background()
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	jobAgent := &oapi.JobAgent{
+		Id:   "test-job-agent",
+		Name: "test-job-agent",
+		Type: "test-runner",
+	}
+	store.JobAgents.Upsert(ctx, jobAgent)
+
+	ifTrue := "inputs.run_job == true"
+	ifFalse := "inputs.run_job == false"
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:   "test-workflow-template",
+		Name: "test-workflow-template",
+		Jobs: []oapi.WorkflowJobTemplate{
+			{Id: "always-job", Name: "always-job", Ref: "test-job-agent", Config: map[string]any{}},
+			{Id: "true-job", Name: "true-job", Ref: "test-job-agent", Config: map[string]any{}, If: &ifTrue},
+			{Id: "false-job", Name: "false-job", Ref: "test-job-agent", Config: map[string]any{}, If: &ifFalse},
+		},
+	}
+	store.WorkflowTemplates.Upsert(ctx, workflowTemplate)
+
+	wf, err := manager.CreateWorkflow(ctx, "test-workflow-template", map[string]any{
+		"run_job": true,
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, wf)
+
+	wfJobs := store.WorkflowJobs.GetByWorkflowId(wf.Id)
+	assert.Len(t, wfJobs, 2, "should have 2 jobs: always-job and true-job, but not false-job")
+}
+
 func TestMaybeSetDefaultInputValues_SetsStringDefault(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
 	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
