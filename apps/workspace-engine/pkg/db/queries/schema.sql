@@ -10,7 +10,7 @@ CREATE TABLE system (
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     workspace_id UUID NOT NULL,
-    metadata JSONB NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE resource (
@@ -23,7 +23,7 @@ CREATE TABLE resource (
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
     config JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    metadata JSONB NOT NULL DEFAULT '{}',
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE environment (

@@ -8,7 +8,7 @@ package db
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const listSystemsByWorkspaceID = `-- name: ListSystemsByWorkspaceID :many
@@ -22,13 +22,13 @@ WHERE s.workspace_id = $1
 `
 
 type ListSystemsByWorkspaceIDRow struct {
-	ID          pgtype.UUID
-	WorkspaceID pgtype.UUID
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
 	Name        string
 	Description string
 }
 
-func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID pgtype.UUID) ([]ListSystemsByWorkspaceIDRow, error) {
+func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListSystemsByWorkspaceIDRow, error) {
 	rows, err := q.db.Query(ctx, listSystemsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err

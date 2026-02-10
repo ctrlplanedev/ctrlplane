@@ -52,6 +52,10 @@ func GetDB(ctx context.Context) (*pgxpool.Conn, error) {
 	return conn, nil
 }
 
+func GetQueries(ctx context.Context) *Queries {
+	return New(GetPool(ctx))
+}
+
 // Close closes the connection pool (useful for cleanup)
 func Close() {
 	if pool != nil {

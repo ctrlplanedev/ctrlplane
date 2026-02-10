@@ -5,14 +5,44 @@
 package db
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Environment struct {
+	ID               uuid.UUID
+	SystemID         uuid.UUID
+	Name             string
+	Directory        string
+	Description      pgtype.Text
+	ResourceSelector []byte
+	CreatedAt        pgtype.Timestamptz
+}
+
+type Resource struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      []byte
+	CreatedAt   pgtype.Timestamptz
+	Metadata    []byte
+}
+
 type System struct {
-	ID          pgtype.UUID
-	WorkspaceID pgtype.UUID
+	ID          uuid.UUID
 	Name        string
 	Description string
-	CreatedAt   pgtype.Timestamp
-	UpdatedAt   pgtype.Timestamp
+	WorkspaceID uuid.UUID
+	Metadata    []byte
+}
+
+type Workspace struct {
+	ID        uuid.UUID
+	Name      string
+	Slug      string
+	CreatedAt pgtype.Timestamptz
 }
