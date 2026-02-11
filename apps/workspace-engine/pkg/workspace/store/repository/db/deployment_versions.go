@@ -43,22 +43,16 @@ func (r *dbDeploymentVersionRepo) Get(id string) (*oapi.DeploymentVersion, bool)
 	return v, true
 }
 
-func (r *dbDeploymentVersionRepo) GetBy(index string, args ...any) ([]*oapi.DeploymentVersion, error) {
-	if index != "deployment_id" || len(args) == 0 {
-		return nil, fmt.Errorf("unsupported index %q for DB deployment version repo", index)
-	}
-
-	deploymentID, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("expected string arg for deployment_id, got %T", args[0])
-	}
-
+func (r *dbDeploymentVersionRepo) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
 	uid, err := uuid.Parse(deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("parse deployment_id: %w", err)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListDeploymentVersionsByDeploymentID(r.ctx, uid)
+	args := db.ListDeploymentVersionsByDeploymentIDParams{
+		DeploymentID: uid,
+	}
+	rows, err := db.GetQueries(r.ctx).ListDeploymentVersionsByDeploymentID(r.ctx, args)
 	if err != nil {
 		return nil, fmt.Errorf("list deployment versions: %w", err)
 	}
@@ -75,7 +69,7 @@ func (r *dbDeploymentVersionRepo) GetBy(index string, args ...any) ([]*oapi.Depl
 }
 
 func (r *dbDeploymentVersionRepo) Set(entity *oapi.DeploymentVersion) error {
-	params, err := ToUpsertParams(entity)
+	params, err := ToUpsertParams(r.workspaceID, entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
 	}
@@ -103,7 +97,10 @@ func (r *dbDeploymentVersionRepo) Items() map[string]*oapi.DeploymentVersion {
 		return make(map[string]*oapi.DeploymentVersion)
 	}
 
-	rows, err := db.GetQueries(r.ctx).ListDeploymentVersionsByWorkspaceID(r.ctx, uid)
+	args := db.ListDeploymentVersionsByWorkspaceIDParams{
+		WorkspaceID: uid,
+	}
+	rows, err := db.GetQueries(r.ctx).ListDeploymentVersionsByWorkspaceID(r.ctx, args)
 	if err != nil {
 		log.Warn("Failed to list deployment versions by workspace", "workspaceId", r.workspaceID, "error", err)
 		return make(map[string]*oapi.DeploymentVersion)

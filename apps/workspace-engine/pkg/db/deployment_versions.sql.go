@@ -22,7 +22,7 @@ func (q *Queries) DeleteDeploymentVersion(ctx context.Context, id uuid.UUID) err
 }
 
 const getDeploymentVersionByID = `-- name: GetDeploymentVersionByID :one
-SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at FROM deployment_version WHERE id = $1
+SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id FROM deployment_version WHERE id = $1
 `
 
 func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (DeploymentVersion, error) {
@@ -38,16 +38,23 @@ func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (D
 		&i.Status,
 		&i.Message,
 		&i.CreatedAt,
+		&i.WorkspaceID,
 	)
 	return i, err
 }
 
 const listDeploymentVersionsByDeploymentID = `-- name: ListDeploymentVersionsByDeploymentID :many
-SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
+SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
+LIMIT COALESCE($2::int, 5000)
 `
 
-func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, deploymentID uuid.UUID) ([]DeploymentVersion, error) {
-	rows, err := q.db.Query(ctx, listDeploymentVersionsByDeploymentID, deploymentID)
+type ListDeploymentVersionsByDeploymentIDParams struct {
+	DeploymentID uuid.UUID
+	Limit        pgtype.Int4
+}
+
+func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, arg ListDeploymentVersionsByDeploymentIDParams) ([]DeploymentVersion, error) {
+	rows, err := q.db.Query(ctx, listDeploymentVersionsByDeploymentID, arg.DeploymentID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +72,7 @@ func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, depl
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
+			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
 		}
@@ -77,15 +85,19 @@ func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, depl
 }
 
 const listDeploymentVersionsByWorkspaceID = `-- name: ListDeploymentVersionsByWorkspaceID :many
-SELECT dv.id, dv.name, dv.tag, dv.config, dv.job_agent_config, dv.deployment_id, dv.status, dv.message, dv.created_at FROM deployment_version dv
-JOIN deployment d ON dv.deployment_id = d.id
-JOIN system s ON d.system_id = s.id
-WHERE s.workspace_id = $1
-ORDER BY dv.created_at DESC
+SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id FROM deployment_version
+WHERE workspace_id = $1
+ORDER BY created_at DESC
+LIMIT COALESCE($2::int, 5000)
 `
 
-func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]DeploymentVersion, error) {
-	rows, err := q.db.Query(ctx, listDeploymentVersionsByWorkspaceID, workspaceID)
+type ListDeploymentVersionsByWorkspaceIDParams struct {
+	WorkspaceID uuid.UUID
+	Limit       pgtype.Int4
+}
+
+func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, arg ListDeploymentVersionsByWorkspaceIDParams) ([]DeploymentVersion, error) {
+	rows, err := q.db.Query(ctx, listDeploymentVersionsByWorkspaceID, arg.WorkspaceID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +115,7 @@ func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, works
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
+			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
 		}
@@ -115,11 +128,11 @@ func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, works
 }
 
 const upsertDeploymentVersion = `-- name: UpsertDeploymentVersion :one
-INSERT INTO deployment_version (name, tag, config, job_agent_config, deployment_id, status, message)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO deployment_version (name, tag, config, job_agent_config, deployment_id, status, message, workspace_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT (deployment_id, tag) DO UPDATE
-SET name = EXCLUDED.name, config = EXCLUDED.config, job_agent_config = EXCLUDED.job_agent_config, status = EXCLUDED.status, message = EXCLUDED.message
-RETURNING id, name, tag, config, job_agent_config, deployment_id, status, message, created_at
+SET name = EXCLUDED.name, config = EXCLUDED.config, job_agent_config = EXCLUDED.job_agent_config, status = EXCLUDED.status, message = EXCLUDED.message, workspace_id = EXCLUDED.workspace_id
+RETURNING id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id
 `
 
 type UpsertDeploymentVersionParams struct {
@@ -130,6 +143,7 @@ type UpsertDeploymentVersionParams struct {
 	DeploymentID   uuid.UUID
 	Status         DeploymentVersionStatus
 	Message        pgtype.Text
+	WorkspaceID    uuid.UUID
 }
 
 func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploymentVersionParams) (DeploymentVersion, error) {
@@ -141,6 +155,7 @@ func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploym
 		arg.DeploymentID,
 		arg.Status,
 		arg.Message,
+		arg.WorkspaceID,
 	)
 	var i DeploymentVersion
 	err := row.Scan(
@@ -153,6 +168,7 @@ func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploym
 		&i.Status,
 		&i.Message,
 		&i.CreatedAt,
+		&i.WorkspaceID,
 	)
 	return i, err
 }

@@ -107,9 +107,19 @@ type InMemory struct {
 	WorkflowJobs         cmap.ConcurrentMap[string, *oapi.WorkflowJob]
 }
 
+// deploymentVersionRepoAdapter wraps an indexstore.Store to satisfy the
+// explicit DeploymentVersionRepo interface.
+type deploymentVersionRepoAdapter struct {
+	*indexstore.Store[*oapi.DeploymentVersion]
+}
+
+func (a *deploymentVersionRepoAdapter) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
+	return a.Store.GetBy("deployment_id", deploymentID)
+}
+
 // DeploymentVersions implements repository.Repo.
 func (s *InMemory) DeploymentVersions() repository.DeploymentVersionRepo {
-	return s.deploymentVersions
+	return &deploymentVersionRepoAdapter{s.deploymentVersions}
 }
 
 func (s *InMemory) Router() *persistence.RepositoryRouter {

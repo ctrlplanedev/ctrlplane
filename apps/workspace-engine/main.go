@@ -219,7 +219,7 @@ func main() {
 		manager.WithWorkspaceCreateOptions(
 			workspace.WithTraceStore(traceStore),
 			workspace.WithStoreOptions(
-				// wsstore.WithDBDeploymentVersions(ctx),
+			// wsstore.WithDBDeploymentVersions(ctx),
 			),
 			workspace.AddDefaultSystem(),
 		),

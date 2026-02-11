@@ -86,6 +86,7 @@ type DeploymentVersion struct {
 	Status         DeploymentVersionStatus
 	Message        pgtype.Text
 	CreatedAt      pgtype.Timestamptz
+	WorkspaceID    uuid.UUID
 }
 
 type Environment struct {
