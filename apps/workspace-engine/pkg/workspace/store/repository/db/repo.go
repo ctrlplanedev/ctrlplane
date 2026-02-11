@@ -13,8 +13,8 @@ func (d *DBRepo) DeploymentVersions() repository.DeploymentVersionRepo {
 	return d.deploymentVersions
 }
 
-func NewDBRepo(ctx context.Context) *DBRepo {
+func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
-		deploymentVersions: NewDeploymentVersionRepo(ctx),
+		deploymentVersions: NewDeploymentVersionRepo(ctx, workspaceID),
 	}
 }

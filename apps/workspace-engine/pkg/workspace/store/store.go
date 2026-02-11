@@ -20,7 +20,7 @@ type StoreOption func(*Store)
 // with a DB-backed implementation. The provided context is used for DB operations.
 func WithDBDeploymentVersions(ctx context.Context) StoreOption {
 	return func(s *Store) {
-		dbRepo := dbrepo.NewDBRepo(ctx)
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.DeploymentVersions.SetRepo(dbRepo.DeploymentVersions())
 	}
 }

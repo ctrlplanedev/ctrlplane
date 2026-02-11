@@ -13,13 +13,14 @@ import (
 // dbDeploymentVersionRepo implements repository.DeploymentVersionRepo
 // backed by the deployment_version table via sqlc queries.
 type dbDeploymentVersionRepo struct {
-	ctx context.Context
+	ctx         context.Context
+	workspaceID string
 }
 
 // NewDeploymentVersionRepo returns a DB-backed DeploymentVersionRepo.
 // The provided context is used for all database operations.
-func NewDeploymentVersionRepo(ctx context.Context) *dbDeploymentVersionRepo {
-	return &dbDeploymentVersionRepo{ctx: ctx}
+func NewDeploymentVersionRepo(ctx context.Context, workspaceID string) *dbDeploymentVersionRepo {
+	return &dbDeploymentVersionRepo{ctx: ctx, workspaceID: workspaceID}
 }
 
 func (r *dbDeploymentVersionRepo) Get(id string) (*oapi.DeploymentVersion, bool) {
@@ -96,8 +97,26 @@ func (r *dbDeploymentVersionRepo) Remove(id string) error {
 }
 
 func (r *dbDeploymentVersionRepo) Items() map[string]*oapi.DeploymentVersion {
-	// Items is not efficiently supported by the DB repo — return empty map.
-	// Callers that need to enumerate all versions should use GetBy or a
-	// dedicated list query.
-	return make(map[string]*oapi.DeploymentVersion)
+	uid, err := uuid.Parse(r.workspaceID)
+	if err != nil {
+		log.Warn("Failed to parse workspace id for Items()", "id", r.workspaceID, "error", err)
+		return make(map[string]*oapi.DeploymentVersion)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListDeploymentVersionsByWorkspaceID(r.ctx, uid)
+	if err != nil {
+		log.Warn("Failed to list deployment versions by workspace", "workspaceId", r.workspaceID, "error", err)
+		return make(map[string]*oapi.DeploymentVersion)
+	}
+
+	result := make(map[string]*oapi.DeploymentVersion, len(rows))
+	for _, row := range rows {
+		v, err := ToOapi(row)
+		if err != nil {
+			log.Warn("Failed to convert deployment version", "error", err)
+			continue
+		}
+		result[v.Id] = v
+	}
+	return result
 }
