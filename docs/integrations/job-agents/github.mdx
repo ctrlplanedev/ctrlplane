@@ -18,20 +18,164 @@ sequenceDiagram
     G->>W: Trigger workflow_dispatch
     W->>W: Get job context from Ctrlplane
     W->>W: Execute deployment
-    W->>C: Update job status
+    G->>C: Webhook: workflow_run event
+    C->>C: Update job status automatically
 ```
 
 1. Ctrlplane creates a job and dispatches it to GitHub
 2. GitHub triggers your workflow with `workflow_dispatch`
 3. Your workflow fetches job context (version, environment, resource)
 4. Your workflow executes the deployment
-5. Job status is reported back to Ctrlplane
+5. GitHub sends a `workflow_run` webhook event to Ctrlplane as the run progresses
+6. Ctrlplane automatically updates the job status (in progress, successful, failure, etc.)
 
 ## Prerequisites
 
-- GitHub App installed in your organization
-- Workflow file with `workflow_dispatch` trigger
-- Repository permissions for the GitHub App
+- A **GitHub App** registered in your organization (see [GitHub App Setup](#github-app-setup))
+- The GitHub App **installed** on the repositories you want to dispatch workflows to
+- A workflow file with `workflow_dispatch` trigger in each target repository
+- Ctrlplane's workspace engine configured with the GitHub App credentials (see [Server Configuration](#server-configuration))
+
+## GitHub App Setup
+
+Ctrlplane authenticates with GitHub using a GitHub App. The workspace engine
+generates a JWT from the App's private key and exchanges it for a short-lived
+installation token to dispatch workflows.
+
+### Creating a GitHub App
+
+1. Go to **GitHub → Settings → Developer settings → GitHub Apps → New GitHub App**
+2. Fill in the required fields:
+   - **GitHub App name**: e.g. `ctrlplane-bot`
+   - **Homepage URL**: your Ctrlplane instance URL
+3. Under **Webhook**:
+   - **Webhook URL**: `https://<your-ctrlplane-domain>/api/github/webhook`
+   - **Webhook secret**: generate a strong secret (e.g. `openssl rand -hex 32`)
+   - Subscribe to the **Workflow runs** event
+4. Under **Permissions**, grant the following **Repository permissions**:
+   - **Actions**: Read and write (required to dispatch workflow events)
+   - **Contents**: Read-only (required to access workflow files)
+   - **Metadata**: Read-only (granted by default)
+5. Click **Create GitHub App**
+
+### Gathering Credentials
+
+After creating the App, collect the following values:
+
+| Credential          | Where to find it                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| **App ID**          | GitHub App settings page → **App ID** (numeric)                                    |
+| **Private Key**     | GitHub App settings page → **Private keys** → **Generate a private key** (PEM file)|
+| **Client ID**       | GitHub App settings page → **Client ID**                                           |
+| **Client Secret**   | GitHub App settings page → **Generate a new client secret**                        |
+| **Webhook Secret**  | The secret you entered when creating the App (step 3 above)                        |
+
+### Installing the App
+
+1. From the GitHub App settings page, click **Install App** in the left sidebar
+2. Choose the organization or account to install on
+3. Select the repositories the App should have access to
+4. Note the **Installation ID** — you can find it in the URL after installation:
+   `https://github.com/settings/installations/INSTALLATION_ID`
+
+You can also retrieve it via the GitHub API:
+
+```bash
+curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+  https://api.github.com/orgs/YOUR_ORG/installations
+```
+
+## Server Configuration
+
+The workspace engine (and the API server) need the GitHub App credentials to
+authenticate with the GitHub API. These are provided via environment variables.
+
+### Environment Variables
+
+| Variable                 | Service          | Required | Description                                                        |
+| ------------------------ | ---------------- | -------- | ------------------------------------------------------------------ |
+| `GITHUB_BOT_APP_ID`     | Workspace Engine | Yes      | The numeric App ID from your GitHub App settings                   |
+| `GITHUB_BOT_PRIVATE_KEY`| Workspace Engine | Yes      | The PEM-encoded private key generated for the GitHub App           |
+| `GITHUB_WEBHOOK_SECRET`  | API Server       | Yes      | The webhook secret used to verify incoming GitHub webhook payloads |
+
+The **workspace engine** uses `GITHUB_BOT_APP_ID` and `GITHUB_BOT_PRIVATE_KEY`
+to generate JWTs for authenticating with the GitHub API and dispatching
+workflows. If either is missing, dispatching will fail with a
+`GitHub bot not configured` error.
+
+The **API server** uses `GITHUB_WEBHOOK_SECRET` to verify incoming
+`workflow_run` webhook events from GitHub. When configured, Ctrlplane
+automatically updates job status as workflows progress — no manual status
+reporting is needed in your workflow.
+
+### Helm Chart Configuration
+
+When deploying with the Ctrlplane Helm chart, configure the GitHub App
+credentials in your `values.yaml` under `global.integrations.github.bot`:
+
+```yaml
+global:
+  integrations:
+    github:
+      url: "https://github.com"
+      bot:
+        appId: "123456"
+        privateKey: |
+          -----BEGIN RSA PRIVATE KEY-----
+          ...
+          -----END RSA PRIVATE KEY-----
+        webhookSecret: "your-webhook-secret"
+```
+
+All bot values support either inline strings or Kubernetes `valueFrom`
+references for secrets:
+
+```yaml
+global:
+  integrations:
+    github:
+      url: "https://github.com"
+      bot:
+        appId:
+          valueFrom:
+            secretKeyRef:
+              name: github-bot-secret
+              key: app-id
+        privateKey:
+          valueFrom:
+            secretKeyRef:
+              name: github-bot-secret
+              key: private-key
+        webhookSecret:
+          valueFrom:
+            secretKeyRef:
+              name: github-bot-secret
+              key: webhook-secret
+```
+
+The full set of Helm values for the GitHub bot:
+
+| Helm Value                                       | Env Variable              | Required for Actions | Description                     |
+| ------------------------------------------------ | ------------------------- | -------------------- | ------------------------------- |
+| `global.integrations.github.bot.appId`           | `GITHUB_BOT_APP_ID`      | Yes                  | GitHub App numeric ID           |
+| `global.integrations.github.bot.privateKey`      | `GITHUB_BOT_PRIVATE_KEY` | Yes                  | PEM private key                 |
+| `global.integrations.github.bot.name`            | `GITHUB_BOT_NAME`        | No                   | Display name for the bot        |
+| `global.integrations.github.bot.clientId`        | `GITHUB_BOT_CLIENT_ID`   | No                   | GitHub App client ID            |
+| `global.integrations.github.bot.clientSecret`    | `GITHUB_BOT_CLIENT_SECRET`| No                  | GitHub App client secret        |
+| `global.integrations.github.bot.webhookSecret`   | `GITHUB_WEBHOOK_SECRET`  | Yes                  | Webhook secret for verifying incoming GitHub events |
+
+### Docker / Manual Deployment
+
+When running the workspace engine directly, pass the environment variables:
+
+```bash
+docker run -d \
+  --name ctrlplane-workspace-engine \
+  -e GITHUB_BOT_APP_ID=123456 \
+  -e GITHUB_BOT_PRIVATE_KEY="$(cat private-key.pem)" \
+  # ... other env vars ...
+  ctrlplane/workspace-engine:latest
+```
 
 ## Configuration
 
@@ -69,6 +213,22 @@ jobAgentConfig:
 | `workflowId`     | Yes      | Workflow ID (numeric)                      |
 | `ref`            | No       | Git ref to run workflow on (default: main) |
 
+### Finding Your Installation ID
+
+The installation ID is the numeric ID assigned when the GitHub App is installed
+on an organization or user account. You can find it:
+
+1. **From the URL**: after installing the App, the URL will be
+   `https://github.com/settings/installations/INSTALLATION_ID`
+2. **From the API**:
+
+```bash
+curl -H "Authorization: Bearer $GITHUB_TOKEN" \
+  https://api.github.com/orgs/YOUR_ORG/installations
+```
+
+Look for the `id` field in the response.
+
 ### Finding Your Workflow ID
 
 Use the GitHub API to find your workflow ID:
@@ -77,6 +237,8 @@ Use the GitHub API to find your workflow ID:
 curl -H "Authorization: Bearer $GITHUB_TOKEN" \
   https://api.github.com/repos/OWNER/REPO/actions/workflows
 ```
+
+The `id` field in each workflow object is the numeric workflow ID you need.
 
 ## Workflow Setup
 
@@ -149,7 +311,40 @@ jobAgentConfig:
 
 ## Status Reporting
 
-The workflow should update job status. You can use the Ctrlplane CLI or API:
+### Automatic via Webhooks (Recommended)
+
+When the GitHub App webhook is configured (see [GitHub App Setup](#creating-a-github-app)),
+Ctrlplane automatically receives `workflow_run` events from GitHub and updates
+job status without any extra steps in your workflow.
+
+The API server listens at `/api/github/webhook` and maps GitHub workflow run
+states to Ctrlplane job statuses:
+
+| GitHub Conclusion  | Ctrlplane Status   |
+| ------------------ | ------------------ |
+| _(in progress)_    | `in_progress`      |
+| `success`          | `successful`       |
+| `failure`          | `failure`          |
+| `cancelled`        | `cancelled`        |
+| `action_required`  | `action_required`  |
+| `skipped`          | `skipped`          |
+| `neutral`          | `skipped`          |
+
+Ctrlplane matches the workflow run to a job by extracting the job ID from the
+workflow run name. The `get-job-inputs` action includes the job ID in the run
+name automatically.
+
+<Note>
+  For automatic status reporting to work, ensure:
+  - The GitHub App webhook URL is set to `https://<your-ctrlplane-domain>/api/github/webhook`
+  - The `GITHUB_WEBHOOK_SECRET` env var matches the secret configured in the GitHub App
+  - The App is subscribed to **Workflow runs** events
+</Note>
+
+### Manual via API (Fallback)
+
+If you are not using webhooks, you can manually report status from the workflow
+using the Ctrlplane API:
 
 ```yaml
 - name: Mark job successful
@@ -204,3 +399,42 @@ jobs:
             app=${{ steps.job.outputs.version_tag }} \
             -n ${{ fromJson(steps.job.outputs.resource_config).namespace }}
 ```
+
+## Troubleshooting
+
+### `GitHub bot not configured` error
+
+The workspace engine cannot find the App credentials. Verify:
+
+- `GITHUB_BOT_APP_ID` is set and is a valid numeric ID
+- `GITHUB_BOT_PRIVATE_KEY` is set and contains the full PEM-encoded private key
+- If using Helm, check that `global.integrations.github.bot.appId` and
+  `global.integrations.github.bot.privateKey` are set in your values
+
+### `failed to get installation token` error
+
+The App credentials are set but the token exchange failed. Check:
+
+- The **App ID** matches the GitHub App you created
+- The **private key** has not been revoked or regenerated
+- The **installation ID** in your deployment config is correct
+- The GitHub App is still installed on the target organization/account
+
+### Workflow not triggered
+
+- Verify the workflow file has `workflow_dispatch` as a trigger
+- Ensure the `ref` in your config points to a branch where the workflow file exists
+- Check that the GitHub App has **Actions: Read and write** permission on the repository
+- Confirm the **workflow ID** is correct (use the API to verify)
+
+### Job status not updating automatically
+
+- Verify the GitHub App webhook URL is set to `https://<your-ctrlplane-domain>/api/github/webhook`
+- Ensure `GITHUB_WEBHOOK_SECRET` is set on the API server and matches the secret in GitHub App settings
+- Check that the App is subscribed to **Workflow runs** events
+- Confirm the API server is reachable from GitHub (not behind a firewall)
+
+### Authentication errors in the workflow
+
+- Ensure `CTRLPLANE_API_KEY` is set as a repository or organization secret in GitHub
+- Verify the API key has permissions to read jobs in your Ctrlplane workspace
