@@ -974,6 +974,13 @@
       "when": 1765421057712,
       "tag": "0138_bouncy_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 139,
+      "version": "7",
+      "when": 1770776178985,
+      "tag": "0139_silent_blink",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,3 @@
-import type * as schema from "@ctrlplane/db/schema";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 
 export enum Event {
@@ -74,28 +73,6 @@ export enum Event {
   WorkflowTemplateDeleted = "workflow-template.deleted",
   WorkflowCreated = "workflow.created",
 }
-
-export type FullPolicy = schema.Policy & {
-  targets: schema.PolicyTarget[];
-  denyWindows: schema.PolicyRuleDenyWindow[];
-  deploymentVersionSelector: schema.PolicyDeploymentVersionSelector | null;
-  versionAnyApprovals: schema.PolicyRuleAnyApproval | null;
-  versionUserApprovals: schema.PolicyRuleUserApproval[];
-  versionRoleApprovals: schema.PolicyRuleRoleApproval[];
-  concurrency: schema.PolicyRuleConcurrency | null;
-  environmentVersionRollout: schema.PolicyRuleEnvironmentVersionRollout | null;
-  maxRetries: schema.PolicyRuleMaxRetries | null;
-};
-
-export type FullResource = schema.Resource & {
-  metadata: Record<string, string>;
-};
-
-export type FullReleaseTarget = schema.ReleaseTarget & {
-  resource: FullResource;
-  environment: schema.Environment;
-  deployment: schema.Deployment;
-};
 
 export type GoEventPayload = {
   [Event.WorkspaceSave]: object;

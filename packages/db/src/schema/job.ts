@@ -47,9 +47,7 @@ import { JobConditionType } from "@ctrlplane/validators/jobs";
 import type { Tx } from "../common.js";
 import { deploymentVersion } from "./deployment-version.js";
 import { jobAgent } from "./job-agent.js";
-import { releaseJob } from "./release.js";
-import { jobResourceRelationship, resource } from "./resource.js";
-import { runbookJobTrigger } from "./runbook.js";
+import { resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
@@ -112,17 +110,8 @@ export const jobRelations = relations(job, ({ many, one }) => ({
     fields: [job.jobAgentId],
     references: [jobAgent.id],
   }),
-  jobRelationships: many(jobResourceRelationship),
   metadata: many(jobMetadata),
-  releaseJob: one(releaseJob, {
-    fields: [job.id],
-    references: [releaseJob.jobId],
-  }),
   variables: many(jobVariable),
-  runbookJobTrigger: one(runbookJobTrigger, {
-    fields: [job.id],
-    references: [runbookJobTrigger.jobId],
-  }),
 }));
 
 export const jobMetadata = pgTable(
