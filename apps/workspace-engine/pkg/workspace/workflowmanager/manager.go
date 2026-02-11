@@ -56,6 +56,14 @@ func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflowTemp
 				}
 			}
 		}
+
+		if objectInput, err := input.AsWorkflowObjectInput(); err == nil && objectInput.Type == oapi.Object {
+			if objectInput.Default != nil {
+				if _, ok := inputs[objectInput.Key]; !ok {
+					inputs[objectInput.Key] = *objectInput.Default
+				}
+			}
+		}
 	}
 }
 

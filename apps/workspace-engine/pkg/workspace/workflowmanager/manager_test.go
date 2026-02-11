@@ -334,6 +334,28 @@ func TestMaybeSetDefaultInputValues_SetsBooleanDefault(t *testing.T) {
 	assert.Equal(t, true, inputs["boolean-input"])
 }
 
+func TestMaybeSetDefaultInputValues_SetsObjectDefault(t *testing.T) {
+	store := store.New("test-workspace", statechange.NewChangeSet[any]())
+	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
+	manager := NewWorkflowManager(store, jobAgentRegistry)
+
+	var objectInput oapi.WorkflowInput
+	_ = objectInput.FromWorkflowObjectInput(oapi.WorkflowObjectInput{
+		Key:     "object-input",
+		Type:    oapi.Object,
+		Default: &map[string]any{"key": "value"},
+	})
+
+	workflowTemplate := &oapi.WorkflowTemplate{
+		Id:     "test-workflow-template",
+		Inputs: []oapi.WorkflowInput{objectInput},
+	}
+
+	inputs := map[string]any{}
+	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	assert.Equal(t, map[string]any{"key": "value"}, inputs["object-input"])
+}
+
 func TestMaybeSetDefaultInputValues_DoesNotOverwriteExistingValue(t *testing.T) {
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
 	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))

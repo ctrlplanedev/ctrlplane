@@ -1821,7 +1821,7 @@ export interface components {
             /** @enum {string} */
             type: "boolean";
         };
-        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"];
+        WorkflowInput: components["schemas"]["WorkflowStringInput"] | components["schemas"]["WorkflowNumberInput"] | components["schemas"]["WorkflowBooleanInput"] | components["schemas"]["WorkflowArrayInput"] | components["schemas"]["WorkflowObjectInput"];
         WorkflowJob: {
             /** @description Configuration for the job agent */
             config: {
@@ -1870,6 +1870,14 @@ export interface components {
             key: string;
             /** @enum {string} */
             type: "number";
+        };
+        WorkflowObjectInput: {
+            default?: {
+                [key: string]: unknown;
+            };
+            key: string;
+            /** @enum {string} */
+            type: "object";
         };
         WorkflowSelectorArrayInput: {
             key: string;

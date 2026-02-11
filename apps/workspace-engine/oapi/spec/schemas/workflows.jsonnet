@@ -63,6 +63,16 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  WorkflowObjectInput: {
+    type: 'object',
+    required: ['key', 'type'],
+    properties: {
+      key: { type: 'string' },
+      type: { type: 'string', enum: ['object'] },
+      default: { type: 'object', additionalProperties: true },
+    },
+  },
+
   WorkflowManualArrayInput: {
     type: 'object',
     required: ['key', 'type'],
@@ -103,6 +113,7 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('WorkflowNumberInput'),
       openapi.schemaRef('WorkflowBooleanInput'),
       openapi.schemaRef('WorkflowArrayInput'),
+      openapi.schemaRef('WorkflowObjectInput'),
     ],
   },
 

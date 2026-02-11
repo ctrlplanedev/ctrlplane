@@ -196,6 +196,11 @@ const (
 	Number WorkflowNumberInputType = "number"
 )
 
+// Defines values for WorkflowObjectInputType.
+const (
+	Object WorkflowObjectInputType = "object"
+)
+
 // Defines values for WorkflowSelectorArrayInputSelectorEntityType.
 const (
 	WorkflowSelectorArrayInputSelectorEntityTypeDeployment  WorkflowSelectorArrayInputSelectorEntityType = "deployment"
@@ -1287,6 +1292,16 @@ type WorkflowNumberInput struct {
 
 // WorkflowNumberInputType defines model for WorkflowNumberInput.Type.
 type WorkflowNumberInputType string
+
+// WorkflowObjectInput defines model for WorkflowObjectInput.
+type WorkflowObjectInput struct {
+	Default *map[string]interface{} `json:"default,omitempty"`
+	Key     string                  `json:"key"`
+	Type    WorkflowObjectInputType `json:"type"`
+}
+
+// WorkflowObjectInputType defines model for WorkflowObjectInput.Type.
+type WorkflowObjectInputType string
 
 // WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
 type WorkflowSelectorArrayInput struct {
@@ -2529,6 +2544,32 @@ func (t *WorkflowInput) FromWorkflowArrayInput(v WorkflowArrayInput) error {
 
 // MergeWorkflowArrayInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowArrayInput
 func (t *WorkflowInput) MergeWorkflowArrayInput(v WorkflowArrayInput) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsWorkflowObjectInput returns the union data inside the WorkflowInput as a WorkflowObjectInput
+func (t WorkflowInput) AsWorkflowObjectInput() (WorkflowObjectInput, error) {
+	var body WorkflowObjectInput
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromWorkflowObjectInput overwrites any union data inside the WorkflowInput as the provided WorkflowObjectInput
+func (t *WorkflowInput) FromWorkflowObjectInput(v WorkflowObjectInput) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeWorkflowObjectInput performs a merge with any union data inside the WorkflowInput, using the provided WorkflowObjectInput
+func (t *WorkflowInput) MergeWorkflowObjectInput(v WorkflowObjectInput) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

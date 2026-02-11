@@ -2446,6 +2446,9 @@
                },
                {
                   "$ref": "#/components/schemas/WorkflowArrayInput"
+               },
+               {
+                  "$ref": "#/components/schemas/WorkflowObjectInput"
                }
             ]
          },
@@ -2602,6 +2605,28 @@
                "type": {
                   "enum": [
                      "number"
+                  ],
+                  "type": "string"
+               }
+            },
+            "required": [
+               "key",
+               "type"
+            ],
+            "type": "object"
+         },
+         "WorkflowObjectInput": {
+            "properties": {
+               "default": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "key": {
+                  "type": "string"
+               },
+               "type": {
+                  "enum": [
+                     "object"
                   ],
                   "type": "string"
                }

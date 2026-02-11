@@ -16,12 +16,46 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
+import { Textarea } from "~/components/ui/textarea";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useWorkflowTemplate } from "./WorkflowTemplateProvider";
 
 const formSchema = z.object({
   inputs: z.record(z.string(), z.any()),
 });
+
+function JsonObjectInput({
+  value,
+  onChange,
+}: {
+  value: WorkspaceEngine["schemas"]["WorkflowObjectInput"]["default"];
+  onChange: (
+    value: WorkspaceEngine["schemas"]["WorkflowObjectInput"]["default"],
+  ) => void;
+}) {
+  const text = JSON.stringify(value ?? {}, null, 2);
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    try {
+      const raw = e.target.value;
+      const parsed: WorkspaceEngine["schemas"]["WorkflowObjectInput"]["default"] =
+        JSON.parse(raw);
+      onChange(parsed);
+    } catch {
+      return;
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <Textarea
+        value={text}
+        onChange={handleChange}
+        className="font-mono text-xs"
+        rows={5}
+      />
+    </div>
+  );
+}
 
 function InputField({
   input,
@@ -47,6 +81,7 @@ function InputField({
                   onCheckedChange={field.onChange}
                 />
               )}
+              {input.type === "object" && <JsonObjectInput {...field} />}
             </>
           </FormControl>
         </FormItem>
@@ -67,6 +102,7 @@ export function WorkflowTriggerForm() {
           if (input.type === "number") return [input.key, input.default ?? 0];
           if (input.type === "boolean")
             return [input.key, input.default ?? false];
+          if (input.type === "object") return [input.key, input.default ?? {}];
           return [input.key, null];
         }),
       ),
