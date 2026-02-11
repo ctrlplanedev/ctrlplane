@@ -27,7 +27,11 @@ import (
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-yaml"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("workspace-engine/jobagents/argo")
 
 var _ types.Dispatchable = &ArgoApplication{}
 
@@ -66,7 +70,12 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.Dispat
 	a.makeApplicationK8sCompatible(app)
 
 	go func() {
-		ctx := context.WithoutCancel(ctx)
+		parentSpanCtx := trace.SpanContextFromContext(ctx)
+		asyncCtx, span := tracer.Start(context.Background(), "ArgoApplication.AsyncDispatch",
+			trace.WithLinks(trace.Link{SpanContext: parentSpanCtx}),
+		)
+		defer span.End()
+
 		ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
 		if err != nil {
 			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
@@ -74,13 +83,13 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.Dispat
 		}
 		defer ioCloser.Close()
 
-		if err := a.upsertApplicationWithRetry(ctx, app, appClient); err != nil {
+		if err := a.upsertApplicationWithRetry(asyncCtx, app, appClient); err != nil {
 			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to upsert application: %s", err.Error()))
 			return
 		}
 
 		verification := newArgoApplicationVerification(a.verifications, dispatchCtx.Job, app.Name, serverAddr, apiKey)
-		if err := verification.StartVerification(ctx, dispatchCtx.Job); err != nil {
+		if err := verification.StartVerification(asyncCtx, dispatchCtx.Job); err != nil {
 			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to start verification: %s", err.Error()))
 			return
 		}

@@ -16,7 +16,11 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-github/v66/github"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("workspace-engine/jobagents/github")
 
 var _ types.Dispatchable = &GithubAction{}
 
@@ -57,8 +61,13 @@ func (a *GithubAction) Dispatch(ctx context.Context, dispatchCtx types.DispatchC
 	}
 
 	go func() {
-		ctx := context.WithoutCancel(ctx)
-		if _, err := client.Actions.CreateWorkflowDispatchEventByID(ctx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
+		parentSpanCtx := trace.SpanContextFromContext(ctx)
+		asyncCtx, span := tracer.Start(context.Background(), "GithubAction.AsyncDispatch",
+			trace.WithLinks(trace.Link{SpanContext: parentSpanCtx}),
+		)
+		defer span.End()
+
+		if _, err := client.Actions.CreateWorkflowDispatchEventByID(asyncCtx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
 			Ref:    ref,
 			Inputs: map[string]any{"job_id": dispatchCtx.Job.Id},
 		}); err != nil {
@@ -66,7 +75,7 @@ func (a *GithubAction) Dispatch(ctx context.Context, dispatchCtx types.DispatchC
 			dispatchCtx.Job.Status = oapi.JobStatusInvalidIntegration
 			dispatchCtx.Job.UpdatedAt = time.Now()
 			dispatchCtx.Job.Message = &message
-			a.store.Jobs.Upsert(ctx, dispatchCtx.Job)
+			a.store.Jobs.Upsert(asyncCtx, dispatchCtx.Job)
 		}
 	}()
 
