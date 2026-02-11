@@ -2743,6 +2743,10 @@
                "id": {
                   "type": "string"
                },
+               "if": {
+                  "description": "CEL expression to determine if the job should run",
+                  "type": "string"
+               },
                "matrix": {
                   "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
