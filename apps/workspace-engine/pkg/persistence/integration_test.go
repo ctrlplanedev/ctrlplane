@@ -479,7 +479,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().Deployments.Get(deploymentId)
 	assert.True(t, ok, "Deployment should be restored")
 
-	_, ok = testStore.Repo().DeploymentVersions.Get(deploymentVersion.Id)
+	_, ok = testStore.Repo().DeploymentVersions().Get(deploymentVersion.Id)
 	assert.True(t, ok, "DeploymentVersion should be restored")
 
 	_, ok = testStore.Repo().DeploymentVariables.Get(deploymentVariable.Id)
@@ -662,7 +662,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	assert.Equal(t, "web-server-1", restoredResource.Name)
 	assert.Equal(t, "us-east-1", restoredResource.Metadata["cluster"])
 
-	restoredVersion, ok := newStore.Repo().DeploymentVersions.Get(versionId)
+	restoredVersion, ok := newStore.Repo().DeploymentVersions().Get(versionId)
 	require.True(t, ok, "DeploymentVersion should be restored")
 	assert.Equal(t, "v1.2.3", restoredVersion.Tag)
 

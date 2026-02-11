@@ -3,11 +3,11 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 type ResourceProviders struct {
-	repo      *repository.Repo
+	repo      *memory.InMemory
 	resources *Resources
 	store     *Store
 }

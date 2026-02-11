@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewJobs(store *Store) *Jobs {
@@ -16,7 +16,7 @@ func NewJobs(store *Store) *Jobs {
 }
 
 type Jobs struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

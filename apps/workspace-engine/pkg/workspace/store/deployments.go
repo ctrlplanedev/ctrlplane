@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 
 	"go.opentelemetry.io/otel"
 )
@@ -22,7 +22,7 @@ func NewDeployments(store *Store) *Deployments {
 }
 
 type Deployments struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

@@ -4,15 +4,25 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager"
+	"workspace-engine/pkg/workspace/store"
 
 	"github.com/aws/smithy-go/ptr"
 )
 
 type WorkspaceOption func(*Workspace)
 
-func WithTraceStore(store releasemanager.PersistenceStore) WorkspaceOption {
+func WithTraceStore(s releasemanager.PersistenceStore) WorkspaceOption {
 	return func(ws *Workspace) {
-		ws.traceStore = store
+		ws.traceStore = s
+	}
+}
+
+// WithStoreOptions applies the given store options to the workspace's store.
+func WithStoreOptions(opts ...store.StoreOption) WorkspaceOption {
+	return func(ws *Workspace) {
+		for _, opt := range opts {
+			opt(ws.store)
+		}
 	}
 }
 

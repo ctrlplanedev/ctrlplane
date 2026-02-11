@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewEnvironments(store *Store) *Environments {
@@ -16,7 +16,7 @@ func NewEnvironments(store *Store) *Environments {
 }
 
 type Environments struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

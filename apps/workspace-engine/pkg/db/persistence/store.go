@@ -7,7 +7,7 @@ import (
 	"time"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/persistence"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -164,7 +164,7 @@ func (s *Store) Load(ctx context.Context, namespace string) (persistence.Changes
 
 	var changes persistence.Changes
 
-	jsonEntityRegistry := repository.GlobalRegistry()
+	jsonEntityRegistry := memory.GlobalRegistry()
 
 	for rows.Next() {
 		var entityType, entityID string

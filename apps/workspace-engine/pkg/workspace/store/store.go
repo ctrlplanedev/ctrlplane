@@ -6,13 +6,27 @@ import (
 	"workspace-engine/pkg/persistence"
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/statechange"
-	"workspace-engine/pkg/workspace/store/repository"
+	dbrepo "workspace-engine/pkg/workspace/store/repository/db"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 
+	"github.com/charmbracelet/log"
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
-	repo := repository.New(wsId)
+// StoreOption configures optional Store behavior.
+type StoreOption func(*Store)
+
+// WithDBDeploymentVersions replaces the default in-memory DeploymentVersionRepo
+// with a DB-backed implementation. The provided context is used for DB operations.
+func WithDBDeploymentVersions(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx)
+		s.DeploymentVersions.SetRepo(dbRepo.DeploymentVersions())
+	}
+}
+
+func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
+	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
 
 	store.Deployments = NewDeployments(store)
@@ -42,12 +56,16 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 	store.Workflows = NewWorkflows(store)
 	store.WorkflowJobs = NewWorkflowJobs(store)
 
+	for _, opt := range opts {
+		opt(store)
+	}
+
 	return store
 }
 
 type Store struct {
 	id        string
-	repo      *repository.Repo
+	repo      *memory.InMemory
 	changeset *statechange.ChangeSet[any]
 
 	Policies                 *Policies
@@ -82,7 +100,7 @@ func (s *Store) ID() string {
 	return s.id
 }
 
-func (s *Store) Repo() *repository.Repo {
+func (s *Store) Repo() *memory.InMemory {
 	return s.repo
 }
 
@@ -95,6 +113,20 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	err := s.repo.Router().Apply(ctx, changes)
 	if err != nil {
 		return err
+	}
+
+	// Migrate legacy changelog deployment versions into the active repo.
+	// After Router().Apply(), the in-memory repo may contain deployment
+	// versions loaded from changelog_entry records. When the DB backend is
+	// active, sync them so they are available through the DB-backed repo.
+	if setStatus != nil {
+		setStatus("Migrating legacy deployment versions")
+	}
+	for _, v := range s.repo.DeploymentVersions().Items() {
+		if err := s.DeploymentVersions.repo.Set(v); err != nil {
+			log.Warn("Failed to migrate legacy deployment version",
+				"version_id", v.Id, "error", err)
+		}
 	}
 
 	if setStatus != nil {

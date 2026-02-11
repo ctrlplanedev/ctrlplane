@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sort"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 type JobVerifications struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

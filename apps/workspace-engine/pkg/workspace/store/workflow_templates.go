@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewWorkflowTemplates(store *Store) *WorkflowTemplates {
@@ -14,7 +14,7 @@ func NewWorkflowTemplates(store *Store) *WorkflowTemplates {
 }
 
 type WorkflowTemplates struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 type GithubEntities struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

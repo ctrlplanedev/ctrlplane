@@ -7,7 +7,7 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/diffcheck"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -21,7 +21,7 @@ func NewResources(store *Store) *Resources {
 }
 
 type Resources struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

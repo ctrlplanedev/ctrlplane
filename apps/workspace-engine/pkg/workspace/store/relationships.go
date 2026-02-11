@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewRelationshipRules(store *Store) *RelationshipRules {
@@ -16,7 +16,7 @@ func NewRelationshipRules(store *Store) *RelationshipRules {
 }
 
 type RelationshipRules struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

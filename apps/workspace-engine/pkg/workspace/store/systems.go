@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewSystems(store *Store) *Systems {
@@ -14,7 +14,7 @@ func NewSystems(store *Store) *Systems {
 }
 
 type Systems struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

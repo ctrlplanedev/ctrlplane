@@ -1,9 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
 import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { deployment } from "./deployment.js";
-import { environment } from "./environment.js";
 import { workspace } from "./workspace.js";
 
 export const system = pgTable(
@@ -21,12 +18,3 @@ export const system = pgTable(
 );
 
 export type System = InferSelectModel<typeof system>;
-
-export const systemRelations = relations(system, ({ one, many }) => ({
-  environments: many(environment),
-  deployments: many(deployment),
-  workspace: one(workspace, {
-    fields: [system.workspaceId],
-    references: [workspace.id],
-  }),
-}));

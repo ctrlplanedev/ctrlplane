@@ -6,50 +6,46 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
-// DeploymentVersionStore defines the interface for deployment version storage.
-// Production uses a DB-backed implementation; tests use the in-memory implementation.
-type DeploymentVersionStore interface {
-	Get(ctx context.Context, id string) (*oapi.DeploymentVersion, error)
-	GetByDeploymentID(ctx context.Context, deploymentID string) ([]*oapi.DeploymentVersion, error)
-	Upsert(ctx context.Context, version *oapi.DeploymentVersion) error
-	Remove(ctx context.Context, id string) error
-}
-
 func NewDeploymentVersions(store *Store) *DeploymentVersions {
 	return &DeploymentVersions{
-		repo:  store.repo,
+		repo:  store.repo.DeploymentVersions(),
 		store: store,
 	}
 }
 
 type DeploymentVersions struct {
-	repo  *repository.Repo
+	repo  repository.DeploymentVersionRepo
 	store *Store
 }
 
+// SetRepo replaces the underlying DeploymentVersionRepo implementation.
+func (d *DeploymentVersions) SetRepo(repo repository.DeploymentVersionRepo) {
+	d.repo = repo
+}
+
 func (d *DeploymentVersions) Items() map[string]*oapi.DeploymentVersion {
-	return d.repo.DeploymentVersions.Items()
+	return d.repo.Items()
 }
 
 func (d *DeploymentVersions) Get(id string) (*oapi.DeploymentVersion, bool) {
-	return d.repo.DeploymentVersions.Get(id)
+	return d.repo.Get(id)
 }
 
 func (d *DeploymentVersions) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
-	return d.repo.DeploymentVersions.GetBy("deployment_id", deploymentID)
+	return d.repo.GetBy("deployment_id", deploymentID)
 }
 
 func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
-	d.repo.DeploymentVersions.Set(version)
+	d.repo.Set(version)
 	d.store.changeset.RecordUpsert(version)
 }
 
 func (d *DeploymentVersions) Remove(ctx context.Context, id string) {
-	version, ok := d.repo.DeploymentVersions.Get(id)
+	version, ok := d.repo.Get(id)
 	if !ok {
 		return
 	}
 
-	d.repo.DeploymentVersions.Remove(id)
+	d.repo.Remove(id)
 	d.store.changeset.RecordDelete(version)
 }

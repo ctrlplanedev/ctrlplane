@@ -14,7 +14,6 @@ import { z } from "zod";
 
 import { role } from "./rbac.js";
 import { resource } from "./resource.js";
-import { system } from "./system.js";
 
 export const workspace = pgTable("workspace", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -55,7 +54,6 @@ export type Workspace = InferSelectModel<typeof workspace>;
 
 export const workspaceRelations = relations(workspace, ({ many }) => ({
   resources: many(resource),
-  systems: many(system),
 }));
 
 export const workspaceEmailDomainMatching = pgTable(

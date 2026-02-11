@@ -12,47 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createDeploymentVersion = `-- name: CreateDeploymentVersion :one
-INSERT INTO deployment_version (name, tag, config, job_agent_config, deployment_id, status, message)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, name, tag, config, job_agent_config, deployment_id, status, message, created_at
-`
-
-type CreateDeploymentVersionParams struct {
-	Name           string
-	Tag            string
-	Config         []byte
-	JobAgentConfig []byte
-	DeploymentID   uuid.UUID
-	Status         DeploymentVersionStatus
-	Message        pgtype.Text
-}
-
-func (q *Queries) CreateDeploymentVersion(ctx context.Context, arg CreateDeploymentVersionParams) (DeploymentVersion, error) {
-	row := q.db.QueryRow(ctx, createDeploymentVersion,
-		arg.Name,
-		arg.Tag,
-		arg.Config,
-		arg.JobAgentConfig,
-		arg.DeploymentID,
-		arg.Status,
-		arg.Message,
-	)
-	var i DeploymentVersion
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Tag,
-		&i.Config,
-		&i.JobAgentConfig,
-		&i.DeploymentID,
-		&i.Status,
-		&i.Message,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const deleteDeploymentVersion = `-- name: DeleteDeploymentVersion :exec
 DELETE FROM deployment_version WHERE id = $1
 `
@@ -117,46 +76,42 @@ func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, depl
 	return items, nil
 }
 
-const updateDeploymentVersion = `-- name: UpdateDeploymentVersion :one
-UPDATE deployment_version
-SET name = $2, tag = $3, config = $4, job_agent_config = $5, status = $6, message = $7
-WHERE id = $1
-RETURNING id, name, tag, config, job_agent_config, deployment_id, status, message, created_at
+const listDeploymentVersionsByWorkspaceID = `-- name: ListDeploymentVersionsByWorkspaceID :many
+SELECT dv.id, dv.name, dv.tag, dv.config, dv.job_agent_config, dv.deployment_id, dv.status, dv.message, dv.created_at FROM deployment_version dv
+JOIN deployment d ON dv.deployment_id = d.id
+JOIN system s ON d.system_id = s.id
+WHERE s.workspace_id = $1
+ORDER BY dv.created_at DESC
 `
 
-type UpdateDeploymentVersionParams struct {
-	ID             uuid.UUID
-	Name           string
-	Tag            string
-	Config         []byte
-	JobAgentConfig []byte
-	Status         DeploymentVersionStatus
-	Message        pgtype.Text
-}
-
-func (q *Queries) UpdateDeploymentVersion(ctx context.Context, arg UpdateDeploymentVersionParams) (DeploymentVersion, error) {
-	row := q.db.QueryRow(ctx, updateDeploymentVersion,
-		arg.ID,
-		arg.Name,
-		arg.Tag,
-		arg.Config,
-		arg.JobAgentConfig,
-		arg.Status,
-		arg.Message,
-	)
-	var i DeploymentVersion
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Tag,
-		&i.Config,
-		&i.JobAgentConfig,
-		&i.DeploymentID,
-		&i.Status,
-		&i.Message,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]DeploymentVersion, error) {
+	rows, err := q.db.Query(ctx, listDeploymentVersionsByWorkspaceID, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeploymentVersion
+	for rows.Next() {
+		var i DeploymentVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Tag,
+			&i.Config,
+			&i.JobAgentConfig,
+			&i.DeploymentID,
+			&i.Status,
+			&i.Message,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const upsertDeploymentVersion = `-- name: UpsertDeploymentVersion :one

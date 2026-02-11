@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 func NewJobAgents(store *Store) *JobAgents {
@@ -14,7 +14,7 @@ func NewJobAgents(store *Store) *JobAgents {
 }
 
 type JobAgents struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

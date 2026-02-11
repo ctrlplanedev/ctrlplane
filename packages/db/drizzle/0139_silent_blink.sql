@@ -1,3 +1,4 @@
+ALTER TYPE "public"."release_status" RENAME TO "deployment_version_status";--> statement-breakpoint
 ALTER TYPE "public"."deployment_version_status" ADD VALUE 'unspecified' BEFORE 'building';--> statement-breakpoint
 ALTER TABLE "deployment_variable" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "deployment_variable_set" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint

@@ -110,16 +110,6 @@ export const updateResourceProviderAws = createResourceProviderAws.partial();
 
 export type ResourceProviderAws = InferSelectModel<typeof resourceProviderAws>;
 
-export const resourceProviderAwsRelations = relations(
-  resourceProviderAws,
-  ({ one }) => ({
-    provider: one(resourceProvider, {
-      fields: [resourceProviderAws.resourceProviderId],
-      references: [resourceProvider.id],
-    }),
-  }),
-);
-
 export const azureTenant = pgTable(
   "azure_tenant",
   {

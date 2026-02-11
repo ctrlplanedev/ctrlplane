@@ -5,11 +5,11 @@ import (
 	"sort"
 	"time"
 	"workspace-engine/pkg/oapi"
-	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/memory"
 )
 
 type UserApprovalRecords struct {
-	repo  *repository.Repo
+	repo  *memory.InMemory
 	store *Store
 }
 

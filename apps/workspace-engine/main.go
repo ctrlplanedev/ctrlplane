@@ -21,6 +21,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
+	wsstore "workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -218,6 +219,9 @@ func main() {
 		manager.WithPersistentStore(store),
 		manager.WithWorkspaceCreateOptions(
 			workspace.WithTraceStore(traceStore),
+			workspace.WithStoreOptions(
+				wsstore.WithDBDeploymentVersions(ctx),
+			),
 			workspace.AddDefaultSystem(),
 		),
 	)
