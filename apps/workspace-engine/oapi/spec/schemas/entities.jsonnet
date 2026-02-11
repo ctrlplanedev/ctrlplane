@@ -37,6 +37,25 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
+  ResourcePreviewRequest: {
+    type: 'object',
+    required: ['name', 'version', 'kind', 'identifier', 'config', 'metadata'],
+    properties: {
+      name: { type: 'string' },
+      version: { type: 'string' },
+      kind: { type: 'string' },
+      identifier: { type: 'string' },
+      config: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      metadata: {
+        type: 'object',
+        additionalProperties: { type: 'string' },
+      },
+    },
+  },
+
   ResourceProvider: {
     type: 'object',
     required: ['id', 'workspaceId', 'name', 'createdAt', 'metadata'],
@@ -226,6 +245,16 @@ local openapi = import '../lib/openapi.libsonnet';
       desiredVersion: openapi.schemaRef('VersionSummary'),
       currentVersion: openapi.schemaRef('VersionSummary'),
       latestJob: openapi.schemaRef('JobSummary'),
+    },
+  },
+
+  ReleaseTargetPreview: {
+    type: 'object',
+    required: ['system', 'deployment', 'environment'],
+    properties: {
+      system: openapi.schemaRef('System'),
+      deployment: openapi.schemaRef('Deployment'),
+      environment: openapi.schemaRef('Environment'),
     },
   },
 

@@ -1588,6 +1588,25 @@
             ],
             "type": "object"
          },
+         "ReleaseTargetPreview": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "system": {
+                  "$ref": "#/components/schemas/System"
+               }
+            },
+            "required": [
+               "system",
+               "deployment",
+               "environment"
+            ],
+            "type": "object"
+         },
          "ReleaseTargetState": {
             "properties": {
                "currentRelease": {
@@ -1740,6 +1759,41 @@
                "identifier",
                "createdAt",
                "workspaceId",
+               "config",
+               "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourcePreviewRequest": {
+            "properties": {
+               "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "identifier": {
+                  "type": "string"
+               },
+               "kind": {
+                  "type": "string"
+               },
+               "metadata": {
+                  "additionalProperties": {
+                     "type": "string"
+                  },
+                  "type": "object"
+               },
+               "name": {
+                  "type": "string"
+               },
+               "version": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "version",
+               "kind",
+               "identifier",
                "config",
                "metadata"
             ],
@@ -5290,6 +5344,105 @@
                }
             },
             "summary": "Evaluate policies for a release target"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/release-targets/resource-preview": {
+         "post": {
+            "description": "Simulates which release targets would be created if the given resource were added to the workspace. This is a dry-run endpoint — no resources or release targets are actually created.",
+            "operationId": "previewReleaseTargetsForResource",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "Maximum number of items to return",
+                  "in": "query",
+                  "name": "limit",
+                  "required": false,
+                  "schema": {
+                     "default": 50,
+                     "maximum": 1000,
+                     "minimum": 1,
+                     "type": "integer"
+                  }
+               },
+               {
+                  "description": "Number of items to skip",
+                  "in": "query",
+                  "name": "offset",
+                  "required": false,
+                  "schema": {
+                     "default": 0,
+                     "minimum": 0,
+                     "type": "integer"
+                  }
+               }
+            ],
+            "requestBody": {
+               "content": {
+                  "application/json": {
+                     "schema": {
+                        "$ref": "#/components/schemas/ResourcePreviewRequest"
+                     }
+                  }
+               },
+               "required": true
+            },
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "properties": {
+                              "items": {
+                                 "items": {
+                                    "$ref": "#/components/schemas/ReleaseTargetPreview"
+                                 },
+                                 "type": "array"
+                              },
+                              "limit": {
+                                 "description": "Maximum number of items returned",
+                                 "type": "integer"
+                              },
+                              "offset": {
+                                 "description": "Number of items skipped",
+                                 "type": "integer"
+                              },
+                              "total": {
+                                 "description": "Total number of items available",
+                                 "type": "integer"
+                              }
+                           },
+                           "required": [
+                              "items",
+                              "total",
+                              "limit",
+                              "offset"
+                           ],
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "description": "Paginated list of items"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               }
+            },
+            "summary": "Preview release targets for a resource"
          }
       },
       "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
