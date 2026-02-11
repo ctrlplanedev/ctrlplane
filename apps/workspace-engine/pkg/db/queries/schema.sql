@@ -63,3 +63,12 @@ CREATE TABLE environment (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT environment_uniq UNIQUE (system_id, name)
 );
+
+CREATE TABLE changelog_entry (
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    entity_data JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (workspace_id, entity_type, entity_id)
+);
