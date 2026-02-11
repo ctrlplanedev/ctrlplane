@@ -13,6 +13,7 @@ import {
 
 import { resource } from "./resource.js";
 import { system } from "./system.js";
+import { workspace } from "./workspace.js";
 
 export const environment = pgTable(
   "environment",
@@ -34,6 +35,8 @@ export const environment = pgTable(
       .notNull()
       .default("{}")
       .$type<Record<string, string>>(),
+
+    workspaceId: uuid("workspace_id").references(() => workspace.id),
   },
   (t) => [uniqueIndex().on(t.systemId, t.name)],
 );

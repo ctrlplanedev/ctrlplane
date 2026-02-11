@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { deployment } from "./deployment.js";
+import { workspace } from "./workspace.js";
 
 export const versionStatus = pgEnum("deployment_version_status", [
   "unspecified",
@@ -44,6 +45,8 @@ export const deploymentVersion = pgTable(
       .notNull()
       .default("{}")
       .$type<Record<string, string>>(),
+
+    workspaceId: uuid("workspace_id").references(() => workspace.id),
   },
   (t) => [
     uniqueIndex().on(t.deploymentId, t.tag),

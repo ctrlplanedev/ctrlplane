@@ -1,5 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { workspace } from "./workspace.js";
 
@@ -13,6 +13,11 @@ export const system = pgTable(
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspace.id, { onDelete: "cascade" }),
+
+    metadata: jsonb("metadata")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, string>>(),
   },
   (t) => [uniqueIndex().on(t.workspaceId, t.slug)],
 );

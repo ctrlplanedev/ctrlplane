@@ -12,6 +12,7 @@ import {
 import { jobAgent } from "./job-agent.js";
 import { resource } from "./resource.js";
 import { system } from "./system.js";
+import { workspace } from "./workspace.js";
 
 export const deployment = pgTable(
   "deployment",
@@ -33,8 +34,10 @@ export const deployment = pgTable(
     resourceSelector: jsonb("resource_selector")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),
+
+    workspaceId: uuid("workspace_id").references(() => workspace.id),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
+  (t) => [uniqueIndex().on(t.systemId, t.slug)],
 );
 
 export const computedDeploymentResource = pgTable(
