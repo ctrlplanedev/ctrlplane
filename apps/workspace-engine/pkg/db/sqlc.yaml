@@ -6,6 +6,7 @@ sql:
     queries:
       - queries/workspaces.sql
       - queries/deployment_versions.sql
+      - queries/changelog.sql
     gen:
       go:
         package: db

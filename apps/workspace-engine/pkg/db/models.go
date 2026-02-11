@@ -56,6 +56,14 @@ func (ns NullDeploymentVersionStatus) Value() (driver.Value, error) {
 	return string(ns.DeploymentVersionStatus), nil
 }
 
+type ChangelogEntry struct {
+	WorkspaceID uuid.UUID
+	EntityType  string
+	EntityID    string
+	EntityData  []byte
+	CreatedAt   pgtype.Timestamptz
+}
+
 type Deployment struct {
 	ID               uuid.UUID
 	Name             string
