@@ -16,7 +16,7 @@ func NewResourceVariables(store *Store) *ResourceVariables {
 }
 
 type ResourceVariables struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

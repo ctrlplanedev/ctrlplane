@@ -14,7 +14,7 @@ func NewJobAgents(store *Store) *JobAgents {
 }
 
 type JobAgents struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

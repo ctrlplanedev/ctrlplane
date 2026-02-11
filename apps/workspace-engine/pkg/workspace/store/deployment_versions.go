@@ -6,6 +6,15 @@ import (
 	"workspace-engine/pkg/workspace/store/repository"
 )
 
+// DeploymentVersionStore defines the interface for deployment version storage.
+// Production uses a DB-backed implementation; tests use the in-memory implementation.
+type DeploymentVersionStore interface {
+	Get(ctx context.Context, id string) (*oapi.DeploymentVersion, error)
+	GetByDeploymentID(ctx context.Context, deploymentID string) ([]*oapi.DeploymentVersion, error)
+	Upsert(ctx context.Context, version *oapi.DeploymentVersion) error
+	Remove(ctx context.Context, id string) error
+}
+
 func NewDeploymentVersions(store *Store) *DeploymentVersions {
 	return &DeploymentVersions{
 		repo:  store.repo,
@@ -14,7 +23,7 @@ func NewDeploymentVersions(store *Store) *DeploymentVersions {
 }
 
 type DeploymentVersions struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

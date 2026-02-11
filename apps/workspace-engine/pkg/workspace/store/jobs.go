@@ -16,7 +16,7 @@ func NewJobs(store *Store) *Jobs {
 }
 
 type Jobs struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

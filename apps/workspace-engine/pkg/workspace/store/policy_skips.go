@@ -15,7 +15,7 @@ func NewPolicySkips(store *Store) *PolicySkips {
 }
 
 type PolicySkips struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

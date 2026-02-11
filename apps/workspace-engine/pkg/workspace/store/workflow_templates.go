@@ -14,7 +14,7 @@ func NewWorkflowTemplates(store *Store) *WorkflowTemplates {
 }
 
 type WorkflowTemplates struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

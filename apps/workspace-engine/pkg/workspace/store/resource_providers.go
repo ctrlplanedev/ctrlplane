@@ -7,7 +7,7 @@ import (
 )
 
 type ResourceProviders struct {
-	repo      *repository.InMemoryStore
+	repo      *repository.Repo
 	resources *Resources
 	store     *Store
 }

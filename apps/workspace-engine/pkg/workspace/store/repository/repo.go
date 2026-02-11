@@ -32,14 +32,14 @@ func createMemDBStore[E persistence.Entity](router *persistence.RepositoryRouter
 	return indexstore.NewStore(db, entityType, fn)
 }
 
-func New(wsId string) *InMemoryStore {
+func New(wsId string) *Repo {
 	router := persistence.NewRepositoryRouter()
 	memdb, err := indexstore.NewDB()
 	if err != nil {
 		panic(err)
 	}
 
-	return &InMemoryStore{
+	return &Repo{
 		router: router,
 		db:     memdb,
 
@@ -68,10 +68,10 @@ func New(wsId string) *InMemoryStore {
 	}
 }
 
-// InMemoryStore provides type-safe access to workspace entities stored in memory.
+// Repo provides type-safe access to workspace entities stored in memory.
 // It exposes typed concurrent maps for direct access while maintaining a router
 // for receiving generic persistence updates from Kafka/Pebble.
-type InMemoryStore struct {
+type Repo struct {
 	router *persistence.RepositoryRouter
 	db     *memdb.MemDB
 
@@ -104,10 +104,10 @@ type InMemoryStore struct {
 	WorkflowJobs         cmap.ConcurrentMap[string, *oapi.WorkflowJob]
 }
 
-func (s *InMemoryStore) Router() *persistence.RepositoryRouter {
+func (s *Repo) Router() *persistence.RepositoryRouter {
 	return s.router
 }
 
-func (s *InMemoryStore) DB() *memdb.MemDB {
+func (s *Repo) DB() *memdb.MemDB {
 	return s.db
 }

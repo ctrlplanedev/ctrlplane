@@ -11,7 +11,7 @@ func NewDeploymentVariableValues(store *Store) *DeploymentVariableValues {
 }
 
 type DeploymentVariableValues struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

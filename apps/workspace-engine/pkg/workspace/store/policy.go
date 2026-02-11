@@ -15,7 +15,7 @@ func NewPolicies(store *Store) *Policies {
 }
 
 type Policies struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

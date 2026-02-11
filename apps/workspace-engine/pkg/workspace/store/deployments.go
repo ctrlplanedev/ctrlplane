@@ -22,7 +22,7 @@ func NewDeployments(store *Store) *Deployments {
 }
 
 type Deployments struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

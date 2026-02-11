@@ -9,7 +9,7 @@ import (
 )
 
 type UserApprovalRecords struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

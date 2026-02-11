@@ -47,7 +47,7 @@ func New(wsId string, changeset *statechange.ChangeSet[any]) *Store {
 
 type Store struct {
 	id        string
-	repo      *repository.InMemoryStore
+	repo      *repository.Repo
 	changeset *statechange.ChangeSet[any]
 
 	Policies                 *Policies
@@ -82,7 +82,7 @@ func (s *Store) ID() string {
 	return s.id
 }
 
-func (s *Store) Repo() *repository.InMemoryStore {
+func (s *Store) Repo() *repository.Repo {
 	return s.repo
 }
 

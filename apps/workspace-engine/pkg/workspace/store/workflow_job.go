@@ -15,7 +15,7 @@ func NewWorkflowJobs(store *Store) *WorkflowJobs {
 }
 
 type WorkflowJobs struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

@@ -14,7 +14,7 @@ func NewSystems(store *Store) *Systems {
 }
 
 type Systems struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

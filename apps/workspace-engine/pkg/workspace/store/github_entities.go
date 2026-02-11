@@ -8,7 +8,7 @@ import (
 )
 
 type GithubEntities struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 

@@ -16,7 +16,7 @@ func NewEnvironments(store *Store) *Environments {
 }
 
 type Environments struct {
-	repo  *repository.InMemoryStore
+	repo  *repository.Repo
 	store *Store
 }
 
