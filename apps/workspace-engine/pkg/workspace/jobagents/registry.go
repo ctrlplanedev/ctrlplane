@@ -81,8 +81,8 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 
 	if workflowJob, ok := r.store.WorkflowJobs.Get(job.WorkflowJobId); ok {
 		dispatchContext.WorkflowJob = workflowJob
-		if workflow, ok := r.store.Workflows.Get(workflowJob.WorkflowId); ok {
-			dispatchContext.Workflow = workflow
+		if workflowRun, ok := r.store.WorkflowRuns.Get(workflowJob.WorkflowRunId); ok {
+			dispatchContext.WorkflowRun = workflowRun
 		}
 		dispatchContext.JobAgent = jobAgent
 		dispatchContext.JobAgentConfig = job.JobAgentConfig

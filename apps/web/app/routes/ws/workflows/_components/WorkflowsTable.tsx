@@ -1,4 +1,6 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
+import { formatDistanceToNowStrict } from "date-fns";
+import _ from "lodash";
 
 import {
   Table,
@@ -8,19 +10,17 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { useWorkflowTemplate } from "./WorkflowTemplateProvider";
-import { formatDistanceToNowStrict } from "date-fns";
-import _ from "lodash";
 import { useWorkspace } from "~/components/WorkspaceProvider";
+import { useWorkflow } from "./WorkflowProvider";
 
-const WorkflowStatusDisplayName = {
+const WorkflowRunStatusDisplayName = {
   successful: "Successful",
   failed: "Failed",
   inProgress: "In Progress",
   pending: "Pending",
 } as const;
 
-const WorkflowStatusBadgeColor: Record<string, string> = {
+const WorkflowRunStatusBadgeColor: Record<string, string> = {
   successful:
     "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800",
   failed:
@@ -31,10 +31,10 @@ const WorkflowStatusBadgeColor: Record<string, string> = {
     "bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800",
 };
 
-function getWorkflowStatus(
-  workflow: WorkspaceEngine["schemas"]["WorkflowWithJobs"],
-): keyof typeof WorkflowStatusDisplayName {
-  const { jobs: wfJobs } = workflow;
+function getWorkflowRunStatus(
+  workflowRun: WorkspaceEngine["schemas"]["WorkflowRunWithJobs"],
+): keyof typeof WorkflowRunStatusDisplayName {
+  const { jobs: wfJobs } = workflowRun;
 
   if (
     wfJobs.every((wfJob) =>
@@ -71,59 +71,73 @@ function getWorkflowStatus(
   return "pending";
 }
 
-function workflowCreatedAt(workflow: WorkspaceEngine["schemas"]["WorkflowWithJobs"]) {
- const dateStr = _.chain(workflow.jobs).flatMap((wfJob) => wfJob.jobs).map((job) => job.createdAt).min().value();
- if (dateStr == null) return null;
- return new Date(dateStr);
+function workflowRunCreatedAt(
+  workflowRun: WorkspaceEngine["schemas"]["WorkflowRunWithJobs"],
+) {
+  const dateStr = _.chain(workflowRun.jobs)
+    .flatMap((wfJob) => wfJob.jobs)
+    .map((job) => job.createdAt)
+    .min()
+    .value();
+  if (dateStr == null) return null;
+  return new Date(dateStr);
 }
 
-function WorkflowStatusBadge({
-  workflow,
+function WorkflowRunStatusBadge({
+  workflowRun,
 }: {
-  workflow: WorkspaceEngine["schemas"]["WorkflowWithJobs"];
+  workflowRun: WorkspaceEngine["schemas"]["WorkflowRunWithJobs"];
 }) {
-  const status = getWorkflowStatus(workflow);
+  const status = getWorkflowRunStatus(workflowRun);
   return (
     <span
-      className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${WorkflowStatusBadgeColor[status]}`}
+      className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${WorkflowRunStatusBadgeColor[status]}`}
     >
-      {WorkflowStatusDisplayName[status]}
+      {WorkflowRunStatusDisplayName[status]}
     </span>
   );
 }
 
 function useWorkflowLink(workflowId: string) {
   const { workspace } = useWorkspace();
-  const { workflowTemplate } = useWorkflowTemplate();
-  return `/${workspace.slug}/workflows/${workflowTemplate.id}/${workflowId}`;
+  const { workflow } = useWorkflow();
+  return `/${workspace.slug}/workflows/${workflow.id}/${workflowId}`;
 }
 
-function WorkflowRow({ workflow }: { workflow: WorkspaceEngine["schemas"]["WorkflowWithJobs"] }) {
-  const createdAt = workflowCreatedAt(workflow);
-  const workflowLink = useWorkflowLink(workflow.id);
+function WorkflowRunRow({
+  workflowRun,
+}: {
+  workflowRun: WorkspaceEngine["schemas"]["WorkflowRunWithJobs"];
+}) {
+  const createdAt = workflowRunCreatedAt(workflowRun);
+  const workflowLink = useWorkflowLink(workflowRun.id);
 
   return (
-    <TableRow key={workflow.id}>
+    <TableRow key={workflowRun.id}>
       <TableCell>
         <a href={workflowLink} className="cursor-pointer hover:underline">
-          {workflow.id}
+          {workflowRun.id}
         </a>
       </TableCell>
-      <TableCell>{workflow.jobs.length}</TableCell>
+      <TableCell>{workflowRun.jobs.length}</TableCell>
       <TableCell>
-        <WorkflowStatusBadge workflow={workflow} />
+        <WorkflowRunStatusBadge workflowRun={workflowRun} />
       </TableCell>
       <TableCell>
-        {createdAt != null ? formatDistanceToNowStrict(createdAt, { addSuffix: true }) : <span className="text-muted-foreground">—</span>}
+        {createdAt != null ? (
+          formatDistanceToNowStrict(createdAt, { addSuffix: true })
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
     </TableRow>
-  )
+  );
 }
 
 export function WorkflowsTable() {
-  const { workflowTemplate } = useWorkflowTemplate();
-  const { workflows } = workflowTemplate
-  const wfsReversed = [...workflows].reverse();
+  const { workflow } = useWorkflow();
+  const { workflowRuns } = workflow;
+  const wfrunsReversed = [...workflowRuns].reverse();
 
   return (
     <Table>
@@ -136,10 +150,10 @@ export function WorkflowsTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {wfsReversed.map((workflow) => (
-          <WorkflowRow key={workflow.id} workflow={workflow} />
+        {wfrunsReversed.map((workflowRun) => (
+          <WorkflowRunRow key={workflowRun.id} workflowRun={workflowRun} />
         ))}
       </TableBody>
     </Table>
-  )
+  );
 }

@@ -89,10 +89,10 @@ var handlers = handler.HandlerRegistry{
 
 	handler.ReleaseTargetDeploy: redeploy.HandleReleaseTargetDeploy,
 
-	handler.WorkflowTemplateCreate: workflows.HandleWorkflowTemplateCreated,
-	handler.WorkflowTemplateUpdate: workflows.HandleWorkflowTemplateUpdated,
-	handler.WorkflowTemplateDelete: workflows.HandleWorkflowTemplateDeleted,
-	handler.WorkflowCreate:         workflows.HandleWorkflowCreated,
+	handler.WorkflowCreate:    workflows.HandleWorkflowCreated,
+	handler.WorkflowUpdate:    workflows.HandleWorkflowUpdated,
+	handler.WorkflowDelete:    workflows.HandleWorkflowDeleted,
+	handler.WorkflowRunCreate: workflows.HandleWorkflowRunCreated,
 }
 
 func NewEventHandler() *handler.EventListener {

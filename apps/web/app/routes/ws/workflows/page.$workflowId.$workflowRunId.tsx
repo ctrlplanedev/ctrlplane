@@ -7,12 +7,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
+import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { SidebarTrigger } from "~/components/ui/sidebar";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { useWorkflowTemplate } from "./_components/WorkflowTemplateProvider";
-import { WorkflowJobCard } from "./_components/WorkflowCard";
-import { Label } from "~/components/ui/label";
+import { WorkflowJobCard } from "./_components/WorkflowJobCard";
+import { useWorkflow } from "./_components/WorkflowProvider";
 
 export function meta() {
   return [
@@ -22,7 +22,7 @@ export function meta() {
 }
 
 function PageHeader() {
-  const { workflowTemplate } = useWorkflowTemplate();
+  const { workflow } = useWorkflow();
   const { workspace } = useWorkspace();
   const { workflowId } = useParams<{ workflowId: string }>();
 
@@ -40,8 +40,8 @@ function PageHeader() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <Link to={`/${workspace.slug}/workflows/${workflowTemplate.id}`}>
-              {workflowTemplate.name}
+            <Link to={`/${workspace.slug}/workflows/${workflow.id}`}>
+              {workflow.name}
             </Link>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -54,13 +54,26 @@ function PageHeader() {
   );
 }
 
+function RunHeader() {
+  const { workflow } = useWorkflow();
+  const { workflowRunId } = useParams<{ workflowRunId: string }>();
+  const { name } = workflow;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <h1 className="text-xl font-semibold">{name}</h1>
+      <p className="text-sm text-muted-foreground">Run {workflowRunId}</p>
+    </div>
+  );
+}
+
 export default function WorkflowPage() {
-  const { workflowId } = useParams<{ workflowId: string }>();
-  const { workflowTemplate } = useWorkflowTemplate();
+  const { workflowRunId } = useParams<{ workflowRunId: string }>();
+  const { workflow } = useWorkflow();
 
-  const workflow = workflowTemplate.workflows.find((w) => w.id === workflowId);
+  const workflowRun = workflow.workflowRuns.find((w) => w.id === workflowRunId);
 
-  if (workflow == null)
+  if (workflowRun == null)
     return (
       <>
         <PageHeader />
@@ -73,18 +86,20 @@ export default function WorkflowPage() {
   return (
     <>
       <PageHeader />
-      <div className="p-4 space-y-4">
-        <h1 className="text-xl font-semibold">Workflow {workflowId}</h1>
+      <div className="space-y-4 p-4">
+        <RunHeader />
 
-        <div className="space-y-2 w-96">
+        <div className="w-96 space-y-2">
           <Label>Inputs</Label>
-          <pre className="text-sm bg-muted p-2 rounded-md">{JSON.stringify(workflow.inputs, null, 2)}</pre>
+          <pre className="rounded-md bg-muted p-2 text-sm">
+            {JSON.stringify(workflow.inputs, null, 2)}
+          </pre>
         </div>
 
         <div className="space-y-2">
-          <Label>Workflow Jobs</Label>
+          <Label>Jobs</Label>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {workflow.jobs.map((job) => (
+            {workflowRun.jobs.map((job) => (
               <WorkflowJobCard key={job.id} workflowJob={job} />
             ))}
           </div>

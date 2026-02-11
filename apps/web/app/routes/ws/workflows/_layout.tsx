@@ -1,40 +1,44 @@
 import { Outlet, useParams } from "react-router";
-import { useWorkspace } from "~/components/WorkspaceProvider";
+
+import type { Workflow } from "./_components/WorkflowProvider";
 import { trpc } from "~/api/trpc";
 import { Spinner } from "~/components/ui/spinner";
-import { WorkflowTemplateProvider, type WorkflowTemplate } from "./_components/WorkflowTemplateProvider";
+import { useWorkspace } from "~/components/WorkspaceProvider";
+import { WorkflowProvider } from "./_components/WorkflowProvider";
 
-function useWorkflowTemplate() {
+function useWorkflow() {
   const { workspace } = useWorkspace();
-  const { workflowTemplateId } = useParams<{ workflowTemplateId: string }>();
-  const { data: workflowTemplate, isLoading } = trpc.workflows.templates.get.useQuery({ workspaceId: workspace.id, workflowTemplateId: workflowTemplateId ?? "" });
-  return { workflowTemplate, isLoading };
+  const { workflowId } = useParams<{ workflowId: string }>();
+  const { data: workflow, isLoading } = trpc.workflows.get.useQuery({
+    workspaceId: workspace.id,
+    workflowId: workflowId ?? "",
+  });
+  return { workflow, isLoading };
 }
 
-function useTemplateWorkflows() {
+function useWorkflowRuns() {
   const { workspace } = useWorkspace();
-  const { workflowTemplateId } = useParams<{ workflowTemplateId: string }>();
-  const { data: workflows, isLoading } = trpc.workflows.templates.workflows.useQuery({ workspaceId: workspace.id, workflowTemplateId: workflowTemplateId ?? "" });
-  return { workflows: workflows?.items ?? [], isLoading };
+  const { workflowId } = useParams<{ workflowId: string }>();
+  const { data: workflowRuns, isLoading } = trpc.workflows.runs.list.useQuery({
+    workspaceId: workspace.id,
+    workflowId: workflowId ?? "",
+  });
+  return { workflowRuns: workflowRuns?.items ?? [], isLoading };
 }
 
 export default function WorkflowsLayout() {
-  const { workflowTemplate, isLoading: isWorkflowTemplateLoading } = useWorkflowTemplate();
-  const { workflows, isLoading: isTemplateWorkflowsLoading } = useTemplateWorkflows();
+  const { workflow, isLoading: isWorkflowLoading } = useWorkflow();
+  const { workflowRuns, isLoading: isWorkflowRunsLoading } = useWorkflowRuns();
 
-  if (isWorkflowTemplateLoading || isTemplateWorkflowsLoading)
-    return <Spinner />;
+  if (isWorkflowLoading || isWorkflowRunsLoading) return <Spinner />;
 
-  if (workflowTemplate == null) throw new Error("Workflow template not found");
+  if (workflow == null) throw new Error("Workflow not found");
 
-  const wfTemplate: WorkflowTemplate = {
-    ...workflowTemplate,
-    workflows,
-  };
+  const wf: Workflow = { ...workflow, workflowRuns };
 
   return (
-    <WorkflowTemplateProvider workflowTemplate={wfTemplate}>
+    <WorkflowProvider workflow={wf}>
       <Outlet />
-    </WorkflowTemplateProvider>
+    </WorkflowProvider>
   );
 }

@@ -131,7 +131,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  CreateWorkflowTemplate: {
+  CreateWorkflow: {
     type: 'object',
     required: ['name', 'inputs', 'jobs'],
     properties: {
@@ -147,7 +147,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  UpdateWorkflowTemplate: {
+  UpdateWorkflow: {
     type: 'object',
     required: ['name', 'inputs', 'jobs'],
     properties: {
@@ -163,7 +163,7 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  WorkflowTemplate: {
+  Workflow: {
     type: 'object',
     required: ['id', 'name', 'inputs', 'jobs'],
     properties: {
@@ -180,12 +180,12 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  Workflow: {
+  WorkflowRun: {
     type: 'object',
-    required: ['id', 'workflowTemplateId', 'inputs'],
+    required: ['id', 'workflowId', 'inputs'],
     properties: {
       id: { type: 'string' },
-      workflowTemplateId: { type: 'string' },
+      workflowId: { type: 'string' },
       inputs: {
         type: 'object',
         additionalProperties: true,

@@ -68,10 +68,10 @@ export enum Event {
 
   ResourceProviderSetResources = "resource-provider.set-resources",
 
-  WorkflowTemplateCreated = "workflow-template.created",
-  WorkflowTemplateUpdated = "workflow-template.updated",
-  WorkflowTemplateDeleted = "workflow-template.deleted",
   WorkflowCreated = "workflow.created",
+  WorkflowUpdated = "workflow.updated",
+  WorkflowDeleted = "workflow.deleted",
+  WorkflowRunCreated = "workflow-run.created",
 }
 
 export type GoEventPayload = {
@@ -122,10 +122,10 @@ export type GoEventPayload = {
     providerId: string;
     batchId: string;
   };
-  [Event.WorkflowTemplateCreated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
-  [Event.WorkflowTemplateUpdated]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
-  [Event.WorkflowTemplateDeleted]: WorkspaceEngine["schemas"]["WorkflowTemplate"];
   [Event.WorkflowCreated]: WorkspaceEngine["schemas"]["Workflow"];
+  [Event.WorkflowUpdated]: WorkspaceEngine["schemas"]["Workflow"];
+  [Event.WorkflowDeleted]: WorkspaceEngine["schemas"]["Workflow"];
+  [Event.WorkflowRunCreated]: WorkspaceEngine["schemas"]["WorkflowRun"];
 };
 
 export type GoMessage<T extends keyof GoEventPayload> = {

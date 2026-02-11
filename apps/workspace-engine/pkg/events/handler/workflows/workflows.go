@@ -8,45 +8,6 @@ import (
 	"workspace-engine/pkg/workspace"
 )
 
-func HandleWorkflowTemplateCreated(
-	ctx context.Context,
-	ws *workspace.Workspace,
-	event handler.RawEvent,
-) error {
-	workflowTemplate := &oapi.WorkflowTemplate{}
-	if err := json.Unmarshal(event.Data, workflowTemplate); err != nil {
-		return err
-	}
-	ws.WorkflowTemplates().Upsert(ctx, workflowTemplate)
-	return nil
-}
-
-func HandleWorkflowTemplateUpdated(
-	ctx context.Context,
-	ws *workspace.Workspace,
-	event handler.RawEvent,
-) error {
-	workflowTemplate := &oapi.WorkflowTemplate{}
-	if err := json.Unmarshal(event.Data, workflowTemplate); err != nil {
-		return err
-	}
-	ws.WorkflowTemplates().Upsert(ctx, workflowTemplate)
-	return nil
-}
-
-func HandleWorkflowTemplateDeleted(
-	ctx context.Context,
-	ws *workspace.Workspace,
-	event handler.RawEvent,
-) error {
-	workflowTemplate := &oapi.WorkflowTemplate{}
-	if err := json.Unmarshal(event.Data, workflowTemplate); err != nil {
-		return err
-	}
-	ws.WorkflowTemplates().Remove(ctx, workflowTemplate.Id)
-	return nil
-}
-
 func HandleWorkflowCreated(
 	ctx context.Context,
 	ws *workspace.Workspace,
@@ -56,8 +17,47 @@ func HandleWorkflowCreated(
 	if err := json.Unmarshal(event.Data, workflow); err != nil {
 		return err
 	}
+	ws.Workflows().Upsert(ctx, workflow)
+	return nil
+}
 
-	if _, err := ws.WorkflowManager().CreateWorkflow(ctx, workflow.WorkflowTemplateId, workflow.Inputs); err != nil {
+func HandleWorkflowUpdated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	workflow := &oapi.Workflow{}
+	if err := json.Unmarshal(event.Data, workflow); err != nil {
+		return err
+	}
+	ws.Workflows().Upsert(ctx, workflow)
+	return nil
+}
+
+func HandleWorkflowDeleted(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	workflow := &oapi.Workflow{}
+	if err := json.Unmarshal(event.Data, workflow); err != nil {
+		return err
+	}
+	ws.Workflows().Remove(ctx, workflow.Id)
+	return nil
+}
+
+func HandleWorkflowRunCreated(
+	ctx context.Context,
+	ws *workspace.Workspace,
+	event handler.RawEvent,
+) error {
+	workflowRun := &oapi.WorkflowRun{}
+	if err := json.Unmarshal(event.Data, workflowRun); err != nil {
+		return err
+	}
+
+	if _, err := ws.WorkflowManager().CreateWorkflowRun(ctx, workflowRun.WorkflowId, workflowRun.Inputs); err != nil {
 		return err
 	}
 	return nil

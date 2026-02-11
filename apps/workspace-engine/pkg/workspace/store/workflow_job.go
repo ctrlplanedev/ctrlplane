@@ -47,10 +47,10 @@ func (w *WorkflowJobs) Remove(ctx context.Context, id string) {
 	w.store.changeset.RecordDelete(workflowJob)
 }
 
-func (w *WorkflowJobs) GetByWorkflowId(workflowId string) []*oapi.WorkflowJob {
+func (w *WorkflowJobs) GetByWorkflowRunId(workflowRunId string) []*oapi.WorkflowJob {
 	wfJobs := make([]*oapi.WorkflowJob, 0)
 	for _, job := range w.repo.WorkflowJobs.Items() {
-		if job.WorkflowId == workflowId {
+		if job.WorkflowRunId == workflowRunId {
 			wfJobs = append(wfJobs, job)
 		}
 	}

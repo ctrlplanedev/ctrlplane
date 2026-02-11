@@ -1188,9 +1188,10 @@ type VersionSummary struct {
 
 // Workflow defines model for Workflow.
 type Workflow struct {
-	Id                 string                 `json:"id"`
-	Inputs             map[string]interface{} `json:"inputs"`
-	WorkflowTemplateId string                 `json:"workflowTemplateId"`
+	Id     string                `json:"id"`
+	Inputs []WorkflowInput       `json:"inputs"`
+	Jobs   []WorkflowJobTemplate `json:"jobs"`
+	Name   string                `json:"name"`
 }
 
 // WorkflowArrayInput defines model for WorkflowArrayInput.
@@ -1221,8 +1222,8 @@ type WorkflowJob struct {
 	Index  int                    `json:"index"`
 
 	// Ref Reference to the job agent
-	Ref        string `json:"ref"`
-	WorkflowId string `json:"workflowId"`
+	Ref           string `json:"ref"`
+	WorkflowRunId string `json:"workflowRunId"`
 }
 
 // WorkflowJobAgentConfig defines model for WorkflowJobAgentConfig.
@@ -1269,8 +1270,8 @@ type WorkflowJobWithJobs struct {
 	Jobs   []Job                  `json:"jobs"`
 
 	// Ref Reference to the job agent
-	Ref        string `json:"ref"`
-	WorkflowId string `json:"workflowId"`
+	Ref           string `json:"ref"`
+	WorkflowRunId string `json:"workflowRunId"`
 }
 
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
@@ -1303,6 +1304,21 @@ type WorkflowObjectInput struct {
 // WorkflowObjectInputType defines model for WorkflowObjectInput.Type.
 type WorkflowObjectInputType string
 
+// WorkflowRun defines model for WorkflowRun.
+type WorkflowRun struct {
+	Id         string                 `json:"id"`
+	Inputs     map[string]interface{} `json:"inputs"`
+	WorkflowId string                 `json:"workflowId"`
+}
+
+// WorkflowRunWithJobs defines model for WorkflowRunWithJobs.
+type WorkflowRunWithJobs struct {
+	Id         string                 `json:"id"`
+	Inputs     map[string]interface{} `json:"inputs"`
+	Jobs       []WorkflowJobWithJobs  `json:"jobs"`
+	WorkflowId string                 `json:"workflowId"`
+}
+
 // WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
 type WorkflowSelectorArrayInput struct {
 	Key      string `json:"key"`
@@ -1328,22 +1344,6 @@ type WorkflowStringInput struct {
 
 // WorkflowStringInputType defines model for WorkflowStringInput.Type.
 type WorkflowStringInputType string
-
-// WorkflowTemplate defines model for WorkflowTemplate.
-type WorkflowTemplate struct {
-	Id     string                `json:"id"`
-	Inputs []WorkflowInput       `json:"inputs"`
-	Jobs   []WorkflowJobTemplate `json:"jobs"`
-	Name   string                `json:"name"`
-}
-
-// WorkflowWithJobs defines model for WorkflowWithJobs.
-type WorkflowWithJobs struct {
-	Id                 string                 `json:"id"`
-	Inputs             map[string]interface{} `json:"inputs"`
-	Jobs               []WorkflowJobWithJobs  `json:"jobs"`
-	WorkflowTemplateId string                 `json:"workflowTemplateId"`
-}
 
 // ValidateResourceSelectorJSONBody defines parameters for ValidateResourceSelector.
 type ValidateResourceSelectorJSONBody struct {
@@ -1556,8 +1556,8 @@ type ListSystemsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// GetWorkflowTemplatesParams defines parameters for GetWorkflowTemplates.
-type GetWorkflowTemplatesParams struct {
+// ListWorkflowsParams defines parameters for ListWorkflows.
+type ListWorkflowsParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -1565,8 +1565,8 @@ type GetWorkflowTemplatesParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// GetWorkflowsByTemplateParams defines parameters for GetWorkflowsByTemplate.
-type GetWorkflowsByTemplateParams struct {
+// GetWorkflowRunsParams defines parameters for GetWorkflowRuns.
+type GetWorkflowRunsParams struct {
 	// Limit Maximum number of items to return
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -2819,15 +2819,15 @@ type ServerInterface interface {
 	// Get system
 	// (GET /v1/workspaces/{workspaceId}/systems/{systemId})
 	GetSystem(c *gin.Context, workspaceId string, systemId string)
-	// Get all workflow templates
-	// (GET /v1/workspaces/{workspaceId}/workflow-templates)
-	GetWorkflowTemplates(c *gin.Context, workspaceId string, params GetWorkflowTemplatesParams)
-	// Get a workflow template
-	// (GET /v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId})
-	GetWorkflowTemplate(c *gin.Context, workspaceId string, workflowTemplateId string)
-	// Get all workflows for a workflow template
-	// (GET /v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows)
-	GetWorkflowsByTemplate(c *gin.Context, workspaceId string, workflowTemplateId string, params GetWorkflowsByTemplateParams)
+	// List workflows
+	// (GET /v1/workspaces/{workspaceId}/workflows)
+	ListWorkflows(c *gin.Context, workspaceId string, params ListWorkflowsParams)
+	// Get a workflow
+	// (GET /v1/workspaces/{workspaceId}/workflows/{workflowId})
+	GetWorkflow(c *gin.Context, workspaceId string, workflowId string)
+	// Get all workflow runs for a workflow
+	// (GET /v1/workspaces/{workspaceId}/workflows/{workflowId}/runs)
+	GetWorkflowRuns(c *gin.Context, workspaceId string, workflowId string, params GetWorkflowRunsParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -4918,8 +4918,8 @@ func (siw *ServerInterfaceWrapper) GetSystem(c *gin.Context) {
 	siw.Handler.GetSystem(c, workspaceId, systemId)
 }
 
-// GetWorkflowTemplates operation middleware
-func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
+// ListWorkflows operation middleware
+func (siw *ServerInterfaceWrapper) ListWorkflows(c *gin.Context) {
 
 	var err error
 
@@ -4933,7 +4933,7 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetWorkflowTemplatesParams
+	var params ListWorkflowsParams
 
 	// ------------- Optional query parameter "limit" -------------
 
@@ -4958,11 +4958,11 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplates(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetWorkflowTemplates(c, workspaceId, params)
+	siw.Handler.ListWorkflows(c, workspaceId, params)
 }
 
-// GetWorkflowTemplate operation middleware
-func (siw *ServerInterfaceWrapper) GetWorkflowTemplate(c *gin.Context) {
+// GetWorkflow operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflow(c *gin.Context) {
 
 	var err error
 
@@ -4975,12 +4975,12 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplate(c *gin.Context) {
 		return
 	}
 
-	// ------------- Path parameter "workflowTemplateId" -------------
-	var workflowTemplateId string
+	// ------------- Path parameter "workflowId" -------------
+	var workflowId string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "workflowTemplateId", c.Param("workflowTemplateId"), &workflowTemplateId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowId", c.Param("workflowId"), &workflowId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowTemplateId: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowId: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -4991,11 +4991,11 @@ func (siw *ServerInterfaceWrapper) GetWorkflowTemplate(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetWorkflowTemplate(c, workspaceId, workflowTemplateId)
+	siw.Handler.GetWorkflow(c, workspaceId, workflowId)
 }
 
-// GetWorkflowsByTemplate operation middleware
-func (siw *ServerInterfaceWrapper) GetWorkflowsByTemplate(c *gin.Context) {
+// GetWorkflowRuns operation middleware
+func (siw *ServerInterfaceWrapper) GetWorkflowRuns(c *gin.Context) {
 
 	var err error
 
@@ -5008,17 +5008,17 @@ func (siw *ServerInterfaceWrapper) GetWorkflowsByTemplate(c *gin.Context) {
 		return
 	}
 
-	// ------------- Path parameter "workflowTemplateId" -------------
-	var workflowTemplateId string
+	// ------------- Path parameter "workflowId" -------------
+	var workflowId string
 
-	err = runtime.BindStyledParameterWithOptions("simple", "workflowTemplateId", c.Param("workflowTemplateId"), &workflowTemplateId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "workflowId", c.Param("workflowId"), &workflowId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowTemplateId: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter workflowId: %w", err), http.StatusBadRequest)
 		return
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params GetWorkflowsByTemplateParams
+	var params GetWorkflowRunsParams
 
 	// ------------- Optional query parameter "limit" -------------
 
@@ -5043,7 +5043,7 @@ func (siw *ServerInterfaceWrapper) GetWorkflowsByTemplate(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetWorkflowsByTemplate(c, workspaceId, workflowTemplateId, params)
+	siw.Handler.GetWorkflowRuns(c, workspaceId, workflowId, params)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -5128,7 +5128,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/status", wrapper.GetEngineStatus)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems", wrapper.ListSystems)
 	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/systems/:systemId", wrapper.GetSystem)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates", wrapper.GetWorkflowTemplates)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates/:workflowTemplateId", wrapper.GetWorkflowTemplate)
-	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflow-templates/:workflowTemplateId/workflows", wrapper.GetWorkflowsByTemplate)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows", wrapper.ListWorkflows)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId", wrapper.GetWorkflow)
+	router.GET(options.BaseURL+"/v1/workspaces/:workspaceId/workflows/:workflowId/runs", wrapper.GetWorkflowRuns)
 }

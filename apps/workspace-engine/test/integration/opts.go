@@ -1262,35 +1262,35 @@ func DeploymentVariableValueReferenceValue(reference string, path []string) Depl
 
 // ===== Workflow Options =====
 
-type WorkflowTemplateOption func(*TestWorkspace, *oapi.WorkflowTemplate)
+type WorkflowOption func(*TestWorkspace, *oapi.Workflow)
 
-func WithWorkflowTemplate(options ...WorkflowTemplateOption) WorkspaceOption {
+func WithWorkflow(options ...WorkflowOption) WorkspaceOption {
 	return func(ws *TestWorkspace) error {
-		wft := c.NewWorkflowTemplate(ws.workspace.ID)
+		wft := c.NewWorkflow(ws.workspace.ID)
 		for _, option := range options {
 			option(ws, wft)
 		}
-		ws.PushEvent(context.Background(), handler.WorkflowTemplateCreate, wft)
+		ws.PushEvent(context.Background(), handler.WorkflowCreate, wft)
 		return nil
 	}
 }
 
-func WorkflowTemplateName(name string) WorkflowTemplateOption {
-	return func(_ *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WorkflowName(name string) WorkflowOption {
+	return func(_ *TestWorkspace, wft *oapi.Workflow) {
 		wft.Name = name
 	}
 }
 
-func WorkflowTemplateID(id string) WorkflowTemplateOption {
-	return func(_ *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WorkflowID(id string) WorkflowOption {
+	return func(_ *TestWorkspace, wft *oapi.Workflow) {
 		wft.Id = id
 	}
 }
 
 type WorkflowInputOption func(*TestWorkspace, *oapi.WorkflowInput)
 
-func WithWorkflowStringInput(options ...WorkflowInputOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowStringInput(options ...WorkflowInputOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		input := c.NewStringWorkflowInput(wft.Id)
 		for _, option := range options {
 			option(ws, input)
@@ -1321,8 +1321,8 @@ func WorkflowStringInputDefault(defaultValue string) WorkflowInputOption {
 	}
 }
 
-func WithWorkflowNumberInput(options ...WorkflowInputOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowNumberInput(options ...WorkflowInputOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		input := c.NewNumberWorkflowInput(wft.Id)
 		for _, option := range options {
 			option(ws, input)
@@ -1353,8 +1353,8 @@ func WorkflowNumberInputDefault(defaultValue float32) WorkflowInputOption {
 	}
 }
 
-func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		input := c.NewBooleanWorkflowInput(wft.Id)
 		for _, option := range options {
 			option(ws, input)
@@ -1387,8 +1387,8 @@ func WorkflowBooleanInputDefault(defaultValue bool) WorkflowInputOption {
 
 type WorkflowJobTemplateOption func(*TestWorkspace, *oapi.WorkflowJobTemplate)
 
-func WithWorkflowJobTemplate(options ...WorkflowJobTemplateOption) WorkflowTemplateOption {
-	return func(ws *TestWorkspace, wft *oapi.WorkflowTemplate) {
+func WithWorkflowJobTemplate(options ...WorkflowJobTemplateOption) WorkflowOption {
+	return func(ws *TestWorkspace, wft *oapi.Workflow) {
 		jobTemplate := c.NewWorkflowJobTemplate(wft.Id)
 		for _, option := range options {
 			option(ws, jobTemplate)

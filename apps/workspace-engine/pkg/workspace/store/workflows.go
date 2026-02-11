@@ -26,16 +26,6 @@ func (w *Workflows) Get(id string) (*oapi.Workflow, bool) {
 	return w.repo.Workflows.Get(id)
 }
 
-func (w *Workflows) GetByTemplateID(templateID string) map[string]*oapi.Workflow {
-	workflows := make(map[string]*oapi.Workflow)
-	for _, workflow := range w.repo.Workflows.Items() {
-		if workflow.WorkflowTemplateId == templateID {
-			workflows[workflow.Id] = workflow
-		}
-	}
-	return workflows
-}
-
 func (w *Workflows) Upsert(ctx context.Context, workflow *oapi.Workflow) {
 	w.repo.Workflows.Set(workflow.Id, workflow)
 	w.store.changeset.RecordUpsert(workflow)
@@ -48,9 +38,9 @@ func (w *Workflows) Remove(ctx context.Context, id string) {
 	}
 	w.repo.Workflows.Remove(id)
 
-	workflowJobs := w.store.WorkflowJobs.GetByWorkflowId(id)
-	for _, workflowJob := range workflowJobs {
-		w.store.WorkflowJobs.Remove(ctx, workflowJob.Id)
+	workflowRuns := w.store.WorkflowRuns.GetByWorkflowId(id)
+	for _, workflowRun := range workflowRuns {
+		w.store.WorkflowRuns.Remove(ctx, workflowRun.Id)
 	}
 
 	w.store.changeset.RecordDelete(workflow)

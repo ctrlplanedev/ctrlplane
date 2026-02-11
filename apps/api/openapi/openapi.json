@@ -259,6 +259,31 @@
             ],
             "type": "object"
          },
+         "CreateWorkflow": {
+            "properties": {
+               "inputs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowInput"
+                  },
+                  "type": "array"
+               },
+               "jobs": {
+                  "items": {
+                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
+                  },
+                  "type": "array"
+               },
+               "name": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "name",
+               "inputs",
+               "jobs"
+            ],
+            "type": "object"
+         },
          "CreateWorkflowJobTemplate": {
             "properties": {
                "config": {
@@ -285,31 +310,6 @@
                "name",
                "ref",
                "config"
-            ],
-            "type": "object"
-         },
-         "CreateWorkflowTemplate": {
-            "properties": {
-               "inputs": {
-                  "items": {
-                     "$ref": "#/components/schemas/WorkflowInput"
-                  },
-                  "type": "array"
-               },
-               "jobs": {
-                  "items": {
-                     "$ref": "#/components/schemas/CreateWorkflowJobTemplate"
-                  },
-                  "type": "array"
-               },
-               "name": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "name",
-               "inputs",
-               "jobs"
             ],
             "type": "object"
          },
@@ -2086,7 +2086,7 @@
             ],
             "type": "object"
          },
-         "UpdateWorkflowTemplate": {
+         "UpdateWorkflow": {
             "properties": {
                "inputs": {
                   "items": {
@@ -2667,17 +2667,26 @@
                   "type": "string"
                },
                "inputs": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowInput"
+                  },
+                  "type": "array"
                },
-               "workflowTemplateId": {
+               "jobs": {
+                  "items": {
+                     "$ref": "#/components/schemas/WorkflowJobTemplate"
+                  },
+                  "type": "array"
+               },
+               "name": {
                   "type": "string"
                }
             },
             "required": [
                "id",
-               "workflowTemplateId",
-               "inputs"
+               "name",
+               "inputs",
+               "jobs"
             ],
             "type": "object"
          },
@@ -2895,6 +2904,26 @@
             ],
             "type": "object"
          },
+         "WorkflowRun": {
+            "properties": {
+               "id": {
+                  "type": "string"
+               },
+               "inputs": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "workflowId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "id",
+               "workflowId",
+               "inputs"
+            ],
+            "type": "object"
+         },
          "WorkflowSelectorArrayInput": {
             "properties": {
                "key": {
@@ -2951,35 +2980,6 @@
             "required": [
                "key",
                "type"
-            ],
-            "type": "object"
-         },
-         "WorkflowTemplate": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "inputs": {
-                  "items": {
-                     "$ref": "#/components/schemas/WorkflowInput"
-                  },
-                  "type": "array"
-               },
-               "jobs": {
-                  "items": {
-                     "$ref": "#/components/schemas/WorkflowJobTemplate"
-                  },
-                  "type": "array"
-               },
-               "name": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "name",
-               "inputs",
-               "jobs"
             ],
             "type": "object"
          },
@@ -7386,10 +7386,10 @@
             "summary": "Upsert system"
          }
       },
-      "/v1/workspaces/{workspaceId}/workflow-templates": {
+      "/v1/workspaces/{workspaceId}/workflows": {
          "get": {
-            "description": "Returns a list of workflow templates.",
-            "operationId": "listWorkflowTemplates",
+            "description": "Returns a list of workflows.",
+            "operationId": "listWorkflows",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -7432,7 +7432,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/WorkflowTemplate"
+                                    "$ref": "#/components/schemas/Workflow"
                                  },
                                  "type": "array"
                               },
@@ -7472,14 +7472,14 @@
                   "description": "Invalid request"
                }
             },
-            "summary": "List workflow templates",
+            "summary": "List workflows",
             "tags": [
                "Workflows"
             ]
          },
          "post": {
-            "description": "Creates a workflow template.",
-            "operationId": "createWorkflowTemplate",
+            "description": "Creates a workflow.",
+            "operationId": "createWorkflow",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -7495,7 +7495,7 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/CreateWorkflowTemplate"
+                        "$ref": "#/components/schemas/CreateWorkflow"
                      }
                   }
                },
@@ -7506,7 +7506,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/WorkflowTemplate"
+                           "$ref": "#/components/schemas/Workflow"
                         }
                      }
                   },
@@ -7523,16 +7523,16 @@
                   "description": "Invalid request"
                }
             },
-            "summary": "Create a workflow template",
+            "summary": "Create a workflow",
             "tags": [
                "Workflows"
             ]
          }
       },
-      "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}": {
+      "/v1/workspaces/{workspaceId}/workflows/{workflowId}": {
          "delete": {
-            "description": "Deletes a workflow template.",
-            "operationId": "deleteWorkflowTemplate",
+            "description": "Deletes a workflow.",
+            "operationId": "deleteWorkflow",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -7544,9 +7544,9 @@
                   }
                },
                {
-                  "description": "ID of the workflow template",
+                  "description": "ID of the workflow",
                   "in": "path",
-                  "name": "workflowTemplateId",
+                  "name": "workflowId",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -7558,11 +7558,11 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/WorkflowTemplate"
+                           "$ref": "#/components/schemas/Workflow"
                         }
                      }
                   },
-                  "description": "Workflow template deleted"
+                  "description": "Workflow deleted"
                },
                "400": {
                   "content": {
@@ -7585,14 +7585,14 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Delete a workflow template",
+            "summary": "Delete a workflow",
             "tags": [
                "Workflows"
             ]
          },
          "get": {
-            "description": "Gets a workflow template by ID.",
-            "operationId": "getWorkflowTemplate",
+            "description": "Gets a workflow by ID.",
+            "operationId": "getWorkflow",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -7604,9 +7604,9 @@
                   }
                },
                {
-                  "description": "ID of the workflow template",
+                  "description": "ID of the workflow",
                   "in": "path",
-                  "name": "workflowTemplateId",
+                  "name": "workflowId",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -7618,7 +7618,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/WorkflowTemplate"
+                           "$ref": "#/components/schemas/Workflow"
                         }
                      }
                   },
@@ -7645,14 +7645,14 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Get a workflow template",
+            "summary": "Get a workflow",
             "tags": [
                "Workflows"
             ]
          },
          "put": {
             "description": "Updates a workflow template.",
-            "operationId": "updateWorkflowTemplate",
+            "operationId": "updateWorkflow",
             "parameters": [
                {
                   "description": "ID of the workspace",
@@ -7664,9 +7664,9 @@
                   }
                },
                {
-                  "description": "ID of the workflow template",
+                  "description": "ID of the workflow",
                   "in": "path",
-                  "name": "workflowTemplateId",
+                  "name": "workflowId",
                   "required": true,
                   "schema": {
                      "type": "string"
@@ -7677,7 +7677,7 @@
                "content": {
                   "application/json": {
                      "schema": {
-                        "$ref": "#/components/schemas/UpdateWorkflowTemplate"
+                        "$ref": "#/components/schemas/UpdateWorkflow"
                      }
                   }
                },
@@ -7688,7 +7688,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/WorkflowTemplate"
+                           "$ref": "#/components/schemas/Workflow"
                         }
                      }
                   },
@@ -7715,7 +7715,7 @@
                   "description": "Resource not found"
                }
             },
-            "summary": "Update a workflow template",
+            "summary": "Update a workflow",
             "tags": [
                "Workflows"
             ]

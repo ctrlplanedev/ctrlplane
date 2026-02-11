@@ -15,7 +15,7 @@ import (
 
 func TestEngine_Workflow_BasicFlow(t *testing.T) {
 	jobAgentID := uuid.New().String()
-	workflowTemplateID := uuid.New().String()
+	workflowID := uuid.New().String()
 	workflowJobTemplateID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
@@ -23,8 +23,8 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("Test Agent"),
 		),
-		integration.WithWorkflowTemplate(
-			integration.WorkflowTemplateID(workflowTemplateID),
+		integration.WithWorkflow(
+			integration.WorkflowID(workflowID),
 			integration.WithWorkflowStringInput(
 				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
@@ -42,28 +42,28 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 
 	ctx := context.Background()
 
-	workflowCreate := &oapi.Workflow{
-		WorkflowTemplateId: workflowTemplateID,
+	workflowRunCreate := &oapi.WorkflowRun{
+		WorkflowId: workflowID,
 		Inputs: map[string]any{
 			"input-1": "custom-1",
 		},
 	}
-	engine.PushEvent(ctx, handler.WorkflowCreate, workflowCreate)
+	engine.PushEvent(ctx, handler.WorkflowRunCreate, workflowRunCreate)
 
-	workflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
-	assert.Len(t, workflows, 1)
-	workflowsSlice := make([]*oapi.Workflow, 0)
-	for _, workflow := range workflows {
-		workflowsSlice = append(workflowsSlice, workflow)
+	workflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+	assert.Len(t, workflowRuns, 1)
+	workflowRunsSlice := make([]*oapi.WorkflowRun, 0)
+	for _, workflowRun := range workflowRuns {
+		workflowRunsSlice = append(workflowRunsSlice, workflowRun)
 	}
-	workflow := workflowsSlice[0]
-	assert.NotNil(t, workflow)
-	assert.Equal(t, workflowTemplateID, workflow.WorkflowTemplateId)
+	workflowRun := workflowRunsSlice[0]
+	assert.NotNil(t, workflowRun)
+	assert.Equal(t, workflowID, workflowRun.WorkflowId)
 	assert.Equal(t, map[string]any{
 		"input-1": "custom-1",
-	}, workflow.Inputs)
+	}, workflowRun.Inputs)
 
-	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow.Id)
+	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(workflowRun.Id)
 	assert.Len(t, workflowJobs, 1)
 	assert.Equal(t, 0, workflowJobs[0].Index)
 
@@ -79,7 +79,7 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 
 func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 	jobAgentID := uuid.New().String()
-	workflowTemplateID := uuid.New().String()
+	workflowID := uuid.New().String()
 	workflowJobTemplateID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
@@ -87,8 +87,8 @@ func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("Test Agent"),
 		),
-		integration.WithWorkflowTemplate(
-			integration.WorkflowTemplateID(workflowTemplateID),
+		integration.WithWorkflow(
+			integration.WorkflowID(workflowID),
 			integration.WithWorkflowStringInput(
 				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
@@ -114,32 +114,32 @@ func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 
 	ctx := context.Background()
 
-	workflowCreate := &oapi.Workflow{
-		WorkflowTemplateId: workflowTemplateID,
+	workflowRunCreate := &oapi.WorkflowRun{
+		WorkflowId: workflowID,
 		Inputs: map[string]any{
 			"input-1": "custom-1",
 			"input-2": 5,
 			"input-3": false,
 		},
 	}
-	engine.PushEvent(ctx, handler.WorkflowCreate, workflowCreate)
+	engine.PushEvent(ctx, handler.WorkflowRunCreate, workflowRunCreate)
 
-	workflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
-	assert.Len(t, workflows, 1)
-	workflowsSlice := make([]*oapi.Workflow, 0)
-	for _, workflow := range workflows {
-		workflowsSlice = append(workflowsSlice, workflow)
+	workflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+	assert.Len(t, workflowRuns, 1)
+	workflowRunsSlice := make([]*oapi.WorkflowRun, 0)
+	for _, workflowRun := range workflowRuns {
+		workflowRunsSlice = append(workflowRunsSlice, workflowRun)
 	}
-	workflow := workflowsSlice[0]
-	assert.NotNil(t, workflow)
-	assert.Equal(t, workflowTemplateID, workflow.WorkflowTemplateId)
+	workflowRun := workflowRunsSlice[0]
+	assert.NotNil(t, workflowRun)
+	assert.Equal(t, workflowID, workflowRun.WorkflowId)
 	assert.Equal(t, map[string]any{
 		"input-1": "custom-1",
 		"input-2": float64(5),
 		"input-3": false,
-	}, workflow.Inputs)
+	}, workflowRun.Inputs)
 
-	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow.Id)
+	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(workflowRun.Id)
 	assert.Len(t, workflowJobs, 1)
 	assert.Equal(t, 0, workflowJobs[0].Index)
 
@@ -156,7 +156,7 @@ func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 	jobAgentID1 := uuid.New().String()
 	jobAgentID2 := uuid.New().String()
-	workflowTemplateID := uuid.New().String()
+	workflowID := uuid.New().String()
 	workflowJobTemplateID1 := uuid.New().String()
 	workflowJobTemplateID2 := uuid.New().String()
 
@@ -169,8 +169,8 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 			integration.JobAgentID(jobAgentID2),
 			integration.JobAgentName("Test Agent 2"),
 		),
-		integration.WithWorkflowTemplate(
-			integration.WorkflowTemplateID(workflowTemplateID),
+		integration.WithWorkflow(
+			integration.WorkflowID(workflowID),
 			integration.WithWorkflowJobTemplate(
 				integration.WorkflowJobTemplateID(workflowJobTemplateID1),
 				integration.WorkflowJobTemplateJobAgentID(jobAgentID1),
@@ -192,22 +192,22 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 
 	ctx := context.Background()
 
-	workflowCreate := &oapi.Workflow{
-		WorkflowTemplateId: workflowTemplateID,
+	workflowRunCreate := &oapi.WorkflowRun{
+		WorkflowId: workflowID,
 	}
-	engine.PushEvent(ctx, handler.WorkflowCreate, workflowCreate)
+	engine.PushEvent(ctx, handler.WorkflowRunCreate, workflowRunCreate)
 
-	workflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
-	assert.Len(t, workflows, 1)
-	workflowsSlice := make([]*oapi.Workflow, 0)
-	for _, workflow := range workflows {
-		workflowsSlice = append(workflowsSlice, workflow)
+	workflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+	assert.Len(t, workflowRuns, 1)
+	workflowRunsSlice := make([]*oapi.WorkflowRun, 0)
+	for _, workflowRun := range workflowRuns {
+		workflowRunsSlice = append(workflowRunsSlice, workflowRun)
 	}
-	workflow := workflowsSlice[0]
-	assert.NotNil(t, workflow)
-	assert.Equal(t, workflowTemplateID, workflow.WorkflowTemplateId)
+	workflowRun := workflowRunsSlice[0]
+	assert.NotNil(t, workflowRun)
+	assert.Equal(t, workflowID, workflowRun.WorkflowId)
 
-	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow.Id)
+	workflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(workflowRun.Id)
 	assert.Len(t, workflowJobs, 2)
 	assert.Equal(t, 0, workflowJobs[0].Index)
 	assert.Equal(t, 1, workflowJobs[1].Index)
@@ -230,7 +230,7 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 		"delaySeconds": float64(20),
 	}, wfJob2jobs[0].JobAgentConfig)
 
-	wfv, err := workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow.Id)
+	wfv, err := workflowmanager.NewWorkflowRunView(engine.Workspace().Store(), workflowRun.Id)
 	assert.NoError(t, err)
 	assert.NotNil(t, wfv)
 	assert.False(t, wfv.IsComplete())
@@ -250,7 +250,7 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent)
 
-	wfv, err = workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow.Id)
+	wfv, err = workflowmanager.NewWorkflowRunView(engine.Workspace().Store(), workflowRun.Id)
 	assert.NoError(t, err)
 	assert.False(t, wfv.IsComplete())
 
@@ -269,7 +269,7 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent2)
 
-	wfv, err = workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow.Id)
+	wfv, err = workflowmanager.NewWorkflowRunView(engine.Workspace().Store(), workflowRun.Id)
 	assert.NoError(t, err)
 	assert.NotNil(t, wfv)
 	assert.True(t, wfv.IsComplete())
@@ -277,7 +277,7 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 
 func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 	jobAgentID := uuid.New().String()
-	workflowTemplateID := uuid.New().String()
+	workflowID := uuid.New().String()
 	workflowJobTemplateID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
@@ -285,8 +285,8 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("Test Agent"),
 		),
-		integration.WithWorkflowTemplate(
-			integration.WorkflowTemplateID(workflowTemplateID),
+		integration.WithWorkflow(
+			integration.WorkflowID(workflowID),
 			integration.WithWorkflowStringInput(
 				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
@@ -304,47 +304,47 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 
 	ctx := context.Background()
 
-	workflow1Create := &oapi.Workflow{
-		WorkflowTemplateId: workflowTemplateID,
+	workflow1RunCreate := &oapi.WorkflowRun{
+		WorkflowId: workflowID,
 		Inputs: map[string]any{
 			"input-1": "custom-1",
 		},
 	}
-	engine.PushEvent(ctx, handler.WorkflowCreate, workflow1Create)
+	engine.PushEvent(ctx, handler.WorkflowRunCreate, workflow1RunCreate)
 
-	workflow2Create := &oapi.Workflow{
-		WorkflowTemplateId: workflowTemplateID,
+	workflow2RunCreate := &oapi.WorkflowRun{
+		WorkflowId: workflowID,
 		Inputs: map[string]any{
 			"input-1": "custom-2",
 		},
 	}
-	engine.PushEvent(ctx, handler.WorkflowCreate, workflow2Create)
+	engine.PushEvent(ctx, handler.WorkflowRunCreate, workflow2RunCreate)
 
-	workflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
-	assert.Len(t, workflows, 2)
-	assert.Equal(t, 2, len(workflows))
+	workflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+	assert.Len(t, workflowRuns, 2)
+	assert.Equal(t, 2, len(workflowRuns))
 
-	workflowsSlice := make([]*oapi.Workflow, 0)
-	for _, workflow := range workflows {
-		workflowsSlice = append(workflowsSlice, workflow)
+	var workflow1Run *oapi.WorkflowRun
+	var workflow2Run *oapi.WorkflowRun
+
+	workflowRunsSlice := make([]*oapi.WorkflowRun, 0)
+	for _, workflowRun := range workflowRuns {
+		workflowRunsSlice = append(workflowRunsSlice, workflowRun)
 	}
 
-	var workflow1 *oapi.Workflow
-	var workflow2 *oapi.Workflow
-
-	for _, workflow := range workflowsSlice {
-		if workflow.Inputs["input-1"] == "custom-1" {
-			workflow1 = workflow
+	for _, workflowRun := range workflowRunsSlice {
+		if workflowRun.Inputs["input-1"] == "custom-1" {
+			workflow1Run = workflowRun
 		} else {
-			workflow2 = workflow
+			workflow2Run = workflowRun
 		}
 	}
 
-	workflow1WorkflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow1.Id)
+	workflow1WorkflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(workflow1Run.Id)
 	assert.Len(t, workflow1WorkflowJobs, 1)
 	assert.Equal(t, 0, workflow1WorkflowJobs[0].Index)
 
-	workflow2WorkflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(workflow2.Id)
+	workflow2WorkflowJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(workflow2Run.Id)
 	assert.Len(t, workflow2WorkflowJobs, 1)
 	assert.Equal(t, 0, workflow2WorkflowJobs[0].Index)
 
@@ -396,12 +396,12 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 	}
 	engine.PushEvent(ctx, handler.JobUpdate, jobUpdateEvent2)
 
-	wfv1, err := workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow1.Id)
+	wfv1, err := workflowmanager.NewWorkflowRunView(engine.Workspace().Store(), workflow1Run.Id)
 	assert.NoError(t, err)
 	assert.NotNil(t, wfv1)
 	assert.True(t, wfv1.IsComplete())
 
-	wfv2, err := workflowmanager.NewWorkflowView(engine.Workspace().Store(), workflow2.Id)
+	wfv2, err := workflowmanager.NewWorkflowRunView(engine.Workspace().Store(), workflow2Run.Id)
 	assert.NoError(t, err)
 	assert.NotNil(t, wfv2)
 	assert.True(t, wfv2.IsComplete())
@@ -409,7 +409,7 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 
 func TestEngine_Workflow_DeleteTemplateCascade(t *testing.T) {
 	jobAgentID := uuid.New().String()
-	workflowTemplateID := uuid.New().String()
+	workflowID := uuid.New().String()
 	workflowJobTemplateID1 := uuid.New().String()
 	workflowJobTemplateID2 := uuid.New().String()
 
@@ -418,8 +418,8 @@ func TestEngine_Workflow_DeleteTemplateCascade(t *testing.T) {
 			integration.JobAgentID(jobAgentID),
 			integration.JobAgentName("Test Agent"),
 		),
-		integration.WithWorkflowTemplate(
-			integration.WorkflowTemplateID(workflowTemplateID),
+		integration.WithWorkflow(
+			integration.WorkflowID(workflowID),
 			integration.WithWorkflowStringInput(
 				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
@@ -445,22 +445,22 @@ func TestEngine_Workflow_DeleteTemplateCascade(t *testing.T) {
 
 	ctx := context.Background()
 
-	engine.PushEvent(ctx, handler.WorkflowCreate, &oapi.Workflow{
-		WorkflowTemplateId: workflowTemplateID,
-		Inputs:             map[string]any{"input-1": "value-1"},
+	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
+		WorkflowId: workflowID,
+		Inputs:     map[string]any{"input-1": "value-1"},
 	})
-	engine.PushEvent(ctx, handler.WorkflowCreate, &oapi.Workflow{
-		WorkflowTemplateId: workflowTemplateID,
-		Inputs:             map[string]any{"input-1": "value-2"},
+	engine.PushEvent(ctx, handler.WorkflowRunCreate, &oapi.WorkflowRun{
+		WorkflowId: workflowID,
+		Inputs:     map[string]any{"input-1": "value-2"},
 	})
 
-	workflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
-	assert.Len(t, workflows, 2)
+	workflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+	assert.Len(t, workflowRuns, 2)
 
 	allWorkflowJobIDs := make([]string, 0)
 	allJobIDs := make([]string, 0)
-	for _, wf := range workflows {
-		wfJobs := engine.Workspace().WorkflowJobs().GetByWorkflowId(wf.Id)
+	for _, wfRun := range workflowRuns {
+		wfJobs := engine.Workspace().WorkflowJobs().GetByWorkflowRunId(wfRun.Id)
 		assert.Len(t, wfJobs, 2, "each workflow should have 2 workflow jobs")
 		for _, wfJob := range wfJobs {
 			allWorkflowJobIDs = append(allWorkflowJobIDs, wfJob.Id)
@@ -472,15 +472,15 @@ func TestEngine_Workflow_DeleteTemplateCascade(t *testing.T) {
 	assert.Len(t, allWorkflowJobIDs, 4, "should have 4 workflow jobs total")
 	assert.Len(t, allJobIDs, 4, "should have 4 jobs total")
 
-	workflowTemplate, ok := engine.Workspace().WorkflowTemplates().Get(workflowTemplateID)
+	workflow, ok := engine.Workspace().Workflows().Get(workflowID)
 	assert.True(t, ok)
-	engine.PushEvent(ctx, handler.WorkflowTemplateDelete, workflowTemplate)
+	engine.PushEvent(ctx, handler.WorkflowDelete, workflow)
 
-	_, ok = engine.Workspace().WorkflowTemplates().Get(workflowTemplateID)
-	assert.False(t, ok, "workflow template should be removed")
+	_, ok = engine.Workspace().Workflows().Get(workflowID)
+	assert.False(t, ok, "workflow should be removed")
 
-	remainingWorkflows := engine.Workspace().Workflows().GetByTemplateID(workflowTemplateID)
-	assert.Empty(t, remainingWorkflows, "all workflows should be removed")
+	remainingWorkflowRuns := engine.Workspace().WorkflowRuns().GetByWorkflowId(workflowID)
+	assert.Empty(t, remainingWorkflowRuns, "all workflow runs should be removed")
 
 	for _, wfJobID := range allWorkflowJobIDs {
 		_, ok := engine.Workspace().WorkflowJobs().Get(wfJobID)

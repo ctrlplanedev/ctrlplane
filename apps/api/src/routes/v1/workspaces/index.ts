@@ -21,7 +21,7 @@ import { releaseRouter } from "./releases.js";
 import { resourceProvidersRouter } from "./resource-providers.js";
 import { resourceRouter } from "./resources.js";
 import { systemRouter } from "./systems.js";
-import { workflowTemplatesRouter } from "./workflow-templates.js";
+import { workflowsRouter } from "./workflows.js";
 
 /**
  * Creates the workspaces router
@@ -46,4 +46,4 @@ export const createWorkspacesRouter = (): Router =>
     .use("/:workspaceId/release-targets", releaseTargetsRouter)
     .use("/:workspaceId/releases", releaseRouter)
     .use("/:workspaceId/job-agents", jobAgentsRouter)
-    .use("/:workspaceId/workflow-templates", workflowTemplatesRouter);
+    .use("/:workspaceId/workflows", workflowsRouter);

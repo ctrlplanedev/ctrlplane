@@ -12,7 +12,7 @@ import (
 
 type Workflows struct{}
 
-func (w *Workflows) GetWorkflowTemplates(c *gin.Context, workspaceId string, params oapi.GetWorkflowTemplatesParams) {
+func (w *Workflows) ListWorkflows(c *gin.Context, workspaceId string, params oapi.ListWorkflowsParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -21,13 +21,13 @@ func (w *Workflows) GetWorkflowTemplates(c *gin.Context, workspaceId string, par
 		return
 	}
 
-	workflowTemplates := ws.WorkflowTemplates().Items()
-	workflowTemplateItems := make([]*oapi.WorkflowTemplate, 0, len(workflowTemplates))
-	for _, workflowTemplate := range workflowTemplates {
-		workflowTemplateItems = append(workflowTemplateItems, workflowTemplate)
+	workflows := ws.Workflows().Items()
+	workflowItems := make([]*oapi.Workflow, 0, len(workflows))
+	for _, workflow := range workflows {
+		workflowItems = append(workflowItems, workflow)
 	}
-	sort.Slice(workflowTemplateItems, func(i, j int) bool {
-		return workflowTemplateItems[i].Name < workflowTemplateItems[j].Name
+	sort.Slice(workflowItems, func(i, j int) bool {
+		return workflowItems[i].Name < workflowItems[j].Name
 	})
 
 	offset := 0
@@ -40,7 +40,7 @@ func (w *Workflows) GetWorkflowTemplates(c *gin.Context, workspaceId string, par
 		limit = *params.Limit
 	}
 
-	total := len(workflowTemplateItems)
+	total := len(workflowItems)
 	start := min(offset, total)
 	end := min(start+limit, total)
 
@@ -48,11 +48,11 @@ func (w *Workflows) GetWorkflowTemplates(c *gin.Context, workspaceId string, par
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  workflowTemplateItems[start:end],
+		"items":  workflowItems[start:end],
 	})
 }
 
-func (w *Workflows) GetWorkflowTemplate(c *gin.Context, workspaceId string, workflowTemplateId string) {
+func (w *Workflows) GetWorkflow(c *gin.Context, workspaceId string, workflowId string) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -61,15 +61,15 @@ func (w *Workflows) GetWorkflowTemplate(c *gin.Context, workspaceId string, work
 		return
 	}
 
-	workflowTemplate, ok := ws.WorkflowTemplates().Get(workflowTemplateId)
+	workflow, ok := ws.Workflows().Get(workflowId)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Workflow template not found",
+			"error": "Workflow not found",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, *workflowTemplate)
+	c.JSON(http.StatusOK, *workflow)
 }
 
 func getWorkflowJobWithJobs(ws *workspace.Workspace, workflowJob *oapi.WorkflowJob) *oapi.WorkflowJobWithJobs {
@@ -91,7 +91,7 @@ func getWorkflowJobWithJobs(ws *workspace.Workspace, workflowJob *oapi.WorkflowJ
 	return workflowJobWithJobs
 }
 
-func (w *Workflows) GetWorkflowsByTemplate(c *gin.Context, workspaceId string, workflowTemplateId string, params oapi.GetWorkflowsByTemplateParams) {
+func (w *Workflows) GetWorkflowRuns(c *gin.Context, workspaceId string, workflowId string, params oapi.GetWorkflowRunsParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -100,16 +100,16 @@ func (w *Workflows) GetWorkflowsByTemplate(c *gin.Context, workspaceId string, w
 		return
 	}
 
-	workflows := ws.Workflows().GetByTemplateID(workflowTemplateId)
+	workflowRuns := ws.WorkflowRuns().GetByWorkflowId(workflowId)
 
-	workflowsSlice := make([]*oapi.Workflow, 0, len(workflows))
-	for _, workflow := range workflows {
-		workflowsSlice = append(workflowsSlice, workflow)
+	workflowRunsSlice := make([]*oapi.WorkflowRun, 0, len(workflowRuns))
+	for _, workflowRun := range workflowRuns {
+		workflowRunsSlice = append(workflowRunsSlice, workflowRun)
 	}
 
-	workflowsWithWfJobs := make([]*oapi.WorkflowWithJobs, 0, len(workflowsSlice))
-	for _, workflow := range workflowsSlice {
-		workflowJobs := ws.WorkflowJobs().GetByWorkflowId(workflow.Id)
+	workflowsWithWfJobs := make([]*oapi.WorkflowRunWithJobs, 0, len(workflowRunsSlice))
+	for _, workflowRun := range workflowRunsSlice {
+		workflowJobs := ws.WorkflowJobs().GetByWorkflowRunId(workflowRun.Id)
 		workflowJobWithJobsSlice := make([]oapi.WorkflowJobWithJobs, 0, len(workflowJobs))
 		for _, workflowJob := range workflowJobs {
 			workflowJobWithJobsSlice = append(workflowJobWithJobsSlice, *getWorkflowJobWithJobs(ws, workflowJob))
@@ -117,13 +117,13 @@ func (w *Workflows) GetWorkflowsByTemplate(c *gin.Context, workspaceId string, w
 		sort.Slice(workflowJobWithJobsSlice, func(i, j int) bool {
 			return workflowJobWithJobsSlice[i].Index < workflowJobWithJobsSlice[j].Index
 		})
-		workflowWithJobs := &oapi.WorkflowWithJobs{
-			Id:                 workflow.Id,
-			WorkflowTemplateId: workflow.WorkflowTemplateId,
-			Inputs:             workflow.Inputs,
-			Jobs:               workflowJobWithJobsSlice,
+		workflowRunWithJobs := &oapi.WorkflowRunWithJobs{
+			Id:         workflowRun.Id,
+			WorkflowId: workflowRun.WorkflowId,
+			Inputs:     workflowRun.Inputs,
+			Jobs:       workflowJobWithJobsSlice,
 		}
-		workflowsWithWfJobs = append(workflowsWithWfJobs, workflowWithJobs)
+		workflowsWithWfJobs = append(workflowsWithWfJobs, workflowRunWithJobs)
 	}
 
 	sort.Slice(workflowsWithWfJobs, func(i, j int) bool {
@@ -149,6 +149,15 @@ func (w *Workflows) GetWorkflowsByTemplate(c *gin.Context, workspaceId string, w
 			}
 		}
 
+		if earliestJobA == nil && earliestJobB == nil {
+			return false
+		}
+		if earliestJobA == nil {
+			return false
+		}
+		if earliestJobB == nil {
+			return true
+		}
 		return earliestJobA.CreatedAt.Before(earliestJobB.CreatedAt)
 	})
 

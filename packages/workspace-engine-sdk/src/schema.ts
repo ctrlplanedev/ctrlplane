@@ -1092,7 +1092,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/workspaces/{workspaceId}/workflow-templates": {
+  "/v1/workspaces/{workspaceId}/workflows": {
     parameters: {
       query?: never;
       header?: never;
@@ -1100,10 +1100,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get all workflow templates
-     * @description Gets all workflow templates for a workspace.
+     * List workflows
+     * @description Returns a list of workflows.
      */
-    get: operations["getWorkflowTemplates"];
+    get: operations["listWorkflows"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1112,7 +1112,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}": {
+  "/v1/workspaces/{workspaceId}/workflows/{workflowId}": {
     parameters: {
       query?: never;
       header?: never;
@@ -1120,10 +1120,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get a workflow template
-     * @description Gets a workflow template.
+     * Get a workflow
+     * @description Gets a workflow by ID.
      */
-    get: operations["getWorkflowTemplate"];
+    get: operations["getWorkflow"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1132,7 +1132,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}/workflows": {
+  "/v1/workspaces/{workspaceId}/workflows/{workflowId}/runs": {
     parameters: {
       query?: never;
       header?: never;
@@ -1140,10 +1140,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get all workflows for a workflow template
-     * @description Gets all workflows for a workflow template.
+     * Get all workflow runs for a workflow
+     * @description Gets all workflow runs for a workflow by ID.
      */
-    get: operations["getWorkflowsByTemplate"];
+    get: operations["getWorkflowRuns"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2094,10 +2094,9 @@ export interface components {
     };
     Workflow: {
       id: string;
-      inputs: {
-        [key: string]: unknown;
-      };
-      workflowTemplateId: string;
+      inputs: components["schemas"]["WorkflowInput"][];
+      jobs: components["schemas"]["WorkflowJobTemplate"][];
+      name: string;
     };
     WorkflowArrayInput:
       | components["schemas"]["WorkflowManualArrayInput"]
@@ -2123,7 +2122,7 @@ export interface components {
       index: number;
       /** @description Reference to the job agent */
       ref: string;
-      workflowId: string;
+      workflowRunId: string;
     };
     WorkflowJobAgentConfig: {
       config: {
@@ -2176,6 +2175,16 @@ export interface components {
       /** @enum {string} */
       type: "object";
     };
+    WorkflowRun: {
+      id: string;
+      inputs: {
+        [key: string]: unknown;
+      };
+      workflowId: string;
+    };
+    WorkflowRunWithJobs: components["schemas"]["WorkflowRun"] & {
+      jobs: components["schemas"]["WorkflowJobWithJobs"][];
+    };
     WorkflowSelectorArrayInput: {
       key: string;
       selector: {
@@ -2191,15 +2200,6 @@ export interface components {
       key: string;
       /** @enum {string} */
       type: "string";
-    };
-    WorkflowTemplate: {
-      id: string;
-      inputs: components["schemas"]["WorkflowInput"][];
-      jobs: components["schemas"]["WorkflowJobTemplate"][];
-      name: string;
-    };
-    WorkflowWithJobs: components["schemas"]["Workflow"] & {
-      jobs: components["schemas"]["WorkflowJobWithJobs"][];
     };
   };
   responses: never;
@@ -4696,7 +4696,7 @@ export interface operations {
       };
     };
   };
-  getWorkflowTemplates: {
+  listWorkflows: {
     parameters: {
       query?: {
         /** @description Maximum number of items to return */
@@ -4720,7 +4720,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            items: components["schemas"]["WorkflowTemplate"][];
+            items: components["schemas"]["Workflow"][];
             /** @description Maximum number of items returned */
             limit: number;
             /** @description Number of items skipped */
@@ -4750,27 +4750,27 @@ export interface operations {
       };
     };
   };
-  getWorkflowTemplate: {
+  getWorkflow: {
     parameters: {
       query?: never;
       header?: never;
       path: {
         /** @description ID of the workspace */
         workspaceId: string;
-        /** @description ID of the workflow template */
-        workflowTemplateId: string;
+        /** @description ID of the workflow */
+        workflowId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Get workflow template */
+      /** @description Get workflow */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["WorkflowTemplate"];
+          "application/json": components["schemas"]["Workflow"];
         };
       };
       /** @description Invalid request */
@@ -4793,7 +4793,7 @@ export interface operations {
       };
     };
   };
-  getWorkflowsByTemplate: {
+  getWorkflowRuns: {
     parameters: {
       query?: {
         /** @description Maximum number of items to return */
@@ -4805,8 +4805,8 @@ export interface operations {
       path: {
         /** @description ID of the workspace */
         workspaceId: string;
-        /** @description ID of the workflow template */
-        workflowTemplateId: string;
+        /** @description ID of the workflow */
+        workflowId: string;
       };
       cookie?: never;
     };
@@ -4819,7 +4819,7 @@ export interface operations {
         };
         content: {
           "application/json": {
-            items: components["schemas"]["WorkflowWithJobs"][];
+            items: components["schemas"]["WorkflowRunWithJobs"][];
             /** @description Maximum number of items returned */
             limit: number;
             /** @description Number of items skipped */

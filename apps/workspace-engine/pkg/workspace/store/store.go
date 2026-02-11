@@ -51,9 +51,9 @@ func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption
 	store.Relations = NewRelations(store)
 	store.RelationshipIndexes = NewRelationshipIndexes(store)
 	store.JobVerifications = NewJobVerifications(store)
-	store.WorkflowTemplates = NewWorkflowTemplates(store)
-	store.WorkflowJobTemplates = NewWorkflowJobTemplates(store)
 	store.Workflows = NewWorkflows(store)
+	store.WorkflowJobTemplates = NewWorkflowJobTemplates(store)
+	store.WorkflowRuns = NewWorkflowRuns(store)
 	store.WorkflowJobs = NewWorkflowJobs(store)
 
 	for _, opt := range opts {
@@ -90,9 +90,9 @@ type Store struct {
 	Relations                *Relations
 	RelationshipIndexes      *RelationshipIndexes
 	JobVerifications         *JobVerifications
-	WorkflowTemplates        *WorkflowTemplates
-	WorkflowJobTemplates     *WorkflowJobTemplates
 	Workflows                *Workflows
+	WorkflowJobTemplates     *WorkflowJobTemplates
+	WorkflowRuns             *WorkflowRuns
 	WorkflowJobs             *WorkflowJobs
 }
 

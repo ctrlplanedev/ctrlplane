@@ -91,10 +91,10 @@ const (
 
 	ReleaseTargetDeploy EventType = "release-target.deploy"
 
-	WorkflowTemplateCreate EventType = "workflow-template.created"
-	WorkflowTemplateUpdate EventType = "workflow-template.updated"
-	WorkflowTemplateDelete EventType = "workflow-template.deleted"
-	WorkflowCreate         EventType = "workflow.created"
+	WorkflowCreate    EventType = "workflow.created"
+	WorkflowUpdate    EventType = "workflow.updated"
+	WorkflowDelete    EventType = "workflow.deleted"
+	WorkflowRunCreate EventType = "workflow-run.created"
 )
 
 // RawEvent represents the raw event data received from Kafka messages

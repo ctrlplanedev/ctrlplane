@@ -29,8 +29,8 @@ func NewWorkflowManager(store *store.Store, jobAgentRegistry *jobagents.Registry
 	}
 }
 
-func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflowTemplate *oapi.WorkflowTemplate) {
-	for _, input := range workflowTemplate.Inputs {
+func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflow *oapi.Workflow) {
+	for _, input := range workflow.Inputs {
 		if stringInput, err := input.AsWorkflowStringInput(); err == nil && stringInput.Type == oapi.String {
 			if stringInput.Default != nil {
 				if _, ok := inputs[stringInput.Key]; !ok {
@@ -79,22 +79,22 @@ func (m *Manager) evaluateJobTemplateIf(jobTemplate oapi.WorkflowJobTemplate, in
 	return result, nil
 }
 
-func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string, inputs map[string]any) (*oapi.Workflow, error) {
-	workflowTemplate, ok := m.store.WorkflowTemplates.Get(workflowTemplateId)
+func (m *Manager) CreateWorkflowRun(ctx context.Context, workflowId string, inputs map[string]any) (*oapi.WorkflowRun, error) {
+	workflow, ok := m.store.Workflows.Get(workflowId)
 	if !ok {
-		return nil, fmt.Errorf("workflow template %s not found", workflowTemplateId)
+		return nil, fmt.Errorf("workflow %s not found", workflowId)
 	}
 
-	m.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	m.maybeSetDefaultInputValues(inputs, workflow)
 
-	workflow := &oapi.Workflow{
-		Id:                 uuid.New().String(),
-		WorkflowTemplateId: workflowTemplateId,
-		Inputs:             maps.Clone(inputs),
+	workflowRun := &oapi.WorkflowRun{
+		Id:         uuid.New().String(),
+		WorkflowId: workflowId,
+		Inputs:     maps.Clone(inputs),
 	}
 
-	workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflowTemplate.Jobs))
-	for idx, jobTemplate := range workflowTemplate.Jobs {
+	workflowJobs := make([]*oapi.WorkflowJob, 0, len(workflow.Jobs))
+	for idx, jobTemplate := range workflow.Jobs {
 		if jobTemplate.If != nil {
 			shouldRun, err := m.evaluateJobTemplateIf(jobTemplate, inputs)
 			if err != nil {
@@ -106,25 +106,25 @@ func (m *Manager) CreateWorkflow(ctx context.Context, workflowTemplateId string,
 		}
 
 		wfJob := &oapi.WorkflowJob{
-			Id:         uuid.New().String(),
-			WorkflowId: workflow.Id,
-			Index:      idx,
-			Ref:        jobTemplate.Ref,
-			Config:     maps.Clone(jobTemplate.Config),
+			Id:            uuid.New().String(),
+			WorkflowRunId: workflowRun.Id,
+			Index:         idx,
+			Ref:           jobTemplate.Ref,
+			Config:        maps.Clone(jobTemplate.Config),
 		}
 		m.store.WorkflowJobs.Upsert(ctx, wfJob)
 		workflowJobs = append(workflowJobs, wfJob)
 	}
 
-	m.store.Workflows.Upsert(ctx, workflow)
+	m.store.WorkflowRuns.Upsert(ctx, workflowRun)
 
 	for _, wfJob := range workflowJobs {
 		if err := m.dispatchJob(ctx, wfJob); err != nil {
-			return workflow, err
+			return workflowRun, err
 		}
 	}
 
-	return workflow, nil
+	return workflowRun, nil
 }
 
 func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) error {

@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWorkflowManager_CreatesNewWorkflow(t *testing.T) {
+func TestWorkflowManager_CreatesNewWorkflowRun(t *testing.T) {
 	ctx := context.Background()
 	store := store.New("test-workspace", statechange.NewChangeSet[any]())
 	jobAgentRegistry := jobagents.NewRegistry(store, verification.NewManager(store))
@@ -36,9 +36,9 @@ func TestWorkflowManager_CreatesNewWorkflow(t *testing.T) {
 	}
 	store.JobAgents.Upsert(ctx, jobAgent1)
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
-		Name:   "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
+		Name:   "test-workflow",
 		Inputs: []oapi.WorkflowInput{stringInput},
 		Jobs: []oapi.WorkflowJobTemplate{
 			{
@@ -51,22 +51,22 @@ func TestWorkflowManager_CreatesNewWorkflow(t *testing.T) {
 			},
 		},
 	}
-	store.WorkflowTemplates.Upsert(ctx, workflowTemplate)
+	store.Workflows.Upsert(ctx, workflow)
 
-	wf, err := manager.CreateWorkflow(ctx, "test-workflow-template", map[string]any{
+	wfRun, err := manager.CreateWorkflowRun(ctx, "test-workflow", map[string]any{
 		"test-input": "test-value",
 	})
 
-	workflow, ok := store.Workflows.Get(wf.Id)
+	workflowRun, ok := store.WorkflowRuns.Get(wfRun.Id)
 	assert.True(t, ok)
 	assert.NoError(t, err)
-	assert.NotNil(t, workflow)
-	assert.Equal(t, "test-workflow-template", workflow.WorkflowTemplateId)
+	assert.NotNil(t, workflowRun)
+	assert.Equal(t, "test-workflow", workflowRun.WorkflowId)
 	assert.Equal(t, map[string]any{
 		"test-input": "test-value",
-	}, workflow.Inputs)
+	}, workflowRun.Inputs)
 
-	wfJobs := store.WorkflowJobs.GetByWorkflowId(workflow.Id)
+	wfJobs := store.WorkflowJobs.GetByWorkflowRunId(workflowRun.Id)
 	assert.Len(t, wfJobs, 1)
 	assert.Equal(t, 0, wfJobs[0].Index)
 
@@ -116,9 +116,9 @@ func TestWorkflowManager_DispatchesAllJobsConcurrently(t *testing.T) {
 	}
 	store.JobAgents.Upsert(ctx, jobAgent2)
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
-		Name:   "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
+		Name:   "test-workflow",
 		Inputs: []oapi.WorkflowInput{stringInput},
 		Jobs: []oapi.WorkflowJobTemplate{
 			{
@@ -139,16 +139,16 @@ func TestWorkflowManager_DispatchesAllJobsConcurrently(t *testing.T) {
 			},
 		},
 	}
-	store.WorkflowTemplates.Upsert(ctx, workflowTemplate)
+	store.Workflows.Upsert(ctx, workflow)
 
-	wf, err := manager.CreateWorkflow(ctx, "test-workflow-template", map[string]any{
+	wfRun, err := manager.CreateWorkflowRun(ctx, "test-workflow", map[string]any{
 		"test-input": "test-value",
 	})
 	assert.NoError(t, err)
-	assert.NotNil(t, wf)
-	assert.Equal(t, "test-workflow-template", wf.WorkflowTemplateId)
+	assert.NotNil(t, wfRun)
+	assert.Equal(t, "test-workflow", wfRun.WorkflowId)
 
-	wfJobs := store.WorkflowJobs.GetByWorkflowId(wf.Id)
+	wfJobs := store.WorkflowJobs.GetByWorkflowRunId(wfRun.Id)
 	assert.Len(t, wfJobs, 2)
 	assert.Equal(t, 0, wfJobs[0].Index)
 	assert.Equal(t, 1, wfJobs[1].Index)
@@ -192,23 +192,23 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 	}
 	store.JobAgents.Upsert(ctx, jobAgent2)
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:   "test-workflow-template",
-		Name: "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:   "test-workflow",
+		Name: "test-workflow",
 		Jobs: []oapi.WorkflowJobTemplate{
 			{Id: "test-job-1", Name: "test-job-1", Ref: "test-job-agent-1"},
 			{Id: "test-job-2", Name: "test-job-2", Ref: "test-job-agent-2"},
 		},
 	}
-	store.WorkflowTemplates.Upsert(ctx, workflowTemplate)
+	store.Workflows.Upsert(ctx, workflow)
 
-	wf, _ := manager.CreateWorkflow(ctx, "test-workflow-template", nil)
+	wfRun, _ := manager.CreateWorkflowRun(ctx, "test-workflow", nil)
 
-	wfv, err := NewWorkflowView(store, wf.Id)
+	wfv, err := NewWorkflowRunView(store, wfRun.Id)
 	assert.NoError(t, err)
 	assert.False(t, wfv.IsComplete())
 
-	wfJobs := store.WorkflowJobs.GetByWorkflowId(wf.Id)
+	wfJobs := store.WorkflowJobs.GetByWorkflowRunId(wfRun.Id)
 	now := time.Now().UTC()
 
 	job1 := store.Jobs.GetByWorkflowJobId(wfJobs[0].Id)[0]
@@ -216,7 +216,7 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 	job1.Status = oapi.JobStatusSuccessful
 	store.Jobs.Upsert(ctx, job1)
 
-	wfv, _ = NewWorkflowView(store, wf.Id)
+	wfv, _ = NewWorkflowRunView(store, wfRun.Id)
 	assert.False(t, wfv.IsComplete())
 
 	job2 := store.Jobs.GetByWorkflowJobId(wfJobs[1].Id)[0]
@@ -224,7 +224,7 @@ func TestWorkflowView_IsComplete(t *testing.T) {
 	job2.Status = oapi.JobStatusSuccessful
 	store.Jobs.Upsert(ctx, job2)
 
-	wfv, _ = NewWorkflowView(store, wf.Id)
+	wfv, _ = NewWorkflowRunView(store, wfRun.Id)
 	assert.True(t, wfv.IsComplete())
 }
 
@@ -244,24 +244,24 @@ func TestCreateWorkflow_SkipsJobWhenIfEvaluatesToFalse(t *testing.T) {
 	ifTrue := "inputs.run_job == true"
 	ifFalse := "inputs.run_job == false"
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:   "test-workflow-template",
-		Name: "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:   "test-workflow",
+		Name: "test-workflow",
 		Jobs: []oapi.WorkflowJobTemplate{
 			{Id: "always-job", Name: "always-job", Ref: "test-job-agent", Config: map[string]any{}},
 			{Id: "true-job", Name: "true-job", Ref: "test-job-agent", Config: map[string]any{}, If: &ifTrue},
 			{Id: "false-job", Name: "false-job", Ref: "test-job-agent", Config: map[string]any{}, If: &ifFalse},
 		},
 	}
-	store.WorkflowTemplates.Upsert(ctx, workflowTemplate)
+	store.Workflows.Upsert(ctx, workflow)
 
-	wf, err := manager.CreateWorkflow(ctx, "test-workflow-template", map[string]any{
+	wfRun, err := manager.CreateWorkflowRun(ctx, "test-workflow", map[string]any{
 		"run_job": true,
 	})
 	assert.NoError(t, err)
-	assert.NotNil(t, wf)
+	assert.NotNil(t, wfRun)
 
-	wfJobs := store.WorkflowJobs.GetByWorkflowId(wf.Id)
+	wfJobs := store.WorkflowJobs.GetByWorkflowRunId(wfRun.Id)
 	assert.Len(t, wfJobs, 2, "should have 2 jobs: always-job and true-job, but not false-job")
 }
 
@@ -277,13 +277,13 @@ func TestMaybeSetDefaultInputValues_SetsStringDefault(t *testing.T) {
 		Default: &[]string{"default-value"}[0],
 	})
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
 		Inputs: []oapi.WorkflowInput{stringInput},
 	}
 
 	inputs := map[string]any{}
-	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	manager.maybeSetDefaultInputValues(inputs, workflow)
 
 	assert.Equal(t, "default-value", inputs["string-input"])
 }
@@ -300,13 +300,13 @@ func TestMaybeSetDefaultInputValues_SetsNumberDefault(t *testing.T) {
 		Default: &[]float32{42.0}[0],
 	})
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
 		Inputs: []oapi.WorkflowInput{numberInput},
 	}
 
 	inputs := map[string]any{}
-	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	manager.maybeSetDefaultInputValues(inputs, workflow)
 
 	assert.Equal(t, float32(42.0), inputs["number-input"])
 }
@@ -323,13 +323,13 @@ func TestMaybeSetDefaultInputValues_SetsBooleanDefault(t *testing.T) {
 		Default: &[]bool{true}[0],
 	})
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
 		Inputs: []oapi.WorkflowInput{booleanInput},
 	}
 
 	inputs := map[string]any{}
-	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	manager.maybeSetDefaultInputValues(inputs, workflow)
 
 	assert.Equal(t, true, inputs["boolean-input"])
 }
@@ -346,13 +346,13 @@ func TestMaybeSetDefaultInputValues_SetsObjectDefault(t *testing.T) {
 		Default: &map[string]any{"key": "value"},
 	})
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
 		Inputs: []oapi.WorkflowInput{objectInput},
 	}
 
 	inputs := map[string]any{}
-	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	manager.maybeSetDefaultInputValues(inputs, workflow)
 	assert.Equal(t, map[string]any{"key": "value"}, inputs["object-input"])
 }
 
@@ -368,15 +368,15 @@ func TestMaybeSetDefaultInputValues_DoesNotOverwriteExistingValue(t *testing.T) 
 		Default: &[]string{"default-value"}[0],
 	})
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
 		Inputs: []oapi.WorkflowInput{stringInput},
 	}
 
 	inputs := map[string]any{
 		"string-input": "user-provided-value",
 	}
-	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	manager.maybeSetDefaultInputValues(inputs, workflow)
 
 	assert.Equal(t, "user-provided-value", inputs["string-input"])
 }
@@ -407,13 +407,13 @@ func TestMaybeSetDefaultInputValues_HandlesMultipleInputTypes(t *testing.T) {
 		Default: &[]bool{false}[0],
 	})
 
-	workflowTemplate := &oapi.WorkflowTemplate{
+	workflow := &oapi.Workflow{
 		Id:     "test-workflow-template",
 		Inputs: []oapi.WorkflowInput{stringInput, numberInput, booleanInput},
 	}
 
 	inputs := map[string]any{}
-	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	manager.maybeSetDefaultInputValues(inputs, workflow)
 
 	assert.Equal(t, "default-string", inputs["string-input"])
 	assert.Equal(t, float32(123.0), inputs["number-input"])
@@ -432,13 +432,13 @@ func TestMaybeSetDefaultInputValues_SkipsInputsWithoutDefault(t *testing.T) {
 		// No default
 	})
 
-	workflowTemplate := &oapi.WorkflowTemplate{
-		Id:     "test-workflow-template",
+	workflow := &oapi.Workflow{
+		Id:     "test-workflow",
 		Inputs: []oapi.WorkflowInput{stringInput},
 	}
 
 	inputs := map[string]any{}
-	manager.maybeSetDefaultInputValues(inputs, workflowTemplate)
+	manager.maybeSetDefaultInputValues(inputs, workflow)
 
 	_, exists := inputs["string-input"]
 	assert.False(t, exists)
