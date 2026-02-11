@@ -496,6 +496,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/release-targets/resource-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview release targets for a resource
+         * @description Simulates which release targets would be created if the given resource were added to the workspace. This is a dry-run endpoint — no resources or release targets are actually created.
+         */
+        post: operations["previewReleaseTargetsForResource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/release-targets/{releaseTargetKey}/desired-release": {
         parameters: {
             query?: never;
@@ -1397,6 +1417,11 @@ export interface components {
             environmentId: string;
             resourceId: string;
         };
+        ReleaseTargetPreview: {
+            deployment: components["schemas"]["Deployment"];
+            environment: components["schemas"]["Environment"];
+            system: components["schemas"]["System"];
+        };
         ReleaseTargetState: {
             currentRelease?: components["schemas"]["Release"];
             desiredRelease?: components["schemas"]["Release"];
@@ -1423,6 +1448,18 @@ export interface components {
             updatedAt?: string;
             version: string;
             workspaceId: string;
+        };
+        ResourcePreviewRequest: {
+            config: {
+                [key: string]: unknown;
+            };
+            identifier: string;
+            kind: string;
+            metadata: {
+                [key: string]: string;
+            };
+            name: string;
+            version: string;
         };
         ResourceProvider: {
             /** Format: date-time */
@@ -3838,6 +3875,55 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    previewReleaseTargetsForResource: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: number;
+                /** @description Number of items to skip */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResourcePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ReleaseTargetPreview"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
+                };
+            };
+            /** @description Invalid request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
