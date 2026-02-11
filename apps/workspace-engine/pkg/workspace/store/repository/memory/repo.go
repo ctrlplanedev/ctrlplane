@@ -114,7 +114,7 @@ type deploymentVersionRepoAdapter struct {
 }
 
 func (a *deploymentVersionRepoAdapter) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
-	return a.Store.GetBy("deployment_id", deploymentID)
+	return a.GetBy("deployment_id", deploymentID)
 }
 
 // DeploymentVersions implements repository.Repo.
