@@ -26,7 +26,7 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 		integration.WithWorkflowTemplate(
 			integration.WorkflowTemplateID(workflowTemplateID),
 			integration.WithWorkflowStringInput(
-				integration.WorkflowStringInputName("input-1"),
+				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
 			),
 			integration.WithWorkflowJobTemplate(
@@ -90,15 +90,15 @@ func TestEngine_Workflow_MultipleInputs(t *testing.T) {
 		integration.WithWorkflowTemplate(
 			integration.WorkflowTemplateID(workflowTemplateID),
 			integration.WithWorkflowStringInput(
-				integration.WorkflowStringInputName("input-1"),
+				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
 			),
 			integration.WithWorkflowNumberInput(
-				integration.WorkflowNumberInputName("input-2"),
+				integration.WorkflowNumberInputKey("input-2"),
 				integration.WorkflowNumberInputDefault(2),
 			),
 			integration.WithWorkflowBooleanInput(
-				integration.WorkflowBooleanInputName("input-3"),
+				integration.WorkflowBooleanInputKey("input-3"),
 				integration.WorkflowBooleanInputDefault(true),
 			),
 			integration.WithWorkflowJobTemplate(
@@ -288,7 +288,7 @@ func TestEngine_Workflow_ConcurrentWorkflows(t *testing.T) {
 		integration.WithWorkflowTemplate(
 			integration.WorkflowTemplateID(workflowTemplateID),
 			integration.WithWorkflowStringInput(
-				integration.WorkflowStringInputName("input-1"),
+				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
 			),
 			integration.WithWorkflowJobTemplate(
@@ -421,7 +421,7 @@ func TestEngine_Workflow_DeleteTemplateCascade(t *testing.T) {
 		integration.WithWorkflowTemplate(
 			integration.WorkflowTemplateID(workflowTemplateID),
 			integration.WithWorkflowStringInput(
-				integration.WorkflowStringInputName("input-1"),
+				integration.WorkflowStringInputKey("input-1"),
 				integration.WorkflowStringInputDefault("default-1"),
 			),
 			integration.WithWorkflowJobTemplate(

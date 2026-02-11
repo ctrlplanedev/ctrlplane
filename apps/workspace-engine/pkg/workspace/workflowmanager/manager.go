@@ -33,8 +33,8 @@ func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflowTemp
 	for _, input := range workflowTemplate.Inputs {
 		if stringInput, err := input.AsWorkflowStringInput(); err == nil && stringInput.Type == oapi.String {
 			if stringInput.Default != nil {
-				if _, ok := inputs[stringInput.Name]; !ok {
-					inputs[stringInput.Name] = *stringInput.Default
+				if _, ok := inputs[stringInput.Key]; !ok {
+					inputs[stringInput.Key] = *stringInput.Default
 				}
 			}
 			continue
@@ -42,8 +42,8 @@ func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflowTemp
 
 		if numberInput, err := input.AsWorkflowNumberInput(); err == nil && numberInput.Type == oapi.Number {
 			if numberInput.Default != nil {
-				if _, ok := inputs[numberInput.Name]; !ok {
-					inputs[numberInput.Name] = *numberInput.Default
+				if _, ok := inputs[numberInput.Key]; !ok {
+					inputs[numberInput.Key] = *numberInput.Default
 				}
 			}
 			continue
@@ -51,8 +51,8 @@ func (m *Manager) maybeSetDefaultInputValues(inputs map[string]any, workflowTemp
 
 		if booleanInput, err := input.AsWorkflowBooleanInput(); err == nil && booleanInput.Type == oapi.Boolean {
 			if booleanInput.Default != nil {
-				if _, ok := inputs[booleanInput.Name]; !ok {
-					inputs[booleanInput.Name] = *booleanInput.Default
+				if _, ok := inputs[booleanInput.Key]; !ok {
+					inputs[booleanInput.Key] = *booleanInput.Default
 				}
 			}
 		}

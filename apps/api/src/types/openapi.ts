@@ -1817,7 +1817,7 @@ export interface components {
         WorkflowArrayInput: components["schemas"]["WorkflowManualArrayInput"] | components["schemas"]["WorkflowSelectorArrayInput"];
         WorkflowBooleanInput: {
             default?: boolean;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "boolean";
         };
@@ -1861,18 +1861,18 @@ export interface components {
             default?: {
                 [key: string]: unknown;
             }[];
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "array";
         };
         WorkflowNumberInput: {
             default?: number;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "number";
         };
         WorkflowSelectorArrayInput: {
-            name: string;
+            key: string;
             selector: {
                 default?: components["schemas"]["Selector"];
                 /** @enum {string} */
@@ -1883,7 +1883,7 @@ export interface components {
         };
         WorkflowStringInput: {
             default?: string;
-            name: string;
+            key: string;
             /** @enum {string} */
             type: "string";
         };

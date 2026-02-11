@@ -2696,7 +2696,7 @@
                "default": {
                   "type": "boolean"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2707,7 +2707,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
@@ -2833,7 +2833,7 @@
                   },
                   "type": "array"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2844,7 +2844,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
@@ -2854,7 +2854,7 @@
                "default": {
                   "type": "number"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2865,14 +2865,14 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"
          },
          "WorkflowSelectorArrayInput": {
             "properties": {
-               "name": {
+               "key": {
                   "type": "string"
                },
                "selector": {
@@ -2902,7 +2902,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type",
                "selector"
             ],
@@ -2913,7 +2913,7 @@
                "default": {
                   "type": "string"
                },
-               "name": {
+               "key": {
                   "type": "string"
                },
                "type": {
@@ -2924,7 +2924,7 @@
                }
             },
             "required": [
-               "name",
+               "key",
                "type"
             ],
             "type": "object"

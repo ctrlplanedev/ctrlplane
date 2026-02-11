@@ -1196,7 +1196,7 @@ type WorkflowArrayInput struct {
 // WorkflowBooleanInput defines model for WorkflowBooleanInput.
 type WorkflowBooleanInput struct {
 	Default *bool                    `json:"default,omitempty"`
-	Name    string                   `json:"name"`
+	Key     string                   `json:"key"`
 	Type    WorkflowBooleanInputType `json:"type"`
 }
 
@@ -1271,7 +1271,7 @@ type WorkflowJobWithJobs struct {
 // WorkflowManualArrayInput defines model for WorkflowManualArrayInput.
 type WorkflowManualArrayInput struct {
 	Default *[]map[string]interface{}    `json:"default,omitempty"`
-	Name    string                       `json:"name"`
+	Key     string                       `json:"key"`
 	Type    WorkflowManualArrayInputType `json:"type"`
 }
 
@@ -1281,7 +1281,7 @@ type WorkflowManualArrayInputType string
 // WorkflowNumberInput defines model for WorkflowNumberInput.
 type WorkflowNumberInput struct {
 	Default *float32                `json:"default,omitempty"`
-	Name    string                  `json:"name"`
+	Key     string                  `json:"key"`
 	Type    WorkflowNumberInputType `json:"type"`
 }
 
@@ -1290,7 +1290,7 @@ type WorkflowNumberInputType string
 
 // WorkflowSelectorArrayInput defines model for WorkflowSelectorArrayInput.
 type WorkflowSelectorArrayInput struct {
-	Name     string `json:"name"`
+	Key      string `json:"key"`
 	Selector struct {
 		Default    *Selector                                    `json:"default,omitempty"`
 		EntityType WorkflowSelectorArrayInputSelectorEntityType `json:"entityType"`
@@ -1307,7 +1307,7 @@ type WorkflowSelectorArrayInputType string
 // WorkflowStringInput defines model for WorkflowStringInput.
 type WorkflowStringInput struct {
 	Default *string                 `json:"default,omitempty"`
-	Name    string                  `json:"name"`
+	Key     string                  `json:"key"`
 	Type    WorkflowStringInputType `json:"type"`
 }
 

@@ -25,7 +25,7 @@ func NewStringWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
 	input := &oapi.WorkflowInput{}
 	name := fmt.Sprintf("test-input-%s", uuid.New().String()[:8])
 	_ = input.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name:    name,
+		Key:     name,
 		Type:    oapi.String,
 		Default: nil,
 	})
@@ -36,7 +36,7 @@ func NewNumberWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
 	input := &oapi.WorkflowInput{}
 	name := fmt.Sprintf("test-input-%s", uuid.New().String()[:8])
 	_ = input.FromWorkflowNumberInput(oapi.WorkflowNumberInput{
-		Name:    name,
+		Key:     name,
 		Type:    oapi.Number,
 		Default: nil,
 	})
@@ -47,7 +47,7 @@ func NewBooleanWorkflowInput(workflowTemplateID string) *oapi.WorkflowInput {
 	input := &oapi.WorkflowInput{}
 	name := fmt.Sprintf("test-input-%s", uuid.New().String()[:8])
 	_ = input.FromWorkflowBooleanInput(oapi.WorkflowBooleanInput{
-		Name:    name,
+		Key:     name,
 		Type:    oapi.Boolean,
 		Default: nil,
 	})

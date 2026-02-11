@@ -9,10 +9,16 @@ import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
 
 type WorkflowTemplate = WorkspaceEngine["schemas"]["WorkflowTemplate"];
 
-function validateUniqueNames(items: { name: string }[], label: string): void {
+function validateUniqueInputKeys(items: { key: string }[]): void {
+  const keys = items.map((i) => i.key);
+  if (new Set(keys).size !== keys.length)
+    throw new ApiError(`Input keys must be unique`, 400);
+}
+
+function validateUniqueJobNames(items: { name: string }[]): void {
   const names = items.map((i) => i.name);
   if (new Set(names).size !== names.length)
-    throw new ApiError(`${label} names must be unique`, 400);
+    throw new ApiError(`Job names must be unique`, 400);
 }
 
 function buildWorkflowTemplate(
@@ -91,8 +97,8 @@ const createWorkflowTemplate: AsyncTypedHandler<
   const { workspaceId } = req.params;
   const body = req.body;
 
-  validateUniqueNames(body.inputs, "Input");
-  validateUniqueNames(body.jobs, "Job");
+  validateUniqueInputKeys(body.inputs);
+  validateUniqueJobNames(body.jobs);
 
   const workflowTemplate = buildWorkflowTemplate(uuidv4(), body);
 
@@ -113,8 +119,8 @@ const updateWorkflowTemplate: AsyncTypedHandler<
   const { workspaceId, workflowTemplateId } = req.params;
   const body = req.body;
 
-  validateUniqueNames(body.inputs, "Input");
-  validateUniqueNames(body.jobs, "Job");
+  validateUniqueInputKeys(body.inputs);
+  validateUniqueJobNames(body.jobs);
 
   const existing = await getClientFor(workspaceId).GET(
     "/v1/workspaces/{workspaceId}/workflow-templates/{workflowTemplateId}",

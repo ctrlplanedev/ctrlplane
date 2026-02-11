@@ -35,9 +35,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowStringInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['string'] },
       default: { type: 'string' },
     },
@@ -45,9 +45,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowNumberInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['number'] },
       default: { type: 'number' },
     },
@@ -55,9 +55,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowBooleanInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['boolean'] },
       default: { type: 'boolean' },
     },
@@ -65,9 +65,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowManualArrayInput: {
     type: 'object',
-    required: ['name', 'type'],
+    required: ['key', 'type'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['array'] },
       default: { type: 'array', items: { type: 'object', additionalProperties: true } },
     },
@@ -75,9 +75,9 @@ local openapi = import '../lib/openapi.libsonnet';
 
   WorkflowSelectorArrayInput: {
     type: 'object',
-    required: ['name', 'type', 'selector'],
+    required: ['key', 'type', 'selector'],
     properties: {
-      name: { type: 'string' },
+      key: { type: 'string' },
       type: { type: 'string', enum: ['array'] },
       selector: {
         type: 'object',

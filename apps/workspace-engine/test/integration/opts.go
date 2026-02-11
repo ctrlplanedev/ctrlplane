@@ -1299,12 +1299,12 @@ func WithWorkflowStringInput(options ...WorkflowInputOption) WorkflowTemplateOpt
 	}
 }
 
-func WorkflowStringInputName(name string) WorkflowInputOption {
+func WorkflowStringInputKey(key string) WorkflowInputOption {
 	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
 		curr, _ := input.MarshalJSON()
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
-		cfg["name"] = name
+		cfg["key"] = key
 		new, _ := json.Marshal(cfg)
 		_ = input.UnmarshalJSON(new)
 	}
@@ -1331,12 +1331,12 @@ func WithWorkflowNumberInput(options ...WorkflowInputOption) WorkflowTemplateOpt
 	}
 }
 
-func WorkflowNumberInputName(name string) WorkflowInputOption {
+func WorkflowNumberInputKey(key string) WorkflowInputOption {
 	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
 		curr, _ := input.MarshalJSON()
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
-		cfg["name"] = name
+		cfg["key"] = key
 		new, _ := json.Marshal(cfg)
 		_ = input.UnmarshalJSON(new)
 	}
@@ -1363,12 +1363,12 @@ func WithWorkflowBooleanInput(options ...WorkflowInputOption) WorkflowTemplateOp
 	}
 }
 
-func WorkflowBooleanInputName(name string) WorkflowInputOption {
+func WorkflowBooleanInputKey(key string) WorkflowInputOption {
 	return func(_ *TestWorkspace, input *oapi.WorkflowInput) {
 		curr, _ := input.MarshalJSON()
 		var cfg map[string]any
 		json.Unmarshal(curr, &cfg)
-		cfg["name"] = name
+		cfg["key"] = key
 		new, _ := json.Marshal(cfg)
 		_ = input.UnmarshalJSON(new)
 	}

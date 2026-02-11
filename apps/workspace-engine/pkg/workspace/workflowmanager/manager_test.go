@@ -21,7 +21,7 @@ func TestWorkflowManager_CreatesNewWorkflow(t *testing.T) {
 
 	var stringInput oapi.WorkflowInput
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name:    "test-input",
+		Key:     "test-input",
 		Type:    oapi.String,
 		Default: &[]string{"test-default"}[0],
 	})
@@ -91,7 +91,7 @@ func TestWorkflowManager_DispatchesAllJobsConcurrently(t *testing.T) {
 
 	var stringInput oapi.WorkflowInput
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name:    "test-input",
+		Key:     "test-input",
 		Type:    oapi.String,
 		Default: &[]string{"test-default"}[0],
 	})
@@ -272,7 +272,7 @@ func TestMaybeSetDefaultInputValues_SetsStringDefault(t *testing.T) {
 
 	var stringInput oapi.WorkflowInput
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name:    "string-input",
+		Key:     "string-input",
 		Type:    oapi.String,
 		Default: &[]string{"default-value"}[0],
 	})
@@ -295,7 +295,7 @@ func TestMaybeSetDefaultInputValues_SetsNumberDefault(t *testing.T) {
 
 	var numberInput oapi.WorkflowInput
 	_ = numberInput.FromWorkflowNumberInput(oapi.WorkflowNumberInput{
-		Name:    "number-input",
+		Key:     "number-input",
 		Type:    oapi.Number,
 		Default: &[]float32{42.0}[0],
 	})
@@ -318,7 +318,7 @@ func TestMaybeSetDefaultInputValues_SetsBooleanDefault(t *testing.T) {
 
 	var booleanInput oapi.WorkflowInput
 	_ = booleanInput.FromWorkflowBooleanInput(oapi.WorkflowBooleanInput{
-		Name:    "boolean-input",
+		Key:     "boolean-input",
 		Type:    oapi.Boolean,
 		Default: &[]bool{true}[0],
 	})
@@ -341,7 +341,7 @@ func TestMaybeSetDefaultInputValues_DoesNotOverwriteExistingValue(t *testing.T) 
 
 	var stringInput oapi.WorkflowInput
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name:    "string-input",
+		Key:     "string-input",
 		Type:    oapi.String,
 		Default: &[]string{"default-value"}[0],
 	})
@@ -366,21 +366,21 @@ func TestMaybeSetDefaultInputValues_HandlesMultipleInputTypes(t *testing.T) {
 
 	var stringInput oapi.WorkflowInput
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name:    "string-input",
+		Key:     "string-input",
 		Type:    oapi.String,
 		Default: &[]string{"default-string"}[0],
 	})
 
 	var numberInput oapi.WorkflowInput
 	_ = numberInput.FromWorkflowNumberInput(oapi.WorkflowNumberInput{
-		Name:    "number-input",
+		Key:     "number-input",
 		Type:    oapi.Number,
 		Default: &[]float32{123.0}[0],
 	})
 
 	var booleanInput oapi.WorkflowInput
 	_ = booleanInput.FromWorkflowBooleanInput(oapi.WorkflowBooleanInput{
-		Name:    "boolean-input",
+		Key:     "boolean-input",
 		Type:    oapi.Boolean,
 		Default: &[]bool{false}[0],
 	})
@@ -405,7 +405,7 @@ func TestMaybeSetDefaultInputValues_SkipsInputsWithoutDefault(t *testing.T) {
 
 	var stringInput oapi.WorkflowInput
 	_ = stringInput.FromWorkflowStringInput(oapi.WorkflowStringInput{
-		Name: "string-input",
+		Key:  "string-input",
 		Type: oapi.String,
 		// No default
 	})
