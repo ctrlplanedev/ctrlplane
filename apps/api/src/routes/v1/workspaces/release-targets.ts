@@ -91,7 +91,7 @@ const previewReleaseTargetsForResource: AsyncTypedHandler<
 
   if (previewResponse.error != null)
     throw new ApiError(
-      previewResponse.error?.error ?? "Failed to preview release targets",
+      previewResponse.error.error ?? "Failed to preview release targets",
       previewResponse.response.status,
     );
 
