@@ -266,6 +266,10 @@
                   "description": "Configuration for the job agent",
                   "type": "object"
                },
+               "if": {
+                  "description": "CEL expression to determine if the job should run",
+                  "type": "string"
+               },
                "matrix": {
                   "$ref": "#/components/schemas/WorkflowJobMatrix"
                },
