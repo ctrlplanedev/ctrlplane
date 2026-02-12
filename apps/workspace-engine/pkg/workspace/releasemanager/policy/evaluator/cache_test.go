@@ -223,8 +223,8 @@ func TestMemoizedEvaluator_ScopeFieldsString(t *testing.T) {
 		},
 		{
 			name:        "all fields",
-			scopeFields: ScopeEnvironment | ScopeVersion | ScopeReleaseTarget | ScopeRelease,
-			want:        "Environment+Version+Resource+Deployment+Release",
+			scopeFields: ScopeEnvironment | ScopeVersion | ScopeReleaseTarget,
+			want:        "Environment+Version+Resource+Deployment",
 		},
 		{
 			name:        "no fields",

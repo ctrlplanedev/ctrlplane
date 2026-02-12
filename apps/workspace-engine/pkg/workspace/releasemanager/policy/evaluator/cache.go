@@ -160,8 +160,5 @@ func (m *MemoizedEvaluator) scopeFieldsString() string {
 	if m.scopeFields&ScopeDeployment != 0 {
 		fields = append(fields, "Deployment")
 	}
-	if m.scopeFields&ScopeRelease != 0 {
-		fields = append(fields, "Release")
-	}
 	return strings.Join(fields, "+")
 }

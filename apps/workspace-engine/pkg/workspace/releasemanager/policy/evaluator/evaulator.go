@@ -60,9 +60,6 @@ const (
 	ScopeResource
 	// ScopeDeployment indicates the evaluator reads scope.Deployment.
 	ScopeDeployment
-	// ScopeRelease is reserved for job-level evaluators that operate on a
-	// specific release.
-	ScopeRelease
 
 	// ScopeReleaseTarget is a convenience composite. A release target is
 	// uniquely identified by an environment, a resource, and a deployment.
