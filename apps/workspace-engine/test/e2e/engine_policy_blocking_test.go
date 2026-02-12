@@ -8,15 +8,17 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	d1ID := "deployment-prod"
-	d2ID := "deployment-dev"
-	e1ID := "env-1"
-	r1ID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

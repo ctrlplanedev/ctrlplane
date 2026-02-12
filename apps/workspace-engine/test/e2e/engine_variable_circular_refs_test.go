@@ -23,6 +23,8 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 	resourceBID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleAToBID := uuid.New().String()
+	relRuleBToAID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -47,7 +49,7 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		),
 		// A → B relationship
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-a-to-b"),
+			integration.RelationshipRuleID(relRuleAToBID),
 			integration.RelationshipRuleName("a-to-b"),
 			integration.RelationshipRuleReference("b-resource"),
 			integration.RelationshipRuleFromType("resource"),
@@ -70,7 +72,7 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		),
 		// B → A relationship (creates cycle)
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-b-to-a"),
+			integration.RelationshipRuleID(relRuleBToAID),
 			integration.RelationshipRuleName("b-to-a"),
 			integration.RelationshipRuleReference("a-resource"),
 			integration.RelationshipRuleFromType("resource"),
@@ -207,6 +209,9 @@ func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 	resourceCID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relAToBID := uuid.New().String()
+	relBToCID := uuid.New().String()
+	relCToAID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -231,7 +236,7 @@ func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 		),
 		// A → B relationship
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-a-to-b"),
+			integration.RelationshipRuleID(relAToBID),
 			integration.RelationshipRuleName("a-to-b"),
 			integration.RelationshipRuleReference("next"),
 			integration.RelationshipRuleFromType("resource"),
@@ -250,7 +255,7 @@ func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 		),
 		// B → C relationship
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-b-to-c"),
+			integration.RelationshipRuleID(relBToCID),
 			integration.RelationshipRuleName("b-to-c"),
 			integration.RelationshipRuleReference("next"),
 			integration.RelationshipRuleFromType("resource"),
@@ -269,7 +274,7 @@ func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 		),
 		// C → A relationship (creates three-way cycle)
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-c-to-a"),
+			integration.RelationshipRuleID(relCToAID),
 			integration.RelationshipRuleName("c-to-a"),
 			integration.RelationshipRuleReference("next"),
 			integration.RelationshipRuleFromType("resource"),
@@ -373,6 +378,7 @@ func TestEngine_VariableResolution_SelfReference(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -397,7 +403,7 @@ func TestEngine_VariableResolution_SelfReference(t *testing.T) {
 		),
 		// Self-referencing relationship
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-self"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("self-ref"),
 			integration.RelationshipRuleReference("self"),
 			integration.RelationshipRuleFromType("resource"),
@@ -847,6 +853,7 @@ func TestEngine_VariableResolution_ReferenceToDeepProperty(t *testing.T) {
 	configResourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -870,7 +877,7 @@ func TestEngine_VariableResolution_ReferenceToDeepProperty(t *testing.T) {
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-app-to-config"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("app-to-config"),
 			integration.RelationshipRuleReference("config"),
 			integration.RelationshipRuleFromType("resource"),

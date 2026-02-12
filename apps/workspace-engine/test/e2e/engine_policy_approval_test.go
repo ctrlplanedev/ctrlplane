@@ -9,16 +9,18 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_ApprovalPolicy_BasicFlow tests that a deployment version requires
 // the minimum number of approvals before a release is created
 func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -124,11 +126,11 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 // TestEngine_ApprovalPolicy_UnapprovalFlow tests that removing an approval
 // prevents deployment of new versions
 func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -295,11 +297,11 @@ func TestEngine_ApprovalPolicy_UnapprovalFlow(t *testing.T) {
 // TestEngine_ApprovalPolicy_MultipleVersions tests that different versions
 // can have different approval states and only approved ones deploy
 func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -472,11 +474,11 @@ func TestEngine_ApprovalPolicy_MultipleVersions(t *testing.T) {
 // TestEngine_ApprovalPolicy_ExactMinimum tests that exactly meeting the minimum
 // approval count allows deployment
 func TestEngine_ApprovalPolicy_ExactMinimum(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -563,11 +565,11 @@ func TestEngine_ApprovalPolicy_ExactMinimum(t *testing.T) {
 // TestEngine_ApprovalPolicy_ZeroApprovalsRequired tests that setting minimum
 // approvals to 0 effectively disables the approval requirement
 func TestEngine_ApprovalPolicy_ZeroApprovalsRequired(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -643,11 +645,11 @@ func TestEngine_ApprovalPolicy_ZeroApprovalsRequired(t *testing.T) {
 // TestEngine_ApprovalPolicy_PartialApprovalBlocks tests that having some but
 // not enough approvals still blocks deployment
 func TestEngine_ApprovalPolicy_PartialApprovalBlocks(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -736,11 +738,11 @@ func TestEngine_ApprovalPolicy_PartialApprovalBlocks(t *testing.T) {
 // TestEngine_ApprovalPolicy_ApprovalDeletion tests that deleting an approval
 // record prevents deployment if it drops below minimum
 func TestEngine_ApprovalPolicy_ApprovalDeletion(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

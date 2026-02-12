@@ -8,18 +8,20 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_PolicyConflict_MultipleApprovalRequirements tests that when multiple
 // policies apply to the same release target with different approval requirements,
 // they are merged and all approval requirements must be satisfied.
 func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
-	resourceID := "resource-1"
-	policy1ID := "policy-approval-2"
-	policy2ID := "policy-approval-3"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policy1ID := uuid.New().String()
+	policy2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -117,12 +119,12 @@ func TestEngine_PolicyConflict_MultipleApprovalRequirements(t *testing.T) {
 // TestEngine_PolicyConflict_OverlappingSelectors tests multiple policies with
 // overlapping selectors targeting the same release target.
 func TestEngine_PolicyConflict_OverlappingSelectors(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
-	resourceID := "resource-1"
-	policy1ID := "policy-prod-env"
-	policy2ID := "policy-all-deployments"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policy1ID := uuid.New().String()
+	policy2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -209,12 +211,12 @@ func TestEngine_PolicyConflict_OverlappingSelectors(t *testing.T) {
 // TestEngine_PolicyConflict_PriorityOrdering tests that policy priority
 // affects evaluation order but all policies must still be satisfied.
 func TestEngine_PolicyConflict_PriorityOrdering(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	highPriorityPolicyID := "policy-high-priority"
-	lowPriorityPolicyID := "policy-low-priority"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	highPriorityPolicyID := uuid.New().String()
+	lowPriorityPolicyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -303,12 +305,12 @@ func TestEngine_PolicyConflict_PriorityOrdering(t *testing.T) {
 // TestEngine_PolicyConflict_ApprovalPlusRetry tests the interaction between
 // approval policies and retry policies on the same target.
 func TestEngine_PolicyConflict_ApprovalPlusRetry(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	approvalPolicyID := "policy-approval"
-	retryPolicyID := "policy-retry"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	approvalPolicyID := uuid.New().String()
+	retryPolicyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -391,11 +393,11 @@ func TestEngine_PolicyConflict_ApprovalPlusRetry(t *testing.T) {
 // TestEngine_PolicyConflict_AllRulesMerged tests that when multiple policies
 // apply to the same target, all their rules are evaluated together.
 func TestEngine_PolicyConflict_AllRulesMerged(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	policy1ID := "policy-approval"
-	policy2ID := "policy-rollout"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	policy1ID := uuid.New().String()
+	policy2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

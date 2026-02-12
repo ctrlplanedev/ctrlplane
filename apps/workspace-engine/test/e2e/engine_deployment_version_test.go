@@ -13,8 +13,8 @@ import (
 )
 
 func TestEngine_DeploymentVersionCreation(t *testing.T) {
-	dv1Id := "dv1"
-	dv2Id := "dv2"
+	dv1Id := uuid.New().String()
+	dv2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -25,15 +25,22 @@ func TestEngine_DeploymentVersionCreation(t *testing.T) {
 		),
 	)
 
-	engineDv1, _ := engine.Workspace().DeploymentVersions().Get(dv1Id)
-	engineDv2, _ := engine.Workspace().DeploymentVersions().Get(dv2Id)
+	engineDv1, ok := engine.Workspace().DeploymentVersions().Get(dv1Id)
+	if !ok || engineDv1 == nil {
+		t.Fatalf("deployment version %s not found", dv1Id)
+	}
+
+	engineDv2, ok := engine.Workspace().DeploymentVersions().Get(dv2Id)
+	if !ok || engineDv2 == nil {
+		t.Fatalf("deployment version %s not found", dv2Id)
+	}
 
 	if engineDv1.Id != dv1Id {
-		t.Fatalf("deployment versions have the same id")
+		t.Fatalf("expected deployment version id %s, got %s", dv1Id, engineDv1.Id)
 	}
 
 	if engineDv2.Id != dv2Id {
-		t.Fatalf("deployment versions have the same id")
+		t.Fatalf("expected deployment version id %s, got %s", dv2Id, engineDv2.Id)
 	}
 }
 

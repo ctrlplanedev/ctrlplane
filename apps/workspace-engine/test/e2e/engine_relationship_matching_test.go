@@ -8,13 +8,22 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/test/integration"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_GetRelatedEntities_ResourceToResource tests finding related resources
 func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	vpcUsWest2ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	clusterEast2ID := uuid.New().String()
+	clusterWest1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
 
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -29,7 +38,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -37,7 +46,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("vpc-us-west-2"),
+			integration.ResourceID(vpcUsWest2ID),
 			integration.ResourceName("vpc-us-west-2"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -45,7 +54,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -53,7 +62,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-2"),
+			integration.ResourceID(clusterEast2ID),
 			integration.ResourceName("cluster-east-2"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -61,7 +70,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-west-1"),
+			integration.ResourceID(clusterWest1ID),
 			integration.ResourceName("cluster-west-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -74,10 +83,10 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -85,7 +94,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-west-2"),
+				integration.ResourceID(vpcUsWest2ID),
 				integration.ResourceName("vpc-us-west-2"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -93,7 +102,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -101,7 +110,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-2"),
+				integration.ResourceID(clusterEast2ID),
 				integration.ResourceName("cluster-east-2"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -109,7 +118,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-west-1"),
+				integration.ResourceID(clusterWest1ID),
 				integration.ResourceName("cluster-west-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -128,7 +137,7 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 		ctx := context.Background()
 
 		// Test from VPC in us-east-1 to clusters
-		vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpcEast, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -155,13 +164,13 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 			clusterIDs[cluster.EntityId] = true
 		}
 
-		if !clusterIDs["cluster-east-1"] {
+		if !clusterIDs[clusterEast1ID] {
 			t.Errorf("cluster-east-1 not in related entities")
 		}
-		if !clusterIDs["cluster-east-2"] {
+		if !clusterIDs[clusterEast2ID] {
 			t.Errorf("cluster-east-2 not in related entities")
 		}
-		if clusterIDs["cluster-west-1"] {
+		if clusterIDs[clusterWest1ID] {
 			t.Errorf("cluster-west-1 should not be in related entities")
 		}
 	})
@@ -169,9 +178,13 @@ func TestEngine_GetRelatedEntities_ResourceToResource(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_BidirectionalRelationship tests that relationships work in both directions
 func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
 
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("part-of"),
 		integration.RelationshipRuleFromType("resource"),
@@ -185,7 +198,7 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -193,7 +206,7 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -206,10 +219,10 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -217,7 +230,7 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -236,7 +249,7 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 		ctx := context.Background()
 
 		// Test from cluster to VPC (reverse direction)
-		cluster, ok := engine.Workspace().Resources().Get("cluster-east-1")
+		cluster, ok := engine.Workspace().Resources().Get(clusterEast1ID)
 		if !ok {
 			t.Fatalf("cluster-east-1 not found")
 		}
@@ -257,7 +270,7 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 			t.Fatalf("expected 1 related VPC, got %d", len(vpcs))
 		}
 
-		if vpcs[0].EntityId != "vpc-us-east-1" {
+		if vpcs[0].EntityId != vpcUsEast1ID {
 			t.Errorf("expected vpc-us-east-1, got %s", vpcs[0].EntityId)
 		}
 
@@ -266,8 +279,15 @@ func TestEngine_GetRelatedEntities_BidirectionalRelationship(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_DeploymentToResource tests deployment to resource relationships
 func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
+	relRuleID := uuid.New().String()
+	deploymentApiID := uuid.New().String()
+	deploymentWorkerID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	clusterWest1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("deployment-to-cluster"),
 		integration.RelationshipRuleReference("runs-on"),
 		integration.RelationshipRuleFromType("deployment"),
@@ -279,14 +299,14 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 	system := integration.WithSystem(
 		integration.SystemName("test-system"),
 		integration.WithDeployment(
-			integration.DeploymentID("deployment-api"),
+			integration.DeploymentID(deploymentApiID),
 			integration.DeploymentName("api"),
 			integration.DeploymentJobAgentConfig(map[string]any{
 				"region": "us-east-1",
 			}),
 		),
 		integration.WithDeployment(
-			integration.DeploymentID("deployment-worker"),
+			integration.DeploymentID(deploymentWorkerID),
 			integration.DeploymentName("worker"),
 			integration.DeploymentJobAgentConfig(map[string]any{
 				"region": "us-west-2",
@@ -299,7 +319,7 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 		system,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -307,7 +327,7 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-west-1"),
+			integration.ResourceID(clusterWest1ID),
 			integration.ResourceName("cluster-west-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -321,10 +341,10 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 		system,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -332,7 +352,7 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-west-1"),
+				integration.ResourceID(clusterWest1ID),
 				integration.ResourceName("cluster-west-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -351,7 +371,7 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 		ctx := context.Background()
 
 		// Test from deployment to resources
-		deployment, ok := engine.Workspace().Deployments().Get("deployment-api")
+		deployment, ok := engine.Workspace().Deployments().Get(deploymentApiID)
 		if !ok {
 			t.Fatalf("deployment-api not found")
 		}
@@ -371,7 +391,7 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 			t.Fatalf("expected 1 related cluster, got %d", len(clusters))
 		}
 
-		if clusters[0].EntityId != "cluster-east-1" {
+		if clusters[0].EntityId != clusterEast1ID {
 			t.Errorf("expected cluster-east-1, got %s", clusters[0].EntityId)
 		}
 	})
@@ -379,8 +399,16 @@ func TestEngine_GetRelatedEntities_DeploymentToResource(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_EnvironmentToResource tests environment to resource relationships
 func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
+	relRuleID := uuid.New().String()
+	envProdID := uuid.New().String()
+	envStagingID := uuid.New().String()
+	dbProdID := uuid.New().String()
+	cacheProdID := uuid.New().String()
+	dbStagingID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("environment-to-resource"),
 		integration.RelationshipRuleReference("has-resources"),
 		integration.RelationshipRuleFromType("environment"),
@@ -392,11 +420,11 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 	system := integration.WithSystem(
 		integration.SystemName("test-system"),
 		integration.WithEnvironment(
-			integration.EnvironmentID("env-prod"),
+			integration.EnvironmentID(envProdID),
 			integration.EnvironmentName("production"),
 		),
 		integration.WithEnvironment(
-			integration.EnvironmentID("env-staging"),
+			integration.EnvironmentID(envStagingID),
 			integration.EnvironmentName("staging"),
 		),
 	)
@@ -406,7 +434,7 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 		system,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("db-prod"),
+			integration.ResourceID(dbProdID),
 			integration.ResourceName("db-prod"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -414,7 +442,7 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cache-prod"),
+			integration.ResourceID(cacheProdID),
 			integration.ResourceName("cache-prod"),
 			integration.ResourceKind("cache"),
 			integration.ResourceMetadata(map[string]string{
@@ -422,7 +450,7 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-staging"),
+			integration.ResourceID(dbStagingID),
 			integration.ResourceName("db-staging"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -436,10 +464,10 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 		system,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-prod"),
+				integration.ResourceID(dbProdID),
 				integration.ResourceName("db-prod"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -447,7 +475,7 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cache-prod"),
+				integration.ResourceID(cacheProdID),
 				integration.ResourceName("cache-prod"),
 				integration.ResourceKind("cache"),
 				integration.ResourceMetadata(map[string]string{
@@ -455,7 +483,7 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-staging"),
+				integration.ResourceID(dbStagingID),
 				integration.ResourceName("db-staging"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -474,7 +502,7 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 		ctx := context.Background()
 
 		// Test from environment to resources
-		environment, ok := engine.Workspace().Environments().Get("env-prod")
+		environment, ok := engine.Workspace().Environments().Get(envProdID)
 		if !ok {
 			t.Fatalf("env-prod not found")
 		}
@@ -499,13 +527,13 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 			resourceIDs[resource.EntityId] = true
 		}
 
-		if !resourceIDs["db-prod"] {
+		if !resourceIDs[dbProdID] {
 			t.Errorf("db-prod not in related entities")
 		}
-		if !resourceIDs["cache-prod"] {
+		if !resourceIDs[cacheProdID] {
 			t.Errorf("cache-prod not in related entities")
 		}
-		if resourceIDs["db-staging"] {
+		if resourceIDs[dbStagingID] {
 			t.Errorf("db-staging should not be in related entities")
 		}
 	})
@@ -513,8 +541,16 @@ func TestEngine_GetRelatedEntities_EnvironmentToResource(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_MultipleRelationships tests entity with multiple relationship rules
 func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
+	relRule1ID := uuid.New().String()
+	relRule2ID := uuid.New().String()
+	vpc1ID := uuid.New().String()
+	cluster1ID := uuid.New().String()
+	cluster2ID := uuid.New().String()
+	db1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule1 := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRule1ID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains-clusters"),
 		integration.RelationshipRuleFromType("resource"),
@@ -525,7 +561,7 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 	)
 
 	rule2 := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-2"),
+		integration.RelationshipRuleID(relRule2ID),
 		integration.RelationshipRuleName("vpc-to-database"),
 		integration.RelationshipRuleReference("contains-databases"),
 		integration.RelationshipRuleFromType("resource"),
@@ -540,32 +576,32 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 		rule1,
 		rule2,
 		integration.WithResource(
-			integration.ResourceID("vpc-1"),
+			integration.ResourceID(vpc1ID),
 			integration.ResourceName("vpc-1"),
 			integration.ResourceKind("vpc"),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-1"),
+			integration.ResourceID(cluster1ID),
 			integration.ResourceName("cluster-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
-				"vpc_id": "vpc-1",
+				"vpc_id": vpc1ID,
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-2"),
+			integration.ResourceID(cluster2ID),
 			integration.ResourceName("cluster-2"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
-				"vpc_id": "vpc-1",
+				"vpc_id": vpc1ID,
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-1"),
+			integration.ResourceID(db1ID),
 			integration.ResourceName("db-1"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
-				"vpc_id": "vpc-1",
+				"vpc_id": vpc1ID,
 			}),
 		),
 	)
@@ -575,35 +611,35 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 		rule1,
 		rule2,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-1"),
+				integration.ResourceID(vpc1ID),
 				integration.ResourceName("vpc-1"),
 				integration.ResourceKind("vpc"),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-1"),
+				integration.ResourceID(cluster1ID),
 				integration.ResourceName("cluster-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
-					"vpc_id": "vpc-1",
+					"vpc_id": vpc1ID,
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-2"),
+				integration.ResourceID(cluster2ID),
 				integration.ResourceName("cluster-2"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
-					"vpc_id": "vpc-1",
+					"vpc_id": vpc1ID,
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-1"),
+				integration.ResourceID(db1ID),
 				integration.ResourceName("db-1"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
-					"vpc_id": "vpc-1",
+					"vpc_id": vpc1ID,
 				}),
 			),
 		),
@@ -617,7 +653,7 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		vpc, ok := engine.Workspace().Resources().Get("vpc-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpc1ID)
 		if !ok {
 			t.Fatalf("vpc-1 not found")
 		}
@@ -655,8 +691,14 @@ func TestEngine_GetRelatedEntities_MultipleRelationships(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_PropertyMatcherNotEquals tests not_equals operator
 func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
+	relRuleID := uuid.New().String()
+	dbEastID := uuid.New().String()
+	dbWestID := uuid.New().String()
+	dbEastOtherID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("cross-region-replication"),
 		integration.RelationshipRuleReference("replicates-to"),
 		integration.RelationshipRuleFromType("resource"),
@@ -670,7 +712,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("db-east"),
+			integration.ResourceID(dbEastID),
 			integration.ResourceName("db-east"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -679,7 +721,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-west"),
+			integration.ResourceID(dbWestID),
 			integration.ResourceName("db-west"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -688,7 +730,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-east-other"),
+			integration.ResourceID(dbEastOtherID),
 			integration.ResourceName("db-east-other"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -702,10 +744,10 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-east"),
+				integration.ResourceID(dbEastID),
 				integration.ResourceName("db-east"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -714,7 +756,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-west"),
+				integration.ResourceID(dbWestID),
 				integration.ResourceName("db-west"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -723,7 +765,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-east-other"),
+				integration.ResourceID(dbEastOtherID),
 				integration.ResourceName("db-east-other"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -742,7 +784,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		dbEast, ok := engine.Workspace().Resources().Get("db-east")
+		dbEast, ok := engine.Workspace().Resources().Get(dbEastID)
 		if !ok {
 			t.Fatalf("db-east not found")
 		}
@@ -771,7 +813,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 
 		// Verify both are db-west
 		for _, replica := range replicas {
-			if replica.EntityId != "db-west" {
+			if replica.EntityId != dbWestID {
 				t.Errorf("expected db-west, got %s", replica.EntityId)
 			}
 		}
@@ -780,8 +822,15 @@ func TestEngine_GetRelatedEntities_PropertyMatcherNotEquals(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_PropertyMatcherContains tests contains operator
 func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
+	relRuleID := uuid.New().String()
+	serviceApiID := uuid.New().String()
+	endpoint1ID := uuid.New().String()
+	endpoint2ID := uuid.New().String()
+	endpoint3ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("service-to-endpoint"),
 		integration.RelationshipRuleReference("exposes"),
 		integration.RelationshipRuleFromType("resource"),
@@ -795,7 +844,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("service-api"),
+			integration.ResourceID(serviceApiID),
 			integration.ResourceName("api-service"),
 			integration.ResourceKind("service"),
 			integration.ResourceMetadata(map[string]string{
@@ -803,17 +852,17 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("endpoint-1"),
+			integration.ResourceID(endpoint1ID),
 			integration.ResourceName("api-service-v1"),
 			integration.ResourceKind("endpoint"),
 		),
 		integration.WithResource(
-			integration.ResourceID("endpoint-2"),
+			integration.ResourceID(endpoint2ID),
 			integration.ResourceName("api-service-v2"),
 			integration.ResourceKind("endpoint"),
 		),
 		integration.WithResource(
-			integration.ResourceID("endpoint-3"),
+			integration.ResourceID(endpoint3ID),
 			integration.ResourceName("other-service"),
 			integration.ResourceKind("endpoint"),
 		),
@@ -823,10 +872,10 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("service-api"),
+				integration.ResourceID(serviceApiID),
 				integration.ResourceName("api-service"),
 				integration.ResourceKind("service"),
 				integration.ResourceMetadata(map[string]string{
@@ -834,17 +883,17 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("endpoint-1"),
+				integration.ResourceID(endpoint1ID),
 				integration.ResourceName("api-service-v1"),
 				integration.ResourceKind("endpoint"),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("endpoint-2"),
+				integration.ResourceID(endpoint2ID),
 				integration.ResourceName("api-service-v2"),
 				integration.ResourceKind("endpoint"),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("endpoint-3"),
+				integration.ResourceID(endpoint3ID),
 				integration.ResourceName("other-service"),
 				integration.ResourceKind("endpoint"),
 			),
@@ -859,7 +908,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		service, ok := engine.Workspace().Resources().Get("service-api")
+		service, ok := engine.Workspace().Resources().Get(serviceApiID)
 		if !ok {
 			t.Fatalf("service-api not found")
 		}
@@ -885,13 +934,13 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 			endpointIDs[endpoint.EntityId] = true
 		}
 
-		if !endpointIDs["endpoint-1"] {
+		if !endpointIDs[endpoint1ID] {
 			t.Errorf("endpoint-1 not in related entities")
 		}
-		if !endpointIDs["endpoint-2"] {
+		if !endpointIDs[endpoint2ID] {
 			t.Errorf("endpoint-2 not in related entities")
 		}
-		if endpointIDs["endpoint-3"] {
+		if endpointIDs[endpoint3ID] {
 			t.Errorf("endpoint-3 should not be in related entities")
 		}
 	})
@@ -899,8 +948,15 @@ func TestEngine_GetRelatedEntities_PropertyMatcherContains(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_PropertyMatcherStartsWith tests starts_with operator
 func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
+	relRuleID := uuid.New().String()
+	regionUsEastID := uuid.New().String()
+	dc1ID := uuid.New().String()
+	dc2ID := uuid.New().String()
+	dc3ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("region-to-resource"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -914,7 +970,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("region-us-east"),
+			integration.ResourceID(regionUsEastID),
 			integration.ResourceName("us-east"),
 			integration.ResourceKind("region"),
 			integration.ResourceMetadata(map[string]string{
@@ -922,7 +978,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("dc-1"),
+			integration.ResourceID(dc1ID),
 			integration.ResourceName("dc-1"),
 			integration.ResourceKind("datacenter"),
 			integration.ResourceMetadata(map[string]string{
@@ -930,7 +986,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("dc-2"),
+			integration.ResourceID(dc2ID),
 			integration.ResourceName("dc-2"),
 			integration.ResourceKind("datacenter"),
 			integration.ResourceMetadata(map[string]string{
@@ -938,7 +994,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("dc-3"),
+			integration.ResourceID(dc3ID),
 			integration.ResourceName("dc-3"),
 			integration.ResourceKind("datacenter"),
 			integration.ResourceMetadata(map[string]string{
@@ -951,10 +1007,10 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("region-us-east"),
+				integration.ResourceID(regionUsEastID),
 				integration.ResourceName("us-east"),
 				integration.ResourceKind("region"),
 				integration.ResourceMetadata(map[string]string{
@@ -962,7 +1018,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("dc-1"),
+				integration.ResourceID(dc1ID),
 				integration.ResourceName("dc-1"),
 				integration.ResourceKind("datacenter"),
 				integration.ResourceMetadata(map[string]string{
@@ -970,7 +1026,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("dc-2"),
+				integration.ResourceID(dc2ID),
 				integration.ResourceName("dc-2"),
 				integration.ResourceKind("datacenter"),
 				integration.ResourceMetadata(map[string]string{
@@ -978,7 +1034,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("dc-3"),
+				integration.ResourceID(dc3ID),
 				integration.ResourceName("dc-3"),
 				integration.ResourceKind("datacenter"),
 				integration.ResourceMetadata(map[string]string{
@@ -996,7 +1052,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		region, ok := engine.Workspace().Resources().Get("region-us-east")
+		region, ok := engine.Workspace().Resources().Get(regionUsEastID)
 		if !ok {
 			t.Fatalf("region-us-east not found")
 		}
@@ -1022,13 +1078,13 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 			dcIDs[dc.EntityId] = true
 		}
 
-		if !dcIDs["dc-1"] {
+		if !dcIDs[dc1ID] {
 			t.Errorf("dc-1 not in related entities")
 		}
-		if !dcIDs["dc-2"] {
+		if !dcIDs[dc2ID] {
 			t.Errorf("dc-2 not in related entities")
 		}
-		if dcIDs["dc-3"] {
+		if dcIDs[dc3ID] {
 			t.Errorf("dc-3 should not be in related entities")
 		}
 	})
@@ -1036,8 +1092,15 @@ func TestEngine_GetRelatedEntities_PropertyMatcherStartsWith(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_PropertyMatcherEndsWith tests ends_with operator
 func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
+	relRuleID := uuid.New().String()
+	app1ID := uuid.New().String()
+	log1ID := uuid.New().String()
+	log2ID := uuid.New().String()
+	log3ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("app-to-logs"),
 		integration.RelationshipRuleReference("has-logs"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1051,7 +1114,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("app-1"),
+			integration.ResourceID(app1ID),
 			integration.ResourceName("app-1"),
 			integration.ResourceKind("application"),
 			integration.ResourceMetadata(map[string]string{
@@ -1059,7 +1122,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("log-1"),
+			integration.ResourceID(log1ID),
 			integration.ResourceName("log-1"),
 			integration.ResourceKind("log-stream"),
 			integration.ResourceMetadata(map[string]string{
@@ -1067,7 +1130,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("log-2"),
+			integration.ResourceID(log2ID),
 			integration.ResourceName("log-2"),
 			integration.ResourceKind("log-stream"),
 			integration.ResourceMetadata(map[string]string{
@@ -1075,7 +1138,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("log-3"),
+			integration.ResourceID(log3ID),
 			integration.ResourceName("log-3"),
 			integration.ResourceKind("log-stream"),
 			integration.ResourceMetadata(map[string]string{
@@ -1088,10 +1151,10 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("app-1"),
+				integration.ResourceID(app1ID),
 				integration.ResourceName("app-1"),
 				integration.ResourceKind("application"),
 				integration.ResourceMetadata(map[string]string{
@@ -1099,7 +1162,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("log-1"),
+				integration.ResourceID(log1ID),
 				integration.ResourceName("log-1"),
 				integration.ResourceKind("log-stream"),
 				integration.ResourceMetadata(map[string]string{
@@ -1107,7 +1170,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("log-2"),
+				integration.ResourceID(log2ID),
 				integration.ResourceName("log-2"),
 				integration.ResourceKind("log-stream"),
 				integration.ResourceMetadata(map[string]string{
@@ -1115,7 +1178,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("log-3"),
+				integration.ResourceID(log3ID),
 				integration.ResourceName("log-3"),
 				integration.ResourceKind("log-stream"),
 				integration.ResourceMetadata(map[string]string{
@@ -1133,7 +1196,7 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		app, ok := engine.Workspace().Resources().Get("app-1")
+		app, ok := engine.Workspace().Resources().Get(app1ID)
 		if !ok {
 			t.Fatalf("app-1 not found")
 		}
@@ -1163,13 +1226,13 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 			logIDs[log.EntityId] = true
 		}
 
-		if !logIDs["log-1"] {
+		if !logIDs[log1ID] {
 			t.Errorf("log-1 not in related entities")
 		}
-		if !logIDs["log-2"] {
+		if !logIDs[log2ID] {
 			t.Errorf("log-2 not in related entities")
 		}
-		if logIDs["log-3"] {
+		if logIDs[log3ID] {
 			t.Errorf("log-3 should not be in related entities")
 		}
 	})
@@ -1177,8 +1240,14 @@ func TestEngine_GetRelatedEntities_PropertyMatcherEndsWith(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_NoSelectorMatchNone tests nil selectors that match all entities of that type
 func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
+	relRuleID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
+	resource3ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("all-resources-in-region"),
 		integration.RelationshipRuleReference("in-region"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1191,7 +1260,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("resource-1"),
+			integration.ResourceID(resource1ID),
 			integration.ResourceName("resource-1"),
 			integration.ResourceKind("service"),
 			integration.ResourceMetadata(map[string]string{
@@ -1199,7 +1268,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("resource-2"),
+			integration.ResourceID(resource2ID),
 			integration.ResourceName("resource-2"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -1207,7 +1276,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("resource-3"),
+			integration.ResourceID(resource3ID),
 			integration.ResourceName("resource-3"),
 			integration.ResourceKind("cache"),
 			integration.ResourceMetadata(map[string]string{
@@ -1220,10 +1289,10 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("resource-1"),
+				integration.ResourceID(resource1ID),
 				integration.ResourceName("resource-1"),
 				integration.ResourceKind("service"),
 				integration.ResourceMetadata(map[string]string{
@@ -1231,7 +1300,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("resource-2"),
+				integration.ResourceID(resource2ID),
 				integration.ResourceName("resource-2"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -1239,7 +1308,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("resource-3"),
+				integration.ResourceID(resource3ID),
 				integration.ResourceName("resource-3"),
 				integration.ResourceKind("cache"),
 				integration.ResourceMetadata(map[string]string{
@@ -1257,7 +1326,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		resource1, ok := engine.Workspace().Resources().Get("resource-1")
+		resource1, ok := engine.Workspace().Resources().Get(resource1ID)
 		if !ok {
 			t.Fatalf("resource-1 not found")
 		}
@@ -1287,7 +1356,7 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 
 		// Verify both are resource-2 (in both directions)
 		for _, res := range related {
-			if res.EntityId != "resource-2" {
+			if res.EntityId != resource2ID {
 				t.Errorf("expected resource-2, got %s", res.EntityId)
 			}
 		}
@@ -1296,8 +1365,14 @@ func TestEngine_GetRelatedEntities_NoSelectorMatchAll(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_ConfigPropertyPath tests accessing nested config properties
 func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
+	relRuleID := uuid.New().String()
+	serviceApiID := uuid.New().String()
+	servicePostgresID := uuid.New().String()
+	serviceRedisID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("service-to-dependency"),
 		integration.RelationshipRuleReference("depends-on"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1311,7 +1386,7 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("service-api"),
+			integration.ResourceID(serviceApiID),
 			integration.ResourceName("api-service"),
 			integration.ResourceKind("service"),
 			integration.ResourceConfig(map[string]interface{}{
@@ -1322,12 +1397,12 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("service-postgres"),
+			integration.ResourceID(servicePostgresID),
 			integration.ResourceName("postgres-service"),
 			integration.ResourceKind("service"),
 		),
 		integration.WithResource(
-			integration.ResourceID("service-redis"),
+			integration.ResourceID(serviceRedisID),
 			integration.ResourceName("redis-service"),
 			integration.ResourceKind("service"),
 		),
@@ -1337,10 +1412,10 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("service-api"),
+				integration.ResourceID(serviceApiID),
 				integration.ResourceName("api-service"),
 				integration.ResourceKind("service"),
 				integration.ResourceConfig(map[string]interface{}{
@@ -1351,12 +1426,12 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("service-postgres"),
+				integration.ResourceID(servicePostgresID),
 				integration.ResourceName("postgres-service"),
 				integration.ResourceKind("service"),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("service-redis"),
+				integration.ResourceID(serviceRedisID),
 				integration.ResourceName("redis-service"),
 				integration.ResourceKind("service"),
 			),
@@ -1371,7 +1446,7 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		apiService, ok := engine.Workspace().Resources().Get("service-api")
+		apiService, ok := engine.Workspace().Resources().Get(serviceApiID)
 		if !ok {
 			t.Fatalf("service-api not found")
 		}
@@ -1392,7 +1467,7 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 			t.Fatalf("expected 1 dependency, got %d", len(dependencies))
 		}
 
-		if dependencies[0].EntityId != "service-postgres" {
+		if dependencies[0].EntityId != servicePostgresID {
 			t.Errorf("expected service-postgres, got %s", dependencies[0].EntityId)
 		}
 	})
@@ -1400,8 +1475,12 @@ func TestEngine_GetRelatedEntities_ConfigPropertyPath(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_NoMatchingRelationships tests entity with no matching relationships
 func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
+	relRuleID := uuid.New().String()
+	database1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1415,7 +1494,7 @@ func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("database-1"),
+			integration.ResourceID(database1ID),
 			integration.ResourceName("database-1"),
 			integration.ResourceKind("database"),
 		),
@@ -1425,10 +1504,10 @@ func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("database-1"),
+				integration.ResourceID(database1ID),
 				integration.ResourceName("database-1"),
 				integration.ResourceKind("database"),
 			),
@@ -1443,7 +1522,7 @@ func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		database, ok := engine.Workspace().Resources().Get("database-1")
+		database, ok := engine.Workspace().Resources().Get(database1ID)
 		if !ok {
 			t.Fatalf("database-1 not found")
 		}
@@ -1463,8 +1542,13 @@ func TestEngine_GetRelatedEntities_NoMatchingRelationships(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_EmptyResults tests relationship rule that matches but finds no targets
 func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpc1ID := uuid.New().String()
+	cluster1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1478,7 +1562,7 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-1"),
+			integration.ResourceID(vpc1ID),
 			integration.ResourceName("vpc-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -1486,7 +1570,7 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-1"),
+			integration.ResourceID(cluster1ID),
 			integration.ResourceName("cluster-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -1499,10 +1583,10 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-1"),
+				integration.ResourceID(vpc1ID),
 				integration.ResourceName("vpc-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -1510,7 +1594,7 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-1"),
+				integration.ResourceID(cluster1ID),
 				integration.ResourceName("cluster-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -1528,7 +1612,7 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		vpc, ok := engine.Workspace().Resources().Get("vpc-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpc1ID)
 		if !ok {
 			t.Fatalf("vpc-1 not found")
 		}
@@ -1549,8 +1633,16 @@ func TestEngine_GetRelatedEntities_EmptyResults(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison tests basic CEL expression matching
 func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	vpcUsWest2ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	clusterEast2ID := uuid.New().String()
+	clusterWest1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster-cel"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1564,7 +1656,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -1572,7 +1664,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("vpc-us-west-2"),
+			integration.ResourceID(vpcUsWest2ID),
 			integration.ResourceName("vpc-us-west-2"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -1580,7 +1672,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -1588,7 +1680,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-2"),
+			integration.ResourceID(clusterEast2ID),
 			integration.ResourceName("cluster-east-2"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -1596,7 +1688,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-west-1"),
+			integration.ResourceID(clusterWest1ID),
 			integration.ResourceName("cluster-west-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -1609,10 +1701,10 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -1620,7 +1712,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-west-2"),
+				integration.ResourceID(vpcUsWest2ID),
 				integration.ResourceName("vpc-us-west-2"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -1628,7 +1720,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -1636,7 +1728,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-2"),
+				integration.ResourceID(clusterEast2ID),
 				integration.ResourceName("cluster-east-2"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -1644,7 +1736,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-west-1"),
+				integration.ResourceID(clusterWest1ID),
 				integration.ResourceName("cluster-west-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -1663,7 +1755,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 		ctx := context.Background()
 
 		// Test from VPC in us-east-1 to clusters
-		vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpcEast, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -1690,13 +1782,13 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 			clusterIDs[cluster.EntityId] = true
 		}
 
-		if !clusterIDs["cluster-east-1"] {
+		if !clusterIDs[clusterEast1ID] {
 			t.Errorf("cluster-east-1 not in related entities")
 		}
-		if !clusterIDs["cluster-east-2"] {
+		if !clusterIDs[clusterEast2ID] {
 			t.Errorf("cluster-east-2 not in related entities")
 		}
-		if clusterIDs["cluster-west-1"] {
+		if clusterIDs[clusterWest1ID] {
 			t.Errorf("cluster-west-1 should not be in related entities")
 		}
 	})
@@ -1704,8 +1796,15 @@ func TestEngine_GetRelatedEntities_CelMatcher_SimpleComparison(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression tests CEL with complex logic
 func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
+	relRuleID := uuid.New().String()
+	serviceApiID := uuid.New().String()
+	dbPostgresID := uuid.New().String()
+	dbMysqlID := uuid.New().String()
+	dbPostgresWestID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("service-to-dependency-cel"),
 		integration.RelationshipRuleReference("depends-on"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1724,7 +1823,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("service-api"),
+			integration.ResourceID(serviceApiID),
 			integration.ResourceName("api-service"),
 			integration.ResourceKind("service"),
 			integration.ResourceMetadata(map[string]string{
@@ -1735,7 +1834,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-postgres"),
+			integration.ResourceID(dbPostgresID),
 			integration.ResourceName("postgres-prod"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -1744,7 +1843,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-mysql"),
+			integration.ResourceID(dbMysqlID),
 			integration.ResourceName("mysql-prod"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -1753,7 +1852,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-postgres-west"),
+			integration.ResourceID(dbPostgresWestID),
 			integration.ResourceName("postgres-west"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -1767,10 +1866,10 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("service-api"),
+				integration.ResourceID(serviceApiID),
 				integration.ResourceName("api-service"),
 				integration.ResourceKind("service"),
 				integration.ResourceMetadata(map[string]string{
@@ -1781,7 +1880,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-postgres"),
+				integration.ResourceID(dbPostgresID),
 				integration.ResourceName("postgres-prod"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -1790,7 +1889,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-mysql"),
+				integration.ResourceID(dbMysqlID),
 				integration.ResourceName("mysql-prod"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -1799,7 +1898,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-postgres-west"),
+				integration.ResourceID(dbPostgresWestID),
 				integration.ResourceName("postgres-west"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -1818,7 +1917,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		apiService, ok := engine.Workspace().Resources().Get("service-api")
+		apiService, ok := engine.Workspace().Resources().Get(serviceApiID)
 		if !ok {
 			t.Fatalf("service-api not found")
 		}
@@ -1839,7 +1938,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 			t.Fatalf("expected 1 dependency, got %d", len(dependencies))
 		}
 
-		if dependencies[0].EntityId != "db-postgres" {
+		if dependencies[0].EntityId != dbPostgresID {
 			t.Errorf("expected db-postgres, got %s", dependencies[0].EntityId)
 		}
 	})
@@ -1847,8 +1946,15 @@ func TestEngine_GetRelatedEntities_CelMatcher_ComplexExpression(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType tests CEL matching deployment to resource
 func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
+	relRuleID := uuid.New().String()
+	deploymentApiID := uuid.New().String()
+	deploymentWorkerID := uuid.New().String()
+	cluster123ID := uuid.New().String()
+	cluster456ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("deployment-to-cluster-cel"),
 		integration.RelationshipRuleReference("runs-on"),
 		integration.RelationshipRuleFromType("deployment"),
@@ -1864,19 +1970,19 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 	system := integration.WithSystem(
 		integration.SystemName("test-system"),
 		integration.WithDeployment(
-			integration.DeploymentID("deployment-api"),
+			integration.DeploymentID(deploymentApiID),
 			integration.DeploymentName("api"),
 			integration.DeploymentJobAgentConfig(map[string]any{
 				"region":     "us-east-1",
-				"cluster_id": "cluster-123",
+				"cluster_id": cluster123ID,
 			}),
 		),
 		integration.WithDeployment(
-			integration.DeploymentID("deployment-worker"),
+			integration.DeploymentID(deploymentWorkerID),
 			integration.DeploymentName("worker"),
 			integration.DeploymentJobAgentConfig(map[string]any{
 				"region":     "us-west-2",
-				"cluster_id": "cluster-456",
+				"cluster_id": cluster456ID,
 			}),
 		),
 	)
@@ -1886,7 +1992,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 		system,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("cluster-123"),
+			integration.ResourceID(cluster123ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -1894,7 +2000,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-456"),
+			integration.ResourceID(cluster456ID),
 			integration.ResourceName("cluster-west-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -1908,10 +2014,10 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 		system,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-123"),
+				integration.ResourceID(cluster123ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -1919,7 +2025,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-456"),
+				integration.ResourceID(cluster456ID),
 				integration.ResourceName("cluster-west-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -1938,7 +2044,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 		ctx := context.Background()
 
 		// Test from deployment to resources
-		deployment, ok := engine.Workspace().Deployments().Get("deployment-api")
+		deployment, ok := engine.Workspace().Deployments().Get(deploymentApiID)
 		if !ok {
 			t.Fatalf("deployment-api not found")
 		}
@@ -1958,7 +2064,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 			t.Fatalf("expected 1 related cluster, got %d", len(clusters))
 		}
 
-		if clusters[0].EntityId != "cluster-123" {
+		if clusters[0].EntityId != cluster123ID {
 			t.Errorf("expected cluster-123, got %s", clusters[0].EntityId)
 		}
 	})
@@ -1966,8 +2072,15 @@ func TestEngine_GetRelatedEntities_CelMatcher_CrossEntityType(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_CelMatcher_ListOperations tests CEL with list operations
 func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
+	relRuleID := uuid.New().String()
+	serviceGlobalID := uuid.New().String()
+	regionUsEast1ID := uuid.New().String()
+	regionEuWest1ID := uuid.New().String()
+	regionUsWest2ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("service-to-allowed-regions"),
 		integration.RelationshipRuleReference("allowed-in"),
 		integration.RelationshipRuleFromType("resource"),
@@ -1984,7 +2097,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("service-global"),
+			integration.ResourceID(serviceGlobalID),
 			integration.ResourceName("global-service"),
 			integration.ResourceKind("service"),
 			integration.ResourceConfig(map[string]interface{}{
@@ -1992,17 +2105,17 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("region-us-east-1"),
+			integration.ResourceID(regionUsEast1ID),
 			integration.ResourceName("us-east-1"),
 			integration.ResourceKind("region"),
 		),
 		integration.WithResource(
-			integration.ResourceID("region-eu-west-1"),
+			integration.ResourceID(regionEuWest1ID),
 			integration.ResourceName("eu-west-1"),
 			integration.ResourceKind("region"),
 		),
 		integration.WithResource(
-			integration.ResourceID("region-us-west-2"),
+			integration.ResourceID(regionUsWest2ID),
 			integration.ResourceName("us-west-2"),
 			integration.ResourceKind("region"),
 		),
@@ -2012,10 +2125,10 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("service-global"),
+				integration.ResourceID(serviceGlobalID),
 				integration.ResourceName("global-service"),
 				integration.ResourceKind("service"),
 				integration.ResourceConfig(map[string]interface{}{
@@ -2023,17 +2136,17 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("region-us-east-1"),
+				integration.ResourceID(regionUsEast1ID),
 				integration.ResourceName("us-east-1"),
 				integration.ResourceKind("region"),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("region-eu-west-1"),
+				integration.ResourceID(regionEuWest1ID),
 				integration.ResourceName("eu-west-1"),
 				integration.ResourceKind("region"),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("region-us-west-2"),
+				integration.ResourceID(regionUsWest2ID),
 				integration.ResourceName("us-west-2"),
 				integration.ResourceKind("region"),
 			),
@@ -2048,7 +2161,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		service, ok := engine.Workspace().Resources().Get("service-global")
+		service, ok := engine.Workspace().Resources().Get(serviceGlobalID)
 		if !ok {
 			t.Fatalf("service-global not found")
 		}
@@ -2074,13 +2187,13 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 			regionIDs[region.EntityId] = true
 		}
 
-		if !regionIDs["region-us-east-1"] {
+		if !regionIDs[regionUsEast1ID] {
 			t.Errorf("region-us-east-1 not in related entities")
 		}
-		if !regionIDs["region-eu-west-1"] {
+		if !regionIDs[regionEuWest1ID] {
 			t.Errorf("region-eu-west-1 not in related entities")
 		}
-		if regionIDs["region-us-west-2"] {
+		if regionIDs[regionUsWest2ID] {
 			t.Errorf("region-us-west-2 should not be in related entities")
 		}
 	})
@@ -2088,8 +2201,15 @@ func TestEngine_GetRelatedEntities_CelMatcher_ListOperations(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_CelMatcher_NumericComparison tests CEL with numeric operations
 func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
+	relRuleID := uuid.New().String()
+	serviceHeavyID := uuid.New().String()
+	dbSmallID := uuid.New().String()
+	dbMediumID := uuid.New().String()
+	dbLargeID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("service-to-sufficient-database"),
 		integration.RelationshipRuleReference("can-use"),
 		integration.RelationshipRuleFromType("resource"),
@@ -2107,7 +2227,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("service-heavy"),
+			integration.ResourceID(serviceHeavyID),
 			integration.ResourceName("heavy-service"),
 			integration.ResourceKind("service"),
 			integration.ResourceMetadata(map[string]string{
@@ -2116,7 +2236,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-small"),
+			integration.ResourceID(dbSmallID),
 			integration.ResourceName("small-db"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -2125,7 +2245,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-medium"),
+			integration.ResourceID(dbMediumID),
 			integration.ResourceName("medium-db"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -2134,7 +2254,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-large"),
+			integration.ResourceID(dbLargeID),
 			integration.ResourceName("large-db"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -2148,10 +2268,10 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("service-heavy"),
+				integration.ResourceID(serviceHeavyID),
 				integration.ResourceName("heavy-service"),
 				integration.ResourceKind("service"),
 				integration.ResourceMetadata(map[string]string{
@@ -2160,7 +2280,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-small"),
+				integration.ResourceID(dbSmallID),
 				integration.ResourceName("small-db"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -2169,7 +2289,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-medium"),
+				integration.ResourceID(dbMediumID),
 				integration.ResourceName("medium-db"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -2178,7 +2298,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-large"),
+				integration.ResourceID(dbLargeID),
 				integration.ResourceName("large-db"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -2197,7 +2317,7 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 	integration.RunWithEngines(t, engines, func(t *testing.T, engine *integration.TestWorkspace) {
 		ctx := context.Background()
 
-		service, ok := engine.Workspace().Resources().Get("service-heavy")
+		service, ok := engine.Workspace().Resources().Get(serviceHeavyID)
 		if !ok {
 			t.Fatalf("service-heavy not found")
 		}
@@ -2223,13 +2343,13 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 			dbIDs[db.EntityId] = true
 		}
 
-		if dbIDs["db-small"] {
+		if dbIDs[dbSmallID] {
 			t.Errorf("db-small should not be in related entities")
 		}
-		if !dbIDs["db-medium"] {
+		if !dbIDs[dbMediumID] {
 			t.Errorf("db-medium not in related entities")
 		}
-		if !dbIDs["db-large"] {
+		if !dbIDs[dbLargeID] {
 			t.Errorf("db-large not in related entities")
 		}
 	})
@@ -2237,8 +2357,14 @@ func TestEngine_GetRelatedEntities_CelMatcher_NumericComparison(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_DeleteResource tests that deleting a resource updates relationships
 func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	clusterEast2ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -2252,7 +2378,7 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -2260,7 +2386,7 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2268,7 +2394,7 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-2"),
+			integration.ResourceID(clusterEast2ID),
 			integration.ResourceName("cluster-east-2"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2281,10 +2407,10 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -2292,7 +2418,7 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -2300,7 +2426,7 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-2"),
+				integration.ResourceID(clusterEast2ID),
 				integration.ResourceName("cluster-east-2"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -2319,7 +2445,7 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 		ctx := context.Background()
 
 		// First verify we have 2 related clusters
-		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -2340,7 +2466,7 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 		}
 
 		// Delete one of the clusters
-		engine.Workspace().Resources().Remove(ctx, "cluster-east-1")
+		engine.Workspace().Resources().Remove(ctx, clusterEast1ID)
 
 		// Verify we now have only 1 related cluster
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -2357,12 +2483,12 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 			t.Fatalf("expected 1 related cluster after delete, got %d", len(clusters))
 		}
 
-		if clusters[0].EntityId != "cluster-east-2" {
+		if clusters[0].EntityId != clusterEast2ID {
 			t.Errorf("expected cluster-east-2, got %s", clusters[0].EntityId)
 		}
 
 		// Delete the last cluster
-		engine.Workspace().Resources().Remove(ctx, "cluster-east-2")
+		engine.Workspace().Resources().Remove(ctx, clusterEast2ID)
 
 		// Verify we now have no relationships
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -2378,8 +2504,13 @@ func TestEngine_GetRelatedEntities_DeleteResource(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_DeleteFromResource tests deleting the source resource
 func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
+	relRuleID := uuid.New().String()
+	dbEastID := uuid.New().String()
+	dbWestID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("database-replication"),
 		integration.RelationshipRuleReference("replicates-to"),
 		integration.RelationshipRuleFromType("resource"),
@@ -2393,7 +2524,7 @@ func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("db-east"),
+			integration.ResourceID(dbEastID),
 			integration.ResourceName("db-east"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -2402,7 +2533,7 @@ func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("db-west"),
+			integration.ResourceID(dbWestID),
 			integration.ResourceName("db-west"),
 			integration.ResourceKind("database"),
 			integration.ResourceMetadata(map[string]string{
@@ -2416,10 +2547,10 @@ func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-east"),
+				integration.ResourceID(dbEastID),
 				integration.ResourceName("db-east"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -2428,7 +2559,7 @@ func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("db-west"),
+				integration.ResourceID(dbWestID),
 				integration.ResourceName("db-west"),
 				integration.ResourceKind("database"),
 				integration.ResourceMetadata(map[string]string{
@@ -2448,7 +2579,7 @@ func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
 		ctx := context.Background()
 
 		// Check db-west has relationship to db-east
-		dbWest, ok := engine.Workspace().Resources().Get("db-west")
+		dbWest, ok := engine.Workspace().Resources().Get(dbWestID)
 		if !ok {
 			t.Fatalf("db-west not found")
 		}
@@ -2469,7 +2600,7 @@ func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
 		}
 
 		// Delete db-east (the from resource from db-west's perspective)
-		engine.Workspace().Resources().Remove(ctx, "db-east")
+		engine.Workspace().Resources().Remove(ctx, dbEastID)
 
 		// Verify db-west no longer has any relationships
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -2485,8 +2616,14 @@ func TestEngine_GetRelatedEntities_DeleteFromResource(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_AddResource tests that adding a resource creates new relationships
 func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	clusterEast2ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -2500,7 +2637,7 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -2508,7 +2645,7 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2521,10 +2658,10 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -2532,7 +2669,7 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -2551,7 +2688,7 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 		ctx := context.Background()
 
 		// Initially should have 1 related cluster
-		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -2575,7 +2712,7 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 		// The engine automatically invalidates all potential source entities (like VPC)
 		// that might have relationships to this new resource
 		engine.PushEvent(ctx, handler.ResourceCreate, &oapi.Resource{
-			Id:          "cluster-east-2",
+			Id:          clusterEast2ID,
 			Name:        "cluster-east-2",
 			Kind:        "kubernetes-cluster",
 			WorkspaceId: engine.Workspace().ID,
@@ -2604,10 +2741,10 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 			clusterIDs[cluster.EntityId] = true
 		}
 
-		if !clusterIDs["cluster-east-1"] {
+		if !clusterIDs[clusterEast1ID] {
 			t.Errorf("cluster-east-1 not in related entities")
 		}
-		if !clusterIDs["cluster-east-2"] {
+		if !clusterIDs[clusterEast2ID] {
 			t.Errorf("cluster-east-2 not in related entities")
 		}
 	})
@@ -2615,8 +2752,13 @@ func TestEngine_GetRelatedEntities_AddResource(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_UpdateResourceMetadata tests that updating resource metadata updates relationships
 func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	cluster1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -2630,7 +2772,7 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -2638,7 +2780,7 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-1"),
+			integration.ResourceID(cluster1ID),
 			integration.ResourceName("cluster-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2651,10 +2793,10 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -2662,7 +2804,7 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-1"),
+				integration.ResourceID(cluster1ID),
 				integration.ResourceName("cluster-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -2681,7 +2823,7 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 		ctx := context.Background()
 
 		// Initially should have 1 related cluster
-		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -2702,7 +2844,7 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 		}
 
 		// Update cluster to different region
-		cluster, ok := engine.Workspace().Resources().Get("cluster-1")
+		cluster, ok := engine.Workspace().Resources().Get(cluster1ID)
 		if !ok {
 			t.Fatalf("cluster-1 not found")
 		}
@@ -2725,8 +2867,13 @@ func TestEngine_GetRelatedEntities_UpdateResourceMetadata(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_DeleteRelationshipRule tests that deleting a rule removes relationships
 func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -2740,7 +2887,7 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -2748,7 +2895,7 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2761,10 +2908,10 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -2772,7 +2919,7 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -2791,7 +2938,7 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 		ctx := context.Background()
 
 		// Initially should have relationships
-		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -2812,7 +2959,7 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 		}
 
 		// Delete the relationship rule
-		rule, ok := engine.Workspace().RelationshipRules().Get("rel-rule-1")
+		rule, ok := engine.Workspace().RelationshipRules().Get(relRuleID)
 		if !ok {
 			t.Fatalf("rel-rule-1 not found")
 		}
@@ -2832,10 +2979,15 @@ func TestEngine_GetRelatedEntities_DeleteRelationshipRule(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_AddRelationshipRule tests that adding a rule creates new relationships
 func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
+	vpcUsEast1ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+	relRuleID := uuid.New().String()
+
 	engineDirect := integration.NewTestWorkspace(
 		t,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -2843,7 +2995,7 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2855,10 +3007,10 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 	engineWithProvider := integration.NewTestWorkspace(
 		t,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -2866,7 +3018,7 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -2885,7 +3037,7 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 		ctx := context.Background()
 
 		// Initially should have no relationships
-		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -2911,7 +3063,7 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region"})
 
 		engine.PushEvent(ctx, handler.RelationshipRuleCreate, &oapi.RelationshipRule{
-			Id:           "rel-rule-1",
+			Id:           relRuleID,
 			Name:         "vpc-to-cluster",
 			Reference:    "contains",
 			FromType:     "resource",
@@ -2937,7 +3089,7 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 			t.Fatalf("expected 1 related cluster after adding rule, got %d", len(clusters))
 		}
 
-		if clusters[0].EntityId != "cluster-east-1" {
+		if clusters[0].EntityId != clusterEast1ID {
 			t.Errorf("expected cluster-east-1, got %s", clusters[0].EntityId)
 		}
 	})
@@ -2945,8 +3097,16 @@ func TestEngine_GetRelatedEntities_AddRelationshipRule(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_DeleteMultipleResources tests cascading deletions
 func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	vpcUsWest2ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	clusterEast2ID := uuid.New().String()
+	clusterWest1ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -2960,7 +3120,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -2968,7 +3128,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("vpc-us-west-2"),
+			integration.ResourceID(vpcUsWest2ID),
 			integration.ResourceName("vpc-us-west-2"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -2976,7 +3136,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2984,7 +3144,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-2"),
+			integration.ResourceID(clusterEast2ID),
 			integration.ResourceName("cluster-east-2"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -2992,7 +3152,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-west-1"),
+			integration.ResourceID(clusterWest1ID),
 			integration.ResourceName("cluster-west-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -3005,10 +3165,10 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -3016,7 +3176,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-west-2"),
+				integration.ResourceID(vpcUsWest2ID),
 				integration.ResourceName("vpc-us-west-2"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -3024,7 +3184,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -3032,7 +3192,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-2"),
+				integration.ResourceID(clusterEast2ID),
 				integration.ResourceName("cluster-east-2"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -3040,7 +3200,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-west-1"),
+				integration.ResourceID(clusterWest1ID),
 				integration.ResourceName("cluster-west-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -3059,7 +3219,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 		ctx := context.Background()
 
 		// Verify vpc-us-east-1 has 2 related clusters
-		vpcEast, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpcEast, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -3080,7 +3240,7 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 		}
 
 		// Verify vpc-us-west-2 has 1 related cluster
-		vpcWest, ok := engine.Workspace().Resources().Get("vpc-us-west-2")
+		vpcWest, ok := engine.Workspace().Resources().Get(vpcUsWest2ID)
 		if !ok {
 			t.Fatalf("vpc-us-west-2 not found")
 		}
@@ -3101,8 +3261,8 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 		}
 
 		// Delete all clusters in us-east-1
-		engine.Workspace().Resources().Remove(ctx, "cluster-east-1")
-		engine.Workspace().Resources().Remove(ctx, "cluster-east-2")
+		engine.Workspace().Resources().Remove(ctx, clusterEast1ID)
+		engine.Workspace().Resources().Remove(ctx, clusterEast2ID)
 
 		// Verify vpc-us-east-1 has no relationships
 		relatedEntities, err = engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
@@ -3133,8 +3293,14 @@ func TestEngine_GetRelatedEntities_DeleteMultipleResources(t *testing.T) {
 
 // TestEngine_GetRelatedEntities_UpdateRelationshipRule tests updating a relationship rule
 func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
+	relRuleID := uuid.New().String()
+	vpcUsEast1ID := uuid.New().String()
+	clusterEast1ID := uuid.New().String()
+	clusterEast2ID := uuid.New().String()
+	testProviderID := uuid.New().String()
+
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("vpc-to-cluster"),
 		integration.RelationshipRuleReference("contains"),
 		integration.RelationshipRuleFromType("resource"),
@@ -3148,7 +3314,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 		t,
 		rule,
 		integration.WithResource(
-			integration.ResourceID("vpc-us-east-1"),
+			integration.ResourceID(vpcUsEast1ID),
 			integration.ResourceName("vpc-us-east-1"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -3156,7 +3322,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-1"),
+			integration.ResourceID(clusterEast1ID),
 			integration.ResourceName("cluster-east-1"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -3165,7 +3331,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID("cluster-east-2"),
+			integration.ResourceID(clusterEast2ID),
 			integration.ResourceName("cluster-east-2"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
@@ -3179,10 +3345,10 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 		t,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(testProviderID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("vpc-us-east-1"),
+				integration.ResourceID(vpcUsEast1ID),
 				integration.ResourceName("vpc-us-east-1"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -3190,7 +3356,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-1"),
+				integration.ResourceID(clusterEast1ID),
 				integration.ResourceName("cluster-east-1"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -3199,7 +3365,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID("cluster-east-2"),
+				integration.ResourceID(clusterEast2ID),
 				integration.ResourceName("cluster-east-2"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
@@ -3219,7 +3385,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 		ctx := context.Background()
 
 		// Initially should have 2 related clusters
-		vpc, ok := engine.Workspace().Resources().Get("vpc-us-east-1")
+		vpc, ok := engine.Workspace().Resources().Get(vpcUsEast1ID)
 		if !ok {
 			t.Fatalf("vpc-us-east-1 not found")
 		}
@@ -3250,7 +3416,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 		_ = matcher.FromCelMatcher(oapi.CelMatcher{Cel: "from.metadata.region == to.metadata.region && to.metadata.tier == 'prod'"})
 
 		engine.PushEvent(ctx, handler.RelationshipRuleUpdate, &oapi.RelationshipRule{
-			Id:           "rel-rule-1",
+			Id:           relRuleID,
 			Name:         "vpc-to-cluster",
 			Reference:    "contains",
 			FromType:     "resource",
@@ -3275,7 +3441,7 @@ func TestEngine_GetRelatedEntities_UpdateRelationshipRule(t *testing.T) {
 			t.Fatalf("expected 1 related cluster after rule update, got %d", len(clusters))
 		}
 
-		if clusters[0].EntityId != "cluster-east-1" {
+		if clusters[0].EntityId != clusterEast1ID {
 			t.Errorf("expected cluster-east-1 (prod tier), got %s", clusters[0].EntityId)
 		}
 	})

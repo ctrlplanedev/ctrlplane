@@ -8,15 +8,17 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_ReleaseTargetState_NoCurrentNoDesired tests state when
 // no releases exist yet (no versions created)
 func TestEngine_ReleaseTargetState_NoCurrentNoDesired(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -81,10 +83,10 @@ func TestEngine_ReleaseTargetState_NoCurrentNoDesired(t *testing.T) {
 // TestEngine_ReleaseTargetState_NoCurrentWithDesired tests state when
 // a desired release exists but no current release (new deployment)
 func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -160,10 +162,10 @@ func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
 // TestEngine_ReleaseTargetState_CurrentMatchesDesired tests state when
 // current and desired releases match (system is up-to-date)
 func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -266,10 +268,10 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 // TestEngine_ReleaseTargetState_CurrentDiffersFromDesired tests state when
 // current and desired releases differ (new deployment pending)
 func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -374,10 +376,10 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 // TestEngine_ReleaseTargetState_JobStatusTransitions tests that job status
 // changes correctly affect the current release
 func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -531,11 +533,11 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 // TestEngine_ReleaseTargetState_MultipleReleaseTargets tests state tracking
 // across multiple release targets
 func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resource1ID := "resource-1"
-	resource2ID := "resource-2"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resource1ID := uuid.New().String()
+	resource2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -651,10 +653,10 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 // TestEngine_ReleaseTargetState_MostRecentSuccessful tests that current release
 // is determined by the most recent successful job, not just any successful job
 func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

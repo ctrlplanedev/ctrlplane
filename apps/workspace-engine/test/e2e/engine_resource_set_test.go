@@ -9,6 +9,7 @@ import (
 	"workspace-engine/pkg/workspace/store"
 	integration "workspace-engine/test/integration"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +27,7 @@ func cacheAndSetResources(t *testing.T, engine *integration.TestWorkspace, ctx c
 }
 
 func TestEngine_ResourceProviderSetResources(t *testing.T) {
-	providerID := "test-provider"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -108,8 +109,8 @@ func TestEngine_ResourceProviderSetResources(t *testing.T) {
 }
 
 func TestEngine_ResourceProviderSetResources_OnlyDeletesProviderResources(t *testing.T) {
-	provider1ID := "provider-1"
-	provider2ID := "provider-2"
+	provider1ID := uuid.New().String()
+	provider2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -165,8 +166,8 @@ func TestEngine_ResourceProviderSetResources_OnlyDeletesProviderResources(t *tes
 }
 
 func TestEngine_ResourceProviderSetResources_CannotStealFromOtherProvider(t *testing.T) {
-	provider1ID := "provider-1"
-	provider2ID := "provider-2"
+	provider1ID := uuid.New().String()
+	provider2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -221,7 +222,8 @@ func TestEngine_ResourceProviderSetResources_CannotStealFromOtherProvider(t *tes
 }
 
 func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing.T) {
-	providerID := "provider-1"
+	providerID := uuid.New().String()
+	unownedResID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -230,7 +232,7 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 			integration.ProviderName("Provider 1"),
 		),
 		integration.WithResource(
-			integration.ResourceID("unowned-res"),
+			integration.ResourceID(unownedResID),
 			integration.ResourceIdentifier("unowned-resource"),
 			integration.ResourceName("Unowned Resource"),
 		),
@@ -239,7 +241,7 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 	ws := engine.Workspace()
 
 	// Verify the resource exists but has no provider
-	unownedRes, exists := ws.Resources().Get("unowned-res")
+	unownedRes, exists := ws.Resources().Get(unownedResID)
 	require.True(t, exists, "unowned-res should exist")
 	require.Nil(t, unownedRes.ProviderId, "resource should have no provider")
 
@@ -256,7 +258,7 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 	cacheAndSetResources(t, engine, ctx, providerID, []*oapi.Resource{claimedResource})
 
 	// Verify the original resource is now owned by the provider
-	claimedRes, exists := ws.Resources().Get("unowned-res")
+	claimedRes, exists := ws.Resources().Get(unownedResID)
 	require.True(t, exists, "unowned-res should still exist (with same ID)")
 	require.NotNil(t, claimedRes.ProviderId, "resource should now have a providerId")
 	require.Equal(t, providerID, *claimedRes.ProviderId, "resource should now belong to provider")
@@ -267,7 +269,7 @@ func TestEngine_ResourceProviderSetResources_CanClaimUnownedResources(t *testing
 }
 
 func TestEngine_ResourceProviderSetResources_TimestampBehavior(t *testing.T) {
-	providerID := "test-provider"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -323,7 +325,7 @@ func TestEngine_ResourceProviderSetResources_TimestampBehavior(t *testing.T) {
 // Cached Batch Pattern Tests - These test the new Ristretto cache-based approach for large payloads
 
 func TestEngine_ResourceProviderSetResources_CachedBatch(t *testing.T) {
-	providerID := "test-provider"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -380,7 +382,7 @@ func TestEngine_ResourceProviderSetResources_CachedBatch(t *testing.T) {
 }
 
 func TestEngine_ResourceProviderSetResources_CachedBatch_LargePayload(t *testing.T) {
-	providerID := "test-provider-large"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,

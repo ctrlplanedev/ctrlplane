@@ -6,10 +6,12 @@ import (
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_SystemInitialState(t *testing.T) {
-	systemId := "test-system"
+	systemId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -34,8 +36,8 @@ func TestEngine_SystemInitialState(t *testing.T) {
 }
 
 func TestEngine_SystemDeploymentMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -92,8 +94,8 @@ func TestEngine_SystemDeploymentMaterializedViews(t *testing.T) {
 }
 
 func TestEngine_SystemEnvironmentMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -162,10 +164,10 @@ func TestEngine_SystemEnvironmentMaterializedViews(t *testing.T) {
 }
 
 func TestEngine_SystemDeploymentUpdateMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	d1Id := "deployment-1"
-	d2Id := "deployment-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -218,10 +220,10 @@ func TestEngine_SystemDeploymentUpdateMaterializedViews(t *testing.T) {
 }
 
 func TestEngine_SystemEnvironmentUpdateMaterializedViews(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	e1Id := "environment-1"
-	e2Id := "environment-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -274,13 +276,13 @@ func TestEngine_SystemEnvironmentUpdateMaterializedViews(t *testing.T) {
 }
 
 func TestEngine_SystemDeletionCascade(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	d1Id := "deployment-1"
-	d2Id := "deployment-2"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
 
-	e1Id := "environment-1"
-	e2Id := "environment-2"
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -342,7 +344,7 @@ func TestEngine_SystemDeletionCascade(t *testing.T) {
 }
 
 func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
-	systemId := "1"
+	systemId := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemID(systemId),
@@ -434,7 +436,7 @@ func TestEngine_SystemMaterializedViewsWithResources(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteSimple(t *testing.T) {
-	systemId := "test-system"
+	systemId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -466,7 +468,7 @@ func TestEngine_SystemDeleteSimple(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteWithReleaseTargets(t *testing.T) {
-	systemId := "test-system"
+	systemId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -510,9 +512,9 @@ func TestEngine_SystemDeleteWithReleaseTargets(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteMultiple(t *testing.T) {
-	s1Id := "system-1"
-	s2Id := "system-2"
-	s3Id := "system-3"
+	s1Id := uuid.New().String()
+	s2Id := uuid.New().String()
+	s3Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -577,9 +579,9 @@ func TestEngine_SystemDeleteMultiple(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteOnlyDeployments(t *testing.T) {
-	systemId := "test-system"
-	d1Id := "deployment-1"
-	d2Id := "deployment-2"
+	systemId := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -619,9 +621,9 @@ func TestEngine_SystemDeleteOnlyDeployments(t *testing.T) {
 }
 
 func TestEngine_SystemDeleteOnlyEnvironments(t *testing.T) {
-	systemId := "test-system"
-	e1Id := "environment-1"
-	e2Id := "environment-2"
+	systemId := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(

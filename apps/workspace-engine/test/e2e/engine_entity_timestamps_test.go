@@ -9,6 +9,7 @@ import (
 	integration "workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +19,7 @@ import (
 // to detect entity changes and invalidate stale cache entries.
 
 func TestEngine_Resource_TimestampsForCache(t *testing.T) {
-	providerID := "timestamp-test-provider"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -214,7 +215,7 @@ func TestEngine_Job_TimestampsForCache(t *testing.T) {
 }
 
 func TestEngine_Resource_CacheKeyChangesOnUpdate(t *testing.T) {
-	providerID := "cache-key-test-provider"
+	providerID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,

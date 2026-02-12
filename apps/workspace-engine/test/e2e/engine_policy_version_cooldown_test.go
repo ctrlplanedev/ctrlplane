@@ -9,6 +9,7 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,8 +17,8 @@ import (
 // TestEngine_VersionCooldown_NoCooldownWithoutPolicy tests that without a version cooldown
 // policy, versions are deployed immediately without any delay
 func TestEngine_VersionCooldown_NoCooldownWithoutPolicy(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -74,8 +75,8 @@ func TestEngine_VersionCooldown_NoCooldownWithoutPolicy(t *testing.T) {
 // TestEngine_VersionCooldown_AllowsFirstVersion tests that the first version deployment
 // is always allowed when no previous deployment exists
 func TestEngine_VersionCooldown_AllowsFirstVersion(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -122,8 +123,8 @@ func TestEngine_VersionCooldown_AllowsFirstVersion(t *testing.T) {
 // TestEngine_VersionCooldown_BlocksRapidVersions tests that rapid version deployments
 // are blocked when they're created within the cooldown interval
 func TestEngine_VersionCooldown_BlocksRapidVersions(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -186,10 +187,10 @@ func TestEngine_VersionCooldown_BlocksRapidVersions(t *testing.T) {
 // TestEngine_VersionCooldown_AllowsSameVersionRedeploy tests that redeploying the
 // same version bypasses the cooldown check
 func TestEngine_VersionCooldown_AllowsSameVersionRedeploy(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -255,8 +256,8 @@ func TestEngine_VersionCooldown_AllowsSameVersionRedeploy(t *testing.T) {
 // TestEngine_VersionCooldown_ZeroIntervalAllowsAll tests that a zero interval
 // effectively disables debouncing
 func TestEngine_VersionCooldown_ZeroIntervalAllowsAll(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -318,8 +319,8 @@ func TestEngine_VersionCooldown_ZeroIntervalAllowsAll(t *testing.T) {
 // TestEngine_VersionCooldown_BatchesMultipleVersions tests that multiple rapid versions
 // are batched, and only the latest version within the cooldown window gets deployed
 func TestEngine_VersionCooldown_BatchesMultipleVersions(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -383,8 +384,8 @@ func TestEngine_VersionCooldown_BatchesMultipleVersions(t *testing.T) {
 // TestEngine_VersionCooldown_UsesVersionCreationTime tests that cooldown is based
 // on version creation time, not job completion time
 func TestEngine_VersionCooldown_UsesVersionCreationTime(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -447,11 +448,11 @@ func TestEngine_VersionCooldown_UsesVersionCreationTime(t *testing.T) {
 // TestEngine_VersionCooldown_CombinedWithApproval tests that version cooldown
 // works correctly when combined with approval policies
 func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	cooldownPolicyID := "cooldown-policy"
-	approvalPolicyID := "approval-policy"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	cooldownPolicyID := uuid.New().String()
+	approvalPolicyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -549,10 +550,10 @@ func TestEngine_VersionCooldown_CombinedWithApproval(t *testing.T) {
 // TestEngine_VersionCooldown_MultipleEnvironments tests that cooldown works
 // independently for each release target (environment)
 func TestEngine_VersionCooldown_MultipleEnvironments(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	stagingEnvID := "staging-env"
-	prodEnvID := "prod-env"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	stagingEnvID := uuid.New().String()
+	prodEnvID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -623,8 +624,8 @@ func TestEngine_VersionCooldown_MultipleEnvironments(t *testing.T) {
 // TestEngine_VersionCooldown_InProgressDeploymentBlocks tests that versions are blocked
 // while there's an in-progress deployment
 func TestEngine_VersionCooldown_InProgressDeploymentBlocks(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // IMPORTANT: This file tests a critical bug where jobs in exited/terminal states
@@ -28,11 +30,11 @@ import (
 // 5. BUG: Jobs with InvalidJobAgent status are being marked as Cancelled
 // 6. EXPECTED: Jobs already in exited states should remain in their original state
 func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
-	systemId := "test-system"
-	deploymentId := "deployment-no-agent"
-	environmentId := "environment-1"
-	resourceId1 := "resource-1"
-	resourceId2 := "resource-2"
+	systemId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	environmentId := uuid.New().String()
+	resourceId1 := uuid.New().String()
+	resourceId2 := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemName("test-system"),
@@ -179,13 +181,13 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 // TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs verifies the CORRECT behavior:
 // Jobs in processing states (Pending, InProgress) SHOULD be cancelled when resources are removed
 func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
-	systemId := "test-system"
-	deploymentId := "deployment-with-agent"
-	environmentId := "environment-1"
-	resourceId1 := "resource-1"
-	resourceId2 := "resource-2"
-	resourceId3 := "resource-3"
-	jobAgentId := "job-agent-1"
+	systemId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	environmentId := uuid.New().String()
+	resourceId1 := uuid.New().String()
+	resourceId2 := uuid.New().String()
+	resourceId3 := uuid.New().String()
+	jobAgentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -313,11 +315,11 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 // TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs verifies that
 // jobs in Successful status are not cancelled when environment selectors change
 func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing.T) {
-	systemId := "test-system"
-	environmentId := "environment-1"
-	jobAgentId := "job-agent-1"
-	resourceId1 := "resource-1"
-	resourceId2 := "resource-2"
+	systemId := uuid.New().String()
+	environmentId := uuid.New().String()
+	jobAgentId := uuid.New().String()
+	resourceId1 := uuid.New().String()
+	resourceId2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -424,10 +426,10 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 //
 // This is the same bug but for deployment selectors instead of environment selectors.
 func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
-	systemId := "test-system"
-	deploymentId := "deployment-no-agent"
-	resourceId1 := "app-1"
-	resourceId2 := "app-2"
+	systemId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	resourceId1 := uuid.New().String()
+	resourceId2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -564,11 +566,11 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 // TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs tests that
 // jobs in Failure status are not cancelled when deployment selectors change
 func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
-	systemId := "test-system"
-	deploymentId := "deployment-with-agent"
-	jobAgentId := "job-agent-1"
-	resourceId1 := "app-1"
-	resourceId2 := "app-2"
+	systemId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	jobAgentId := uuid.New().String()
+	resourceId1 := uuid.New().String()
+	resourceId2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -665,9 +667,9 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
 // TestEngine_MultipleExitedStates_NeverUpdated tests that ALL exited states
 // (InvalidJobAgent, Successful, Failure, Skipped, etc.) are preserved when selectors change
 func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
-	systemId := "test-system"
-	environmentId := "environment-1"
-	jobAgentId := "job-agent-1"
+	systemId := uuid.New().String()
+	environmentId := uuid.New().String()
+	jobAgentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -785,11 +787,11 @@ func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
 // TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs verifies that
 // jobs in InProgress status (a processing state) SHOULD be cancelled
 func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
-	systemId := "test-system"
-	environmentId := "environment-1"
-	jobAgentId := "job-agent-1"
-	resourceId1 := "resource-1"
-	resourceId2 := "resource-2"
+	systemId := uuid.New().String()
+	environmentId := uuid.New().String()
+	jobAgentId := uuid.New().String()
+	resourceId1 := uuid.New().String()
+	resourceId2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

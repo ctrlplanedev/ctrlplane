@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 	"workspace-engine/pkg/events"
@@ -28,6 +29,22 @@ func init() {
 	)
 }
 
+// UseDBBacking returns true when the USE_DATABASE_BACKING environment variable
+// is set to a non-empty value. When enabled, NewTestWorkspace transparently
+// creates workspaces backed by a real PostgreSQL database instead of in-memory
+// stores.
+//
+// Run tests with DB backing:
+//
+//	USE_DATABASE_BACKING=1 go test ./test/e2e/...
+//
+// Optionally set POSTGRES_URL (defaults to postgresql://ctrlplane:ctrlplane@localhost:5432/ctrlplane):
+//
+//	USE_DATABASE_BACKING=1 POSTGRES_URL=postgresql://... go test ./test/e2e/...
+func UseDBBacking() bool {
+	return os.Getenv("USE_DATABASE_BACKING") != ""
+}
+
 type TestWorkspace struct {
 	t             *testing.T
 	workspace     *workspace.Workspace
@@ -35,6 +52,12 @@ type TestWorkspace struct {
 	traceStore    *spanstore.InMemoryStore
 }
 
+// NewTestWorkspace creates a TestWorkspace for use in tests.
+//
+// By default it uses a purely in-memory store. When the USE_DATABASE_BACKING
+// environment variable is set, it automatically creates a workspace backed by
+// a real PostgreSQL database (with proper UUID workspace IDs, DB records, and
+// cleanup). If the database is unreachable the test is skipped.
 func NewTestWorkspace(
 	t *testing.T,
 	options ...WorkspaceOption,
@@ -42,6 +65,19 @@ func NewTestWorkspace(
 	if t == nil {
 		t = &testing.T{}
 	}
+	t.Helper()
+
+	if UseDBBacking() {
+		return newDBTestWorkspace(t, options...)
+	}
+
+	return newMemoryTestWorkspace(t, options...)
+}
+
+func newMemoryTestWorkspace(
+	t *testing.T,
+	options ...WorkspaceOption,
+) *TestWorkspace {
 	t.Helper()
 
 	workspaceID := fmt.Sprintf("test-workspace-%d", time.Now().UnixNano())

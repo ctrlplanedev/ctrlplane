@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,16 +28,16 @@ func getAgentJobsSortedByNewest(engine *integration.TestWorkspace, agentID strin
 }
 
 func TestEngine_PolicyDeploymentDependency(t *testing.T) {
-	jobAgentVpcID := "job-agent-vpc"
-	jobAgentClusterID := "job-agent-cluster"
+	jobAgentVpcID := uuid.New().String()
+	jobAgentClusterID := uuid.New().String()
 
-	deploymentVpcID := "deployment-vpc"
-	deploymentClusterID := "deployment-cluster"
+	deploymentVpcID := uuid.New().String()
+	deploymentClusterID := uuid.New().String()
 
-	environmentID := "environment-1"
-	resourceID := "resource-1"
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
-	policyID := "policy-1"
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -69,10 +71,10 @@ func TestEngine_PolicyDeploymentDependency(t *testing.T) {
 		integration.WithPolicy(
 			integration.PolicyID(policyID),
 			integration.PolicyName("policy-1"),
-			integration.WithPolicySelector("deployment.id == 'deployment-cluster'"),
+			integration.WithPolicySelector(fmt.Sprintf("deployment.id == '%s'", deploymentClusterID)),
 			integration.WithPolicyRule(
 				integration.WithRuleDeploymentDependency(
-					integration.DeploymentDependencyRuleDependsOnDeploymentSelector("deployment.id == 'deployment-vpc'"),
+					integration.DeploymentDependencyRuleDependsOnDeploymentSelector(fmt.Sprintf("deployment.id == '%s'", deploymentVpcID)),
 				),
 			),
 		),

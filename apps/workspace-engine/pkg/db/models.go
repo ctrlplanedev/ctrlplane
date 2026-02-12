@@ -19,6 +19,7 @@ const (
 	DeploymentVersionStatusReady    DeploymentVersionStatus = "ready"
 	DeploymentVersionStatusFailed   DeploymentVersionStatus = "failed"
 	DeploymentVersionStatusRejected DeploymentVersionStatus = "rejected"
+	DeploymentVersionStatusPaused   DeploymentVersionStatus = "paused"
 )
 
 func (e *DeploymentVersionStatus) Scan(src interface{}) error {
@@ -64,18 +65,6 @@ type ChangelogEntry struct {
 	CreatedAt   pgtype.Timestamptz
 }
 
-type Deployment struct {
-	ID               uuid.UUID
-	Name             string
-	Slug             string
-	Description      string
-	SystemID         uuid.UUID
-	JobAgentID       uuid.UUID
-	JobAgentConfig   []byte
-	ResourceSelector []byte
-	CreatedAt        pgtype.Timestamptz
-}
-
 type DeploymentVersion struct {
 	ID             uuid.UUID
 	Name           string
@@ -87,16 +76,6 @@ type DeploymentVersion struct {
 	Message        pgtype.Text
 	CreatedAt      pgtype.Timestamptz
 	WorkspaceID    uuid.UUID
-}
-
-type Environment struct {
-	ID               uuid.UUID
-	SystemID         uuid.UUID
-	Name             string
-	Directory        string
-	Description      pgtype.Text
-	ResourceSelector []byte
-	CreatedAt        pgtype.Timestamptz
 }
 
 type Resource struct {

@@ -733,9 +733,10 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJobIfRetryIsConfigured(t *testi
 	// can create a new job IF a retry policy with smart defaults is configured.
 	// Without a policy (strict mode), cancelled jobs would block redeployment.
 	// This demonstrates the value of explicit retry policies for infrastructure churn scenarios.
-	jobAgentId := "job-agent-1"
-	deploymentId := "deployment-1"
-	resourceId := "resource-1"
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	resourceId := uuid.New().String()
+	environmentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -751,7 +752,7 @@ func TestEngine_ResourceDeleteAndReAddTriggersNewJobIfRetryIsConfigured(t *testi
 				),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentID("env-prod"),
+				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("env-prod"),
 				integration.EnvironmentCelResourceSelector("true"),
 			),
@@ -834,9 +835,10 @@ func TestEngine_ResourceDeleteAndReAddBlockedByStrictMode(t *testing.T) {
 	// The cancelled job counts as an attempt, preventing new job creation.
 	// To allow redeployment after resource deletion, users must configure an
 	// explicit retry policy with smart defaults.
-	jobAgentId := "job-agent-1"
-	deploymentId := "deployment-1"
-	resourceId := "resource-1"
+	jobAgentId := uuid.New().String()
+	deploymentId := uuid.New().String()
+	resourceId := uuid.New().String()
+	environmentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -852,7 +854,7 @@ func TestEngine_ResourceDeleteAndReAddBlockedByStrictMode(t *testing.T) {
 				),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentID("env-prod"),
+				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("env-prod"),
 				integration.EnvironmentCelResourceSelector("true"),
 			),
@@ -914,13 +916,13 @@ func TestEngine_ResourceDeleteAndReAddBlockedByStrictMode(t *testing.T) {
 }
 
 func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
-	d1Id := "deployment-1"
-	dv1Id := "dv1"
-	e1Id := "env-dev"
-	e2Id := "env-prod"
-	r1Id := "resource-dev"
-	r2Id := "resource-prod"
-	jobAgentId := "job-agent-1"
+	d1Id := uuid.New().String()
+	dv1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
+	jobAgentId := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -970,10 +972,10 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 		),
 	)
 
-	e1, _ := engine.Workspace().Environments().Get("env-dev")
-	e2, _ := engine.Workspace().Environments().Get("env-prod")
-	r1, _ := engine.Workspace().Resources().Get("resource-dev")
-	r2, _ := engine.Workspace().Resources().Get("resource-prod")
+	e1, _ := engine.Workspace().Environments().Get(e1Id)
+	e2, _ := engine.Workspace().Environments().Get(e2Id)
+	r1, _ := engine.Workspace().Resources().Get(r1Id)
+	r2, _ := engine.Workspace().Resources().Get(r2Id)
 
 	// Verify release targets (2 targets: 1 for dev, 1 for prod)
 	releaseTargets, err := engine.Workspace().ReleaseTargets().Items()
@@ -1017,11 +1019,11 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 }
 
 func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
-	jobAgentId := "job-agent-1"
+	jobAgentId := uuid.New().String()
 
-	r1Id := "resource-1"
-	r2Id := "resource-2"
-	dv1Id := "dv1"
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
+	dv1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -1046,8 +1048,8 @@ func TestEngine_ResourceDeletionCancelsPendingJobs(t *testing.T) {
 		integration.WithResource(integration.ResourceID(r2Id)),
 	)
 
-	r1, _ := engine.Workspace().Resources().Get("resource-1")
-	r2, _ := engine.Workspace().Resources().Get("resource-2")
+	r1, _ := engine.Workspace().Resources().Get(r1Id)
+	r2, _ := engine.Workspace().Resources().Get(r2Id)
 	ctx := context.Background()
 
 	// Verify 2 jobs were created

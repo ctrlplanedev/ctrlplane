@@ -4,10 +4,12 @@ import (
 	"context"
 	"testing"
 	"workspace-engine/test/integration"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_RelationshipRuleCreation(t *testing.T) {
-	relationshipRuleID := "rel-rule-1"
+	relationshipRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -81,8 +83,8 @@ func TestEngine_RelationshipRuleCreation(t *testing.T) {
 }
 
 func TestEngine_MultipleRelationshipRules(t *testing.T) {
-	relationshipRuleID1 := "rel-rule-1"
-	relationshipRuleID2 := "rel-rule-2"
+	relationshipRuleID1 := uuid.New().String()
+	relationshipRuleID2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -131,8 +133,8 @@ func TestEngine_MultipleRelationshipRules(t *testing.T) {
 }
 
 func TestEngine_RelationshipRuleRemoval(t *testing.T) {
-	relationshipRuleID1 := "rel-rule-1"
-	relationshipRuleID2 := "rel-rule-2"
+	relationshipRuleID1 := uuid.New().String()
+	relationshipRuleID2 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -184,9 +186,9 @@ func TestEngine_RelationshipRuleRemoval(t *testing.T) {
 }
 
 func TestEngine_RelationshipRuleRemovalWithResources(t *testing.T) {
-	relationshipRuleID := "rel-rule-vpc-cluster"
-	resourceVpcID := "vpc-1"
-	resourceClusterID := "cluster-1"
+	relationshipRuleID := uuid.New().String()
+	resourceVpcID := uuid.New().String()
+	resourceClusterID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -277,9 +279,9 @@ func TestEngine_RelationshipRuleRemovalWithResources(t *testing.T) {
 }
 
 func TestEngine_RelationshipRuleRemovalMultiple(t *testing.T) {
-	rule1ID := "rel-rule-1"
-	rule2ID := "rel-rule-2"
-	rule3ID := "rel-rule-3"
+	rule1ID := uuid.New().String()
+	rule2ID := uuid.New().String()
+	rule3ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -334,7 +336,7 @@ func TestEngine_RelationshipRuleRemovalMultiple(t *testing.T) {
 }
 
 func TestEngine_RelationshipRuleRemovalAndRecreation(t *testing.T) {
-	relationshipRuleID := "rel-rule-1"
+	relationshipRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -391,8 +393,8 @@ func TestEngine_RelationshipRuleRemovalAndRecreation(t *testing.T) {
 }
 
 func TestEngine_RelationshipRuleRemovalWithCrossEntityTypes(t *testing.T) {
-	rule1ID := "resource-to-deployment"
-	rule2ID := "deployment-to-environment"
+	rule1ID := uuid.New().String()
+	rule2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,

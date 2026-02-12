@@ -46,6 +46,11 @@ func ToOapi(dv db.DeploymentVersion) (*oapi.DeploymentVersion, error) {
 
 // ToUpsertParams converts an oapi.DeploymentVersion into sqlc upsert params.
 func ToUpsertParams(wsId string, v *oapi.DeploymentVersion) (db.UpsertDeploymentVersionParams, error) {
+	id, err := uuid.Parse(v.Id)
+	if err != nil {
+		return db.UpsertDeploymentVersionParams{}, fmt.Errorf("parse id: %w", err)
+	}
+
 	workspaceID, err := uuid.Parse(wsId)
 	if err != nil {
 		return db.UpsertDeploymentVersionParams{}, fmt.Errorf("parse workspace_id: %w", err)
@@ -77,6 +82,7 @@ func ToUpsertParams(wsId string, v *oapi.DeploymentVersion) (db.UpsertDeployment
 	}
 
 	return db.UpsertDeploymentVersionParams{
+		ID:             id,
 		Name:           v.Name,
 		Tag:            v.Tag,
 		Config:         configBytes,

@@ -8,15 +8,17 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_JobStateTransition_PendingToInProgress tests the normal flow
 // from pending to in-progress when a job starts execution.
 func TestEngine_JobStateTransition_PendingToInProgress(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -101,10 +103,10 @@ func TestEngine_JobStateTransition_PendingToInProgress(t *testing.T) {
 // TestEngine_JobStateTransition_InProgressToSuccessful tests completing
 // a job successfully.
 func TestEngine_JobStateTransition_InProgressToSuccessful(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -190,10 +192,10 @@ func TestEngine_JobStateTransition_InProgressToSuccessful(t *testing.T) {
 // TestEngine_JobStateTransition_InProgressToFailure tests a job failing
 // during execution.
 func TestEngine_JobStateTransition_InProgressToFailure(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -279,10 +281,10 @@ func TestEngine_JobStateTransition_InProgressToFailure(t *testing.T) {
 // TestEngine_JobStateTransition_PendingToCancelled tests cancelling a
 // pending job before it starts.
 func TestEngine_JobStateTransition_PendingToCancelled(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -346,10 +348,10 @@ func TestEngine_JobStateTransition_PendingToCancelled(t *testing.T) {
 // TestEngine_JobStateTransition_InProgressToCancelled tests cancelling
 // a job that's already running.
 func TestEngine_JobStateTransition_InProgressToCancelled(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -438,10 +440,10 @@ func TestEngine_JobStateTransition_InProgressToCancelled(t *testing.T) {
 // TestEngine_JobStateTransition_SkippedJob tests creating a job in skipped
 // state (e.g., due to conditions not being met).
 func TestEngine_JobStateTransition_SkippedJob(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -505,10 +507,10 @@ func TestEngine_JobStateTransition_SkippedJob(t *testing.T) {
 // TestEngine_JobStateTransition_ActionRequired tests a job requiring manual
 // intervention.
 func TestEngine_JobStateTransition_ActionRequired(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -609,10 +611,10 @@ func TestEngine_JobStateTransition_ActionRequired(t *testing.T) {
 // TestEngine_JobStateTransition_InvalidStates tests attempting to transition
 // to invalid job agent states.
 func TestEngine_JobStateTransition_InvalidStates(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -675,9 +677,9 @@ func TestEngine_JobStateTransition_InvalidStates(t *testing.T) {
 // TestEngine_JobStateTransition_MultipleJobsIndependentStates tests that
 // multiple jobs maintain independent states.
 func TestEngine_JobStateTransition_MultipleJobsIndependentStates(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -790,10 +792,10 @@ func TestEngine_JobStateTransition_MultipleJobsIndependentStates(t *testing.T) {
 // TestEngine_JobStateTransition_FieldUpdateValidation tests that only
 // specified fields are updated when FieldsToUpdate is provided.
 func TestEngine_JobStateTransition_FieldUpdateValidation(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -877,10 +879,10 @@ func TestEngine_JobStateTransition_FieldUpdateValidation(t *testing.T) {
 // TestEngine_JobStateTransition_TimestampProgression tests that job timestamps
 // progress correctly through state transitions.
 func TestEngine_JobStateTransition_TimestampProgression(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

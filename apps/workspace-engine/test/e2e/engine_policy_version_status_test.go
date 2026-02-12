@@ -7,16 +7,18 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 // TestEngine_PolicyVersionStatusReady tests that a policy only allows deployments
 // with versions whose status is "ready"
 func TestEngine_PolicyVersionStatusReady(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -123,11 +125,11 @@ func TestEngine_PolicyVersionStatusReady(t *testing.T) {
 // TestEngine_PolicyVersionStatusReady_StatusUpdate tests that when a deployment version
 // status changes from non-ready to ready, jobs are created
 func TestEngine_PolicyVersionStatusReady_StatusUpdate(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -206,12 +208,12 @@ func TestEngine_PolicyVersionStatusReady_StatusUpdate(t *testing.T) {
 // TestEngine_PolicyVersionStatusReady_MultipleDeployments tests that the policy
 // correctly filters versions across multiple deployments
 func TestEngine_PolicyVersionStatusReady_MultipleDeployments(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deployment1ID := "deployment-1"
-	deployment2ID := "deployment-2"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deployment1ID := uuid.New().String()
+	deployment2ID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -316,12 +318,12 @@ func TestEngine_PolicyVersionStatusReady_MultipleDeployments(t *testing.T) {
 // TestEngine_PolicyVersionStatusReady_WithSelector tests that the policy
 // only applies to selected deployments
 func TestEngine_PolicyVersionStatusReady_WithSelector(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentProdID := "deployment-prod"
-	deploymentDevID := "deployment-dev"
-	environmentID := "env-1"
-	resourceID := "resource-1"
-	policyID := "policy-1"
+	jobAgentID := uuid.New().String()
+	deploymentProdID := uuid.New().String()
+	deploymentDevID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

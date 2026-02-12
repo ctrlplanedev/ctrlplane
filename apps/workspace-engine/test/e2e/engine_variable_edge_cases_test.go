@@ -295,6 +295,7 @@ func TestEngine_VariableResolution_ReferenceWithZeroMatches(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -318,7 +319,7 @@ func TestEngine_VariableResolution_ReferenceWithZeroMatches(t *testing.T) {
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("cluster-to-vpc"),
 			integration.RelationshipRuleReference("vpc"),
 			integration.RelationshipRuleFromType("resource"),
@@ -402,6 +403,7 @@ func TestEngine_VariableResolution_ReferenceWithMultipleMatches(t *testing.T) {
 	vpc2ID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -425,7 +427,7 @@ func TestEngine_VariableResolution_ReferenceWithMultipleMatches(t *testing.T) {
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("cluster-to-vpc"),
 			integration.RelationshipRuleReference("vpc"),
 			integration.RelationshipRuleFromType("resource"),
@@ -527,6 +529,7 @@ func TestEngine_VariableResolution_ReferenceWithMissingIntermediateProperty(t *t
 	vpcID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -550,7 +553,7 @@ func TestEngine_VariableResolution_ReferenceWithMissingIntermediateProperty(t *t
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("cluster-to-vpc"),
 			integration.RelationshipRuleReference("vpc"),
 			integration.RelationshipRuleFromType("resource"),
@@ -642,6 +645,7 @@ func TestEngine_VariableResolution_ReferenceWithLeafPropertyMissing(t *testing.T
 	vpcID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -665,7 +669,7 @@ func TestEngine_VariableResolution_ReferenceWithLeafPropertyMissing(t *testing.T
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("cluster-to-vpc"),
 			integration.RelationshipRuleReference("vpc"),
 			integration.RelationshipRuleFromType("resource"),

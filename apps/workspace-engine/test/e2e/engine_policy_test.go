@@ -7,6 +7,8 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
@@ -61,10 +63,10 @@ func TestEngine_PolicyBasicReleaseTargets(t *testing.T) {
 }
 
 func TestEngine_PolicyDeploymentSelector(t *testing.T) {
-	d1ID := "d1-1"
-	d2ID := "d2-1"
-	e1ID := "e1-1"
-	r1ID := "r1-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -131,10 +133,10 @@ func TestEngine_PolicyDeploymentSelector(t *testing.T) {
 }
 
 func TestEngine_PolicyEnvironmentSelector(t *testing.T) {
-	d1ID := "d1-1"
-	e1ID := "e1-1"
-	r1ID := "r1-1"
-	e2ID := "e2-2"
+	d1ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
+	e2ID := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
@@ -404,10 +406,10 @@ func TestEngine_PolicyAllThreeSelectors(t *testing.T) {
 }
 
 func TestEngine_PolicyMultipleSelectors(t *testing.T) {
-	d1ID := "deployment-prod"
-	d2ID := "deployment-staging"
-	e1ID := "env-1"
-	r1ID := "resource-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -791,12 +793,12 @@ func TestEngine_PolicyWithNonExistentEntities(t *testing.T) {
 }
 
 func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
-	d1ID := "d1-1"
-	d2ID := "d2-1"
-	d3ID := "d3-1"
-	e1ID := "e1-1"
-	e2ID := "e2-1"
-	r1ID := "r1-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	d3ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	e2ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -886,10 +888,10 @@ func TestEngine_PolicyWithComplexSelectorCombinations(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetCreatedAfterPolicy(t *testing.T) {
-	d1ID := "deployment-prod"
-	d2ID := "deployment-staging"
-	e1ID := "env-1"
-	r1ID := "resource-1"
+	d1ID := uuid.New().String()
+	d2ID := uuid.New().String()
+	e1ID := uuid.New().String()
+	r1ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithPolicy(

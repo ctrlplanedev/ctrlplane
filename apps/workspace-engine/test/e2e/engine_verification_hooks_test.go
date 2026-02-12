@@ -8,14 +8,15 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEngineVerificationHooks(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "environment-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	ws := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -130,10 +131,10 @@ func TestEngineVerificationHooks(t *testing.T) {
 }
 
 func TestEngineVerificationHooks_SuccessThreshold(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "environment-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	ws := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(

@@ -7,10 +7,12 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_JobAgentCreation(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -45,9 +47,9 @@ func TestEngine_JobAgentCreation(t *testing.T) {
 }
 
 func TestEngine_JobAgentMultipleCreation(t *testing.T) {
-	jobAgentID1 := "job-agent-1"
-	jobAgentID2 := "job-agent-2"
-	jobAgentID3 := "job-agent-3"
+	jobAgentID1 := uuid.New().String()
+	jobAgentID2 := uuid.New().String()
+	jobAgentID3 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -101,7 +103,7 @@ func TestEngine_JobAgentMultipleCreation(t *testing.T) {
 }
 
 func TestEngine_JobAgentUpdate(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -141,10 +143,10 @@ func TestEngine_JobAgentUpdate(t *testing.T) {
 }
 
 func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "environment-1"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -255,7 +257,7 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 }
 
 func TestEngine_JobAgentDelete(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -290,7 +292,7 @@ func TestEngine_JobAgentDelete(t *testing.T) {
 }
 
 func TestEngine_JobAgentWithConfig(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()
@@ -349,7 +351,7 @@ func TestEngine_JobAgentWithConfig(t *testing.T) {
 }
 
 func TestEngine_JobAgentConfigUpdate(t *testing.T) {
-	jobAgentID := "job-agent-1"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()
@@ -388,8 +390,8 @@ func TestEngine_JobAgentConfigUpdate(t *testing.T) {
 }
 
 func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -442,8 +444,8 @@ func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
 }
 
 func TestEngine_JobAgentDeleteAffectsDeployments(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -526,10 +528,10 @@ func TestEngine_JobAgentTypes(t *testing.T) {
 }
 
 func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
-	jobAgentID := "shared-agent"
-	deploymentID1 := "deployment-1"
-	deploymentID2 := "deployment-2"
-	deploymentID3 := "deployment-3"
+	jobAgentID := uuid.New().String()
+	deploymentID1 := uuid.New().String()
+	deploymentID2 := uuid.New().String()
+	deploymentID3 := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -604,7 +606,7 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 }
 
 func TestEngine_JobAgentEmptyConfig(t *testing.T) {
-	jobAgentID := "job-agent-empty-config"
+	jobAgentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()

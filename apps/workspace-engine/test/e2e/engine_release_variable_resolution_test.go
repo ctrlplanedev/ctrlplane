@@ -19,6 +19,7 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	providerID := uuid.New().String()
 
 	system := integration.WithSystem(
 		integration.SystemName("test-system"),
@@ -73,7 +74,7 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 		),
 		system,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(providerID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
 				integration.ResourceID(resourceID),
@@ -295,6 +296,8 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 	vpcID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
+	providerID := uuid.New().String()
 
 	system := integration.WithSystem(
 		integration.SystemName("test-system"),
@@ -316,7 +319,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 	)
 
 	rule := integration.WithRelationshipRule(
-		integration.RelationshipRuleID("rel-rule-1"),
+		integration.RelationshipRuleID(relRuleID),
 		integration.RelationshipRuleName("cluster-to-vpc"),
 		integration.RelationshipRuleReference("vpc"),
 		integration.RelationshipRuleFromType("resource"),
@@ -387,7 +390,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 		system,
 		rule,
 		integration.WithResourceProvider(
-			integration.ProviderID("test-provider"),
+			integration.ProviderID(providerID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
 				integration.ResourceID(vpcID),
@@ -505,6 +508,7 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 	vpcID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -531,7 +535,7 @@ func TestEngine_ReleaseVariableResolution_MixedValues(t *testing.T) {
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("cluster-to-vpc"),
 			integration.RelationshipRuleReference("vpc"),
 			integration.RelationshipRuleFromType("resource"),
@@ -1024,6 +1028,7 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 	dbID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -1050,7 +1055,7 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("service-to-database"),
 			integration.RelationshipRuleReference("database"),
 			integration.RelationshipRuleFromType("resource"),
@@ -1158,7 +1163,7 @@ func TestEngine_ReleaseVariableResolution_NestedReferenceProperty(t *testing.T) 
 
 // TestEngine_ReleaseVariableResolution_DirectResolveValue tests the low-level ResolveValue function
 func TestEngine_ReleaseVariableResolution_DirectResolveValue(t *testing.T) {
-	resourceID := "resource-1"
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -1985,6 +1990,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceNotFound(t *testing.T) {
 	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -2008,7 +2014,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceNotFound(t *testing.T) {
 		),
 		// Define relationship rule but NO matching "to" resource exists
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("resource-to-workspace"),
 			integration.RelationshipRuleReference("workspace"),
 			integration.RelationshipRuleFromType("resource"),
@@ -2094,6 +2100,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceNoMatchingResources(t *testin
 	workspaceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -2116,7 +2123,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceNoMatchingResources(t *testin
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("resource-to-workspace"),
 			integration.RelationshipRuleReference("workspace"),
 			integration.RelationshipRuleFromType("resource"),
@@ -2207,6 +2214,7 @@ func TestEngine_ReleaseVariableResolution_MissingPropertyInReference(t *testing.
 	workspaceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -2229,7 +2237,7 @@ func TestEngine_ReleaseVariableResolution_MissingPropertyInReference(t *testing.
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("resource-to-workspace"),
 			integration.RelationshipRuleReference("workspace"),
 			integration.RelationshipRuleFromType("resource"),

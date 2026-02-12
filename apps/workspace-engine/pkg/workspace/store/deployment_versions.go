@@ -4,6 +4,8 @@ import (
 	"context"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewDeploymentVersions(store *Store) *DeploymentVersions {
@@ -36,7 +38,9 @@ func (d *DeploymentVersions) GetByDeploymentID(deploymentID string) ([]*oapi.Dep
 }
 
 func (d *DeploymentVersions) Upsert(ctx context.Context, id string, version *oapi.DeploymentVersion) {
-	d.repo.Set(version)
+	if err := d.repo.Set(version); err != nil {
+		log.Error("Failed to upsert deployment version", "error", err)
+	}
 	d.store.changeset.RecordUpsert(version)
 }
 

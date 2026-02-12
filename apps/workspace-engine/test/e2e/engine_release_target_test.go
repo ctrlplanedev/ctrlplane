@@ -7,12 +7,14 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/test/integration"
 	c "workspace-engine/test/integration/creators"
+
+	"github.com/google/uuid"
 )
 
 func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
-	d1Id := "d1-id"
-	e1Id := "e1-id"
-	r1Id := "r1-id"
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	r1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -88,7 +90,7 @@ func TestEngine_ReleaseTargetCreationAndRemoval(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
-	e1Id := "e1-id"
+	e1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -126,7 +128,7 @@ func TestEngine_ReleaseTargetEnvironmentRemoval(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetResourceRemoval(t *testing.T) {
-	r1Id := "r1-id"
+	r1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -209,9 +211,9 @@ func TestEngine_ReleaseTargetWithSelectors(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
-	d1Id := "d1-id"
-	r1Id := "r1-id"
-	r2Id := "r2-id"
+	d1Id := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -297,10 +299,10 @@ func TestEngine_ReleaseTargetSelectorUpdate(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
-	sys1Id := "sys1-id"
-	sys2Id := "sys2-id"
-	d1Id := "d1-id"
-	e1Id := "e1-id"
+	sys1Id := uuid.New().String()
+	sys2Id := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -363,12 +365,12 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
-	d1Id := "d1-id"
-	d2Id := "d2-id"
-	e1Id := "e1-id"
-	e2Id := "e2-id"
-	r1Id := "r1-id"
-	r2Id := "r2-id"
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	r1Id := uuid.New().String()
+	r2Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -462,7 +464,7 @@ func TestEngine_ReleaseTargetMultipleDeploymentsEnvironments(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
-	r3Id := "r3-id"
+	r3Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
@@ -560,7 +562,7 @@ func TestEngine_ReleaseTargetComplexSelectors(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
-	envId := "env-1"
+	envId := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.WithDeployment(
@@ -603,9 +605,9 @@ func TestEngine_ReleaseTargetEnvironmentWithoutSelector(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
-	sysId := "sys-1"
-	d1Id := "d1-1"
-	e1Id := "e1-1"
+	sysId := uuid.New().String()
+	d1Id := uuid.New().String()
+	e1Id := uuid.New().String()
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(
 			integration.SystemID(sysId),
@@ -651,12 +653,12 @@ func TestEngine_ReleaseTargetSystemDeletion(t *testing.T) {
 }
 
 func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
-	sysId := "sys-id"
-	d1Id := "d1-id"
-	d2Id := "d2-id"
-	e1Id := "e1-id"
-	e2Id := "e2-id"
-	r1Id := "r1-id"
+	sysId := uuid.New().String()
+	d1Id := uuid.New().String()
+	d2Id := uuid.New().String()
+	e1Id := uuid.New().String()
+	e2Id := uuid.New().String()
+	r1Id := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithSystem(

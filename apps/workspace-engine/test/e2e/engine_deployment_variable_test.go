@@ -932,6 +932,7 @@ func TestEngine_DeploymentVariableValue_ReferenceValue(t *testing.T) {
 	vpcID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -961,7 +962,7 @@ func TestEngine_DeploymentVariableValue_ReferenceValue(t *testing.T) {
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("cluster-to-vpc"),
 			integration.RelationshipRuleReference("vpc"),
 			integration.RelationshipRuleFromType("resource"),
@@ -1045,6 +1046,7 @@ func TestEngine_DeploymentVariableValue_ReferenceNestedProperty(t *testing.T) {
 	dbID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -1074,7 +1076,7 @@ func TestEngine_DeploymentVariableValue_ReferenceNestedProperty(t *testing.T) {
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("service-to-database"),
 			integration.RelationshipRuleReference("database"),
 			integration.RelationshipRuleFromType("resource"),
@@ -1599,6 +1601,7 @@ func TestEngine_DeploymentVariableValue_MixedLiteralAndReference(t *testing.T) {
 	dbID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(
 		t,
@@ -1635,7 +1638,7 @@ func TestEngine_DeploymentVariableValue_MixedLiteralAndReference(t *testing.T) {
 			),
 		),
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("rel-rule-1"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("service-to-database"),
 			integration.RelationshipRuleReference("database"),
 			integration.RelationshipRuleFromType("resource"),

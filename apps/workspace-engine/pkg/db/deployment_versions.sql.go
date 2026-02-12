@@ -128,15 +128,16 @@ func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, arg L
 }
 
 const upsertDeploymentVersion = `-- name: UpsertDeploymentVersion :one
-INSERT INTO deployment_version (name, tag, config, job_agent_config, deployment_id, status, message, workspace_id, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9::timestamptz, NOW()))
+INSERT INTO deployment_version (id, name, tag, config, job_agent_config, deployment_id, status, message, workspace_id, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10::timestamptz, NOW()))
 ON CONFLICT (deployment_id, tag) DO UPDATE
 SET name = EXCLUDED.name, config = EXCLUDED.config, job_agent_config = EXCLUDED.job_agent_config, status = EXCLUDED.status, message = EXCLUDED.message, workspace_id = EXCLUDED.workspace_id,
-    created_at = CASE WHEN $9::timestamptz IS NOT NULL THEN EXCLUDED.created_at ELSE deployment_version.created_at END
+    created_at = CASE WHEN $10::timestamptz IS NOT NULL THEN EXCLUDED.created_at ELSE deployment_version.created_at END
 RETURNING id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id
 `
 
 type UpsertDeploymentVersionParams struct {
+	ID             uuid.UUID
 	Name           string
 	Tag            string
 	Config         []byte
@@ -150,6 +151,7 @@ type UpsertDeploymentVersionParams struct {
 
 func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploymentVersionParams) (DeploymentVersion, error) {
 	row := q.db.QueryRow(ctx, upsertDeploymentVersion,
+		arg.ID,
 		arg.Name,
 		arg.Tag,
 		arg.Config,

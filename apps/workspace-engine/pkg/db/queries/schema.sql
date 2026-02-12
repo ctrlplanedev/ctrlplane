@@ -26,19 +26,7 @@ CREATE TABLE resource (
     metadata JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE TYPE deployment_version_status AS ENUM ('building', 'ready', 'failed', 'rejected');
-
-CREATE TABLE deployment (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    slug TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    system_id UUID NOT NULL REFERENCES system(id) ON DELETE CASCADE,
-    job_agent_id UUID,
-    job_agent_config JSONB NOT NULL DEFAULT '{}',
-    resource_selector JSONB DEFAULT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+CREATE TYPE deployment_version_status AS ENUM ('building', 'ready', 'failed', 'rejected', 'paused');
 
 CREATE TABLE deployment_version (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -46,23 +34,12 @@ CREATE TABLE deployment_version (
     tag TEXT NOT NULL,
     config JSONB NOT NULL DEFAULT '{}',
     job_agent_config JSONB NOT NULL DEFAULT '{}',
-    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    deployment_id UUID NOT NULL,
     status deployment_version_status NOT NULL DEFAULT 'ready',
     message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     workspace_id UUID REFERENCES workspace(id),
     CONSTRAINT deployment_version_uniq UNIQUE (deployment_id, tag)
-);
-
-CREATE TABLE environment (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    system_id UUID NOT NULL REFERENCES system(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    directory TEXT NOT NULL DEFAULT '',
-    description TEXT DEFAULT '',
-    resource_selector JSONB DEFAULT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT environment_uniq UNIQUE (system_id, name)
 );
 
 CREATE TABLE changelog_entry (

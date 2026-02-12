@@ -231,6 +231,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 	environmentId := uuid.New().String()
 	appId := uuid.New().String()
 	dbId := uuid.New().String()
+	relRuleID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -294,7 +295,7 @@ func TestEngine_ReleaseManager_WithReferenceVariables(t *testing.T) {
 		),
 		// Relationship rule: app -> database
 		integration.WithRelationshipRule(
-			integration.RelationshipRuleID("app-to-db"),
+			integration.RelationshipRuleID(relRuleID),
 			integration.RelationshipRuleName("app-to-database"),
 			integration.RelationshipRuleReference("database"),
 			integration.RelationshipRuleFromType("resource"),

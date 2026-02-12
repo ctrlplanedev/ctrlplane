@@ -14,11 +14,11 @@ import (
 
 // TestEngine_PolicyBypass_ApprovalBypass tests bypassing approval requirements
 func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-approval"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -94,11 +94,11 @@ func TestEngine_PolicyBypass_ApprovalBypass(t *testing.T) {
 
 // TestEngine_PolicyBypass_MultipleRuleTypes tests bypassing multiple rule types
 func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
-	resourceID := "resource-1"
-	policyID := "policy-multiple"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policyID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -185,9 +185,9 @@ func TestEngine_PolicyBypass_MultipleRuleTypes(t *testing.T) {
 
 // TestEngine_PolicyBypass_EnvironmentWildcard tests bypass applying to all resources in an environment
 func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -262,11 +262,11 @@ func TestEngine_PolicyBypass_EnvironmentWildcard(t *testing.T) {
 
 // TestEngine_PolicyBypass_VersionWildcard tests bypass applying to all environments
 func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	envProdID := "env-prod"
-	envStagingID := "env-staging"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	envProdID := uuid.New().String()
+	envStagingID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -341,12 +341,12 @@ func TestEngine_PolicyBypass_VersionWildcard(t *testing.T) {
 
 // TestEngine_PolicyBypass_PolicySpecific tests bypass applying only to specific policies
 func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
-	resourceID := "resource-1"
-	policy1ID := "policy-1"
-	policy2ID := "policy-2"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
+	policy1ID := uuid.New().String()
+	policy2ID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -443,10 +443,10 @@ func TestEngine_PolicyBypass_PolicySpecific(t *testing.T) {
 
 // TestEngine_PolicyBypass_Expiration tests that expired bypasses are ignored
 func TestEngine_PolicyBypass_Expiration(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
@@ -510,10 +510,10 @@ func TestEngine_PolicyBypass_Expiration(t *testing.T) {
 
 // TestEngine_PolicyBypass_DeleteBypass tests that deleting a bypass re-enables policies
 func TestEngine_PolicyBypass_DeleteBypass(t *testing.T) {
-	jobAgentID := "job-agent-1"
-	deploymentID := "deployment-1"
-	environmentID := "env-prod"
-	resourceID := "resource-1"
+	jobAgentID := uuid.New().String()
+	deploymentID := uuid.New().String()
+	environmentID := uuid.New().String()
+	resourceID := uuid.New().String()
 
 	engine := integration.NewTestWorkspace(t,
 		integration.WithJobAgent(
