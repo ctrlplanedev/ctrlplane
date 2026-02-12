@@ -48,13 +48,6 @@ func (a *ArgoApplication) Type() string {
 	return "argo-cd"
 }
 
-func (a *ArgoApplication) Supports() types.Capabilities {
-	return types.Capabilities{
-		Workflows:   true,
-		Deployments: true,
-	}
-}
-
 func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) error {
 	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := a.parseJobAgentConfig(jobAgentConfig)

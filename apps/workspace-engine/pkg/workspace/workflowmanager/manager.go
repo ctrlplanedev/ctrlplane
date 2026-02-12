@@ -128,21 +128,11 @@ func (m *Manager) CreateWorkflowRun(ctx context.Context, workflowId string, inpu
 }
 
 func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) error {
-	jobAgent, ok := m.store.JobAgents.Get(wfJob.Ref)
-	if !ok {
-		return fmt.Errorf("job agent %s not found", wfJob.Ref)
-	}
-
-	mergedConfig, err := mergeJobAgentConfig(jobAgent.Config, wfJob.Config)
-	if err != nil {
-		return fmt.Errorf("failed to merge job agent config: %w", err)
-	}
-
 	job := &oapi.Job{
 		Id:             uuid.New().String(),
 		WorkflowJobId:  wfJob.Id,
 		JobAgentId:     wfJob.Ref,
-		JobAgentConfig: mergedConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 		Metadata:       make(map[string]string),
@@ -155,24 +145,4 @@ func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) erro
 	}
 
 	return nil
-}
-
-func mergeJobAgentConfig(configs ...oapi.JobAgentConfig) (oapi.JobAgentConfig, error) {
-	mergedConfig := make(map[string]any)
-	for _, config := range configs {
-		deepMerge(mergedConfig, config)
-	}
-	return mergedConfig, nil
-}
-
-func deepMerge(dst, src map[string]any) {
-	for k, v := range src {
-		if sm, ok := v.(map[string]any); ok {
-			if dm, ok := dst[k].(map[string]any); ok {
-				deepMerge(dm, sm)
-				continue
-			}
-		}
-		dst[k] = v
-	}
 }
