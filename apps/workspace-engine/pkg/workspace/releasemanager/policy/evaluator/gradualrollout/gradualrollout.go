@@ -312,7 +312,7 @@ func (e *GradualRolloutEvaluator) getDeploymentOffset(
 func (e *GradualRolloutEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
 	environment := scope.Environment
 	version := scope.Version
-	releaseTarget := scope.ReleaseTarget
+	releaseTarget := scope.ReleaseTarget()
 	resource, ok := e.store.Resources.Get(releaseTarget.ResourceId)
 	if !ok {
 		return results.

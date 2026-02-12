@@ -170,9 +170,10 @@ func TestEvaluatePolicy(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 
 	tests := []struct {
@@ -400,9 +401,10 @@ func TestEvaluatePolicy_MultipleRules(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 
 	policy := &oapi.Policy{

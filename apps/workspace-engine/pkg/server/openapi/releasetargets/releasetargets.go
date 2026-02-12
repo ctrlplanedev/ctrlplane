@@ -85,11 +85,28 @@ func (s *ReleaseTargets) EvaluateReleaseTarget(c *gin.Context, workspaceId strin
 		return
 	}
 
+	resource, ok := ws.Resources().Get(req.ReleaseTarget.ResourceId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Failed to get resource: " + req.ReleaseTarget.ResourceId,
+		})
+		return
+	}
+
+	deployment, ok := ws.Deployments().Get(req.ReleaseTarget.DeploymentId)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Failed to get deployment: " + req.ReleaseTarget.DeploymentId,
+		})
+		return
+	}
+
 	decision := policy.NewDeployDecision()
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       &req.Version,
-		ReleaseTarget: &req.ReleaseTarget,
+		Environment: environment,
+		Version:     &req.Version,
+		Resource:    resource,
+		Deployment:  deployment,
 	}
 	for _, policy := range policies {
 		policyResult := policyManager.EvaluateWithPolicy(c.Request.Context(), policy, scope, policyManager.SummaryPolicyEvaluators)

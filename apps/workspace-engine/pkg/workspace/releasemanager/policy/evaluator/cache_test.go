@@ -51,19 +51,20 @@ func TestMemoizedEvaluator_CachesOnScopeFields(t *testing.T) {
 
 	env := &oapi.Environment{Id: "env-1"}
 	version := &oapi.DeploymentVersion{Id: "v1.0.0"}
-	target1 := &oapi.ReleaseTarget{ResourceId: "r1", EnvironmentId: "env-1", DeploymentId: "d1"}
-	target2 := &oapi.ReleaseTarget{ResourceId: "r2", EnvironmentId: "env-1", DeploymentId: "d1"}
+	res1 := &oapi.Resource{Id: "r1"}
+	res2 := &oapi.Resource{Id: "r2"}
+	dep := &oapi.Deployment{Id: "d1"}
 
 	t.Run("caches on Environment+Version only", func(t *testing.T) {
 		mock := &MockEvaluator{scopeFields: ScopeEnvironment | ScopeVersion}
 		memoized := NewMemoized(mock, ScopeEnvironment|ScopeVersion)
 
 		// Call with target1
-		scope1 := EvaluatorScope{Environment: env, Version: version, ReleaseTarget: target1}
+		scope1 := EvaluatorScope{Environment: env, Version: version, Resource: res1, Deployment: dep}
 		result1 := memoized.Evaluate(ctx, scope1)
 
 		// Call with target2 - should hit cache (target doesn't matter)
-		scope2 := EvaluatorScope{Environment: env, Version: version, ReleaseTarget: target2}
+		scope2 := EvaluatorScope{Environment: env, Version: version, Resource: res2, Deployment: dep}
 		result2 := memoized.Evaluate(ctx, scope2)
 
 		// Should only evaluate once
@@ -78,11 +79,11 @@ func TestMemoizedEvaluator_CachesOnScopeFields(t *testing.T) {
 		memoized := NewMemoized(mock, ScopeEnvironment|ScopeVersion|ScopeReleaseTarget)
 
 		// Call with target1
-		scope1 := EvaluatorScope{Environment: env, Version: version, ReleaseTarget: target1}
+		scope1 := EvaluatorScope{Environment: env, Version: version, Resource: res1, Deployment: dep}
 		result1 := memoized.Evaluate(ctx, scope1)
 
-		// Call with target2 - should NOT hit cache (different target)
-		scope2 := EvaluatorScope{Environment: env, Version: version, ReleaseTarget: target2}
+		// Call with target2 - should NOT hit cache (different resource)
+		scope2 := EvaluatorScope{Environment: env, Version: version, Resource: res2, Deployment: dep}
 		result2 := memoized.Evaluate(ctx, scope2)
 
 		// Call with target1 again - should hit cache
@@ -137,10 +138,12 @@ func TestMemoizedEvaluator_MissingFields(t *testing.T) {
 		mock := &MockEvaluator{scopeFields: ScopeVersion}
 		memoized := NewMemoized(mock, ScopeVersion)
 
+		target := &oapi.ReleaseTarget{ResourceId: "r1", EnvironmentId: "env-1", DeploymentId: "d1"}
 		scope := EvaluatorScope{
-			Version:       &oapi.DeploymentVersion{Id: "v1.0.0"},
-			ReleaseTarget: &oapi.ReleaseTarget{ResourceId: "r1", EnvironmentId: "env-1", DeploymentId: "d1"},
-			// Other fields are nil, but not required
+			Version:     &oapi.DeploymentVersion{Id: "v1.0.0"},
+			Environment: &oapi.Environment{Id: target.EnvironmentId},
+			Resource:    &oapi.Resource{Id: target.ResourceId},
+			Deployment:  &oapi.Deployment{Id: target.DeploymentId},
 		}
 
 		result := memoized.Evaluate(ctx, scope)
@@ -165,8 +168,8 @@ func TestMemoizedEvaluator_BuildCacheKey(t *testing.T) {
 		{
 			name:        "same key for same environment+version",
 			scopeFields: ScopeEnvironment | ScopeVersion,
-			scope:       EvaluatorScope{Environment: env, Version: version, ReleaseTarget: target},
-			scope2:      EvaluatorScope{Environment: env, Version: version, ReleaseTarget: nil},
+			scope:       EvaluatorScope{Environment: env, Version: version, Resource: &oapi.Resource{Id: target.ResourceId}, Deployment: &oapi.Deployment{Id: target.DeploymentId}},
+			scope2:      EvaluatorScope{Environment: env, Version: version},
 			wantSame:    true,
 		},
 		{
@@ -221,7 +224,7 @@ func TestMemoizedEvaluator_ScopeFieldsString(t *testing.T) {
 		{
 			name:        "all fields",
 			scopeFields: ScopeEnvironment | ScopeVersion | ScopeReleaseTarget | ScopeRelease,
-			want:        "Environment+Version+ReleaseTarget+Release",
+			want:        "Environment+Version+Resource+Deployment+Release",
 		},
 		{
 			name:        "no fields",

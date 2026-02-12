@@ -189,8 +189,10 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -223,8 +225,10 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 
 		// Try to deploy the same version again
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			ReleaseTarget: releaseTarget,
+			Version:     version,
+			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -260,8 +264,10 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       v1_1,
-			ReleaseTarget: releaseTarget,
+			Version:     v1_1,
+			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -299,8 +305,10 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       v1_1,
-			ReleaseTarget: releaseTarget,
+			Version:     v1_1,
+			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -338,8 +346,10 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       v1_1,
-			ReleaseTarget: releaseTarget,
+			Version:     v1_1,
+			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 
 		result := eval.Evaluate(ctx, scope)
@@ -379,13 +389,21 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 
 		// All versions should be allowed since 2 hours have passed since v1.0 was created
 		// (even though they were created rapidly after v1.0)
-		result := eval.Evaluate(ctx, evaluator.EvaluatorScope{Version: v1_1, ReleaseTarget: releaseTarget})
+		scope := func(v *oapi.DeploymentVersion) evaluator.EvaluatorScope {
+			return evaluator.EvaluatorScope{
+				Version:     v,
+				Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+				Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+				Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+			}
+		}
+		result := eval.Evaluate(ctx, scope(v1_1))
 		assert.True(t, result.Allowed, "v1.1 should be allowed (enough time has elapsed)")
 
-		result = eval.Evaluate(ctx, evaluator.EvaluatorScope{Version: v1_2, ReleaseTarget: releaseTarget})
+		result = eval.Evaluate(ctx, scope(v1_2))
 		assert.True(t, result.Allowed, "v1.2 should be allowed (enough time has elapsed)")
 
-		result = eval.Evaluate(ctx, evaluator.EvaluatorScope{Version: v1_3, ReleaseTarget: releaseTarget})
+		result = eval.Evaluate(ctx, scope(v1_3))
 		assert.True(t, result.Allowed, "v1.3 should be allowed (enough time has elapsed)")
 	})
 
@@ -429,8 +447,10 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       v1_2,
-			ReleaseTarget: releaseTarget,
+			Version:     v1_2,
+			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 
 		// v1.2 should be allowed because enough time has elapsed since v1.1 (in progress) was created
@@ -469,8 +489,10 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		require.NotNil(t, eval)
 
 		scope := evaluator.EvaluatorScope{
-			Version:       v1_1,
-			ReleaseTarget: releaseTarget,
+			Version:     v1_1,
+			Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 
 		result := eval.Evaluate(ctx, scope)

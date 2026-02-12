@@ -129,7 +129,11 @@ func TestDeploymentDependencyEvaluator_UnsatisfiedDependencyFails(t *testing.T) 
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
 	eval := NewEvaluator(st, rule)
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+	})
 	assert.False(t, result.Allowed, "expected denied when dependency is not satisfied")
 }
 
@@ -157,7 +161,11 @@ func TestDeploymentDependencyEvaluator_SatisfiedDependencyPasses(t *testing.T) {
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
 	eval := NewEvaluator(st, rule)
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget2})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+	})
 
 	assert.True(t, result.Allowed, "expected allowed when dependency is satisfied")
 }
@@ -193,7 +201,11 @@ func TestDeploymentDependencyEvaluator_MixedSatisfactionsFails(t *testing.T) {
 
 	eval := NewEvaluator(st, rule)
 
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget3})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget3.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget3.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget3.DeploymentId},
+	})
 	assert.False(t, result.Allowed, "expected denied when some upstream release targets are not successful")
 }
 
@@ -229,7 +241,11 @@ func TestDeploymentDependencyEvaluator_FailedJobsFails(t *testing.T) {
 
 	eval := NewEvaluator(st, rule)
 
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget3})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget3.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget3.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget3.DeploymentId},
+	})
 	assert.False(t, result.Allowed, "expected denied when some upstream release targets are not successful")
 }
 
@@ -264,7 +280,11 @@ func TestDeploymentDependencyEvaluator_FailsIfLatestJobIsNotSuccessful(t *testin
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
 	eval := NewEvaluator(st, rule)
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget2})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+	})
 	assert.False(t, result.Allowed, "expected denied when latest job is not successful")
 }
 
@@ -299,7 +319,11 @@ func TestDeploymentDependencyEvaluator_PassesIfLatestJobIsProgressingAndOtherJob
 	cel := fmt.Sprintf("deployment.id == '%s'", deployment1.Id)
 	rule := generateDependencyRule(cel)
 	eval := NewEvaluator(st, rule)
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget2})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+	})
 	assert.True(t, result.Allowed, "expected allowed when latest job is progressing and other jobs are successful")
 }
 
@@ -327,7 +351,11 @@ func TestDeploymentDependencyEvaluator_NoMatchingDeploymentsFails(t *testing.T) 
 
 	eval := NewEvaluator(st, rule)
 
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget2})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+	})
 	assert.False(t, result.Allowed, "expected denied when no matching deployments are found")
 }
 
@@ -354,6 +382,10 @@ func TestDeploymentDependencyEvaluator_NotEnoughUpstreamReleaseTargetsFails(t *t
 
 	eval := NewEvaluator(st, rule)
 
-	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget2})
+	result := eval.Evaluate(ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget2.DeploymentId},
+	})
 	assert.False(t, result.Allowed, "expected denied when not enough upstream release targets are found")
 }

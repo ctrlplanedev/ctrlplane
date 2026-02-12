@@ -97,8 +97,8 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 
 	deploymentSelector := e.rule.DependsOnDeploymentSelector
 	span.SetAttributes(
-		attribute.String("deployment.id", scope.ReleaseTarget.DeploymentId),
-		attribute.String("resource.id", scope.ReleaseTarget.ResourceId),
+		attribute.String("deployment.id", scope.Deployment.Id),
+		attribute.String("resource.id", scope.Resource.Id),
 	)
 
 	matchingDeployments, err := e.findMatchingDeployments(ctx)
@@ -106,7 +106,7 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 		span.RecordError(err)
 		return results.NewDeniedResult(
 			fmt.Sprintf("Deployment dependency: failed to find matching deployments: %v", err),
-		).WithDetail("error", err.Error()).WithDetail("deployment_id", scope.ReleaseTarget.DeploymentId)
+		).WithDetail("error", err.Error()).WithDetail("deployment_id", scope.Deployment.Id)
 	}
 
 	if len(matchingDeployments) == 0 {
@@ -115,10 +115,10 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 		).WithDetail("deployment_selector", deploymentSelector)
 	}
 
-	upstreamReleaseTargets := e.getUpstreamReleaseTargets(ctx, matchingDeployments, scope.ReleaseTarget.ResourceId)
+	upstreamReleaseTargets := e.getUpstreamReleaseTargets(ctx, matchingDeployments, scope.Resource.Id)
 	if len(upstreamReleaseTargets) != cap(upstreamReleaseTargets) {
 		return results.NewDeniedResult(
-			fmt.Sprintf("Deployment dependency: some upstream release targets not found for resource: %v", scope.ReleaseTarget.ResourceId),
+			fmt.Sprintf("Deployment dependency: some upstream release targets not found for resource: %v", scope.Resource.Id),
 		).WithDetail("deployment_selector", deploymentSelector)
 	}
 

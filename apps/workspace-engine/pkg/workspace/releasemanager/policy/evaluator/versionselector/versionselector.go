@@ -66,28 +66,12 @@ func (e *Evaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope
 			attribute.String("version.tag", scope.Version.Tag),
 			attribute.String("environment.id", scope.Environment.Id),
 			attribute.String("environment.name", scope.Environment.Name),
-			attribute.String("release_target.key", scope.ReleaseTarget.Key()),
+			attribute.String("release_target.key", scope.ReleaseTarget().Key()),
 		))
 	defer span.End()
 
-	// Get deployment and resource from store
-	deployment, ok := e.store.Deployments.Get(scope.ReleaseTarget.DeploymentId)
-	if !ok {
-		err := fmt.Errorf("deployment %s not found", scope.ReleaseTarget.DeploymentId)
-		span.RecordError(err)
-		return results.NewDeniedResult(
-			fmt.Sprintf("Version selector: deployment not found: %s", scope.ReleaseTarget.DeploymentId),
-		).WithDetail("error", err.Error())
-	}
-
-	resource, ok := e.store.Resources.Get(scope.ReleaseTarget.ResourceId)
-	if !ok {
-		err := fmt.Errorf("resource %s not found", scope.ReleaseTarget.ResourceId)
-		span.RecordError(err)
-		return results.NewDeniedResult(
-			fmt.Sprintf("Version selector: resource not found: %s", scope.ReleaseTarget.ResourceId),
-		).WithDetail("error", err.Error())
-	}
+	deployment := scope.Deployment
+	resource := scope.Resource
 
 	// Try to extract CEL selector first
 	celSelector, celErr := e.rule.Selector.AsCelSelector()

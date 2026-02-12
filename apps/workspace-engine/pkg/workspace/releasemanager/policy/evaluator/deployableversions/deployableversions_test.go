@@ -35,8 +35,10 @@ func TestDeployableVersionStatusEvaluator_ReadyVersion(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -63,8 +65,10 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithoutRelease(t *testing
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -100,8 +104,10 @@ func TestDeployableVersionStatusEvaluator_PausedVersionWithRelease(t *testing.T)
 	eval := NewEvaluator(st)
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -128,8 +134,10 @@ func TestDeployableVersionStatusEvaluator_BuildingVersion(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -156,8 +164,10 @@ func TestDeployableVersionStatusEvaluator_FailedVersion(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -184,8 +194,10 @@ func TestDeployableVersionStatusEvaluator_RejectedVersion(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -212,8 +224,10 @@ func TestDeployableVersionStatusEvaluator_UnspecifiedVersion(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -241,12 +255,16 @@ func TestDeployableVersionStatusEvaluator_Caching(t *testing.T) {
 	}
 
 	scope1 := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	scope2 := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 
 	// Both should return the same result (cached)
@@ -278,12 +296,16 @@ func TestDeployableVersionStatusEvaluator_DifferentVersionsNotCached(t *testing.
 	}
 
 	scope1 := evaluator.EvaluatorScope{
-		Version:       readyVersion,
-		ReleaseTarget: releaseTarget,
+		Version:     readyVersion,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	scope2 := evaluator.EvaluatorScope{
-		Version:       pausedVersion,
-		ReleaseTarget: releaseTarget,
+		Version:     pausedVersion,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 
 	result1 := eval.Evaluate(context.Background(), scope1)
@@ -300,12 +322,15 @@ func TestDeployableVersionStatusEvaluator_MissingFields(t *testing.T) {
 	eval := NewEvaluator(st)
 
 	// Scope without version - should be denied by memoization wrapper
+	rt := &oapi.ReleaseTarget{
+		ResourceId:    "resource-1",
+		EnvironmentId: "env-1",
+		DeploymentId:  "deployment-1",
+	}
 	scope := evaluator.EvaluatorScope{
-		ReleaseTarget: &oapi.ReleaseTarget{
-			ResourceId:    "resource-1",
-			EnvironmentId: "env-1",
-			DeploymentId:  "deployment-1",
-		},
+		Environment: &oapi.Environment{Id: rt.EnvironmentId},
+		Resource:    &oapi.Resource{Id: rt.ResourceId},
+		Deployment:  &oapi.Deployment{Id: rt.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -340,8 +365,10 @@ func TestDeployableVersionStatusEvaluator_ResultStructure(t *testing.T) {
 	}
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(context.Background(), scope)
 
@@ -386,16 +413,20 @@ func TestDeployableVersionStatusEvaluator_PausedVersionMultipleTargets(t *testin
 
 	// Test target1 (has release) - should be allowed
 	scope1 := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: target1,
+		Version:     version,
+		Environment: &oapi.Environment{Id: target1.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target1.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target1.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "paused version with release should be allowed on target1")
 
 	// Test target2 (no release) - should be denied
 	scope2 := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: target2,
+		Version:     version,
+		Environment: &oapi.Environment{Id: target2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target2.DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.False(t, result2.Allowed, "paused version without release should be denied on target2")
@@ -421,8 +452,10 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 	eval := NewEvaluator(st)
 
 	scope1 := evaluator.EvaluatorScope{
-		Version:       version1,
-		ReleaseTarget: releaseTarget,
+		Version:     version1,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(ctx, scope1)
 	assert.True(t, result.Allowed, "ready version should be allowed")
@@ -433,8 +466,10 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 		Status: oapi.DeploymentVersionStatusPaused,
 	}
 	scope2 := evaluator.EvaluatorScope{
-		Version:       version2,
-		ReleaseTarget: releaseTarget,
+		Version:     version2,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result = eval.Evaluate(ctx, scope2)
 	assert.False(t, result.Allowed, "paused version without release should be denied")
@@ -457,8 +492,10 @@ func TestDeployableVersionStatusEvaluator_StatusTransitions(t *testing.T) {
 		Status: oapi.DeploymentVersionStatusReady,
 	}
 	scope3 := evaluator.EvaluatorScope{
-		Version:       version3,
-		ReleaseTarget: releaseTarget,
+		Version:     version3,
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result = eval.Evaluate(ctx, scope3)
 	assert.True(t, result.Allowed, "ready version should always be allowed")
@@ -508,24 +545,30 @@ func TestDeployableVersionStatusEvaluator_PausedWithMultipleReleases(t *testing.
 
 	// Paused version on target1 (has release) - allowed
 	scope1 := evaluator.EvaluatorScope{
-		Version:       pausedVersion,
-		ReleaseTarget: target1,
+		Version:     pausedVersion,
+		Environment: &oapi.Environment{Id: target1.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target1.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target1.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "paused version should be allowed on target with its release")
 
 	// Paused version on target2 (has different version's release) - denied
 	scope2 := evaluator.EvaluatorScope{
-		Version:       pausedVersion,
-		ReleaseTarget: target2,
+		Version:     pausedVersion,
+		Environment: &oapi.Environment{Id: target2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target2.DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.False(t, result2.Allowed, "paused version should be denied on target without its release")
 
 	// Ready version on target2 - allowed
 	scope3 := evaluator.EvaluatorScope{
-		Version:       readyVersion,
-		ReleaseTarget: target2,
+		Version:     readyVersion,
+		Environment: &oapi.Environment{Id: target2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target2.DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed, "ready version should always be allowed")
@@ -565,16 +608,20 @@ func TestDeployableVersionStatusEvaluator_PausedVersionDifferentEnvironments(t *
 
 	// Dev environment (has release) - allowed
 	devScope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: devTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: devTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: devTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: devTarget.DeploymentId},
 	}
 	devResult := eval.Evaluate(ctx, devScope)
 	assert.True(t, devResult.Allowed, "paused version should be allowed in dev (has release)")
 
 	// Prod environment (no release) - denied
 	prodScope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: prodTarget,
+		Version:     version,
+		Environment: &oapi.Environment{Id: prodTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: prodTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodTarget.DeploymentId},
 	}
 	prodResult := eval.Evaluate(ctx, prodScope)
 	assert.False(t, prodResult.Allowed, "paused version should be denied in prod (no release)")
@@ -601,8 +648,10 @@ func TestDeployableVersionStatusEvaluator_EmptyStoreHandling(t *testing.T) {
 	eval := NewEvaluator(st)
 
 	scope := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: target,
+		Version:     version,
+		Environment: &oapi.Environment{Id: target.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target.DeploymentId},
 	}
 	result := eval.Evaluate(ctx, scope)
 
@@ -643,8 +692,10 @@ func TestDeployableVersionStatusEvaluator_WrongVersionRelease(t *testing.T) {
 	eval := NewEvaluator(st)
 
 	scope := evaluator.EvaluatorScope{
-		Version:       pausedVersion,
-		ReleaseTarget: target,
+		Version:     pausedVersion,
+		Environment: &oapi.Environment{Id: target.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target.DeploymentId},
 	}
 	result := eval.Evaluate(ctx, scope)
 
@@ -687,12 +738,16 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 
 	// Evaluate for target1 twice - should be cached
 	scope1a := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: target1,
+		Version:     version,
+		Environment: &oapi.Environment{Id: target1.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target1.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target1.DeploymentId},
 	}
 	scope1b := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: target1,
+		Version:     version,
+		Environment: &oapi.Environment{Id: target1.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target1.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target1.DeploymentId},
 	}
 
 	result1a := eval.Evaluate(ctx, scope1a)
@@ -702,8 +757,10 @@ func TestDeployableVersionStatusEvaluator_PausedVersionCaching(t *testing.T) {
 
 	// Evaluate for target2 - should NOT use target1's cache (different target)
 	scope2 := evaluator.EvaluatorScope{
-		Version:       version,
-		ReleaseTarget: target2,
+		Version:     version,
+		Environment: &oapi.Environment{Id: target2.EnvironmentId},
+		Resource:    &oapi.Resource{Id: target2.ResourceId},
+		Deployment:  &oapi.Deployment{Id: target2.DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 
@@ -748,8 +805,10 @@ func TestDeployableVersionStatusEvaluator_AllStatusesComprehensive(t *testing.T)
 			}
 
 			scope := evaluator.EvaluatorScope{
-				Version:       version,
-				ReleaseTarget: target,
+				Version:     version,
+				Environment: &oapi.Environment{Id: target.EnvironmentId},
+				Resource:    &oapi.Resource{Id: target.ResourceId},
+				Deployment:  &oapi.Deployment{Id: target.DeploymentId},
 			}
 
 			result := eval.Evaluate(ctx, scope)

@@ -106,7 +106,11 @@ func setupScopeWithDeployedTarget(t *testing.T, st *store.Store) (context.Contex
 	ctx, releaseTarget := setupReleaseTarget(t, st)
 	seedSuccessfulRelease(t, ctx, st, releaseTarget)
 
-	return ctx, evaluator.EvaluatorScope{ReleaseTarget: releaseTarget}
+	return ctx, evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+	}
 }
 
 func TestDeploymentWindowEvaluator_NewEvaluator_NilRule(t *testing.T) {
@@ -318,7 +322,11 @@ func TestDeploymentWindowEvaluator_IgnoresWindowWithoutDeployedVersion(t *testin
 	require.NotNil(t, eval, "expected non-nil evaluator")
 
 	ctx, releaseTarget := setupReleaseTarget(t, st)
-	scope := evaluator.EvaluatorScope{ReleaseTarget: releaseTarget}
+	scope := evaluator.EvaluatorScope{
+		Environment: &oapi.Environment{Id: releaseTarget.EnvironmentId},
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
+	}
 	result := eval.Evaluate(ctx, scope)
 
 	assert.True(t, result.Allowed, "expected allowed when no deployment exists")

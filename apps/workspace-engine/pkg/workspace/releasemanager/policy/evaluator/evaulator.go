@@ -17,6 +17,16 @@ import (
 //     declared fields are non-nil in the provided scope. If any are missing, it
 //     returns a denial without calling the underlying evaluator.
 //
+// # Primitive vs composite fields
+//
+// The primitive fields are ScopeEnvironment, ScopeVersion, ScopeResource,
+// ScopeDeployment, and ScopeRelease. Each corresponds to a single entity.
+//
+// ScopeReleaseTarget is a composite: a release target is uniquely identified by
+// the combination of an environment, a resource, and a deployment. Declaring
+// ScopeReleaseTarget is equivalent to ScopeEnvironment | ScopeResource |
+// ScopeDeployment.
+//
 // # Choosing the correct value
 //
 // Set the bit for every EvaluatorScope field that the evaluator accesses in its
@@ -34,7 +44,7 @@ import (
 //   - ScopeVersion | ScopeReleaseTarget: rule depends on the version and the
 //     specific target (e.g. deployable version status, version cooldown).
 //   - ScopeEnvironment | ScopeVersion | ScopeReleaseTarget: rule depends on all
-//     three (e.g. gradual rollout, version selector).
+//     entities (e.g. gradual rollout, version selector).
 //   - ScopeReleaseTarget: rule only depends on the target itself (e.g. deployment
 //     window, deployment dependency, rollback).
 //   - 0 (no bits set): rule is workspace-scoped and produces the same result
@@ -46,11 +56,18 @@ const (
 	ScopeEnvironment ScopeFields = 1 << iota
 	// ScopeVersion indicates the evaluator reads scope.Version.
 	ScopeVersion
-	// ScopeReleaseTarget indicates the evaluator reads scope.ReleaseTarget.
-	ScopeReleaseTarget
-	// ScopeRelease indicates the evaluator reads scope.Release (reserved for
-	// job-level evaluators that operate on a specific release).
+	// ScopeResource indicates the evaluator reads scope.Resource.
+	ScopeResource
+	// ScopeDeployment indicates the evaluator reads scope.Deployment.
+	ScopeDeployment
+	// ScopeRelease is reserved for job-level evaluators that operate on a
+	// specific release.
 	ScopeRelease
+
+	// ScopeReleaseTarget is a convenience composite. A release target is
+	// uniquely identified by an environment, a resource, and a deployment.
+	// Declaring ScopeReleaseTarget is equivalent to declaring all three.
+	ScopeReleaseTarget = ScopeEnvironment | ScopeResource | ScopeDeployment
 )
 
 // EvaluatorScope contains the context for policy evaluation.
@@ -60,12 +77,24 @@ const (
 //   - Skip deployed: typically Release
 //   - Workspace rules: may not need any specific entities
 type EvaluatorScope struct {
-	Environment   *oapi.Environment
-	Version       *oapi.DeploymentVersion
-	ReleaseTarget *oapi.ReleaseTarget
+	Environment *oapi.Environment
+	Version     *oapi.DeploymentVersion
+	Resource    *oapi.Resource
+	Deployment  *oapi.Deployment
+}
+
+// ReleaseTarget constructs an oapi.ReleaseTarget from the scope's
+// Environment, Resource, and Deployment fields.
+func (s EvaluatorScope) ReleaseTarget() *oapi.ReleaseTarget {
+	return &oapi.ReleaseTarget{
+		EnvironmentId: s.Environment.Id,
+		ResourceId:    s.Resource.Id,
+		DeploymentId:  s.Deployment.Id,
+	}
 }
 
 // HasFields checks if this scope has all the required fields set (non-nil).
+// Each scope field maps directly to its corresponding struct field.
 func (s EvaluatorScope) HasFields(fields ScopeFields) bool {
 	if fields&ScopeEnvironment != 0 && s.Environment == nil {
 		return false
@@ -73,7 +102,10 @@ func (s EvaluatorScope) HasFields(fields ScopeFields) bool {
 	if fields&ScopeVersion != 0 && s.Version == nil {
 		return false
 	}
-	if fields&ScopeReleaseTarget != 0 && s.ReleaseTarget == nil {
+	if fields&ScopeResource != 0 && s.Resource == nil {
+		return false
+	}
+	if fields&ScopeDeployment != 0 && s.Deployment == nil {
 		return false
 	}
 

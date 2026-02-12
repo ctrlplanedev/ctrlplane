@@ -71,9 +71,14 @@ func (e *VersionCooldownVersionSummaryEvaluator) Evaluate(ctx context.Context, s
 	messages := make([]*oapi.RuleEvaluation, 0, totalTargets)
 
 	for _, releaseTarget := range releaseTargets {
+		environment, _ := e.store.Environments.Get(releaseTarget.EnvironmentId)
+		resource, _ := e.store.Resources.Get(releaseTarget.ResourceId)
+		deployment, _ := e.store.Deployments.Get(releaseTarget.DeploymentId)
 		scope := evaluator.EvaluatorScope{
-			Version:       version,
-			ReleaseTarget: releaseTarget,
+			Environment: environment,
+			Version:     version,
+			Resource:    resource,
+			Deployment:  deployment,
 		}
 		evaluation := NewEvaluator(e.store, &oapi.PolicyRule{Id: "versionCooldownSummary", VersionCooldown: e.rule}).Evaluate(ctx, scope)
 

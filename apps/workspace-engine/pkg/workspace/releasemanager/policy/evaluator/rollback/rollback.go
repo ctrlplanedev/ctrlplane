@@ -55,7 +55,7 @@ func (e *RollbackEvaluator) getLatestJobForReleaseTarget(releaseTarget *oapi.Rel
 }
 
 func (e *RollbackEvaluator) Evaluate(ctx context.Context, scope evaluator.EvaluatorScope) *oapi.RuleEvaluation {
-	releaseTarget := scope.ReleaseTarget
+	releaseTarget := scope.ReleaseTarget()
 	latestJob := e.getLatestJobForReleaseTarget(releaseTarget)
 	if latestJob == nil {
 		return results.NewAllowedResult("No jobs found for release target")

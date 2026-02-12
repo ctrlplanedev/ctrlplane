@@ -182,9 +182,10 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 
 	// Position 0: deploys immediately (offset = 0 * 60 = 0 seconds)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "position 0 should deploy immediately")
@@ -193,9 +194,10 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 
 	// Position 1: deploys after 60 seconds (offset = 1 * 60 = 60 seconds)
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed, "position 1 should deploy after 60 seconds")
@@ -204,9 +206,10 @@ func TestGradualRolloutEvaluator_LinearRollout(t *testing.T) {
 
 	// Position 2: deploys after 120 seconds (offset = 2 * 60 = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed, "position 2 should deploy after 120 seconds")
@@ -259,18 +262,20 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 
 	// Position 0: deploys immediately - should be allowed
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
 
 	// Position 1: deploys after 60 seconds, but we're only at 30 seconds - should be pending
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.False(t, result2.Allowed)
@@ -281,9 +286,10 @@ func TestGradualRolloutEvaluator_LinearRollout_Pending(t *testing.T) {
 
 	// Position 2: deploys after 120 seconds - should be pending
 	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.False(t, result3.Allowed)
@@ -338,9 +344,10 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 
 	// Position 0: offset = (0/3) * 60 = 0 seconds
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -349,9 +356,10 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 
 	// Position 1: offset = (1/3) * 60 = 20 seconds
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed)
@@ -360,9 +368,10 @@ func TestGradualRolloutEvaluator_LinearNormalizedRollout(t *testing.T) {
 
 	// Position 2: offset = (2/3) * 60 = 40 seconds
 	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed)
@@ -416,9 +425,10 @@ func TestGradualRolloutEvaluator_ZeroTimeScaleIntervalStartsImmediately(t *testi
 	// All positions should deploy immediately when timeScaleInterval is 0
 	for i, releaseTarget := range releaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: releaseTarget,
+			Environment: environment,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 		assert.True(t, result.Allowed, "position %d should deploy immediately", i)
@@ -494,9 +504,10 @@ func TestGradualRolloutEvaluator_UnsatisfiedApprovalRequirement(t *testing.T) {
 	// All targets should be pending since approval requirement isn't met
 	for _, releaseTarget := range releaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: releaseTarget,
+			Environment: environment,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+			Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 		assert.False(t, result.Allowed, "target should be pending")
@@ -594,9 +605,10 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 
 	// Position 0: deploys immediately after approval (offset = 0)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -606,9 +618,10 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 
 	// Position 1: deploys after 60 seconds from approval (offset = 60 seconds)
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed)
@@ -618,9 +631,10 @@ func TestGradualRolloutEvaluator_SatisfiedApprovalRequirement(t *testing.T) {
 
 	// Position 2: deploys after 120 seconds from approval (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed)
@@ -698,9 +712,10 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 
 	// Position 0: deploys immediately after approval (offset = 0)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -710,9 +725,10 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 
 	// Position 1: deploys after 60 seconds from approval (offset = 60 seconds)
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed)
@@ -722,9 +738,10 @@ func TestGradualRolloutEvaluator_IfApprovalPolicySkipped_RolloutStartsImmediatel
 
 	// Position 2: deploys after 120 seconds from approval (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed)
@@ -811,9 +828,10 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 
 	// Position 0: deploys immediately after approval (offset = 0)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -823,9 +841,10 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 
 	// Position 1: deploys after 60 seconds from approval (offset = 60 seconds)
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed)
@@ -835,9 +854,10 @@ func TestGradualRolloutEvaluator_IfEnvironmentProgressionPolicySkipped_RolloutSt
 
 	// Position 2: deploys after 120 seconds from approval (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed)
@@ -955,9 +975,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SuccessPercentage(t 
 
 	// Position 0: deploys immediately after environment progression is satisfied
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -1066,9 +1087,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_SoakTime(t *testing.
 
 	// Position 0: deploys after soak time is satisfied
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: prodRT,
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: prodRT.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodRT.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -1187,9 +1209,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_BothSuccessPercentag
 
 	// Position 0: deploys after both conditions are satisfied (soak time is later)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: prodRT,
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: prodRT.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodRT.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -1282,9 +1305,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionOnly_Unsatisfied(t *testi
 	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: prodRT,
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: prodRT.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodRT.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.False(t, result1.Allowed)
@@ -1423,9 +1447,10 @@ func TestGradualRolloutEvaluator_BothPolicies_BothSatisfied(t *testing.T) {
 
 	// Position 0: deploys after the later condition (environment progression)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: prodRT,
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: prodRT.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodRT.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -1563,9 +1588,10 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalLater(t *testing.T) {
 
 	// Position 0: deploys after the later condition (approval)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: prodRT,
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: prodRT.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodRT.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -1693,9 +1719,10 @@ func TestGradualRolloutEvaluator_BothPolicies_ApprovalUnsatisfied(t *testing.T) 
 	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: prodRT,
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: prodRT.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodRT.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.False(t, result1.Allowed)
@@ -1811,9 +1838,10 @@ func TestGradualRolloutEvaluator_BothPolicies_EnvProgUnsatisfied(t *testing.T) {
 	_ = st.ReleaseTargets.Upsert(ctx, prodRT)
 
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: prodRT,
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: prodRT.ResourceId},
+		Deployment:  &oapi.Deployment{Id: prodRT.DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.False(t, result1.Allowed)
@@ -1906,9 +1934,10 @@ func TestGradualRolloutEvaluator_ApprovalJustSatisfied_OnlyPosition0Allowed(t *t
 
 	for i, rt := range releaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: rt,
+			Environment: environment,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: rt.ResourceId},
+			Deployment:  &oapi.Deployment{Id: rt.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 
@@ -2033,9 +2062,10 @@ func countAllowedTargets(ctx context.Context, t *testing.T, eval GradualRolloutE
 	allowedCount := 0
 	for _, rt := range releaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: rt,
+			Environment: environment,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: rt.ResourceId},
+			Deployment:  &oapi.Deployment{Id: rt.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 		if result.Allowed {
@@ -2160,9 +2190,10 @@ func TestGradualRolloutEvaluator_EnvProgressionJustSatisfied_OnlyPosition0Allowe
 
 	for i, rt := range prodReleaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   prodEnv,
-			Version:       version,
-			ReleaseTarget: rt,
+			Environment: prodEnv,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: rt.ResourceId},
+			Deployment:  &oapi.Deployment{Id: rt.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 
@@ -2227,9 +2258,10 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenPending(t *testing.T) {
 
 	// Position 1: should deploy at baseTime + 60 seconds, but current time is baseTime + 30 seconds
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result := eval.Evaluate(ctx, scope)
 
@@ -2293,9 +2325,10 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WhenAllowed(t *testing.T) {
 	// All positions should be allowed by now
 	for i, rt := range releaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: rt,
+			Environment: environment,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: rt.ResourceId},
+			Deployment:  &oapi.Deployment{Id: rt.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 
@@ -2372,9 +2405,10 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_WaitingForDependencies(t *te
 
 	// Check position 0 - should be pending (rollout hasn't started)
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result := eval.Evaluate(ctx, scope)
 
@@ -2466,9 +2500,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 
 	// Position 0: should deploy immediately from version.CreatedAt (offset = 0)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed)
@@ -2479,9 +2514,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 
 	// Position 1: deploys after 60 seconds from version.CreatedAt (offset = 60 seconds)
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed)
@@ -2491,9 +2527,10 @@ func TestGradualRolloutEvaluator_EnvironmentProgressionNoReleaseTargets(t *testi
 
 	// Position 2: deploys after 120 seconds from version.CreatedAt (offset = 120 seconds)
 	scope3 := evaluator.EvaluatorScope{
-		Environment:   prodEnv,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: prodEnv,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result3 := eval.Evaluate(ctx, scope3)
 	assert.True(t, result3.Allowed)
@@ -2549,9 +2586,10 @@ func TestGradualRolloutEvaluator_NextEvaluationTime_LinearNormalized(t *testing.
 	// Position 2: offset = (2/4) * 120 = 60 seconds
 	// Should deploy at baseTime + 60 seconds, current time is baseTime + 10 seconds
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[2],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[2].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[2].DeploymentId},
 	}
 	result := eval.Evaluate(ctx, scope)
 
@@ -2644,9 +2682,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_InsideAllowWindow(t *testing.T
 
 	// Position 0: should deploy immediately from version.CreatedAt (no window adjustment needed)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "position 0 should be allowed")
@@ -2726,9 +2765,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 
 	// Position 0: rollout start time should be adjusted to window open (9am)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "position 0 should be allowed (current time is after adjusted rollout start)")
@@ -2739,9 +2779,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_OutsideAllowWindow(t *testing.
 
 	// Position 1: should deploy 60 seconds after window opens
 	scope2 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[1],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[1].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[1].DeploymentId},
 	}
 	result2 := eval.Evaluate(ctx, scope2)
 	assert.True(t, result2.Allowed, "position 1 should be allowed")
@@ -2804,9 +2845,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_IgnoresWindowWithoutDeployedVe
 	_ = st.ReleaseTargets.Upsert(ctx, releaseTarget)
 
 	scope := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTarget,
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTarget.ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTarget.DeploymentId},
 	}
 	result := eval.Evaluate(ctx, scope)
 
@@ -2882,9 +2924,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowAdjustsRolloutStart(
 
 	// Position 0: rollout start time should be pushed to deny window end (6am)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "position 0 should be allowed")
@@ -2960,9 +3003,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowOutsideNoChange(t *t
 
 	// Position 0: rollout start time should be version.CreatedAt (not inside deny window)
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "position 0 should be allowed")
@@ -3048,9 +3092,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_DenyWindowPreventsFrontloading
 	// At 6:05am, positions 0-4 should be allowed, position 5+ should be pending
 	for i, rt := range releaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: rt,
+			Environment: environment,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: rt.ResourceId},
+			Deployment:  &oapi.Deployment{Id: rt.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 
@@ -3135,9 +3180,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_NoWindowsExistingBehavior(t *t
 
 	// Position 0: should use version.CreatedAt as rollout start
 	scope1 := evaluator.EvaluatorScope{
-		Environment:   environment,
-		Version:       version,
-		ReleaseTarget: releaseTargets[0],
+		Environment: environment,
+		Version:     version,
+		Resource:    &oapi.Resource{Id: releaseTargets[0].ResourceId},
+		Deployment:  &oapi.Deployment{Id: releaseTargets[0].DeploymentId},
 	}
 	result1 := eval.Evaluate(ctx, scope1)
 	assert.True(t, result1.Allowed, "position 0 should be allowed")
@@ -3223,9 +3269,10 @@ func TestGradualRolloutEvaluator_DeploymentWindow_PreventsFrontloading(t *testin
 	// At 9:05am, positions 0-4 should be allowed, position 5 should be pending
 	for i, rt := range releaseTargets {
 		scope := evaluator.EvaluatorScope{
-			Environment:   environment,
-			Version:       version,
-			ReleaseTarget: rt,
+			Environment: environment,
+			Version:     version,
+			Resource:    &oapi.Resource{Id: rt.ResourceId},
+			Deployment:  &oapi.Deployment{Id: rt.DeploymentId},
 		}
 		result := eval.Evaluate(ctx, scope)
 
