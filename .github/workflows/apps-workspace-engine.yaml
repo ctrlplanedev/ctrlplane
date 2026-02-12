@@ -87,7 +87,7 @@ jobs:
         working-directory: packages/db
         env:
           POSTGRES_URL: "postgresql://ctrlplane_test:test_password@localhost:5432/ctrlplane_test?sslmode=disable"
-        run: pnpm dlx drizzle-kit migrate
+        run: pnpm exec drizzle-kit migrate
 
       - name: Run DB package tests
         working-directory: apps/workspace-engine
