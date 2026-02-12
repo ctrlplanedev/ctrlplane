@@ -5,14 +5,51 @@ import (
 	"workspace-engine/pkg/oapi"
 )
 
-// ScopeFields defines which fields from EvaluatorScope an evaluator cares about.
-// This determines what gets included in the cache key.
+// ScopeFields is a bitmask that declares which EvaluatorScope fields an evaluator
+// reads during evaluation. It serves two purposes:
+//
+//  1. Cache key generation: When wrapped with WithMemoization, only the declared
+//     fields are included in the cache key. An evaluator declaring
+//     ScopeEnvironment|ScopeVersion will return cached results when called with
+//     different ReleaseTargets but the same Environment and Version.
+//
+//  2. Scope validation: Before evaluation, the memoization layer checks that all
+//     declared fields are non-nil in the provided scope. If any are missing, it
+//     returns a denial without calling the underlying evaluator.
+//
+// # Choosing the correct value
+//
+// Set the bit for every EvaluatorScope field that the evaluator accesses in its
+// Evaluate method. Include a field if:
+//   - The evaluator reads the field directly (e.g. scope.Version.Id).
+//   - The evaluator passes the field to a store lookup or external call.
+//
+// Do NOT include a field if:
+//   - The evaluator never references it. Adding unnecessary fields reduces cache
+//     hit rates by making cache keys more specific than needed.
+//
+// Common patterns from existing evaluators:
+//   - ScopeEnvironment | ScopeVersion: rule depends on the environment/version
+//     pair (e.g. approval, environment progression, soak time).
+//   - ScopeVersion | ScopeReleaseTarget: rule depends on the version and the
+//     specific target (e.g. deployable version status, version cooldown).
+//   - ScopeEnvironment | ScopeVersion | ScopeReleaseTarget: rule depends on all
+//     three (e.g. gradual rollout, version selector).
+//   - ScopeReleaseTarget: rule only depends on the target itself (e.g. deployment
+//     window, deployment dependency, rollback).
+//   - 0 (no bits set): rule is workspace-scoped and produces the same result
+//     regardless of scope values; cached under a single "workspace" key.
 type ScopeFields int
 
 const (
+	// ScopeEnvironment indicates the evaluator reads scope.Environment.
 	ScopeEnvironment ScopeFields = 1 << iota
+	// ScopeVersion indicates the evaluator reads scope.Version.
 	ScopeVersion
+	// ScopeReleaseTarget indicates the evaluator reads scope.ReleaseTarget.
 	ScopeReleaseTarget
+	// ScopeRelease indicates the evaluator reads scope.Release (reserved for
+	// job-level evaluators that operate on a specific release).
 	ScopeRelease
 )
 
