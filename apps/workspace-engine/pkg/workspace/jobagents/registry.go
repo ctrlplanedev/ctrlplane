@@ -52,6 +52,7 @@ func (r *Registry) fillReleaseContext(job *oapi.Job, ctx *types.DispatchContext)
 	ctx.Deployment = jobWithRelease.Deployment
 	ctx.Environment = jobWithRelease.Environment
 	ctx.Resource = jobWithRelease.Resource
+	ctx.Version = &jobWithRelease.Release.Version
 
 	return nil
 }
@@ -79,9 +80,9 @@ func (r *Registry) fillWorkflowContext(job *oapi.Job, ctx *types.DispatchContext
 func (r *Registry) getMergedJobAgentConfig(jobAgent *oapi.JobAgent, ctx *types.DispatchContext) (oapi.JobAgentConfig, error) {
 	agentConfig := jobAgent.Config
 
-	var wofklowJobConfig oapi.JobAgentConfig
+	var workflowJobConfig oapi.JobAgentConfig
 	if ctx.WorkflowJob != nil {
-		wofklowJobConfig = ctx.WorkflowJob.Config
+		workflowJobConfig = ctx.WorkflowJob.Config
 	}
 
 	var deploymentConfig oapi.JobAgentConfig
@@ -94,7 +95,7 @@ func (r *Registry) getMergedJobAgentConfig(jobAgent *oapi.JobAgent, ctx *types.D
 		versionConfig = ctx.Version.JobAgentConfig
 	}
 
-	mergedConfig, err := mergeJobAgentConfig(agentConfig, wofklowJobConfig, deploymentConfig, versionConfig)
+	mergedConfig, err := mergeJobAgentConfig(agentConfig, workflowJobConfig, deploymentConfig, versionConfig)
 	if err != nil {
 		return oapi.JobAgentConfig{}, fmt.Errorf("failed to merge job agent configs: %w", err)
 	}

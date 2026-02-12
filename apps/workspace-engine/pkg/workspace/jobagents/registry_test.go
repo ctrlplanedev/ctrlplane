@@ -660,6 +660,74 @@ func TestDispatch_ReleaseContextPopulated(t *testing.T) {
 	assert.Equal(t, "yes", dc.JobAgentConfig["deploy_cfg"])
 }
 
+func TestDispatch_VersionJobAgentConfigMergedViaFillReleaseContext(t *testing.T) {
+	ctx := context.Background()
+	s := newTestStore()
+	r, fake := newTestRegistry(s)
+
+	agent := &oapi.JobAgent{
+		Id: "agent-1", Name: "agent-1", Type: "fake",
+		Config: oapi.JobAgentConfig{"shared": "agent", "agent_only": "a"},
+	}
+	s.JobAgents.Upsert(ctx, agent)
+
+	env := &oapi.Environment{Id: "env-1", Name: "staging", SystemId: "sys-1"}
+	dep := &oapi.Deployment{
+		Id: "dep-1", Name: "web", SystemId: "sys-1",
+		Metadata:       map[string]string{},
+		JobAgentConfig: oapi.JobAgentConfig{"shared": "deployment", "deploy_only": "d"},
+	}
+	res := &oapi.Resource{
+		Id: "res-1", Name: "node", Kind: "vm", Identifier: "node-1",
+		Version: "v1", WorkspaceId: "test-workspace",
+		Config: map[string]interface{}{}, Metadata: map[string]string{},
+		CreatedAt: time.Now(),
+	}
+	s.Environments.Upsert(ctx, env)
+	s.Deployments.Upsert(ctx, dep)
+	s.Resources.Upsert(ctx, res)
+
+	release := &oapi.Release{
+		ReleaseTarget: oapi.ReleaseTarget{
+			EnvironmentId: "env-1",
+			DeploymentId:  "dep-1",
+			ResourceId:    "res-1",
+		},
+		Version: oapi.DeploymentVersion{
+			Id:             "ver-1",
+			Tag:            "v3.0.0",
+			JobAgentConfig: oapi.JobAgentConfig{"shared": "version", "version_only": "v"},
+		},
+		Variables: map[string]oapi.LiteralValue{},
+	}
+	_ = s.Releases.Upsert(ctx, release)
+
+	job := &oapi.Job{
+		Id: "job-1", JobAgentId: "agent-1", ReleaseId: release.ID(),
+		Status: oapi.JobStatusPending, Metadata: map[string]string{},
+		CreatedAt: time.Now(), UpdatedAt: time.Now(),
+	}
+	s.Jobs.Upsert(ctx, job)
+
+	err := r.Dispatch(ctx, job)
+
+	assert.NoError(t, err)
+	assert.Len(t, fake.dispatchedContexts, 1)
+
+	dc := fake.dispatchedContexts[0]
+
+	// Version should be populated by fillReleaseContext, not manually set
+	assert.NotNil(t, dc.Version, "fillReleaseContext should populate DispatchContext.Version from the release")
+	assert.Equal(t, "ver-1", dc.Version.Id)
+
+	// Version's JobAgentConfig should win the "shared" key (highest priority)
+	assert.Equal(t, "version", dc.JobAgentConfig["shared"],
+		"version JobAgentConfig should override agent and deployment configs")
+	assert.Equal(t, "a", dc.JobAgentConfig["agent_only"])
+	assert.Equal(t, "d", dc.JobAgentConfig["deploy_only"])
+	assert.Equal(t, "v", dc.JobAgentConfig["version_only"])
+}
+
 func TestRegister_AddsDispatcher(t *testing.T) {
 	s := newTestStore()
 	r := &Registry{
