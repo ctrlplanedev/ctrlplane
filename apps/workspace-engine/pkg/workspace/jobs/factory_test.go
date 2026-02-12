@@ -24,47 +24,6 @@ func mustCreateJobAgentConfig(t *testing.T, configJSON string) oapi.JobAgentConf
 	return config
 }
 
-// Helper functions for converting JobAgentConfig to specific typed configs
-func getGithubJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.GithubJobAgentConfig {
-	t.Helper()
-	configJSON, err := json.Marshal(config)
-	require.NoError(t, err)
-	var fullConfig oapi.GithubJobAgentConfig
-	err = json.Unmarshal(configJSON, &fullConfig)
-	require.NoError(t, err)
-	return &fullConfig
-}
-
-func getArgoCDJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.ArgoCDJobAgentConfig {
-	t.Helper()
-	configJSON, err := json.Marshal(config)
-	require.NoError(t, err)
-	var fullConfig oapi.ArgoCDJobAgentConfig
-	err = json.Unmarshal(configJSON, &fullConfig)
-	require.NoError(t, err)
-	return &fullConfig
-}
-
-func getTerraformCloudJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.TerraformCloudJobAgentConfig {
-	t.Helper()
-	configJSON, err := json.Marshal(config)
-	require.NoError(t, err)
-	var fullConfig oapi.TerraformCloudJobAgentConfig
-	err = json.Unmarshal(configJSON, &fullConfig)
-	require.NoError(t, err)
-	return &fullConfig
-}
-
-func getTestRunnerJobAgentConfig(t *testing.T, config oapi.JobAgentConfig) *oapi.TestRunnerJobAgentConfig {
-	t.Helper()
-	configJSON, err := json.Marshal(config)
-	require.NoError(t, err)
-	var fullConfig oapi.TestRunnerJobAgentConfig
-	err = json.Unmarshal(configJSON, &fullConfig)
-	require.NoError(t, err)
-	return &fullConfig
-}
-
 func mustCreateResourceSelector(t *testing.T) *oapi.Selector {
 	t.Helper()
 	selector := &oapi.Selector{}
