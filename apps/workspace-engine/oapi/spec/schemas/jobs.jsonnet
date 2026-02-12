@@ -43,7 +43,6 @@ local JobPropertyKeys = std.objectFields(Job.properties);
   DispatchContext: {
     type: 'object',
     required: [
-      'job',
       'jobAgent',
       'jobAgentConfig',
     ],

@@ -451,7 +451,6 @@
                }
             },
             "required": [
-               "job",
                "jobAgent",
                "jobAgentConfig"
             ],
