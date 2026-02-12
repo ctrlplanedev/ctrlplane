@@ -71,6 +71,11 @@ func ToUpsertParams(wsId string, v *oapi.DeploymentVersion) (db.UpsertDeployment
 		message = pgtype.Text{String: *v.Message, Valid: true}
 	}
 
+	var createdAt pgtype.Timestamptz
+	if !v.CreatedAt.IsZero() {
+		createdAt = pgtype.Timestamptz{Time: v.CreatedAt, Valid: true}
+	}
+
 	return db.UpsertDeploymentVersionParams{
 		Name:           v.Name,
 		Tag:            v.Tag,
@@ -80,5 +85,6 @@ func ToUpsertParams(wsId string, v *oapi.DeploymentVersion) (db.UpsertDeployment
 		Status:         db.DeploymentVersionStatus(v.Status),
 		Message:        message,
 		WorkspaceID:    workspaceID,
+		CreatedAt:      createdAt,
 	}, nil
 }

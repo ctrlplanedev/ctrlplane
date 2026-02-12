@@ -21,6 +21,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
+	wsstore "workspace-engine/pkg/workspace/store"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -219,7 +220,7 @@ func main() {
 		manager.WithWorkspaceCreateOptions(
 			workspace.WithTraceStore(traceStore),
 			workspace.WithStoreOptions(
-			// wsstore.WithDBDeploymentVersions(ctx),
+				wsstore.WithDBDeploymentVersions(ctx),
 			),
 			workspace.AddDefaultSystem(),
 		),
@@ -338,16 +339,14 @@ func main() {
 	defer shutdownTimeout.Stop()
 
 	// 1. Wait for consumer goroutine to finish
-	shutdownWg.Add(1)
-	go func() {
-		defer shutdownWg.Done()
+	shutdownWg.Go(func() {
 		select {
 		case <-consumerDone:
 			log.Info("Consumer finished gracefully")
 		case <-shutdownTimeout.C:
 			log.Warn("Consumer shutdown timeout - forcing shutdown")
 		}
-	}()
+	})
 
 	// 2. Unregister from router on shutdown
 	if registryClient != nil {
