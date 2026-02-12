@@ -13,15 +13,15 @@ import (
 )
 
 type fakeDispatcher struct {
-	dispatchedContexts []types.DispatchContext
+	dispatchedContexts []*oapi.DispatchContext
 }
 
 func (f *fakeDispatcher) Type() string {
 	return "fake"
 }
 
-func (f *fakeDispatcher) Dispatch(ctx context.Context, dc types.DispatchContext) error {
-	f.dispatchedContexts = append(f.dispatchedContexts, dc)
+func (f *fakeDispatcher) Dispatch(ctx context.Context, job *oapi.Job) error {
+	f.dispatchedContexts = append(f.dispatchedContexts, job.DispatchContext)
 	return nil
 }
 
@@ -163,7 +163,7 @@ func TestFillReleaseContext_NoReleaseId(t *testing.T) {
 	r, _ := newTestRegistry(s)
 
 	job := &oapi.Job{Id: "job-1", ReleaseId: ""}
-	dispatchCtx := &types.DispatchContext{}
+	dispatchCtx := &oapi.DispatchContext{}
 
 	err := r.fillReleaseContext(job, dispatchCtx)
 
@@ -172,6 +172,7 @@ func TestFillReleaseContext_NoReleaseId(t *testing.T) {
 	assert.Nil(t, dispatchCtx.Deployment)
 	assert.Nil(t, dispatchCtx.Environment)
 	assert.Nil(t, dispatchCtx.Resource)
+	assert.Nil(t, dispatchCtx.Version)
 }
 
 func TestFillReleaseContext_PopulatesAllFields(t *testing.T) {
@@ -212,7 +213,7 @@ func TestFillReleaseContext_PopulatesAllFields(t *testing.T) {
 	}
 	s.Jobs.Upsert(ctx, job)
 
-	dispatchCtx := &types.DispatchContext{}
+	dispatchCtx := &oapi.DispatchContext{}
 	err := r.fillReleaseContext(job, dispatchCtx)
 
 	assert.NoError(t, err)
@@ -224,6 +225,8 @@ func TestFillReleaseContext_PopulatesAllFields(t *testing.T) {
 	assert.Equal(t, "env-1", dispatchCtx.Environment.Id)
 	assert.NotNil(t, dispatchCtx.Resource)
 	assert.Equal(t, "res-1", dispatchCtx.Resource.Id)
+	assert.NotNil(t, dispatchCtx.Version)
+	assert.Equal(t, "ver-1", dispatchCtx.Version.Id)
 }
 
 func TestFillWorkflowContext_NoWorkflowJobId(t *testing.T) {
@@ -231,19 +234,26 @@ func TestFillWorkflowContext_NoWorkflowJobId(t *testing.T) {
 	r, _ := newTestRegistry(s)
 
 	job := &oapi.Job{Id: "job-1", WorkflowJobId: ""}
-	dispatchCtx := &types.DispatchContext{}
+	dispatchCtx := &oapi.DispatchContext{}
 
 	err := r.fillWorkflowContext(job, dispatchCtx)
 
 	assert.NoError(t, err)
 	assert.Nil(t, dispatchCtx.WorkflowJob)
 	assert.Nil(t, dispatchCtx.WorkflowRun)
+	assert.Nil(t, dispatchCtx.Workflow)
 }
 
 func TestFillWorkflowContext_PopulatesWorkflowRunAndJob(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
+
+	workflow := &oapi.Workflow{
+		Id:   "wf-1",
+		Name: "test-workflow",
+	}
+	s.Workflows.Upsert(ctx, workflow)
 
 	workflowRun := &oapi.WorkflowRun{
 		Id:         "wf-run-1",
@@ -262,7 +272,7 @@ func TestFillWorkflowContext_PopulatesWorkflowRunAndJob(t *testing.T) {
 	s.WorkflowJobs.Upsert(ctx, workflowJob)
 
 	job := &oapi.Job{Id: "job-1", WorkflowJobId: "wf-job-1"}
-	dispatchCtx := &types.DispatchContext{}
+	dispatchCtx := &oapi.DispatchContext{}
 
 	err := r.fillWorkflowContext(job, dispatchCtx)
 
@@ -272,6 +282,8 @@ func TestFillWorkflowContext_PopulatesWorkflowRunAndJob(t *testing.T) {
 	assert.NotNil(t, dispatchCtx.WorkflowRun)
 	assert.Equal(t, "wf-run-1", dispatchCtx.WorkflowRun.Id)
 	assert.Equal(t, map[string]interface{}{"version": "1.0"}, dispatchCtx.WorkflowRun.Inputs)
+	assert.NotNil(t, dispatchCtx.Workflow)
+	assert.Equal(t, "wf-1", dispatchCtx.Workflow.Id)
 }
 
 func TestFillWorkflowContext_WorkflowJobNotFound(t *testing.T) {
@@ -279,7 +291,7 @@ func TestFillWorkflowContext_WorkflowJobNotFound(t *testing.T) {
 	r, _ := newTestRegistry(s)
 
 	job := &oapi.Job{Id: "job-1", WorkflowJobId: "nonexistent"}
-	dispatchCtx := &types.DispatchContext{}
+	dispatchCtx := &oapi.DispatchContext{}
 
 	err := r.fillWorkflowContext(job, dispatchCtx)
 
@@ -302,7 +314,7 @@ func TestFillWorkflowContext_WorkflowRunNotFound(t *testing.T) {
 	s.WorkflowJobs.Upsert(ctx, workflowJob)
 
 	job := &oapi.Job{Id: "job-1", WorkflowJobId: "wf-job-1"}
-	dispatchCtx := &types.DispatchContext{}
+	dispatchCtx := &oapi.DispatchContext{}
 
 	err := r.fillWorkflowContext(job, dispatchCtx)
 
@@ -310,71 +322,114 @@ func TestFillWorkflowContext_WorkflowRunNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "workflow run not found")
 }
 
-func TestGetMergedJobAgentConfig_AgentConfigOnly(t *testing.T) {
+func TestFillWorkflowContext_WorkflowNotFound(t *testing.T) {
+	ctx := context.Background()
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
-	agent := &oapi.JobAgent{
-		Config: oapi.JobAgentConfig{"agent_key": "agent_value"},
+	workflowRun := &oapi.WorkflowRun{
+		Id:         "wf-run-1",
+		WorkflowId: "nonexistent-wf",
+		Inputs:     map[string]interface{}{},
 	}
-	dispatchCtx := &types.DispatchContext{}
+	s.WorkflowRuns.Upsert(ctx, workflowRun)
 
-	merged, err := r.getMergedJobAgentConfig(agent, dispatchCtx)
+	workflowJob := &oapi.WorkflowJob{
+		Id:            "wf-job-1",
+		WorkflowRunId: "wf-run-1",
+		Ref:           "fake",
+		Index:         0,
+		Config:        map[string]interface{}{},
+	}
+	s.WorkflowJobs.Upsert(ctx, workflowJob)
 
-	assert.NoError(t, err)
-	assert.Equal(t, "agent_value", merged["agent_key"])
+	job := &oapi.Job{Id: "job-1", WorkflowJobId: "wf-job-1"}
+	dispatchCtx := &oapi.DispatchContext{}
+
+	err := r.fillWorkflowContext(job, dispatchCtx)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "workflow not found")
 }
 
-func TestGetMergedJobAgentConfig_WithWorkflowJobConfig(t *testing.T) {
+func TestFillJobAgentContext_AgentConfigOnly(t *testing.T) {
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
 	agent := &oapi.JobAgent{
+		Id:     "agent-1",
+		Name:   "agent-1",
+		Type:   "fake",
+		Config: oapi.JobAgentConfig{"agent_key": "agent_value"},
+	}
+	dispatchCtx := &oapi.DispatchContext{}
+
+	err := r.fillJobAgentContext(agent, dispatchCtx)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "agent_value", dispatchCtx.JobAgentConfig["agent_key"])
+	assert.Equal(t, "agent-1", dispatchCtx.JobAgent.Id)
+}
+
+func TestFillJobAgentContext_WithWorkflowJobConfig(t *testing.T) {
+	s := newTestStore()
+	r, _ := newTestRegistry(s)
+
+	agent := &oapi.JobAgent{
+		Id:     "agent-1",
+		Name:   "agent-1",
+		Type:   "fake",
 		Config: oapi.JobAgentConfig{"shared": "agent", "agent_only": "yes"},
 	}
-	dispatchCtx := &types.DispatchContext{
+	dispatchCtx := &oapi.DispatchContext{
 		WorkflowJob: &oapi.WorkflowJob{
 			Config: map[string]interface{}{"shared": "workflow", "wf_only": "yes"},
 		},
 	}
 
-	merged, err := r.getMergedJobAgentConfig(agent, dispatchCtx)
+	err := r.fillJobAgentContext(agent, dispatchCtx)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "workflow", merged["shared"])
-	assert.Equal(t, "yes", merged["agent_only"])
-	assert.Equal(t, "yes", merged["wf_only"])
+	assert.Equal(t, "workflow", dispatchCtx.JobAgentConfig["shared"])
+	assert.Equal(t, "yes", dispatchCtx.JobAgentConfig["agent_only"])
+	assert.Equal(t, "yes", dispatchCtx.JobAgentConfig["wf_only"])
 }
 
-func TestGetMergedJobAgentConfig_WithDeploymentConfig(t *testing.T) {
+func TestFillJobAgentContext_WithDeploymentConfig(t *testing.T) {
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
 	agent := &oapi.JobAgent{
+		Id:     "agent-1",
+		Name:   "agent-1",
+		Type:   "fake",
 		Config: oapi.JobAgentConfig{"shared": "agent"},
 	}
-	dispatchCtx := &types.DispatchContext{
+	dispatchCtx := &oapi.DispatchContext{
 		Deployment: &oapi.Deployment{
 			JobAgentConfig: oapi.JobAgentConfig{"shared": "deployment", "deploy_only": "yes"},
 		},
 	}
 
-	merged, err := r.getMergedJobAgentConfig(agent, dispatchCtx)
+	err := r.fillJobAgentContext(agent, dispatchCtx)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "deployment", merged["shared"])
-	assert.Equal(t, "yes", merged["deploy_only"])
+	assert.Equal(t, "deployment", dispatchCtx.JobAgentConfig["shared"])
+	assert.Equal(t, "yes", dispatchCtx.JobAgentConfig["deploy_only"])
 }
 
-func TestGetMergedJobAgentConfig_AllSourcesMergeInOrder(t *testing.T) {
-	// Priority (lowest → highest): agent → deployment → workflow → version
+func TestFillJobAgentContext_AllSourcesMergeInOrder(t *testing.T) {
+	// Priority (lowest -> highest): agent -> deployment -> workflow -> version
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
 	agent := &oapi.JobAgent{
+		Id:     "agent-1",
+		Name:   "agent-1",
+		Type:   "fake",
 		Config: oapi.JobAgentConfig{"shared": "agent", "agent_only": "a"},
 	}
-	dispatchCtx := &types.DispatchContext{
+	dispatchCtx := &oapi.DispatchContext{
 		WorkflowJob: &oapi.WorkflowJob{
 			Config: map[string]interface{}{"shared": "workflow", "wf_only": "w", "wf_deploy_shared": "workflow"},
 		},
@@ -386,44 +441,50 @@ func TestGetMergedJobAgentConfig_AllSourcesMergeInOrder(t *testing.T) {
 		},
 	}
 
-	merged, err := r.getMergedJobAgentConfig(agent, dispatchCtx)
+	err := r.fillJobAgentContext(agent, dispatchCtx)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "version", merged["shared"])
-	assert.Equal(t, "a", merged["agent_only"])
-	assert.Equal(t, "w", merged["wf_only"])
-	assert.Equal(t, "d", merged["deploy_only"])
-	assert.Equal(t, "v", merged["version_only"])
-	assert.Equal(t, "workflow", merged["wf_deploy_shared"],
+	assert.Equal(t, "version", dispatchCtx.JobAgentConfig["shared"])
+	assert.Equal(t, "a", dispatchCtx.JobAgentConfig["agent_only"])
+	assert.Equal(t, "w", dispatchCtx.JobAgentConfig["wf_only"])
+	assert.Equal(t, "d", dispatchCtx.JobAgentConfig["deploy_only"])
+	assert.Equal(t, "v", dispatchCtx.JobAgentConfig["version_only"])
+	assert.Equal(t, "workflow", dispatchCtx.JobAgentConfig["wf_deploy_shared"],
 		"workflow job config should override deployment config")
 }
 
-func TestGetMergedJobAgentConfig_NilWorkflowJobAndDeployment(t *testing.T) {
+func TestFillJobAgentContext_NilWorkflowJobAndDeployment(t *testing.T) {
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
 	agent := &oapi.JobAgent{
+		Id:     "agent-1",
+		Name:   "agent-1",
+		Type:   "fake",
 		Config: oapi.JobAgentConfig{"key": "value"},
 	}
-	dispatchCtx := &types.DispatchContext{}
+	dispatchCtx := &oapi.DispatchContext{}
 
-	merged, err := r.getMergedJobAgentConfig(agent, dispatchCtx)
+	err := r.fillJobAgentContext(agent, dispatchCtx)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "value", merged["key"])
-	assert.Len(t, merged, 1)
+	assert.Equal(t, "value", dispatchCtx.JobAgentConfig["key"])
+	assert.Len(t, dispatchCtx.JobAgentConfig, 1)
 }
 
-func TestGetMergedJobAgentConfig_DeepMergeNestedConfigs(t *testing.T) {
+func TestFillJobAgentContext_DeepMergeNestedConfigs(t *testing.T) {
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
 	agent := &oapi.JobAgent{
+		Id:   "agent-1",
+		Name: "agent-1",
+		Type: "fake",
 		Config: oapi.JobAgentConfig{
 			"nested": map[string]any{"agent_key": "agent_val", "shared_key": "agent"},
 		},
 	}
-	dispatchCtx := &types.DispatchContext{
+	dispatchCtx := &oapi.DispatchContext{
 		WorkflowJob: &oapi.WorkflowJob{
 			Config: map[string]interface{}{
 				"nested": map[string]any{"wf_key": "wf_val", "shared_key": "workflow"},
@@ -431,13 +492,33 @@ func TestGetMergedJobAgentConfig_DeepMergeNestedConfigs(t *testing.T) {
 		},
 	}
 
-	merged, err := r.getMergedJobAgentConfig(agent, dispatchCtx)
+	err := r.fillJobAgentContext(agent, dispatchCtx)
 
 	assert.NoError(t, err)
-	nested := merged["nested"].(map[string]any)
+	nested := dispatchCtx.JobAgentConfig["nested"].(map[string]any)
 	assert.Equal(t, "agent_val", nested["agent_key"])
 	assert.Equal(t, "wf_val", nested["wf_key"])
 	assert.Equal(t, "workflow", nested["shared_key"])
+}
+
+func TestFillJobAgentContext_SetsJobAgentOnContext(t *testing.T) {
+	s := newTestStore()
+	r, _ := newTestRegistry(s)
+
+	agent := &oapi.JobAgent{
+		Id:     "agent-1",
+		Name:   "my-agent",
+		Type:   "fake",
+		Config: oapi.JobAgentConfig{},
+	}
+	dispatchCtx := &oapi.DispatchContext{}
+
+	err := r.fillJobAgentContext(agent, dispatchCtx)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "agent-1", dispatchCtx.JobAgent.Id)
+	assert.Equal(t, "my-agent", dispatchCtx.JobAgent.Name)
+	assert.Equal(t, "fake", dispatchCtx.JobAgent.Type)
 }
 
 func TestDispatch_JobAgentNotFound(t *testing.T) {
@@ -482,6 +563,9 @@ func TestDispatch_WorkflowJobContextPassedToDispatcher(t *testing.T) {
 	agent := &oapi.JobAgent{Id: "agent-1", Name: "agent-1", Type: "fake", Config: oapi.JobAgentConfig{"base": "config"}}
 	s.JobAgents.Upsert(ctx, agent)
 
+	workflow := &oapi.Workflow{Id: "wf-1", Name: "test-workflow"}
+	s.Workflows.Upsert(ctx, workflow)
+
 	workflowRun := &oapi.WorkflowRun{Id: "wf-run-1", WorkflowId: "wf-1", Inputs: map[string]interface{}{"env": "prod"}}
 	s.WorkflowRuns.Upsert(ctx, workflowRun)
 
@@ -503,12 +587,13 @@ func TestDispatch_WorkflowJobContextPassedToDispatcher(t *testing.T) {
 	assert.Len(t, fake.dispatchedContexts, 1)
 
 	dc := fake.dispatchedContexts[0]
-	assert.Equal(t, "job-1", dc.Job.Id)
 	assert.Equal(t, "agent-1", dc.JobAgent.Id)
 	assert.NotNil(t, dc.WorkflowJob)
 	assert.Equal(t, "wf-job-1", dc.WorkflowJob.Id)
 	assert.NotNil(t, dc.WorkflowRun)
 	assert.Equal(t, "wf-run-1", dc.WorkflowRun.Id)
+	assert.NotNil(t, dc.Workflow)
+	assert.Equal(t, "wf-1", dc.Workflow.Id)
 }
 
 func TestDispatch_MergedConfigPassedToDispatcher(t *testing.T) {
@@ -521,6 +606,9 @@ func TestDispatch_MergedConfigPassedToDispatcher(t *testing.T) {
 		Config: oapi.JobAgentConfig{"agent_key": "agent_val", "shared": "agent"},
 	}
 	s.JobAgents.Upsert(ctx, agent)
+
+	workflow := &oapi.Workflow{Id: "wf-1", Name: "test-workflow"}
+	s.Workflows.Upsert(ctx, workflow)
 
 	workflowRun := &oapi.WorkflowRun{Id: "wf-run-1", WorkflowId: "wf-1", Inputs: map[string]interface{}{}}
 	s.WorkflowRuns.Upsert(ctx, workflowRun)
@@ -575,17 +663,18 @@ func TestDispatch_NoWorkflowNoRelease(t *testing.T) {
 	assert.Nil(t, dc.Resource)
 	assert.Nil(t, dc.WorkflowJob)
 	assert.Nil(t, dc.WorkflowRun)
+	assert.Nil(t, dc.Workflow)
 	assert.Equal(t, "value", dc.JobAgentConfig["key"])
 }
 
-func TestDispatch_UpsertJobInStore(t *testing.T) {
+func TestDispatch_SetsDispatchContextOnJob(t *testing.T) {
 	ctx := context.Background()
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
 	agent := &oapi.JobAgent{
 		Id: "agent-1", Name: "agent-1", Type: "fake",
-		Config: oapi.JobAgentConfig{},
+		Config: oapi.JobAgentConfig{"key": "value"},
 	}
 	s.JobAgents.Upsert(ctx, agent)
 
@@ -598,9 +687,14 @@ func TestDispatch_UpsertJobInStore(t *testing.T) {
 	err := r.Dispatch(ctx, job)
 
 	assert.NoError(t, err)
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, "agent-1", job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "value", job.DispatchContext.JobAgentConfig["key"])
+
 	stored, ok := s.Jobs.Get("job-1")
 	assert.True(t, ok)
-	assert.Equal(t, "job-1", stored.Id)
+	assert.NotNil(t, stored.DispatchContext)
+	assert.Equal(t, "agent-1", stored.DispatchContext.JobAgent.Id)
 }
 
 func TestDispatch_ReleaseContextPopulated(t *testing.T) {
@@ -660,6 +754,8 @@ func TestDispatch_ReleaseContextPopulated(t *testing.T) {
 	assert.Equal(t, "env-1", dc.Environment.Id)
 	assert.NotNil(t, dc.Resource)
 	assert.Equal(t, "res-1", dc.Resource.Id)
+	assert.NotNil(t, dc.Version)
+	assert.Equal(t, "ver-1", dc.Version.Id)
 	assert.Equal(t, "yes", dc.JobAgentConfig["deploy_cfg"])
 }
 
@@ -719,11 +815,9 @@ func TestDispatch_VersionJobAgentConfigMergedViaFillReleaseContext(t *testing.T)
 
 	dc := fake.dispatchedContexts[0]
 
-	// Version should be populated by fillReleaseContext, not manually set
-	assert.NotNil(t, dc.Version, "fillReleaseContext should populate DispatchContext.Version from the release")
+	assert.NotNil(t, dc.Version)
 	assert.Equal(t, "ver-1", dc.Version.Id)
 
-	// Version's JobAgentConfig should win the "shared" key (highest priority)
 	assert.Equal(t, "version", dc.JobAgentConfig["shared"],
 		"version JobAgentConfig should override agent and deployment configs")
 	assert.Equal(t, "a", dc.JobAgentConfig["agent_only"])

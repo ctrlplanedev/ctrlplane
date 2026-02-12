@@ -2,6 +2,7 @@ package terraformcloud
 
 import (
 	"context"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents/types"
 	"workspace-engine/pkg/workspace/store"
 )
@@ -20,6 +21,6 @@ func (t *TFE) Type() string {
 	return "tfe"
 }
 
-func (t *TFE) Dispatch(ctx context.Context, context types.DispatchContext) error {
+func (t *TFE) Dispatch(ctx context.Context, job *oapi.Job) error {
 	return nil
 }

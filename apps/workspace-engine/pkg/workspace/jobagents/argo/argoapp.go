@@ -48,7 +48,8 @@ func (a *ArgoApplication) Type() string {
 	return "argo-cd"
 }
 
-func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) error {
+func (a *ArgoApplication) Dispatch(ctx context.Context, job *oapi.Job) error {
+	dispatchCtx := job.DispatchContext
 	jobAgentConfig := dispatchCtx.JobAgentConfig
 	serverAddr, apiKey, template, err := a.parseJobAgentConfig(jobAgentConfig)
 	if err != nil {
@@ -71,23 +72,23 @@ func (a *ArgoApplication) Dispatch(ctx context.Context, dispatchCtx types.Dispat
 
 		ioCloser, appClient, err := a.getApplicationClient(serverAddr, apiKey)
 		if err != nil {
-			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
+			a.sendJobFailureEvent(job, fmt.Sprintf("failed to create ArgoCD client: %s", err.Error()))
 			return
 		}
 		defer ioCloser.Close()
 
 		if err := a.upsertApplicationWithRetry(asyncCtx, app, appClient); err != nil {
-			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to upsert application: %s", err.Error()))
+			a.sendJobFailureEvent(job, fmt.Sprintf("failed to upsert application: %s", err.Error()))
 			return
 		}
 
-		verification := newArgoApplicationVerification(a.verifications, dispatchCtx.Job, app.Name, serverAddr, apiKey)
-		if err := verification.StartVerification(asyncCtx, dispatchCtx.Job); err != nil {
-			a.sendJobFailureEvent(dispatchCtx, fmt.Sprintf("failed to start verification: %s", err.Error()))
+		verification := newArgoApplicationVerification(a.verifications, job, app.Name, serverAddr, apiKey)
+		if err := verification.StartVerification(asyncCtx, job); err != nil {
+			a.sendJobFailureEvent(job, fmt.Sprintf("failed to start verification: %s", err.Error()))
 			return
 		}
 
-		a.sendJobUpdateEvent(serverAddr, app, dispatchCtx)
+		a.sendJobUpdateEvent(serverAddr, app, job)
 	}()
 
 	return nil
@@ -123,7 +124,7 @@ func (a *ArgoApplication) getApplicationClient(serverAddr, apiKey string) (io.Cl
 	return client.NewApplicationClient()
 }
 
-func (a *ArgoApplication) getTemplatedApplication(ctx types.DispatchContext, template string) (*v1alpha1.Application, error) {
+func (a *ArgoApplication) getTemplatedApplication(ctx *oapi.DispatchContext, template string) (*v1alpha1.Application, error) {
 	t, err := templatefuncs.Parse("argoCDAgentConfig", template)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
@@ -214,14 +215,14 @@ func isRetryableError(err error) bool {
 		strings.Contains(errStr, "Unavailable")
 }
 
-func (a *ArgoApplication) sendJobFailureEvent(context types.DispatchContext, message string) error {
+func (a *ArgoApplication) sendJobFailureEvent(job *oapi.Job, message string) error {
 	workspaceId := a.store.ID()
 
 	now := time.Now().UTC()
 	eventPayload := oapi.JobUpdateEvent{
-		Id: &context.Job.Id,
+		Id: &job.Id,
 		Job: oapi.Job{
-			Id:          context.Job.Id,
+			Id:          job.Id,
 			Status:      oapi.JobStatusFailure,
 			Message:     &message,
 			UpdatedAt:   now,
@@ -256,7 +257,7 @@ func (a *ArgoApplication) sendJobFailureEvent(context types.DispatchContext, mes
 	return nil
 }
 
-func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Application, context types.DispatchContext) error {
+func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Application, job *oapi.Job) error {
 	workspaceId := a.store.ID()
 
 	appUrl := fmt.Sprintf("%s/applications/%s/%s", serverAddr, app.Namespace, app.Name)
@@ -272,14 +273,14 @@ func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Ap
 	}
 
 	newJobMetadata := make(map[string]string)
-	maps.Copy(newJobMetadata, context.Job.Metadata)
+	maps.Copy(newJobMetadata, job.Metadata)
 	newJobMetadata[string("ctrlplane/links")] = string(linksJSON)
 
 	now := time.Now().UTC()
 	eventPayload := oapi.JobUpdateEvent{
-		Id: &context.Job.Id,
+		Id: &job.Id,
 		Job: oapi.Job{
-			Id:          context.Job.Id,
+			Id:          job.Id,
 			Metadata:    newJobMetadata,
 			Status:      oapi.JobStatusSuccessful,
 			UpdatedAt:   now,

@@ -37,7 +37,8 @@ func (a *GithubAction) Type() string {
 }
 
 // Dispatch implements types.Dispatchable.
-func (a *GithubAction) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) error {
+func (a *GithubAction) Dispatch(ctx context.Context, job *oapi.Job) error {
+	dispatchCtx := job.DispatchContext
 	cfg, err := a.parseJobAgentConfig(dispatchCtx.JobAgentConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse job agent config: %w", err)
@@ -62,13 +63,13 @@ func (a *GithubAction) Dispatch(ctx context.Context, dispatchCtx types.DispatchC
 
 		if _, err := client.Actions.CreateWorkflowDispatchEventByID(asyncCtx, cfg.Owner, cfg.Repo, cfg.WorkflowId, github.CreateWorkflowDispatchEventRequest{
 			Ref:    ref,
-			Inputs: map[string]any{"job_id": dispatchCtx.Job.Id},
+			Inputs: map[string]any{"job_id": job.Id},
 		}); err != nil {
 			message := fmt.Sprintf("failed to dispatch workflow: %s", err.Error())
-			dispatchCtx.Job.Status = oapi.JobStatusInvalidIntegration
-			dispatchCtx.Job.UpdatedAt = time.Now()
-			dispatchCtx.Job.Message = &message
-			a.store.Jobs.Upsert(asyncCtx, dispatchCtx.Job)
+			job.Status = oapi.JobStatusInvalidIntegration
+			job.UpdatedAt = time.Now()
+			job.Message = &message
+			a.store.Jobs.Upsert(asyncCtx, job)
 		}
 	}()
 
