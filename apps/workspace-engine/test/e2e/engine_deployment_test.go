@@ -227,6 +227,15 @@ func TestEngine_DeploymentJobAgentCreatesJobs(t *testing.T) {
 			if job.JobAgentId != jobAgentID {
 				t.Fatalf("job for deployment with agent has wrong job agent: got %s, want %s", job.JobAgentId, jobAgentID)
 			}
+
+			assert.NotNil(t, job.DispatchContext, "dispatched job should have DispatchContext")
+			assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Release)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentIDWithAgent, job.DispatchContext.Deployment.Id)
+			assert.NotNil(t, job.DispatchContext.Environment)
+			assert.NotNil(t, job.DispatchContext.Resource)
+			assert.NotNil(t, job.DispatchContext.Version)
 		}
 		if release.ReleaseTarget.DeploymentId == deploymentIDNoAgent {
 			jobsNoAgent++
@@ -312,6 +321,18 @@ func TestEngine_DeploymentJobAgentConfigMerging(t *testing.T) {
 	if timeout, ok := jobConfig["timeout"].(float64); !ok || timeout != 300 {
 		t.Fatalf("job config timeout mismatch: got %v, want 300", jobConfig["timeout"])
 	}
+
+	// Verify DispatchContext is populated with correct config
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "custom-namespace", job.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(300), job.DispatchContext.JobAgentConfig["timeout"])
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
 }
 
 func TestEngine_DeploymentJobAgentUpdate(t *testing.T) {
@@ -424,12 +445,20 @@ func TestEngine_DeploymentMultipleJobAgents(t *testing.T) {
 			if job.JobAgentId != jobAgentK8s {
 				t.Fatalf("k8s deployment job has wrong agent: got %s, want %s", job.JobAgentId, jobAgentK8s)
 			}
+			assert.NotNil(t, job.DispatchContext)
+			assert.Equal(t, jobAgentK8s, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentK8s, job.DispatchContext.Deployment.Id)
 		}
 		if release.ReleaseTarget.DeploymentId == deploymentDocker {
 			dockerJobFound = true
 			if job.JobAgentId != jobAgentDocker {
 				t.Fatalf("docker deployment job has wrong agent: got %s, want %s", job.JobAgentId, jobAgentDocker)
 			}
+			assert.NotNil(t, job.DispatchContext)
+			assert.Equal(t, jobAgentDocker, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentDocker, job.DispatchContext.Deployment.Id)
 		}
 	}
 
@@ -507,6 +536,15 @@ func TestEngine_AddingAgentToDeploymentRetriggersInvalidJobs(t *testing.T) {
 
 	assert.Equal(t, 1, invalidJobAgentJobs, "expected 1 invalid job agent job (the old one should be preserved)")
 	assert.Equal(t, 1, len(pendingJobs), "expected 1 pending job (the new one should be created, i.e. 'retriggered')")
+
+	// Verify the retriggered pending job has DispatchContext
+	for _, job := range pendingJobs {
+		assert.NotNil(t, job.DispatchContext, "retriggered job should have DispatchContext")
+		assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	}
 }
 
 func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.T) {
@@ -773,6 +811,12 @@ func TestEngine_DeploymentRemovalWithJobs(t *testing.T) {
 		if release.ReleaseTarget.DeploymentId == deploymentID {
 			deploymentJobs++
 			jobsForDeployment = append(jobsForDeployment, job.Id)
+
+			assert.NotNil(t, job.DispatchContext, "pending job should have DispatchContext")
+			assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+			assert.NotNil(t, job.DispatchContext.Release)
+			assert.NotNil(t, job.DispatchContext.Deployment)
+			assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
 		}
 	}
 

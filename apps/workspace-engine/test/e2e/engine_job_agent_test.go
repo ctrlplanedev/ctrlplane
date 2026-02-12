@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_JobAgentCreation(t *testing.T) {
@@ -211,6 +212,21 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 		t.Fatalf("job agent config retries mismatch: got %v, want 3", config["retries"])
 	}
 
+	// Verify DispatchContext on initial job
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "default", job.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(300), job.DispatchContext.JobAgentConfig["timeout"])
+	assert.Equal(t, float64(3), job.DispatchContext.JobAgentConfig["retries"])
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.Equal(t, environmentID, job.DispatchContext.Environment.Id)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.Equal(t, resourceID, job.DispatchContext.Resource.Id)
+	assert.NotNil(t, job.DispatchContext.Version)
+
 	job.Status = oapi.JobStatusSuccessful
 	engine.Workspace().Jobs().Upsert(ctx, job)
 
@@ -254,6 +270,16 @@ func TestEngine_JobAgentUpdateReconcilesReleaseTargets(t *testing.T) {
 	if updatedConfig["retries"] != float64(5) {
 		t.Fatalf("job agent config retries mismatch: got %v, want 5", updatedConfig["retries"])
 	}
+
+	// Verify DispatchContext on reconciled job reflects updated config
+	assert.NotNil(t, updatedJob.DispatchContext)
+	assert.Equal(t, jobAgentID, updatedJob.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "custom-namespace", updatedJob.DispatchContext.JobAgentConfig["namespace"])
+	assert.Equal(t, float64(600), updatedJob.DispatchContext.JobAgentConfig["timeout"])
+	assert.Equal(t, float64(5), updatedJob.DispatchContext.JobAgentConfig["retries"])
+	assert.NotNil(t, updatedJob.DispatchContext.Release)
+	assert.NotNil(t, updatedJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, updatedJob.DispatchContext.Deployment.Id)
 }
 
 func TestEngine_JobAgentDelete(t *testing.T) {
@@ -441,6 +467,15 @@ func TestEngine_JobAgentUsedByDeployment(t *testing.T) {
 	if job.JobAgentId != jobAgentID {
 		t.Fatalf("job job agent mismatch: got %s, want %s", job.JobAgentId, jobAgentID)
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
 }
 
 func TestEngine_JobAgentDeleteAffectsDeployments(t *testing.T) {
@@ -602,6 +637,11 @@ func TestEngine_JobAgentSharedAcrossMultipleDeployments(t *testing.T) {
 		if job.JobAgentId != jobAgentID {
 			t.Fatalf("job should use agent %s, got %s", jobAgentID, job.JobAgentId)
 		}
+		assert.NotNil(t, job.DispatchContext)
+		assert.Equal(t, jobAgentID, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.NotNil(t, job.DispatchContext.Version)
 	}
 }
 

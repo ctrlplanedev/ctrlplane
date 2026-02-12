@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // IMPORTANT: This file tests a critical bug where jobs in exited/terminal states
@@ -96,6 +97,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 		if job.Status != oapi.JobStatusInvalidJobAgent {
 			t.Fatalf("expected job %s to have InvalidJobAgent status, got %v", job.Id, job.Status)
 		}
+		assert.Nil(t, job.DispatchContext)
 	}
 
 	t.Logf("Created 2 jobs with InvalidJobAgent status: %v", jobIDs)
@@ -248,6 +250,7 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 		if job.Status != oapi.JobStatusPending {
 			t.Fatalf("expected job %s to have Pending status, got %v", job.Id, job.Status)
 		}
+		assert.NotNil(t, job.DispatchContext)
 	}
 
 	t.Logf("Created 2 jobs with Pending status: %v", jobIDs)
@@ -368,6 +371,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 	}
 
 	for _, job := range allJobs {
+		assert.NotNil(t, job.DispatchContext)
 		job.Status = oapi.JobStatusSuccessful
 		engine.Workspace().Jobs().Upsert(ctx, job)
 	}
@@ -493,6 +497,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 		if job.Status != oapi.JobStatusInvalidJobAgent {
 			t.Fatalf("expected job %s to have InvalidJobAgent status, got %v", job.Id, job.Status)
 		}
+		assert.Nil(t, job.DispatchContext)
 	}
 
 	t.Log("Created 2 jobs with InvalidJobAgent status")
@@ -840,6 +845,7 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 	}
 
 	for _, job := range allJobs {
+		assert.NotNil(t, job.DispatchContext)
 		job.Status = oapi.JobStatusInProgress
 		engine.Workspace().Jobs().Upsert(ctx, job)
 	}

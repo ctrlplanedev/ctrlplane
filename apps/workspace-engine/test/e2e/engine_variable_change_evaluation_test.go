@@ -10,6 +10,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_VariableChange_DeploymentDefaultStringValueChange tests that changing a deployment variable default string value triggers new release/job
@@ -69,6 +70,8 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 		initialJob = job
 		break
 	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	initialReleaseID := initialJob.ReleaseId
 
 	// Mark job as successful
@@ -98,6 +101,7 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 	if initialAppNameStr != "initial-app" {
 		t.Errorf("initial app_name = %s, want initial-app", initialAppNameStr)
 	}
+	assert.Equal(t, "initial-app", (*initialJob.DispatchContext.Variables)["app_name"])
 
 	// Get the deployment variable to update
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -136,6 +140,8 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 		t.Fatalf("no new pending job created after variable change")
 		return
 	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
 
 	if newJob.ReleaseId == initialReleaseID {
 		t.Errorf("new job should have different release ID")
@@ -156,6 +162,7 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 	if newAppNameStr != "updated-app" {
 		t.Errorf("new app_name = %s, want updated-app", newAppNameStr)
 	}
+	assert.Equal(t, "updated-app", (*newJob.DispatchContext.Variables)["app_name"])
 }
 
 // TestEngine_VariableChange_DeploymentDefaultIntValueChange tests that changing a deployment variable default int value triggers new release/job
@@ -215,6 +222,8 @@ func TestEngine_VariableChange_DeploymentDefaultIntValueChange(t *testing.T) {
 		initialJob = job
 		break
 	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
 	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
@@ -226,6 +235,7 @@ func TestEngine_VariableChange_DeploymentDefaultIntValueChange(t *testing.T) {
 	if int64(initialReplicas) != 3 {
 		t.Errorf("initial replicas = %d, want 3", initialReplicas)
 	}
+	assert.Equal(t, "3", (*initialJob.DispatchContext.Variables)["replicas"])
 
 	// Get the deployment variable to update
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -260,11 +270,14 @@ func TestEngine_VariableChange_DeploymentDefaultIntValueChange(t *testing.T) {
 		newJob = job
 		break
 	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
 	newRelease, _ := engine.Workspace().Releases().Get(newJob.ReleaseId)
 	newReplicas, _ := newRelease.Variables["replicas"].AsIntegerValue()
 	if int64(newReplicas) != 5 {
 		t.Errorf("new replicas = %d, want 5", newReplicas)
 	}
+	assert.Equal(t, "5", (*newJob.DispatchContext.Variables)["replicas"])
 }
 
 // TestEngine_VariableChange_DeploymentDefaultBoolValueChange tests that changing a deployment variable default bool value triggers new release/job
@@ -320,6 +333,8 @@ func TestEngine_VariableChange_DeploymentDefaultBoolValueChange(t *testing.T) {
 		initialJob = job
 		break
 	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
 	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
@@ -331,6 +346,7 @@ func TestEngine_VariableChange_DeploymentDefaultBoolValueChange(t *testing.T) {
 	if initialDebugMode {
 		t.Errorf("initial debug_mode = %v, want false", initialDebugMode)
 	}
+	assert.Equal(t, "false", (*initialJob.DispatchContext.Variables)["debug_mode"])
 
 	// Get the deployment variable to update
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -365,11 +381,14 @@ func TestEngine_VariableChange_DeploymentDefaultBoolValueChange(t *testing.T) {
 		newJob = job
 		break
 	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
 	newRelease, _ := engine.Workspace().Releases().Get(newJob.ReleaseId)
 	newDebugMode, _ := newRelease.Variables["debug_mode"].AsBooleanValue()
 	if !newDebugMode {
 		t.Errorf("new debug_mode = %v, want true", newDebugMode)
 	}
+	assert.Equal(t, "true", (*newJob.DispatchContext.Variables)["debug_mode"])
 }
 
 // TestEngine_VariableChange_DeploymentDefaultObjectValueChange tests that changing a deployment variable default object value triggers new release/job
@@ -428,6 +447,8 @@ func TestEngine_VariableChange_DeploymentDefaultObjectValueChange(t *testing.T) 
 		initialJob = job
 		break
 	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
 	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
@@ -439,6 +460,7 @@ func TestEngine_VariableChange_DeploymentDefaultObjectValueChange(t *testing.T) 
 	if initialConfig.Object["timeout"] != float64(30) {
 		t.Errorf("initial timeout = %v, want 30", initialConfig.Object["timeout"])
 	}
+	assert.NotNil(t, (*initialJob.DispatchContext.Variables)["config"])
 
 	// Get the deployment variable to update
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -476,11 +498,14 @@ func TestEngine_VariableChange_DeploymentDefaultObjectValueChange(t *testing.T) 
 		newJob = job
 		break
 	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
 	newRelease, _ := engine.Workspace().Releases().Get(newJob.ReleaseId)
 	newConfig, _ := newRelease.Variables["config"].AsObjectValue()
 	if newConfig.Object["timeout"] != float64(60) {
 		t.Errorf("new timeout = %v, want 60", newConfig.Object["timeout"])
 	}
+	assert.NotNil(t, (*newJob.DispatchContext.Variables)["config"])
 }
 
 // TestEngine_VariableChange_DeploymentValueChange tests that changing a deployment variable value (with selector) triggers new release/job
@@ -539,6 +564,8 @@ func TestEngine_VariableChange_DeploymentValueChange(t *testing.T) {
 		initialJob = job
 		break
 	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
 	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
@@ -550,6 +577,7 @@ func TestEngine_VariableChange_DeploymentValueChange(t *testing.T) {
 	if initialRegion != "us-west-1" {
 		t.Errorf("initial region = %s, want us-west-1", initialRegion)
 	}
+	assert.Equal(t, "us-west-1", (*initialJob.DispatchContext.Variables)["region"])
 
 	// Get the deployment variable and its values
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -581,11 +609,14 @@ func TestEngine_VariableChange_DeploymentValueChange(t *testing.T) {
 		newJob = job
 		break
 	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
 	newRelease, _ := engine.Workspace().Releases().Get(newJob.ReleaseId)
 	newRegion, _ := newRelease.Variables["region"].AsStringValue()
 	if newRegion != "us-east-1" {
 		t.Errorf("new region = %s, want us-east-1", newRegion)
 	}
+	assert.Equal(t, "us-east-1", (*newJob.DispatchContext.Variables)["region"])
 }
 
 // TestEngine_VariableChange_ResourceVariableChange tests that changing a resource variable triggers new release/job
@@ -642,6 +673,8 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 		initialJob = job
 		break
 	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
 	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
@@ -653,6 +686,7 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 	if initialVersion != "v1.0.0" {
 		t.Errorf("initial app_version = %s, want v1.0.0", initialVersion)
 	}
+	assert.Equal(t, "v1.0.0", (*initialJob.DispatchContext.Variables)["app_version"])
 
 	// Change the resource variable
 	updatedVar := c.NewResourceVariable(resourceID, "app_version")
@@ -671,11 +705,14 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 		newJob = job
 		break
 	}
+	assert.NotNil(t, newJob.DispatchContext)
+	assert.NotNil(t, newJob.DispatchContext.Variables)
 	newRelease, _ := engine.Workspace().Releases().Get(newJob.ReleaseId)
 	newVersion, _ := newRelease.Variables["app_version"].AsStringValue()
 	if newVersion != "v2.0.0" {
 		t.Errorf("new app_version = %s, want v2.0.0", newVersion)
 	}
+	assert.Equal(t, "v2.0.0", (*newJob.DispatchContext.Variables)["app_version"])
 }
 
 // TestEngine_VariableChange_MultipleVariablesChange tests that changing multiple variables simultaneously creates one new release
@@ -740,6 +777,8 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 		initialJob = job
 		break
 	}
+	assert.NotNil(t, initialJob.DispatchContext)
+	assert.NotNil(t, initialJob.DispatchContext.Variables)
 	now := time.Now()
 	initialJob.Status = oapi.JobStatusSuccessful
 	initialJob.CompletedAt = &now
@@ -754,6 +793,9 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 	if initialAppName != "initial-app" || int64(initialReplicas) != 3 || initialEnv != "staging" {
 		t.Errorf("initial values incorrect")
 	}
+	assert.Equal(t, "initial-app", (*initialJob.DispatchContext.Variables)["app_name"])
+	assert.Equal(t, "3", (*initialJob.DispatchContext.Variables)["replicas"])
+	assert.Equal(t, "staging", (*initialJob.DispatchContext.Variables)["env"])
 
 	// Change first variable - this triggers a new job
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -819,6 +861,8 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 		finalJob = job
 		break
 	}
+	assert.NotNil(t, finalJob.DispatchContext)
+	assert.NotNil(t, finalJob.DispatchContext.Variables)
 
 	finalRelease, _ := engine.Workspace().Releases().Get(finalJob.ReleaseId)
 	finalAppName, _ := finalRelease.Variables["app_name"].AsStringValue()
@@ -834,4 +878,7 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 	if finalEnv != "production" {
 		t.Errorf("final env = %s, want production", finalEnv)
 	}
+	assert.Equal(t, "updated-app", (*finalJob.DispatchContext.Variables)["app_name"])
+	assert.Equal(t, "5", (*finalJob.DispatchContext.Variables)["replicas"])
+	assert.Equal(t, "production", (*finalJob.DispatchContext.Variables)["env"])
 }

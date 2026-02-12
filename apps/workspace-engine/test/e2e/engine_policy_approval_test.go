@@ -11,6 +11,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_ApprovalPolicy_BasicFlow tests that a deployment version requires
@@ -121,6 +122,7 @@ func TestEngine_ApprovalPolicy_BasicFlow(t *testing.T) {
 	if job.Status != oapi.JobStatusPending {
 		t.Fatalf("expected job status Pending, got %s", job.Status)
 	}
+	assert.NotNil(t, job.DispatchContext)
 }
 
 // TestEngine_ApprovalPolicy_UnapprovalFlow tests that removing an approval

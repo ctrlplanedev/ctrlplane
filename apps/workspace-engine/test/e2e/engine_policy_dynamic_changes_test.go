@@ -10,6 +10,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_PolicyPriorityChange_MidDeployment tests that changing policy
@@ -490,6 +491,7 @@ func TestEngine_PolicyAdded_RetroactiveBlocking(t *testing.T) {
 	if v1Job.Status == oapi.JobStatusCancelled {
 		t.Fatalf("v1.0.0 job should not be cancelled")
 	}
+	assert.NotNil(t, v1Job.DispatchContext)
 
 	// Now add a policy requiring approval
 	policy := c.NewPolicy(engine.Workspace().ID)

@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
@@ -109,6 +110,23 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	if cfg["deploymentConfig"] != jobAgentConfig["deploymentConfig"] {
 		t.Fatalf("expected job job_agent_config deploymentConfig %s, got %s", jobAgentConfig["deploymentConfig"], cfg["deploymentConfig"])
 	}
+
+	// Verify DispatchContext
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgent.Id, job.DispatchContext.JobAgent.Id)
+	assert.Equal(t, "test-deployment-config", job.DispatchContext.JobAgentConfig["deploymentConfig"])
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.Equal(t, d1.Id, job.DispatchContext.Release.ReleaseTarget.DeploymentId)
+	assert.Equal(t, e1.Id, job.DispatchContext.Release.ReleaseTarget.EnvironmentId)
+	assert.Equal(t, r1.Id, job.DispatchContext.Release.ReleaseTarget.ResourceId)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, d1.Id, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.Equal(t, e1.Id, job.DispatchContext.Environment.Id)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.Equal(t, r1.Id, job.DispatchContext.Resource.Id)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 }
 
 func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
@@ -186,7 +204,7 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 		t.Fatalf("expected %d pending jobs after deployment version creation, got %d", expectedJobs, len(pendingJobs))
 	}
 
-	// Verify all jobs are PENDING
+	// Verify all jobs are PENDING with correct DispatchContext
 	for _, job := range pendingJobs {
 		if job.Status != oapi.JobStatusPending {
 			t.Fatalf("expected job status PENDING, got %v", job.Status)
@@ -198,6 +216,15 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 		if release.ReleaseTarget.DeploymentId != d1.Id {
 			t.Fatalf("expected job deployment_id %s, got %s", d1.Id, release.ReleaseTarget.DeploymentId)
 		}
+
+		assert.NotNil(t, job.DispatchContext)
+		assert.Equal(t, jobAgent.Id, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.Equal(t, d1.Id, job.DispatchContext.Deployment.Id)
+		assert.NotNil(t, job.DispatchContext.Environment)
+		assert.NotNil(t, job.DispatchContext.Resource)
+		assert.NotNil(t, job.DispatchContext.Version)
 	}
 }
 
@@ -474,6 +501,9 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
 	}
 
+	// InvalidJobAgent jobs should not have DispatchContext (dispatch was never called)
+	assert.Nil(t, job.DispatchContext, "InvalidJobAgent job should not have DispatchContext")
+
 	// Verify no pending jobs (InvalidJobAgent jobs are not pending)
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 0 {
@@ -559,6 +589,10 @@ func TestEngine_JobCreatedWithInvalidJobAgent(t *testing.T) {
 	if len(cfg) != 0 {
 		t.Errorf("expected empty job agent config, got %v", cfg)
 	}
+
+	// InvalidJobAgent jobs should not have DispatchContext
+	assert.Nil(t, job.DispatchContext, "InvalidJobAgent job should not have DispatchContext")
+
 	// Verify job is NOT in pending state
 	pendingJobs := engine.Workspace().Jobs().GetPending()
 	if len(pendingJobs) != 0 {

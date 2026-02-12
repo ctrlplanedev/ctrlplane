@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_PolicyVersionStatusReady tests that a policy only allows deployments
@@ -120,6 +121,7 @@ func TestEngine_PolicyVersionStatusReady(t *testing.T) {
 	if job.Status != oapi.JobStatusPending {
 		t.Fatalf("expected job status Pending, got %s", job.Status)
 	}
+	assert.NotNil(t, job.DispatchContext)
 }
 
 // TestEngine_PolicyVersionStatusReady_StatusUpdate tests that when a deployment version

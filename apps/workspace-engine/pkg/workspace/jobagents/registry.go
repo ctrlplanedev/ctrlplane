@@ -65,6 +65,13 @@ func (r *Registry) fillReleaseContext(job *oapi.Job, ctx *oapi.DispatchContext) 
 		res := *jobWithRelease.Resource
 		ctx.Resource = &res
 	}
+	if jobWithRelease.Release.Variables != nil {
+		variables := make(map[string]any)
+		for k, v := range jobWithRelease.Release.Variables {
+			variables[k] = v.String()
+		}
+		ctx.Variables = &variables
+	}
 
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // =============================================================================
@@ -146,6 +147,9 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, jobA.DispatchContext)
+	assert.NotNil(t, jobA.DispatchContext.Variables)
+
 	releaseA, exists := engine.Workspace().Releases().Get(jobA.ReleaseId)
 	if !exists {
 		t.Fatalf("release A not found")
@@ -157,6 +161,7 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		if name != "resource-b" {
 			t.Errorf("resource A related_name should be 'resource-b', got %s", name)
 		}
+		assert.Equal(t, "resource-b", (*jobA.DispatchContext.Variables)["related_name"])
 		t.Logf("SUCCESS: Resource A resolved reference to B (name: %s)", name)
 	} else {
 		t.Logf("Resource A related_name not found (may be expected if circular refs are blocked)")
@@ -180,6 +185,9 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, jobB.DispatchContext)
+	assert.NotNil(t, jobB.DispatchContext.Variables)
+
 	releaseB, exists := engine.Workspace().Releases().Get(jobB.ReleaseId)
 	if !exists {
 		t.Fatalf("release B not found")
@@ -191,6 +199,7 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		if name != "resource-a" {
 			t.Errorf("resource B related_name should be 'resource-a', got %s", name)
 		}
+		assert.Equal(t, "resource-a", (*jobB.DispatchContext.Variables)["related_name"])
 		t.Logf("SUCCESS: Resource B resolved reference to A (name: %s)", name)
 	} else {
 		t.Logf("Resource B related_name not found (may be expected if circular refs are blocked)")
@@ -353,6 +362,9 @@ func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 			break
 		}
 
+		assert.NotNil(t, job.DispatchContext)
+		assert.NotNil(t, job.DispatchContext.Variables)
+
 		release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 		if !exists {
 			t.Fatalf("release for resource %s not found", tc.resourceID)
@@ -363,6 +375,7 @@ func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 			if name != tc.expectedName {
 				t.Errorf("resource %s next_name should be %s, got %s", tc.resourceID, tc.expectedName, name)
 			}
+			assert.Equal(t, tc.expectedName, (*job.DispatchContext.Variables)["next_name"])
 			t.Logf("Resource %s resolved to: %s", tc.resourceID, name)
 		} else {
 			t.Logf("Resource %s next_name not found", tc.resourceID)
@@ -454,6 +467,9 @@ func TestEngine_VariableResolution_SelfReference(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -465,6 +481,7 @@ func TestEngine_VariableResolution_SelfReference(t *testing.T) {
 		if name != "self-referencing-resource" {
 			t.Errorf("self_name should be 'self-referencing-resource', got %s", name)
 		}
+		assert.Equal(t, "self-referencing-resource", (*job.DispatchContext.Variables)["self_name"])
 		t.Logf("SUCCESS: Self-reference resolved to: %s", name)
 	} else {
 		t.Logf("self_name not found (self-reference may be blocked)")
@@ -539,6 +556,10 @@ func TestEngine_VariableResolution_ArrayLiteralValue(t *testing.T) {
 		job = j
 		break
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+	assert.NotNil(t, (*job.DispatchContext.Variables)["allowed_ips"])
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -621,6 +642,9 @@ func TestEngine_VariableResolution_EmptyArrayValue(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -628,10 +652,13 @@ func TestEngine_VariableResolution_EmptyArrayValue(t *testing.T) {
 
 	if tags, exists := release.Variables["tags"]; exists {
 		t.Logf("Empty array variable exists: %+v", tags)
+		assert.NotNil(t, (*job.DispatchContext.Variables)["tags"])
 		if obj, err := tags.AsObjectValue(); err == nil {
 			t.Logf("Empty array stored as object: %+v", obj.Object)
 		}
 	} else {
+		_, dcExists := (*job.DispatchContext.Variables)["tags"]
+		assert.False(t, dcExists)
 		t.Logf("tags variable not found (empty array may be omitted)")
 	}
 }
@@ -699,6 +726,10 @@ func TestEngine_VariableResolution_ArrayOfObjects(t *testing.T) {
 		job = j
 		break
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+	assert.NotNil(t, (*job.DispatchContext.Variables)["endpoints"])
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -807,6 +838,10 @@ func TestEngine_VariableResolution_DeeplyNestedObject(t *testing.T) {
 		job = j
 		break
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+	assert.NotNil(t, (*job.DispatchContext.Variables)["config"])
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -945,6 +980,9 @@ func TestEngine_VariableResolution_ReferenceToDeepProperty(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -955,6 +993,7 @@ func TestEngine_VariableResolution_ReferenceToDeepProperty(t *testing.T) {
 		if password != "secret123" {
 			t.Errorf("db_password should be 'secret123', got %s", password)
 		}
+		assert.Equal(t, "secret123", (*job.DispatchContext.Variables)["db_password"])
 		t.Logf("SUCCESS: Retrieved deeply nested property via reference: %s", password)
 	} else {
 		t.Logf("db_password not found (deep property path may not be supported)")
