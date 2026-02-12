@@ -3,7 +3,6 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 	"workspace-engine/pkg/oapi"
@@ -28,41 +27,6 @@ func NewFactory(store *store.Store) *Factory {
 	return &Factory{
 		store: store,
 	}
-}
-
-func (f *Factory) MergeJobAgentConfig(deployment *oapi.Deployment, jobAgent *oapi.JobAgent, version *oapi.DeploymentVersion) (oapi.JobAgentConfig, error) {
-	deploymentConfig := deployment.JobAgentConfig
-	runnerConfig := jobAgent.Config
-	deploymentMap, err := toMap(deploymentConfig)
-	if err != nil {
-		return oapi.JobAgentConfig{}, fmt.Errorf("failed to convert deployment job agent config to map: %w", err)
-	}
-	runnerMap, err := toMap(runnerConfig)
-	if err != nil {
-		return oapi.JobAgentConfig{}, fmt.Errorf("failed to convert job agent config to map: %w", err)
-	}
-	versionMap, err := toMap(version.JobAgentConfig)
-	if err != nil {
-		return oapi.JobAgentConfig{}, fmt.Errorf("failed to convert deployment version job agent config to map: %w", err)
-	}
-
-	// Merge job agent defaults first, then apply deployment overrides, then apply version overrides.
-	mergedConfig := make(map[string]any)
-	deepMerge(mergedConfig, runnerMap)
-	deepMerge(mergedConfig, deploymentMap)
-	deepMerge(mergedConfig, versionMap)
-
-	mergedJSON, err := json.Marshal(mergedConfig)
-	if err != nil {
-		return oapi.JobAgentConfig{}, fmt.Errorf("failed to marshal merged job agent config: %w", err)
-	}
-
-	var out oapi.JobAgentConfig
-	if err := json.Unmarshal(mergedJSON, &out); err != nil {
-		return oapi.JobAgentConfig{}, fmt.Errorf("failed to unmarshal merged job agent config: %w", err)
-	}
-
-	return out, nil
 }
 
 // CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
@@ -152,32 +116,6 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			AddMetadata("job_agent_type", jobAgent.Type)
 	}
 
-	// Merge job agent config: deployment config overrides agent defaults
-	mergedConfig, err := f.MergeJobAgentConfig(deployment, jobAgent, &release.Version)
-	if err != nil {
-		if action != nil {
-			action.AddStep("Configure job", trace.StepResultFail,
-				fmt.Sprintf("Failed to merge job agent config: %v", err)).
-				AddMetadata("job_agent_id", *jobAgentId).
-				AddMetadata("deployment_id", deployment.Id).
-				AddMetadata("deployment_name", deployment.Name).
-				AddMetadata("issue", "invalid_job_agent_config")
-		}
-		// Create job with InvalidJobAgent status when config merge fails
-		msg := fmt.Sprintf("Failed to merge job agent config: %v", err)
-		return &oapi.Job{
-			Id:             uuid.New().String(),
-			ReleaseId:      release.ID(),
-			JobAgentId:     *jobAgentId,
-			JobAgentConfig: oapi.JobAgentConfig{},
-			Status:         oapi.JobStatusInvalidJobAgent,
-			Message:        &msg,
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
-			Metadata:       make(map[string]string),
-		}, nil
-	}
-
 	if action != nil {
 		configMsg := "Applied default job agent configuration"
 
@@ -200,7 +138,7 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 		Id:             jobId,
 		ReleaseId:      release.ID(),
 		JobAgentId:     *jobAgentId,
-		JobAgentConfig: mergedConfig,
+		JobAgentConfig: oapi.JobAgentConfig{},
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),

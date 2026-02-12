@@ -36,13 +36,6 @@ func (a *GithubAction) Type() string {
 	return "github-app"
 }
 
-func (a *GithubAction) Supports() types.Capabilities {
-	return types.Capabilities{
-		Workflows:   true,
-		Deployments: true,
-	}
-}
-
 // Dispatch implements types.Dispatchable.
 func (a *GithubAction) Dispatch(ctx context.Context, dispatchCtx types.DispatchContext) error {
 	cfg, err := a.parseJobAgentConfig(dispatchCtx.JobAgentConfig)

@@ -20,13 +20,6 @@ func (t *TFE) Type() string {
 	return "tfe"
 }
 
-func (t *TFE) Supports() types.Capabilities {
-	return types.Capabilities{
-		Workflows:   false,
-		Deployments: true,
-	}
-}
-
 func (t *TFE) Dispatch(ctx context.Context, context types.DispatchContext) error {
 	return nil
 }

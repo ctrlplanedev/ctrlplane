@@ -9,12 +9,6 @@ import (
 type Dispatchable interface {
 	Type() string
 	Dispatch(ctx context.Context, context DispatchContext) error
-	Supports() Capabilities
-}
-
-type Capabilities struct {
-	Workflows   bool
-	Deployments bool
 }
 
 type DispatchContext struct {

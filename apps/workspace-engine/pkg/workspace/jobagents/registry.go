@@ -37,6 +37,71 @@ func (r *Registry) Register(dispatcher types.Dispatchable) {
 	r.dispatchers[dispatcher.Type()] = dispatcher
 }
 
+func (r *Registry) fillReleaseContext(job *oapi.Job, ctx *types.DispatchContext) error {
+	releaseId := job.ReleaseId
+	if releaseId == "" {
+		return nil
+	}
+
+	jobWithRelease, err := r.store.Jobs.GetWithRelease(job.Id)
+	if err != nil {
+		return fmt.Errorf("failed to get job with release: %w", err)
+	}
+
+	ctx.Release = &jobWithRelease.Release
+	ctx.Deployment = jobWithRelease.Deployment
+	ctx.Environment = jobWithRelease.Environment
+	ctx.Resource = jobWithRelease.Resource
+
+	return nil
+}
+
+func (r *Registry) fillWorkflowContext(job *oapi.Job, ctx *types.DispatchContext) error {
+	if job.WorkflowJobId == "" {
+		return nil
+	}
+
+	workflowJob, ok := r.store.WorkflowJobs.Get(job.WorkflowJobId)
+	if !ok {
+		return fmt.Errorf("workflow job not found: %s", job.WorkflowJobId)
+	}
+
+	workflowRun, ok := r.store.WorkflowRuns.Get(workflowJob.WorkflowRunId)
+	if !ok {
+		return fmt.Errorf("workflow run not found: %s", workflowJob.WorkflowRunId)
+	}
+
+	ctx.WorkflowJob = workflowJob
+	ctx.WorkflowRun = workflowRun
+	return nil
+}
+
+func (r *Registry) getMergedJobAgentConfig(jobAgent *oapi.JobAgent, ctx *types.DispatchContext) (oapi.JobAgentConfig, error) {
+	agentConfig := jobAgent.Config
+
+	var wofklowJobConfig oapi.JobAgentConfig
+	if ctx.WorkflowJob != nil {
+		wofklowJobConfig = ctx.WorkflowJob.Config
+	}
+
+	var deploymentConfig oapi.JobAgentConfig
+	if ctx.Deployment != nil {
+		deploymentConfig = ctx.Deployment.JobAgentConfig
+	}
+
+	var versionConfig oapi.JobAgentConfig
+	if ctx.Version != nil {
+		versionConfig = ctx.Version.JobAgentConfig
+	}
+
+	mergedConfig, err := mergeJobAgentConfig(agentConfig, wofklowJobConfig, deploymentConfig, versionConfig)
+	if err != nil {
+		return oapi.JobAgentConfig{}, fmt.Errorf("failed to merge job agent configs: %w", err)
+	}
+
+	return mergedConfig, nil
+}
+
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	jobAgent, ok := r.store.JobAgents.Get(job.JobAgentId)
 	if !ok {
@@ -52,42 +117,20 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	dispatchContext.Job = job
 	dispatchContext.JobAgent = jobAgent
 
-	isWorkflow := job.WorkflowJobId != ""
-	caps := dispatcher.Supports()
-
-	if isWorkflow && !caps.Workflows {
-		return fmt.Errorf("job agent type %s does not support workflows", jobAgent.Type)
+	if err := r.fillReleaseContext(job, &dispatchContext); err != nil {
+		return fmt.Errorf("failed to get release context: %w", err)
 	}
-
-	if !isWorkflow && !caps.Deployments {
-		return fmt.Errorf("job agent type %s does not support deployments", jobAgent.Type)
+	if err := r.fillWorkflowContext(job, &dispatchContext); err != nil {
+		return fmt.Errorf("failed to get workflow context: %w", err)
 	}
-
-	if jobWithRelease, _ := r.store.Jobs.GetWithRelease(job.Id); jobWithRelease != nil {
-		dispatchContext.Release = &jobWithRelease.Release
-		dispatchContext.Deployment = jobWithRelease.Deployment
-		dispatchContext.Environment = jobWithRelease.Environment
-		dispatchContext.Resource = jobWithRelease.Resource
-		jobAgentConfig, err := mergeJobAgentConfig(
-			jobAgent.Config,
-			jobWithRelease.Deployment.JobAgentConfig,
-			jobWithRelease.Release.Version.JobAgentConfig,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to merge job agent config: %w", err)
-		}
-		dispatchContext.JobAgentConfig = jobAgentConfig
+	mergedConfig, err := r.getMergedJobAgentConfig(jobAgent, &dispatchContext)
+	if err != nil {
+		return fmt.Errorf("failed to merge all job agent configs: %w", err)
 	}
+	dispatchContext.JobAgentConfig = mergedConfig
 
-	if workflowJob, ok := r.store.WorkflowJobs.Get(job.WorkflowJobId); ok {
-		dispatchContext.WorkflowJob = workflowJob
-		if workflowRun, ok := r.store.WorkflowRuns.Get(workflowJob.WorkflowRunId); ok {
-			dispatchContext.WorkflowRun = workflowRun
-		}
-		dispatchContext.JobAgent = jobAgent
-		dispatchContext.JobAgentConfig = job.JobAgentConfig
-	}
-
+	job.JobAgentConfig = mergedConfig
+	r.store.Jobs.Upsert(ctx, job)
 	return dispatcher.Dispatch(ctx, dispatchContext)
 }
 

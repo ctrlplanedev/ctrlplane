@@ -55,6 +55,30 @@ func createTestDeploymentForExecutor(id, systemID, name, jobAgentID string) *oap
 	}
 }
 
+func createTestEnvironmentForExecutor(id, systemID, name string) *oapi.Environment {
+	selector := &oapi.Selector{}
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
+	return &oapi.Environment{
+		Id:               id,
+		Name:             name,
+		SystemId:         systemID,
+		ResourceSelector: selector,
+	}
+}
+
+func createTestResourceForExecutor(id, name, workspaceID string) *oapi.Resource {
+	return &oapi.Resource{
+		Id:          id,
+		Name:        name,
+		Kind:        "",
+		Identifier:  name,
+		CreatedAt:   time.Now(),
+		Config:      map[string]any{},
+		Metadata:    map[string]string{},
+		WorkspaceId: workspaceID,
+	}
+}
+
 func createTestRelease(deploymentID, environmentID, resourceID, versionID, versionTag string) *oapi.Release {
 	return &oapi.Release{
 		ReleaseTarget: oapi.ReleaseTarget{
@@ -93,6 +117,12 @@ func TestExecuteRelease_Success(t *testing.T) {
 
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
+
+	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	_ = testStore.Environments.Upsert(ctx, environment)
+
+	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
 
 	// Create release
 	release := createTestRelease(deploymentID, environmentID, resourceID, versionID, "v1.0.0")
