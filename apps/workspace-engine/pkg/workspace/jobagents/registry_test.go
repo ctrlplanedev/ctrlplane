@@ -367,6 +367,7 @@ func TestGetMergedJobAgentConfig_WithDeploymentConfig(t *testing.T) {
 }
 
 func TestGetMergedJobAgentConfig_AllSourcesMergeInOrder(t *testing.T) {
+	// Priority (lowest → highest): agent → deployment → workflow → version
 	s := newTestStore()
 	r, _ := newTestRegistry(s)
 
@@ -375,10 +376,10 @@ func TestGetMergedJobAgentConfig_AllSourcesMergeInOrder(t *testing.T) {
 	}
 	dispatchCtx := &types.DispatchContext{
 		WorkflowJob: &oapi.WorkflowJob{
-			Config: map[string]interface{}{"shared": "workflow", "wf_only": "w"},
+			Config: map[string]interface{}{"shared": "workflow", "wf_only": "w", "wf_deploy_shared": "workflow"},
 		},
 		Deployment: &oapi.Deployment{
-			JobAgentConfig: oapi.JobAgentConfig{"shared": "deployment", "deploy_only": "d"},
+			JobAgentConfig: oapi.JobAgentConfig{"shared": "deployment", "deploy_only": "d", "wf_deploy_shared": "deployment"},
 		},
 		Version: &oapi.DeploymentVersion{
 			JobAgentConfig: oapi.JobAgentConfig{"shared": "version", "version_only": "v"},
@@ -393,6 +394,8 @@ func TestGetMergedJobAgentConfig_AllSourcesMergeInOrder(t *testing.T) {
 	assert.Equal(t, "w", merged["wf_only"])
 	assert.Equal(t, "d", merged["deploy_only"])
 	assert.Equal(t, "v", merged["version_only"])
+	assert.Equal(t, "workflow", merged["wf_deploy_shared"],
+		"workflow job config should override deployment config")
 }
 
 func TestGetMergedJobAgentConfig_NilWorkflowJobAndDeployment(t *testing.T) {

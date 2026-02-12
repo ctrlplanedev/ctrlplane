@@ -95,7 +95,7 @@ func (r *Registry) getMergedJobAgentConfig(jobAgent *oapi.JobAgent, ctx *types.D
 		versionConfig = ctx.Version.JobAgentConfig
 	}
 
-	mergedConfig, err := mergeJobAgentConfig(agentConfig, workflowJobConfig, deploymentConfig, versionConfig)
+	mergedConfig, err := mergeJobAgentConfig(agentConfig, deploymentConfig, workflowJobConfig, versionConfig)
 	if err != nil {
 		return oapi.JobAgentConfig{}, fmt.Errorf("failed to merge job agent configs: %w", err)
 	}
