@@ -8,7 +8,6 @@ export * from "./system.js";
 export * from "./team.js";
 export * from "./job.js";
 export * from "./workspace.js";
-export * from "./github.js";
 export * from "./dashboard.js";
 export * from "./invite.js";
 export * from "./rbac.js";

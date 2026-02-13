@@ -3,7 +3,6 @@ import { deploymentTracesRouter } from "./routes/deployment-traces.js";
 import { deploymentVersionsRouter } from "./routes/deployment-versions.js";
 import { deploymentsRouter } from "./routes/deployments.js";
 import { environmentRouter } from "./routes/environments.js";
-import { githubRouter } from "./routes/github.js";
 import { jobAgentsRouter } from "./routes/job-agents.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { policiesRouter } from "./routes/policies.js";
@@ -38,7 +37,6 @@ export const appRouter = router({
   redeploy: redeployRouter,
   resourceProviders: resourceProvidersRouter,
   jobAgents: jobAgentsRouter,
-  github: githubRouter,
   releaseTargets: releaseTargetsRouter,
   workflows: workflowsRouter,
 });

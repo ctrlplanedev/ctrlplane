@@ -13,6 +13,28 @@ CREATE TABLE system (
     metadata JSONB NOT NULL DEFAULT '{}'
 );
 
+CREATE TABLE deployment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    job_agent_id UUID,
+    job_agent_config JSONB NOT NULL DEFAULT '{}',
+    resource_selector TEXT NOT NULL DEFAULT 'false',
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
+);
+
+CREATE TABLE environment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    resource_selector TEXT NOT NULL DEFAULT 'false',
+    metadata JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
+);
+
 CREATE TABLE resource (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     version TEXT NOT NULL,
@@ -50,4 +72,18 @@ CREATE TABLE changelog_entry (
     entity_data JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (workspace_id, entity_type, entity_id)
+);
+
+CREATE TABLE system_environment (
+    system_id UUID NOT NULL REFERENCES system(id) ON DELETE CASCADE,
+    environment_id UUID NOT NULL REFERENCES environment(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (system_id, environment_id)
+);
+
+CREATE TABLE system_deployment (
+    system_id UUID NOT NULL REFERENCES system(id) ON DELETE CASCADE,
+    deployment_id UUID NOT NULL REFERENCES deployment(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (system_id, deployment_id)
 );

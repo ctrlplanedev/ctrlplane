@@ -65,6 +65,18 @@ type ChangelogEntry struct {
 	CreatedAt   pgtype.Timestamptz
 }
 
+type Deployment struct {
+	ID               uuid.UUID
+	Name             string
+	Description      pgtype.Text
+	JobAgentID       uuid.UUID
+	JobAgentConfig   map[string]any
+	ResourceSelector string
+	Metadata         map[string]string
+	CreatedAt        pgtype.Timestamptz
+	WorkspaceID      uuid.UUID
+}
+
 type DeploymentVersion struct {
 	ID             uuid.UUID
 	Name           string
@@ -77,6 +89,16 @@ type DeploymentVersion struct {
 	Message        pgtype.Text
 	CreatedAt      pgtype.Timestamptz
 	WorkspaceID    uuid.UUID
+}
+
+type Environment struct {
+	ID               uuid.UUID
+	Name             string
+	Description      pgtype.Text
+	ResourceSelector string
+	Metadata         map[string]string
+	CreatedAt        pgtype.Timestamptz
+	WorkspaceID      uuid.UUID
 }
 
 type Resource struct {
@@ -98,6 +120,18 @@ type System struct {
 	Description string
 	WorkspaceID uuid.UUID
 	Metadata    []byte
+}
+
+type SystemDeployment struct {
+	SystemID     uuid.UUID
+	DeploymentID uuid.UUID
+	CreatedAt    pgtype.Timestamptz
+}
+
+type SystemEnvironment struct {
+	SystemID      uuid.UUID
+	EnvironmentID uuid.UUID
+	CreatedAt     pgtype.Timestamptz
 }
 
 type Workspace struct {
