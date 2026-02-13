@@ -31,6 +31,7 @@ local Job = {
       type: 'object',
       additionalProperties: { type: 'string' },
     },
+    dispatchContext: openapi.schemaRef('DispatchContext'),
   },
 };
 
@@ -38,6 +39,30 @@ local JobPropertyKeys = std.objectFields(Job.properties);
 
 {
   Job: Job,
+
+  DispatchContext: {
+    type: 'object',
+    required: [
+      'jobAgent',
+      'jobAgentConfig',
+    ],
+    properties: {
+      jobAgent: openapi.schemaRef('JobAgent'),
+      jobAgentConfig: openapi.schemaRef('JobAgentConfig'),
+      release: openapi.schemaRef('Release'),
+      deployment: openapi.schemaRef('Deployment'),
+      environment: openapi.schemaRef('Environment'),
+      resource: openapi.schemaRef('Resource'),
+      workflow: openapi.schemaRef('Workflow'),
+      workflowJob: openapi.schemaRef('WorkflowJob'),
+      workflowRun: openapi.schemaRef('WorkflowRun'),
+      version: openapi.schemaRef('DeploymentVersion'),
+      variables: {
+        type: 'object',
+        additionalProperties: true,
+      },
+    },
+  },
 
   JobStatus: {
     type: 'string',

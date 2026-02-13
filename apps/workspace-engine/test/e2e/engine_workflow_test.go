@@ -75,6 +75,22 @@ func TestEngine_Workflow_BasicFlow(t *testing.T) {
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(10),
 	}, jobs[0].JobAgentConfig)
+
+	// Verify DispatchContext for workflow job
+	assert.NotNil(t, jobs[0].DispatchContext)
+	assert.Equal(t, jobAgentID, jobs[0].DispatchContext.JobAgent.Id)
+	assert.Equal(t, float64(10), jobs[0].DispatchContext.JobAgentConfig["delaySeconds"])
+	assert.NotNil(t, jobs[0].DispatchContext.WorkflowJob)
+	assert.Equal(t, workflowJobs[0].Id, jobs[0].DispatchContext.WorkflowJob.Id)
+	assert.NotNil(t, jobs[0].DispatchContext.WorkflowRun)
+	assert.Equal(t, workflowRun.Id, jobs[0].DispatchContext.WorkflowRun.Id)
+	assert.NotNil(t, jobs[0].DispatchContext.Workflow)
+	assert.Equal(t, workflowID, jobs[0].DispatchContext.Workflow.Id)
+	// Workflow jobs should not have release context
+	assert.Nil(t, jobs[0].DispatchContext.Release)
+	assert.Nil(t, jobs[0].DispatchContext.Deployment)
+	assert.Nil(t, jobs[0].DispatchContext.Environment)
+	assert.Nil(t, jobs[0].DispatchContext.Resource)
 }
 
 func TestEngine_Workflow_MultipleInputs(t *testing.T) {
@@ -221,6 +237,14 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 		"delaySeconds": float64(10),
 	}, wfJob1jobs[0].JobAgentConfig)
 
+	// Verify DispatchContext for workflow job 1
+	assert.NotNil(t, wfJob1jobs[0].DispatchContext)
+	assert.Equal(t, jobAgentID1, wfJob1jobs[0].DispatchContext.JobAgent.Id)
+	assert.NotNil(t, wfJob1jobs[0].DispatchContext.WorkflowJob)
+	assert.NotNil(t, wfJob1jobs[0].DispatchContext.WorkflowRun)
+	assert.NotNil(t, wfJob1jobs[0].DispatchContext.Workflow)
+	assert.Equal(t, workflowID, wfJob1jobs[0].DispatchContext.Workflow.Id)
+
 	wfJob2jobs := engine.Workspace().Jobs().GetByWorkflowJobId(workflowJobs[1].Id)
 	assert.Len(t, wfJob2jobs, 1)
 	assert.Equal(t, oapi.JobStatusPending, wfJob2jobs[0].Status)
@@ -229,6 +253,14 @@ func TestEngine_Workflow_MultipleJobsConcurrent(t *testing.T) {
 	assert.Equal(t, oapi.JobAgentConfig{
 		"delaySeconds": float64(20),
 	}, wfJob2jobs[0].JobAgentConfig)
+
+	// Verify DispatchContext for workflow job 2
+	assert.NotNil(t, wfJob2jobs[0].DispatchContext)
+	assert.Equal(t, jobAgentID2, wfJob2jobs[0].DispatchContext.JobAgent.Id)
+	assert.NotNil(t, wfJob2jobs[0].DispatchContext.WorkflowJob)
+	assert.NotNil(t, wfJob2jobs[0].DispatchContext.WorkflowRun)
+	assert.NotNil(t, wfJob2jobs[0].DispatchContext.Workflow)
+	assert.Equal(t, workflowID, wfJob2jobs[0].DispatchContext.Workflow.Id)
 
 	wfv, err := workflowmanager.NewWorkflowRunView(engine.Workspace().Store(), workflowRun.Id)
 	assert.NoError(t, err)

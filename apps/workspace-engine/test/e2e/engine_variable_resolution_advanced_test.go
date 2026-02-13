@@ -11,6 +11,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // =============================================================================
@@ -96,6 +97,9 @@ func TestEngine_VariableResolution_MultipleSamePriorityValues(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -116,6 +120,8 @@ func TestEngine_VariableResolution_MultipleSamePriorityValues(t *testing.T) {
 	if regionStr != "us-east-1" && regionStr != "us-west-2" {
 		t.Errorf("region should be one of the same-priority values, got %s", regionStr)
 	}
+
+	assert.Equal(t, regionStr, (*job.DispatchContext.Variables)["region"])
 }
 
 // TestEngine_VariableResolution_PriorityZeroVsNegative tests that priority 0
@@ -195,6 +201,9 @@ func TestEngine_VariableResolution_PriorityZeroVsNegative(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -207,6 +216,8 @@ func TestEngine_VariableResolution_PriorityZeroVsNegative(t *testing.T) {
 	if value != "zero-priority" {
 		t.Errorf("expected 'zero-priority' (0 > -10), got %s", value)
 	}
+
+	assert.Equal(t, "zero-priority", (*job.DispatchContext.Variables)["priority_test"])
 
 	t.Logf("SUCCESS: Priority 0 wins over negative priority")
 }
@@ -298,6 +309,9 @@ func TestEngine_VariableResolution_HigherPriorityWins(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -317,6 +331,8 @@ func TestEngine_VariableResolution_HigherPriorityWins(t *testing.T) {
 	if configStr != "high-priority-config" {
 		t.Errorf("expected 'high-priority-config' (priority 100), got %s", configStr)
 	}
+
+	assert.Equal(t, "high-priority-config", (*job.DispatchContext.Variables)["config"])
 
 	t.Logf("SUCCESS: Highest priority value (100) wins over lower priorities (50, 10)")
 }
@@ -409,6 +425,9 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job1.DispatchContext)
+	assert.NotNil(t, job1.DispatchContext.Variables)
+
 	release1, _ := engine.Workspace().Releases().Get(job1.ReleaseId)
 	config1 := release1.Variables["env_specific_config"]
 	config1Str, _ := config1.AsStringValue()
@@ -416,6 +435,8 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 	if config1Str != "production-config" {
 		t.Errorf("production resource should get 'production-config', got %s", config1Str)
 	}
+
+	assert.Equal(t, "production-config", (*job1.DispatchContext.Variables)["env_specific_config"])
 
 	// Test development resource
 	releaseTarget2 := &oapi.ReleaseTarget{
@@ -435,6 +456,9 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job2.DispatchContext)
+	assert.NotNil(t, job2.DispatchContext.Variables)
+
 	release2, _ := engine.Workspace().Releases().Get(job2.ReleaseId)
 	config2 := release2.Variables["env_specific_config"]
 	config2Str, _ := config2.AsStringValue()
@@ -442,6 +466,8 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 	if config2Str != "development-config" {
 		t.Errorf("development resource should get 'development-config', got %s", config2Str)
 	}
+
+	assert.Equal(t, "development-config", (*job2.DispatchContext.Variables)["env_specific_config"])
 
 	t.Logf("SUCCESS: Selector matching correctly filters values before priority comparison")
 }
@@ -536,6 +562,9 @@ func TestEngine_VariableResolution_VeryLargeNestedObject(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -556,6 +585,8 @@ func TestEngine_VariableResolution_VeryLargeNestedObject(t *testing.T) {
 	if len(obj.Object) < 15 {
 		t.Errorf("expected at least 15 top-level properties, got %d", len(obj.Object))
 	}
+
+	assert.NotNil(t, (*job.DispatchContext.Variables)["large_config"])
 
 	t.Logf("SUCCESS: Large nested object with %d top-level properties resolved", len(obj.Object))
 }
@@ -626,6 +657,9 @@ func TestEngine_VariableResolution_MixedTypeArray(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -635,6 +669,8 @@ func TestEngine_VariableResolution_MixedTypeArray(t *testing.T) {
 	if !mixedExists {
 		t.Fatal("mixed_array variable should be resolved")
 	}
+
+	assert.NotNil(t, (*job.DispatchContext.Variables)["mixed_array"])
 
 	// Array values are stored in the literal value but accessor depends on implementation
 	t.Logf("SUCCESS: Mixed-type array resolved correctly")
@@ -711,6 +747,9 @@ func TestEngine_VariableResolution_EmptyObjectVsNull(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job1.DispatchContext)
+	assert.NotNil(t, job1.DispatchContext.Variables)
+
 	release1, exists := engine.Workspace().Releases().Get(job1.ReleaseId)
 	if !exists {
 		t.Fatalf("release 1 not found")
@@ -722,6 +761,7 @@ func TestEngine_VariableResolution_EmptyObjectVsNull(t *testing.T) {
 		t.Log("Note: Empty object {} was not included in release")
 	} else {
 		t.Logf("SUCCESS: Empty object {} is present in release")
+		assert.NotNil(t, (*job1.DispatchContext.Variables)["config"])
 	}
 
 	// Test resource 2 (null)
@@ -742,6 +782,9 @@ func TestEngine_VariableResolution_EmptyObjectVsNull(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job2.DispatchContext)
+	assert.NotNil(t, job2.DispatchContext.Variables)
+
 	release2, exists := engine.Workspace().Releases().Get(job2.ReleaseId)
 	if !exists {
 		t.Fatalf("release 2 not found")
@@ -751,6 +794,8 @@ func TestEngine_VariableResolution_EmptyObjectVsNull(t *testing.T) {
 	if _, exists := release2.Variables["config"]; exists {
 		t.Log("Note: Null value was included in release")
 	} else {
+		_, dcExists := (*job2.DispatchContext.Variables)["config"]
+		assert.False(t, dcExists, "config should not exist in DispatchContext.Variables when null")
 		t.Logf("SUCCESS: Null value excluded from release")
 	}
 }
@@ -825,6 +870,9 @@ func TestEngine_VariableResolution_UnicodeInValues(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -847,6 +895,8 @@ func TestEngine_VariableResolution_UnicodeInValues(t *testing.T) {
 			t.Errorf("key %s not found in unicode_strings", key)
 		}
 	}
+
+	assert.NotNil(t, (*job.DispatchContext.Variables)["unicode_strings"])
 
 	t.Logf("SUCCESS: All Unicode strings preserved correctly")
 }
@@ -917,6 +967,9 @@ func TestEngine_VariableResolution_SpecialCharactersInVariableNames(t *testing.T
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -924,6 +977,11 @@ func TestEngine_VariableResolution_SpecialCharactersInVariableNames(t *testing.T
 
 	// Test each special character variable
 	specialVars := []string{"var_with_underscore", "var-with-dash", "var.with.dot"}
+	expectedValues := map[string]string{
+		"var_with_underscore": "underscore",
+		"var-with-dash":      "dash",
+		"var.with.dot":       "dot",
+	}
 	resolvedCount := 0
 
 	for _, varName := range specialVars {
@@ -931,6 +989,7 @@ func TestEngine_VariableResolution_SpecialCharactersInVariableNames(t *testing.T
 			resolvedCount++
 			if strVal, err := val.AsStringValue(); err == nil {
 				t.Logf("Variable %s resolved to: %s", varName, strVal)
+				assert.Equal(t, expectedValues[varName], (*job.DispatchContext.Variables)[varName])
 			}
 		}
 	}
@@ -1002,6 +1061,9 @@ func TestEngine_VariableResolution_VeryLongVariableName(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -1011,8 +1073,11 @@ func TestEngine_VariableResolution_VeryLongVariableName(t *testing.T) {
 	if val, exists := release.Variables[longVarName]; exists {
 		if strVal, err := val.AsStringValue(); err == nil && strVal == "very-long-name" {
 			t.Logf("SUCCESS: Variable with %d-character name resolved", len(longVarName))
+			assert.Equal(t, "very-long-name", (*job.DispatchContext.Variables)[longVarName])
 		}
 	} else {
+		_, dcExists := (*job.DispatchContext.Variables)[longVarName]
+		assert.False(t, dcExists, "long variable name should not exist in DispatchContext.Variables if not in release")
 		t.Logf("Note: Very long variable name (%d chars) was not resolved", len(longVarName))
 	}
 }
@@ -1086,6 +1151,9 @@ func TestEngine_VariableResolution_FloatingPointPrecision(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -1105,6 +1173,8 @@ func TestEngine_VariableResolution_FloatingPointPrecision(t *testing.T) {
 	if len(obj.Object) != 5 {
 		t.Errorf("expected 5 precision numbers, got %d", len(obj.Object))
 	}
+
+	assert.NotNil(t, (*job.DispatchContext.Variables)["precision_numbers"])
 
 	t.Logf("SUCCESS: High-precision floating point numbers handled correctly")
 }
@@ -1169,6 +1239,9 @@ func TestEngine_VariableResolution_MaxIntValues(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -1178,6 +1251,7 @@ func TestEngine_VariableResolution_MaxIntValues(t *testing.T) {
 	if maxInt, exists := release.Variables["max_int64"]; exists {
 		if val, err := maxInt.AsIntegerValue(); err == nil {
 			t.Logf("Max int64 resolved: %d", val)
+			assert.NotNil(t, (*job.DispatchContext.Variables)["max_int64"])
 		}
 	}
 
@@ -1185,6 +1259,7 @@ func TestEngine_VariableResolution_MaxIntValues(t *testing.T) {
 	if minInt, exists := release.Variables["min_int64"]; exists {
 		if val, err := minInt.AsIntegerValue(); err == nil {
 			t.Logf("Min int64 resolved: %d", val)
+			assert.NotNil(t, (*job.DispatchContext.Variables)["min_int64"])
 		}
 	}
 
@@ -1261,6 +1336,9 @@ func TestEngine_VariableResolution_WhitespaceOnlyString(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -1282,6 +1360,8 @@ func TestEngine_VariableResolution_WhitespaceOnlyString(t *testing.T) {
 			t.Errorf("whitespace variant %s not found", key)
 		}
 	}
+
+	assert.NotNil(t, (*job.DispatchContext.Variables)["whitespace_test"])
 
 	t.Logf("SUCCESS: Whitespace-only strings preserved correctly")
 }
@@ -1353,9 +1433,13 @@ func TestEngine_VariableResolution_EmptyArrayVsNullArray(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job1.DispatchContext)
+	assert.NotNil(t, job1.DispatchContext.Variables)
+
 	release1, _ := engine.Workspace().Releases().Get(job1.ReleaseId)
 
 	if _, exists := release1.Variables["items"]; exists {
+		assert.NotNil(t, (*job1.DispatchContext.Variables)["items"])
 		t.Logf("SUCCESS: Empty array [] is present in release")
 	}
 
@@ -1373,9 +1457,14 @@ func TestEngine_VariableResolution_EmptyArrayVsNullArray(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job2.DispatchContext)
+	assert.NotNil(t, job2.DispatchContext.Variables)
+
 	release2, _ := engine.Workspace().Releases().Get(job2.ReleaseId)
 
 	if _, exists := release2.Variables["items"]; !exists {
+		_, dcExists := (*job2.DispatchContext.Variables)["items"]
+		assert.False(t, dcExists, "items should not exist in DispatchContext.Variables when null")
 		t.Logf("SUCCESS: Null value excluded from release")
 	}
 }
@@ -1441,6 +1530,9 @@ func TestEngine_VariableResolution_FalsyValues(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, _ := engine.Workspace().Releases().Get(job.ReleaseId)
 
 	// All falsy values should be present (not excluded as "missing")
@@ -1450,6 +1542,7 @@ func TestEngine_VariableResolution_FalsyValues(t *testing.T) {
 		if val, err := zero.AsIntegerValue(); err == nil && int64(val) == 0 {
 			falsyCount++
 			t.Logf("✓ Integer 0 is present")
+			assert.Equal(t, "0", (*job.DispatchContext.Variables)["zero"])
 		}
 	}
 
@@ -1457,6 +1550,7 @@ func TestEngine_VariableResolution_FalsyValues(t *testing.T) {
 		if val, err := falseBool.AsBooleanValue(); err == nil && !val {
 			falsyCount++
 			t.Logf("✓ Boolean false is present")
+			assert.Equal(t, "false", (*job.DispatchContext.Variables)["false_bool"])
 		}
 	}
 
@@ -1464,6 +1558,7 @@ func TestEngine_VariableResolution_FalsyValues(t *testing.T) {
 		if val, err := emptyStr.AsStringValue(); err == nil && val == "" {
 			falsyCount++
 			t.Logf("✓ Empty string is present")
+			assert.Equal(t, "", (*job.DispatchContext.Variables)["empty_string"])
 		}
 	}
 

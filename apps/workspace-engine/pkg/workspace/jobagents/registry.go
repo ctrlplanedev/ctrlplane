@@ -37,7 +37,7 @@ func (r *Registry) Register(dispatcher types.Dispatchable) {
 	r.dispatchers[dispatcher.Type()] = dispatcher
 }
 
-func (r *Registry) fillReleaseContext(job *oapi.Job, ctx *types.DispatchContext) error {
+func (r *Registry) fillReleaseContext(job *oapi.Job, ctx *oapi.DispatchContext) error {
 	releaseId := job.ReleaseId
 	if releaseId == "" {
 		return nil
@@ -48,16 +48,35 @@ func (r *Registry) fillReleaseContext(job *oapi.Job, ctx *types.DispatchContext)
 		return fmt.Errorf("failed to get job with release: %w", err)
 	}
 
-	ctx.Release = &jobWithRelease.Release
-	ctx.Deployment = jobWithRelease.Deployment
-	ctx.Environment = jobWithRelease.Environment
-	ctx.Resource = jobWithRelease.Resource
-	ctx.Version = &jobWithRelease.Release.Version
+	release := jobWithRelease.Release
+	ctx.Release = &release
+	version := release.Version
+	ctx.Version = &version
+
+	if jobWithRelease.Deployment != nil {
+		dep := *jobWithRelease.Deployment
+		ctx.Deployment = &dep
+	}
+	if jobWithRelease.Environment != nil {
+		env := *jobWithRelease.Environment
+		ctx.Environment = &env
+	}
+	if jobWithRelease.Resource != nil {
+		res := *jobWithRelease.Resource
+		ctx.Resource = &res
+	}
+	if jobWithRelease.Release.Variables != nil {
+		variables := make(map[string]any)
+		for k, v := range jobWithRelease.Release.Variables {
+			variables[k] = v.String()
+		}
+		ctx.Variables = &variables
+	}
 
 	return nil
 }
 
-func (r *Registry) fillWorkflowContext(job *oapi.Job, ctx *types.DispatchContext) error {
+func (r *Registry) fillWorkflowContext(job *oapi.Job, ctx *oapi.DispatchContext) error {
 	if job.WorkflowJobId == "" {
 		return nil
 	}
@@ -72,12 +91,21 @@ func (r *Registry) fillWorkflowContext(job *oapi.Job, ctx *types.DispatchContext
 		return fmt.Errorf("workflow run not found: %s", workflowJob.WorkflowRunId)
 	}
 
-	ctx.WorkflowJob = workflowJob
-	ctx.WorkflowRun = workflowRun
+	workflow, ok := r.store.Workflows.Get(workflowRun.WorkflowId)
+	if !ok {
+		return fmt.Errorf("workflow not found: %s", workflowRun.WorkflowId)
+	}
+
+	wf := *workflow
+	ctx.Workflow = &wf
+	wj := *workflowJob
+	ctx.WorkflowJob = &wj
+	wr := *workflowRun
+	ctx.WorkflowRun = &wr
 	return nil
 }
 
-func (r *Registry) getMergedJobAgentConfig(jobAgent *oapi.JobAgent, ctx *types.DispatchContext) (oapi.JobAgentConfig, error) {
+func (r *Registry) fillJobAgentContext(jobAgent *oapi.JobAgent, ctx *oapi.DispatchContext) error {
 	agentConfig := jobAgent.Config
 
 	var workflowJobConfig oapi.JobAgentConfig
@@ -97,10 +125,13 @@ func (r *Registry) getMergedJobAgentConfig(jobAgent *oapi.JobAgent, ctx *types.D
 
 	mergedConfig, err := mergeJobAgentConfig(agentConfig, deploymentConfig, workflowJobConfig, versionConfig)
 	if err != nil {
-		return oapi.JobAgentConfig{}, fmt.Errorf("failed to merge job agent configs: %w", err)
+		return fmt.Errorf("failed to merge job agent configs: %w", err)
 	}
 
-	return mergedConfig, nil
+	ctx.JobAgentConfig = mergedConfig
+	agent := *jobAgent
+	ctx.JobAgent = agent
+	return nil
 }
 
 func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
@@ -114,9 +145,8 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 		return fmt.Errorf("job agent type %s not found", jobAgent.Type)
 	}
 
-	dispatchContext := types.DispatchContext{}
-	dispatchContext.Job = job
-	dispatchContext.JobAgent = jobAgent
+	dispatchContext := oapi.DispatchContext{}
+	dispatchContext.JobAgent = *jobAgent
 
 	if err := r.fillReleaseContext(job, &dispatchContext); err != nil {
 		return fmt.Errorf("failed to get release context: %w", err)
@@ -124,15 +154,14 @@ func (r *Registry) Dispatch(ctx context.Context, job *oapi.Job) error {
 	if err := r.fillWorkflowContext(job, &dispatchContext); err != nil {
 		return fmt.Errorf("failed to get workflow context: %w", err)
 	}
-	mergedConfig, err := r.getMergedJobAgentConfig(jobAgent, &dispatchContext)
-	if err != nil {
-		return fmt.Errorf("failed to merge all job agent configs: %w", err)
+	if err := r.fillJobAgentContext(jobAgent, &dispatchContext); err != nil {
+		return fmt.Errorf("failed to get job agent context: %w", err)
 	}
-	dispatchContext.JobAgentConfig = mergedConfig
 
-	job.JobAgentConfig = mergedConfig
+	job.JobAgentConfig = dispatchContext.JobAgentConfig
+	job.DispatchContext = &dispatchContext
 	r.store.Jobs.Upsert(ctx, job)
-	return dispatcher.Dispatch(ctx, dispatchContext)
+	return dispatcher.Dispatch(ctx, job)
 }
 
 // mergeJobAgentConfig merges the given job agent configs into a single config.

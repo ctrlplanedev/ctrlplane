@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // =============================================================================
@@ -82,6 +83,9 @@ func TestEngine_VariableResolution_NullValueInDeploymentDefault(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -94,6 +98,11 @@ func TestEngine_VariableResolution_NullValueInDeploymentDefault(t *testing.T) {
 		t.Logf("Note: Variable with nil default is included in release")
 	} else {
 		t.Logf("Variable with nil default is NOT included in release (expected behavior)")
+	}
+
+	_, dcOptionalConfigExists := (*job.DispatchContext.Variables)["optional_config"]
+	if !dcOptionalConfigExists {
+		t.Logf("optional_config correctly not in DispatchContext.Variables")
 	}
 }
 
@@ -166,6 +175,10 @@ func TestEngine_VariableResolution_NullInNestedObjectPath(t *testing.T) {
 		job = j
 		break
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+	assert.NotNil(t, (*job.DispatchContext.Variables)["config"])
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -266,6 +279,9 @@ func TestEngine_VariableResolution_ResourceVariableOverrideWithNull(t *testing.T
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -277,11 +293,16 @@ func TestEngine_VariableResolution_ResourceVariableOverrideWithNull(t *testing.T
 	if featureFlag, exists := variables["feature_flag"]; exists {
 		if val, err := featureFlag.AsStringValue(); err == nil {
 			t.Logf("feature_flag resolved to: %s (deployment default used)", val)
+			assert.Equal(t, val, (*job.DispatchContext.Variables)["feature_flag"])
 		} else {
 			t.Logf("feature_flag exists but type conversion failed: %v", err)
 		}
 	} else {
 		t.Logf("feature_flag not found in variables (null override removed it)")
+		_, dcFeatureFlagExists := (*job.DispatchContext.Variables)["feature_flag"]
+		if !dcFeatureFlagExists {
+			t.Logf("feature_flag correctly not in DispatchContext.Variables")
+		}
 	}
 }
 
@@ -380,6 +401,9 @@ func TestEngine_VariableResolution_ReferenceWithZeroMatches(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release should exist even when reference has zero matches")
@@ -393,6 +417,9 @@ func TestEngine_VariableResolution_ReferenceWithZeroMatches(t *testing.T) {
 	} else {
 		t.Logf("SUCCESS: Variable correctly excluded when reference has zero matches")
 	}
+
+	_, dcVpcIdExists := (*job.DispatchContext.Variables)["vpc_id"]
+	assert.False(t, dcVpcIdExists, "vpc_id should not exist in DispatchContext.Variables when reference has zero matches")
 }
 
 // TestEngine_VariableResolution_ReferenceWithMultipleMatches tests reference when multiple resources match
@@ -503,6 +530,9 @@ func TestEngine_VariableResolution_ReferenceWithMultipleMatches(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -517,6 +547,7 @@ func TestEngine_VariableResolution_ReferenceWithMultipleMatches(t *testing.T) {
 		if name != "vpc-primary" && name != "vpc-secondary" {
 			t.Errorf("vpc_name should be one of the matching VPCs, got %s", name)
 		}
+		assert.Equal(t, name, (*job.DispatchContext.Variables)["vpc_name"])
 	} else {
 		t.Errorf("vpc_name should be resolved when reference has multiple matches (should use first)")
 	}
@@ -623,6 +654,9 @@ func TestEngine_VariableResolution_ReferenceWithMissingIntermediateProperty(t *t
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release should exist even when property path is invalid")
@@ -636,6 +670,9 @@ func TestEngine_VariableResolution_ReferenceWithMissingIntermediateProperty(t *t
 	} else {
 		t.Logf("SUCCESS: Variable correctly excluded when intermediate property path is missing")
 	}
+
+	_, dcSubnetCidrExists := (*job.DispatchContext.Variables)["subnet_cidr"]
+	assert.False(t, dcSubnetCidrExists, "subnet_cidr should not exist in DispatchContext.Variables when intermediate property is missing")
 }
 
 // TestEngine_VariableResolution_ReferenceWithLeafPropertyMissing tests reference when only the leaf property is missing
@@ -737,6 +774,9 @@ func TestEngine_VariableResolution_ReferenceWithLeafPropertyMissing(t *testing.T
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -750,6 +790,9 @@ func TestEngine_VariableResolution_ReferenceWithLeafPropertyMissing(t *testing.T
 	} else {
 		t.Logf("SUCCESS: Variable correctly excluded when leaf property is missing")
 	}
+
+	_, dcVpcCidrExists := (*job.DispatchContext.Variables)["vpc_cidr"]
+	assert.False(t, dcVpcCidrExists, "vpc_cidr should not exist in DispatchContext.Variables when leaf property is missing")
 }
 
 // TestEngine_VariableResolution_ReferenceToNonExistentRelationship tests reference to relationship name that doesn't exist
@@ -818,6 +861,9 @@ func TestEngine_VariableResolution_ReferenceToNonExistentRelationship(t *testing
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release should exist even when relationship doesn't exist")
@@ -831,6 +877,9 @@ func TestEngine_VariableResolution_ReferenceToNonExistentRelationship(t *testing
 	} else {
 		t.Logf("SUCCESS: Variable correctly excluded when relationship doesn't exist")
 	}
+
+	_, dcDatabaseHostExists := (*job.DispatchContext.Variables)["database_host"]
+	assert.False(t, dcDatabaseHostExists, "database_host should not exist in DispatchContext.Variables when relationship doesn't exist")
 }
 
 // =============================================================================
@@ -911,6 +960,9 @@ func TestEngine_VariableResolution_StringNumberConversion(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job1.DispatchContext)
+	assert.NotNil(t, job1.DispatchContext.Variables)
+
 	release1, exists := engine.Workspace().Releases().Get(job1.ReleaseId)
 	if !exists {
 		t.Fatalf("release 1 not found")
@@ -922,6 +974,7 @@ func TestEngine_VariableResolution_StringNumberConversion(t *testing.T) {
 		if port1Str != "8080" {
 			t.Errorf("Resource 1 port string should be '8080', got %s", port1Str)
 		}
+		assert.Equal(t, "8080", (*job1.DispatchContext.Variables)["port"])
 	} else {
 		t.Logf("Resource 1 port is not a string: %v", err)
 	}
@@ -944,6 +997,9 @@ func TestEngine_VariableResolution_StringNumberConversion(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job2.DispatchContext)
+	assert.NotNil(t, job2.DispatchContext.Variables)
+
 	release2, exists := engine.Workspace().Releases().Get(job2.ReleaseId)
 	if !exists {
 		t.Fatalf("release 2 not found")
@@ -955,6 +1011,7 @@ func TestEngine_VariableResolution_StringNumberConversion(t *testing.T) {
 		if int64(port2Int) != 8080 {
 			t.Errorf("Resource 2 port integer should be 8080, got %d", port2Int)
 		}
+		assert.Equal(t, "8080", (*job2.DispatchContext.Variables)["port"])
 	} else {
 		t.Logf("Resource 2 port is not an integer: %v", err)
 	}
@@ -1036,6 +1093,9 @@ func TestEngine_VariableResolution_BooleanStringConversion(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job1.DispatchContext)
+	assert.NotNil(t, job1.DispatchContext.Variables)
+
 	release1, exists := engine.Workspace().Releases().Get(job1.ReleaseId)
 	if !exists {
 		t.Fatalf("release 1 not found")
@@ -1047,6 +1107,7 @@ func TestEngine_VariableResolution_BooleanStringConversion(t *testing.T) {
 		if enabled1Str != "true" {
 			t.Errorf("Resource 1 enabled string should be 'true', got %s", enabled1Str)
 		}
+		assert.Equal(t, "true", (*job1.DispatchContext.Variables)["enabled"])
 	} else {
 		t.Logf("Resource 1 enabled is not a string: %v", err)
 	}
@@ -1069,6 +1130,9 @@ func TestEngine_VariableResolution_BooleanStringConversion(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job2.DispatchContext)
+	assert.NotNil(t, job2.DispatchContext.Variables)
+
 	release2, exists := engine.Workspace().Releases().Get(job2.ReleaseId)
 	if !exists {
 		t.Fatalf("release 2 not found")
@@ -1080,6 +1144,7 @@ func TestEngine_VariableResolution_BooleanStringConversion(t *testing.T) {
 		if !enabled2Bool {
 			t.Errorf("Resource 2 enabled boolean should be true, got %v", enabled2Bool)
 		}
+		assert.Equal(t, "true", (*job2.DispatchContext.Variables)["enabled"])
 	} else {
 		t.Logf("Resource 2 enabled is not a boolean: %v", err)
 	}
@@ -1161,6 +1226,9 @@ func TestEngine_VariableResolution_ZeroVsEmptyString(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job1.DispatchContext)
+	assert.NotNil(t, job1.DispatchContext.Variables)
+
 	release1, exists := engine.Workspace().Releases().Get(job1.ReleaseId)
 	if !exists {
 		t.Fatalf("release 1 not found")
@@ -1172,6 +1240,7 @@ func TestEngine_VariableResolution_ZeroVsEmptyString(t *testing.T) {
 		if int64(value1Int) != 0 {
 			t.Errorf("Resource 1 value should be 0, got %d", value1Int)
 		}
+		assert.Equal(t, "0", (*job1.DispatchContext.Variables)["value"])
 	} else {
 		t.Errorf("Resource 1 value should be integer 0: %v", err)
 	}
@@ -1194,6 +1263,9 @@ func TestEngine_VariableResolution_ZeroVsEmptyString(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job2.DispatchContext)
+	assert.NotNil(t, job2.DispatchContext.Variables)
+
 	release2, exists := engine.Workspace().Releases().Get(job2.ReleaseId)
 	if !exists {
 		t.Fatalf("release 2 not found")
@@ -1205,6 +1277,7 @@ func TestEngine_VariableResolution_ZeroVsEmptyString(t *testing.T) {
 		if value2Str != "" {
 			t.Errorf("Resource 2 value should be empty string, got '%s'", value2Str)
 		}
+		assert.Equal(t, "", (*job2.DispatchContext.Variables)["value"])
 	} else {
 		t.Errorf("Resource 2 value should be empty string: %v", err)
 	}
@@ -1273,6 +1346,9 @@ func TestEngine_VariableResolution_NegativeNumbers(t *testing.T) {
 		break
 	}
 
+	assert.NotNil(t, job.DispatchContext)
+	assert.NotNil(t, job.DispatchContext.Variables)
+
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
 		t.Fatalf("release not found")
@@ -1291,6 +1367,8 @@ func TestEngine_VariableResolution_NegativeNumbers(t *testing.T) {
 	if int64(offsetInt) != -42 {
 		t.Errorf("offset should be -42, got %d", offsetInt)
 	}
+
+	assert.Equal(t, "-42", (*job.DispatchContext.Variables)["offset"])
 
 	t.Logf("SUCCESS: Negative integer -42 correctly stored and retrieved")
 }

@@ -109,6 +109,14 @@ func TestEngine_LatestJob_PopulatedAfterVersionCreate(t *testing.T) {
 	require.NotNil(t, state.LatestJob, "LatestJob should be populated after job creation")
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status,
 		"LatestJob should be in pending state after version create")
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Release)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 }
 
 // TestEngine_LatestJob_ReflectsStatusTransitions verifies that LatestJob
@@ -129,6 +137,12 @@ func TestEngine_LatestJob_ReflectsStatusTransitions(t *testing.T) {
 	state := getState(t, ctx, engine, rt)
 	require.NotNil(t, state.LatestJob)
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 
 	job := findJobForVersion(engine, "v1.0.0")
 	require.NotNil(t, job, "job for v1.0.0 must exist")
@@ -191,6 +205,10 @@ func TestEngine_LatestJob_PointsToNewestJob(t *testing.T) {
 		"LatestJob should point to the newest job (v2.0.0)")
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status,
 		"LatestJob should reflect the pending v2.0.0 job")
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v2.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 }
 
 // TestEngine_LatestJob_ReflectsFailedJob verifies that LatestJob correctly
@@ -256,6 +274,11 @@ func TestEngine_LatestJob_UpdatedAfterJobStatusChange(t *testing.T) {
 	require.NotNil(t, state.LatestJob)
 	initialJobID := state.LatestJob.Job.Id
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
 
 	// Update job to successful.
 	job := findJobForVersion(engine, "v1.0.0")
@@ -413,6 +436,12 @@ func TestEngine_LatestJob_MultipleReleaseTargetsIndependent(t *testing.T) {
 			"LatestJob should be populated for every release target after version create (resource=%s)", rt.ResourceId)
 		assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status,
 			"LatestJob should be pending before any updates (resource=%s)", rt.ResourceId)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+		assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+		assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+		assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 	}
 
 	// Pick one job to complete and identify the release targets.
@@ -476,6 +505,12 @@ func TestEngine_LatestJob_ThreeVersionLifecycle(t *testing.T) {
 	state := getState(t, ctx, engine, rt)
 	require.NotNil(t, state.LatestJob)
 	assert.Equal(t, oapi.JobStatusPending, state.LatestJob.Job.Status)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext)
+	assert.Equal(t, deploymentID, state.LatestJob.Job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Environment)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Resource)
+	assert.NotNil(t, state.LatestJob.Job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", state.LatestJob.Job.DispatchContext.Version.Tag)
 	job1 := findJobForVersion(engine, "v1.0.0")
 	require.NotNil(t, job1)
 	assert.Equal(t, job1.Id, state.LatestJob.Job.Id)

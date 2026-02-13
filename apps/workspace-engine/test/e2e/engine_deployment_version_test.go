@@ -10,6 +10,7 @@ import (
 	"workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEngine_DeploymentVersionCreation(t *testing.T) {
@@ -119,6 +120,15 @@ func TestEngine_DeploymentVersionCreatesJobsForAllReleaseTargets(t *testing.T) {
 		if job.Status != oapi.JobStatusPending {
 			t.Errorf("job %s has incorrect status: expected PENDING, got %v", job.Id, job.Status)
 		}
+		assert.NotNil(t, job.DispatchContext)
+		assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+		assert.NotNil(t, job.DispatchContext.Release)
+		assert.NotNil(t, job.DispatchContext.Deployment)
+		assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+		assert.NotNil(t, job.DispatchContext.Environment)
+		assert.NotNil(t, job.DispatchContext.Resource)
+		assert.NotNil(t, job.DispatchContext.Version)
+		assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	}
 }
 
@@ -240,6 +250,16 @@ func TestEngine_DeploymentVersionJobCreationWithConfig(t *testing.T) {
 		job = j
 		break
 	}
+
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 
 	release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !ok {
@@ -415,6 +435,7 @@ func TestEngine_DeploymentVersionWithNoJobAgent(t *testing.T) {
 	if job.Status != oapi.JobStatusInvalidJobAgent {
 		t.Errorf("expected job status InvalidJobAgent, got %v", job.Status)
 	}
+	assert.Nil(t, job.DispatchContext)
 
 	if job.JobAgentId != "" {
 		t.Errorf("expected empty job agent ID, got %s", job.JobAgentId)
@@ -669,6 +690,18 @@ func TestEngine_DeploymentVersionJobsWithJobAgentConfig(t *testing.T) {
 	if config["deploy_script"] != "/scripts/deploy.sh" {
 		t.Errorf("expected deploy_script=/scripts/deploy.sh, got %v", config["deploy_script"])
 	}
+	assert.NotNil(t, job.DispatchContext)
+	assert.Equal(t, jobAgentId, job.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, job.DispatchContext.Release)
+	assert.NotNil(t, job.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, job.DispatchContext.Deployment.Id)
+	assert.NotNil(t, job.DispatchContext.Environment)
+	assert.NotNil(t, job.DispatchContext.Resource)
+	assert.NotNil(t, job.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
+	assert.Equal(t, float64(300), job.DispatchContext.JobAgentConfig["timeout"])
+	assert.Equal(t, float64(3), job.DispatchContext.JobAgentConfig["retries"])
+	assert.Equal(t, "/scripts/deploy.sh", job.DispatchContext.JobAgentConfig["deploy_script"])
 }
 
 // TestEngine_ConcurrentDeploymentVersionCreation tests creating multiple deployment versions

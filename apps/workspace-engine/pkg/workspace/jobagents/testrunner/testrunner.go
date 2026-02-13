@@ -60,11 +60,10 @@ func (t *TestRunner) Type() string {
 	return "test-runner"
 }
 
-func (t *TestRunner) Dispatch(ctx context.Context, renderCtx types.DispatchContext) error {
+func (t *TestRunner) Dispatch(ctx context.Context, job *oapi.Job) error {
 	ctx, span := tracer.Start(ctx, "TestRunner.Dispatch")
 	defer span.End()
 
-	job := renderCtx.Job
 	span.SetAttributes(attribute.String("job.id", job.Id))
 
 	cfg, err := job.GetTestRunnerJobAgentConfig()

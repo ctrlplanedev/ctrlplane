@@ -87,20 +87,21 @@ const (
 
 // Defines values for JobUpdateEventFieldsToUpdate.
 const (
-	JobUpdateEventFieldsToUpdateCompletedAt    JobUpdateEventFieldsToUpdate = "completedAt"
-	JobUpdateEventFieldsToUpdateCreatedAt      JobUpdateEventFieldsToUpdate = "createdAt"
-	JobUpdateEventFieldsToUpdateExternalId     JobUpdateEventFieldsToUpdate = "externalId"
-	JobUpdateEventFieldsToUpdateId             JobUpdateEventFieldsToUpdate = "id"
-	JobUpdateEventFieldsToUpdateJobAgentConfig JobUpdateEventFieldsToUpdate = "jobAgentConfig"
-	JobUpdateEventFieldsToUpdateJobAgentId     JobUpdateEventFieldsToUpdate = "jobAgentId"
-	JobUpdateEventFieldsToUpdateMessage        JobUpdateEventFieldsToUpdate = "message"
-	JobUpdateEventFieldsToUpdateMetadata       JobUpdateEventFieldsToUpdate = "metadata"
-	JobUpdateEventFieldsToUpdateReleaseId      JobUpdateEventFieldsToUpdate = "releaseId"
-	JobUpdateEventFieldsToUpdateStartedAt      JobUpdateEventFieldsToUpdate = "startedAt"
-	JobUpdateEventFieldsToUpdateStatus         JobUpdateEventFieldsToUpdate = "status"
-	JobUpdateEventFieldsToUpdateTraceToken     JobUpdateEventFieldsToUpdate = "traceToken"
-	JobUpdateEventFieldsToUpdateUpdatedAt      JobUpdateEventFieldsToUpdate = "updatedAt"
-	JobUpdateEventFieldsToUpdateWorkflowJobId  JobUpdateEventFieldsToUpdate = "workflowJobId"
+	JobUpdateEventFieldsToUpdateCompletedAt     JobUpdateEventFieldsToUpdate = "completedAt"
+	JobUpdateEventFieldsToUpdateCreatedAt       JobUpdateEventFieldsToUpdate = "createdAt"
+	JobUpdateEventFieldsToUpdateDispatchContext JobUpdateEventFieldsToUpdate = "dispatchContext"
+	JobUpdateEventFieldsToUpdateExternalId      JobUpdateEventFieldsToUpdate = "externalId"
+	JobUpdateEventFieldsToUpdateId              JobUpdateEventFieldsToUpdate = "id"
+	JobUpdateEventFieldsToUpdateJobAgentConfig  JobUpdateEventFieldsToUpdate = "jobAgentConfig"
+	JobUpdateEventFieldsToUpdateJobAgentId      JobUpdateEventFieldsToUpdate = "jobAgentId"
+	JobUpdateEventFieldsToUpdateMessage         JobUpdateEventFieldsToUpdate = "message"
+	JobUpdateEventFieldsToUpdateMetadata        JobUpdateEventFieldsToUpdate = "metadata"
+	JobUpdateEventFieldsToUpdateReleaseId       JobUpdateEventFieldsToUpdate = "releaseId"
+	JobUpdateEventFieldsToUpdateStartedAt       JobUpdateEventFieldsToUpdate = "startedAt"
+	JobUpdateEventFieldsToUpdateStatus          JobUpdateEventFieldsToUpdate = "status"
+	JobUpdateEventFieldsToUpdateTraceToken      JobUpdateEventFieldsToUpdate = "traceToken"
+	JobUpdateEventFieldsToUpdateUpdatedAt       JobUpdateEventFieldsToUpdate = "updatedAt"
+	JobUpdateEventFieldsToUpdateWorkflowJobId   JobUpdateEventFieldsToUpdate = "workflowJobId"
 )
 
 // Defines values for JobVerificationStatus.
@@ -376,6 +377,21 @@ type DeploymentWithVariables struct {
 	Variables  []DeploymentVariableWithValues `json:"variables"`
 }
 
+// DispatchContext defines model for DispatchContext.
+type DispatchContext struct {
+	Deployment     *Deployment             `json:"deployment,omitempty"`
+	Environment    *Environment            `json:"environment,omitempty"`
+	JobAgent       JobAgent                `json:"jobAgent"`
+	JobAgentConfig JobAgentConfig          `json:"jobAgentConfig"`
+	Release        *Release                `json:"release,omitempty"`
+	Resource       *Resource               `json:"resource,omitempty"`
+	Variables      *map[string]interface{} `json:"variables,omitempty"`
+	Version        *DeploymentVersion      `json:"version,omitempty"`
+	Workflow       *Workflow               `json:"workflow,omitempty"`
+	WorkflowJob    *WorkflowJob            `json:"workflowJob,omitempty"`
+	WorkflowRun    *WorkflowRun            `json:"workflowRun,omitempty"`
+}
+
 // EntityRelation defines model for EntityRelation.
 type EntityRelation struct {
 	Direction RelationDirection `json:"direction"`
@@ -502,20 +518,21 @@ type IntegerValue = int
 
 // Job defines model for Job.
 type Job struct {
-	CompletedAt    *time.Time        `json:"completedAt,omitempty"`
-	CreatedAt      time.Time         `json:"createdAt"`
-	ExternalId     *string           `json:"externalId,omitempty"`
-	Id             string            `json:"id"`
-	JobAgentConfig JobAgentConfig    `json:"jobAgentConfig"`
-	JobAgentId     string            `json:"jobAgentId"`
-	Message        *string           `json:"message,omitempty"`
-	Metadata       map[string]string `json:"metadata"`
-	ReleaseId      string            `json:"releaseId"`
-	StartedAt      *time.Time        `json:"startedAt,omitempty"`
-	Status         JobStatus         `json:"status"`
-	TraceToken     *string           `json:"traceToken,omitempty"`
-	UpdatedAt      time.Time         `json:"updatedAt"`
-	WorkflowJobId  string            `json:"workflowJobId"`
+	CompletedAt     *time.Time        `json:"completedAt,omitempty"`
+	CreatedAt       time.Time         `json:"createdAt"`
+	DispatchContext *DispatchContext  `json:"dispatchContext,omitempty"`
+	ExternalId      *string           `json:"externalId,omitempty"`
+	Id              string            `json:"id"`
+	JobAgentConfig  JobAgentConfig    `json:"jobAgentConfig"`
+	JobAgentId      string            `json:"jobAgentId"`
+	Message         *string           `json:"message,omitempty"`
+	Metadata        map[string]string `json:"metadata"`
+	ReleaseId       string            `json:"releaseId"`
+	StartedAt       *time.Time        `json:"startedAt,omitempty"`
+	Status          JobStatus         `json:"status"`
+	TraceToken      *string           `json:"traceToken,omitempty"`
+	UpdatedAt       time.Time         `json:"updatedAt"`
+	WorkflowJobId   string            `json:"workflowJobId"`
 }
 
 // JobAgent defines model for JobAgent.

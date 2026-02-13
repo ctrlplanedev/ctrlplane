@@ -9,6 +9,7 @@ import (
 	c "workspace-engine/test/integration/creators"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEngine_Redeploy_BasicFlow tests the basic redeploy functionality:
@@ -103,6 +104,18 @@ func TestEngine_Redeploy_BasicFlow(t *testing.T) {
 		redeployJob = j
 		break
 	}
+
+	assert.NotNil(t, redeployJob.DispatchContext)
+	assert.Equal(t, jobAgentId, redeployJob.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Release)
+	assert.NotNil(t, redeployJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, redeployJob.DispatchContext.Deployment.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Environment)
+	assert.Equal(t, environmentId, redeployJob.DispatchContext.Environment.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Resource)
+	assert.Equal(t, resourceId, redeployJob.DispatchContext.Resource.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", redeployJob.DispatchContext.Version.Tag)
 
 	// Verify it's a new job (different ID)
 	if redeployJob.Id == initialJob.Id {
@@ -210,6 +223,18 @@ func TestEngine_Redeploy_AfterFailedJob(t *testing.T) {
 		redeployJob = j
 		break
 	}
+
+	assert.NotNil(t, redeployJob.DispatchContext)
+	assert.Equal(t, jobAgentId, redeployJob.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Release)
+	assert.NotNil(t, redeployJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, redeployJob.DispatchContext.Deployment.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Environment)
+	assert.Equal(t, environmentId, redeployJob.DispatchContext.Environment.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Resource)
+	assert.Equal(t, resourceId, redeployJob.DispatchContext.Resource.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", redeployJob.DispatchContext.Version.Tag)
 
 	// Verify it's a new job
 	if redeployJob.Id == initialJob.Id {
@@ -606,6 +631,18 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 		t.Errorf("replicas = %d, want 5", v)
 	}
 
+	assert.NotNil(t, redeployJob.DispatchContext)
+	assert.Equal(t, jobAgentId, redeployJob.DispatchContext.JobAgent.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Release)
+	assert.NotNil(t, redeployJob.DispatchContext.Deployment)
+	assert.Equal(t, deploymentId, redeployJob.DispatchContext.Deployment.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Environment)
+	assert.Equal(t, environmentId, redeployJob.DispatchContext.Environment.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Resource)
+	assert.Equal(t, resourceId, redeployJob.DispatchContext.Resource.Id)
+	assert.NotNil(t, redeployJob.DispatchContext.Version)
+	assert.Equal(t, "v1.0.0", redeployJob.DispatchContext.Version.Tag)
+
 	cfg := redeployJob.JobAgentConfig
 
 	// Verify job agent config is preserved
@@ -613,6 +650,7 @@ func TestEngine_Redeploy_WithVariables(t *testing.T) {
 		t.Errorf("job agent config namespace = %v, want production",
 			cfg["namespace"])
 	}
+	assert.Equal(t, "production", redeployJob.DispatchContext.JobAgentConfig["namespace"])
 }
 
 // TestEngine_Redeploy_WithPendingJob tests that redeploy is blocked when a job is pending
@@ -956,6 +994,7 @@ func TestEngine_Redeploy_WithInvalidJobAgent(t *testing.T) {
 	if initialJob.Status != oapi.JobStatusInvalidJobAgent {
 		t.Fatalf("expected initial job status InvalidJobAgent, got %v", initialJob.Status)
 	}
+	assert.Nil(t, initialJob.DispatchContext)
 
 	// Trigger redeploy - should work since InvalidJobAgent is NOT in processing state
 	engine.PushEvent(ctx, handler.ReleaseTargetDeploy, releaseTarget)
