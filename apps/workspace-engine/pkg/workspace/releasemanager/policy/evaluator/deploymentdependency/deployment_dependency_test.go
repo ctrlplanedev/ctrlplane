@@ -63,14 +63,10 @@ func generateReleaseTarget(ctx context.Context, resource *oapi.Resource, environ
 }
 
 func generateDependencyRule(cel string) *oapi.PolicyRule {
-	selector := oapi.Selector{}
-	_ = selector.FromCelSelector(oapi.CelSelector{
-		Cel: cel,
-	})
 	return &oapi.PolicyRule{
 		Id: uuid.New().String(),
 		DeploymentDependency: &oapi.DeploymentDependencyRule{
-			DependsOnDeploymentSelector: selector,
+			DependsOn: cel,
 		},
 	}
 }

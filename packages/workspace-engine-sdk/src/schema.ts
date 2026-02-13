@@ -1251,9 +1251,8 @@ export interface components {
       system: components["schemas"]["System"];
     };
     DeploymentDependencyRule: {
-      dependsOnDeploymentSelector: components["schemas"]["Selector"];
-      /** @description Reference to the entity that this rule depends on */
-      reference?: string;
+      /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
+      dependsOn: string;
     };
     DeploymentVariable: {
       defaultValue?: components["schemas"]["LiteralValue"];

@@ -1022,7 +1022,8 @@ export interface components {
             system: components["schemas"]["System"];
         };
         DeploymentDependencyRule: {
-            dependsOnDeploymentSelector: components["schemas"]["Selector"];
+            /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
+            dependsOn: string;
         };
         DeploymentRequestAccepted: {
             id: string;

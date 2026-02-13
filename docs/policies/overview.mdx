@@ -1,15 +1,21 @@
 # Policies
 
-**Policies** in Ctrlplane define rules that govern how releases progress through
-your environments. They help you build confidence in your deployment process by
-enforcing quality gates, automating checks, and ensuring consistency across your
-infrastructure.
+**Policies** define **when** a version is allowed to deploy. They are the rules
+that govern how releases progress through your environments — controlling
+deployment timing through approvals, verification gates, progression
+requirements, deployment windows, and more.
+
+<Tip>
+In Ctrlplane's mental model: [**Deployments**](../concepts/deployments) = what & how, [**Environments**](../concepts/environments) = where, **Policies** = when.
+</Tip>
 
 ## Building Confidence Through Policies
 
-The primary purpose of policies is to help you deploy with confidence. As
-releases move through your environments, policies ensure that each stage meets
-your quality standards before progressing to the next.
+While [deployments](../concepts/deployments) define _what and how_ and
+[environments](../concepts/environments) define _where_, policies answer the
+critical question of _when_: is this version ready to deploy? Has it passed
+through the right gates? Policies help you deploy with confidence by ensuring
+that each stage meets your quality standards before progressing to the next.
 
 ```
 Development → QA → Staging → Production

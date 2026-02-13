@@ -202,7 +202,6 @@ func (si *StateIndex) RestoreAll(ctx context.Context) {
 	}
 
 	si.Recompute(ctx)
-	log.Info("state index restored", "release_targets", len(targets))
 }
 
 // --- Recompute ---

@@ -5,19 +5,24 @@ description: "Overview of the core concepts in Ctrlplane"
 
 This page provides an overview of the core concepts in Ctrlplane.
 
+The three pillars of Ctrlplane answer the fundamental questions of deployment:
+
+- **Deployments** define **what** to deploy and **how** — the service, its versions, and the job agent that executes the deployment.
+- **Environments** define **where** to deploy — logical stages that dynamically group resources via selectors.
+- **Policies** define **when** to deploy — rules like approvals, verification, progression gates, and deployment windows that control timing.
+
 ```
 System
-  ├── Environments (group resources via selectors)
-  ├── Deployments (what to deploy)
+  ├── Deployments (what & how)
   │     └── Versions (specific builds)
-  └── Resources (deployment targets)
+  ├── Environments (where)
+  │     └── Resources (deployment targets)
+  └── Policies (when)
 
 Release Target = Deployment × Environment × Resource
 
 Release = Version deployed to a Release Target
   └── Job (executed by Job Agent)
-
-Policy → Rules that govern releases
 ```
 
 
@@ -70,8 +75,8 @@ config:
 
 ## Environment
 
-An **Environment** represents a logical deployment stage (dev, staging, prod)
-that groups resources using selectors.
+An **Environment** defines **where** to deploy. It represents a logical
+deployment stage (dev, staging, prod) that groups resources using selectors.
 
 | Property           | Description                                 |
 | ------------------ | ------------------------------------------- |
@@ -90,7 +95,9 @@ resourceSelector: resource.metadata["environment"] == "production"
 
 ## Deployment
 
-A **Deployment** represents a service or application you want to deploy.
+A **Deployment** defines **what** to deploy and **how**. It represents a service
+or application you want to deploy, along with the job agent configuration that
+determines how the deployment is executed.
 
 | Property           | Description                                      |
 | ------------------ | ------------------------------------------------ |
@@ -207,7 +214,9 @@ to your infrastructure.
 
 ## Policy
 
-A **Policy** defines rules governing when and how deployments happen.
+A **Policy** defines **when** a version is allowed to deploy. Policies are the
+rules governing deployment timing—approvals, gates, windows, and verification
+that control when releases progress.
 
 | Component   | Description                                  |
 | ----------- | -------------------------------------------- |
@@ -279,19 +288,19 @@ See [Selectors](/concepts/selectors) for full syntax.
 
 ## Quick Reference Table
 
-| Entity         | What It Is                                      |
-| -------------- | ----------------------------------------------- |
-| System         | Workspace grouping deployments and environments |
-| Resource       | Deployment target (cluster, VM, function)       |
-| Environment    | Logical stage grouping resources via selectors  |
-| Deployment     | Service/app to deploy                           |
-| Version        | Specific build of a deployment                  |
-| Release Target | Deployment × Environment × Resource             |
-| Release        | Version being deployed to a release target      |
-| Job            | Execution task sent to a job agent              |
-| Job Agent      | Executor (ArgoCD, GitHub Actions, etc.)         |
-| Policy         | Rules controlling deployments                   |
-| Selector       | Query expression matching entities              |
+| Entity         | What It Is                                                  |
+| -------------- | ----------------------------------------------------------- |
+| System         | Workspace grouping deployments and environments             |
+| Resource       | Deployment target (cluster, VM, function)                   |
+| Deployment     | **What & how** — service/app to deploy and its agent config |
+| Environment    | **Where** — logical stage grouping resources via selectors  |
+| Version        | Specific build of a deployment                              |
+| Release Target | Deployment × Environment × Resource                         |
+| Release        | Version being deployed to a release target                  |
+| Job            | Execution task sent to a job agent                          |
+| Job Agent      | Executor (ArgoCD, GitHub Actions, etc.)                     |
+| Policy         | **When** — rules controlling deployment timing              |
+| Selector       | Query expression matching entities                          |
 
 ## Next Steps
 

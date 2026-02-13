@@ -885,13 +885,9 @@ func WithRuleRollbackOnVerificationFailure() PolicyRuleOption {
 
 type DeploymentDependencyRuleOption func(*TestWorkspace, *oapi.DeploymentDependencyRule) error
 
-func DeploymentDependencyRuleDependsOnDeploymentSelector(cel string) DeploymentDependencyRuleOption {
+func DeploymentDependencyRuleDependsOn(cel string) DeploymentDependencyRuleOption {
 	return func(_ *TestWorkspace, r *oapi.DeploymentDependencyRule) error {
-		sel := &oapi.Selector{}
-		if err := sel.FromCelSelector(oapi.CelSelector{Cel: cel}); err != nil {
-			return err
-		}
-		r.DependsOnDeploymentSelector = *sel
+		r.DependsOn = cel
 		return nil
 	}
 }

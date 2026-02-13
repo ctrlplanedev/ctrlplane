@@ -309,10 +309,8 @@ type DeploymentAndSystem struct {
 
 // DeploymentDependencyRule defines model for DeploymentDependencyRule.
 type DeploymentDependencyRule struct {
-	DependsOnDeploymentSelector Selector `json:"dependsOnDeploymentSelector"`
-
-	// Reference Reference to the entity that this rule depends on
-	Reference *string `json:"reference,omitempty"`
+	// DependsOn CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.
+	DependsOn string `json:"dependsOn"`
 }
 
 // DeploymentVariable defines model for DeploymentVariable.

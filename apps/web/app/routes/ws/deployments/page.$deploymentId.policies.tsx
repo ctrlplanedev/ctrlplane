@@ -56,15 +56,9 @@ const getRuleDetails = (rule: PolicyRule): string[] => {
     return [`Min approvals: ${rule.anyApproval.minApprovals}`];
 
   if (rule.deploymentDependency != null) {
-    const details = [
-      `Depends on deployments: ${truncateText(
-        formatSelector(rule.deploymentDependency.dependsOnDeploymentSelector),
-      )}`,
+    return [
+      `Depends on: ${truncateText(rule.deploymentDependency.dependsOn)}`,
     ];
-    if (rule.deploymentDependency.reference) {
-      details.push(`Reference: ${rule.deploymentDependency.reference}`);
-    }
-    return details;
   }
 
   if (rule.deploymentWindow != null) {

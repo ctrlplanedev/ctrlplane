@@ -13,6 +13,12 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+func celToSelector(cel string) *oapi.Selector {
+	s := &oapi.Selector{}
+	_ = s.FromCelSelector(oapi.CelSelector{Cel: cel})
+	return s
+}
+
 var tracer = otel.Tracer("DeploymentDependencyEvaluator")
 
 type DeploymentDependencyEvaluator struct {
@@ -50,10 +56,10 @@ func (e *DeploymentDependencyEvaluator) Complexity() int {
 }
 
 func (e *DeploymentDependencyEvaluator) findMatchingDeployments(ctx context.Context) ([]*oapi.Deployment, error) {
-	deploymentSelector := e.rule.DependsOnDeploymentSelector
+	deploymentSelector := celToSelector(e.rule.DependsOn)
 	matchingDeployments := make([]*oapi.Deployment, 0)
 	for _, deployment := range e.store.Deployments.Items() {
-		matched, err := selector.Match(ctx, &deploymentSelector, deployment)
+		matched, err := selector.Match(ctx, deploymentSelector, deployment)
 		if err != nil {
 			return nil, fmt.Errorf("failed to match deployment selector: %w", err)
 		}
@@ -95,10 +101,11 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 	ctx, span := tracer.Start(ctx, "DeploymentDependencyEvaluator.Evaluate")
 	defer span.End()
 
-	deploymentSelector := e.rule.DependsOnDeploymentSelector
+	dependsOn := e.rule.DependsOn
 	span.SetAttributes(
 		attribute.String("deployment.id", scope.Deployment.Id),
 		attribute.String("resource.id", scope.Resource.Id),
+		attribute.String("dependsOn", dependsOn),
 	)
 
 	matchingDeployments, err := e.findMatchingDeployments(ctx)
@@ -111,15 +118,15 @@ func (e *DeploymentDependencyEvaluator) Evaluate(ctx context.Context, scope eval
 
 	if len(matchingDeployments) == 0 {
 		return results.NewDeniedResult(
-			fmt.Sprintf("Deployment dependency: no matching deployments found for selector: %v", deploymentSelector),
-		).WithDetail("deployment_selector", deploymentSelector)
+			fmt.Sprintf("Deployment dependency: no matching deployments found for selector: %v", dependsOn),
+		).WithDetail("dependsOn", dependsOn)
 	}
 
 	upstreamReleaseTargets := e.getUpstreamReleaseTargets(ctx, matchingDeployments, scope.Resource.Id)
 	if len(upstreamReleaseTargets) != cap(upstreamReleaseTargets) {
 		return results.NewDeniedResult(
 			fmt.Sprintf("Deployment dependency: some upstream release targets not found for resource: %v", scope.Resource.Id),
-		).WithDetail("deployment_selector", deploymentSelector)
+		).WithDetail("dependsOn", dependsOn)
 	}
 
 	for _, upstreamReleaseTarget := range upstreamReleaseTargets {

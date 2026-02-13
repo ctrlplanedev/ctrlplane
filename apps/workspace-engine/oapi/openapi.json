@@ -222,16 +222,13 @@
          },
          "DeploymentDependencyRule": {
             "properties": {
-               "dependsOnDeploymentSelector": {
-                  "$ref": "#/components/schemas/Selector"
-               },
-               "reference": {
-                  "description": "Reference to the entity that this rule depends on",
+               "dependsOn": {
+                  "description": "CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.",
                   "type": "string"
                }
             },
             "required": [
-               "dependsOnDeploymentSelector"
+               "dependsOn"
             ],
             "type": "object"
          },

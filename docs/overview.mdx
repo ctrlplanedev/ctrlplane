@@ -28,13 +28,15 @@ flowchart LR
 
 You only need to understand 5 things:
 
-| Entity | What It Is | Example |
-|--------|-----------|---------|
-| **Resource** | A deployment target | `prod-us-east-1` K8s cluster |
-| **Environment** | A group of resources | "Production" = all clusters with `env: prod` |
-| **Deployment** | A service you deploy | "API Gateway" |
-| **Version** | A specific build | `v1.2.3` or `sha-abc123` |
-| **Policy** | Rules for deployment | "Require approval for production" |
+| Entity | Question It Answers | Example |
+|--------|---------------------|---------|
+| **Resource** | What infrastructure exists? | `prod-us-east-1` K8s cluster |
+| **Deployment** | **What** to deploy and **how** | "API Gateway" deployed via ArgoCD |
+| **Environment** | **Where** to deploy | "Production" = all clusters with `env: prod` |
+| **Version** | Which build to deploy? | `v1.2.3` or `sha-abc123` |
+| **Policy** | **When** to deploy | "After staging succeeds and SRE approves" |
+
+In short: **Deployments** define _what and how_, **Environments** define _where_, and **Policies** define _when_.
 
 ### How They Connect
 
@@ -86,9 +88,9 @@ flowchart TB
     R3 -.->|"matches"| Dev
 ```
 
-## Policies Control Everything
+## Policies Define When to Deploy
 
-Policies define rules for when deployments can happen:
+Policies are the rules that govern _when_ a version is allowed to deploy:
 
 | Policy | What It Does |
 |--------|-------------|

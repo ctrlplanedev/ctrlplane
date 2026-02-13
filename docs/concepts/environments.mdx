@@ -1,12 +1,16 @@
 ---
 title: "Environments"
-description: "Organize your deployment pipeline into stages"
+description: "Define where to deploy — logical stages that group resources"
 ---
 
-An **Environment** represents a logical deployment stage in your pipeline, 
-such as development, staging, or production. Environments use selectors to 
-dynamically determine which resources belong to them. From a deployment perspective, 
-an environment is additional metadata attached to the resources it selects.
+An **Environment** defines **where** to deploy. It represents a logical
+deployment stage in your pipeline, such as development, staging, or production.
+Environments use selectors to dynamically determine which resources belong to
+them — answering the question of _where_ a version should be released.
+
+<Tip>
+In Ctrlplane's mental model: [**Deployments**](./deployments) = what & how, **Environments** = where, [**Policies**](../policies/overview) = when.
+</Tip>
 
 ## What is an Environment?
 

@@ -1,9 +1,16 @@
 ---
 title: "Deployments"
-description: "Orchestrate deployments across your infrastructure"
+description: "Define what to deploy and how — services, versions, and execution"
 ---
 
-A **Deployment** represents a service or application that you want to deploy across your infrastructure. Deployments have versions (created by your CI), which get released to environments and resources.
+A **Deployment** defines **what** you want to deploy and **how** it gets
+deployed. It represents a service or application along with its job agent
+configuration — connecting the _what_ (your service and its versions) with the
+_how_ (the agent and workflow that executes the deployment).
+
+<Tip>
+In Ctrlplane's mental model: **Deployments** = what & how, [**Environments**](./environments) = where, [**Policies**](../policies/overview) = when.
+</Tip>
 
 ## What is a Deployment?
 

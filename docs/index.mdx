@@ -9,14 +9,18 @@ description:
 **Ctrlplane is the orchestration layer between your CI/CD pipelines and your
 infrastructure.**
 
-Your CI builds code. Your infrastructure runs it. Ctrlplane decides _when_
-releases are ready, _where_ they should deploy, and _what gates_ they must
-pass—handling environment promotion, verification, approvals, and rollbacks
-automatically.
+Your CI builds code. Your infrastructure runs it. Ctrlplane orchestrates the
+rest through three core concepts:
+
+| Concept | Question It Answers | Example |
+|---------|---------------------|---------|
+| **Deployment** | **What** to deploy and **how** | "API Service" deployed via ArgoCD |
+| **Environment** | **Where** to deploy | "Production" = all clusters with `env: prod` |
+| **Policy** | **When** to deploy | "Only after staging succeeds and SRE approves" |
 
 ```
 Your CI/CD    ──►    Ctrlplane    ──►    Your Infrastructure
- (builds)            (orchestrates)           (deploys)
+ (builds)         (what, where, when)         (deploys)
 ```
 
 ## Start Here

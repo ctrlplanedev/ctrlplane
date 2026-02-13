@@ -74,7 +74,7 @@ func TestEngine_PolicyDeploymentDependency(t *testing.T) {
 			integration.WithPolicySelector(fmt.Sprintf("deployment.id == '%s'", deploymentClusterID)),
 			integration.WithPolicyRule(
 				integration.WithRuleDeploymentDependency(
-					integration.DeploymentDependencyRuleDependsOnDeploymentSelector(fmt.Sprintf("deployment.id == '%s'", deploymentVpcID)),
+					integration.DeploymentDependencyRuleDependsOn(fmt.Sprintf("deployment.id == '%s'", deploymentVpcID)),
 				),
 			),
 		),

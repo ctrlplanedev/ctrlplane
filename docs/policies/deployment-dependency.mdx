@@ -37,17 +37,14 @@ policies:
       - deployment: deployment.name == "api-service"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              name: database-migration
+          dependsOn: deployment.name == "database-migration"
 ```
 
 ## Properties
 
-| Property                       | Type     | Required | Description                                    |
-| ------------------------------ | -------- | -------- | ---------------------------------------------- |
-| `dependsOnDeploymentSelector`  | Selector | Yes      | Selector for the prerequisite deployment(s)    |
-| `reference`                    | string   | No       | Reference to the dependency entity             |
+| Property    | Type   | Required | Description                                                                                              |
+| ----------- | ------ | -------- | -------------------------------------------------------------------------------------------------------- |
+| `dependsOn` | string | Yes      | CEL expression to match upstream deployment(s) that must have a successful release before proceeding.    |
 
 ## Common Patterns
 
@@ -62,9 +59,7 @@ policies:
       - deployment: deployment.name == "api-service"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              name: database-migration
+          dependsOn: deployment.name == "database-migration"
 ```
 
 ### Service Dependency Chain
@@ -79,9 +74,7 @@ policies:
       - deployment: deployment.name == "api-service"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              name: database-migration
+          dependsOn: deployment.name == "database-migration"
 
   # Frontend depends on API
   - name: frontend-depends-on-api
@@ -89,9 +82,7 @@ policies:
       - deployment: deployment.name == "frontend"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              name: api-service
+          dependsOn: deployment.name == "api-service"
 ```
 
 ### Shared Library Dependencies
@@ -105,9 +96,7 @@ policies:
       - deployment: deployment.metadata.usesSharedLib == "true"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              type: shared-library
+          dependsOn: deployment.metadata.type == "shared-library"
 ```
 
 ### Infrastructure First
@@ -121,9 +110,7 @@ policies:
       - deployment: deployment.metadata.type == "application"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              type: infrastructure
+          dependsOn: deployment.metadata.type == "infrastructure"
 ```
 
 ### Multi-Service Dependency
@@ -137,14 +124,7 @@ policies:
       - deployment: deployment.name == "api-gateway"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchExpression:
-              - key: name
-                operator: In
-                values:
-                  - auth-service
-                  - user-service
-                  - billing-service
+          dependsOn: deployment.name in ["auth-service", "user-service", "billing-service"]
 ```
 
 ### By Team or Domain
@@ -158,9 +138,7 @@ policies:
       - deployment: deployment.metadata.layer == "frontend"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              layer: backend
+          dependsOn: deployment.metadata.layer == "backend"
 ```
 
 ## Dependency Resolution
@@ -171,7 +149,7 @@ A new version is released for a deployment with dependency rules.
 
 ### 2. Dependency Check
 
-Ctrlplane identifies all deployments matching `dependsOnDeploymentSelector`.
+Ctrlplane identifies all deployments matching the `dependsOn` CEL expression.
 
 ### 3. Status Evaluation
 
@@ -194,9 +172,7 @@ policies:
       - environment: environment.name == "production"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              name: database-migration
+          dependsOn: deployment.name == "database-migration"
       - environmentProgression:
           dependsOnEnvironmentSelector:
             matchLabels:
@@ -214,9 +190,7 @@ policies:
       - deployment: deployment.name == "frontend"
     rules:
       - deploymentDependency:
-          dependsOnDeploymentSelector:
-            matchLabels:
-              name: api-service
+          dependsOn: deployment.name == "api-service"
       - gradualRollout:
           rolloutType: linear
           timeScaleInterval: 300
@@ -256,7 +230,7 @@ policies:
 If a deployment is blocked waiting for dependencies:
 
 1. Check the dependency deployment's status
-2. Verify the selector matches the expected deployment
+2. Verify the CEL expression matches the expected deployment
 3. Ensure the dependency version is compatible
 4. Review the dependency deployment's success status
 
@@ -273,4 +247,3 @@ If you encounter circular dependency errors:
 - [Policies Overview](./overview) - Learn about policy structure
 - [Environment Progression](./environment-progression) - Cross-environment gates
 - [Gradual Rollouts](./gradual-rollouts) - Control deployment pace
-

@@ -168,12 +168,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   DeploymentDependencyRule: {
     type: 'object',
-    required: ['dependsOnDeploymentSelector'],
+    required: ['dependsOn'],
     properties: {
-      dependsOnDeploymentSelector: openapi.schemaRef('Selector'),
-      reference: {
+      dependsOn: {
         type: 'string',
-        description: 'Reference to the entity that this rule depends on',
+        description: 'CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed.',
       },
     },
   },
