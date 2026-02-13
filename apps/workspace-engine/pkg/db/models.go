@@ -69,9 +69,10 @@ type DeploymentVersion struct {
 	ID             uuid.UUID
 	Name           string
 	Tag            string
-	Config         []byte
-	JobAgentConfig []byte
+	Config         map[string]any
+	JobAgentConfig map[string]any
 	DeploymentID   uuid.UUID
+	Metadata       map[string]string
 	Status         DeploymentVersionStatus
 	Message        pgtype.Text
 	CreatedAt      pgtype.Timestamptz

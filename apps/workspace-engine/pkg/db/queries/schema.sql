@@ -35,6 +35,7 @@ CREATE TABLE deployment_version (
     config JSONB NOT NULL DEFAULT '{}',
     job_agent_config JSONB NOT NULL DEFAULT '{}',
     deployment_id UUID NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}',
     status deployment_version_status NOT NULL DEFAULT 'ready',
     message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -22,7 +22,7 @@ func (q *Queries) DeleteDeploymentVersion(ctx context.Context, id uuid.UUID) err
 }
 
 const getDeploymentVersionByID = `-- name: GetDeploymentVersionByID :one
-SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id FROM deployment_version WHERE id = $1
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version WHERE id = $1
 `
 
 func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (DeploymentVersion, error) {
@@ -35,6 +35,7 @@ func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (D
 		&i.Config,
 		&i.JobAgentConfig,
 		&i.DeploymentID,
+		&i.Metadata,
 		&i.Status,
 		&i.Message,
 		&i.CreatedAt,
@@ -44,7 +45,7 @@ func (q *Queries) GetDeploymentVersionByID(ctx context.Context, id uuid.UUID) (D
 }
 
 const listDeploymentVersionsByDeploymentID = `-- name: ListDeploymentVersionsByDeploymentID :many
-SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version WHERE deployment_id = $1 ORDER BY created_at DESC
 LIMIT COALESCE($2::int, 5000)
 `
 
@@ -69,6 +70,7 @@ func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, arg 
 			&i.Config,
 			&i.JobAgentConfig,
 			&i.DeploymentID,
+			&i.Metadata,
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
@@ -85,7 +87,7 @@ func (q *Queries) ListDeploymentVersionsByDeploymentID(ctx context.Context, arg 
 }
 
 const listDeploymentVersionsByWorkspaceID = `-- name: ListDeploymentVersionsByWorkspaceID :many
-SELECT id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id FROM deployment_version
+SELECT id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id FROM deployment_version
 WHERE workspace_id = $1
 ORDER BY created_at DESC
 LIMIT COALESCE($2::int, 5000)
@@ -112,6 +114,7 @@ func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, arg L
 			&i.Config,
 			&i.JobAgentConfig,
 			&i.DeploymentID,
+			&i.Metadata,
 			&i.Status,
 			&i.Message,
 			&i.CreatedAt,
@@ -128,21 +131,22 @@ func (q *Queries) ListDeploymentVersionsByWorkspaceID(ctx context.Context, arg L
 }
 
 const upsertDeploymentVersion = `-- name: UpsertDeploymentVersion :one
-INSERT INTO deployment_version (id, name, tag, config, job_agent_config, deployment_id, status, message, workspace_id, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10::timestamptz, NOW()))
+INSERT INTO deployment_version (id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, workspace_id, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11::timestamptz, NOW()))
 ON CONFLICT (deployment_id, tag) DO UPDATE
-SET name = EXCLUDED.name, config = EXCLUDED.config, job_agent_config = EXCLUDED.job_agent_config, status = EXCLUDED.status, message = EXCLUDED.message, workspace_id = EXCLUDED.workspace_id,
-    created_at = CASE WHEN $10::timestamptz IS NOT NULL THEN EXCLUDED.created_at ELSE deployment_version.created_at END
-RETURNING id, name, tag, config, job_agent_config, deployment_id, status, message, created_at, workspace_id
+SET name = EXCLUDED.name, config = EXCLUDED.config, job_agent_config = EXCLUDED.job_agent_config, metadata = EXCLUDED.metadata, status = EXCLUDED.status, message = EXCLUDED.message, workspace_id = EXCLUDED.workspace_id,
+    created_at = CASE WHEN $11::timestamptz IS NOT NULL THEN EXCLUDED.created_at ELSE deployment_version.created_at END
+RETURNING id, name, tag, config, job_agent_config, deployment_id, metadata, status, message, created_at, workspace_id
 `
 
 type UpsertDeploymentVersionParams struct {
 	ID             uuid.UUID
 	Name           string
 	Tag            string
-	Config         []byte
-	JobAgentConfig []byte
+	Config         map[string]any
+	JobAgentConfig map[string]any
 	DeploymentID   uuid.UUID
+	Metadata       map[string]string
 	Status         DeploymentVersionStatus
 	Message        pgtype.Text
 	WorkspaceID    uuid.UUID
@@ -157,6 +161,7 @@ func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploym
 		arg.Config,
 		arg.JobAgentConfig,
 		arg.DeploymentID,
+		arg.Metadata,
 		arg.Status,
 		arg.Message,
 		arg.WorkspaceID,
@@ -170,6 +175,7 @@ func (q *Queries) UpsertDeploymentVersion(ctx context.Context, arg UpsertDeploym
 		&i.Config,
 		&i.JobAgentConfig,
 		&i.DeploymentID,
+		&i.Metadata,
 		&i.Status,
 		&i.Message,
 		&i.CreatedAt,

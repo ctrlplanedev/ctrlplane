@@ -485,6 +485,12 @@ func DeploymentVersionMessage(message string) DeploymentVersionOption {
 	}
 }
 
+func DeploymentVersionMetadata(metadata map[string]string) DeploymentVersionOption {
+	return func(_ *TestWorkspace, dv *oapi.DeploymentVersion) {
+		dv.Metadata = metadata
+	}
+}
+
 // ===== Environment Options =====
 
 func EnvironmentName(name string) EnvironmentOption {

@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	wsstore "workspace-engine/pkg/workspace/store"
+
 	"workspace-engine/pkg/config"
 	"workspace-engine/pkg/db"
 	dbpersistence "workspace-engine/pkg/db/persistence"
@@ -219,7 +221,7 @@ func main() {
 		manager.WithWorkspaceCreateOptions(
 			workspace.WithTraceStore(traceStore),
 			workspace.WithStoreOptions(
-				// wsstore.WithDBDeploymentVersions(ctx),
+				wsstore.WithDBDeploymentVersions(ctx),
 			),
 			workspace.AddDefaultSystem(),
 		),

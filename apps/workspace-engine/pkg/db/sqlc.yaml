@@ -23,3 +23,12 @@ sql:
             go_type:
               import: "github.com/google/uuid"
               type: "UUID"
+          - column: "deployment_version.config"
+            go_type:
+              type: "map[string]any"
+          - column: "deployment_version.metadata"
+            go_type:
+              type: "map[string]string"
+          - column: "deployment_version.job_agent_config"
+            go_type:
+              type: "map[string]any"

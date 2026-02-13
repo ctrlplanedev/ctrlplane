@@ -30,6 +30,7 @@ func NewDeploymentVersion() *oapi.DeploymentVersion {
 		CreatedAt:      time.Now(),
 		Config:         make(map[string]any),
 		JobAgentConfig: make(map[string]any),
+		Metadata:       make(map[string]string),
 	}
 
 	return dv
