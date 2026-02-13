@@ -1096,6 +1096,21 @@ export interface components {
             deployment: components["schemas"]["Deployment"];
             variables: components["schemas"]["DeploymentVariableWithValues"][];
         };
+        DispatchContext: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            jobAgent: components["schemas"]["JobAgent"];
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            release?: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+            variables?: {
+                [key: string]: unknown;
+            };
+            version?: components["schemas"]["DeploymentVersion"];
+            workflow?: components["schemas"]["Workflow"];
+            workflowJob?: components["schemas"]["WorkflowJob"];
+            workflowRun?: components["schemas"]["WorkflowRun"];
+        };
         Environment: {
             /** Format: date-time */
             createdAt: string;
@@ -1191,6 +1206,7 @@ export interface components {
             completedAt?: string;
             /** Format: date-time */
             createdAt: string;
+            dispatchContext?: components["schemas"]["DispatchContext"];
             externalId?: string;
             id: string;
             jobAgentConfig: {
@@ -1218,6 +1234,9 @@ export interface components {
             name: string;
             type: string;
         };
+        JobAgentConfig: {
+            [key: string]: unknown;
+        };
         JobAgentRequestAccepted: {
             id: string;
             message: string;
@@ -1231,7 +1250,7 @@ export interface components {
         JobUpdateEvent: {
             agentId?: string;
             externalId?: string;
-            fieldsToUpdate?: ("completedAt" | "createdAt" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "metadata" | "releaseId" | "startedAt" | "status" | "updatedAt")[];
+            fieldsToUpdate?: ("completedAt" | "createdAt" | "dispatchContext" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "metadata" | "releaseId" | "startedAt" | "status" | "updatedAt")[];
             id?: string;
             job: components["schemas"]["Job"];
         } & (unknown | unknown);

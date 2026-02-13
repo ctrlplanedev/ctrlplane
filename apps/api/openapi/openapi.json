@@ -697,6 +697,49 @@
             ],
             "type": "object"
          },
+         "DispatchContext": {
+            "properties": {
+               "deployment": {
+                  "$ref": "#/components/schemas/Deployment"
+               },
+               "environment": {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               "jobAgent": {
+                  "$ref": "#/components/schemas/JobAgent"
+               },
+               "jobAgentConfig": {
+                  "$ref": "#/components/schemas/JobAgentConfig"
+               },
+               "release": {
+                  "$ref": "#/components/schemas/Release"
+               },
+               "resource": {
+                  "$ref": "#/components/schemas/Resource"
+               },
+               "variables": {
+                  "additionalProperties": true,
+                  "type": "object"
+               },
+               "version": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+               },
+               "workflow": {
+                  "$ref": "#/components/schemas/Workflow"
+               },
+               "workflowJob": {
+                  "$ref": "#/components/schemas/WorkflowJob"
+               },
+               "workflowRun": {
+                  "$ref": "#/components/schemas/WorkflowRun"
+               }
+            },
+            "required": [
+               "jobAgent",
+               "jobAgentConfig"
+            ],
+            "type": "object"
+         },
          "Environment": {
             "properties": {
                "createdAt": {
@@ -901,6 +944,9 @@
                   "format": "date-time",
                   "type": "string"
                },
+               "dispatchContext": {
+                  "$ref": "#/components/schemas/DispatchContext"
+               },
                "externalId": {
                   "type": "string"
                },
@@ -978,6 +1024,10 @@
             ],
             "type": "object"
          },
+         "JobAgentConfig": {
+            "additionalProperties": true,
+            "type": "object"
+         },
          "JobAgentRequestAccepted": {
             "properties": {
                "id": {
@@ -1049,6 +1099,7 @@
                      "enum": [
                         "completedAt",
                         "createdAt",
+                        "dispatchContext",
                         "externalId",
                         "id",
                         "jobAgentConfig",
