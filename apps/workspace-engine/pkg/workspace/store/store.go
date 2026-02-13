@@ -152,9 +152,10 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		setStatus("Migrating legacy systems")
 	}
 	for _, sys := range s.repo.Systems().Items() {
+		log.Info("Migrating legacy system", "system_id", sys.Id, "name", sys.Name)
 		if err := s.Systems.repo.Set(sys); err != nil {
 			log.Warn("Failed to migrate legacy system",
-				"system_id", sys.Id, "error", err)
+				"system_id", sys.Id, "name", sys.Name, "error", err)
 		}
 	}
 
@@ -162,9 +163,10 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		setStatus("Migrating legacy deployments")
 	}
 	for _, d := range s.repo.Deployments().Items() {
+		log.Info("Migrating legacy deployment", "deployment_id", d.Id, "name", d.Name)
 		if err := s.Deployments.repo.Set(d); err != nil {
 			log.Warn("Failed to migrate legacy deployment",
-				"deployment_id", d.Id, "error", err)
+				"deployment_id", d.Id, "name", d.Name, "error", err)
 		}
 	}
 
@@ -172,9 +174,10 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		setStatus("Migrating legacy environments")
 	}
 	for _, env := range s.repo.Environments().Items() {
+		log.Info("Migrating legacy environment", "environment_id", env.Id, "name", env.Name)
 		if err := s.Environments.repo.Set(env); err != nil {
 			log.Warn("Failed to migrate legacy environment",
-				"environment_id", env.Id, "error", err)
+				"environment_id", env.Id, "name", env.Name, "error", err)
 		}
 	}
 
@@ -182,9 +185,10 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		setStatus("Migrating legacy deployment versions")
 	}
 	for _, v := range s.repo.DeploymentVersions().Items() {
+		log.Info("Migrating legacy deployment version", "version_id", v.Id, "name", v.Name)
 		if err := s.DeploymentVersions.repo.Set(v); err != nil {
 			log.Warn("Failed to migrate legacy deployment version",
-				"version_id", v.Id, "error", err)
+				"version_id", v.Id, "name", v.Name, "error", err)
 		}
 	}
 
