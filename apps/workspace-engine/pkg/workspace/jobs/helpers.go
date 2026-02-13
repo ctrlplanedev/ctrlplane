@@ -1,6 +1,10 @@
 package jobs
 
-import "workspace-engine/pkg/oapi"
+import (
+	"encoding/json"
+	"fmt"
+	"workspace-engine/pkg/oapi"
+)
 
 // mergeJobAgentConfig merges the given job agent configs into a single config.
 // The configs are merged in the order they are provided, with later configs overriding earlier ones.
@@ -22,4 +26,16 @@ func deepMerge(dst, src map[string]any) {
 		}
 		dst[k] = v
 	}
+}
+
+func deepCopy[T any](src T) (T, error) {
+	var dst T
+	b, err := json.Marshal(src)
+	if err != nil {
+		return dst, fmt.Errorf("deep copy marshal: %w", err)
+	}
+	if err := json.Unmarshal(b, &dst); err != nil {
+		return dst, fmt.Errorf("deep copy unmarshal: %w", err)
+	}
+	return dst, nil
 }

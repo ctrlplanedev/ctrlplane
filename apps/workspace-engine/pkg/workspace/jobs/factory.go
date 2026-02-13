@@ -90,20 +90,50 @@ func (f *Factory) buildJobAgentConfig(release *oapi.Release, deployment *oapi.De
 	return mergedConfig, nil
 }
 
-func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (*oapi.DispatchContext, error) {
-	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
+func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent, mergedConfig oapi.JobAgentConfig) (*oapi.DispatchContext, error) {
+	environment, exists := f.store.Environments.Get(release.ReleaseTarget.EnvironmentId)
+	if !exists {
+		return nil, fmt.Errorf("environment %s not found", release.ReleaseTarget.EnvironmentId)
+	}
+	envCopy, err := deepCopy(environment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build job agent config: %w", err)
+		return nil, fmt.Errorf("failed to copy environment: %w", err)
 	}
 
-	dispatchContext := oapi.DispatchContext{
-		Release:        release,
-		Deployment:     deployment,
-		JobAgent:       *jobAgent,
-		JobAgentConfig: mergedConfig,
-		Version:        &release.Version,
-		Variables:      release.Variables,
+	resource, exists := f.store.Resources.Get(release.ReleaseTarget.ResourceId)
+	if !exists {
+		return nil, fmt.Errorf("resource %s not found", release.ReleaseTarget.ResourceId)
 	}
+	resourceCopy, err := deepCopy(resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy resource: %w", err)
+	}
+
+	releaseCopy, err := deepCopy(release)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy release: %w", err)
+	}
+
+	deploymentCopy, err := deepCopy(deployment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy deployment: %w", err)
+	}
+
+	agentCopy, err := deepCopy(jobAgent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy job agent: %w", err)
+	}
+
+	return &oapi.DispatchContext{
+		Release:        releaseCopy,
+		Deployment:     deploymentCopy,
+		Environment:    envCopy,
+		Resource:       resourceCopy,
+		JobAgent:       *agentCopy,
+		JobAgentConfig: mergedConfig,
+		Version:        &releaseCopy.Version,
+		Variables:      &releaseCopy.Variables,
+	}, nil
 }
 
 // CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
@@ -176,24 +206,97 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 		return nil, fmt.Errorf("failed to get merged job agent config: %w", err)
 	}
 
+	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent, mergedConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
+	}
+
 	return &oapi.Job{
-		Id:             jobId,
-		ReleaseId:      release.ID(),
-		JobAgentId:     *jobAgentId,
-		JobAgentConfig: mergedConfig,
-		Status:         oapi.JobStatusPending,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		Metadata:       make(map[string]string),
+		Id:              jobId,
+		ReleaseId:       release.ID(),
+		JobAgentId:      *jobAgentId,
+		JobAgentConfig:  mergedConfig,
+		Status:          oapi.JobStatusPending,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+		Metadata:        make(map[string]string),
+		DispatchContext: dispatchContext,
 	}, nil
 }
 
-func (f *Factory) CreateJobForStep(ctx context.Context, job *oapi.WorkflowJob, action *trace.Action) (*oapi.Job, error) {
-	_, span := tracer.Start(ctx, "CreateJobForStep",
-		oteltrace.WithAttributes(
-			attribute.String("workflow_job.id", job.Id),
-		))
-	defer span.End()
+func (f *Factory) buildWorkflowJobConfig(wfJob *oapi.WorkflowJob, jobAgent *oapi.JobAgent) (oapi.JobAgentConfig, error) {
+	agentConfig := jobAgent.Config
+	workflowJobConfig := wfJob.Config
+	mergedConfig, err := mergeJobAgentConfig(agentConfig, workflowJobConfig)
+	if err != nil {
+		return oapi.JobAgentConfig{}, fmt.Errorf("failed to merge job agent configs: %w", err)
+	}
+	return mergedConfig, nil
+}
 
-	panic("not implemented")
+func (f *Factory) buildWorkflowJobDispatchContext(wfJob *oapi.WorkflowJob, jobAgent *oapi.JobAgent, mergedConfig oapi.JobAgentConfig) (*oapi.DispatchContext, error) {
+	jobAgentCopy, err := deepCopy(jobAgent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy job agent: %w", err)
+	}
+
+	workflowJobCopy, err := deepCopy(wfJob)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy workflow job: %w", err)
+	}
+
+	workflowRun, exists := f.store.WorkflowRuns.Get(wfJob.WorkflowRunId)
+	if !exists {
+		return nil, fmt.Errorf("workflow run %s not found", wfJob.WorkflowRunId)
+	}
+	workflowRunCopy, err := deepCopy(workflowRun)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy workflow run: %w", err)
+	}
+
+	workflow, exists := f.store.Workflows.Get(workflowRun.WorkflowId)
+	if !exists {
+		return nil, fmt.Errorf("workflow %s not found", workflowRun.WorkflowId)
+	}
+	workflowCopy, err := deepCopy(workflow)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy workflow: %w", err)
+	}
+
+	return &oapi.DispatchContext{
+		WorkflowJob:    workflowJobCopy,
+		JobAgent:       *jobAgentCopy,
+		JobAgentConfig: mergedConfig,
+		WorkflowRun:    workflowRunCopy,
+		Workflow:       workflowCopy,
+	}, nil
+}
+
+func (f *Factory) CreateJobForWorkflowJob(ctx context.Context, wfJob *oapi.WorkflowJob) (*oapi.Job, error) {
+	jobAgent, exists := f.store.JobAgents.Get(wfJob.Ref)
+	if !exists {
+		return nil, fmt.Errorf("job agent %s not found", wfJob.Ref)
+	}
+
+	mergedConfig, err := f.buildWorkflowJobConfig(wfJob, jobAgent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build workflow job config: %w", err)
+	}
+
+	dispatchContext, err := f.buildWorkflowJobDispatchContext(wfJob, jobAgent, mergedConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build workflow job dispatch context: %w", err)
+	}
+
+	return &oapi.Job{
+		Id:              uuid.New().String(),
+		WorkflowJobId:   wfJob.Id,
+		JobAgentId:      jobAgent.Id,
+		JobAgentConfig:  mergedConfig,
+		Status:          oapi.JobStatusPending,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+		Metadata:        make(map[string]string),
+		DispatchContext: dispatchContext,
+	}, nil
 }
