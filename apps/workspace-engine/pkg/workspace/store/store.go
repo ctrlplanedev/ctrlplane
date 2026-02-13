@@ -25,6 +25,33 @@ func WithDBDeploymentVersions(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBDeployments replaces the default in-memory DeploymentRepo
+// with a DB-backed implementation.
+func WithDBDeployments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Deployments.SetRepo(dbRepo.Deployments())
+	}
+}
+
+// WithDBEnvironments replaces the default in-memory EnvironmentRepo
+// with a DB-backed implementation.
+func WithDBEnvironments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Environments.SetRepo(dbRepo.Environments())
+	}
+}
+
+// WithDBSystems replaces the default in-memory SystemRepo
+// with a DB-backed implementation.
+func WithDBSystems(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Systems.SetRepo(dbRepo.Systems())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -115,10 +142,42 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		return err
 	}
 
-	// Migrate legacy changelog deployment versions into the active repo.
-	// After Router().Apply(), the in-memory repo may contain deployment
-	// versions loaded from changelog_entry records. When the DB backend is
-	// active, sync them so they are available through the DB-backed repo.
+	// Migrate legacy changelog entities into the active repos.
+	// After Router().Apply(), the in-memory repo may contain entities
+	// loaded from changelog_entry records. When the DB backend is
+	// active, sync them so they are available through the DB-backed repos.
+	// The DB repo Set() methods handle creating join table entries
+	// (system_deployment, system_environment) from the oapi SystemId field.
+	if setStatus != nil {
+		setStatus("Migrating legacy systems")
+	}
+	for _, sys := range s.repo.Systems().Items() {
+		if err := s.Systems.repo.Set(sys); err != nil {
+			log.Warn("Failed to migrate legacy system",
+				"system_id", sys.Id, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy deployments")
+	}
+	for _, d := range s.repo.Deployments().Items() {
+		if err := s.Deployments.repo.Set(d); err != nil {
+			log.Warn("Failed to migrate legacy deployment",
+				"deployment_id", d.Id, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy environments")
+	}
+	for _, env := range s.repo.Environments().Items() {
+		if err := s.Environments.repo.Set(env); err != nil {
+			log.Warn("Failed to migrate legacy environment",
+				"environment_id", env.Id, "error", err)
+		}
+	}
+
 	if setStatus != nil {
 		setStatus("Migrating legacy deployment versions")
 	}

@@ -11,12 +11,39 @@ import (
 	"github.com/google/uuid"
 )
 
+const deleteSystem = `-- name: DeleteSystem :exec
+DELETE FROM system WHERE id = $1
+`
+
+func (q *Queries) DeleteSystem(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteSystem, id)
+	return err
+}
+
+const getSystemByID = `-- name: GetSystemByID :one
+SELECT id, name, description, workspace_id, metadata FROM system WHERE id = $1
+`
+
+func (q *Queries) GetSystemByID(ctx context.Context, id uuid.UUID) (System, error) {
+	row := q.db.QueryRow(ctx, getSystemByID, id)
+	var i System
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WorkspaceID,
+		&i.Metadata,
+	)
+	return i, err
+}
+
 const listSystemsByWorkspaceID = `-- name: ListSystemsByWorkspaceID :many
 SELECT
     s.id,
     s.workspace_id,
     s.name,
-    s.description
+    s.description,
+    s.metadata
 FROM system s
 WHERE s.workspace_id = $1
 `
@@ -26,6 +53,7 @@ type ListSystemsByWorkspaceIDRow struct {
 	WorkspaceID uuid.UUID
 	Name        string
 	Description string
+	Metadata    []byte
 }
 
 func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListSystemsByWorkspaceIDRow, error) {
@@ -42,6 +70,7 @@ func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID uuid
 			&i.WorkspaceID,
 			&i.Name,
 			&i.Description,
+			&i.Metadata,
 		); err != nil {
 			return nil, err
 		}
@@ -51,4 +80,40 @@ func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID uuid
 		return nil, err
 	}
 	return items, nil
+}
+
+const upsertSystem = `-- name: UpsertSystem :one
+INSERT INTO system (id, name, description, workspace_id, metadata)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (id) DO UPDATE
+SET name = EXCLUDED.name, description = EXCLUDED.description,
+    workspace_id = EXCLUDED.workspace_id, metadata = EXCLUDED.metadata
+RETURNING id, name, description, workspace_id, metadata
+`
+
+type UpsertSystemParams struct {
+	ID          uuid.UUID
+	Name        string
+	Description string
+	WorkspaceID uuid.UUID
+	Metadata    []byte
+}
+
+func (q *Queries) UpsertSystem(ctx context.Context, arg UpsertSystemParams) (System, error) {
+	row := q.db.QueryRow(ctx, upsertSystem,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.WorkspaceID,
+		arg.Metadata,
+	)
+	var i System
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WorkspaceID,
+		&i.Metadata,
+	)
+	return i, err
 }

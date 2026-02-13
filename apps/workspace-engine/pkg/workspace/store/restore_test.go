@@ -187,7 +187,7 @@ func TestStore_Restore_EmptyEnvironments(t *testing.T) {
 	require.NoError(t, err, "Restore should succeed with no environments")
 
 	// Verify system was restored
-	restoredSystem, ok := testStore.Repo().Systems.Get(system.Id)
+	restoredSystem, ok := testStore.Repo().Systems().Get(system.Id)
 	require.True(t, ok, "System should be restored")
 	assert.Equal(t, system.Name, restoredSystem.Name)
 }

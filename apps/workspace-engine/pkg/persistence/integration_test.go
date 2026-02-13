@@ -87,7 +87,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify entities were restored correctly
-	restoredSystem, ok := testStore.Repo().Systems.Get(system.Id)
+	restoredSystem, ok := testStore.Repo().Systems().Get(system.Id)
 	require.True(t, ok, "System should be restored")
 	assert.Equal(t, system.Name, restoredSystem.Name)
 	assert.Equal(t, system.Description, restoredSystem.Description)
@@ -99,7 +99,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	assert.Equal(t, resource.Version, restoredResource.Version)
 	assert.Equal(t, resource.Metadata["env"], restoredResource.Metadata["env"])
 
-	restoredDeployment, ok := testStore.Repo().Deployments.Get(deployment.Id)
+	restoredDeployment, ok := testStore.Repo().Deployments().Get(deployment.Id)
 	require.True(t, ok, "Deployment should be restored")
 	assert.Equal(t, deployment.Name, restoredDeployment.Name)
 	assert.Equal(t, deployment.Slug, restoredDeployment.Slug)
@@ -291,7 +291,7 @@ func TestPersistence_MultipleNamespaces(t *testing.T) {
 	err = testStore1.Repo().Router().Apply(ctx, loaded1)
 	require.NoError(t, err)
 
-	restoredSystem1, ok := testStore1.Repo().Systems.Get(system1.Id)
+	restoredSystem1, ok := testStore1.Repo().Systems().Get(system1.Id)
 	require.True(t, ok)
 	assert.Equal(t, "system-1", restoredSystem1.Name)
 
@@ -299,7 +299,7 @@ func TestPersistence_MultipleNamespaces(t *testing.T) {
 	err = testStore2.Repo().Router().Apply(ctx, loaded2)
 	require.NoError(t, err)
 
-	restoredSystem2, ok := testStore2.Repo().Systems.Get(system2.Id)
+	restoredSystem2, ok := testStore2.Repo().Systems().Get(system2.Id)
 	require.True(t, ok)
 	assert.Equal(t, "system-2", restoredSystem2.Name)
 }
@@ -464,7 +464,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify each entity type was restored
-	_, ok := testStore.Repo().Systems.Get(systemId)
+	_, ok := testStore.Repo().Systems().Get(systemId)
 	assert.True(t, ok, "System should be restored")
 
 	_, ok = testStore.Repo().Resources.Get(resource.Id)
@@ -476,7 +476,7 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok = testStore.Repo().ResourceVariables.Get(resourceVariable.ID())
 	assert.True(t, ok, "ResourceVariable should be restored")
 
-	_, ok = testStore.Repo().Deployments.Get(deploymentId)
+	_, ok = testStore.Repo().Deployments().Get(deploymentId)
 	assert.True(t, ok, "Deployment should be restored")
 
 	_, ok = testStore.Repo().DeploymentVersions().Get(deploymentVersion.Id)
@@ -645,11 +645,11 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify all base entities are restored
-	restoredSystem, ok := newStore.Repo().Systems.Get(systemId)
+	restoredSystem, ok := newStore.Repo().Systems().Get(systemId)
 	require.True(t, ok, "System should be restored")
 	assert.Equal(t, "production-system", restoredSystem.Name)
 
-	restoredDeployment, ok := newStore.Repo().Deployments.Get(deploymentId)
+	restoredDeployment, ok := newStore.Repo().Deployments().Get(deploymentId)
 	require.True(t, ok, "Deployment should be restored")
 	assert.Equal(t, "web-app", restoredDeployment.Name)
 

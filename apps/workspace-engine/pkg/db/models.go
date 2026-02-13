@@ -73,7 +73,6 @@ type Deployment struct {
 	JobAgentConfig   map[string]any
 	ResourceSelector string
 	Metadata         map[string]string
-	CreatedAt        pgtype.Timestamptz
 	WorkspaceID      uuid.UUID
 }
 

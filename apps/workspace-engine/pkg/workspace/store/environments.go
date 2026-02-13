@@ -5,31 +5,40 @@ import (
 	"fmt"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/selector"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
+
+	"github.com/charmbracelet/log"
 )
 
 func NewEnvironments(store *Store) *Environments {
 	return &Environments{
-		repo:  store.repo,
+		repo:  store.repo.Environments(),
 		store: store,
 	}
 }
 
 type Environments struct {
-	repo  *memory.InMemory
+	repo  repository.EnvironmentRepo
 	store *Store
 }
 
+// SetRepo replaces the underlying EnvironmentRepo implementation.
+func (e *Environments) SetRepo(repo repository.EnvironmentRepo) {
+	e.repo = repo
+}
+
 func (e *Environments) Items() map[string]*oapi.Environment {
-	return e.repo.Environments.Items()
+	return e.repo.Items()
 }
 
 func (e *Environments) Get(id string) (*oapi.Environment, bool) {
-	return e.repo.Environments.Get(id)
+	return e.repo.Get(id)
 }
 
 func (e *Environments) Upsert(ctx context.Context, environment *oapi.Environment) error {
-	e.repo.Environments.Set(environment.Id, environment)
+	if err := e.repo.Set(environment); err != nil {
+		log.Error("Failed to upsert environment", "error", err)
+	}
 	e.store.changeset.RecordUpsert(environment)
 
 	return nil
@@ -41,7 +50,7 @@ func (e *Environments) Remove(ctx context.Context, id string) {
 		return
 	}
 
-	e.repo.Environments.Remove(id)
+	e.repo.Remove(id)
 	e.store.changeset.RecordDelete(env)
 }
 

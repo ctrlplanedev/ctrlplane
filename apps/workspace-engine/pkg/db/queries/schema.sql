@@ -21,7 +21,6 @@ CREATE TABLE deployment (
     job_agent_config JSONB NOT NULL DEFAULT '{}',
     resource_selector TEXT NOT NULL DEFAULT 'false',
     metadata JSONB NOT NULL DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
 );
 

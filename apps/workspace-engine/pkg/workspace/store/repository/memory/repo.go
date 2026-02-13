@@ -50,14 +50,14 @@ func New(wsId string) *InMemory {
 		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
 		ResourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
 		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
-		Deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
+		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
 		deploymentVersions:       createMemDBStore[*oapi.DeploymentVersion](router, "deployment_version", memdb),
 		DeploymentVariables:      createTypedStore[*oapi.DeploymentVariable](router, "deployment_variable"),
 		DeploymentVariableValues: createTypedStore[*oapi.DeploymentVariableValue](router, "deployment_variable_value"),
-		Environments:             createTypedStore[*oapi.Environment](router, "environment"),
+		environments:             createTypedStore[*oapi.Environment](router, "environment"),
 		Policies:                 createTypedStore[*oapi.Policy](router, "policy"),
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
-		Systems:                  createTypedStore[*oapi.System](router, "system"),
+		systems:                  createTypedStore[*oapi.System](router, "system"),
 		Releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		JobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
@@ -82,15 +82,15 @@ type InMemory struct {
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
 	ResourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
 
-	Deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
+	deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
 	DeploymentVariables      cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
 	deploymentVersions       *indexstore.Store[*oapi.DeploymentVersion]
 	DeploymentVariableValues cmap.ConcurrentMap[string, *oapi.DeploymentVariableValue]
 
-	Environments     cmap.ConcurrentMap[string, *oapi.Environment]
+	environments     cmap.ConcurrentMap[string, *oapi.Environment]
 	Policies         cmap.ConcurrentMap[string, *oapi.Policy]
 	PolicySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
-	Systems          cmap.ConcurrentMap[string, *oapi.System]
+	systems          cmap.ConcurrentMap[string, *oapi.System]
 	Releases         *indexstore.Store[*oapi.Release]
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
@@ -120,6 +120,45 @@ func (a *deploymentVersionRepoAdapter) GetByDeploymentID(deploymentID string) ([
 // DeploymentVersions implements repository.Repo.
 func (s *InMemory) DeploymentVersions() repository.DeploymentVersionRepo {
 	return &deploymentVersionRepoAdapter{s.deploymentVersions}
+}
+
+// cmapRepoAdapter wraps a cmap.ConcurrentMap to satisfy a basic entity repo interface.
+type cmapRepoAdapter[E persistence.Entity] struct {
+	store *cmap.ConcurrentMap[string, E]
+}
+
+func (a *cmapRepoAdapter[E]) Get(id string) (E, bool) {
+	return a.store.Get(id)
+}
+
+func (a *cmapRepoAdapter[E]) Set(entity E) error {
+	_, key := entity.CompactionKey()
+	a.store.Set(key, entity)
+	return nil
+}
+
+func (a *cmapRepoAdapter[E]) Remove(id string) error {
+	a.store.Remove(id)
+	return nil
+}
+
+func (a *cmapRepoAdapter[E]) Items() map[string]E {
+	return a.store.Items()
+}
+
+// Deployments implements repository.Repo.
+func (s *InMemory) Deployments() repository.DeploymentRepo {
+	return &cmapRepoAdapter[*oapi.Deployment]{store: &s.deployments}
+}
+
+// Environments implements repository.Repo.
+func (s *InMemory) Environments() repository.EnvironmentRepo {
+	return &cmapRepoAdapter[*oapi.Environment]{store: &s.environments}
+}
+
+// Systems implements repository.Repo.
+func (s *InMemory) Systems() repository.SystemRepo {
+	return &cmapRepoAdapter[*oapi.System]{store: &s.systems}
 }
 
 func (s *InMemory) Router() *persistence.RepositoryRouter {

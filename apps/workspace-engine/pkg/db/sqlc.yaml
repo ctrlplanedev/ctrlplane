@@ -1,4 +1,7 @@
 version: "2"
+servers:
+  - engine: postgresql
+    uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
 sql:
   - engine: postgresql
     schema:
@@ -6,7 +9,12 @@ sql:
     queries:
       - queries/workspaces.sql
       - queries/deployment_versions.sql
+      - queries/deployments.sql
+      - queries/environments.sql
+      - queries/systems.sql
       - queries/changelog.sql
+    database:
+      uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
     gen:
       go:
         package: db
@@ -42,9 +50,6 @@ sql:
           - column: "deployment.metadata"
             go_type:
               type: "map[string]string"
-          - column: "deployment.job_agent_config"
-            go_type:
-              type: "map[string]any"
 
           # Environment
           - column: "environment.metadata"
