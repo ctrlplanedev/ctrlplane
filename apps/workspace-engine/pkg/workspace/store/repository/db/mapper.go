@@ -72,14 +72,29 @@ func ToUpsertParams(wsId string, v *oapi.DeploymentVersion) (db.UpsertDeployment
 		createdAt = pgtype.Timestamptz{Time: v.CreatedAt, Valid: true}
 	}
 
+	metadata := v.Metadata
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+
+	config := v.Config
+	if config == nil {
+		config = make(map[string]any)
+	}
+
+	jobAgentConfig := map[string]any(v.JobAgentConfig)
+	if jobAgentConfig == nil {
+		jobAgentConfig = make(map[string]any)
+	}
+
 	return db.UpsertDeploymentVersionParams{
 		ID:             id,
 		Name:           v.Name,
 		Tag:            v.Tag,
-		Config:         v.Config,
-		JobAgentConfig: map[string]any(v.JobAgentConfig),
+		Config:         config,
+		JobAgentConfig: jobAgentConfig,
 		DeploymentID:   deploymentID,
-		Metadata:       v.Metadata,
+		Metadata:       metadata,
 		Status:         db.DeploymentVersionStatus(v.Status),
 		Message:        message,
 		WorkspaceID:    workspaceID,
