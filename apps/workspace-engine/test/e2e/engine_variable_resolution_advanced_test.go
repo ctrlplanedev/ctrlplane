@@ -979,8 +979,8 @@ func TestEngine_VariableResolution_SpecialCharactersInVariableNames(t *testing.T
 	specialVars := []string{"var_with_underscore", "var-with-dash", "var.with.dot"}
 	expectedValues := map[string]string{
 		"var_with_underscore": "underscore",
-		"var-with-dash":      "dash",
-		"var.with.dot":       "dot",
+		"var-with-dash":       "dash",
+		"var.with.dot":        "dot",
 	}
 	resolvedCount := 0
 
