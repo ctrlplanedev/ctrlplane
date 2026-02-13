@@ -509,7 +509,9 @@ func TestEngine_DispatchContextImmutability_VariablesUnchangedAfterResourceVaria
 
 	require.NotNil(t, job.DispatchContext)
 	require.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "my-app", (*job.DispatchContext.Variables)["app_name"])
+	dcAppName, err := (*job.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-app", dcAppName)
 
 	// Add a resource variable that would override the deployment variable on new jobs
 	rv := c.NewResourceVariable(resourceID, "app_name")
@@ -525,6 +527,8 @@ func TestEngine_DispatchContextImmutability_VariablesUnchangedAfterResourceVaria
 	require.True(t, ok)
 	require.NotNil(t, jobAfter.DispatchContext)
 	require.NotNil(t, jobAfter.DispatchContext.Variables)
-	assert.Equal(t, "my-app", (*jobAfter.DispatchContext.Variables)["app_name"],
+	dcAppNameAfter, err := (*jobAfter.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-app", dcAppNameAfter,
 		"DispatchContext.Variables should retain original values after resource variable update")
 }

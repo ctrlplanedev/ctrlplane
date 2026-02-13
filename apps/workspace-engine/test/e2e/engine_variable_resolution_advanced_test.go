@@ -121,7 +121,9 @@ func TestEngine_VariableResolution_MultipleSamePriorityValues(t *testing.T) {
 		t.Errorf("region should be one of the same-priority values, got %s", regionStr)
 	}
 
-	assert.Equal(t, regionStr, (*job.DispatchContext.Variables)["region"])
+	dispatchRegion, err := (*job.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, regionStr, dispatchRegion)
 }
 
 // TestEngine_VariableResolution_PriorityZeroVsNegative tests that priority 0
@@ -217,7 +219,9 @@ func TestEngine_VariableResolution_PriorityZeroVsNegative(t *testing.T) {
 		t.Errorf("expected 'zero-priority' (0 > -10), got %s", value)
 	}
 
-	assert.Equal(t, "zero-priority", (*job.DispatchContext.Variables)["priority_test"])
+	dispatchPriorityTest, err := (*job.DispatchContext.Variables)["priority_test"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "zero-priority", dispatchPriorityTest)
 
 	t.Logf("SUCCESS: Priority 0 wins over negative priority")
 }
@@ -332,7 +336,9 @@ func TestEngine_VariableResolution_HigherPriorityWins(t *testing.T) {
 		t.Errorf("expected 'high-priority-config' (priority 100), got %s", configStr)
 	}
 
-	assert.Equal(t, "high-priority-config", (*job.DispatchContext.Variables)["config"])
+	dispatchConfig, err := (*job.DispatchContext.Variables)["config"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "high-priority-config", dispatchConfig)
 
 	t.Logf("SUCCESS: Highest priority value (100) wins over lower priorities (50, 10)")
 }
@@ -436,7 +442,9 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 		t.Errorf("production resource should get 'production-config', got %s", config1Str)
 	}
 
-	assert.Equal(t, "production-config", (*job1.DispatchContext.Variables)["env_specific_config"])
+	dispatchConfig1, err := (*job1.DispatchContext.Variables)["env_specific_config"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "production-config", dispatchConfig1)
 
 	// Test development resource
 	releaseTarget2 := &oapi.ReleaseTarget{
@@ -467,7 +475,9 @@ func TestEngine_VariableResolution_SelectorMatchingWithPriority(t *testing.T) {
 		t.Errorf("development resource should get 'development-config', got %s", config2Str)
 	}
 
-	assert.Equal(t, "development-config", (*job2.DispatchContext.Variables)["env_specific_config"])
+	dispatchConfig2, err := (*job2.DispatchContext.Variables)["env_specific_config"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "development-config", dispatchConfig2)
 
 	t.Logf("SUCCESS: Selector matching correctly filters values before priority comparison")
 }
@@ -989,7 +999,9 @@ func TestEngine_VariableResolution_SpecialCharactersInVariableNames(t *testing.T
 			resolvedCount++
 			if strVal, err := val.AsStringValue(); err == nil {
 				t.Logf("Variable %s resolved to: %s", varName, strVal)
-				assert.Equal(t, expectedValues[varName], (*job.DispatchContext.Variables)[varName])
+				dcVal, dcErr := (*job.DispatchContext.Variables)[varName].AsStringValue()
+				assert.NoError(t, dcErr)
+				assert.Equal(t, expectedValues[varName], dcVal)
 			}
 		}
 	}
@@ -1073,7 +1085,9 @@ func TestEngine_VariableResolution_VeryLongVariableName(t *testing.T) {
 	if val, exists := release.Variables[longVarName]; exists {
 		if strVal, err := val.AsStringValue(); err == nil && strVal == "very-long-name" {
 			t.Logf("SUCCESS: Variable with %d-character name resolved", len(longVarName))
-			assert.Equal(t, "very-long-name", (*job.DispatchContext.Variables)[longVarName])
+			dcVal, dcErr := (*job.DispatchContext.Variables)[longVarName].AsStringValue()
+			assert.NoError(t, dcErr)
+			assert.Equal(t, "very-long-name", dcVal)
 		}
 	} else {
 		_, dcExists := (*job.DispatchContext.Variables)[longVarName]
@@ -1542,7 +1556,9 @@ func TestEngine_VariableResolution_FalsyValues(t *testing.T) {
 		if val, err := zero.AsIntegerValue(); err == nil && int64(val) == 0 {
 			falsyCount++
 			t.Logf("✓ Integer 0 is present")
-			assert.Equal(t, "0", (*job.DispatchContext.Variables)["zero"])
+			dcZero, dcErr := (*job.DispatchContext.Variables)["zero"].AsIntegerValue()
+			assert.NoError(t, dcErr)
+			assert.Equal(t, 0, dcZero)
 		}
 	}
 
@@ -1550,7 +1566,9 @@ func TestEngine_VariableResolution_FalsyValues(t *testing.T) {
 		if val, err := falseBool.AsBooleanValue(); err == nil && !val {
 			falsyCount++
 			t.Logf("✓ Boolean false is present")
-			assert.Equal(t, "false", (*job.DispatchContext.Variables)["false_bool"])
+			dcFalseBool, dcErr := (*job.DispatchContext.Variables)["false_bool"].AsBooleanValue()
+			assert.NoError(t, dcErr)
+			assert.Equal(t, false, dcFalseBool)
 		}
 	}
 
@@ -1558,7 +1576,9 @@ func TestEngine_VariableResolution_FalsyValues(t *testing.T) {
 		if val, err := emptyStr.AsStringValue(); err == nil && val == "" {
 			falsyCount++
 			t.Logf("✓ Empty string is present")
-			assert.Equal(t, "", (*job.DispatchContext.Variables)["empty_string"])
+			dcEmptyStr, dcErr := (*job.DispatchContext.Variables)["empty_string"].AsStringValue()
+			assert.NoError(t, dcErr)
+			assert.Equal(t, "", dcEmptyStr)
 		}
 	}
 

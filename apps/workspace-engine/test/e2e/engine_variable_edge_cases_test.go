@@ -293,7 +293,9 @@ func TestEngine_VariableResolution_ResourceVariableOverrideWithNull(t *testing.T
 	if featureFlag, exists := variables["feature_flag"]; exists {
 		if val, err := featureFlag.AsStringValue(); err == nil {
 			t.Logf("feature_flag resolved to: %s (deployment default used)", val)
-			assert.Equal(t, val, (*job.DispatchContext.Variables)["feature_flag"])
+			dcVal, dcErr := (*job.DispatchContext.Variables)["feature_flag"].AsStringValue()
+			assert.NoError(t, dcErr)
+			assert.Equal(t, val, dcVal)
 		} else {
 			t.Logf("feature_flag exists but type conversion failed: %v", err)
 		}
@@ -547,7 +549,9 @@ func TestEngine_VariableResolution_ReferenceWithMultipleMatches(t *testing.T) {
 		if name != "vpc-primary" && name != "vpc-secondary" {
 			t.Errorf("vpc_name should be one of the matching VPCs, got %s", name)
 		}
-		assert.Equal(t, name, (*job.DispatchContext.Variables)["vpc_name"])
+		dcName, dcErr := (*job.DispatchContext.Variables)["vpc_name"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, name, dcName)
 	} else {
 		t.Errorf("vpc_name should be resolved when reference has multiple matches (should use first)")
 	}
@@ -974,7 +978,9 @@ func TestEngine_VariableResolution_StringNumberConversion(t *testing.T) {
 		if port1Str != "8080" {
 			t.Errorf("Resource 1 port string should be '8080', got %s", port1Str)
 		}
-		assert.Equal(t, "8080", (*job1.DispatchContext.Variables)["port"])
+		dcPort1, dcErr := (*job1.DispatchContext.Variables)["port"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, "8080", dcPort1)
 	} else {
 		t.Logf("Resource 1 port is not a string: %v", err)
 	}
@@ -1011,7 +1017,9 @@ func TestEngine_VariableResolution_StringNumberConversion(t *testing.T) {
 		if int64(port2Int) != 8080 {
 			t.Errorf("Resource 2 port integer should be 8080, got %d", port2Int)
 		}
-		assert.Equal(t, "8080", (*job2.DispatchContext.Variables)["port"])
+		dcPort2, dcErr := (*job2.DispatchContext.Variables)["port"].AsIntegerValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, 8080, dcPort2)
 	} else {
 		t.Logf("Resource 2 port is not an integer: %v", err)
 	}
@@ -1107,7 +1115,9 @@ func TestEngine_VariableResolution_BooleanStringConversion(t *testing.T) {
 		if enabled1Str != "true" {
 			t.Errorf("Resource 1 enabled string should be 'true', got %s", enabled1Str)
 		}
-		assert.Equal(t, "true", (*job1.DispatchContext.Variables)["enabled"])
+		dcEnabled1, dcErr := (*job1.DispatchContext.Variables)["enabled"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, "true", dcEnabled1)
 	} else {
 		t.Logf("Resource 1 enabled is not a string: %v", err)
 	}
@@ -1144,7 +1154,9 @@ func TestEngine_VariableResolution_BooleanStringConversion(t *testing.T) {
 		if !enabled2Bool {
 			t.Errorf("Resource 2 enabled boolean should be true, got %v", enabled2Bool)
 		}
-		assert.Equal(t, "true", (*job2.DispatchContext.Variables)["enabled"])
+		dcEnabled2, dcErr := (*job2.DispatchContext.Variables)["enabled"].AsBooleanValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, true, dcEnabled2)
 	} else {
 		t.Logf("Resource 2 enabled is not a boolean: %v", err)
 	}
@@ -1240,7 +1252,9 @@ func TestEngine_VariableResolution_ZeroVsEmptyString(t *testing.T) {
 		if int64(value1Int) != 0 {
 			t.Errorf("Resource 1 value should be 0, got %d", value1Int)
 		}
-		assert.Equal(t, "0", (*job1.DispatchContext.Variables)["value"])
+		dcValue1, dcErr := (*job1.DispatchContext.Variables)["value"].AsIntegerValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, 0, dcValue1)
 	} else {
 		t.Errorf("Resource 1 value should be integer 0: %v", err)
 	}
@@ -1277,7 +1291,9 @@ func TestEngine_VariableResolution_ZeroVsEmptyString(t *testing.T) {
 		if value2Str != "" {
 			t.Errorf("Resource 2 value should be empty string, got '%s'", value2Str)
 		}
-		assert.Equal(t, "", (*job2.DispatchContext.Variables)["value"])
+		dcValue2, dcErr := (*job2.DispatchContext.Variables)["value"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, "", dcValue2)
 	} else {
 		t.Errorf("Resource 2 value should be empty string: %v", err)
 	}
@@ -1368,7 +1384,9 @@ func TestEngine_VariableResolution_NegativeNumbers(t *testing.T) {
 		t.Errorf("offset should be -42, got %d", offsetInt)
 	}
 
-	assert.Equal(t, "-42", (*job.DispatchContext.Variables)["offset"])
+	dcOffset, dcErr := (*job.DispatchContext.Variables)["offset"].AsIntegerValue()
+	assert.NoError(t, dcErr)
+	assert.Equal(t, -42, dcOffset)
 
 	t.Logf("SUCCESS: Negative integer -42 correctly stored and retrieved")
 }

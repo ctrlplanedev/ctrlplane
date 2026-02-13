@@ -89,7 +89,9 @@ func TestEngine_DeploymentVariableValue_LiteralStringValue(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "my-app", (*job.DispatchContext.Variables)["app_name"])
+	dispatchAppName, err := (*job.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-app", dispatchAppName)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -185,7 +187,9 @@ func TestEngine_DeploymentVariableValue_LiteralIntValue(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "5", (*job.DispatchContext.Variables)["replicas"])
+	replicasVal, err := (*job.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 5, replicasVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -281,7 +285,9 @@ func TestEngine_DeploymentVariableValue_LiteralBoolValue(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "true", (*job.DispatchContext.Variables)["enable_debug"])
+	dispatchEnableDebug, err := (*job.DispatchContext.Variables)["enable_debug"].AsBooleanValue()
+	assert.NoError(t, err)
+	assert.Equal(t, true, dispatchEnableDebug)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -507,7 +513,9 @@ func TestEngine_DeploymentVariableValue_ResourceSelectorMatching(t *testing.T) {
 	assert.NotNil(t, job1.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job1.DispatchContext.Version.Tag)
 	assert.NotNil(t, job1.DispatchContext.Variables)
-	assert.Equal(t, "us-east-1", (*job1.DispatchContext.Variables)["region"])
+	dispatchRegion1, err := (*job1.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-east-1", dispatchRegion1)
 
 	release1, exists := engine.Workspace().Releases().Get(job1.ReleaseId)
 	if !exists {
@@ -656,7 +664,9 @@ func TestEngine_DeploymentVariableValue_ResourceSelectorNotMatching(t *testing.T
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "us-west-2", (*job.DispatchContext.Variables)["region"])
+	dispatchRegion, err := (*job.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-west-2", dispatchRegion)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -759,7 +769,9 @@ func TestEngine_DeploymentVariableValue_NoResourceSelector(t *testing.T) {
 	assert.NotNil(t, job1.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job1.DispatchContext.Version.Tag)
 	assert.NotNil(t, job1.DispatchContext.Variables)
-	assert.Equal(t, "v1.0.0", (*job1.DispatchContext.Variables)["app_version"])
+	dispatchVersion1, err := (*job1.DispatchContext.Variables)["app_version"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "v1.0.0", dispatchVersion1)
 
 	release1, exists := engine.Workspace().Releases().Get(job1.ReleaseId)
 	if !exists {
@@ -806,7 +818,9 @@ func TestEngine_DeploymentVariableValue_NoResourceSelector(t *testing.T) {
 	assert.NotNil(t, job2.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job2.DispatchContext.Version.Tag)
 	assert.NotNil(t, job2.DispatchContext.Variables)
-	assert.Equal(t, "v1.0.0", (*job2.DispatchContext.Variables)["app_version"])
+	dispatchVersion2, err := (*job2.DispatchContext.Variables)["app_version"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "v1.0.0", dispatchVersion2)
 
 	release2, exists := engine.Workspace().Releases().Get(job2.ReleaseId)
 	if !exists {
@@ -928,7 +942,9 @@ func TestEngine_DeploymentVariableValue_MultipleSelectors(t *testing.T) {
 	assert.NotNil(t, job1.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job1.DispatchContext.Version.Tag)
 	assert.NotNil(t, job1.DispatchContext.Variables)
-	assert.Equal(t, "us-east-1", (*job1.DispatchContext.Variables)["region"])
+	dispatchRegion1, err := (*job1.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-east-1", dispatchRegion1)
 
 	release1, exists := engine.Workspace().Releases().Get(job1.ReleaseId)
 	if !exists {
@@ -975,7 +991,9 @@ func TestEngine_DeploymentVariableValue_MultipleSelectors(t *testing.T) {
 	assert.NotNil(t, job2.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job2.DispatchContext.Version.Tag)
 	assert.NotNil(t, job2.DispatchContext.Variables)
-	assert.Equal(t, "us-west-2", (*job2.DispatchContext.Variables)["region"])
+	dispatchRegion2, err := (*job2.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-west-2", dispatchRegion2)
 
 	release2, exists := engine.Workspace().Releases().Get(job2.ReleaseId)
 	if !exists {
@@ -1076,7 +1094,9 @@ func TestEngine_DeploymentVariableValue_PriorityOrdering(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "high-priority", (*job.DispatchContext.Variables)["replicas"])
+	dispatchReplicas, err := (*job.DispatchContext.Variables)["replicas"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "high-priority", dispatchReplicas)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -1204,7 +1224,9 @@ func TestEngine_DeploymentVariableValue_ReferenceValue(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, vpcID, (*job.DispatchContext.Variables)["vpc_id"])
+	vpcIDVal, err := (*job.DispatchContext.Variables)["vpc_id"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, vpcID, vpcIDVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -1335,7 +1357,9 @@ func TestEngine_DeploymentVariableValue_ReferenceNestedProperty(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "db.example.com", (*job.DispatchContext.Variables)["db_host"])
+	dbHostVal, err := (*job.DispatchContext.Variables)["db_host"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "db.example.com", dbHostVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -1440,7 +1464,9 @@ func TestEngine_DeploymentVariableValue_DefaultValueFallback(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "8080", (*job.DispatchContext.Variables)["port"])
+	portVal, err := (*job.DispatchContext.Variables)["port"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 8080, portVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -1537,7 +1563,9 @@ func TestEngine_DeploymentVariableValue_PriorityOverDefault(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "5", (*job.DispatchContext.Variables)["replicas"])
+	replicasVal, err := (*job.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 5, replicasVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -1647,7 +1675,9 @@ func TestEngine_DeploymentVariableValue_MultipleValuesSameResource(t *testing.T)
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "60", (*job.DispatchContext.Variables)["timeout"])
+	timeoutVal, err := (*job.DispatchContext.Variables)["timeout"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 60, timeoutVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -1743,7 +1773,9 @@ func TestEngine_DeploymentVariableValue_EmptyStringValue(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "", (*job.DispatchContext.Variables)["optional_value"])
+	optionalVal, err := (*job.DispatchContext.Variables)["optional_value"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "", optionalVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -1983,8 +2015,12 @@ func TestEngine_DeploymentVariableValue_MixedLiteralAndReference(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "my-api", (*job.DispatchContext.Variables)["app_name"])
-	assert.Equal(t, "db.example.com", (*job.DispatchContext.Variables)["db_host"])
+	appNameVal, err := (*job.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-api", appNameVal)
+	dbHostVal2, err := (*job.DispatchContext.Variables)["db_host"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "db.example.com", dbHostVal2)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {
@@ -2097,7 +2133,9 @@ func TestEngine_DeploymentVariableValue_ResourceVariableOverride(t *testing.T) {
 	assert.NotNil(t, job.DispatchContext.Version)
 	assert.Equal(t, "v1.0.0", job.DispatchContext.Version.Tag)
 	assert.NotNil(t, job.DispatchContext.Variables)
-	assert.Equal(t, "5", (*job.DispatchContext.Variables)["replicas"])
+	replicasVal, err := (*job.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 5, replicasVal)
 
 	release, exists := engine.Workspace().Releases().Get(job.ReleaseId)
 	if !exists {

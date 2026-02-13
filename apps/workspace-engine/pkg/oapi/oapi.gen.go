@@ -377,17 +377,17 @@ type DeploymentWithVariables struct {
 
 // DispatchContext defines model for DispatchContext.
 type DispatchContext struct {
-	Deployment     *Deployment             `json:"deployment,omitempty"`
-	Environment    *Environment            `json:"environment,omitempty"`
-	JobAgent       JobAgent                `json:"jobAgent"`
-	JobAgentConfig JobAgentConfig          `json:"jobAgentConfig"`
-	Release        *Release                `json:"release,omitempty"`
-	Resource       *Resource               `json:"resource,omitempty"`
-	Variables      *map[string]interface{} `json:"variables,omitempty"`
-	Version        *DeploymentVersion      `json:"version,omitempty"`
-	Workflow       *Workflow               `json:"workflow,omitempty"`
-	WorkflowJob    *WorkflowJob            `json:"workflowJob,omitempty"`
-	WorkflowRun    *WorkflowRun            `json:"workflowRun,omitempty"`
+	Deployment     *Deployment              `json:"deployment,omitempty"`
+	Environment    *Environment             `json:"environment,omitempty"`
+	JobAgent       JobAgent                 `json:"jobAgent"`
+	JobAgentConfig JobAgentConfig           `json:"jobAgentConfig"`
+	Release        *Release                 `json:"release,omitempty"`
+	Resource       *Resource                `json:"resource,omitempty"`
+	Variables      *map[string]LiteralValue `json:"variables,omitempty"`
+	Version        *DeploymentVersion       `json:"version,omitempty"`
+	Workflow       *Workflow                `json:"workflow,omitempty"`
+	WorkflowJob    *WorkflowJob             `json:"workflowJob,omitempty"`
+	WorkflowRun    *WorkflowRun             `json:"workflowRun,omitempty"`
 }
 
 // EntityRelation defines model for EntityRelation.
