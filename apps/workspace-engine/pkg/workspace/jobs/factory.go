@@ -76,8 +76,6 @@ func (f *Factory) jobAgentNotFoundJob(releaseID, jobAgentID, deploymentName stri
 }
 
 func (f *Factory) buildJobAgentConfig(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (oapi.JobAgentConfig, error) {
-	mergedConfig := make(oapi.JobAgentConfig)
-
 	agentConfig := jobAgent.Config
 	deploymentConfig := deployment.JobAgentConfig
 	versionConfig := release.Version.JobAgentConfig
