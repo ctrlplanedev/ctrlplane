@@ -267,6 +267,12 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
 	_ = testStore.Deployments.Upsert(ctx, deployment)
 
+	environment := createTestEnvironmentForExecutor(environmentID, systemID, "test-environment")
+	_ = testStore.Environments.Upsert(ctx, environment)
+
+	resource := createTestResourceForExecutor(resourceID, "test-resource", workspaceID)
+	_, _ = testStore.Resources.Upsert(ctx, resource)
+
 	// Create and execute multiple releases
 	releases := []*oapi.Release{
 		createTestRelease(deploymentID, environmentID, resourceID, uuid.New().String(), "v1.0.0"),

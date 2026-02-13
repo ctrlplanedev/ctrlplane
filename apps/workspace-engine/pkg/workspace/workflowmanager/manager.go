@@ -8,6 +8,7 @@ import (
 	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents"
+	"workspace-engine/pkg/workspace/jobs"
 	"workspace-engine/pkg/workspace/store"
 
 	"github.com/google/uuid"
@@ -20,12 +21,14 @@ var workflowCelEnv, _ = celutil.NewEnvBuilder().
 type Manager struct {
 	store            *store.Store
 	jobAgentRegistry *jobagents.Registry
+	factory          *jobs.Factory
 }
 
 func NewWorkflowManager(store *store.Store, jobAgentRegistry *jobagents.Registry) *Manager {
 	return &Manager{
 		store:            store,
 		jobAgentRegistry: jobAgentRegistry,
+		factory:          jobs.NewFactory(store),
 	}
 }
 
@@ -119,30 +122,15 @@ func (m *Manager) CreateWorkflowRun(ctx context.Context, workflowId string, inpu
 	m.store.WorkflowRuns.Upsert(ctx, workflowRun)
 
 	for _, wfJob := range workflowJobs {
-		if err := m.dispatchJob(ctx, wfJob); err != nil {
-			return workflowRun, err
+		job, err := m.factory.CreateJobForWorkflowJob(ctx, wfJob)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create job for workflow job %q: %w", wfJob.Id, err)
+		}
+		m.store.Jobs.Upsert(ctx, job)
+		if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
+			return nil, fmt.Errorf("failed to dispatch job: %w", err)
 		}
 	}
 
 	return workflowRun, nil
-}
-
-func (m *Manager) dispatchJob(ctx context.Context, wfJob *oapi.WorkflowJob) error {
-	job := &oapi.Job{
-		Id:             uuid.New().String(),
-		WorkflowJobId:  wfJob.Id,
-		JobAgentId:     wfJob.Ref,
-		JobAgentConfig: oapi.JobAgentConfig{},
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		Metadata:       make(map[string]string),
-		Status:         oapi.JobStatusPending,
-	}
-
-	m.store.Jobs.Upsert(ctx, job)
-	if err := m.jobAgentRegistry.Dispatch(ctx, job); err != nil {
-		return fmt.Errorf("failed to dispatch job: %w", err)
-	}
-
-	return nil
 }
