@@ -1,4 +1,4 @@
-package db
+package deploymentversions
 
 import (
 	"context"
@@ -10,20 +10,20 @@ import (
 	"github.com/google/uuid"
 )
 
-// dbDeploymentVersionRepo implements repository.DeploymentVersionRepo
-// backed by the deployment_version table via sqlc queries.
-type dbDeploymentVersionRepo struct {
+// Repo implements repository.DeploymentVersionRepo backed by the
+// deployment_version table via sqlc queries.
+type Repo struct {
 	ctx         context.Context
 	workspaceID string
 }
 
-// NewDeploymentVersionRepo returns a DB-backed DeploymentVersionRepo.
+// NewRepo returns a DB-backed DeploymentVersionRepo.
 // The provided context is used for all database operations.
-func NewDeploymentVersionRepo(ctx context.Context, workspaceID string) *dbDeploymentVersionRepo {
-	return &dbDeploymentVersionRepo{ctx: ctx, workspaceID: workspaceID}
+func NewRepo(ctx context.Context, workspaceID string) *Repo {
+	return &Repo{ctx: ctx, workspaceID: workspaceID}
 }
 
-func (r *dbDeploymentVersionRepo) Get(id string) (*oapi.DeploymentVersion, bool) {
+func (r *Repo) Get(id string) (*oapi.DeploymentVersion, bool) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		log.Warn("Failed to parse deployment version id", "id", id, "error", err)
@@ -43,7 +43,7 @@ func (r *dbDeploymentVersionRepo) Get(id string) (*oapi.DeploymentVersion, bool)
 	return v, true
 }
 
-func (r *dbDeploymentVersionRepo) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
+func (r *Repo) GetByDeploymentID(deploymentID string) ([]*oapi.DeploymentVersion, error) {
 	uid, err := uuid.Parse(deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("parse deployment_id: %w", err)
@@ -68,7 +68,7 @@ func (r *dbDeploymentVersionRepo) GetByDeploymentID(deploymentID string) ([]*oap
 	return result, nil
 }
 
-func (r *dbDeploymentVersionRepo) Set(entity *oapi.DeploymentVersion) error {
+func (r *Repo) Set(entity *oapi.DeploymentVersion) error {
 	params, err := ToUpsertParams(r.workspaceID, entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
@@ -81,7 +81,7 @@ func (r *dbDeploymentVersionRepo) Set(entity *oapi.DeploymentVersion) error {
 	return nil
 }
 
-func (r *dbDeploymentVersionRepo) Remove(id string) error {
+func (r *Repo) Remove(id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		return fmt.Errorf("parse id: %w", err)
@@ -90,7 +90,7 @@ func (r *dbDeploymentVersionRepo) Remove(id string) error {
 	return db.GetQueries(r.ctx).DeleteDeploymentVersion(r.ctx, uid)
 }
 
-func (r *dbDeploymentVersionRepo) Items() map[string]*oapi.DeploymentVersion {
+func (r *Repo) Items() map[string]*oapi.DeploymentVersion {
 	uid, err := uuid.Parse(r.workspaceID)
 	if err != nil {
 		log.Warn("Failed to parse workspace id for Items()", "id", r.workspaceID, "error", err)
