@@ -52,9 +52,12 @@ func NewEvaluator(store *store.Store, policyRule *oapi.PolicyRule) evaluator.Eva
 		return nil
 	}
 
-	// Set the location on the rrule's DTSTART if not already set
-	if r.OrigOptions.Dtstart.IsZero() {
-		r.DTStart(time.Now().In(loc))
+	// Set DTSTART far enough in the past to find previous occurrences
+	// that might still have open windows (matching the utility functions).
+	duration := time.Duration(rule.DurationMinutes) * time.Minute
+	lookbackStart := time.Now().In(loc).Add(-duration).Add(-24 * time.Hour * 7)
+	if r.OrigOptions.Dtstart.IsZero() || r.OrigOptions.Dtstart.After(lookbackStart) {
+		r.DTStart(lookbackStart)
 	}
 
 	return evaluator.WithMemoization(&DeploymentWindowEvaluator{
