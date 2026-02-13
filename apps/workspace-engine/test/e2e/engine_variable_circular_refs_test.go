@@ -161,7 +161,9 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		if name != "resource-b" {
 			t.Errorf("resource A related_name should be 'resource-b', got %s", name)
 		}
-		assert.Equal(t, "resource-b", (*jobA.DispatchContext.Variables)["related_name"])
+		dcRelatedNameA, dcErr := (*jobA.DispatchContext.Variables)["related_name"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, "resource-b", dcRelatedNameA)
 		t.Logf("SUCCESS: Resource A resolved reference to B (name: %s)", name)
 	} else {
 		t.Logf("Resource A related_name not found (may be expected if circular refs are blocked)")
@@ -199,7 +201,9 @@ func TestEngine_VariableResolution_CircularReference_TwoWay(t *testing.T) {
 		if name != "resource-a" {
 			t.Errorf("resource B related_name should be 'resource-a', got %s", name)
 		}
-		assert.Equal(t, "resource-a", (*jobB.DispatchContext.Variables)["related_name"])
+		dcRelatedNameB, dcErr := (*jobB.DispatchContext.Variables)["related_name"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, "resource-a", dcRelatedNameB)
 		t.Logf("SUCCESS: Resource B resolved reference to A (name: %s)", name)
 	} else {
 		t.Logf("Resource B related_name not found (may be expected if circular refs are blocked)")
@@ -375,7 +379,9 @@ func TestEngine_VariableResolution_CircularReference_ThreeWay(t *testing.T) {
 			if name != tc.expectedName {
 				t.Errorf("resource %s next_name should be %s, got %s", tc.resourceID, tc.expectedName, name)
 			}
-			assert.Equal(t, tc.expectedName, (*job.DispatchContext.Variables)["next_name"])
+			dcNextName, dcErr := (*job.DispatchContext.Variables)["next_name"].AsStringValue()
+			assert.NoError(t, dcErr)
+			assert.Equal(t, tc.expectedName, dcNextName)
 			t.Logf("Resource %s resolved to: %s", tc.resourceID, name)
 		} else {
 			t.Logf("Resource %s next_name not found", tc.resourceID)
@@ -481,7 +487,9 @@ func TestEngine_VariableResolution_SelfReference(t *testing.T) {
 		if name != "self-referencing-resource" {
 			t.Errorf("self_name should be 'self-referencing-resource', got %s", name)
 		}
-		assert.Equal(t, "self-referencing-resource", (*job.DispatchContext.Variables)["self_name"])
+		dcSelfName, dcErr := (*job.DispatchContext.Variables)["self_name"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, "self-referencing-resource", dcSelfName)
 		t.Logf("SUCCESS: Self-reference resolved to: %s", name)
 	} else {
 		t.Logf("self_name not found (self-reference may be blocked)")
@@ -993,7 +1001,9 @@ func TestEngine_VariableResolution_ReferenceToDeepProperty(t *testing.T) {
 		if password != "secret123" {
 			t.Errorf("db_password should be 'secret123', got %s", password)
 		}
-		assert.Equal(t, "secret123", (*job.DispatchContext.Variables)["db_password"])
+		dcPassword, dcErr := (*job.DispatchContext.Variables)["db_password"].AsStringValue()
+		assert.NoError(t, dcErr)
+		assert.Equal(t, "secret123", dcPassword)
 		t.Logf("SUCCESS: Retrieved deeply nested property via reference: %s", password)
 	} else {
 		t.Logf("db_password not found (deep property path may not be supported)")

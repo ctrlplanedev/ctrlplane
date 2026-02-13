@@ -59,7 +59,7 @@ local JobPropertyKeys = std.objectFields(Job.properties);
       version: openapi.schemaRef('DeploymentVersion'),
       variables: {
         type: 'object',
-        additionalProperties: true,
+        additionalProperties: openapi.schemaRef('LiteralValue'),
       },
     },
   },

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"workspace-engine/pkg/workspace/store/repository"
+	"workspace-engine/pkg/workspace/store/repository/db/deploymentversions"
 )
 
 type DBRepo struct {
@@ -15,6 +16,6 @@ func (d *DBRepo) DeploymentVersions() repository.DeploymentVersionRepo {
 
 func NewDBRepo(ctx context.Context, workspaceID string) *DBRepo {
 	return &DBRepo{
-		deploymentVersions: NewDeploymentVersionRepo(ctx, workspaceID),
+		deploymentVersions: deploymentversions.NewRepo(ctx, workspaceID),
 	}
 }

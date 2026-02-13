@@ -431,7 +431,9 @@
                   "$ref": "#/components/schemas/Resource"
                },
                "variables": {
-                  "additionalProperties": true,
+                  "additionalProperties": {
+                     "$ref": "#/components/schemas/LiteralValue"
+                  },
                   "type": "object"
                },
                "version": {

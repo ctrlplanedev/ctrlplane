@@ -101,7 +101,9 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 	if initialAppNameStr != "initial-app" {
 		t.Errorf("initial app_name = %s, want initial-app", initialAppNameStr)
 	}
-	assert.Equal(t, "initial-app", (*initialJob.DispatchContext.Variables)["app_name"])
+	dcInitialAppName, err := (*initialJob.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "initial-app", dcInitialAppName)
 
 	// Get the deployment variable to update
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -162,7 +164,9 @@ func TestEngine_VariableChange_DeploymentDefaultStringValueChange(t *testing.T) 
 	if newAppNameStr != "updated-app" {
 		t.Errorf("new app_name = %s, want updated-app", newAppNameStr)
 	}
-	assert.Equal(t, "updated-app", (*newJob.DispatchContext.Variables)["app_name"])
+	dcNewAppName, err := (*newJob.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "updated-app", dcNewAppName)
 }
 
 // TestEngine_VariableChange_DeploymentDefaultIntValueChange tests that changing a deployment variable default int value triggers new release/job
@@ -235,7 +239,9 @@ func TestEngine_VariableChange_DeploymentDefaultIntValueChange(t *testing.T) {
 	if int64(initialReplicas) != 3 {
 		t.Errorf("initial replicas = %d, want 3", initialReplicas)
 	}
-	assert.Equal(t, "3", (*initialJob.DispatchContext.Variables)["replicas"])
+	dcInitialReplicas, err := (*initialJob.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, dcInitialReplicas)
 
 	// Get the deployment variable to update
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -277,7 +283,9 @@ func TestEngine_VariableChange_DeploymentDefaultIntValueChange(t *testing.T) {
 	if int64(newReplicas) != 5 {
 		t.Errorf("new replicas = %d, want 5", newReplicas)
 	}
-	assert.Equal(t, "5", (*newJob.DispatchContext.Variables)["replicas"])
+	dcNewReplicas, err := (*newJob.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 5, dcNewReplicas)
 }
 
 // TestEngine_VariableChange_DeploymentDefaultBoolValueChange tests that changing a deployment variable default bool value triggers new release/job
@@ -346,7 +354,9 @@ func TestEngine_VariableChange_DeploymentDefaultBoolValueChange(t *testing.T) {
 	if initialDebugMode {
 		t.Errorf("initial debug_mode = %v, want false", initialDebugMode)
 	}
-	assert.Equal(t, "false", (*initialJob.DispatchContext.Variables)["debug_mode"])
+	dcInitialDebugMode, err := (*initialJob.DispatchContext.Variables)["debug_mode"].AsBooleanValue()
+	assert.NoError(t, err)
+	assert.Equal(t, false, dcInitialDebugMode)
 
 	// Get the deployment variable to update
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -388,7 +398,9 @@ func TestEngine_VariableChange_DeploymentDefaultBoolValueChange(t *testing.T) {
 	if !newDebugMode {
 		t.Errorf("new debug_mode = %v, want true", newDebugMode)
 	}
-	assert.Equal(t, "true", (*newJob.DispatchContext.Variables)["debug_mode"])
+	dcNewDebugMode, err := (*newJob.DispatchContext.Variables)["debug_mode"].AsBooleanValue()
+	assert.NoError(t, err)
+	assert.Equal(t, true, dcNewDebugMode)
 }
 
 // TestEngine_VariableChange_DeploymentDefaultObjectValueChange tests that changing a deployment variable default object value triggers new release/job
@@ -577,7 +589,9 @@ func TestEngine_VariableChange_DeploymentValueChange(t *testing.T) {
 	if initialRegion != "us-west-1" {
 		t.Errorf("initial region = %s, want us-west-1", initialRegion)
 	}
-	assert.Equal(t, "us-west-1", (*initialJob.DispatchContext.Variables)["region"])
+	dcInitialRegion, err := (*initialJob.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-west-1", dcInitialRegion)
 
 	// Get the deployment variable and its values
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -616,7 +630,9 @@ func TestEngine_VariableChange_DeploymentValueChange(t *testing.T) {
 	if newRegion != "us-east-1" {
 		t.Errorf("new region = %s, want us-east-1", newRegion)
 	}
-	assert.Equal(t, "us-east-1", (*newJob.DispatchContext.Variables)["region"])
+	dcNewRegion, err := (*newJob.DispatchContext.Variables)["region"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "us-east-1", dcNewRegion)
 }
 
 // TestEngine_VariableChange_ResourceVariableChange tests that changing a resource variable triggers new release/job
@@ -686,7 +702,9 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 	if initialVersion != "v1.0.0" {
 		t.Errorf("initial app_version = %s, want v1.0.0", initialVersion)
 	}
-	assert.Equal(t, "v1.0.0", (*initialJob.DispatchContext.Variables)["app_version"])
+	dcInitialVersion, err := (*initialJob.DispatchContext.Variables)["app_version"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "v1.0.0", dcInitialVersion)
 
 	// Change the resource variable
 	updatedVar := c.NewResourceVariable(resourceID, "app_version")
@@ -712,7 +730,9 @@ func TestEngine_VariableChange_ResourceVariableChange(t *testing.T) {
 	if newVersion != "v2.0.0" {
 		t.Errorf("new app_version = %s, want v2.0.0", newVersion)
 	}
-	assert.Equal(t, "v2.0.0", (*newJob.DispatchContext.Variables)["app_version"])
+	dcNewVersion, err := (*newJob.DispatchContext.Variables)["app_version"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "v2.0.0", dcNewVersion)
 }
 
 // TestEngine_VariableChange_MultipleVariablesChange tests that changing multiple variables simultaneously creates one new release
@@ -793,9 +813,15 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 	if initialAppName != "initial-app" || int64(initialReplicas) != 3 || initialEnv != "staging" {
 		t.Errorf("initial values incorrect")
 	}
-	assert.Equal(t, "initial-app", (*initialJob.DispatchContext.Variables)["app_name"])
-	assert.Equal(t, "3", (*initialJob.DispatchContext.Variables)["replicas"])
-	assert.Equal(t, "staging", (*initialJob.DispatchContext.Variables)["env"])
+	dcInitialAppName2, err := (*initialJob.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "initial-app", dcInitialAppName2)
+	dcInitialReplicas2, err := (*initialJob.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, dcInitialReplicas2)
+	dcInitialEnv, err := (*initialJob.DispatchContext.Variables)["env"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "staging", dcInitialEnv)
 
 	// Change first variable - this triggers a new job
 	deploymentVars := engine.Workspace().Deployments().Variables(deploymentID)
@@ -878,7 +904,13 @@ func TestEngine_VariableChange_MultipleVariablesChange(t *testing.T) {
 	if finalEnv != "production" {
 		t.Errorf("final env = %s, want production", finalEnv)
 	}
-	assert.Equal(t, "updated-app", (*finalJob.DispatchContext.Variables)["app_name"])
-	assert.Equal(t, "5", (*finalJob.DispatchContext.Variables)["replicas"])
-	assert.Equal(t, "production", (*finalJob.DispatchContext.Variables)["env"])
+	dcFinalAppName, err := (*finalJob.DispatchContext.Variables)["app_name"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "updated-app", dcFinalAppName)
+	dcFinalReplicas, err := (*finalJob.DispatchContext.Variables)["replicas"].AsIntegerValue()
+	assert.NoError(t, err)
+	assert.Equal(t, 5, dcFinalReplicas)
+	dcFinalEnv, err := (*finalJob.DispatchContext.Variables)["env"].AsStringValue()
+	assert.NoError(t, err)
+	assert.Equal(t, "production", dcFinalEnv)
 }
