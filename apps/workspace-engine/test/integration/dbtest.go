@@ -69,6 +69,9 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 	ws := workspace.New(ctx, workspaceID,
 		workspace.WithTraceStore(traceStore),
 		workspace.WithStoreOptions(
+			store.WithDBSystems(ctx),
+			store.WithDBDeployments(ctx),
+			store.WithDBEnvironments(ctx),
 			store.WithDBDeploymentVersions(ctx),
 		),
 	)
