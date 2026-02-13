@@ -3,10 +3,7 @@ import type { EntityType, ScopeType } from "@ctrlplane/db/schema";
 import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
-  deployment,
-  deploymentVersion,
   entityRole,
-  environment,
   resource,
   resourceProvider,
   role,
@@ -70,42 +67,42 @@ export const checkEntityPermissionForResource = async (
   return role != null;
 };
 
-const getDeploymentVersionScopes = async (id: string) => {
-  const result = await db
-    .select()
-    .from(workspace)
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(deployment, eq(deployment.systemId, system.id))
-    .innerJoin(
-      deploymentVersion,
-      eq(deploymentVersion.deploymentId, deployment.id),
-    )
-    .where(eq(deploymentVersion.id, id))
-    .then(takeFirst);
+// const getDeploymentVersionScopes = async (id: string) => {
+//   const result = await db
+//     .select()
+//     .from(workspace)
+//     .innerJoin(system, eq(system.workspaceId, workspace.id))
+//     .innerJoin(deployment, eq(deployment.systemId, system.id))
+//     .innerJoin(
+//       deploymentVersion,
+//       eq(deploymentVersion.deploymentId, deployment.id),
+//     )
+//     .where(eq(deploymentVersion.id, id))
+//     .then(takeFirst);
 
-  return [
-    { type: "deploymentVersion" as const, id: result.deployment_version.id },
-    { type: "deployment" as const, id: result.deployment.id },
-    { type: "system" as const, id: result.system.id },
-    { type: "workspace" as const, id: result.workspace.id },
-  ];
-};
+//   return [
+//     { type: "deploymentVersion" as const, id: result.deployment_version.id },
+//     { type: "deployment" as const, id: result.deployment.id },
+//     { type: "system" as const, id: result.system.id },
+//     { type: "workspace" as const, id: result.workspace.id },
+//   ];
+// };
 
-const getEnvironmentScopes = async (id: string) => {
-  const result = await db
-    .select()
-    .from(workspace)
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(environment, eq(environment.systemId, system.id))
-    .where(eq(environment.id, id))
-    .then(takeFirst);
+// const getEnvironmentScopes = async (id: string) => {
+//   const result = await db
+//     .select()
+//     .from(workspace)
+//     .innerJoin(system, eq(system.workspaceId, workspace.id))
+//     .innerJoin(environment, eq(environment.systemId, system.id))
+//     .where(eq(environment.id, id))
+//     .then(takeFirst);
 
-  return [
-    { type: "environment" as const, id: result.environment.id },
-    { type: "system" as const, id: result.system.id },
-    { type: "workspace" as const, id: result.workspace.id },
-  ];
-};
+//   return [
+//     { type: "environment" as const, id: result.environment.id },
+//     { type: "system" as const, id: result.system.id },
+//     { type: "workspace" as const, id: result.workspace.id },
+//   ];
+// };
 
 const getResourceScopes = async (id: string) => {
   const result = await db
@@ -135,21 +132,21 @@ const getResourceProviderScopes = async (id: string) => {
   ];
 };
 
-const getDeploymentScopes = async (id: string) => {
-  const result = await db
-    .select()
-    .from(workspace)
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(deployment, eq(deployment.systemId, system.id))
-    .where(eq(deployment.id, id))
-    .then(takeFirst);
+// const getDeploymentScopes = async (id: string) => {
+//   const result = await db
+//     .select()
+//     .from(workspace)
+//     .innerJoin(system, eq(system.workspaceId, workspace.id))
+//     .innerJoin(deployment, eq(deployment.systemId, system.id))
+//     .where(eq(deployment.id, id))
+//     .then(takeFirst);
 
-  return [
-    { type: "deployment" as const, id: result.deployment.id },
-    { type: "system" as const, id: result.system.id },
-    { type: "workspace" as const, id: result.workspace.id },
-  ];
-};
+//   return [
+//     { type: "deployment" as const, id: result.deployment.id },
+//     { type: "system" as const, id: result.system.id },
+//     { type: "workspace" as const, id: result.workspace.id },
+//   ];
+// };
 
 const getSystemScopes = async (id: string) => {
   const result = await db
@@ -183,11 +180,14 @@ export const scopeHandlers: Record<
 > = {
   resource: getResourceScopes,
   resourceProvider: getResourceProviderScopes,
-  deployment: getDeploymentScopes,
+  // deployment: getDeploymentScopes,
+  deployment: () => Promise.resolve([]),
   system: getSystemScopes,
   workspace: getWorkspaceScopes,
-  environment: getEnvironmentScopes,
-  deploymentVersion: getDeploymentVersionScopes,
+  // environment: getEnvironmentScopes,
+  // deploymentVersion: getDeploymentVersionScopes,
+  environment: () => Promise.resolve([]),
+  deploymentVersion: () => Promise.resolve([]),
 };
 
 const fetchScopeHierarchyForResource = async (resource: {
