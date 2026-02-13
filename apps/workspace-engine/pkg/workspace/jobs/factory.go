@@ -29,6 +29,83 @@ func NewFactory(store *store.Store) *Factory {
 	}
 }
 
+func (f *Factory) noAgentConfiguredJob(releaseID, jobAgentID, deploymentName string, action *trace.Action) *oapi.Job {
+	message := fmt.Sprintf("No job agent configured for deployment '%s'", deploymentName)
+	if action != nil {
+		action.AddStep("Create InvalidJobAgent job", trace.StepResultPass,
+			fmt.Sprintf("Created InvalidJobAgent job for release %s with job agent %s", releaseID, jobAgentID)).
+			AddMetadata("release_id", releaseID).
+			AddMetadata("job_agent_id", jobAgentID).
+			AddMetadata("message", message)
+	}
+
+	return &oapi.Job{
+		Id:             uuid.New().String(),
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		JobAgentConfig: oapi.JobAgentConfig{},
+		Status:         oapi.JobStatusInvalidJobAgent,
+		Message:        &message,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Metadata:       make(map[string]string),
+	}
+}
+
+func (f *Factory) jobAgentNotFoundJob(releaseID, jobAgentID, deploymentName string, action *trace.Action) *oapi.Job {
+	message := fmt.Sprintf("Job agent '%s' not found for deployment '%s'", jobAgentID, deploymentName)
+	if action != nil {
+		action.AddStep("Create NoAgentFoundJob job", trace.StepResultPass,
+			fmt.Sprintf("Created NoAgentFoundJob job for release %s with job agent %s", releaseID, jobAgentID)).
+			AddMetadata("release_id", releaseID).
+			AddMetadata("job_agent_id", jobAgentID).
+			AddMetadata("message", message)
+	}
+
+	return &oapi.Job{
+		Id:             uuid.New().String(),
+		ReleaseId:      releaseID,
+		JobAgentId:     jobAgentID,
+		JobAgentConfig: oapi.JobAgentConfig{},
+		Status:         oapi.JobStatusInvalidJobAgent,
+		Message:        &message,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Metadata:       make(map[string]string),
+	}
+}
+
+func (f *Factory) buildJobAgentConfig(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (oapi.JobAgentConfig, error) {
+	mergedConfig := make(oapi.JobAgentConfig)
+
+	agentConfig := jobAgent.Config
+	deploymentConfig := deployment.JobAgentConfig
+	versionConfig := release.Version.JobAgentConfig
+
+	mergedConfig, err := mergeJobAgentConfig(agentConfig, deploymentConfig, versionConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge job agent configs: %w", err)
+	}
+
+	return mergedConfig, nil
+}
+
+func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (*oapi.DispatchContext, error) {
+	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build job agent config: %w", err)
+	}
+
+	dispatchContext := oapi.DispatchContext{
+		Release:        release,
+		Deployment:     deployment,
+		JobAgent:       *jobAgent,
+		JobAgentConfig: mergedConfig,
+		Version:        &release.Version,
+		Variables:      release.Variables,
+	}
+}
+
 // CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
 // The job is configured with merged settings from JobAgent + Deployment.
 func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release, action *trace.Action) (*oapi.Job, error) {
@@ -57,55 +134,15 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			AddMetadata("deployment_name", deployment.Name)
 	}
 
-	// Check if job agent is configured
 	jobAgentId := deployment.JobAgentId
-	if jobAgentId == nil || *jobAgentId == "" {
-		if action != nil {
-			action.AddStep("Validate job agent", trace.StepResultFail,
-				fmt.Sprintf("No job agent configured for deployment '%s'. Jobs cannot be created without a job agent.", deployment.Name)).
-				AddMetadata("deployment_id", deployment.Id).
-				AddMetadata("deployment_name", deployment.Name).
-				AddMetadata("issue", "missing_job_agent_configuration")
-		}
-		// Create job with InvalidJobAgent status when no job agent configured
-		msg := fmt.Sprintf("No job agent configured for deployment '%s'", deployment.Name)
-		return &oapi.Job{
-			Id:             uuid.New().String(),
-			ReleaseId:      release.ID(),
-			JobAgentId:     "",
-			JobAgentConfig: oapi.JobAgentConfig{},
-			Status:         oapi.JobStatusInvalidJobAgent,
-			Message:        &msg,
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
-			Metadata:       make(map[string]string),
-		}, nil
+	isJobAgentConfigured := jobAgentId != nil && *jobAgentId != ""
+	if !isJobAgentConfigured {
+		return f.noAgentConfiguredJob(release.ID(), "", deployment.Name, action), nil
 	}
 
-	// Validate job agent exists
 	jobAgent, exists := f.store.JobAgents.Get(*jobAgentId)
 	if !exists {
-		if action != nil {
-			action.AddStep("Validate job agent", trace.StepResultFail,
-				fmt.Sprintf("Job agent '%s' configured on deployment '%s' does not exist or was deleted", *jobAgentId, deployment.Name)).
-				AddMetadata("job_agent_id", *jobAgentId).
-				AddMetadata("deployment_id", deployment.Id).
-				AddMetadata("deployment_name", deployment.Name).
-				AddMetadata("issue", "job_agent_not_found")
-		}
-		// Create job with InvalidJobAgent status when job agent not found
-		msg := fmt.Sprintf("Job agent '%s' not found for deployment '%s'", *jobAgentId, deployment.Name)
-		return &oapi.Job{
-			Id:             uuid.New().String(),
-			ReleaseId:      release.ID(),
-			JobAgentId:     *jobAgentId,
-			JobAgentConfig: oapi.JobAgentConfig{},
-			Status:         oapi.JobStatusInvalidJobAgent,
-			Message:        &msg,
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
-			Metadata:       make(map[string]string),
-		}, nil
+		return f.jobAgentNotFoundJob(release.ID(), *jobAgentId, deployment.Name, action), nil
 	}
 
 	if action != nil {
@@ -134,11 +171,16 @@ func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release
 			AddMetadata("version_tag", release.Version.Tag)
 	}
 
+	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get merged job agent config: %w", err)
+	}
+
 	return &oapi.Job{
 		Id:             jobId,
 		ReleaseId:      release.ID(),
 		JobAgentId:     *jobAgentId,
-		JobAgentConfig: oapi.JobAgentConfig{},
+		JobAgentConfig: mergedConfig,
 		Status:         oapi.JobStatusPending,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
