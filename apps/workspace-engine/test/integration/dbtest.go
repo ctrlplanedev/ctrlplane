@@ -88,18 +88,27 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 		}
 		defer cleanupConn.Release()
 
-		// Delete deployment_version rows first — the workspace_id FK has no
-		// ON DELETE CASCADE, so removing the workspace without this would fail.
-		_, err = cleanupConn.Exec(context.Background(),
-			"DELETE FROM deployment_version WHERE workspace_id = $1", workspaceID)
-		if err != nil {
-			t.Logf("Cleanup: failed to delete deployment versions for workspace %s: %v", workspaceID, err)
+		cleanupCtx := context.Background()
+
+		// Delete entities that reference workspace without ON DELETE CASCADE.
+		// Order matters: join tables first, then entities, then workspace.
+		cleanupQueries := []struct {
+			label string
+			sql   string
+		}{
+			{"deployment versions", "DELETE FROM deployment_version WHERE workspace_id = $1"},
+			{"system deployments", "DELETE FROM system_deployment WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)"},
+			{"system environments", "DELETE FROM system_environment WHERE environment_id IN (SELECT id FROM environment WHERE workspace_id = $1)"},
+			{"deployments", "DELETE FROM deployment WHERE workspace_id = $1"},
+			{"environments", "DELETE FROM environment WHERE workspace_id = $1"},
+			{"systems", "DELETE FROM system WHERE workspace_id = $1"},
+			{"workspace", "DELETE FROM workspace WHERE id = $1"},
 		}
 
-		_, err = cleanupConn.Exec(context.Background(),
-			"DELETE FROM workspace WHERE id = $1", workspaceID)
-		if err != nil {
-			t.Logf("Cleanup: failed to delete workspace %s: %v", workspaceID, err)
+		for _, q := range cleanupQueries {
+			if _, err := cleanupConn.Exec(cleanupCtx, q.sql, workspaceID); err != nil {
+				t.Logf("Cleanup: failed to delete %s for workspace %s: %v", q.label, workspaceID, err)
+			}
 		}
 	})
 

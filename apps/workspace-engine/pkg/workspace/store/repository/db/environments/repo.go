@@ -56,10 +56,13 @@ func (r *Repo) Set(entity *oapi.Environment) error {
 	systemID, err := uuid.Parse(entity.SystemId)
 	if err == nil && systemID != uuid.Nil {
 		environmentID, _ := uuid.Parse(entity.Id)
-		_ = db.GetQueries(r.ctx).UpsertSystemEnvironment(r.ctx, db.UpsertSystemEnvironmentParams{
+		if err := db.GetQueries(r.ctx).UpsertSystemEnvironment(r.ctx, db.UpsertSystemEnvironmentParams{
 			SystemID:      systemID,
 			EnvironmentID: environmentID,
-		})
+		}); err != nil {
+			log.Warn("Failed to upsert system_environment join",
+				"system_id", entity.SystemId, "environment_id", entity.Id, "error", err)
+		}
 	}
 
 	return nil

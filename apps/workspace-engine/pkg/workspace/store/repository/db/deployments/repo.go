@@ -56,10 +56,13 @@ func (r *Repo) Set(entity *oapi.Deployment) error {
 	systemID, err := uuid.Parse(entity.SystemId)
 	if err == nil && systemID != uuid.Nil {
 		deploymentID, _ := uuid.Parse(entity.Id)
-		_ = db.GetQueries(r.ctx).UpsertSystemDeployment(r.ctx, db.UpsertSystemDeploymentParams{
+		if err := db.GetQueries(r.ctx).UpsertSystemDeployment(r.ctx, db.UpsertSystemDeploymentParams{
 			SystemID:     systemID,
 			DeploymentID: deploymentID,
-		})
+		}); err != nil {
+			log.Warn("Failed to upsert system_deployment join",
+				"system_id", entity.SystemId, "deployment_id", entity.Id, "error", err)
+		}
 	}
 
 	return nil
