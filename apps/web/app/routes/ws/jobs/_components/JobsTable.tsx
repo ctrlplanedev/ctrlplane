@@ -17,7 +17,7 @@ import { JobActions } from "./JobActions";
 import { VariablesCell } from "./VariablesCell";
 
 type JobsTableProps = {
-  jobs: WorkspaceEngine["schemas"]["JobWithRelease"][];
+  jobs: WorkspaceEngine["schemas"]["Job"][];
 };
 
 function JobsTableHeader() {
@@ -69,27 +69,30 @@ function LinksCell({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
   );
 }
 
-function JobsTableRow({
-  jobWithRelease,
-}: {
-  jobWithRelease: WorkspaceEngine["schemas"]["JobWithRelease"];
-}) {
-  const { job, resource, environment, deployment, release } = jobWithRelease;
+function JobsTableRow({ job }: { job: WorkspaceEngine["schemas"]["Job"] }) {
+  // const { job, resource, environment, deployment, release } = jobWithRelease;
   return (
     <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
       <TableCell className="font-medium">
-        {deployment?.name ?? <span className="text-muted-foreground">—</span>}
+        {job.dispatchContext?.deployment?.name ?? (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell>
-        {environment?.name ?? <span className="text-muted-foreground">—</span>}
+        {job.dispatchContext?.environment?.name ?? (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell>
-        {resource?.name ?? <span className="text-muted-foreground">—</span>}
+        {job.dispatchContext?.resource?.name ?? (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell className="font-mono  font-medium">
-        {release.version.name || release.version.tag}
+        {job.dispatchContext?.version?.name ||
+          job.dispatchContext?.version?.tag}
       </TableCell>
-      <VariablesCell jobWithRelease={jobWithRelease} />
+      <VariablesCell job={job} />
       <TableCell>
         <JobStatusBadge {...job} />
       </TableCell>
@@ -102,7 +105,7 @@ function JobsTableRow({
       </TableCell>
 
       <TableCell className="flex justify-end">
-        <JobActions job={jobWithRelease} />
+        <JobActions job={job} />
       </TableCell>
     </TableRow>
   );
@@ -114,11 +117,8 @@ export function JobsTable({ jobs }: JobsTableProps) {
       <Table className="border-b">
         <JobsTableHeader />
         <TableBody>
-          {jobs.map((jobWithRelease) => (
-            <JobsTableRow
-              key={jobWithRelease.job.id}
-              jobWithRelease={jobWithRelease}
-            />
+          {jobs.map((job) => (
+            <JobsTableRow key={job.id} job={job} />
           ))}
         </TableBody>
       </Table>

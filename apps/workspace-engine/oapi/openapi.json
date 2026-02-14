@@ -4571,7 +4571,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/JobWithRelease"
+                                    "$ref": "#/components/schemas/Job"
                                  },
                                  "type": "array"
                               },
