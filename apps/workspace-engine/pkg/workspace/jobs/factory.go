@@ -316,7 +316,7 @@ func (f *Factory) BuildDispatchContextForLegacyReleaseJob(job *oapi.Job) (*oapi.
 
 	jobAgent, ok := f.store.JobAgents.Get(*deployment.JobAgentId)
 	if !ok {
-		return nil, fmt.Errorf("job agent %s not found", deployment.JobAgentId)
+		return nil, fmt.Errorf("job agent %s not found", *deployment.JobAgentId)
 	}
 
 	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
