@@ -2,6 +2,7 @@ package memory
 
 import (
 	"fmt"
+	"slices"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
@@ -154,7 +155,7 @@ type deploymentRepoAdapter struct {
 func (a *deploymentRepoAdapter) GetBySystemID(systemID string) map[string]*oapi.Deployment {
 	result := make(map[string]*oapi.Deployment)
 	for id, d := range a.store.Items() {
-		if d.SystemId == systemID {
+		if slices.Contains(d.SystemIds, systemID) {
 			result[id] = d
 		}
 	}
@@ -174,7 +175,7 @@ type environmentRepoAdapter struct {
 func (a *environmentRepoAdapter) GetBySystemID(systemID string) map[string]*oapi.Environment {
 	result := make(map[string]*oapi.Environment)
 	for id, e := range a.store.Items() {
-		if e.SystemId == systemID {
+		if slices.Contains(e.SystemIds, systemID) {
 			result[id] = e
 		}
 	}

@@ -278,7 +278,7 @@ export function DeploymentCardViewButton() {
 type LazyLoadDeploymentCardProps = {
   className?: string;
   deployment: { id: string; name: string; description?: string };
-  system: { id: string; name: string };
+  systems: Array<{ id: string; name: string }>;
 };
 
 export const HealthStatusBadge: React.FC<{
@@ -385,7 +385,7 @@ export const SyncProgressBadge: React.FC<{ synced: number; total: number }> = ({
 
 export function LazyLoadDeploymentCard({
   deployment,
-  system,
+  systems,
   className,
 }: LazyLoadDeploymentCardProps) {
   const { workspace } = useWorkspace();
@@ -445,7 +445,7 @@ export function LazyLoadDeploymentCard({
     >
       <DeploymentCardHeader
         name={deployment.name}
-        systemName={system.name}
+        systemName={systems.map((s) => s.name).join(", ") || undefined}
         description={deployment.description}
       />
       <DeploymentCardContent>

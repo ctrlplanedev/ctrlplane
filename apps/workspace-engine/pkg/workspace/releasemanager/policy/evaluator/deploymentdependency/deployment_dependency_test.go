@@ -24,7 +24,7 @@ func generateMatchAllSelector() *oapi.Selector {
 
 func generateEnvironment(ctx context.Context, systemID string, store *store.Store) *oapi.Environment {
 	environment := &oapi.Environment{
-		SystemId:         systemID,
+		SystemIds:        []string{systemID},
 		Id:               uuid.New().String(),
 		ResourceSelector: generateMatchAllSelector(),
 	}
@@ -34,7 +34,7 @@ func generateEnvironment(ctx context.Context, systemID string, store *store.Stor
 
 func generateDeployment(ctx context.Context, systemID string, store *store.Store) *oapi.Deployment {
 	deployment := &oapi.Deployment{
-		SystemId:         systemID,
+		SystemIds:        []string{systemID},
 		Id:               uuid.New().String(),
 		ResourceSelector: generateMatchAllSelector(),
 	}

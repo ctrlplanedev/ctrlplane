@@ -298,13 +298,13 @@ type Deployment struct {
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
 	Slug             string            `json:"slug"`
-	SystemId         string            `json:"systemId"`
+	SystemIds        []string          `json:"systemIds"`
 }
 
-// DeploymentAndSystem defines model for DeploymentAndSystem.
-type DeploymentAndSystem struct {
+// DeploymentAndSystems defines model for DeploymentAndSystems.
+type DeploymentAndSystems struct {
 	Deployment Deployment `json:"deployment"`
-	System     System     `json:"system"`
+	Systems    []System   `json:"systems"`
 }
 
 // DeploymentDependencyRule defines model for DeploymentDependencyRule.
@@ -409,7 +409,7 @@ type Environment struct {
 	Metadata         map[string]string `json:"metadata"`
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
-	SystemId         string            `json:"systemId"`
+	SystemIds        []string          `json:"systemIds"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.

@@ -37,7 +37,7 @@ func selectorToString(sel *oapi.Selector) string {
 }
 
 // ToOapi converts a db.Environment into an oapi.Environment.
-// SystemId is not populated here — it is resolved through the join table
+// SystemIds is not populated here — it is resolved through the join table
 // via GetBySystemID when needed.
 func ToOapi(row db.Environment) *oapi.Environment {
 	var description *string

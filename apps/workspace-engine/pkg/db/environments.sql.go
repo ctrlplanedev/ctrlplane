@@ -51,15 +51,28 @@ func (q *Queries) GetEnvironmentByID(ctx context.Context, id uuid.UUID) (Environ
 	return i, err
 }
 
-const getSystemIDForEnvironment = `-- name: GetSystemIDForEnvironment :one
-SELECT system_id FROM system_environment WHERE environment_id = $1 LIMIT 1
+const getSystemIDsForEnvironment = `-- name: GetSystemIDsForEnvironment :many
+SELECT system_id FROM system_environment WHERE environment_id = $1
 `
 
-func (q *Queries) GetSystemIDForEnvironment(ctx context.Context, environmentID uuid.UUID) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, getSystemIDForEnvironment, environmentID)
-	var system_id uuid.UUID
-	err := row.Scan(&system_id)
-	return system_id, err
+func (q *Queries) GetSystemIDsForEnvironment(ctx context.Context, environmentID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getSystemIDsForEnvironment, environmentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var system_id uuid.UUID
+		if err := rows.Scan(&system_id); err != nil {
+			return nil, err
+		}
+		items = append(items, system_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listEnvironmentsBySystemID = `-- name: ListEnvironmentsBySystemID :many

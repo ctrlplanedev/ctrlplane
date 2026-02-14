@@ -38,7 +38,7 @@ func selectorToString(sel *oapi.Selector) string {
 }
 
 // ToOapi converts a db.Deployment into an oapi.Deployment.
-// SystemId is not populated here — it is resolved through the join table
+// SystemIds is not populated here — it is resolved through the join table
 // via GetBySystemID when needed.
 func ToOapi(row db.Deployment) *oapi.Deployment {
 	description := row.Description

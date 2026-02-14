@@ -21,7 +21,7 @@ func NewDeployment(systemID string) *oapi.Deployment {
 		Name:             fmt.Sprintf("d-%s", idSubstring),
 		Slug:             fmt.Sprintf("d-%s", idSubstring),
 		Description:      &description,
-		SystemId:         systemID,
+		SystemIds:        []string{systemID},
 		JobAgentId:       nil,
 		JobAgentConfig:   map[string]any{},
 		ResourceSelector: nil,

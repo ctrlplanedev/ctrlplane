@@ -22,9 +22,9 @@ func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -32,7 +32,7 @@ func TestPolicyResolver_GetRules_RetryRules(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -121,9 +121,9 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -131,7 +131,7 @@ func TestPolicyResolver_GetRules_NoMatchingRules(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -192,9 +192,9 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -202,7 +202,7 @@ func TestPolicyResolver_GetRules_DisabledPolicy(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -264,9 +264,9 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -274,7 +274,7 @@ func TestPolicyResolver_GetRules_MultiplePolicies(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -362,9 +362,9 @@ func TestPolicyResolver_GetRules_SelectorFilters(t *testing.T) {
 	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -372,7 +372,7 @@ func TestPolicyResolver_GetRules_SelectorFilters(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "web-app",
 		Slug:           "web-app",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -453,9 +453,9 @@ func TestPolicyResolver_GetRules_SelectorWithEnvironment(t *testing.T) {
 	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "staging",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "staging",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -463,7 +463,7 @@ func TestPolicyResolver_GetRules_SelectorWithEnvironment(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "web",
 		Slug:           "web",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
@@ -521,9 +521,9 @@ func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
 	_ = st.Systems.Upsert(ctx, system)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -531,7 +531,7 @@ func TestPolicyResolver_GetRules_DifferentRuleTypes(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)

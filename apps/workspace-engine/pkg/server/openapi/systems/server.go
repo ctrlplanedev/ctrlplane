@@ -2,6 +2,7 @@ package systems
 
 import (
 	"net/http"
+	"slices"
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
@@ -31,7 +32,7 @@ func (s *Systems) GetSystem(c *gin.Context, workspaceId string, systemId string)
 	environments := ws.Environments().Items()
 	environmentsList := make([]*oapi.Environment, 0, len(environments))
 	for _, environment := range environments {
-		if environment.SystemId == systemId {
+		if slices.Contains(environment.SystemIds, systemId) {
 			environmentsList = append(environmentsList, environment)
 		}
 	}
@@ -39,7 +40,7 @@ func (s *Systems) GetSystem(c *gin.Context, workspaceId string, systemId string)
 	deployments := ws.Deployments().Items()
 	deploymentsList := make([]*oapi.Deployment, 0, len(deployments))
 	for _, deployment := range deployments {
-		if deployment.SystemId == systemId {
+		if slices.Contains(deployment.SystemIds, systemId) {
 			deploymentsList = append(deploymentsList, deployment)
 		}
 	}

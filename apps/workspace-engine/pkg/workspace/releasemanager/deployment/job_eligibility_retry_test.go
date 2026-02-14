@@ -20,15 +20,15 @@ func TestRetryPolicy_MultipleRules_FirstNoRetry_SecondHasRetry(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -126,16 +126,16 @@ func TestRetryPolicy_MultiplePolicies_MostRestrictiveWins(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		JobAgentId:     nil,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -240,15 +240,15 @@ func TestRetryPolicy_AllRulesNoRetry_UsesDefault(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 
@@ -324,15 +324,15 @@ func TestRetryPolicy_DisabledPolicy_NotApplied(t *testing.T) {
 		Id:             "deployment-1",
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
 
 	environment := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "production",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 

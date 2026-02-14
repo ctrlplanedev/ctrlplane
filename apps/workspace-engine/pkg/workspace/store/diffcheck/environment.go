@@ -1,6 +1,7 @@
 package diffcheck
 
 import (
+	"slices"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/r3labs/diff/v3"
@@ -65,8 +66,8 @@ func hasEnvironmentChangesBasic(old, new *oapi.Environment) map[string]bool {
 		changed["name"] = true
 	}
 
-	if old.SystemId != new.SystemId {
-		changed["systemid"] = true
+	if !slices.Equal(old.SystemIds, new.SystemIds) {
+		changed["systemids"] = true
 	}
 
 	// Compare Description (pointer field)

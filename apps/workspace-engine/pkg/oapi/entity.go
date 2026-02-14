@@ -20,8 +20,11 @@ func (e *RelatableEntity) GetType() RelatableEntityType {
 		return "resource"
 	}
 
-	// Environment has "systemId" but no "slug" or "kind"
-	if _, hasSystemId := data["systemId"]; hasSystemId {
+	// Environment has "systemIds" (or legacy "systemId") but no "slug" or "kind"
+	if _, has := data["systemIds"]; has {
+		return "environment"
+	}
+	if _, has := data["systemId"]; has {
 		return "environment"
 	}
 

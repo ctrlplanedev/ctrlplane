@@ -18,24 +18,31 @@ import (
 )
 
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) ([]*oapi.ReleaseTarget, error) {
-	environments := ws.Systems().Environments(deployment.SystemId)
+	seen := make(map[string]struct{})
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, environment := range environments {
-		resources, err := ws.Environments().Resources(ctx, environment.Id)
-		if err != nil {
-			return nil, err
-		}
-		for _, resource := range resources {
-			isMatch, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+	for _, systemID := range deployment.SystemIds {
+		environments := ws.Systems().Environments(systemID)
+		for _, environment := range environments {
+			resources, err := ws.Environments().Resources(ctx, environment.Id)
 			if err != nil {
 				return nil, err
 			}
-			if isMatch {
-				releaseTargets = append(releaseTargets, &oapi.ReleaseTarget{
-					EnvironmentId: environment.Id,
-					DeploymentId:  deployment.Id,
-					ResourceId:    resource.Id,
-				})
+			for _, resource := range resources {
+				isMatch, err := selector.Match(ctx, deployment.ResourceSelector, resource)
+				if err != nil {
+					return nil, err
+				}
+				if isMatch {
+					rt := &oapi.ReleaseTarget{
+						EnvironmentId: environment.Id,
+						DeploymentId:  deployment.Id,
+						ResourceId:    resource.Id,
+					}
+					if _, ok := seen[rt.Key()]; !ok {
+						seen[rt.Key()] = struct{}{}
+						releaseTargets = append(releaseTargets, rt)
+					}
+				}
 			}
 		}
 	}

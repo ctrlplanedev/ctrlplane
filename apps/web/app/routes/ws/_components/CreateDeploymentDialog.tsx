@@ -128,7 +128,12 @@ export function CreateDeploymentDialog({
   const onSubmit = form.handleSubmit(async (data) => {
     try {
       const workspaceId = workspace.id;
-      await createDeploymentMutation.mutateAsync({ workspaceId, ...data });
+      const { systemId: selectedSystemId, ...rest } = data;
+      await createDeploymentMutation.mutateAsync({
+        workspaceId,
+        ...rest,
+        systemIds: [selectedSystemId],
+      });
     } catch (err: unknown) {
       // Error is handled by the mutation's onError callback
       console.error("Failed to create deployment:", err);

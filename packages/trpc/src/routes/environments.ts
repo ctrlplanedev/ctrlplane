@@ -167,7 +167,7 @@ export const environmentRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        systemId: z.string(),
+        systemIds: z.array(z.string()).min(1),
         name: z.string().min(1).max(255),
         description: z.string().max(500).optional(),
         metadata: z.record(z.string(), z.string()).optional(),

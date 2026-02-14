@@ -3,13 +3,13 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   Deployment: {
     type: 'object',
-    required: ['id', 'name', 'slug', 'systemId', 'jobAgentConfig', 'metadata'],
+    required: ['id', 'name', 'slug', 'systemIds', 'jobAgentConfig', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
-      systemId: { type: 'string' },
+      systemIds: { type: 'array', items: { type: 'string' } },
       jobAgentId: { type: 'string' },
       jobAgentConfig: openapi.schemaRef('JobAgentConfig'),
       resourceSelector: openapi.schemaRef('Selector'),
@@ -26,12 +26,12 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  DeploymentAndSystem: {
+  DeploymentAndSystems: {
     type: 'object',
-    required: ['deployment', 'system'],
+    required: ['deployment', 'systems'],
     properties: {
       deployment: openapi.schemaRef('Deployment'),
-      system: openapi.schemaRef('System'),
+      systems: { type: 'array', items: openapi.schemaRef('System') },
     },
   },
 

@@ -34,17 +34,17 @@ func setupReleaseTarget(t *testing.T, st *store.Store) (context.Context, *oapi.R
 	ctx := context.Background()
 	systemID := uuid.New().String()
 	deployment := &oapi.Deployment{
-		Id:       uuid.New().String(),
-		Name:     "test-deployment",
-		Slug:     "test-deployment",
-		SystemId: systemID,
+		Id:        uuid.New().String(),
+		Name:      "test-deployment",
+		Slug:      "test-deployment",
+		SystemIds: []string{systemID},
 	}
 	require.NoError(t, st.Deployments.Upsert(ctx, deployment))
 
 	environment := &oapi.Environment{
-		Id:       uuid.New().String(),
-		Name:     "test-environment",
-		SystemId: systemID,
+		Id:        uuid.New().String(),
+		Name:      "test-environment",
+		SystemIds: []string{systemID},
 	}
 	require.NoError(t, st.Environments.Upsert(ctx, environment))
 

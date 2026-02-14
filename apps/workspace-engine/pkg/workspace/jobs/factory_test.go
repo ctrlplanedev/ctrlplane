@@ -45,7 +45,7 @@ func createTestDeployment(t *testing.T, id string, jobAgentId *string, jobAgentC
 		Id:               id,
 		Name:             "test-deployment",
 		Slug:             "test-deployment",
-		SystemId:         "system-1",
+		SystemIds:        []string{"system-1"},
 		JobAgentId:       jobAgentId,
 		JobAgentConfig:   jobAgentConfig,
 		ResourceSelector: mustCreateResourceSelector(t),
@@ -57,7 +57,7 @@ func createTestEnvironment(t *testing.T, id string, systemId string, name string
 	return &oapi.Environment{
 		Id:               id,
 		Name:             name,
-		SystemId:         systemId,
+		SystemIds:        []string{systemId},
 		Metadata:         map[string]string{},
 		CreatedAt:        time.Now(),
 		ResourceSelector: mustCreateResourceSelector(t),
@@ -331,10 +331,10 @@ func setupFullStore(t *testing.T) (*store.Store, string, string, string, string)
 	deployment := createTestDeployment(t, deploymentId, &jobAgentId, mustCreateJobAgentConfig(t, `{"deploy_key": "deploy_val"}`))
 
 	environment := &oapi.Environment{
-		Id:       environmentId,
-		Name:     "production",
-		SystemId: "system-1",
-		Metadata: map[string]string{},
+		Id:        environmentId,
+		Name:      "production",
+		SystemIds: []string{"system-1"},
+		Metadata:  map[string]string{},
 	}
 
 	resource := &oapi.Resource{
@@ -434,7 +434,7 @@ func TestFactory_CreateJobForRelease_MergesJobAgentConfig(t *testing.T) {
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deployConfig)
 
 	environment := &oapi.Environment{
-		Id: "env-1", Name: "prod", SystemId: "system-1", Metadata: map[string]string{},
+		Id: "env-1", Name: "prod", SystemIds: []string{"system-1"}, Metadata: map[string]string{},
 	}
 	resource := &oapi.Resource{
 		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",
@@ -499,7 +499,7 @@ func TestFactory_CreateJobForRelease_DispatchContextResourceNotFound(t *testing.
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, mustCreateJobAgentConfig(t, `{}`))
 
 	environment := &oapi.Environment{
-		Id: "env-1", Name: "prod", SystemId: "system-1", Metadata: map[string]string{},
+		Id: "env-1", Name: "prod", SystemIds: []string{"system-1"}, Metadata: map[string]string{},
 	}
 
 	st.JobAgents.Upsert(ctx, jobAgent)
@@ -749,7 +749,7 @@ func TestFactory_CreateJobForRelease_DeepMergesNestedConfig(t *testing.T) {
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deployConfig)
 
 	environment := &oapi.Environment{
-		Id: "env-1", Name: "prod", SystemId: "system-1", Metadata: map[string]string{},
+		Id: "env-1", Name: "prod", SystemIds: []string{"system-1"}, Metadata: map[string]string{},
 	}
 	resource := &oapi.Resource{
 		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",

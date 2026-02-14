@@ -220,26 +220,29 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 		return deploymentsList[i].Id < deploymentsList[j].Id
 	})
 
-	deploymentsWithSystem := make([]*oapi.DeploymentAndSystem, 0, total)
+	deploymentsWithSystems := make([]*oapi.DeploymentAndSystems, 0, total)
 	for _, deployment := range deploymentsList[start:end] {
-		system, ok := ws.Systems().Get(deployment.SystemId)
-		if !ok {
-			log.Error("System not found for deployment", "deploymentId", deployment.Id, "systemId", deployment.SystemId)
-			continue
+		systems := make([]oapi.System, 0, len(deployment.SystemIds))
+		for _, sid := range deployment.SystemIds {
+			system, ok := ws.Systems().Get(sid)
+			if !ok {
+				log.Warn("System not found for deployment", "deploymentId", deployment.Id, "systemId", sid)
+				continue
+			}
+			systems = append(systems, *system)
 		}
-		// Use struct literal yielding + anonymous struct literal for "System"
-		dws := &oapi.DeploymentAndSystem{
+		dws := &oapi.DeploymentAndSystems{
 			Deployment: *deployment,
-			System:     *system,
+			Systems:    systems,
 		}
-		deploymentsWithSystem = append(deploymentsWithSystem, dws)
+		deploymentsWithSystems = append(deploymentsWithSystems, dws)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,
 		"offset": offset,
 		"limit":  limit,
-		"items":  deploymentsWithSystem,
+		"items":  deploymentsWithSystems,
 	})
 }
 

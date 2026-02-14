@@ -41,12 +41,12 @@ export function meta() {
 type DeleteSystemDialogProps = {
   system: { id: string; name: string; workspaceId: string } | null;
   deployments: Array<{
-    deployment: { id: string; name: string; systemId: string };
+    deployment: { id: string; name: string; systemIds: string[] };
   }>;
   environments: Array<{
     id: string;
     name: string;
-    systemId: string;
+    systemIds: string[];
   }>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -64,11 +64,11 @@ function DeleteSystemDialog({
 
   if (!system) return null;
 
-  const systemDeployments = deployments.filter(
-    (d) => d.deployment.systemId === system.id,
+  const systemDeployments = deployments.filter((d) =>
+    d.deployment.systemIds.includes(system.id),
   );
-  const systemEnvironments = environments.filter(
-    (e) => e.systemId === system.id,
+  const systemEnvironments = environments.filter((e) =>
+    e.systemIds.includes(system.id),
   );
 
   const handleDelete = () => {
@@ -212,10 +212,10 @@ export default function Systems() {
   // Get deployments and environments for a specific system
   const getSystemResources = (systemId: string) => {
     const systemDeployments = deployments
-      .filter((d) => d.deployment.systemId === systemId)
+      .filter((d) => d.deployment.systemIds.includes(systemId))
       .sort((a, b) => a.deployment.name.localeCompare(b.deployment.name));
     const systemEnvironments = environments
-      .filter((e) => e.systemId === systemId)
+      .filter((e) => e.systemIds.includes(systemId))
       .sort((a, b) => a.name.localeCompare(b.name));
     return { systemDeployments, systemEnvironments };
   };

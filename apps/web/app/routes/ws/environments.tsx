@@ -52,7 +52,7 @@ export default function Environments() {
       return e.name.toLowerCase().includes(searchQuery.toLowerCase());
     }
     if (systemFilter !== "all") {
-      return e.systemId === systemFilter;
+      return e.systemIds?.includes(systemFilter);
     }
     return true;
   });
@@ -133,11 +133,9 @@ export default function Environments() {
             <EnvironmentCard
               key={environment.id}
               environment={environment}
-              system={
-                systems.find(
-                  (system) => system.id === environment.systemId,
-                ) ?? { id: "", name: "" }
-              }
+              systems={systems.filter((system) =>
+                environment.systemIds?.includes(system.id),
+              )}
             />
           ))}
         </div>

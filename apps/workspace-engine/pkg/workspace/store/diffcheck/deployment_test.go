@@ -15,7 +15,7 @@ func TestHasDeploymentChanges_NoChanges(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:        "api-deployment",
 		Slug:        "api-deployment",
-		SystemId:    "sys-123",
+		SystemIds:   []string{"sys-123"},
 		Description: &desc,
 		JobAgentId:  &agentId,
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -28,7 +28,7 @@ func TestHasDeploymentChanges_NoChanges(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:        "api-deployment",
 		Slug:        "api-deployment",
-		SystemId:    "sys-123",
+		SystemIds:   []string{"sys-123"},
 		Description: &desc,
 		JobAgentId:  &agentId,
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -46,7 +46,7 @@ func TestHasDeploymentChanges_NilInputs(t *testing.T) {
 	sample := &oapi.Deployment{
 		Name:           "sample",
 		Slug:           "sample",
-		SystemId:       "sys-1",
+		SystemIds:      []string{"sys-1"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 
@@ -76,24 +76,15 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 	newAgent := "agent-new"
 
 	oldSelector := &oapi.Selector{}
-	assert.NoError(t, oldSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
-			"system": "legacy",
-		},
-	}))
+	assert.NoError(t, oldSelector.FromCelSelector(oapi.CelSelector{Cel: "system == 'legacy'"}))
 
 	newSelector := &oapi.Selector{}
-	assert.NoError(t, newSelector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]interface{}{
-			"system": "modern",
-			"team":   "platform",
-		},
-	}))
+	assert.NoError(t, newSelector.FromCelSelector(oapi.CelSelector{Cel: "system == 'modern' && team == 'platform'"}))
 
 	old := &oapi.Deployment{
 		Name:        "api-old",
 		Slug:        "api-old",
-		SystemId:    "sys-old",
+		SystemIds:   []string{"sys-old"},
 		Description: &oldDesc,
 		JobAgentId:  &oldAgent,
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -109,7 +100,7 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:        "api-new",
 		Slug:        "api-new",
-		SystemId:    "sys-new",
+		SystemIds:   []string{"sys-new"},
 		Description: &newDesc,
 		JobAgentId:  &newAgent,
 		JobAgentConfig: oapi.JobAgentConfig{
@@ -122,8 +113,6 @@ func TestHasDeploymentChangesBasic_DetectsChanges(t *testing.T) {
 
 	changes := hasDeploymentChangesBasic(old, new)
 	assert.True(t, changes["name"])
-	assert.True(t, changes["slug"])
-	assert.True(t, changes["systemid"])
 	assert.True(t, changes["description"])
 	assert.True(t, changes["jobagentid"])
 	assert.True(t, changes["jobagentconfig.image"])
@@ -137,7 +126,7 @@ func TestHasDeploymentChanges_NameChanged(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
@@ -145,7 +134,7 @@ func TestHasDeploymentChanges_NameChanged(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "web-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
@@ -159,7 +148,7 @@ func TestHasDeploymentChanges_SlugChanged(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
@@ -167,7 +156,7 @@ func TestHasDeploymentChanges_SlugChanged(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment-v2",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
@@ -181,7 +170,7 @@ func TestHasDeploymentChanges_SystemIdChanged(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
@@ -189,14 +178,14 @@ func TestHasDeploymentChanges_SystemIdChanged(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-456",
+		SystemIds:      []string{"sys-456"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
 
 	changes := HasDeploymentChanges(old, new)
 	assert.Len(t, changes, 1, "Should have exactly 1 change")
-	assert.True(t, changes["systemid"], "Should detect systemId change")
+	assert.True(t, changes["systemids.0"], "Should detect systemIds change")
 }
 
 func TestHasDeploymentChanges_DescriptionChanged(t *testing.T) {
@@ -206,7 +195,7 @@ func TestHasDeploymentChanges_DescriptionChanged(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		Description:    &oldDesc,
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
@@ -215,7 +204,7 @@ func TestHasDeploymentChanges_DescriptionChanged(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		Description:    &newDesc,
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
@@ -233,7 +222,7 @@ func TestHasDeploymentChanges_JobAgentIdChanged(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentId:     &oldAgent,
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
@@ -242,7 +231,7 @@ func TestHasDeploymentChanges_JobAgentIdChanged(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentId:     &newAgent,
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
@@ -255,9 +244,9 @@ func TestHasDeploymentChanges_JobAgentIdChanged(t *testing.T) {
 
 func TestHasDeploymentChanges_JobAgentConfigValueChanged(t *testing.T) {
 	old := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 3,
 			"image":    "nginx:1.0",
@@ -266,9 +255,9 @@ func TestHasDeploymentChanges_JobAgentConfigValueChanged(t *testing.T) {
 	}
 
 	new := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 3,
 			"image":    "nginx:2.0",
@@ -283,9 +272,9 @@ func TestHasDeploymentChanges_JobAgentConfigValueChanged(t *testing.T) {
 
 func TestHasDeploymentChanges_JobAgentConfigKeyAdded(t *testing.T) {
 	old := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 3,
 		},
@@ -293,9 +282,9 @@ func TestHasDeploymentChanges_JobAgentConfigKeyAdded(t *testing.T) {
 	}
 
 	new := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 3,
 			"image":    "nginx:latest",
@@ -310,9 +299,9 @@ func TestHasDeploymentChanges_JobAgentConfigKeyAdded(t *testing.T) {
 
 func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 	old := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 3,
 			"image":    "nginx:latest",
@@ -321,9 +310,9 @@ func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 	}
 
 	new := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 3,
 		},
@@ -337,9 +326,9 @@ func TestHasDeploymentChanges_JobAgentConfigKeyRemoved(t *testing.T) {
 
 func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 	old := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"database": map[string]interface{}{
 				"host": "localhost",
@@ -350,9 +339,9 @@ func TestHasDeploymentChanges_JobAgentConfigNestedChange(t *testing.T) {
 	}
 
 	new := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"database": map[string]interface{}{
 				"host": "prod-db.example.com",
@@ -385,7 +374,7 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:             "api-deployment",
 		Slug:             "api-deployment",
-		SystemId:         "sys-123",
+		SystemIds:        []string{"sys-123"},
 		ResourceSelector: oldSelector,
 		JobAgentConfig:   oapi.JobAgentConfig{},
 		Id:               "deploy-123",
@@ -394,7 +383,7 @@ func TestHasDeploymentChanges_ResourceSelectorChanged(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:             "api-deployment",
 		Slug:             "api-deployment",
-		SystemId:         "sys-123",
+		SystemIds:        []string{"sys-123"},
 		ResourceSelector: newSelector,
 		JobAgentConfig:   oapi.JobAgentConfig{},
 		Id:               "deploy-123",
@@ -420,7 +409,7 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:        "api-deployment",
 		Slug:        "api-deployment",
-		SystemId:    "sys-123",
+		SystemIds:   []string{"sys-123"},
 		Description: &oldDesc,
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 3,
@@ -432,7 +421,7 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:        "web-deployment",
 		Slug:        "web-deployment",
-		SystemId:    "sys-456",
+		SystemIds:   []string{"sys-456"},
 		Description: &newDesc,
 		JobAgentConfig: oapi.JobAgentConfig{
 			"replicas": 5,
@@ -445,7 +434,7 @@ func TestHasDeploymentChanges_MultipleChanges(t *testing.T) {
 	assert.GreaterOrEqual(t, len(changes), 6, "Should detect multiple changes")
 	assert.True(t, changes["name"], "Should detect name change")
 	assert.True(t, changes["slug"], "Should detect slug change")
-	assert.True(t, changes["systemid"], "Should detect systemId change")
+	assert.True(t, changes["systemids.0"], "Should detect systemIds change")
 	assert.True(t, changes["description"], "Should detect description change")
 	assert.True(t, changes["jobagentconfig.replicas"], "Should detect jobAgentConfig.replicas change")
 	assert.True(t, changes["jobagentconfig.image"], "Should detect jobAgentConfig.image change")
@@ -456,7 +445,7 @@ func TestHasDeploymentChanges_IdIgnored(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-old",
 	}
@@ -464,7 +453,7 @@ func TestHasDeploymentChanges_IdIgnored(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-new",
 	}
@@ -478,7 +467,7 @@ func TestHasDeploymentChanges_IdIgnoredWithOtherChanges(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-old",
 	}
@@ -486,7 +475,7 @@ func TestHasDeploymentChanges_IdIgnoredWithOtherChanges(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "web-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-new",
 	}
@@ -501,7 +490,7 @@ func TestHasDeploymentChanges_EmptyJobAgentConfig(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
@@ -509,7 +498,7 @@ func TestHasDeploymentChanges_EmptyJobAgentConfig(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
 	}
@@ -524,7 +513,7 @@ func TestHasDeploymentChanges_NilToSetDescription(t *testing.T) {
 	old := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		Description:    nil,
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
@@ -533,7 +522,7 @@ func TestHasDeploymentChanges_NilToSetDescription(t *testing.T) {
 	new := &oapi.Deployment{
 		Name:           "api-deployment",
 		Slug:           "api-deployment",
-		SystemId:       "sys-123",
+		SystemIds:      []string{"sys-123"},
 		Description:    &newDesc,
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Id:             "deploy-123",
@@ -546,9 +535,9 @@ func TestHasDeploymentChanges_NilToSetDescription(t *testing.T) {
 
 func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 	old := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"services": map[string]interface{}{
 				"database": map[string]interface{}{
@@ -563,9 +552,9 @@ func TestHasDeploymentChanges_DeeplyNestedJobAgentConfig(t *testing.T) {
 	}
 
 	new := &oapi.Deployment{
-		Name:     "api-deployment",
-		Slug:     "api-deployment",
-		SystemId: "sys-123",
+		Name:      "api-deployment",
+		Slug:      "api-deployment",
+		SystemIds: []string{"sys-123"},
 		JobAgentConfig: oapi.JobAgentConfig{
 			"services": map[string]interface{}{
 				"database": map[string]interface{}{

@@ -48,7 +48,7 @@ func createTestDeploymentForExecutor(id, systemID, name, jobAgentID string) *oap
 		Id:               id,
 		Name:             name,
 		Slug:             name,
-		SystemId:         systemID,
+		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,
 		JobAgentConfig:   oapi.JobAgentConfig{},
@@ -61,7 +61,7 @@ func createTestEnvironmentForExecutor(id, systemID, name string) *oapi.Environme
 	return &oapi.Environment{
 		Id:               id,
 		Name:             name,
-		SystemId:         systemID,
+		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 	}
 }
@@ -166,7 +166,7 @@ func TestExecuteRelease_InvalidJobAgent(t *testing.T) {
 	deployment := &oapi.Deployment{
 		Id:               deploymentID,
 		Name:             "test-deployment",
-		SystemId:         systemID,
+		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 		JobAgentId:       nil, // No job agent
 		JobAgentConfig:   oapi.JobAgentConfig{},

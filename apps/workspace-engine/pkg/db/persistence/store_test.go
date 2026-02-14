@@ -691,7 +691,7 @@ func TestStore_SaveAndLoad_Deployment(t *testing.T) {
 		Id:             uuid.New().String(),
 		Name:           "test-deployment",
 		Slug:           "test-deployment-slug",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"version": "v1.2.3"}),
 	}
 
@@ -763,7 +763,7 @@ func TestStore_SaveAndLoad_MultipleEntities(t *testing.T) {
 		Id:             uuid.New().String(),
 		Name:           "deployment-1",
 		Slug:           "deployment-1",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
@@ -1135,7 +1135,7 @@ func TestStore_SaveAndLoad_OAPIDeployment(t *testing.T) {
 		Id:             uuid.New().String(),
 		Name:           "test-deployment",
 		Slug:           "test-deployment-slug",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: customJobAgentConfig(map[string]interface{}{"config": "value"}),
 	}
 
@@ -1178,7 +1178,7 @@ func TestStore_SaveAndLoad_OAPIEnvironment(t *testing.T) {
 	environment := &oapi.Environment{
 		Id:        uuid.New().String(),
 		Name:      "production",
-		SystemId:  uuid.New().String(),
+		SystemIds: []string{uuid.New().String()},
 		CreatedAt: time.Now(),
 	}
 
@@ -1404,14 +1404,14 @@ func TestStore_SaveAndLoad_AllOAPIEntityTypes(t *testing.T) {
 		Id:             uuid.New().String(),
 		Name:           "Deployment 1",
 		Slug:           "deployment-1",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: customJobAgentConfig(nil),
 	}
 
 	environment := &oapi.Environment{
 		Id:        uuid.New().String(),
 		Name:      "Environment 1",
-		SystemId:  uuid.New().String(),
+		SystemIds: []string{uuid.New().String()},
 		CreatedAt: time.Now(),
 	}
 

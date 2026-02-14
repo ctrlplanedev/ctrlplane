@@ -83,12 +83,12 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Environment: {
     type: 'object',
-    required: ['id', 'name', 'systemId', 'createdAt', 'metadata'],
+    required: ['id', 'name', 'systemIds', 'createdAt', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
       description: { type: 'string' },
-      systemId: { type: 'string' },
+      systemIds: { type: 'array', items: { type: 'string' } },
       resourceSelector: openapi.schemaRef('Selector'),
       createdAt: { type: 'string', format: 'date-time' },
       metadata: { type: 'object', additionalProperties: { type: 'string' } },

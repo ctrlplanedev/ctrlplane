@@ -873,7 +873,7 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemId: string;
+            systemIds: string[];
         };
         CreateDeploymentVersionRequest: {
             config?: {
@@ -898,7 +898,7 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemId: string;
+            systemIds: string[];
         };
         CreatePolicyRequest: {
             description?: string;
@@ -1015,11 +1015,11 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemId: string;
+            systemIds: string[];
         };
-        DeploymentAndSystem: {
+        DeploymentAndSystems: {
             deployment: components["schemas"]["Deployment"];
-            system: components["schemas"]["System"];
+            systems: components["schemas"]["System"][];
         };
         DeploymentDependencyRule: {
             /** @description CEL expression to match upstream deployment(s) that must have a successful release before this deployment can proceed. */
@@ -1097,6 +1097,21 @@ export interface components {
             deployment: components["schemas"]["Deployment"];
             variables: components["schemas"]["DeploymentVariableWithValues"][];
         };
+        DispatchContext: {
+            deployment?: components["schemas"]["Deployment"];
+            environment?: components["schemas"]["Environment"];
+            jobAgent: components["schemas"]["JobAgent"];
+            jobAgentConfig: components["schemas"]["JobAgentConfig"];
+            release?: components["schemas"]["Release"];
+            resource?: components["schemas"]["Resource"];
+            variables?: {
+                [key: string]: components["schemas"]["LiteralValue"];
+            };
+            version?: components["schemas"]["DeploymentVersion"];
+            workflow?: components["schemas"]["Workflow"];
+            workflowJob?: components["schemas"]["WorkflowJob"];
+            workflowRun?: components["schemas"]["WorkflowRun"];
+        };
         Environment: {
             /** Format: date-time */
             createdAt: string;
@@ -1107,7 +1122,7 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemId: string;
+            systemIds: string[];
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
@@ -1192,6 +1207,7 @@ export interface components {
             completedAt?: string;
             /** Format: date-time */
             createdAt: string;
+            dispatchContext?: components["schemas"]["DispatchContext"];
             externalId?: string;
             id: string;
             jobAgentConfig: {
@@ -1219,6 +1235,9 @@ export interface components {
             name: string;
             type: string;
         };
+        JobAgentConfig: {
+            [key: string]: unknown;
+        };
         JobAgentRequestAccepted: {
             id: string;
             message: string;
@@ -1232,7 +1251,7 @@ export interface components {
         JobUpdateEvent: {
             agentId?: string;
             externalId?: string;
-            fieldsToUpdate?: ("completedAt" | "createdAt" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "metadata" | "releaseId" | "startedAt" | "status" | "updatedAt")[];
+            fieldsToUpdate?: ("completedAt" | "createdAt" | "dispatchContext" | "externalId" | "id" | "jobAgentConfig" | "jobAgentId" | "metadata" | "releaseId" | "startedAt" | "status" | "updatedAt")[];
             id?: string;
             job: components["schemas"]["Job"];
         } & (unknown | unknown);
@@ -1624,7 +1643,7 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemId: string;
+            systemIds: string[];
         };
         UpsertDeploymentVariableRequest: {
             defaultValue?: components["schemas"]["LiteralValue"];
@@ -1661,7 +1680,7 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemId: string;
+            systemIds: string[];
         };
         UpsertJobAgentRequest: {
             config: {
@@ -2328,7 +2347,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["DeploymentAndSystem"][];
+                        items: components["schemas"]["DeploymentAndSystems"][];
                         /** @description Maximum number of items returned */
                         limit: number;
                         /** @description Number of items skipped */

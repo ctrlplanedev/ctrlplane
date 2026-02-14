@@ -74,6 +74,13 @@ export const deploymentsRouter = router({
           },
         },
       );
+
+      if (response.error != null)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: response.error.error ?? "Failed to list deployments",
+        });
+
       return response.data;
     }),
 
@@ -149,7 +156,7 @@ export const deploymentsRouter = router({
     .input(
       z.object({
         workspaceId: z.uuid(),
-        systemId: z.string(),
+        systemIds: z.array(z.string()).min(1),
         name: z.string().min(3).max(255),
         slug: z.string().min(3).max(255),
         description: z.string().max(255).optional(),

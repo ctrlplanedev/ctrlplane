@@ -46,7 +46,7 @@ func setupStoreWithDeployment(deploymentID string) *store.Store {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 
@@ -179,7 +179,7 @@ func TestVariableManager_OnlyDeploymentKeysReturned(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -246,7 +246,7 @@ func TestVariableManager_ResourceVariableTakesPrecedence(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -310,7 +310,7 @@ func TestVariableManager_DeploymentVariablePriority(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -374,7 +374,7 @@ func TestVariableManager_FallbackToDefault(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -437,7 +437,7 @@ func TestVariableManager_NoDefaultNotIncluded(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -490,7 +490,7 @@ func TestVariableManager_SelectorFiltering(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -556,7 +556,7 @@ func TestVariableManager_NoSelectorMatches(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -646,7 +646,7 @@ func TestVariableManager_EmptyDeploymentVariables(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -693,7 +693,7 @@ func TestVariableManager_ComplexVariableTypes(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -770,7 +770,7 @@ func TestVariableManager_MixedPriorities(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {
@@ -882,7 +882,7 @@ func TestVariableManager_MultipleResources(t *testing.T) {
 		Id:             deploymentID,
 		Name:           "test-deployment",
 		Slug:           "test-deployment",
-		SystemId:       uuid.New().String(),
+		SystemIds:      []string{uuid.New().String()},
 		JobAgentConfig: oapi.JobAgentConfig{},
 	}
 	if err := st.Deployments.Upsert(ctx, deployment); err != nil {

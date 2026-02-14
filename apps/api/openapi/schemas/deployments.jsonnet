@@ -8,9 +8,9 @@ local jobAgentConfig = {
 {
   CreateDeploymentRequest: {
     type: 'object',
-    required: ['systemId', 'slug', 'name'],
+    required: ['systemIds', 'name', 'slug'],
     properties: {
-      systemId: { type: 'string' },
+      systemIds: { type: 'array', items: { type: 'string' } },
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
@@ -23,9 +23,9 @@ local jobAgentConfig = {
 
   UpsertDeploymentRequest: {
     type: 'object',
-    required: ['systemId', 'slug', 'name'],
+    required: ['systemIds', 'name', 'slug'],
     properties: {
-      systemId: { type: 'string' },
+      systemIds: { type: 'array', items: { type: 'string' } },
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
@@ -47,13 +47,13 @@ local jobAgentConfig = {
 
   Deployment: {
     type: 'object',
-    required: ['id', 'name', 'slug', 'systemId', 'jobAgentConfig'],
+    required: ['id', 'name', 'slug', 'systemIds', 'jobAgentConfig'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
-      systemId: { type: 'string' },
+      systemIds: { type: 'array', items: { type: 'string' } },
       jobAgentId: { type: 'string' },
       jobAgentConfig: jobAgentConfig,
       resourceSelector: openapi.schemaRef('Selector'),
@@ -61,12 +61,12 @@ local jobAgentConfig = {
     },
   },
 
-  DeploymentAndSystem: {
+  DeploymentAndSystems: {
     type: 'object',
-    required: ['deployment', 'system'],
+    required: ['deployment', 'systems'],
     properties: {
       deployment: openapi.schemaRef('Deployment'),
-      system: openapi.schemaRef('System'),
+      systems: { type: 'array', items: openapi.schemaRef('System') },
     },
   },
 

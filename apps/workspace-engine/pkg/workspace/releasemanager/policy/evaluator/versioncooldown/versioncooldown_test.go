@@ -24,10 +24,10 @@ func setupTestStore(t *testing.T) (*store.Store, context.Context) {
 
 func createTestDeployment(ctx context.Context, s *store.Store) *oapi.Deployment {
 	deployment := &oapi.Deployment{
-		Id:       uuid.New().String(),
-		Name:     "test-deployment",
-		Slug:     "test-deployment",
-		SystemId: uuid.New().String(),
+		Id:        uuid.New().String(),
+		Name:      "test-deployment",
+		Slug:      "test-deployment",
+		SystemIds: []string{uuid.New().String()},
 	}
 	_ = s.Deployments.Upsert(ctx, deployment)
 	return deployment
@@ -35,9 +35,9 @@ func createTestDeployment(ctx context.Context, s *store.Store) *oapi.Deployment 
 
 func createTestEnvironment(ctx context.Context, s *store.Store, systemID string) *oapi.Environment {
 	env := &oapi.Environment{
-		Id:       uuid.New().String(),
-		Name:     "staging",
-		SystemId: systemID,
+		Id:        uuid.New().String(),
+		Name:      "staging",
+		SystemIds: []string{systemID},
 	}
 	_ = s.Environments.Upsert(ctx, env)
 	return env
@@ -173,7 +173,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 		version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", time.Now())
@@ -204,7 +204,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
@@ -240,7 +240,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
@@ -280,7 +280,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
@@ -321,7 +321,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
@@ -362,7 +362,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
@@ -411,7 +411,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 
@@ -464,7 +464,7 @@ func TestVersionCooldownEvaluator_Evaluate(t *testing.T) {
 		s, ctx := setupTestStore(t)
 
 		deployment := createTestDeployment(ctx, s)
-		environment := createTestEnvironment(ctx, s, deployment.SystemId)
+		environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 		resource := createTestResource(ctx, s)
 		releaseTarget := createTestReleaseTarget(ctx, s, deployment, environment, resource)
 

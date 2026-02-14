@@ -195,7 +195,7 @@ func TestEngine_SystemDeploymentUpdateMaterializedViews(t *testing.T) {
 	// Update deployment d1 to move it to system 2
 	newD1 := c.NewDeployment(s1.Id)
 	newD1.Id = d1.Id
-	newD1.SystemId = s2.Id
+	newD1.SystemIds = []string{s2.Id}
 	engine.PushEvent(ctx, handler.DeploymentUpdate, newD1)
 
 	// System 2 should now have 2 deployment
@@ -251,7 +251,7 @@ func TestEngine_SystemEnvironmentUpdateMaterializedViews(t *testing.T) {
 	// Update environment e1 to move it to system 2
 	newE1 := c.NewEnvironment(s1.Id)
 	newE1.Id = e1.Id
-	newE1.SystemId = s2.Id
+	newE1.SystemIds = []string{s2.Id}
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, newE1)
 
 	// Verify materialized views updated - system 1 should now have 1 environment

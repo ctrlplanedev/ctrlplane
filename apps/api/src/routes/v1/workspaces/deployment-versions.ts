@@ -33,21 +33,25 @@ const getEnvironmentIds = async (
     );
 
   const { deployment } = deploymentResponse.data;
-  const { systemId } = deployment;
+  const { systemIds } = deployment;
 
-  const systemResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/systems/{systemId}",
-    { params: { path: { workspaceId, systemId } } },
-  );
-
-  if (systemResponse.error != null)
-    throw new ApiError(
-      systemResponse.error.error ?? "System not found",
-      systemResponse.response.status,
+  const environmentIds: string[] = [];
+  for (const systemId of systemIds) {
+    const systemResponse = await getClientFor(workspaceId).GET(
+      "/v1/workspaces/{workspaceId}/systems/{systemId}",
+      { params: { path: { workspaceId, systemId } } },
     );
-  const { environments } = systemResponse.data;
 
-  return environments.map((environment) => environment.id);
+    if (systemResponse.error != null)
+      throw new ApiError(
+        systemResponse.error.error ?? "System not found",
+        systemResponse.response.status,
+      );
+    const { environments } = systemResponse.data;
+    environmentIds.push(...environments.map((environment) => environment.id));
+  }
+
+  return environmentIds;
 };
 
 const upsertUserApprovalRecord: AsyncTypedHandler<

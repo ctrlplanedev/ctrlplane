@@ -104,8 +104,10 @@ export default function ReleaseTargetsPage() {
   });
 
   const environments =
-    environmentsQuery.data?.items.filter(
-      (environment) => environment.systemId === deployment.systemId,
+    environmentsQuery.data?.items.filter((environment) =>
+      environment.systemIds.some((id: string) =>
+        deployment.systemIds.includes(id),
+      ),
     ) ?? [];
 
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];

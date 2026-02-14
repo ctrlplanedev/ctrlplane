@@ -27,14 +27,14 @@ func setupTestStoreForJobTracker() *store.Store {
 
 	// Create environments
 	env1 := &oapi.Environment{
-		Id:       "env-1",
-		Name:     "staging",
-		SystemId: "system-1",
+		Id:        "env-1",
+		Name:      "staging",
+		SystemIds: []string{"system-1"},
 	}
 	env2 := &oapi.Environment{
-		Id:       "env-2",
-		Name:     "prod",
-		SystemId: "system-1",
+		Id:        "env-2",
+		Name:      "prod",
+		SystemIds: []string{"system-1"},
 	}
 	_ = st.Environments.Upsert(ctx, env1)
 	_ = st.Environments.Upsert(ctx, env2)
@@ -46,7 +46,7 @@ func setupTestStoreForJobTracker() *store.Store {
 		Id:             "deploy-1",
 		Name:           "my-app",
 		Slug:           "my-app",
-		SystemId:       "system-1",
+		SystemIds:      []string{"system-1"},
 		JobAgentId:     &jobAgentId,
 		Description:    &description,
 		JobAgentConfig: oapi.JobAgentConfig{},

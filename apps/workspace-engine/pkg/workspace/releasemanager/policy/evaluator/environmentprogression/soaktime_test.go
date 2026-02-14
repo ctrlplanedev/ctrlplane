@@ -37,7 +37,7 @@ func setupTestStoreForSoakTime() *store.Store {
 	env := &oapi.Environment{
 		Id:               "env-staging",
 		Name:             "staging",
-		SystemId:         "system-1",
+		SystemIds:        []string{"system-1"},
 		ResourceSelector: resourceSelector,
 	}
 	_ = st.Environments.Upsert(ctx, env)
@@ -49,7 +49,7 @@ func setupTestStoreForSoakTime() *store.Store {
 		Id:               "deploy-1",
 		Name:             "my-app",
 		Slug:             "my-app",
-		SystemId:         "system-1",
+		SystemIds:        []string{"system-1"},
 		JobAgentId:       &jobAgentId,
 		Description:      &description,
 		JobAgentConfig:   oapi.JobAgentConfig{},

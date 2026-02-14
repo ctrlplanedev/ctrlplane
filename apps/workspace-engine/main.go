@@ -224,7 +224,7 @@ func main() {
 				wsstore.WithDBDeploymentVersions(ctx),
 				wsstore.WithDBSystems(ctx),
 			),
-			workspace.AddDefaultSystem(),
+			// workspace.AddDefaultSystem(),
 		),
 	)
 

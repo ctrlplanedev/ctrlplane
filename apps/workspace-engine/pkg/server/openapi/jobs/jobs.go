@@ -5,7 +5,6 @@ import (
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
-	"workspace-engine/pkg/workspace"
 	jobFactory "workspace-engine/pkg/workspace/jobs"
 
 	"github.com/charmbracelet/log"
@@ -106,36 +105,6 @@ func (s *Jobs) GetJobWithRelease(c *gin.Context, workspaceId string, jobId strin
 	})
 }
 
-func (s *Jobs) getJobWithRelease(ws *workspace.Workspace, job *oapi.Job) *oapi.JobWithRelease {
-	release, ok := ws.Releases().Get(job.ReleaseId)
-	if !ok {
-		return nil
-	}
-
-	environment, ok := ws.Environments().Get(release.ReleaseTarget.EnvironmentId)
-	if !ok {
-		return nil
-	}
-
-	deployment, ok := ws.Deployments().Get(release.ReleaseTarget.DeploymentId)
-	if !ok {
-		return nil
-	}
-
-	resource, ok := ws.Resources().Get(release.ReleaseTarget.ResourceId)
-	if !ok {
-		return nil
-	}
-
-	return &oapi.JobWithRelease{
-		Job:         *job,
-		Release:     *release,
-		Environment: environment,
-		Deployment:  deployment,
-		Resource:    resource,
-	}
-}
-
 func (s *Jobs) getFilteredJobs(allJobs []*oapi.Job, params oapi.GetJobsParams) ([]*oapi.Job, error) {
 	filteredJobs := make([]*oapi.Job, 0)
 
@@ -232,10 +201,7 @@ func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsPa
 	end := min(start+limit, total)
 
 	paginatedJobs := make([]*oapi.Job, 0, end-start)
-
-	for _, job := range items[start:end] {
-		paginatedJobs = append(paginatedJobs, job)
-	}
+	paginatedJobs = append(paginatedJobs, items[start:end]...)
 
 	c.JSON(http.StatusOK, gin.H{
 		"total":  total,

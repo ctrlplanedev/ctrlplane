@@ -127,7 +127,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Id:          environmentId,
 		Name:        "test-env",
 		Description: ptr("Test environment"),
-		SystemId:    systemId,
+		SystemIds:   []string{systemId},
 	}
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
@@ -141,7 +141,7 @@ func createTestRelease(s *store.Store, ctx context.Context) *oapi.Release {
 		Name:        "test-deployment",
 		Slug:        "test-deployment",
 		Description: ptr("Test deployment"),
-		SystemId:    systemId,
+		SystemIds:   []string{systemId},
 	}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})

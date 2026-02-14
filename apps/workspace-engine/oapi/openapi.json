@@ -191,32 +191,38 @@
                "slug": {
                   "type": "string"
                },
-               "systemId": {
-                  "type": "string"
+               "systemIds": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
                }
             },
             "required": [
                "id",
                "name",
                "slug",
-               "systemId",
+               "systemIds",
                "jobAgentConfig",
                "metadata"
             ],
             "type": "object"
          },
-         "DeploymentAndSystem": {
+         "DeploymentAndSystems": {
             "properties": {
                "deployment": {
                   "$ref": "#/components/schemas/Deployment"
                },
-               "system": {
-                  "$ref": "#/components/schemas/System"
+               "systems": {
+                  "items": {
+                     "$ref": "#/components/schemas/System"
+                  },
+                  "type": "array"
                }
             },
             "required": [
                "deployment",
-               "system"
+               "systems"
             ],
             "type": "object"
          },
@@ -507,14 +513,17 @@
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
                },
-               "systemId": {
-                  "type": "string"
+               "systemIds": {
+                  "items": {
+                     "type": "string"
+                  },
+                  "type": "array"
                }
             },
             "required": [
                "id",
                "name",
-               "systemId",
+               "systemIds",
                "createdAt",
                "metadata"
             ],
@@ -3064,7 +3073,7 @@
                            "properties": {
                               "items": {
                                  "items": {
-                                    "$ref": "#/components/schemas/DeploymentAndSystem"
+                                    "$ref": "#/components/schemas/DeploymentAndSystems"
                                  },
                                  "type": "array"
                               },

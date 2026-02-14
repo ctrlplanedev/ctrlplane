@@ -24,8 +24,8 @@ SET name = EXCLUDED.name, description = EXCLUDED.description, job_agent_id = EXC
     metadata = EXCLUDED.metadata, workspace_id = EXCLUDED.workspace_id
 RETURNING *;
 
--- name: GetSystemIDForDeployment :one
-SELECT system_id FROM system_deployment WHERE deployment_id = $1 LIMIT 1;
+-- name: GetSystemIDsForDeployment :many
+SELECT system_id FROM system_deployment WHERE deployment_id = $1;
 
 -- name: UpsertSystemDeployment :exec
 INSERT INTO system_deployment (system_id, deployment_id)

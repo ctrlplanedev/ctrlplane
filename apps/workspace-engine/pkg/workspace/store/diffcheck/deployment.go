@@ -2,6 +2,7 @@ package diffcheck
 
 import (
 	"encoding/json"
+	"slices"
 	"workspace-engine/pkg/oapi"
 
 	"github.com/r3labs/diff/v3"
@@ -94,8 +95,8 @@ func hasDeploymentChangesBasic(old, new *oapi.Deployment) map[string]bool {
 	if old.Slug != new.Slug {
 		changed["slug"] = true
 	}
-	if old.SystemId != new.SystemId {
-		changed["systemid"] = true
+	if !slices.Equal(old.SystemIds, new.SystemIds) {
+		changed["systemids"] = true
 	}
 
 	// Compare Description (pointer field)

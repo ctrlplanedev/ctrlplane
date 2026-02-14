@@ -56,7 +56,9 @@ export default function Deployments() {
 
   // Get unique systems for filter
   const systems = Array.from(
-    new Set(deploymentsWithSystems.map((d) => d.system.name)),
+    new Set(
+      deploymentsWithSystems.flatMap((d) => d.systems.map((s) => s.name)),
+    ),
   );
 
   const filteredDeployments = deploymentsWithSystems.filter((d) => {
@@ -66,7 +68,7 @@ export default function Deployments() {
         .includes(searchQuery.toLowerCase());
     }
     if (systemFilter !== "all") {
-      return d.system.name === systemFilter;
+      return d.systems.some((s) => s.name === systemFilter);
     }
     return true;
   });
@@ -145,13 +147,15 @@ export default function Deployments() {
         <div
           className={"grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
         >
-          {filteredDeployments.map(({ deployment, system }) => (
-            <LazyLoadDeploymentCard
-              deployment={deployment}
-              system={system}
-              key={deployment.id}
-            />
-          ))}
+          {filteredDeployments.map(
+            ({ deployment, systems: deploymentSystems }) => (
+              <LazyLoadDeploymentCard
+                deployment={deployment}
+                systems={deploymentSystems}
+                key={deployment.id}
+              />
+            ),
+          )}
         </div>
 
         {deploymentsWithSystems.length === 0 && (

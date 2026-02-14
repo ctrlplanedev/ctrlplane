@@ -108,9 +108,11 @@ export function CreateEnvironmentDialog({
 
   const onSubmit = form.handleSubmit(async (data) => {
     const workspaceId = workspace.id;
+    const { systemId: selectedSystemId, ...rest } = data;
     await createEnvironmentMutation.mutateAsync({
       workspaceId,
-      ...data,
+      ...rest,
+      systemIds: [selectedSystemId],
       resourceSelectorCel: data.celExpression,
     });
   });

@@ -52,15 +52,28 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 	return i, err
 }
 
-const getSystemIDForDeployment = `-- name: GetSystemIDForDeployment :one
-SELECT system_id FROM system_deployment WHERE deployment_id = $1 LIMIT 1
+const getSystemIDsForDeployment = `-- name: GetSystemIDsForDeployment :many
+SELECT system_id FROM system_deployment WHERE deployment_id = $1
 `
 
-func (q *Queries) GetSystemIDForDeployment(ctx context.Context, deploymentID uuid.UUID) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, getSystemIDForDeployment, deploymentID)
-	var system_id uuid.UUID
-	err := row.Scan(&system_id)
-	return system_id, err
+func (q *Queries) GetSystemIDsForDeployment(ctx context.Context, deploymentID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getSystemIDsForDeployment, deploymentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var system_id uuid.UUID
+		if err := rows.Scan(&system_id); err != nil {
+			return nil, err
+		}
+		items = append(items, system_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listDeploymentsBySystemID = `-- name: ListDeploymentsBySystemID :many

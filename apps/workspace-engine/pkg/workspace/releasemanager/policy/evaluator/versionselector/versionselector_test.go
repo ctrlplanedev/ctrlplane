@@ -23,10 +23,10 @@ func setupTestStore(t *testing.T) (*store.Store, context.Context) {
 
 func createTestDeployment(ctx context.Context, s *store.Store) *oapi.Deployment {
 	deployment := &oapi.Deployment{
-		Id:       uuid.New().String(),
-		Name:     "test-deployment",
-		Slug:     "test-deployment",
-		SystemId: uuid.New().String(),
+		Id:        uuid.New().String(),
+		Name:      "test-deployment",
+		Slug:      "test-deployment",
+		SystemIds: []string{uuid.New().String()},
 	}
 	_ = s.Deployments.Upsert(ctx, deployment)
 	return deployment
@@ -34,9 +34,9 @@ func createTestDeployment(ctx context.Context, s *store.Store) *oapi.Deployment 
 
 func createTestEnvironment(ctx context.Context, s *store.Store, systemID string) *oapi.Environment {
 	env := &oapi.Environment{
-		Id:       uuid.New().String(),
-		Name:     "staging",
-		SystemId: systemID,
+		Id:        uuid.New().String(),
+		Name:      "staging",
+		SystemIds: []string{systemID},
 	}
 	_ = s.Environments.Upsert(ctx, env)
 	return env
@@ -134,7 +134,7 @@ func TestEvaluateCEL_VersionTagMatching(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
 	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 	resource := createTestResource(ctx, s, map[string]string{"tier": "staging"})
 
 	t.Run("allows version when CEL expression matches", func(t *testing.T) {
@@ -203,7 +203,7 @@ func TestEvaluateCEL_EnvironmentMatching(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
 	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 	resource := createTestResource(ctx, s, nil)
 	version := createTestVersion(ctx, s, deployment.Id, "v2.0.0", nil)
 
@@ -266,7 +266,7 @@ func TestEvaluateCEL_ResourceMetadataMatching(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
 	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 	resource := createTestResource(ctx, s, map[string]string{"tier": "production", "region": "us-west"})
 	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
 
@@ -329,7 +329,7 @@ func TestEvaluateCEL_CombinedConditions(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
 	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 	resource := createTestResource(ctx, s, map[string]string{"canary": "true"})
 	version := createTestVersion(ctx, s, deployment.Id, "v2.5.0-canary", map[string]string{"channel": "beta"})
 
@@ -392,7 +392,7 @@ func TestEvaluate_InvalidCEL(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
 	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 	resource := createTestResource(ctx, s, nil)
 	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
 
@@ -427,7 +427,7 @@ func TestEvaluate_WithDescription(t *testing.T) {
 	s, ctx := setupTestStore(t)
 
 	deployment := createTestDeployment(ctx, s)
-	environment := createTestEnvironment(ctx, s, deployment.SystemId)
+	environment := createTestEnvironment(ctx, s, deployment.SystemIds[0])
 	resource := createTestResource(ctx, s, nil)
 	version := createTestVersion(ctx, s, deployment.Id, "v1.0.0", nil)
 

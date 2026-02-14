@@ -26,8 +26,8 @@ SET name = EXCLUDED.name, description = EXCLUDED.description,
     created_at = CASE WHEN sqlc.narg('created_at')::timestamptz IS NOT NULL THEN EXCLUDED.created_at ELSE environment.created_at END
 RETURNING *;
 
--- name: GetSystemIDForEnvironment :one
-SELECT system_id FROM system_environment WHERE environment_id = $1 LIMIT 1;
+-- name: GetSystemIDsForEnvironment :many
+SELECT system_id FROM system_environment WHERE environment_id = $1;
 
 -- name: UpsertSystemEnvironment :exec
 INSERT INTO system_environment (system_id, environment_id)

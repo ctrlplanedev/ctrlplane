@@ -417,7 +417,7 @@ func TestEngine_DeploymentVersionJobsList_EnvironmentSorting(t *testing.T) {
 	// Get all environments for this system
 	environments := []*oapi.Environment{}
 	for _, env := range ws.Environments().Items() {
-		if env.SystemId == deployment.SystemId {
+		if len(env.SystemIds) > 0 && len(deployment.SystemIds) > 0 && env.SystemIds[0] == deployment.SystemIds[0] {
 			environments = append(environments, env)
 		}
 	}

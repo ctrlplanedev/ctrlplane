@@ -345,7 +345,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	// Move deployment to system 2 - should remove release target
 	// (environment is still in system 1, so no matching deployment+environment pair)
 	d1Updated := *d1 // Create a copy of the deployment value
-	d1Updated.SystemId = sys2.Id
+	d1Updated.SystemIds = []string{sys2.Id}
 	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
@@ -355,7 +355,7 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 
 	// Move environment to system 2 as well - should recreate release target
 	e1Updated := *e1 // Create a copy of the environment value
-	e1Updated.SystemId = sys2.Id
+	e1Updated.SystemIds = []string{sys2.Id}
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()

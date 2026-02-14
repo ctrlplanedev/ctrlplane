@@ -147,7 +147,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	// loaded from changelog_entry records. When the DB backend is
 	// active, sync them so they are available through the DB-backed repos.
 	// The DB repo Set() methods handle creating join table entries
-	// (system_deployment, system_environment) from the oapi SystemId field.
+	// (system_deployment, system_environment) from the oapi SystemIds field.
 	if setStatus != nil {
 		setStatus("Migrating legacy systems")
 	}
@@ -199,24 +199,36 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	// Group deployments by SystemId for O(1) lookup
 	deploymentsBySystem := make(map[string][]*oapi.Deployment)
 	for _, deployment := range s.Deployments.Items() {
-		deploymentsBySystem[deployment.SystemId] = append(deploymentsBySystem[deployment.SystemId], deployment)
+		for _, sid := range deployment.SystemIds {
+			deploymentsBySystem[sid] = append(deploymentsBySystem[sid], deployment)
+		}
 	}
 
-	// Iterate environments, then matching deployments, then resources
+	// Iterate environments, then matching deployments, then resources.
+	// Deduplicate across systems so the same (deployment, environment, resource)
+	// tuple is not added twice.
+	seenRT := make(map[string]struct{})
 	for _, environment := range s.Environments.Items() {
-		matchingDeployments := deploymentsBySystem[environment.SystemId]
-		if len(matchingDeployments) == 0 {
-			continue
+		// Collect all deployments from systems this environment belongs to.
+		matchingDeployments := make(map[string]*oapi.Deployment)
+		var systemName string
+		for _, sid := range environment.SystemIds {
+			for _, d := range deploymentsBySystem[sid] {
+				matchingDeployments[d.Id] = d
+			}
+			if systemName == "" {
+				if sys, ok := s.Systems.Get(sid); ok {
+					systemName = sys.Name
+				}
+			}
 		}
-
-		system, ok := s.Systems.Get(environment.SystemId)
-		if !ok {
+		if len(matchingDeployments) == 0 {
 			continue
 		}
 
 		if setStatus != nil {
 			setStatus(
-				"Computing release targets for environment \"" + environment.Name + "\" in system \"" + system.Name + "\".",
+				"Computing release targets for environment \"" + environment.Name + "\" in system \"" + systemName + "\".",
 			)
 		}
 
@@ -234,11 +246,15 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 					continue
 				}
 
-				_ = s.ReleaseTargets.Upsert(ctx, &oapi.ReleaseTarget{
+				rt := &oapi.ReleaseTarget{
 					EnvironmentId: environment.Id,
 					DeploymentId:  deployment.Id,
 					ResourceId:    resource.Id,
-				})
+				}
+				if _, ok := seenRT[rt.Key()]; !ok {
+					seenRT[rt.Key()] = struct{}{}
+					_ = s.ReleaseTargets.Upsert(ctx, rt)
+				}
 			}
 		}
 	}

@@ -16,7 +16,8 @@ type environmentJSON struct {
 
 // UnmarshalJSON implements custom JSON unmarshaling for Environment
 // to handle backwards compatibility with old data that may have empty
-// string createdAt values instead of proper timestamps.
+// string createdAt values instead of proper timestamps, and to migrate
+// legacy "systemId" (singular string) to "systemIds" (array).
 func (e *Environment) UnmarshalJSON(data []byte) error {
 	var aux environmentJSON
 	if err := json.Unmarshal(data, &aux); err != nil {
@@ -54,6 +55,19 @@ func (e *Environment) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			e.CreatedAt = createdAt
+		}
+	}
+
+	// Handle legacy "systemId" field from existing changelog entries
+	if len(e.SystemIds) == 0 {
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(data, &raw); err == nil {
+			if val, ok := raw["systemId"]; ok {
+				var legacyID string
+				if json.Unmarshal(val, &legacyID) == nil && legacyID != "" {
+					e.SystemIds = []string{legacyID}
+				}
+			}
 		}
 	}
 

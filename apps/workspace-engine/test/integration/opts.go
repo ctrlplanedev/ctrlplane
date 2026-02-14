@@ -322,7 +322,7 @@ func SystemID(id string) SystemOption {
 func WithDeployment(options ...DeploymentOption) SystemOption {
 	return func(ws *TestWorkspace, s *oapi.System, eb *eventsBuilder) {
 		d := c.NewDeployment(s.Id)
-		d.SystemId = s.Id
+		d.SystemIds = []string{s.Id}
 
 		dvEB := newEventsBuilder()
 		for _, option := range options {
@@ -342,7 +342,7 @@ func WithDeployment(options ...DeploymentOption) SystemOption {
 func WithEnvironment(options ...EnvironmentOption) SystemOption {
 	return func(ws *TestWorkspace, s *oapi.System, eb *eventsBuilder) {
 		e := c.NewEnvironment(s.Id)
-		e.SystemId = s.Id
+		e.SystemIds = []string{s.Id}
 
 		for _, option := range options {
 			option(ws, e)

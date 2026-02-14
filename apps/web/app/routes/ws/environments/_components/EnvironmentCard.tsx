@@ -34,16 +34,16 @@ type EnvironmentCardProps = {
     id: string;
     name: string;
     description?: string;
-    systemId: string;
+    systemIds: string[];
     createdAt: string;
     resourceSelector?: { cel?: string; json?: Record<string, unknown> };
   };
-  system: { id: string; name: string };
+  systems: Array<{ id: string; name: string }>;
 };
 
 export const EnvironmentCard: React.FC<EnvironmentCardProps> = ({
   environment,
-  system,
+  systems,
 }) => {
   const { workspace } = useWorkspace();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -115,7 +115,9 @@ export const EnvironmentCard: React.FC<EnvironmentCardProps> = ({
               </DropdownMenu>
             </CardTitle>
 
-            <CardDescription className="text-xs">{system.name}</CardDescription>
+            <CardDescription className="text-xs">
+              {systems.map((s) => s.name).join(", ") || "No system"}
+            </CardDescription>
 
             {environment.description && (
               <p className="mt-2 text-xs text-muted-foreground">

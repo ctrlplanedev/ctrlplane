@@ -100,7 +100,7 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	require.True(t, ok, "Deployment should be loaded")
 	assert.Equal(t, "web-deployment", loadedDeployment.Name)
 	assert.Equal(t, "Web application deployment", *loadedDeployment.Description)
-	assert.Equal(t, systemID, loadedDeployment.SystemId)
+	assert.Contains(t, loadedDeployment.SystemIds, systemID)
 	assert.Equal(t, jobAgentID, *loadedDeployment.JobAgentId)
 
 	// Verify Environment
@@ -108,7 +108,7 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	require.True(t, ok, "Environment should be loaded")
 	assert.Equal(t, "production", loadedEnv.Name)
 	assert.Equal(t, "Production environment", *loadedEnv.Description)
-	assert.Equal(t, systemID, loadedEnv.SystemId)
+	assert.Contains(t, loadedEnv.SystemIds, systemID)
 
 	// Verify Resources
 	allResources := ws.Resources().Items()

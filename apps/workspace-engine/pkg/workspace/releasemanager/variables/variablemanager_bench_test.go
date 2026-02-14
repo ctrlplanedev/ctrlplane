@@ -43,7 +43,7 @@ func createBenchDeployment(systemID, id, name string) *oapi.Deployment {
 		Id:               id,
 		Name:             name,
 		Slug:             name,
-		SystemId:         systemID,
+		SystemIds:        []string{systemID},
 		Description:      &description,
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,

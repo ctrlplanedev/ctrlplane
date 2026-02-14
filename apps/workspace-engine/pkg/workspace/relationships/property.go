@@ -99,8 +99,13 @@ func getDeploymentProperty(deployment *oapi.Deployment, propertyPath []string) (
 			return convertValue(*deployment.Description)
 		}
 		return nil, fmt.Errorf("description is nil")
+	case "system_ids", "systemids":
+		return convertValue(deployment.SystemIds)
 	case "system_id", "systemid":
-		return convertValue(deployment.SystemId)
+		if len(deployment.SystemIds) > 0 {
+			return convertValue(deployment.SystemIds[0])
+		}
+		return nil, fmt.Errorf("system_id is empty")
 	case "job_agent_id", "jobagentid":
 		if deployment.JobAgentId != nil {
 			return convertValue(*deployment.JobAgentId)
@@ -147,8 +152,13 @@ func getEnvironmentProperty(environment *oapi.Environment, propertyPath []string
 			return convertValue(*environment.Description)
 		}
 		return nil, fmt.Errorf("description is nil")
+	case "system_ids", "systemids":
+		return convertValue(environment.SystemIds)
 	case "system_id", "systemid":
-		return convertValue(environment.SystemId)
+		if len(environment.SystemIds) > 0 {
+			return convertValue(environment.SystemIds[0])
+		}
+		return nil, fmt.Errorf("system_id is empty")
 	default:
 		return getPropertyReflection(environment, propertyPath)
 	}
