@@ -6,6 +6,9 @@ import (
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
 	"workspace-engine/pkg/workspace"
+	jobFactory "workspace-engine/pkg/workspace/jobs"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -145,46 +148,6 @@ func (s *Jobs) getFilteredJobs(allJobs []*oapi.Job, params oapi.GetJobsParams) (
 	return filteredJobs, nil
 }
 
-func (s *Jobs) fillReleaseCtxForLegacyJob(ws *workspace.Workspace, job *oapi.Job) {
-	release, ok := ws.Releases().Get(job.ReleaseId)
-	if !ok {
-		return
-	}
-
-	environment, ok := ws.Environments().Get(release.ReleaseTarget.EnvironmentId)
-	if !ok {
-		return
-	}
-
-	deployment, ok := ws.Deployments().Get(release.ReleaseTarget.DeploymentId)
-	if !ok {
-		return
-	}
-
-	resource, ok := ws.Resources().Get(release.ReleaseTarget.ResourceId)
-	if !ok {
-		return
-	}
-
-	jobAgent, ok := ws.JobAgents().Get(job.JobAgentId)
-	if !ok {
-		return
-	}
-
-	dispatchCtx := &oapi.DispatchContext{
-		Release:        release,
-		Environment:    environment,
-		Deployment:     deployment,
-		Resource:       resource,
-		JobAgent:       *jobAgent,
-		JobAgentConfig: job.JobAgentConfig,
-		Version:        &release.Version,
-		Variables:      &release.Variables,
-	}
-
-	job.DispatchContext = dispatchCtx
-}
-
 func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsParams) {
 	ws, err := utils.GetWorkspace(c, workspaceId)
 	if err != nil {
@@ -205,9 +168,16 @@ func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsPa
 		return items[i].CreatedAt.After(items[j].CreatedAt)
 	})
 
+	factory := jobFactory.NewFactory(ws.Store())
+
 	for _, job := range items {
-		if job.DispatchContext == nil {
-			s.fillReleaseCtxForLegacyJob(ws, job)
+		if job.DispatchContext == nil && job.ReleaseId != "" {
+			dispatchCtx, err := factory.BuildDispatchContextForLegacyReleaseJob(job)
+			if err != nil {
+				log.Warn("Failed to build dispatch context for legacy release job", "error", err)
+				continue
+			}
+			job.DispatchContext = dispatchCtx
 		}
 	}
 
