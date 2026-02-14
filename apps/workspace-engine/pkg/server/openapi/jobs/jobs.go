@@ -32,6 +32,19 @@ func (s *Jobs) GetJob(c *gin.Context, workspaceId string, jobId string) {
 		return
 	}
 
+	factory := jobFactory.NewFactory(ws.Store())
+
+	if job.DispatchContext == nil && job.ReleaseId != "" {
+		dispatchCtx, err := factory.BuildDispatchContextForLegacyReleaseJob(job)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to build dispatch context for legacy release job: " + err.Error(),
+			})
+			return
+		}
+		job.DispatchContext = dispatchCtx
+	}
+
 	c.JSON(http.StatusOK, job)
 }
 
