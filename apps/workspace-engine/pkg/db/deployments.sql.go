@@ -21,37 +21,24 @@ func (q *Queries) DeleteDeployment(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const getDeploymentByID = `-- name: GetDeploymentByID :one
-SELECT
-    d.id,
-    d.name,
-    d.description,
-    d.job_agent_id,
-    d.job_agent_config,
-    d.resource_selector,
-    d.metadata,
-    d.workspace_id,
-    sd.system_id
-FROM deployment d
-LEFT JOIN system_deployment sd ON sd.deployment_id = d.id
-WHERE d.id = $1
+const deleteSystemDeploymentByDeploymentID = `-- name: DeleteSystemDeploymentByDeploymentID :exec
+DELETE FROM system_deployment WHERE deployment_id = $1
 `
 
-type GetDeploymentByIDRow struct {
-	ID               uuid.UUID
-	Name             string
-	Description      pgtype.Text
-	JobAgentID       uuid.UUID
-	JobAgentConfig   map[string]any
-	ResourceSelector string
-	Metadata         map[string]string
-	WorkspaceID      uuid.UUID
-	SystemID         uuid.UUID
+func (q *Queries) DeleteSystemDeploymentByDeploymentID(ctx context.Context, deploymentID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteSystemDeploymentByDeploymentID, deploymentID)
+	return err
 }
 
-func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (GetDeploymentByIDRow, error) {
+const getDeploymentByID = `-- name: GetDeploymentByID :one
+SELECT id, name, description, job_agent_id, job_agent_config, resource_selector, metadata, workspace_id
+FROM deployment
+WHERE id = $1
+`
+
+func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployment, error) {
 	row := q.db.QueryRow(ctx, getDeploymentByID, id)
-	var i GetDeploymentByIDRow
+	var i Deployment
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -61,54 +48,37 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (GetDeplo
 		&i.ResourceSelector,
 		&i.Metadata,
 		&i.WorkspaceID,
-		&i.SystemID,
 	)
 	return i, err
 }
 
-const listDeploymentsByWorkspaceID = `-- name: ListDeploymentsByWorkspaceID :many
-SELECT
-    d.id,
-    d.name,
-    d.description,
-    d.job_agent_id,
-    d.job_agent_config,
-    d.resource_selector,
-    d.metadata,
-    d.workspace_id,
-    sd.system_id
-FROM deployment d
-LEFT JOIN system_deployment sd ON sd.deployment_id = d.id
-WHERE d.workspace_id = $1
-LIMIT COALESCE($2::int, 5000)
+const getSystemIDForDeployment = `-- name: GetSystemIDForDeployment :one
+SELECT system_id FROM system_deployment WHERE deployment_id = $1 LIMIT 1
 `
 
-type ListDeploymentsByWorkspaceIDParams struct {
-	WorkspaceID uuid.UUID
-	Limit       pgtype.Int4
+func (q *Queries) GetSystemIDForDeployment(ctx context.Context, deploymentID uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getSystemIDForDeployment, deploymentID)
+	var system_id uuid.UUID
+	err := row.Scan(&system_id)
+	return system_id, err
 }
 
-type ListDeploymentsByWorkspaceIDRow struct {
-	ID               uuid.UUID
-	Name             string
-	Description      pgtype.Text
-	JobAgentID       uuid.UUID
-	JobAgentConfig   map[string]any
-	ResourceSelector string
-	Metadata         map[string]string
-	WorkspaceID      uuid.UUID
-	SystemID         uuid.UUID
-}
+const listDeploymentsBySystemID = `-- name: ListDeploymentsBySystemID :many
+SELECT d.id, d.name, d.description, d.job_agent_id, d.job_agent_config, d.resource_selector, d.metadata, d.workspace_id
+FROM deployment d
+INNER JOIN system_deployment sd ON sd.deployment_id = d.id
+WHERE sd.system_id = $1
+`
 
-func (q *Queries) ListDeploymentsByWorkspaceID(ctx context.Context, arg ListDeploymentsByWorkspaceIDParams) ([]ListDeploymentsByWorkspaceIDRow, error) {
-	rows, err := q.db.Query(ctx, listDeploymentsByWorkspaceID, arg.WorkspaceID, arg.Limit)
+func (q *Queries) ListDeploymentsBySystemID(ctx context.Context, systemID uuid.UUID) ([]Deployment, error) {
+	rows, err := q.db.Query(ctx, listDeploymentsBySystemID, systemID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListDeploymentsByWorkspaceIDRow
+	var items []Deployment
 	for rows.Next() {
-		var i ListDeploymentsByWorkspaceIDRow
+		var i Deployment
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -118,7 +88,47 @@ func (q *Queries) ListDeploymentsByWorkspaceID(ctx context.Context, arg ListDepl
 			&i.ResourceSelector,
 			&i.Metadata,
 			&i.WorkspaceID,
-			&i.SystemID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDeploymentsByWorkspaceID = `-- name: ListDeploymentsByWorkspaceID :many
+SELECT id, name, description, job_agent_id, job_agent_config, resource_selector, metadata, workspace_id
+FROM deployment
+WHERE workspace_id = $1
+LIMIT COALESCE($2::int, 5000)
+`
+
+type ListDeploymentsByWorkspaceIDParams struct {
+	WorkspaceID uuid.UUID
+	Limit       pgtype.Int4
+}
+
+func (q *Queries) ListDeploymentsByWorkspaceID(ctx context.Context, arg ListDeploymentsByWorkspaceIDParams) ([]Deployment, error) {
+	rows, err := q.db.Query(ctx, listDeploymentsByWorkspaceID, arg.WorkspaceID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Deployment
+	for rows.Next() {
+		var i Deployment
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.JobAgentID,
+			&i.JobAgentConfig,
+			&i.ResourceSelector,
+			&i.Metadata,
+			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
 		}
@@ -143,10 +153,10 @@ RETURNING id, name, description, job_agent_id, job_agent_config, resource_select
 type UpsertDeploymentParams struct {
 	ID               uuid.UUID
 	Name             string
-	Description      pgtype.Text
+	Description      string
 	JobAgentID       uuid.UUID
 	JobAgentConfig   map[string]any
-	ResourceSelector string
+	ResourceSelector pgtype.Text
 	Metadata         map[string]string
 	WorkspaceID      uuid.UUID
 }

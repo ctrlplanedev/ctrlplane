@@ -36,8 +36,10 @@ func selectorToString(sel *oapi.Selector) string {
 	return string(b)
 }
 
-// ToOapiFromGetRow converts a GetEnvironmentByIDRow into an oapi.Environment.
-func ToOapiFromGetRow(row db.GetEnvironmentByIDRow) *oapi.Environment {
+// ToOapi converts a db.Environment into an oapi.Environment.
+// SystemId is not populated here — it is resolved through the join table
+// via GetBySystemID when needed.
+func ToOapi(row db.Environment) *oapi.Environment {
 	var description *string
 	if row.Description.Valid {
 		description = &row.Description.String
@@ -55,30 +57,6 @@ func ToOapiFromGetRow(row db.GetEnvironmentByIDRow) *oapi.Environment {
 		ResourceSelector: selectorFromString(row.ResourceSelector),
 		Metadata:         metadata,
 		CreatedAt:        row.CreatedAt.Time,
-		SystemId:         row.SystemID.String(),
-	}
-}
-
-// ToOapiFromListRow converts a ListEnvironmentsByWorkspaceIDRow into an oapi.Environment.
-func ToOapiFromListRow(row db.ListEnvironmentsByWorkspaceIDRow) *oapi.Environment {
-	var description *string
-	if row.Description.Valid {
-		description = &row.Description.String
-	}
-
-	metadata := row.Metadata
-	if metadata == nil {
-		metadata = make(map[string]string)
-	}
-
-	return &oapi.Environment{
-		Id:               row.ID.String(),
-		Name:             row.Name,
-		Description:      description,
-		ResourceSelector: selectorFromString(row.ResourceSelector),
-		Metadata:         metadata,
-		CreatedAt:        row.CreatedAt.Time,
-		SystemId:         row.SystemID.String(),
 	}
 }
 

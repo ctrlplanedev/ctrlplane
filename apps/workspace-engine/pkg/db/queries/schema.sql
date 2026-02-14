@@ -16,12 +16,12 @@ CREATE TABLE system (
 CREATE TABLE deployment (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    description TEXT DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
     job_agent_id UUID,
     job_agent_config JSONB NOT NULL DEFAULT '{}',
-    resource_selector TEXT NOT NULL DEFAULT 'false',
+    resource_selector TEXT DEFAULT 'false',
     metadata JSONB NOT NULL DEFAULT '{}',
-    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
+    workspace_id UUID REFERENCES workspace(id)
 );
 
 CREATE TABLE environment (

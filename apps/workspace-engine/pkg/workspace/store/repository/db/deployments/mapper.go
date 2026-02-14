@@ -37,11 +37,14 @@ func selectorToString(sel *oapi.Selector) string {
 	return string(b)
 }
 
-// ToOapiFromGetRow converts a GetDeploymentByIDRow into an oapi.Deployment.
-func ToOapiFromGetRow(row db.GetDeploymentByIDRow) *oapi.Deployment {
-	var description *string
-	if row.Description.Valid {
-		description = &row.Description.String
+// ToOapi converts a db.Deployment into an oapi.Deployment.
+// SystemId is not populated here — it is resolved through the join table
+// via GetBySystemID when needed.
+func ToOapi(row db.Deployment) *oapi.Deployment {
+	description := row.Description
+	var descPtr *string
+	if description != "" {
+		descPtr = &description
 	}
 
 	metadata := row.Metadata
@@ -60,50 +63,19 @@ func ToOapiFromGetRow(row db.GetDeploymentByIDRow) *oapi.Deployment {
 		jobAgentId = &s
 	}
 
-	return &oapi.Deployment{
-		Id:               row.ID.String(),
-		Name:             row.Name,
-		Description:      description,
-		JobAgentId:       jobAgentId,
-		JobAgentConfig:   jobAgentConfig,
-		ResourceSelector: selectorFromString(row.ResourceSelector),
-		Metadata:         metadata,
-		SystemId:         row.SystemID.String(),
-	}
-}
-
-// ToOapiFromListRow converts a ListDeploymentsByWorkspaceIDRow into an oapi.Deployment.
-func ToOapiFromListRow(row db.ListDeploymentsByWorkspaceIDRow) *oapi.Deployment {
-	var description *string
-	if row.Description.Valid {
-		description = &row.Description.String
-	}
-
-	metadata := row.Metadata
-	if metadata == nil {
-		metadata = make(map[string]string)
-	}
-
-	jobAgentConfig := oapi.JobAgentConfig(row.JobAgentConfig)
-	if jobAgentConfig == nil {
-		jobAgentConfig = make(oapi.JobAgentConfig)
-	}
-
-	var jobAgentId *string
-	if row.JobAgentID != uuid.Nil {
-		s := row.JobAgentID.String()
-		jobAgentId = &s
+	var resourceSelector *oapi.Selector
+	if row.ResourceSelector.Valid {
+		resourceSelector = selectorFromString(row.ResourceSelector.String)
 	}
 
 	return &oapi.Deployment{
 		Id:               row.ID.String(),
 		Name:             row.Name,
-		Description:      description,
+		Description:      descPtr,
 		JobAgentId:       jobAgentId,
 		JobAgentConfig:   jobAgentConfig,
-		ResourceSelector: selectorFromString(row.ResourceSelector),
+		ResourceSelector: resourceSelector,
 		Metadata:         metadata,
-		SystemId:         row.SystemID.String(),
 	}
 }
 
@@ -114,15 +86,9 @@ func ToUpsertParams(d *oapi.Deployment) (db.UpsertDeploymentParams, error) {
 		return db.UpsertDeploymentParams{}, fmt.Errorf("parse id: %w", err)
 	}
 
-	systemID, err := uuid.Parse(d.SystemId)
-	if err != nil {
-		return db.UpsertDeploymentParams{}, fmt.Errorf("parse system_id: %w", err)
-	}
-	_ = systemID // used by caller for system_deployment upsert
-
-	var description pgtype.Text
+	description := ""
 	if d.Description != nil {
-		description = pgtype.Text{String: *d.Description, Valid: true}
+		description = *d.Description
 	}
 
 	var jobAgentID uuid.UUID
@@ -144,13 +110,16 @@ func ToUpsertParams(d *oapi.Deployment) (db.UpsertDeploymentParams, error) {
 		jobAgentConfig = make(map[string]any)
 	}
 
+	selStr := selectorToString(d.ResourceSelector)
+	resourceSelector := pgtype.Text{String: selStr, Valid: true}
+
 	return db.UpsertDeploymentParams{
 		ID:               id,
 		Name:             d.Name,
 		Description:      description,
 		JobAgentID:       jobAgentID,
 		JobAgentConfig:   jobAgentConfig,
-		ResourceSelector: selectorToString(d.ResourceSelector),
+		ResourceSelector: resourceSelector,
 		Metadata:         metadata,
 		WorkspaceID:      uuid.Nil, // set by caller
 	}, nil

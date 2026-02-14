@@ -5,7 +5,6 @@ import {
   primaryKey,
   text,
   timestamp,
-  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -13,24 +12,19 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { workspace } from "./workspace.js";
 
-export const system = pgTable(
-  "system",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    name: text("name").notNull(),
-    slug: text("slug").notNull(),
-    description: text("description").notNull().default(""),
-    workspaceId: uuid("workspace_id")
-      .notNull()
-      .references(() => workspace.id, { onDelete: "cascade" }),
+export const system = pgTable("system", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspace.id, { onDelete: "cascade" }),
 
-    metadata: jsonb("metadata")
-      .notNull()
-      .default("{}")
-      .$type<Record<string, string>>(),
-  },
-  (t) => [uniqueIndex().on(t.workspaceId, t.slug)],
-);
+  metadata: jsonb("metadata")
+    .notNull()
+    .default("{}")
+    .$type<Record<string, string>>(),
+});
 
 export type System = InferSelectModel<typeof system>;
 

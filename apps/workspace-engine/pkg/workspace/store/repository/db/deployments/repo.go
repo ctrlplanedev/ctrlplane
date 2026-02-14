@@ -20,6 +20,15 @@ func NewRepo(ctx context.Context, workspaceID string) *Repo {
 	return &Repo{ctx: ctx, workspaceID: workspaceID}
 }
 
+// resolveSystemID looks up the system_id for a deployment from the join table.
+func (r *Repo) resolveSystemID(deploymentID uuid.UUID) string {
+	systemID, err := db.GetQueries(r.ctx).GetSystemIDForDeployment(r.ctx, deploymentID)
+	if err != nil {
+		return ""
+	}
+	return systemID.String()
+}
+
 func (r *Repo) Get(id string) (*oapi.Deployment, bool) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
@@ -32,7 +41,31 @@ func (r *Repo) Get(id string) (*oapi.Deployment, bool) {
 		return nil, false
 	}
 
-	return ToOapiFromGetRow(row), true
+	d := ToOapi(row)
+	d.SystemId = r.resolveSystemID(uid)
+	return d, true
+}
+
+func (r *Repo) GetBySystemID(systemID string) map[string]*oapi.Deployment {
+	uid, err := uuid.Parse(systemID)
+	if err != nil {
+		log.Warn("Failed to parse system id for GetBySystemID", "id", systemID, "error", err)
+		return make(map[string]*oapi.Deployment)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListDeploymentsBySystemID(r.ctx, uid)
+	if err != nil {
+		log.Warn("Failed to list deployments by system", "systemId", systemID, "error", err)
+		return make(map[string]*oapi.Deployment)
+	}
+
+	result := make(map[string]*oapi.Deployment, len(rows))
+	for _, row := range rows {
+		d := ToOapi(row)
+		d.SystemId = systemID
+		result[d.Id] = d
+	}
+	return result
 }
 
 func (r *Repo) Set(entity *oapi.Deployment) error {
@@ -53,9 +86,16 @@ func (r *Repo) Set(entity *oapi.Deployment) error {
 	}
 
 	// Maintain the system_deployment join.
+	// First, remove any existing mapping so a deployment can move between systems.
+	deploymentID, _ := uuid.Parse(entity.Id)
+	if err := db.GetQueries(r.ctx).DeleteSystemDeploymentByDeploymentID(r.ctx, deploymentID); err != nil {
+		log.Warn("Failed to delete old system_deployment join",
+			"deployment_id", entity.Id, "error", err)
+	}
+
+	// Then insert the new mapping if a system_id is set.
 	systemID, err := uuid.Parse(entity.SystemId)
 	if err == nil && systemID != uuid.Nil {
-		deploymentID, _ := uuid.Parse(entity.Id)
 		if err := db.GetQueries(r.ctx).UpsertSystemDeployment(r.ctx, db.UpsertSystemDeploymentParams{
 			SystemID:     systemID,
 			DeploymentID: deploymentID,
@@ -94,7 +134,8 @@ func (r *Repo) Items() map[string]*oapi.Deployment {
 
 	result := make(map[string]*oapi.Deployment, len(rows))
 	for _, row := range rows {
-		d := ToOapiFromListRow(row)
+		d := ToOapi(row)
+		d.SystemId = r.resolveSystemID(row.ID)
 		result[d.Id] = d
 	}
 	return result

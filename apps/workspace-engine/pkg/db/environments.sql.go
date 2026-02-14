@@ -21,35 +21,24 @@ func (q *Queries) DeleteEnvironment(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const getEnvironmentByID = `-- name: GetEnvironmentByID :one
-SELECT
-    e.id,
-    e.name,
-    e.description,
-    e.resource_selector,
-    e.metadata,
-    e.created_at,
-    e.workspace_id,
-    se.system_id
-FROM environment e
-LEFT JOIN system_environment se ON se.environment_id = e.id
-WHERE e.id = $1
+const deleteSystemEnvironmentByEnvironmentID = `-- name: DeleteSystemEnvironmentByEnvironmentID :exec
+DELETE FROM system_environment WHERE environment_id = $1
 `
 
-type GetEnvironmentByIDRow struct {
-	ID               uuid.UUID
-	Name             string
-	Description      pgtype.Text
-	ResourceSelector string
-	Metadata         map[string]string
-	CreatedAt        pgtype.Timestamptz
-	WorkspaceID      uuid.UUID
-	SystemID         uuid.UUID
+func (q *Queries) DeleteSystemEnvironmentByEnvironmentID(ctx context.Context, environmentID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteSystemEnvironmentByEnvironmentID, environmentID)
+	return err
 }
 
-func (q *Queries) GetEnvironmentByID(ctx context.Context, id uuid.UUID) (GetEnvironmentByIDRow, error) {
+const getEnvironmentByID = `-- name: GetEnvironmentByID :one
+SELECT id, name, description, resource_selector, metadata, created_at, workspace_id
+FROM environment
+WHERE id = $1
+`
+
+func (q *Queries) GetEnvironmentByID(ctx context.Context, id uuid.UUID) (Environment, error) {
 	row := q.db.QueryRow(ctx, getEnvironmentByID, id)
-	var i GetEnvironmentByIDRow
+	var i Environment
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -58,53 +47,37 @@ func (q *Queries) GetEnvironmentByID(ctx context.Context, id uuid.UUID) (GetEnvi
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.WorkspaceID,
-		&i.SystemID,
 	)
 	return i, err
 }
 
-const listEnvironmentsByWorkspaceID = `-- name: ListEnvironmentsByWorkspaceID :many
-SELECT
-    e.id,
-    e.name,
-    e.description,
-    e.resource_selector,
-    e.metadata,
-    e.created_at,
-    e.workspace_id,
-    se.system_id
-FROM environment e
-LEFT JOIN system_environment se ON se.environment_id = e.id
-WHERE e.workspace_id = $1
-ORDER BY e.created_at DESC
-LIMIT COALESCE($2::int, 5000)
+const getSystemIDForEnvironment = `-- name: GetSystemIDForEnvironment :one
+SELECT system_id FROM system_environment WHERE environment_id = $1 LIMIT 1
 `
 
-type ListEnvironmentsByWorkspaceIDParams struct {
-	WorkspaceID uuid.UUID
-	Limit       pgtype.Int4
+func (q *Queries) GetSystemIDForEnvironment(ctx context.Context, environmentID uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getSystemIDForEnvironment, environmentID)
+	var system_id uuid.UUID
+	err := row.Scan(&system_id)
+	return system_id, err
 }
 
-type ListEnvironmentsByWorkspaceIDRow struct {
-	ID               uuid.UUID
-	Name             string
-	Description      pgtype.Text
-	ResourceSelector string
-	Metadata         map[string]string
-	CreatedAt        pgtype.Timestamptz
-	WorkspaceID      uuid.UUID
-	SystemID         uuid.UUID
-}
+const listEnvironmentsBySystemID = `-- name: ListEnvironmentsBySystemID :many
+SELECT e.id, e.name, e.description, e.resource_selector, e.metadata, e.created_at, e.workspace_id
+FROM environment e
+INNER JOIN system_environment se ON se.environment_id = e.id
+WHERE se.system_id = $1
+`
 
-func (q *Queries) ListEnvironmentsByWorkspaceID(ctx context.Context, arg ListEnvironmentsByWorkspaceIDParams) ([]ListEnvironmentsByWorkspaceIDRow, error) {
-	rows, err := q.db.Query(ctx, listEnvironmentsByWorkspaceID, arg.WorkspaceID, arg.Limit)
+func (q *Queries) ListEnvironmentsBySystemID(ctx context.Context, systemID uuid.UUID) ([]Environment, error) {
+	rows, err := q.db.Query(ctx, listEnvironmentsBySystemID, systemID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListEnvironmentsByWorkspaceIDRow
+	var items []Environment
 	for rows.Next() {
-		var i ListEnvironmentsByWorkspaceIDRow
+		var i Environment
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -113,7 +86,47 @@ func (q *Queries) ListEnvironmentsByWorkspaceID(ctx context.Context, arg ListEnv
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.WorkspaceID,
-			&i.SystemID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEnvironmentsByWorkspaceID = `-- name: ListEnvironmentsByWorkspaceID :many
+SELECT id, name, description, resource_selector, metadata, created_at, workspace_id
+FROM environment
+WHERE workspace_id = $1
+ORDER BY created_at DESC
+LIMIT COALESCE($2::int, 5000)
+`
+
+type ListEnvironmentsByWorkspaceIDParams struct {
+	WorkspaceID uuid.UUID
+	Limit       pgtype.Int4
+}
+
+func (q *Queries) ListEnvironmentsByWorkspaceID(ctx context.Context, arg ListEnvironmentsByWorkspaceIDParams) ([]Environment, error) {
+	rows, err := q.db.Query(ctx, listEnvironmentsByWorkspaceID, arg.WorkspaceID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Environment
+	for rows.Next() {
+		var i Environment
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.ResourceSelector,
+			&i.Metadata,
+			&i.CreatedAt,
+			&i.WorkspaceID,
 		); err != nil {
 			return nil, err
 		}

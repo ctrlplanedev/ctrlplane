@@ -146,14 +146,44 @@ func (a *cmapRepoAdapter[E]) Items() map[string]E {
 	return a.store.Items()
 }
 
+// deploymentRepoAdapter wraps a cmap for deployments and adds GetBySystemID.
+type deploymentRepoAdapter struct {
+	cmapRepoAdapter[*oapi.Deployment]
+}
+
+func (a *deploymentRepoAdapter) GetBySystemID(systemID string) map[string]*oapi.Deployment {
+	result := make(map[string]*oapi.Deployment)
+	for id, d := range a.store.Items() {
+		if d.SystemId == systemID {
+			result[id] = d
+		}
+	}
+	return result
+}
+
 // Deployments implements repository.Repo.
 func (s *InMemory) Deployments() repository.DeploymentRepo {
-	return &cmapRepoAdapter[*oapi.Deployment]{store: &s.deployments}
+	return &deploymentRepoAdapter{cmapRepoAdapter[*oapi.Deployment]{store: &s.deployments}}
+}
+
+// environmentRepoAdapter wraps a cmap for environments and adds GetBySystemID.
+type environmentRepoAdapter struct {
+	cmapRepoAdapter[*oapi.Environment]
+}
+
+func (a *environmentRepoAdapter) GetBySystemID(systemID string) map[string]*oapi.Environment {
+	result := make(map[string]*oapi.Environment)
+	for id, e := range a.store.Items() {
+		if e.SystemId == systemID {
+			result[id] = e
+		}
+	}
+	return result
 }
 
 // Environments implements repository.Repo.
 func (s *InMemory) Environments() repository.EnvironmentRepo {
-	return &cmapRepoAdapter[*oapi.Environment]{store: &s.environments}
+	return &environmentRepoAdapter{cmapRepoAdapter[*oapi.Environment]{store: &s.environments}}
 }
 
 // Systems implements repository.Repo.

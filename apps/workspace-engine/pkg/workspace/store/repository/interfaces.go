@@ -15,6 +15,7 @@ type DeploymentVersionRepo interface {
 // DeploymentRepo defines the contract for deployment storage.
 type DeploymentRepo interface {
 	Get(id string) (*oapi.Deployment, bool)
+	GetBySystemID(systemID string) map[string]*oapi.Deployment
 	Set(entity *oapi.Deployment) error
 	Remove(id string) error
 	Items() map[string]*oapi.Deployment
@@ -23,6 +24,7 @@ type DeploymentRepo interface {
 // EnvironmentRepo defines the contract for environment storage.
 type EnvironmentRepo interface {
 	Get(id string) (*oapi.Environment, bool)
+	GetBySystemID(systemID string) map[string]*oapi.Environment
 	Set(entity *oapi.Environment) error
 	Remove(id string) error
 	Items() map[string]*oapi.Environment

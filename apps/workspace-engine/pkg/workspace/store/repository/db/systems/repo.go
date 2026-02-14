@@ -72,7 +72,7 @@ func (r *Repo) Items() map[string]*oapi.System {
 
 	result := make(map[string]*oapi.System, len(rows))
 	for _, row := range rows {
-		s := ToOapiFromListRow(row)
+		s := ToOapi(row)
 		result[s.Id] = s
 	}
 	return result

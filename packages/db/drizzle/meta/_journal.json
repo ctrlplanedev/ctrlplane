@@ -1009,6 +1009,13 @@
       "when": 1771015819930,
       "tag": "0143_peaceful_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 144,
+      "version": "7",
+      "when": 1771045758243,
+      "tag": "0144_magical_the_hand",
+      "breakpoints": true
     }
   ]
 }

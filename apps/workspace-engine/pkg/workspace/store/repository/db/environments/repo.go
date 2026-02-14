@@ -20,6 +20,15 @@ func NewRepo(ctx context.Context, workspaceID string) *Repo {
 	return &Repo{ctx: ctx, workspaceID: workspaceID}
 }
 
+// resolveSystemID looks up the system_id for an environment from the join table.
+func (r *Repo) resolveSystemID(environmentID uuid.UUID) string {
+	systemID, err := db.GetQueries(r.ctx).GetSystemIDForEnvironment(r.ctx, environmentID)
+	if err != nil {
+		return ""
+	}
+	return systemID.String()
+}
+
 func (r *Repo) Get(id string) (*oapi.Environment, bool) {
 	uid, err := uuid.Parse(id)
 	if err != nil {
@@ -32,7 +41,31 @@ func (r *Repo) Get(id string) (*oapi.Environment, bool) {
 		return nil, false
 	}
 
-	return ToOapiFromGetRow(row), true
+	e := ToOapi(row)
+	e.SystemId = r.resolveSystemID(uid)
+	return e, true
+}
+
+func (r *Repo) GetBySystemID(systemID string) map[string]*oapi.Environment {
+	uid, err := uuid.Parse(systemID)
+	if err != nil {
+		log.Warn("Failed to parse system id for GetBySystemID", "id", systemID, "error", err)
+		return make(map[string]*oapi.Environment)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListEnvironmentsBySystemID(r.ctx, uid)
+	if err != nil {
+		log.Warn("Failed to list environments by system", "systemId", systemID, "error", err)
+		return make(map[string]*oapi.Environment)
+	}
+
+	result := make(map[string]*oapi.Environment, len(rows))
+	for _, row := range rows {
+		e := ToOapi(row)
+		e.SystemId = systemID
+		result[e.Id] = e
+	}
+	return result
 }
 
 func (r *Repo) Set(entity *oapi.Environment) error {
@@ -53,9 +86,16 @@ func (r *Repo) Set(entity *oapi.Environment) error {
 	}
 
 	// Maintain the system_environment join.
+	// First, remove any existing mapping so an environment can move between systems.
+	environmentID, _ := uuid.Parse(entity.Id)
+	if err := db.GetQueries(r.ctx).DeleteSystemEnvironmentByEnvironmentID(r.ctx, environmentID); err != nil {
+		log.Warn("Failed to delete old system_environment join",
+			"environment_id", entity.Id, "error", err)
+	}
+
+	// Then insert the new mapping if a system_id is set.
 	systemID, err := uuid.Parse(entity.SystemId)
 	if err == nil && systemID != uuid.Nil {
-		environmentID, _ := uuid.Parse(entity.Id)
 		if err := db.GetQueries(r.ctx).UpsertSystemEnvironment(r.ctx, db.UpsertSystemEnvironmentParams{
 			SystemID:      systemID,
 			EnvironmentID: environmentID,
@@ -94,7 +134,8 @@ func (r *Repo) Items() map[string]*oapi.Environment {
 
 	result := make(map[string]*oapi.Environment, len(rows))
 	for _, row := range rows {
-		e := ToOapiFromListRow(row)
+		e := ToOapi(row)
+		e.SystemId = r.resolveSystemID(row.ID)
 		result[e.Id] = e
 	}
 	return result

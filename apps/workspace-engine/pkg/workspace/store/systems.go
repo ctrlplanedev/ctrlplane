@@ -53,21 +53,9 @@ func (s *Systems) Items() map[string]*oapi.System {
 }
 
 func (s *Systems) Deployments(systemId string) map[string]*oapi.Deployment {
-	deployments := make(map[string]*oapi.Deployment)
-	for _, deployment := range s.store.Deployments.Items() {
-		if deployment.SystemId == systemId {
-			deployments[deployment.Id] = deployment
-		}
-	}
-	return deployments
+	return s.store.Deployments.repo.GetBySystemID(systemId)
 }
 
 func (s *Systems) Environments(systemId string) map[string]*oapi.Environment {
-	environments := make(map[string]*oapi.Environment)
-	for _, environment := range s.store.Environments.Items() {
-		if environment.SystemId == systemId {
-			environments[environment.Id] = environment
-		}
-	}
-	return environments
+	return s.store.Environments.repo.GetBySystemID(systemId)
 }

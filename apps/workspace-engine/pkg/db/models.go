@@ -68,10 +68,10 @@ type ChangelogEntry struct {
 type Deployment struct {
 	ID               uuid.UUID
 	Name             string
-	Description      pgtype.Text
+	Description      string
 	JobAgentID       uuid.UUID
 	JobAgentConfig   map[string]any
-	ResourceSelector string
+	ResourceSelector pgtype.Text
 	Metadata         map[string]string
 	WorkspaceID      uuid.UUID
 }

@@ -38,38 +38,25 @@ func (q *Queries) GetSystemByID(ctx context.Context, id uuid.UUID) (System, erro
 }
 
 const listSystemsByWorkspaceID = `-- name: ListSystemsByWorkspaceID :many
-SELECT
-    s.id,
-    s.workspace_id,
-    s.name,
-    s.description,
-    s.metadata
-FROM system s
-WHERE s.workspace_id = $1
+SELECT id, name, description, workspace_id, metadata
+FROM system
+WHERE workspace_id = $1
 `
 
-type ListSystemsByWorkspaceIDRow struct {
-	ID          uuid.UUID
-	WorkspaceID uuid.UUID
-	Name        string
-	Description string
-	Metadata    []byte
-}
-
-func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListSystemsByWorkspaceIDRow, error) {
+func (q *Queries) ListSystemsByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]System, error) {
 	rows, err := q.db.Query(ctx, listSystemsByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListSystemsByWorkspaceIDRow
+	var items []System
 	for rows.Next() {
-		var i ListSystemsByWorkspaceIDRow
+		var i System
 		if err := rows.Scan(
 			&i.ID,
-			&i.WorkspaceID,
 			&i.Name,
 			&i.Description,
+			&i.WorkspaceID,
 			&i.Metadata,
 		); err != nil {
 			return nil, err
