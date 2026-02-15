@@ -828,6 +828,33 @@ func WithRuleRetryWithBackoff(maxRetries int32, backoffSeconds int32, strategy o
 	}
 }
 
+// ===== DeploymentWindowRule Options =====
+
+// WithRuleDeploymentWindow configures a deployment window rule that controls when
+// deployments are allowed based on a recurring time window.
+func WithRuleDeploymentWindow(rrule string, durationMinutes int32) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.DeploymentWindow = &oapi.DeploymentWindowRule{
+			Rrule:           rrule,
+			DurationMinutes: durationMinutes,
+		}
+		return nil
+	}
+}
+
+// WithRuleDeploymentWindowFull configures a deployment window rule with all options.
+func WithRuleDeploymentWindowFull(rrule string, durationMinutes int32, timezone *string, allowWindow *bool) PolicyRuleOption {
+	return func(_ *TestWorkspace, r *oapi.PolicyRule) error {
+		r.DeploymentWindow = &oapi.DeploymentWindowRule{
+			Rrule:           rrule,
+			DurationMinutes: durationMinutes,
+			Timezone:        timezone,
+			AllowWindow:     allowWindow,
+		}
+		return nil
+	}
+}
+
 // ===== VersionCooldownRule Options =====
 
 // WithRuleVersionCooldown configures a version cooldown rule that limits how frequently

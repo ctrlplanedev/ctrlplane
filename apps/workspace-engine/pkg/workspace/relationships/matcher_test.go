@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"workspace-engine/pkg/oapi"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestNewPropertyMatcher tests the PropertyMatcher constructor
@@ -1291,6 +1293,294 @@ func TestGetPropertyValue_TypeVariants(t *testing.T) {
 			tt.checkValue(t, got)
 		})
 	}
+}
+
+// TestMatches_PropertyMatcher tests the top-level Matches function with property matchers
+func TestMatches_PropertyMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+
+	// Build a PropertiesMatcher and set it in a RelationshipRule_Matcher
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "region"},
+				ToProperty:   []string{"metadata", "region"},
+				Operator:     "equals",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create properties matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.True(t, result, "Should match when regions are equal")
+}
+
+// TestMatches_PropertyMatcher_NoMatch tests Matches with non-matching properties
+func TestMatches_PropertyMatcher_NoMatch(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "eu-west-1"},
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "region"},
+				ToProperty:   []string{"metadata", "region"},
+				Operator:     "equals",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create properties matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.False(t, result, "Should not match when regions differ")
+}
+
+// TestMatches_CelMatcher tests the Matches function with a CEL matcher
+func TestMatches_CelMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewDeploymentEntity(&oapi.Deployment{
+		Id:        "deployment-1",
+		Name:      "web-server",
+		SystemIds: []string{"system-1"},
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromCelMatcher(oapi.CelMatcher{
+		Cel: "from.name == to.name",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CEL matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.True(t, result, "Should match when names are equal via CEL")
+}
+
+// TestMatches_CelMatcher_NoMatch tests Matches with non-matching CEL
+func TestMatches_CelMatcher_NoMatch(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewDeploymentEntity(&oapi.Deployment{
+		Id:        "deployment-1",
+		Name:      "api-server",
+		SystemIds: []string{"system-1"},
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromCelMatcher(oapi.CelMatcher{
+		Cel: "from.name == to.name",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CEL matcher: %v", err)
+	}
+
+	result := Matches(context.Background(), matcher, from, to)
+	assert.False(t, result, "Should not match when names differ via CEL")
+}
+
+// TestMatches_NoMatcher tests Matches with empty/invalid matcher
+func TestMatches_NoMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		WorkspaceId: "workspace-1",
+	})
+
+	// Empty matcher (no properties, no cel)
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create empty matcher: %v", err)
+	}
+
+	// When no properties are specified, falls through to CelMatcher which also has no cel
+	// This should return true (match by selectors only)
+	result := Matches(context.Background(), matcher, from, to)
+	assert.True(t, result, "Empty matcher should match (selectors only)")
+}
+
+// TestMatchesWithCache_PropertyMatcher tests MatchesWithCache with property matchers
+func TestMatchesWithCache_PropertyMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+	to := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-2",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+		Metadata:    map[string]string{"region": "us-east-1"},
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromPropertiesMatcher(oapi.PropertiesMatcher{
+		Properties: []oapi.PropertyMatcher{
+			{
+				FromProperty: []string{"metadata", "region"},
+				ToProperty:   []string{"metadata", "region"},
+				Operator:     "equals",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create properties matcher: %v", err)
+	}
+
+	// Without cache
+	result := MatchesWithCache(context.Background(), matcher, from, to, nil)
+	assert.True(t, result)
+
+	// With cache
+	cache := BuildEntityMapCache([]*oapi.RelatableEntity{from, to})
+	result = MatchesWithCache(context.Background(), matcher, from, to, cache)
+	assert.True(t, result)
+}
+
+// TestMatchesWithCache_CelMatcher tests MatchesWithCache with CEL matchers and cache
+func TestMatchesWithCache_CelMatcher(t *testing.T) {
+	from := NewResourceEntity(&oapi.Resource{
+		Id:          "resource-1",
+		Name:        "web-server",
+		WorkspaceId: "workspace-1",
+	})
+	to := NewDeploymentEntity(&oapi.Deployment{
+		Id:        "deployment-1",
+		Name:      "web-server",
+		SystemIds: []string{"system-1"},
+	})
+
+	matcher := &oapi.RelationshipRule_Matcher{}
+	err := matcher.FromCelMatcher(oapi.CelMatcher{
+		Cel: "from.name == to.name",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CEL matcher: %v", err)
+	}
+
+	// Without cache
+	result := MatchesWithCache(context.Background(), matcher, from, to, nil)
+	assert.True(t, result)
+
+	// With cache
+	cache := BuildEntityMapCache([]*oapi.RelatableEntity{from, to})
+	result = MatchesWithCache(context.Background(), matcher, from, to, cache)
+	assert.True(t, result)
+
+	// With partial cache (only from)
+	partialCache := EntityMapCache{
+		from.GetID(): cache[from.GetID()],
+	}
+	result = MatchesWithCache(context.Background(), matcher, from, to, partialCache)
+	assert.True(t, result)
+}
+
+// TestBuildEntityMapCache tests building an entity map cache
+func TestBuildEntityMapCache(t *testing.T) {
+	entities := []*oapi.RelatableEntity{
+		NewResourceEntity(&oapi.Resource{
+			Id:          "resource-1",
+			Name:        "server-1",
+			WorkspaceId: "workspace-1",
+		}),
+		NewDeploymentEntity(&oapi.Deployment{
+			Id:        "deployment-1",
+			Name:      "deploy-1",
+			SystemIds: []string{"system-1"},
+		}),
+		NewEnvironmentEntity(&oapi.Environment{
+			Id:        "env-1",
+			Name:      "production",
+			SystemIds: []string{"system-1"},
+		}),
+	}
+
+	cache := BuildEntityMapCache(entities)
+	assert.Len(t, cache, 3)
+	assert.Contains(t, cache, "resource-1")
+	assert.Contains(t, cache, "deployment-1")
+	assert.Contains(t, cache, "env-1")
+
+	// Verify map contents
+	resourceMap := cache["resource-1"]
+	assert.NotNil(t, resourceMap)
+	assert.Equal(t, "server-1", resourceMap["name"])
+}
+
+// TestEntityToMap tests the deprecated EntityToMap function
+func TestEntityToMap(t *testing.T) {
+	resource := &oapi.Resource{
+		Id:          "resource-1",
+		Name:        "server-1",
+		WorkspaceId: "workspace-1",
+	}
+
+	m, err := EntityToMap(resource)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	assert.Equal(t, "server-1", m["name"])
+
+	// Deployment
+	deployment := &oapi.Deployment{
+		Id:        "dep-1",
+		Name:      "deploy-1",
+		SystemIds: []string{"system-1"},
+	}
+	m, err = EntityToMap(deployment)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	assert.Equal(t, "deploy-1", m["name"])
+
+	// Environment
+	env := &oapi.Environment{
+		Id:        "env-1",
+		Name:      "production",
+		SystemIds: []string{"system-1"},
+	}
+	m, err = EntityToMap(env)
+	assert.NoError(t, err)
+	assert.NotNil(t, m)
+	assert.Equal(t, "production", m["name"])
 }
 
 // TestGetPropertyValue_EdgeCases tests edge cases and error conditions
