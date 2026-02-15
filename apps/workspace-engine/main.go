@@ -222,6 +222,7 @@ func main() {
 			workspace.WithTraceStore(traceStore),
 			workspace.WithStoreOptions(
 				wsstore.WithDBDeploymentVersions(ctx),
+				wsstore.WithDBDeployments(ctx),
 				wsstore.WithDBSystems(ctx),
 			),
 			// workspace.AddDefaultSystem(),
