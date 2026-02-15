@@ -182,6 +182,7 @@ func TestEngine_RelationshipMatcher_NewResourceTriggersMatching(t *testing.T) {
 	entity := relationships.NewResourceEntity(svc)
 	related, err := engine.Workspace().RelationshipRules().GetRelatedEntities(ctx, entity)
 	assert.NoError(t, err)
+	assert.Empty(t, related, "should have no relationships before database is added")
 
 	// Add a matching database via event
 	newDB := &oapi.Resource{

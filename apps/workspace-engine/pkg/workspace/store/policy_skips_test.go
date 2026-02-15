@@ -21,10 +21,6 @@ func stringPtr(s string) *string {
 	return &s
 }
 
-func timePtr(t time.Time) *time.Time {
-	return &t
-}
-
 func TestPolicySkips_CRUD(t *testing.T) {
 	s := setupStore()
 	ctx := context.Background()
