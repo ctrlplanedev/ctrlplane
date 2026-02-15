@@ -6,6 +6,7 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -29,11 +30,16 @@ func selectorToString(sel *oapi.Selector) string {
 	if sel == nil {
 		return "false"
 	}
-	b, err := sel.MarshalJSON()
+	cel, err := sel.AsCelSelector()
 	if err != nil {
-		return "false"
+		log.Warn("Failed to convert selector to CEL, falling back to JSON", "error", err)
+		b, err := sel.MarshalJSON()
+		if err != nil {
+			return "false"
+		}
+		return string(b)
 	}
-	return string(b)
+	return cel.Cel
 }
 
 // ToOapi converts a db.Environment into an oapi.Environment.
