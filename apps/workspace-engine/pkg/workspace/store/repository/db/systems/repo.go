@@ -36,6 +36,7 @@ func (r *Repo) Get(id string) (*oapi.System, bool) {
 }
 
 func (r *Repo) Set(entity *oapi.System) error {
+	entity.WorkspaceId = r.workspaceID
 	params, err := ToUpsertParams(entity)
 	if err != nil {
 		return fmt.Errorf("convert to upsert params: %w", err)
