@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@ctrlplane/trpc";
 import { Editor } from "@monaco-editor/react";
 import yaml from "js-yaml";
 
@@ -13,9 +12,12 @@ import {
 } from "~/components/ui/dialog";
 
 type VersionActionsPanelProps = {
-  version: NonNullable<
-    NonNullable<RouterOutputs["deployment"]["versions"]>["items"]
-  >[number];
+  version: {
+    id: string;
+    name?: string;
+    tag: string;
+    jobAgentConfig?: Record<string, unknown>;
+  };
   environments: Environment[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,10 +26,10 @@ type VersionActionsPanelProps = {
 function parseJobAgentConfig(jobAgentConfig: Record<string, unknown>): string {
   try {
     return yaml.dump(jobAgentConfig);
-  } catch (error) {
+  } catch {
     try {
       return JSON.stringify(jobAgentConfig, null, 2);
-    } catch (error) {
+    } catch {
       return "";
     }
   }
@@ -38,14 +40,14 @@ export const VersionActionsPanel: React.FC<VersionActionsPanelProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { jobAgentConfig } = version;
+  const { jobAgentConfig = {} } = version;
   const { theme } = useTheme();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden p-0">
         <DialogHeader className="border-b p-4">
           <DialogTitle className="font-mono text-base">
-            {version.tag}
+            {version.name ?? version.tag}
           </DialogTitle>
           <DialogDescription className="text-[10px]">
             {/* Deployed to {totalOnVersion} of {totalResources} total resources

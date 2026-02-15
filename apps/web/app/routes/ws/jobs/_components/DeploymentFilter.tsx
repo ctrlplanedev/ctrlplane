@@ -24,7 +24,7 @@ function useDeploymentsSearch() {
     workspaceId: workspace.id,
   });
 
-  return { deployments: data?.items ?? [], isLoading };
+  return { deployments: data ?? [], isLoading };
 }
 
 export function DeploymentFilter() {
@@ -33,9 +33,7 @@ export function DeploymentFilter() {
   const { deployments } = useDeploymentsSearch();
   const { deploymentId, setDeploymentId } = useDeploymentId();
 
-  const selectedDeployment = deployments.find(
-    (d) => d.deployment.id === deploymentId,
-  );
+  const selectedDeployment = deployments.find((d) => d.id === deploymentId);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -46,7 +44,7 @@ export function DeploymentFilter() {
         >
           <Filter className="size-4" />
           <span className="truncate">
-            {selectedDeployment?.deployment.name ?? "All deployments"}
+            {selectedDeployment?.name ?? "All deployments"}
           </span>
         </Button>
       </PopoverTrigger>
@@ -59,11 +57,11 @@ export function DeploymentFilter() {
             </CommandItem>
             {deployments.map((deployment) => (
               <CommandItem
-                key={deployment.deployment.id}
-                value={`${deployment.deployment.name} (${deployment.deployment.id})`}
-                onSelect={() => setDeploymentId(deployment.deployment.id)}
+                key={deployment.id}
+                value={`${deployment.name} (${deployment.id})`}
+                onSelect={() => setDeploymentId(deployment.id)}
               >
-                {deployment.deployment.name}
+                {deployment.name}
               </CommandItem>
             ))}
           </CommandList>

@@ -57,13 +57,14 @@ function useApproveVersion(versionId: string, environmentId: string) {
   return { onClickApprove, isPending: approveMutation.isPending };
 }
 
-export function DeploymentVersion({
-  version,
-  environment,
-}: {
-  version: WorkspaceEngine["schemas"]["DeploymentVersion"];
-  environment: WorkspaceEngine["schemas"]["Environment"];
-}) {
+type DeploymentVersionProps = {
+  version: { id: string };
+  environment: { id: string };
+};
+
+export function DeploymentVersion(props: DeploymentVersionProps) {
+  const { version, environment } = props;
+
   const { data, isLoading } = usePolicyEvaluations(version.id, environment.id);
   const { onClickApprove, isPending } = useApproveVersion(
     version.id,

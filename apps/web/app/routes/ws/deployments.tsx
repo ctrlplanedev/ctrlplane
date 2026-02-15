@@ -37,7 +37,7 @@ export default function Deployments() {
   const deploymentsQuery = trpc.deployment.list.useQuery({
     workspaceId: workspace.id,
   });
-  const deploymentsWithSystems = deploymentsQuery.data?.items ?? [];
+  const deploymentsWithSystems = deploymentsQuery.data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -57,18 +57,20 @@ export default function Deployments() {
   // Get unique systems for filter
   const systems = Array.from(
     new Set(
-      deploymentsWithSystems.flatMap((d) => d.systems.map((s) => s.name)),
+      deploymentsWithSystems.flatMap((deployment) =>
+        deployment.systemDeployments.map((sd) => sd.system),
+      ),
     ),
   );
 
-  const filteredDeployments = deploymentsWithSystems.filter((d) => {
+  const filteredDeployments = deploymentsWithSystems.filter((deployment) => {
     if (searchQuery) {
-      return d.deployment.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      return deployment.name.toLowerCase().includes(searchQuery.toLowerCase());
     }
     if (systemFilter !== "all") {
-      return d.systems.some((s) => s.name === systemFilter);
+      return deployment.systemDeployments.some(
+        (sd) => sd.system.name === systemFilter,
+      );
     }
     return true;
   });
@@ -120,11 +122,13 @@ export default function Deployments() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Systems</SelectItem>
-                  {systems.sort().map((system) => (
-                    <SelectItem key={system} value={system}>
-                      {system}
-                    </SelectItem>
-                  ))}
+                  {systems
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((system) => (
+                      <SelectItem key={system.id} value={system.id}>
+                        {system.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 
@@ -147,15 +151,13 @@ export default function Deployments() {
         <div
           className={"grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}
         >
-          {filteredDeployments.map(
-            ({ deployment, systems: deploymentSystems }) => (
-              <LazyLoadDeploymentCard
-                deployment={deployment}
-                systems={deploymentSystems}
-                key={deployment.id}
-              />
-            ),
-          )}
+          {filteredDeployments.map((deployment) => (
+            <LazyLoadDeploymentCard
+              deployment={deployment}
+              systems={deployment.systemDeployments.map((sd) => sd.system)}
+              key={deployment.id}
+            />
+          ))}
         </div>
 
         {deploymentsWithSystems.length === 0 && (

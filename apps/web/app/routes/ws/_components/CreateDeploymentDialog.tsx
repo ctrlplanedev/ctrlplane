@@ -176,7 +176,7 @@ export function CreateDeploymentDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {systemsData?.items.map(
+                        {systemsData?.map(
                           (system: { id: string; name: string }) => (
                             <SelectItem key={system.id} value={system.id}>
                               {system.name}

@@ -139,7 +139,6 @@ export default function DeploymentTraces() {
 
   // Fetch deployment versions for filtering
   const versionsQuery = trpc.deployment.versions.useQuery({
-    workspaceId: workspace.id,
     deploymentId: deployment.id,
     limit: 100,
     offset: 0,
@@ -187,7 +186,7 @@ export default function DeploymentTraces() {
   );
 
   const traces = tracesQuery.data ?? [];
-  const versions = versionsQuery.data?.items ?? [];
+  const versions = versionsQuery.data;
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];
 
   // Filter traces by search query
@@ -215,11 +214,12 @@ export default function DeploymentTraces() {
   );
 
   // Prepare data for filters
-  const releaseOptions = versions.map((v) => ({
-    id: v.id,
-    name: v.name,
-    version: v.tag,
-  }));
+  const releaseOptions =
+    versions?.map((v) => ({
+      id: v.id,
+      name: v.name,
+      version: v.tag,
+    })) ?? [];
 
   const releaseTargetOptions = releaseTargets.map((rt) => ({
     key: `${rt.releaseTarget.resourceId}-${rt.releaseTarget.environmentId}-${rt.releaseTarget.deploymentId}`,

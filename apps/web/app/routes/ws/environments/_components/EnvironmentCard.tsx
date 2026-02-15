@@ -35,8 +35,8 @@ type EnvironmentCardProps = {
     name: string;
     description?: string;
     systemIds: string[];
-    createdAt: string;
-    resourceSelector?: { cel?: string; json?: Record<string, unknown> };
+    createdAt: Date;
+    resourceSelector?: string;
   };
   systems: Array<{ id: string; name: string }>;
 };
@@ -67,7 +67,7 @@ export const EnvironmentCard: React.FC<EnvironmentCardProps> = ({
     setShowDeleteDialog(false);
   };
 
-  const formatDate = (date?: string) => {
+  const formatDate = (date?: string | Date) => {
     if (!date) return null;
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
@@ -126,20 +126,16 @@ export const EnvironmentCard: React.FC<EnvironmentCardProps> = ({
             )}
           </CardHeader>
           <CardContent className="space-y-3">
-            {environment.resourceSelector?.cel && (
-              <div className="flex items-start gap-2">
-                <Layers className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                <code className="block truncate rounded bg-muted px-2 py-1 text-xs">
-                  {environment.resourceSelector.cel}
-                </code>
-              </div>
-            )}
-            {environment.createdAt && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>Created {formatDate(environment.createdAt)}</span>
-              </div>
-            )}
+            <div className="flex items-start gap-2">
+              <Layers className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <code className="block truncate rounded bg-muted px-2 py-1 text-xs">
+                {environment.resourceSelector}
+              </code>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span>Created {formatDate(environment.createdAt)}</span>
+            </div>
           </CardContent>
         </Card>
       </Link>

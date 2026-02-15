@@ -397,11 +397,11 @@ export function LazyLoadDeploymentCard({
   );
 
   const versions = trpc.deployment.versions.useQuery(
-    { workspaceId: workspace.id, deploymentId: deployment.id, limit: 1000 },
+    { deploymentId: deployment.id, limit: 1000 },
     { enabled: inView },
   );
 
-  const last24hDeployments = versions.data?.items.filter((version) => {
+  const last24hDeployments = versions.data?.filter((version) => {
     const createdAt = new Date(version.createdAt);
     const twentyFourHoursAgo = subHours(new Date(), 24);
     return isAfter(createdAt, twentyFourHoursAgo);
@@ -411,7 +411,7 @@ export function LazyLoadDeploymentCard({
 
   const releaseTargets = rtQuery.data?.items ?? [];
 
-  const latestVersion = versions.data?.items[0];
+  const latestVersion = versions.data?.[0];
   const deploymentsLast24h = last24hDeployments?.length ?? 0;
 
   const isOutOfSync = releaseTargets.some(

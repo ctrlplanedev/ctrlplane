@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import type { Edge, Node } from "reactflow";
 import { useCallback, useMemo } from "react";
 import _ from "lodash";
@@ -64,7 +63,6 @@ export default function DeploymentDetail() {
 
   const versionsQuery = trpc.deployment.versions.useQuery(
     {
-      workspaceId: workspace.id,
       deploymentId: deployment.id,
       limit: 1000,
       offset: 0,
@@ -78,8 +76,6 @@ export default function DeploymentDetail() {
     limit: 1000,
     offset: 0,
   });
-
-  console.log(releaseTargetsQuery.data?.items);
 
   const releaseTargets = useMemo(
     () => releaseTargetsQuery.data?.items ?? [],
@@ -103,10 +99,12 @@ export default function DeploymentDetail() {
 
   const environments = useMemo(
     () =>
-      (environmentsQuery.data?.items ?? []).filter((e) =>
-        e.systemIds?.some((id: string) => deployment.systemIds?.includes(id)),
+      (environmentsQuery.data ?? []).filter((e) =>
+        e.systemEnvironments.some((se) =>
+          deployment.systemIds.includes(se.systemId),
+        ),
       ),
-    [deployment.systemIds, environmentsQuery.data?.items],
+    [deployment.systemIds, environmentsQuery.data],
   );
 
   const envDependsOn = useCallback(
@@ -122,9 +120,8 @@ export default function DeploymentDetail() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedVersionId = searchParams.get("version");
-  const selectedVersion = versionsQuery.data?.items.find(
-    (v) => v.id === selectedVersionId,
-  );
+  const selectedVersion =
+    versionsQuery.data?.find((v) => v.id === selectedVersionId) ?? null;
   const selectedEnvironmentId = searchParams.get("env");
   const selectedEnvironment = environments.find(
     (e) => e.id === selectedEnvironmentId,
@@ -150,7 +147,7 @@ export default function DeploymentDetail() {
 
   // Create ReactFlow nodes for environments (left to right flow)
   const computedNodes: Node[] = useMemo(() => {
-    const versions = versionsQuery.data?.items ?? [];
+    const versions = versionsQuery.data ?? [];
     if (versions.length === 0) return [];
 
     const firstVersion = versions[0];
@@ -235,7 +232,7 @@ export default function DeploymentDetail() {
   }, [
     environments,
     releaseTargets,
-    versionsQuery.data?.items,
+    versionsQuery.data,
     handleEnvironmentSelect,
     releaseTargetsQuery.isLoading,
   ]);
@@ -277,7 +274,7 @@ export default function DeploymentDetail() {
     return connections;
   }, [environments, envDependsOn]);
 
-  const versions = versionsQuery.data?.items ?? [];
+  const versions = versionsQuery.data ?? [];
   const noVersions = !versionsQuery.isLoading && versions.length === 0;
   return (
     <>

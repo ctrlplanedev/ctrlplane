@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -87,16 +89,16 @@ export const environmentRouter = router({
           .perform(Permission.EnvironmentList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(async ({ input }) => {
-      const { workspaceId } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments",
-        {
-          params: { query: { limit: 1000, offset: 0 }, path: { workspaceId } },
+    .query(async ({ input, ctx }) => {
+      const environments = await ctx.db.query.environment.findMany({
+        where: eq(schema.environment.workspaceId, input.workspaceId),
+        limit: 1000,
+        offset: 0,
+        with: {
+          systemEnvironments: true,
         },
-      );
-
-      return result.data;
+      });
+      return environments;
     }),
 
   update: protectedProcedure
@@ -128,7 +130,7 @@ export const environmentRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
+              validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });
@@ -191,7 +193,7 @@ export const environmentRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
+              validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });

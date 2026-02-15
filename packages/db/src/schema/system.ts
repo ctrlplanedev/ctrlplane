@@ -1,4 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   jsonb,
   pgTable,
@@ -26,6 +27,11 @@ export const system = pgTable("system", {
     .$type<Record<string, string>>(),
 });
 
+export const systemRelations = relations(system, ({ many }) => ({
+  systemDeployments: many(systemDeployment),
+  systemEnvironments: many(systemEnvironment),
+}));
+
 export type System = InferSelectModel<typeof system>;
 
 export const systemDeployment = pgTable(
@@ -44,6 +50,20 @@ export const systemDeployment = pgTable(
   (t) => [primaryKey({ columns: [t.systemId, t.deploymentId] })],
 );
 
+export const systemDeploymentRelations = relations(
+  systemDeployment,
+  ({ one }) => ({
+    system: one(system, {
+      fields: [systemDeployment.systemId],
+      references: [system.id],
+    }),
+    deployment: one(deployment, {
+      fields: [systemDeployment.deploymentId],
+      references: [deployment.id],
+    }),
+  }),
+);
+
 export const systemEnvironment = pgTable(
   "system_environment",
   {
@@ -58,4 +78,18 @@ export const systemEnvironment = pgTable(
       .defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.systemId, t.environmentId] })],
+);
+
+export const systemEnvironmentRelations = relations(
+  systemEnvironment,
+  ({ one }) => ({
+    system: one(system, {
+      fields: [systemEnvironment.systemId],
+      references: [system.id],
+    }),
+    environment: one(environment, {
+      fields: [systemEnvironment.environmentId],
+      references: [environment.id],
+    }),
+  }),
 );

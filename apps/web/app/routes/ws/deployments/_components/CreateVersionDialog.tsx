@@ -161,12 +161,9 @@ export function CreateVersionDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {deploymentsData?.items.map((item) => (
-                          <SelectItem
-                            key={item.deployment.id}
-                            value={item.deployment.id}
-                          >
-                            {item.deployment.name}
+                        {deploymentsData?.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name}
                           </SelectItem>
                         )) ?? []}
                       </SelectContent>

@@ -1,4 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   jsonb,
   pgTable,
@@ -9,6 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { resource } from "./resource.js";
+import { systemEnvironment } from "./system.js";
 import { workspace } from "./workspace.js";
 
 export const environment = pgTable("environment", {
@@ -28,6 +30,10 @@ export const environment = pgTable("environment", {
 
   workspaceId: uuid("workspace_id").references(() => workspace.id),
 });
+
+export const environmentRelations = relations(environment, ({ many }) => ({
+  systemEnvironments: many(systemEnvironment),
+}));
 
 export type Environment = InferSelectModel<typeof environment>;
 

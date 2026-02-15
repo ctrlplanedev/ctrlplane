@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import { jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 
 import { resource } from "./resource.js";
+import { systemDeployment } from "./system.js";
 import { workspace } from "./workspace.js";
 
 export const deployment = pgTable("deployment", {
@@ -24,6 +25,10 @@ export const deployment = pgTable("deployment", {
 
   workspaceId: uuid("workspace_id").references(() => workspace.id),
 });
+
+export const deploymentRelations = relations(deployment, ({ many }) => ({
+  systemDeployments: many(systemDeployment),
+}));
 
 export const computedDeploymentResource = pgTable(
   "computed_deployment_resource",

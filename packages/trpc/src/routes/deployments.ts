@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import { desc, eq } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
@@ -64,24 +66,20 @@ export const deploymentsRouter = router({
           .perform(Permission.DeploymentList)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments",
-        {
-          params: {
-            path: { workspaceId: input.workspaceId },
-            query: { limit: 1000, offset: 0 },
+    .query(async ({ input, ctx }) => {
+      const deployments = await ctx.db.query.deployment.findMany({
+        where: eq(schema.deployment.workspaceId, input.workspaceId),
+        limit: 1000,
+        offset: 0,
+        with: {
+          systemDeployments: {
+            with: {
+              system: true,
+            },
           },
         },
-      );
-
-      if (response.error != null)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: response.error.error ?? "Failed to list deployments",
-        });
-
-      return response.data;
+      });
+      return deployments;
     }),
 
   releaseTargets: protectedProcedure
@@ -128,28 +126,24 @@ export const deploymentsRouter = router({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentVersionList)
-          .on({ type: "workspace", id: input.workspaceId }),
+          .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(
       z.object({
-        workspaceId: z.string(),
-        deploymentId: z.string(),
+        deploymentId: z.uuid(),
         limit: z.number().min(1).max(1000).default(1000),
         offset: z.number().min(0).default(0),
       }),
     )
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}/versions",
-        {
-          params: {
-            path: input,
-            query: { limit: 5_000, offset: 0 },
-          },
-        },
-      );
+    .query(async ({ input, ctx }) => {
+      const versions = await ctx.db.query.deploymentVersion.findMany({
+        where: eq(schema.deploymentVersion.deploymentId, input.deploymentId),
+        limit: input.limit,
+        offset: input.offset,
+        orderBy: desc(schema.deploymentVersion.createdAt),
+      });
 
-      return response.data;
+      return versions;
     }),
 
   create: protectedProcedure
@@ -205,7 +199,7 @@ export const deploymentsRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
+              validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });
