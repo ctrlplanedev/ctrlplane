@@ -12,11 +12,34 @@ import (
 	"workspace-engine/pkg/messaging"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/jobagents/testrunner"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 )
 
 var globalTraceStore = spanstore.NewInMemoryStore()
+
+// noopProducer is a no-op messaging.Producer used in tests to avoid
+// connecting to a real Kafka broker.
+type noopProducer struct{}
+
+func (noopProducer) Publish([]byte, []byte) error              { return nil }
+func (noopProducer) PublishToPartition([]byte, []byte, int32) error { return nil }
+func (noopProducer) Flush(int) int                             { return 0 }
+func (noopProducer) Close() error                              { return nil }
+
+// overrideTestRunnerProducer replaces the TestRunner in the workspace's
+// job agent registry with one that uses a no-op Kafka producer, preventing
+// real Kafka connections during tests.
+func overrideTestRunnerProducer(ws *workspace.Workspace) {
+	ws.JobAgentRegistry().Register(
+		testrunner.NewWithOptions(ws.Store(), testrunner.Options{
+			ProducerFactory: func() (messaging.Producer, error) {
+				return noopProducer{}, nil
+			},
+		}),
+	)
+}
 
 func init() {
 	manager.Configure(
@@ -85,6 +108,8 @@ func newMemoryTestWorkspace(
 	if err != nil {
 		t.Fatalf("failed to get or create workspace: %v", err)
 	}
+
+	overrideTestRunnerProducer(ws)
 
 	tw := &TestWorkspace{}
 	tw.t = t

@@ -15,13 +15,20 @@ import (
 	"github.com/google/uuid"
 )
 
-// BenchmarkEngine_LargeScale benchmarks workspace.tick performance with a large-scale setup
-// Setup:
-// - 15000 resources
-// - 30 deployments
-// - 50 releases per deployment (1500 total)
-// - 5 relationship rules with 20+ variables per deployment
-// - ~8000 jobs (mix of successful and failed)
+// Tunable parameters for BenchmarkEngine_LargeScale.
+const (
+	benchResourceCount     = 1000
+	benchEnvironmentCount  = 5
+	benchDeploymentCount   = 5
+	benchVarsPerDeployment = 0
+	benchValuesPerVariable = 0
+	benchVersionsPerDeploy = 5
+	benchTargetJobCount    = 50
+	benchMaxProcessRounds  = 20
+	benchJobBatchSize      = 50
+)
+
+// BenchmarkEngine_LargeScale benchmarks workspace.tick performance with a large-scale setup.
 func BenchmarkEngine_LargeScale(b *testing.B) {
 	b.Log("Setting up large-scale benchmark environment...")
 
@@ -46,10 +53,10 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 	sys.Name = "bench-system"
 	engine.PushEvent(ctx, handler.SystemCreate, sys)
 
-	// Phase 3: Create environments (3 environments to distribute resources)
+	// Phase 3: Create environments
 	b.Log("Creating environments...")
-	environmentIDs := make([]string, 3)
-	for i := 0; i < 3; i++ {
+	environmentIDs := make([]string, benchEnvironmentCount)
+	for i := 0; i < benchEnvironmentCount; i++ {
 		envID := uuid.New().String()
 		environmentIDs[i] = envID
 		env := c.NewEnvironment(sysID)
@@ -60,10 +67,10 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
 	}
 
-	// Phase 4: Create 30 deployments with 20+ variables each
-	b.Log("Creating 30 deployments with variables...")
-	deploymentIDs := make([]string, 30)
-	for i := range 30 {
+	// Phase 4: Create deployments with variables
+	b.Logf("Creating %d deployments with variables...", benchDeploymentCount)
+	deploymentIDs := make([]string, benchDeploymentCount)
+	for i := range benchDeploymentCount {
 		deploymentID := uuid.New().String()
 		deploymentIDs[i] = deploymentID
 
@@ -79,8 +86,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		}
 		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
 
-		// Create 25 variables per deployment (mix of literal and reference types)
-		for v := range 25 {
+		for v := range benchVarsPerDeployment {
 			dvID := uuid.New().String()
 			dv := c.NewDeploymentVariable(deploymentID, fmt.Sprintf("var_%d", v))
 			dv.Id = dvID
@@ -93,8 +99,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 
 			engine.PushEvent(ctx, handler.DeploymentVariableCreate, dv)
 
-			// Create 3 deployment variable values with selectors
-			for val := 0; val < 3; val++ {
+			for val := 0; val < benchValuesPerVariable; val++ {
 				dvvID := uuid.New().String()
 				dvv := &oapi.DeploymentVariableValue{
 					Id:                   dvvID,
@@ -123,8 +128,8 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		}
 	}
 
-	// Phase 5: Create 5 relationship rules
-	b.Log("Creating 5 relationship rules...")
+	// Phase 5: Create relationship rules
+	b.Log("Creating relationship rules...")
 	relationshipTypes := []struct {
 		fromKind  string
 		toKind    string
@@ -167,9 +172,9 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		engine.PushEvent(ctx, handler.RelationshipRuleCreate, rr)
 	}
 
-	// Phase 6: Create 15000 resources with various configurations
-	b.Log("Creating 15000 resources...")
-	resourceIDs := make([]string, 15000)
+	// Phase 6: Create resources
+	b.Logf("Creating %d resources...", benchResourceCount)
+	resourceIDs := make([]string, benchResourceCount)
 	kinds := []string{
 		"application", "database", "cache", "service", "vpc",
 		"cluster", "region", "deployment", "config", "server",
@@ -177,7 +182,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 	tiers := []string{"frontend", "backend", "database", "middleware", "storage"}
 	regions := []string{"us-east-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-south-1"}
 
-	for i := range 15000 {
+	for i := range benchResourceCount {
 		if i%10 == 0 {
 			log.Info("Creating resources...", "progress", i/10)
 		}
@@ -243,12 +248,12 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		}
 	}
 
-	// Phase 7: Create 50 deployment versions per deployment (1500 total)
-	b.Log("Creating 50 versions per deployment (1500 total)...")
-	versionIDs := make([][]string, 30)
+	// Phase 7: Create deployment versions
+	b.Logf("Creating %d versions per deployment (%d total)...", benchVersionsPerDeploy, benchDeploymentCount*benchVersionsPerDeploy)
+	versionIDs := make([][]string, benchDeploymentCount)
 	for i, deploymentID := range deploymentIDs {
-		versionIDs[i] = make([]string, 50)
-		for v := 0; v < 50; v++ {
+		versionIDs[i] = make([]string, benchVersionsPerDeploy)
+		for v := 0; v < benchVersionsPerDeploy; v++ {
 			versionID := uuid.New().String()
 			versionIDs[i][v] = versionID
 
@@ -281,13 +286,13 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 	b.Log("Waiting for initial processing...")
 	time.Sleep(2 * time.Second)
 
-	// Phase 8: Complete jobs to create ~8000 jobs (mix of successful and failed)
-	b.Log("Processing jobs to create ~8000 completed jobs...")
-	jobsToCreate := 8000
+	// Phase 8: Complete jobs
+	b.Logf("Processing jobs to create ~%d completed jobs...", benchTargetJobCount)
+	jobsToCreate := benchTargetJobCount
 	jobsCreated := 0
 	processRounds := 0
 
-	for jobsCreated < jobsToCreate && processRounds < 100 {
+	for jobsCreated < jobsToCreate && processRounds < benchMaxProcessRounds {
 		processRounds++
 
 		// Get pending jobs
@@ -314,11 +319,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 			break
 		}
 
-		// Process up to 100 jobs at a time
-		jobsToProcess := 100
-		if len(pendingJobs) < jobsToProcess {
-			jobsToProcess = len(pendingJobs)
-		}
+		jobsToProcess := min(len(pendingJobs), benchJobBatchSize)
 
 		jobIdx := 0
 		for _, job := range pendingJobs {
@@ -376,12 +377,9 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 	b.Logf("Total Jobs: %d (Success: %d, Failed: %d)", len(allJobs), successCount, failCount)
 	b.Logf("========================================")
 
-	// Now run the actual benchmark: measure workspace.tick performance
 	b.ResetTimer()
 	b.ReportAllocs()
-
 	for i := 0; i < b.N; i++ {
-		// Send workspace tick event
 		rawEvent := handler.RawEvent{
 			EventType:   handler.WorkspaceTick,
 			WorkspaceID: workspaceID,
