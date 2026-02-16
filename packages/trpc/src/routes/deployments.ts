@@ -200,7 +200,7 @@ export const deploymentsRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-              validate.data.errors.length > 0
+            validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });

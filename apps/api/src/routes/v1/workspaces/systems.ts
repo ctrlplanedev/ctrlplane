@@ -130,9 +130,105 @@ export const createSystem: AsyncTypedHandler<
   }
 };
 
+export const linkDeploymentToSystem: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}",
+  "put"
+> = async (req, res) => {
+  const { workspaceId, systemId, deploymentId } = req.params;
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.SystemDeploymentLinked,
+      timestamp: Date.now(),
+      data: { systemId, deploymentId },
+    });
+    res
+      .status(202)
+      .json({ id: systemId, message: "Deployment link requested" });
+  } catch {
+    throw new ApiError("Failed to link deployment to system", 500);
+  }
+};
+
+export const unlinkDeploymentFromSystem: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, systemId, deploymentId } = req.params;
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.SystemDeploymentUnlinked,
+      timestamp: Date.now(),
+      data: { systemId, deploymentId },
+    });
+    res
+      .status(202)
+      .json({ id: systemId, message: "Deployment unlink requested" });
+  } catch {
+    throw new ApiError("Failed to unlink deployment from system", 500);
+  }
+};
+
+export const linkEnvironmentToSystem: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}",
+  "put"
+> = async (req, res) => {
+  const { workspaceId, systemId, environmentId } = req.params;
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.SystemEnvironmentLinked,
+      timestamp: Date.now(),
+      data: { systemId, environmentId },
+    });
+    res
+      .status(202)
+      .json({ id: systemId, message: "Environment link requested" });
+  } catch {
+    throw new ApiError("Failed to link environment to system", 500);
+  }
+};
+
+export const unlinkEnvironmentFromSystem: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}",
+  "delete"
+> = async (req, res) => {
+  const { workspaceId, systemId, environmentId } = req.params;
+  try {
+    await sendGoEvent({
+      workspaceId,
+      eventType: Event.SystemEnvironmentUnlinked,
+      timestamp: Date.now(),
+      data: { systemId, environmentId },
+    });
+    res
+      .status(202)
+      .json({ id: systemId, message: "Environment unlink requested" });
+  } catch {
+    throw new ApiError("Failed to unlink environment from system", 500);
+  }
+};
+
 export const systemRouter = Router({ mergeParams: true })
   .post("/", asyncHandler(createSystem))
   .get("/", asyncHandler(getSystems))
   .get("/:systemId", asyncHandler(getSystem))
   .delete("/:systemId", asyncHandler(deleteSystem))
-  .put("/:systemId", asyncHandler(upsertSystem));
+  .put("/:systemId", asyncHandler(upsertSystem))
+  .put(
+    "/:systemId/deployments/:deploymentId",
+    asyncHandler(linkDeploymentToSystem),
+  )
+  .delete(
+    "/:systemId/deployments/:deploymentId",
+    asyncHandler(unlinkDeploymentFromSystem),
+  )
+  .put(
+    "/:systemId/environments/:environmentId",
+    asyncHandler(linkEnvironmentToSystem),
+  )
+  .delete(
+    "/:systemId/environments/:environmentId",
+    asyncHandler(unlinkEnvironmentFromSystem),
+  );

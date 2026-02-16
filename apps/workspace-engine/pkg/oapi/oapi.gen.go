@@ -1038,6 +1038,18 @@ type System struct {
 	WorkspaceId string             `json:"workspaceId"`
 }
 
+// SystemDeploymentLink defines model for SystemDeploymentLink.
+type SystemDeploymentLink struct {
+	DeploymentId string `json:"deploymentId"`
+	SystemId     string `json:"systemId"`
+}
+
+// SystemEnvironmentLink defines model for SystemEnvironmentLink.
+type SystemEnvironmentLink struct {
+	EnvironmentId string `json:"environmentId"`
+	SystemId      string `json:"systemId"`
+}
+
 // TerraformCloudJobAgentConfig defines model for TerraformCloudJobAgentConfig.
 type TerraformCloudJobAgentConfig struct {
 	// Address Terraform Cloud address (e.g. https://app.terraform.io).

@@ -29,7 +29,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProviderRequestAccepted'))
+      responses: openapi.okResponse(openapi.schemaRef('ResourceProvider'))
                  + openapi.badRequestResponse(),
     },
   },
@@ -58,7 +58,7 @@ local openapi = import '../lib/openapi.libsonnet';
           },
         },
       },
-      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProviderRequestAccepted'))
+      responses: openapi.acceptedResponse(openapi.schemaRef('ResourceProviderSetRequestAccepted'))
                  + openapi.badRequestResponse()
                  + openapi.notFoundResponse(),
     },

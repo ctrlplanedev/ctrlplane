@@ -61,6 +61,11 @@ const (
 	SystemUpdate EventType = "system.updated"
 	SystemDelete EventType = "system.deleted"
 
+	SystemDeploymentLinked    EventType = "system-deployment.linked"
+	SystemDeploymentUnlinked  EventType = "system-deployment.unlinked"
+	SystemEnvironmentLinked   EventType = "system-environment.linked"
+	SystemEnvironmentUnlinked EventType = "system-environment.unlinked"
+
 	JobAgentCreate EventType = "job-agent.created"
 	JobAgentUpdate EventType = "job-agent.updated"
 	JobAgentDelete EventType = "job-agent.deleted"

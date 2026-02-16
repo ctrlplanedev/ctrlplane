@@ -1905,6 +1905,14 @@ export interface components {
             name: string;
             workspaceId: string;
         };
+        SystemDeploymentLink: {
+            deploymentId: string;
+            systemId: string;
+        };
+        SystemEnvironmentLink: {
+            environmentId: string;
+            systemId: string;
+        };
         TerraformCloudJobAgentConfig: {
             /** @description Terraform Cloud address (e.g. https://app.terraform.io). */
             address: string;

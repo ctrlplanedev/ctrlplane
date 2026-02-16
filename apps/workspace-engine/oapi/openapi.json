@@ -2133,6 +2133,36 @@
             ],
             "type": "object"
          },
+         "SystemDeploymentLink": {
+            "properties": {
+               "deploymentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "deploymentId"
+            ],
+            "type": "object"
+         },
+         "SystemEnvironmentLink": {
+            "properties": {
+               "environmentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "environmentId"
+            ],
+            "type": "object"
+         },
          "TerraformCloudJobAgentConfig": {
             "properties": {
                "address": {

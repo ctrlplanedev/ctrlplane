@@ -274,4 +274,22 @@ local openapi = import '../lib/openapi.libsonnet';
       openapi.schemaRef('Resource'),
     ],
   },
+
+  SystemDeploymentLink: {
+    type: 'object',
+    required: ['systemId', 'deploymentId'],
+    properties: {
+      systemId: { type: 'string' },
+      deploymentId: { type: 'string' },
+    },
+  },
+
+  SystemEnvironmentLink: {
+    type: 'object',
+    required: ['systemId', 'environmentId'],
+    properties: {
+      systemId: { type: 'string' },
+      environmentId: { type: 'string' },
+    },
+  },
 }

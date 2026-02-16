@@ -22,9 +22,9 @@ const upsertResourceProvider: AsyncTypedHandler<
       target: [resourceProvider.workspaceId, resourceProvider.name],
       set: { name },
     })
-    .returning();
+    .returning().then(takeFirstOrNull);
 
-  res.status(200).json(provider[0]);
+  res.status(200).json(provider);
 };
 
 const getResourceProviderByName: AsyncTypedHandler<
@@ -99,7 +99,6 @@ const setResourceProviderResources: AsyncTypedHandler<
   res.status(202).json({
     ok: true,
     batchId,
-    resources,
     method: "cached",
   });
 };

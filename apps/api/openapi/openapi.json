@@ -1850,21 +1850,6 @@
             ],
             "type": "object"
          },
-         "ResourceProviderRequestAccepted": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "message": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "message"
-            ],
-            "type": "object"
-         },
          "ResourceProviderResource": {
             "properties": {
                "config": {
@@ -1914,6 +1899,24 @@
                "createdAt",
                "config",
                "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceProviderSetRequestAccepted": {
+            "properties": {
+               "batchId": {
+                  "type": "string"
+               },
+               "method": {
+                  "type": "string"
+               },
+               "ok": {
+                  "type": "boolean"
+               }
+            },
+            "required": [
+               "ok",
+               "method"
             ],
             "type": "object"
          },
@@ -6488,15 +6491,15 @@
                "required": true
             },
             "responses": {
-               "202": {
+               "200": {
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
+                           "$ref": "#/components/schemas/ResourceProvider"
                         }
                      }
                   },
-                  "description": "Accepted response"
+                  "description": "OK response"
                },
                "400": {
                   "content": {
@@ -6599,7 +6602,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
+                           "$ref": "#/components/schemas/ResourceProviderSetRequestAccepted"
                         }
                      }
                   },
@@ -7459,6 +7462,270 @@
                }
             },
             "summary": "Upsert system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}": {
+         "delete": {
+            "operationId": "unlinkDeploymentFromSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Unlink deployment from system"
+         },
+         "put": {
+            "operationId": "linkDeploymentToSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Link deployment to system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}": {
+         "delete": {
+            "operationId": "unlinkEnvironmentFromSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Unlink environment from system"
+         },
+         "put": {
+            "operationId": "linkEnvironmentToSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Link environment to system"
          }
       },
       "/v1/workspaces/{workspaceId}/workflows": {
