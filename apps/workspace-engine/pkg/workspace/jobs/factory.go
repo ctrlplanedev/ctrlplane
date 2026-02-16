@@ -298,36 +298,3 @@ func (f *Factory) CreateJobForWorkflowJob(ctx context.Context, wfJob *oapi.Workf
 		DispatchContext: dispatchContext,
 	}, nil
 }
-
-func (f *Factory) BuildDispatchContextForLegacyReleaseJob(job *oapi.Job) (*oapi.DispatchContext, error) {
-	release, ok := f.store.Releases.Get(job.ReleaseId)
-	if !ok {
-		return nil, fmt.Errorf("release %s not found", job.ReleaseId)
-	}
-
-	deployment, ok := f.store.Deployments.Get(release.ReleaseTarget.DeploymentId)
-	if !ok {
-		return nil, fmt.Errorf("deployment %s not found", release.ReleaseTarget.DeploymentId)
-	}
-
-	if deployment.JobAgentId == nil || *deployment.JobAgentId == "" {
-		return nil, fmt.Errorf("deployment %s has no job agent configured", release.ReleaseTarget.DeploymentId)
-	}
-
-	jobAgent, ok := f.store.JobAgents.Get(*deployment.JobAgentId)
-	if !ok {
-		return nil, fmt.Errorf("job agent %s not found", *deployment.JobAgentId)
-	}
-
-	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build job agent config: %w", err)
-	}
-
-	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent, mergedConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
-	}
-
-	return dispatchContext, nil
-}

@@ -5,9 +5,6 @@ import (
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
-	jobFactory "workspace-engine/pkg/workspace/jobs"
-
-	"github.com/charmbracelet/log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,19 +26,6 @@ func (s *Jobs) GetJob(c *gin.Context, workspaceId string, jobId string) {
 			"error": "Job not found",
 		})
 		return
-	}
-
-	factory := jobFactory.NewFactory(ws.Store())
-
-	if job.DispatchContext == nil && job.ReleaseId != "" {
-		dispatchCtx, err := factory.BuildDispatchContextForLegacyReleaseJob(job)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to build dispatch context for legacy release job: " + err.Error(),
-			})
-			return
-		}
-		job.DispatchContext = dispatchCtx
 	}
 
 	c.JSON(http.StatusOK, job)
@@ -149,19 +133,6 @@ func (s *Jobs) GetJobs(c *gin.Context, workspaceId string, params oapi.GetJobsPa
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].CreatedAt.After(items[j].CreatedAt)
 	})
-
-	factory := jobFactory.NewFactory(ws.Store())
-
-	for _, job := range items {
-		if job.DispatchContext == nil && job.ReleaseId != "" {
-			dispatchCtx, err := factory.BuildDispatchContextForLegacyReleaseJob(job)
-			if err != nil {
-				log.Warn("Failed to build dispatch context for legacy release job", "error", err)
-				continue
-			}
-			job.DispatchContext = dispatchCtx
-		}
-	}
 
 	offset := 0
 	if params.Offset != nil {
