@@ -176,6 +176,12 @@
                "jobAgentId": {
                   "type": "string"
                },
+               "jobAgents": {
+                  "items": {
+                     "$ref": "#/components/schemas/DeploymentJobAgent"
+                  },
+                  "type": "array"
+               },
                "metadata": {
                   "additionalProperties": {
                      "type": "string"
@@ -235,6 +241,26 @@
             },
             "required": [
                "dependsOn"
+            ],
+            "type": "object"
+         },
+         "DeploymentJobAgent": {
+            "properties": {
+               "config": {
+                  "$ref": "#/components/schemas/JobAgentConfig"
+               },
+               "if": {
+                  "description": "CEL expression to determine if the job agent should be used",
+                  "type": "string"
+               },
+               "ref": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "ref",
+               "config",
+               "if"
             ],
             "type": "object"
          },
