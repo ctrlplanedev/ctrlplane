@@ -2,6 +2,7 @@ package computeindex
 
 import (
 	"context"
+	"runtime"
 	"sync"
 )
 
@@ -22,6 +23,10 @@ type ComputedIndex[V any] struct {
 	mu   sync.RWMutex
 	eval ComputeFunc[V]
 
+	// concurrency controls how many goroutines evaluate dirty entities
+	// in parallel during Recompute.  <=1 means sequential (the default).
+	concurrency int
+
 	// entities tracks registered entity IDs.
 	entities map[string]bool
 
@@ -32,13 +37,37 @@ type ComputedIndex[V any] struct {
 	dirty map[string]bool
 }
 
+// Option configures a ComputedIndex at creation time.
+type Option func(*options)
+
+type options struct {
+	concurrency int
+}
+
+// WithConcurrency sets the number of goroutines used to evaluate dirty
+// entities in parallel during Recompute.  Values <=1 (the default) mean
+// sequential evaluation.  A good starting point is runtime.NumCPU().
+func WithConcurrency(n int) Option {
+	return func(o *options) { o.concurrency = n }
+}
+
+// WithAutoConcurrency sets concurrency to runtime.NumCPU().
+func WithAutoConcurrency() Option {
+	return func(o *options) { o.concurrency = runtime.NumCPU() }
+}
+
 // New creates a new ComputedIndex with the given compute function.
-func New[V any](eval ComputeFunc[V]) *ComputedIndex[V] {
+func New[V any](eval ComputeFunc[V], opts ...Option) *ComputedIndex[V] {
+	cfg := options{}
+	for _, o := range opts {
+		o(&cfg)
+	}
 	return &ComputedIndex[V]{
-		eval:     eval,
-		entities: make(map[string]bool),
-		values:   make(map[string]V),
-		dirty:    make(map[string]bool),
+		eval:        eval,
+		concurrency: cfg.concurrency,
+		entities:    make(map[string]bool),
+		values:      make(map[string]V),
+		dirty:       make(map[string]bool),
 	}
 }
 
@@ -143,6 +172,7 @@ func (idx *ComputedIndex[V]) IsDirty() bool {
 // Recompute processes all dirty entities and updates their computed values.
 // It snapshots dirty state under the lock, evaluates outside the lock (since
 // ComputeFunc may be expensive), then applies results under the lock.
+// When concurrency > 1, evaluations are distributed across a worker pool.
 // Returns the number of evaluations performed.
 func (idx *ComputedIndex[V]) Recompute(ctx context.Context) int {
 	idx.mu.Lock()
@@ -165,16 +195,45 @@ func (idx *ComputedIndex[V]) Recompute(ctx context.Context) int {
 		return 0
 	}
 
-	// Evaluate outside the lock — ComputeFunc may be expensive
 	type evalResult struct {
 		entityID string
 		value    V
 		err      error
 	}
-	results := make([]evalResult, 0, len(toEval))
-	for _, entityID := range toEval {
-		value, err := idx.eval(ctx, entityID)
-		results = append(results, evalResult{entityID, value, err})
+
+	results := make([]evalResult, len(toEval))
+
+	workers := idx.concurrency
+	if workers <= 1 || len(toEval) == 1 {
+		// Sequential path — no goroutine overhead
+		for i, entityID := range toEval {
+			value, err := idx.eval(ctx, entityID)
+			results[i] = evalResult{entityID, value, err}
+		}
+	} else {
+		// Parallel path — fan out across a bounded worker pool
+		if workers > len(toEval) {
+			workers = len(toEval)
+		}
+
+		work := make(chan int, len(toEval))
+		for i := range toEval {
+			work <- i
+		}
+		close(work)
+
+		var wg sync.WaitGroup
+		wg.Add(workers)
+		for range workers {
+			go func() {
+				defer wg.Done()
+				for i := range work {
+					value, err := idx.eval(ctx, toEval[i])
+					results[i] = evalResult{toEval[i], value, err}
+				}
+			}()
+		}
+		wg.Wait()
 	}
 
 	// Apply results under the lock

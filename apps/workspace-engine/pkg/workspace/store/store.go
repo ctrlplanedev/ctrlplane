@@ -279,6 +279,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if setStatus != nil {
 			setStatus("Registering relationships for rule: " + rule.Name)
 		}
+
 		s.RelationshipIndexes.AddRule(ctx, rule)
 	}
 	// Recomputation is deferred until the first GetRelatedEntities call,
@@ -286,6 +287,10 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	span.End()
 
 	s.changeset.Clear()
+
+	if setStatus != nil {
+		setStatus("Adding entities to relationship indexes")
+	}
 
 	return nil
 }
