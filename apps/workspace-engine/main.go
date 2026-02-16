@@ -225,6 +225,7 @@ func main() {
 				wsstore.WithDBEnvironments(ctx),
 				wsstore.WithDBDeployments(ctx),
 				wsstore.WithDBSystems(ctx),
+				// wsstore.WithDBJobAgents(ctx),
 			),
 			// workspace.AddDefaultSystem(),
 		),

@@ -37,3 +37,11 @@ type SystemRepo interface {
 	Remove(id string) error
 	Items() map[string]*oapi.System
 }
+
+// JobAgentRepo defines the contract for job agent storage.
+type JobAgentRepo interface {
+	Get(id string) (*oapi.JobAgent, bool)
+	Set(entity *oapi.JobAgent) error
+	Remove(id string) error
+	Items() map[string]*oapi.JobAgent
+}

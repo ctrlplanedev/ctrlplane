@@ -73,6 +73,7 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			store.WithDBDeployments(ctx),
 			store.WithDBEnvironments(ctx),
 			store.WithDBDeploymentVersions(ctx),
+			store.WithDBJobAgents(ctx),
 		),
 	)
 
@@ -102,6 +103,7 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			{"deployments", "DELETE FROM deployment WHERE workspace_id = $1"},
 			{"environments", "DELETE FROM environment WHERE workspace_id = $1"},
 			{"systems", "DELETE FROM system WHERE workspace_id = $1"},
+			{"job agents", "DELETE FROM job_agent WHERE workspace_id = $1"},
 			{"workspace", "DELETE FROM workspace WHERE id = $1"},
 		}
 

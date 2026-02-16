@@ -52,6 +52,15 @@ func WithDBSystems(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBJobAgents replaces the default in-memory JobAgentRepo
+// with a DB-backed implementation.
+func WithDBJobAgents(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.JobAgents.SetRepo(dbRepo.JobAgents())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -185,6 +194,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.DeploymentVersions.repo.Set(v); err != nil {
 			log.Warn("Failed to migrate legacy deployment version",
 				"version_id", v.Id, "name", v.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy job agents")
+	}
+	for _, ja := range s.repo.JobAgents().Items() {
+		if err := s.JobAgents.repo.Set(ja); err != nil {
+			log.Warn("Failed to migrate legacy job agent",
+				"job_agent_id", ja.Id, "name", ja.Name, "error", err)
 		}
 	}
 

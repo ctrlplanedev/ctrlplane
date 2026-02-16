@@ -12,6 +12,7 @@ sql:
       - queries/deployments.sql
       - queries/environments.sql
       - queries/systems.sql
+      - queries/job_agents.sql
       - queries/changelog.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
@@ -55,3 +56,8 @@ sql:
           - column: "environment.metadata"
             go_type:
               type: "map[string]string"
+
+          # JobAgent
+          - column: "job_agent.config"
+            go_type:
+              type: "map[string]any"

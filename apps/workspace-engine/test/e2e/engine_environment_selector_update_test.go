@@ -48,12 +48,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) 
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("development"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 		),
 		integration.WithResource(
@@ -211,12 +206,7 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsPendingJobs(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("development"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 		),
 		integration.WithResource(
@@ -343,12 +333,7 @@ func TestEngine_EnvironmentSelectorUpdate_DoesNotCancelSuccessfulJobs(t *testing
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("development"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 		),
 		integration.WithResource(
@@ -442,12 +427,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelExitedJobs(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("deployment-no-agent"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "app",
-					"key":      "type",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["type"] == "app"`),
 				// No job agent configured - will create InvalidJobAgent jobs
 			),
 			integration.WithEnvironment(
@@ -589,12 +569,7 @@ func TestEngine_DeploymentSelectorUpdate_DoesNotCancelFailedJobs(t *testing.T) {
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentName("deployment-with-agent"),
 				integration.DeploymentJobAgent(jobAgentId),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "app",
-					"key":      "type",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["type"] == "app"`),
 				integration.WithDeploymentVersion(
 					integration.DeploymentVersionTag("v1.0.0"),
 				),
@@ -695,12 +670,7 @@ func TestEngine_MultipleExitedStates_NeverUpdated(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(
@@ -817,12 +787,7 @@ func TestEngine_EnvironmentSelectorUpdate_CancelsInProgressJobs(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentId),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(

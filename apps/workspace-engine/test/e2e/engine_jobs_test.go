@@ -246,12 +246,7 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
 	d1Selector := &oapi.Selector{}
-	_ = d1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = d1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	d1.ResourceSelector = d1Selector
 	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
 
@@ -259,12 +254,7 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
@@ -976,22 +966,12 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentName(e1Id),
 				integration.EnvironmentID(e1Id),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName(e2Id),
 				integration.EnvironmentID(e2Id),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(
@@ -1177,24 +1157,14 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "dev"`})
 	e1.ResourceSelector = e1Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
 	e2Selector := &oapi.Selector{}
-	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = e2Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	e2.ResourceSelector = e2Selector
 	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
 

@@ -460,12 +460,7 @@ func TestEngine_DeploymentVersionWithFilteredReleaseTargets(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentId),
 				integration.DeploymentJobAgent(jobAgentId),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"key":      "tier",
-					"value":    "production",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["tier"] == "production"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName("prod"),
@@ -544,22 +539,12 @@ func TestEngine_DeploymentVersionCreationWithMultipleEnvironments(t *testing.T) 
 			integration.WithEnvironment(
 				integration.EnvironmentID(envDevId),
 				integration.EnvironmentName("development"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"key":      "env",
-					"value":    "dev",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(envProdId),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"key":      "env",
-					"value":    "prod",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(

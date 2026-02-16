@@ -24,6 +24,14 @@ CREATE TABLE deployment (
     workspace_id UUID REFERENCES workspace(id)
 );
 
+CREATE TABLE job_agent (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    config JSON NOT NULL DEFAULT '{}'
+);
+
 CREATE TABLE environment (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,

@@ -54,7 +54,7 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 				"env":    "prod",
 				"region": "us-east-1",
 			}),
-			integration.ResourceConfig(map[string]interface{}{
+			integration.ResourceConfig(map[string]any{
 				"replicas": float64(3),
 				"image":    "nginx:latest",
 			}),

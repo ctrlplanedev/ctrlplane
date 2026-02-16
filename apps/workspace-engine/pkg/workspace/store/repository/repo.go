@@ -5,4 +5,5 @@ type Repo interface {
 	Deployments() DeploymentRepo
 	Environments() EnvironmentRepo
 	Systems() SystemRepo
+	JobAgents() JobAgentRepo
 }

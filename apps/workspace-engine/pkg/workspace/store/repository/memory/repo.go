@@ -61,7 +61,7 @@ func New(wsId string) *InMemory {
 		systems:                  createTypedStore[*oapi.System](router, "system"),
 		Releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
-		JobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
+		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
 		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
@@ -96,7 +96,7 @@ type InMemory struct {
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
 	Jobs      *indexstore.Store[*oapi.Job]
-	JobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
+	jobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
 
 	GithubEntities      cmap.ConcurrentMap[string, *oapi.GithubEntity]
 	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
@@ -190,6 +190,11 @@ func (s *InMemory) Environments() repository.EnvironmentRepo {
 // Systems implements repository.Repo.
 func (s *InMemory) Systems() repository.SystemRepo {
 	return &cmapRepoAdapter[*oapi.System]{store: &s.systems}
+}
+
+// JobAgents implements repository.Repo.
+func (s *InMemory) JobAgents() repository.JobAgentRepo {
+	return &cmapRepoAdapter[*oapi.JobAgent]{store: &s.jobAgents}
 }
 
 func (s *InMemory) Router() *persistence.RepositoryRouter {

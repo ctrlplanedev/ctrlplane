@@ -23,12 +23,7 @@ func TestEngine_DeploymentCreation(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID1),
 				integration.DeploymentName("deployment-has-filter"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID2),
@@ -857,12 +852,7 @@ func TestEngine_DeploymentRemovalWithResources(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID1),
 				integration.DeploymentName("deployment-1"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "web",
-					"key":      "tier",
-				}),
+				integration.DeploymentCelResourceSelector(`resource.metadata["tier"] == "web"`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(deploymentID2),

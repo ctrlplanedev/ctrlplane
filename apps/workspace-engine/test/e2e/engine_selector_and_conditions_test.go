@@ -25,66 +25,20 @@ func TestEngine_DeploymentSelectorAndCondition(t *testing.T) {
 			integration.WithDeployment(
 				integration.DeploymentID(d1ID),
 				integration.DeploymentName("deployment-prod-web"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
+				integration.DeploymentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("web")`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d2ID),
 				integration.DeploymentName("deployment-prod-api"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
+				integration.DeploymentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("web")`),
 			),
 			integration.WithDeployment(
 				integration.DeploymentID(d3ID),
 				integration.DeploymentName("deployment-dev-web"),
-				integration.DeploymentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "web",
-						},
-					},
-				}),
+				integration.DeploymentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("web")`),
 			),
 			integration.WithEnvironment(
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -159,59 +113,17 @@ func TestEngine_EnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-prod-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "us-east",
-						},
-					},
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("us-east")`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-prod-us-west"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "us-east",
-						},
-					},
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("us-east")`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e3ID),
 				integration.EnvironmentName("env-dev-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"operator": "and",
-					"conditions": []any{
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "prod",
-						},
-						map[string]any{
-							"type":     "name",
-							"operator": "contains",
-							"value":    "us-east",
-						},
-					},
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.name.contains("prod") && resource.name.contains("us-east")`),
 			),
 		),
 		integration.WithResource(
@@ -377,29 +289,17 @@ func TestEngine_PolicyEnvironmentSelectorAndCondition(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
 				integration.EnvironmentName("env-prod-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e2ID),
 				integration.EnvironmentName("env-prod-us-west"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e3ID),
 				integration.EnvironmentName("env-dev-us-east"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

@@ -100,6 +100,14 @@ type Environment struct {
 	WorkspaceID      uuid.UUID
 }
 
+type JobAgent struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        string
+	Type        string
+	Config      map[string]any
+}
+
 type Resource struct {
 	ID          uuid.UUID
 	Version     string
