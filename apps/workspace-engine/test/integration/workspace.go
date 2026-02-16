@@ -23,10 +23,10 @@ var globalTraceStore = spanstore.NewInMemoryStore()
 // connecting to a real Kafka broker.
 type noopProducer struct{}
 
-func (noopProducer) Publish([]byte, []byte) error              { return nil }
+func (noopProducer) Publish([]byte, []byte) error                   { return nil }
 func (noopProducer) PublishToPartition([]byte, []byte, int32) error { return nil }
-func (noopProducer) Flush(int) int                             { return 0 }
-func (noopProducer) Close() error                              { return nil }
+func (noopProducer) Flush(int) int                                  { return 0 }
+func (noopProducer) Close() error                                   { return nil }
 
 // overrideTestRunnerProducer replaces the TestRunner in the workspace's
 // job agent registry with one that uses a no-op Kafka producer, preventing

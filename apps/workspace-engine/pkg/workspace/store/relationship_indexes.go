@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/relationships"
@@ -138,11 +139,20 @@ type indexEntry struct {
 // relationship rule. It provides entity lifecycle operations that fan out to
 // all indexes and an aggregated query interface compatible with existing
 // consumers that expect map[string][]*oapi.EntityRelation.
+//
+// Recomputation is lazy: dirty state is tracked incrementally as entities and
+// rules change, but the actual CEL evaluation is deferred until a query
+// (GetRelatedEntities) is made. This avoids O(N²) work on boot and after
+// events that never read relationships.
 type RelationshipIndexes struct {
 	store       *Store
 	entityStore *entityStoreAdapter
 
 	indexes cmap.ConcurrentMap[string, *indexEntry] // keyed by rule ID
+
+	// recomputeMu serializes lazy recomputation so that concurrent readers
+	// (e.g. reconciliation goroutines) trigger at most one Recompute.
+	recomputeMu sync.Mutex
 }
 
 func NewRelationshipIndexes(store *Store) *RelationshipIndexes {
@@ -329,7 +339,42 @@ func (ri *RelationshipIndexes) IsDirty() bool {
 
 // Recompute processes dirty state across all rule indexes.
 // Returns the total number of match evaluations performed.
+// This is safe to call explicitly (e.g. from tests or benchmarks) and
+// serializes with the lazy recomputation path.
 func (ri *RelationshipIndexes) Recompute(ctx context.Context) int {
+	ri.recomputeMu.Lock()
+	defer ri.recomputeMu.Unlock()
+	return ri.recomputeLocked(ctx)
+}
+
+// --- Lazy recompute ---
+
+// ensureRecomputed recomputes all dirty indexes if any are pending. The mutex
+// guarantees that concurrent callers (e.g. reconciliation goroutines) wait
+// for a single recomputation instead of triggering redundant work.
+func (ri *RelationshipIndexes) ensureRecomputed(ctx context.Context) {
+	ri.recomputeMu.Lock()
+	defer ri.recomputeMu.Unlock()
+
+	if !ri.isDirtyLocked() {
+		return
+	}
+	ri.recomputeLocked(ctx)
+}
+
+// isDirtyLocked checks dirty state without acquiring recomputeMu (caller holds it).
+func (ri *RelationshipIndexes) isDirtyLocked() bool {
+	ctx := context.Background()
+	for _, entry := range ri.indexes.Items() {
+		if entry.index.IsDirty(ctx) {
+			return true
+		}
+	}
+	return false
+}
+
+// recomputeLocked performs recomputation without acquiring recomputeMu (caller holds it).
+func (ri *RelationshipIndexes) recomputeLocked(ctx context.Context) int {
 	ctx, span := relationshipIndexesTracer.Start(ctx, "RelationshipIndexes.Recompute")
 	defer span.End()
 
@@ -351,10 +396,16 @@ func (ri *RelationshipIndexes) Recompute(ctx context.Context) int {
 // all rule indexes. Results are grouped by rule reference, matching the format
 // expected by existing consumers (release manager, API layer, variable manager).
 //
+// Lazy recomputation: if any indexes have dirty state, they are recomputed
+// before the query executes. This defers the O(N²) boot/event cost to the
+// first actual read.
+//
 // For each rule index:
 //   - Children (entity is "from", child is "to") produce Direction=From entries
 //   - Parents (parent is "from", entity is "to") produce Direction=To entries
 func (ri *RelationshipIndexes) GetRelatedEntities(ctx context.Context, entity *oapi.RelatableEntity) (map[string][]*oapi.EntityRelation, error) {
+	ri.ensureRecomputed(ctx)
+
 	ctx, span := relationshipIndexesTracer.Start(ctx, "RelationshipIndexes.GetRelatedEntities")
 	defer span.End()
 

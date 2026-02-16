@@ -277,11 +277,12 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	_, span = relationshipIndexesTracer.Start(ctx, "Store.Restore.RelationshipIndexes")
 	for _, rule := range s.Relationships.Items() {
 		if setStatus != nil {
-			setStatus("Computing relationships for rule: " + rule.Name)
+			setStatus("Registering relationships for rule: " + rule.Name)
 		}
 		s.RelationshipIndexes.AddRule(ctx, rule)
 	}
-	s.RelationshipIndexes.Recompute(ctx)
+	// Recomputation is deferred until the first GetRelatedEntities call,
+	// avoiding the O(N²) CEL evaluation cost during boot.
 	span.End()
 
 	s.changeset.Clear()
