@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { desc, eq } from "@ctrlplane/db";
+import { asc, desc, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -78,6 +78,7 @@ export const deploymentsRouter = router({
             },
           },
         },
+        orderBy: asc(schema.deployment.name),
       });
       return deployments;
     }),
@@ -199,7 +200,7 @@ export const deploymentsRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-            validate.data.errors.length > 0
+              validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });
