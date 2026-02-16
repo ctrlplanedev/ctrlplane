@@ -13,6 +13,7 @@ sql:
       - queries/environments.sql
       - queries/systems.sql
       - queries/job_agents.sql
+      - queries/resource_providers.sql
       - queries/changelog.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
@@ -54,6 +55,19 @@ sql:
 
           # Environment
           - column: "environment.metadata"
+            go_type:
+              type: "map[string]string"
+
+          # ResourceProvider
+          - column: "resource_provider.metadata"
+            go_type:
+              type: "map[string]string"
+
+          # Resource
+          - column: "resource.config"
+            go_type:
+              type: "map[string]any"
+          - column: "resource.metadata"
             go_type:
               type: "map[string]string"
 

@@ -42,6 +42,14 @@ CREATE TABLE environment (
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
 );
 
+CREATE TABLE resource_provider (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    metadata JSONB NOT NULL DEFAULT '{}'
+);
+
 CREATE TABLE resource (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     version TEXT NOT NULL,
@@ -52,6 +60,9 @@ CREATE TABLE resource (
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
     config JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ,
+    locked_at TIMESTAMPTZ,
     metadata JSONB NOT NULL DEFAULT '{}'
 );
 

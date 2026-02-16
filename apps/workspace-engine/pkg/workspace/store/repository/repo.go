@@ -6,4 +6,5 @@ type Repo interface {
 	Environments() EnvironmentRepo
 	Systems() SystemRepo
 	JobAgents() JobAgentRepo
+	ResourceProviders() ResourceProviderRepo
 }

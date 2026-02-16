@@ -61,6 +61,15 @@ func WithDBJobAgents(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBResourceProviders replaces the default in-memory ResourceProviderRepo
+// with a DB-backed implementation.
+func WithDBResourceProviders(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.ResourceProviders.SetRepo(dbRepo.ResourceProviders())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -204,6 +213,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.JobAgents.repo.Set(ja); err != nil {
 			log.Warn("Failed to migrate legacy job agent",
 				"job_agent_id", ja.Id, "name", ja.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy resource providers")
+	}
+	for _, rp := range s.repo.ResourceProviders().Items() {
+		if err := s.ResourceProviders.repo.Set(rp); err != nil {
+			log.Warn("Failed to migrate legacy resource provider",
+				"resource_provider_id", rp.Id, "name", rp.Name, "error", err)
 		}
 	}
 

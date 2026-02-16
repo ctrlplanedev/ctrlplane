@@ -116,9 +116,20 @@ type Resource struct {
 	Identifier  string
 	ProviderID  uuid.UUID
 	WorkspaceID uuid.UUID
-	Config      []byte
+	Config      map[string]any
 	CreatedAt   pgtype.Timestamptz
-	Metadata    []byte
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	LockedAt    pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+type ResourceProvider struct {
+	ID          uuid.UUID
+	Name        string
+	WorkspaceID uuid.UUID
+	CreatedAt   pgtype.Timestamptz
+	Metadata    map[string]string
 }
 
 type System struct {

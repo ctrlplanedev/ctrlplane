@@ -49,7 +49,7 @@ func New(wsId string) *InMemory {
 
 		JobVerifications:         createTypedStore[*oapi.JobVerification](router, "job_verification"),
 		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
-		ResourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
+		resourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
 		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
 		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
 		deploymentVersions:       createMemDBStore[*oapi.DeploymentVersion](router, "deployment_version", memdb),
@@ -81,7 +81,7 @@ type InMemory struct {
 
 	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
-	ResourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
+	resourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
 
 	deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
 	DeploymentVariables      cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
@@ -195,6 +195,11 @@ func (s *InMemory) Systems() repository.SystemRepo {
 // JobAgents implements repository.Repo.
 func (s *InMemory) JobAgents() repository.JobAgentRepo {
 	return &cmapRepoAdapter[*oapi.JobAgent]{store: &s.jobAgents}
+}
+
+// ResourceProviders implements repository.Repo.
+func (s *InMemory) ResourceProviders() repository.ResourceProviderRepo {
+	return &cmapRepoAdapter[*oapi.ResourceProvider]{store: &s.resourceProviders}
 }
 
 func (s *InMemory) Router() *persistence.RepositoryRouter {

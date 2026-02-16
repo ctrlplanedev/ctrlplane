@@ -45,3 +45,11 @@ type JobAgentRepo interface {
 	Remove(id string) error
 	Items() map[string]*oapi.JobAgent
 }
+
+// ResourceProviderRepo defines the contract for resource provider storage.
+type ResourceProviderRepo interface {
+	Get(id string) (*oapi.ResourceProvider, bool)
+	Set(entity *oapi.ResourceProvider) error
+	Remove(id string) error
+	Items() map[string]*oapi.ResourceProvider
+}
