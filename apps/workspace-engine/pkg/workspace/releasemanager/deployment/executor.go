@@ -3,6 +3,7 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/jobagents"
@@ -14,6 +15,14 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
+
+func agentNames(agents []*oapi.JobAgent) []string {
+	names := make([]string, len(agents))
+	for i, a := range agents {
+		names[i] = a.Name
+	}
+	return names
+}
 
 // Executor handles deployment execution (Phase 2: ACTION - Write operations).
 type Executor struct {
@@ -79,6 +88,12 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 		))
 	defer span.End()
 
+	var execution *trace.ExecutionPhase
+	if recorder != nil {
+		execution = recorder.StartExecution()
+		defer execution.End()
+	}
+
 	if err := e.store.Releases.Upsert(ctx, releaseToDeploy); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to persist release")
@@ -94,7 +109,20 @@ func (e *Executor) ExecuteRelease(ctx context.Context, releaseToDeploy *oapi.Rel
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get deployment agents")
-		return nil, err
+		failedJob := e.jobFactory.InvalidDeploymentAgentsJob(releaseToDeploy.ID(), deployment.Name, nil)
+		e.store.Jobs.Upsert(ctx, failedJob)
+		return []*oapi.Job{failedJob}, nil
+	}
+
+	if execution != nil {
+		execution.TriggerJob("create_jobs_for_deployment_agents", map[string]string{
+			"deployment_id":  deployment.Id,
+			"environment_id": releaseToDeploy.ReleaseTarget.EnvironmentId,
+			"resource_id":    releaseToDeploy.ReleaseTarget.ResourceId,
+			"version_id":     releaseToDeploy.Version.Id,
+			"version_tag":    releaseToDeploy.Version.Tag,
+			"agents":         strings.Join(agentNames(agents), ","),
+		})
 	}
 
 	if len(agents) == 0 {

@@ -79,8 +79,9 @@ func TestEngine_JobAgentConfigurationRetriggersInvalidJobs(t *testing.T) {
 	// Update deployment to use the job agent
 	deployment, exists := engine.Workspace().Deployments().Get(deploymentID)
 	require.True(t, exists, "deployment not found")
-	deployment.JobAgentId = &jobAgentID
-	engine.PushEvent(ctx, handler.DeploymentUpdate, deployment)
+	dep := *deployment
+	dep.JobAgentId = &jobAgentID
+	engine.PushEvent(ctx, handler.DeploymentUpdate, &dep)
 
 	// Step 4: Verify new Pending jobs created
 	allJobsAfterUpdate := engine.Workspace().Jobs().Items()
@@ -195,12 +196,13 @@ func TestEngine_JobAgentConfigUpdateRetriggersInvalidJobs(t *testing.T) {
 	// Update deployment with both job agent ID and custom config
 	deployment, exists := engine.Workspace().Deployments().Get(deploymentID)
 	require.True(t, exists, "deployment not found")
-	deployment.JobAgentId = &jobAgentID
-	deployment.JobAgentConfig = map[string]any{
+	dep := *deployment
+	dep.JobAgentId = &jobAgentID
+	dep.JobAgentConfig = map[string]any{
 		"timeout":  600, // Override agent default
 		"replicas": 3,   // Add deployment-specific config
 	}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, deployment)
+	engine.PushEvent(ctx, handler.DeploymentUpdate, &dep)
 
 	// Step 4: Verify new Pending job created with merged config
 	allJobsAfterUpdate := engine.Workspace().Jobs().Items()
@@ -326,8 +328,9 @@ func TestEngine_JobAgentConfigurationWithMultipleResources(t *testing.T) {
 	// Update deployment to use the job agent
 	deployment, exists := engine.Workspace().Deployments().Get(deploymentID)
 	require.True(t, exists, "deployment not found")
-	deployment.JobAgentId = &jobAgentID
-	engine.PushEvent(ctx, handler.DeploymentUpdate, deployment)
+	dep := *deployment
+	dep.JobAgentId = &jobAgentID
+	engine.PushEvent(ctx, handler.DeploymentUpdate, &dep)
 
 	// Verify new Pending jobs created for all resources
 	allJobsAfterUpdate := engine.Workspace().Jobs().Items()

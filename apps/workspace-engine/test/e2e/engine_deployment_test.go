@@ -515,8 +515,9 @@ func TestEngine_AddingAgentToDeploymentRetriggersInvalidJobs(t *testing.T) {
 		t.Fatalf("deployment not found")
 		return
 	}
-	d.JobAgentId = &jobAgentID
-	engine.PushEvent(ctx, handler.DeploymentUpdate, d)
+	dep := *d
+	dep.JobAgentId = &jobAgentID
+	engine.PushEvent(ctx, handler.DeploymentUpdate, &dep)
 
 	allJobs = engine.Workspace().Jobs().Items()
 
@@ -592,8 +593,9 @@ func TestEngine_FutureUpdatesDoNotRetriggerPreviouslyRetriggeredJobs(t *testing.
 		t.Fatalf("deployment not found")
 		return
 	}
-	d.JobAgentId = &jobAgentID
-	engine.PushEvent(ctx, handler.DeploymentUpdate, d)
+	dep := *d
+	dep.JobAgentId = &jobAgentID
+	engine.PushEvent(ctx, handler.DeploymentUpdate, &dep)
 
 	allJobs = engine.Workspace().Jobs().Items()
 

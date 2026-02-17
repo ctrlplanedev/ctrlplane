@@ -3,6 +3,7 @@ package deployment
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 
@@ -137,7 +138,7 @@ func upsertTargets(ctx context.Context, ws *workspace.Workspace, releaseTargets 
 	return nil
 }
 
-func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget) error {
+func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment, releaseTargets []*oapi.ReleaseTarget, skipEligibilityCheck bool) error {
 	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
 		for _, rt := range releaseTargets {
 			ws.ReleaseManager().DirtyDesiredRelease(rt)
@@ -147,10 +148,46 @@ func reconcileTargets(ctx context.Context, ws *workspace.Workspace, deployment *
 		for _, releaseTarget := range releaseTargets {
 			_ = ws.ReleaseManager().ReconcileTarget(ctx, releaseTarget,
 				releasemanager.WithTrigger(trace.TriggerDeploymentUpdated),
+				releasemanager.WithSkipEligibilityCheck(skipEligibilityCheck),
 			)
 		}
 	}
 	return nil
+}
+
+func getOldDeployment(ws *workspace.Workspace, deploymentID string) (oapi.Deployment, error) {
+	oldDeployment, ok := ws.Deployments().Get(deploymentID)
+	if !ok {
+		return oapi.Deployment{}, fmt.Errorf("deployment %s not found", deploymentID)
+	}
+	if oldDeployment == nil {
+		return oapi.Deployment{}, fmt.Errorf("deployment %s not found", deploymentID)
+	}
+	return *oldDeployment, nil
+}
+
+func isJobAgentConfigurationChanged(oldDeployment *oapi.Deployment, newDeployment *oapi.Deployment) bool {
+	oldAgentId := ""
+	if oldDeployment.JobAgentId != nil {
+		oldAgentId = *oldDeployment.JobAgentId
+	}
+	newAgentId := ""
+	if newDeployment.JobAgentId != nil {
+		newAgentId = *newDeployment.JobAgentId
+	}
+	if oldAgentId != newAgentId {
+		return true
+	}
+
+	oldConfig, _ := json.Marshal(oldDeployment.JobAgentConfig)
+	newConfig, _ := json.Marshal(newDeployment.JobAgentConfig)
+	if string(oldConfig) != string(newConfig) {
+		return true
+	}
+
+	oldAgents, _ := json.Marshal(oldDeployment.JobAgents)
+	newAgents, _ := json.Marshal(newDeployment.JobAgents)
+	return string(oldAgents) != string(newAgents)
 }
 
 func HandleDeploymentUpdated(
@@ -160,6 +197,11 @@ func HandleDeploymentUpdated(
 ) error {
 	deployment := &oapi.Deployment{}
 	if err := json.Unmarshal(event.Data, deployment); err != nil {
+		return err
+	}
+
+	oldDeployment, err := getOldDeployment(ws, deployment.Id)
+	if err != nil {
 		return err
 	}
 
@@ -190,17 +232,11 @@ func HandleDeploymentUpdated(
 		return err
 	}
 
-	err = reconcileTargets(ctx, ws, deployment, addedReleaseTargets)
-	if err != nil {
-		return err
+	if isJobAgentConfigurationChanged(&oldDeployment, deployment) {
+		return reconcileTargets(ctx, ws, deployment, releaseTargets, true)
 	}
 
-	jobsToRetrigger := getJobsToRetrigger(ws, deployment)
-	if len(jobsToRetrigger) > 0 {
-		retriggerInvalidJobAgentJobs(ctx, ws, jobsToRetrigger)
-	}
-
-	return nil
+	return reconcileTargets(ctx, ws, deployment, addedReleaseTargets, false)
 }
 
 func HandleDeploymentDeleted(

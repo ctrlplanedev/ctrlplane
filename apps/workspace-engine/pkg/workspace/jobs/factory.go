@@ -52,20 +52,20 @@ func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName str
 	}
 }
 
-func (f *Factory) jobAgentNotFoundJob(releaseID, jobAgentID, deploymentName string, action *trace.Action) *oapi.Job {
-	message := fmt.Sprintf("Job agent '%s' not found for deployment '%s'", jobAgentID, deploymentName)
+func (f *Factory) InvalidDeploymentAgentsJob(releaseID, deploymentName string, action *trace.Action) *oapi.Job {
+	message := fmt.Sprintf("Invalid deployment agents for deployment '%s'", deploymentName)
 	if action != nil {
-		action.AddStep("Create NoAgentFoundJob job", trace.StepResultPass,
-			fmt.Sprintf("Created NoAgentFoundJob job for release %s with job agent %s", releaseID, jobAgentID)).
+		action.AddStep("Create InvalidDeploymentAgentsJob job", trace.StepResultPass,
+			fmt.Sprintf("Created InvalidDeploymentAgentsJob job for release %s with deployment %s", releaseID, deploymentName)).
 			AddMetadata("release_id", releaseID).
-			AddMetadata("job_agent_id", jobAgentID).
+			AddMetadata("deployment_name", deploymentName).
 			AddMetadata("message", message)
 	}
 
 	return &oapi.Job{
 		Id:             uuid.New().String(),
 		ReleaseId:      releaseID,
-		JobAgentId:     jobAgentID,
+		JobAgentId:     "",
 		JobAgentConfig: oapi.JobAgentConfig{},
 		Status:         oapi.JobStatusInvalidJobAgent,
 		Message:        &message,

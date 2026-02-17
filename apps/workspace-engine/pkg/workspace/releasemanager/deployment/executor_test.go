@@ -178,7 +178,8 @@ func TestExecuteRelease_NoJobAgentConfigured(t *testing.T) {
 
 	// No job agent configured and no jobAgents list — returns empty jobs
 	require.NoError(t, err)
-	require.Empty(t, jobs)
+	require.Len(t, jobs, 1)
+	require.Equal(t, oapi.JobStatusInvalidJobAgent, jobs[0].Status)
 
 	// Verify release was still persisted
 	_, exists := testStore.Releases.Get(release.ID())
@@ -256,7 +257,7 @@ func TestExecuteRelease_MultipleReleases(t *testing.T) {
 	jobAgentID := uuid.New().String()
 
 	// Create necessary entities
-	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "github")
+	jobAgent := createTestJobAgent(jobAgentID, workspaceID, "test-agent", "test-runner")
 	testStore.JobAgents.Upsert(ctx, jobAgent)
 
 	deployment := createTestDeploymentForExecutor(deploymentID, systemID, "test-deployment", jobAgentID)
