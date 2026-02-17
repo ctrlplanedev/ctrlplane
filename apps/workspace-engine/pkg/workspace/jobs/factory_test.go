@@ -45,7 +45,6 @@ func createTestDeployment(t *testing.T, id string, jobAgentId *string, jobAgentC
 		Id:               id,
 		Name:             "test-deployment",
 		Slug:             "test-deployment",
-		SystemIds:        []string{"system-1"},
 		JobAgentId:       jobAgentId,
 		JobAgentConfig:   jobAgentConfig,
 		ResourceSelector: mustCreateResourceSelector(t),
@@ -57,7 +56,6 @@ func createTestEnvironment(t *testing.T, id string, systemId string, name string
 	return &oapi.Environment{
 		Id:               id,
 		Name:             name,
-		SystemIds:        []string{systemId},
 		Metadata:         map[string]string{},
 		CreatedAt:        time.Now(),
 		ResourceSelector: mustCreateResourceSelector(t),
@@ -113,61 +111,21 @@ func createTestReleaseWithJobAgentConfig(t *testing.T, deploymentId, environment
 // Error Cases
 // =============================================================================
 
-func TestFactory_CreateJobForRelease_NoJobAgentConfigured(t *testing.T) {
-	st := setupTestStore()
-	ctx := context.Background()
-
-	// Deployment has no job agent configured
-	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
-	deployment := createTestDeployment(t, "deploy-1", nil, deploymentConfig)
-
-	_ = st.Deployments.Upsert(ctx, deployment)
-
-	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
-
-	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
-
-	require.NoError(t, err)
-	require.Empty(t, jobs)
-}
-
-func TestFactory_CreateJobForRelease_JobAgentNotFound(t *testing.T) {
-	st := setupTestStore()
-	ctx := context.Background()
-
-	// Deployment references a job agent that doesn't exist
-	nonExistentAgentId := "non-existent-agent"
-	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
-	deployment := createTestDeployment(t, "deploy-1", &nonExistentAgentId, deploymentConfig)
-
-	_ = st.Deployments.Upsert(ctx, deployment)
-
-	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
-
-	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
-
-	require.NoError(t, err)
-	require.Len(t, jobs, 1)
-	require.Equal(t, oapi.JobStatusInvalidJobAgent, jobs[0].Status)
-	require.NotNil(t, jobs[0].Message)
-	require.Contains(t, *jobs[0].Message, "not found")
-}
-
 func TestFactory_CreateJobForRelease_DeploymentNotFound(t *testing.T) {
 	st := setupTestStore()
 	ctx := context.Background()
+
+	jobAgent := createTestJobAgent(t, "agent-1", "custom", mustCreateJobAgentConfig(t, `{}`))
 
 	// Release references a deployment that doesn't exist
 	release := createTestRelease(t, "non-existent-deploy", "env-1", "resource-1", "version-1")
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 
 	// Should return an error
 	require.Error(t, err)
-	require.Nil(t, jobs)
+	require.Nil(t, job)
 	require.Contains(t, err.Error(), "not found")
 }
 
@@ -204,13 +162,12 @@ func TestFactory_CreateJobForRelease_SetsCorrectJobFields(t *testing.T) {
 	beforeCreation := time.Now()
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 
 	afterCreation := time.Now()
 
 	require.NoError(t, err)
-	require.Len(t, jobs, 1)
-	job := jobs[0]
+	require.NotNil(t, job)
 
 	// Verify job ID is a valid UUID
 	_, err = uuid.Parse(job.Id)
@@ -270,45 +227,21 @@ func TestFactory_CreateJobForRelease_UniqueJobIds(t *testing.T) {
 	jobIds := make(map[string]bool)
 	for i := 0; i < 10; i++ {
 		release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
-		jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+		job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 		require.NoError(t, err)
-		require.Len(t, jobs, 1)
+		require.NotNil(t, job)
 
 		// Each job should have a unique ID
-		require.False(t, jobIds[jobs[0].Id], "Job ID should be unique")
-		jobIds[jobs[0].Id] = true
+		require.False(t, jobIds[job.Id], "Job ID should be unique")
+		jobIds[job.Id] = true
 	}
-}
-
-// =============================================================================
-// Empty Job Agent ID Tests
-// =============================================================================
-
-func TestFactory_CreateJobForRelease_EmptyJobAgentId(t *testing.T) {
-	st := setupTestStore()
-	ctx := context.Background()
-
-	// Deployment has empty string job agent ID
-	emptyAgentId := ""
-	deploymentConfig := mustCreateJobAgentConfig(t, `{"type": "custom"}`)
-	deployment := createTestDeployment(t, "deploy-1", &emptyAgentId, deploymentConfig)
-
-	_ = st.Deployments.Upsert(ctx, deployment)
-
-	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
-
-	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
-
-	require.NoError(t, err)
-	require.Empty(t, jobs)
 }
 
 // =============================================================================
 // Dispatch Context Tests (new factory responsibility)
 // =============================================================================
 
-func setupFullStore(t *testing.T) (*store.Store, string, string, string, string) {
+func setupFullStore(t *testing.T) (*store.Store, *oapi.JobAgent, string, string, string) {
 	t.Helper()
 	st := setupTestStore()
 	ctx := context.Background()
@@ -322,10 +255,9 @@ func setupFullStore(t *testing.T) (*store.Store, string, string, string, string)
 	deployment := createTestDeployment(t, deploymentId, &jobAgentId, mustCreateJobAgentConfig(t, `{"deploy_key": "deploy_val"}`))
 
 	environment := &oapi.Environment{
-		Id:        environmentId,
-		Name:      "production",
-		SystemIds: []string{"system-1"},
-		Metadata:  map[string]string{},
+		Id:       environmentId,
+		Name:     "production",
+		Metadata: map[string]string{},
 	}
 
 	resource := &oapi.Resource{
@@ -343,21 +275,20 @@ func setupFullStore(t *testing.T) (*store.Store, string, string, string, string)
 	_ = st.Environments.Upsert(ctx, environment)
 	st.Resources.Upsert(ctx, resource)
 
-	return st, jobAgentId, deploymentId, environmentId, resourceId
+	return st, jobAgent, deploymentId, environmentId, resourceId
 }
 
 func TestFactory_CreateJobForRelease_BuildsDispatchContext(t *testing.T) {
-	st, _, deploymentId, environmentId, resourceId := setupFullStore(t)
+	st, jobAgent, deploymentId, environmentId, resourceId := setupFullStore(t)
 	ctx := context.Background()
 
 	release := createTestRelease(t, deploymentId, environmentId, resourceId, "version-1")
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 
 	require.NoError(t, err)
-	require.Len(t, jobs, 1)
-	job := jobs[0]
+	require.NotNil(t, job)
 	require.NotNil(t, job.DispatchContext)
 
 	dc := job.DispatchContext
@@ -370,17 +301,16 @@ func TestFactory_CreateJobForRelease_BuildsDispatchContext(t *testing.T) {
 }
 
 func TestFactory_CreateJobForRelease_DispatchContextHasCorrectEntities(t *testing.T) {
-	st, _, deploymentId, environmentId, resourceId := setupFullStore(t)
+	st, jobAgent, deploymentId, environmentId, resourceId := setupFullStore(t)
 	ctx := context.Background()
 
 	release := createTestRelease(t, deploymentId, environmentId, resourceId, "version-1")
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 
 	require.NoError(t, err)
-	require.Len(t, jobs, 1)
-	dc := jobs[0].DispatchContext
+	dc := job.DispatchContext
 
 	require.Equal(t, deploymentId, dc.Deployment.Id)
 	require.Equal(t, environmentId, dc.Environment.Id)
@@ -389,7 +319,7 @@ func TestFactory_CreateJobForRelease_DispatchContextHasCorrectEntities(t *testin
 }
 
 func TestFactory_CreateJobForRelease_DispatchContextVariablesPointsToReleaseVariables(t *testing.T) {
-	st, _, deploymentId, environmentId, resourceId := setupFullStore(t)
+	st, jobAgent, deploymentId, environmentId, resourceId := setupFullStore(t)
 	ctx := context.Background()
 
 	release := createTestRelease(t, deploymentId, environmentId, resourceId, "version-1")
@@ -400,13 +330,12 @@ func TestFactory_CreateJobForRelease_DispatchContextVariablesPointsToReleaseVari
 	}
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 
 	require.NoError(t, err)
-	require.Len(t, jobs, 1)
-	require.NotNil(t, jobs[0].DispatchContext.Variables)
+	require.NotNil(t, job.DispatchContext.Variables)
 
-	vars := *jobs[0].DispatchContext.Variables
+	vars := *job.DispatchContext.Variables
 	appName, exists := vars["app_name"]
 	require.True(t, exists)
 	val, err := appName.AsStringValue()
@@ -428,7 +357,7 @@ func TestFactory_CreateJobForRelease_MergesJobAgentConfig(t *testing.T) {
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deployConfig)
 
 	environment := &oapi.Environment{
-		Id: "env-1", Name: "prod", SystemIds: []string{"system-1"}, Metadata: map[string]string{},
+		Id: "env-1", Name: "prod", Metadata: map[string]string{},
 	}
 	resource := &oapi.Resource{
 		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",
@@ -443,11 +372,10 @@ func TestFactory_CreateJobForRelease_MergesJobAgentConfig(t *testing.T) {
 	release := createTestReleaseWithJobAgentConfig(t, "deploy-1", "env-1", "resource-1", "version-1", versionConfig)
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 
 	require.NoError(t, err)
-	require.Len(t, jobs, 1)
-	job := jobs[0]
+	require.NotNil(t, job)
 
 	// Version config wins for "shared" since it's applied last
 	require.Equal(t, "from_version", job.JobAgentConfig["shared"])
@@ -461,7 +389,7 @@ func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testi
 	ctx := context.Background()
 
 	jobAgentId := "agent-1"
-	jobAgent := createTestJobAgent(t, jobAgentId, "custom", mustCreateJobAgentConfig(t, `{}`))
+	agent := createTestJobAgent(t, jobAgentId, "custom", mustCreateJobAgentConfig(t, `{}`))
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, mustCreateJobAgentConfig(t, `{}`))
 
 	resource := &oapi.Resource{
@@ -469,7 +397,7 @@ func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testi
 		Config: map[string]interface{}{}, Metadata: map[string]string{}, CreatedAt: time.Now(),
 	}
 
-	st.JobAgents.Upsert(ctx, jobAgent)
+	st.JobAgents.Upsert(ctx, agent)
 	_ = st.Deployments.Upsert(ctx, deployment)
 	st.Resources.Upsert(ctx, resource)
 	// Deliberately not adding environment
@@ -477,10 +405,10 @@ func TestFactory_CreateJobForRelease_DispatchContextEnvironmentNotFound(t *testi
 	release := createTestRelease(t, "deploy-1", "env-missing", "resource-1", "version-1")
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, agent, nil)
 
 	require.Error(t, err)
-	require.Nil(t, jobs)
+	require.Nil(t, job)
 	require.Contains(t, err.Error(), "environment")
 	require.Contains(t, err.Error(), "not found")
 }
@@ -490,14 +418,14 @@ func TestFactory_CreateJobForRelease_DispatchContextResourceNotFound(t *testing.
 	ctx := context.Background()
 
 	jobAgentId := "agent-1"
-	jobAgent := createTestJobAgent(t, jobAgentId, "custom", mustCreateJobAgentConfig(t, `{}`))
+	agent := createTestJobAgent(t, jobAgentId, "custom", mustCreateJobAgentConfig(t, `{}`))
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, mustCreateJobAgentConfig(t, `{}`))
 
 	environment := &oapi.Environment{
-		Id: "env-1", Name: "prod", SystemIds: []string{"system-1"}, Metadata: map[string]string{},
+		Id: "env-1", Name: "prod", Metadata: map[string]string{},
 	}
 
-	st.JobAgents.Upsert(ctx, jobAgent)
+	st.JobAgents.Upsert(ctx, agent)
 	_ = st.Deployments.Upsert(ctx, deployment)
 	_ = st.Environments.Upsert(ctx, environment)
 	// Deliberately not adding resource
@@ -505,10 +433,10 @@ func TestFactory_CreateJobForRelease_DispatchContextResourceNotFound(t *testing.
 	release := createTestRelease(t, "deploy-1", "env-1", "resource-missing", "version-1")
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, agent, nil)
 
 	require.Error(t, err)
-	require.Nil(t, jobs)
+	require.Nil(t, job)
 	require.Contains(t, err.Error(), "resource")
 	require.Contains(t, err.Error(), "not found")
 }
@@ -744,7 +672,7 @@ func TestFactory_CreateJobForRelease_DeepMergesNestedConfig(t *testing.T) {
 	deployment := createTestDeployment(t, "deploy-1", &jobAgentId, deployConfig)
 
 	environment := &oapi.Environment{
-		Id: "env-1", Name: "prod", SystemIds: []string{"system-1"}, Metadata: map[string]string{},
+		Id: "env-1", Name: "prod", Metadata: map[string]string{},
 	}
 	resource := &oapi.Resource{
 		Id: "resource-1", Name: "server-1", Kind: "server", Identifier: "server-1",
@@ -759,11 +687,9 @@ func TestFactory_CreateJobForRelease_DeepMergesNestedConfig(t *testing.T) {
 	release := createTestRelease(t, "deploy-1", "env-1", "resource-1", "version-1")
 
 	factory := NewFactory(st)
-	jobs, err := factory.CreateJobsForRelease(ctx, release, nil)
+	job, err := factory.CreateJobForRelease(ctx, release, jobAgent, nil)
 
 	require.NoError(t, err)
-	require.Len(t, jobs, 1)
-	job := jobs[0]
 
 	nested, ok := job.JobAgentConfig["nested"].(map[string]any)
 	require.True(t, ok)

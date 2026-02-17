@@ -285,8 +285,13 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 			continue
 		}
 
+		agent, ok := ws.JobAgents().Get(job.JobAgentId)
+		if !ok || agent == nil {
+			continue
+		}
+
 		// Create a new job for this release (bypassing eligibility checks for explicit retrigger)
-		newJobs, err := jobFactory.CreateJobsForRelease(ctx, release, nil)
+		newJob, err := jobFactory.CreateJobForRelease(ctx, release, agent, nil)
 		if err != nil {
 			log.Error("failed to create job for release during retrigger",
 				"releaseId", release.ID(),
@@ -295,26 +300,24 @@ func retriggerInvalidJobAgentJobs(ctx context.Context, ws *workspace.Workspace, 
 			continue
 		}
 
-		// Upsert the new jobs
-		for _, newJob := range newJobs {
-			ws.Jobs().Upsert(ctx, newJob)
+		// Upsert the new job
+		ws.Jobs().Upsert(ctx, newJob)
+		log.Info("created new job for previously invalid job agent",
+			"newJobId", newJob.Id,
+			"originalJobId", job.Id,
+			"releaseId", release.ID(),
+			"deploymentId", release.ReleaseTarget.DeploymentId,
+			"status", newJob.Status)
 
-			log.Info("created new job for previously invalid job agent",
-				"newJobId", newJob.Id,
-				"originalJobId", job.Id,
-				"releaseId", release.ID(),
-				"deploymentId", release.ReleaseTarget.DeploymentId,
-				"status", newJob.Status)
-
-			if newJob.Status != oapi.JobStatusInvalidJobAgent {
-				if err := ws.JobAgentRegistry().Dispatch(ctx, newJob); err != nil {
-					message := err.Error()
-					newJob.Status = oapi.JobStatusInvalidIntegration
-					newJob.UpdatedAt = time.Now()
-					newJob.Message = &message
-					ws.Jobs().Upsert(ctx, newJob)
-				}
+		if newJob.Status != oapi.JobStatusInvalidJobAgent {
+			if err := ws.JobAgentRegistry().Dispatch(ctx, newJob); err != nil {
+				message := err.Error()
+				newJob.Status = oapi.JobStatusInvalidIntegration
+				newJob.UpdatedAt = time.Now()
+				newJob.Message = &message
+				ws.Jobs().Upsert(ctx, newJob)
 			}
 		}
+
 	}
 }

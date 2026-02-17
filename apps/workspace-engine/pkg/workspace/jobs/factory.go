@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"workspace-engine/pkg/celutil"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 	"workspace-engine/pkg/workspace/store"
@@ -17,11 +16,6 @@ import (
 )
 
 var tracer = otel.Tracer("workspace/releasemanager/jobs")
-
-var jobAgentIfEnv, _ = celutil.NewEnvBuilder().
-	WithMapVariables("release", "deployment", "environment", "resource").
-	WithStandardExtensions().
-	BuildCached(12 * time.Hour)
 
 // Factory creates jobs for releases.
 type Factory struct {
@@ -35,7 +29,7 @@ func NewFactory(store *store.Store) *Factory {
 	}
 }
 
-func (f *Factory) noAgentConfiguredJob(releaseID, jobAgentID, deploymentName string, action *trace.Action) *oapi.Job {
+func (f *Factory) NoAgentConfiguredJob(releaseID, jobAgentID, deploymentName string, action *trace.Action) *oapi.Job {
 	message := fmt.Sprintf("No job agent configured for deployment '%s'", deploymentName)
 	if action != nil {
 		action.AddStep("Create InvalidJobAgent job", trace.StepResultPass,
@@ -140,108 +134,9 @@ func (f *Factory) buildDispatchContext(release *oapi.Release, deployment *oapi.D
 	}, nil
 }
 
-func (f *Factory) getJobAgents(release *oapi.Release, deployment *oapi.Deployment) ([]*oapi.JobAgent, error) {
-	if deployment.JobAgentId != nil && *deployment.JobAgentId != "" {
-		jobAgent, exists := f.store.JobAgents.Get(*deployment.JobAgentId)
-		if !exists {
-			return nil, fmt.Errorf("job agent %s not found", *deployment.JobAgentId)
-		}
-		return []*oapi.JobAgent{jobAgent}, nil
-	}
-
-	if deployment.JobAgents == nil || len(*deployment.JobAgents) == 0 {
-		return []*oapi.JobAgent{}, nil
-	}
-
-	environment, exists := f.store.Environments.Get(release.ReleaseTarget.EnvironmentId)
-	if !exists {
-		return nil, fmt.Errorf("environment %s not found", release.ReleaseTarget.EnvironmentId)
-	}
-
-	resource, exists := f.store.Resources.Get(release.ReleaseTarget.ResourceId)
-	if !exists {
-		return nil, fmt.Errorf("resource %s not found", release.ReleaseTarget.ResourceId)
-	}
-
-	releaseMap, err := celutil.EntityToMap(release)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert release to map: %w", err)
-	}
-	deploymentMap, err := celutil.EntityToMap(deployment)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert deployment to map: %w", err)
-	}
-	environmentMap, err := celutil.EntityToMap(environment)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert environment to map: %w", err)
-	}
-	resourceMap, err := celutil.EntityToMap(resource)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert resource to map: %w", err)
-	}
-
-	celCtx := map[string]any{
-		"release":     releaseMap,
-		"deployment":  deploymentMap,
-		"environment": environmentMap,
-		"resource":    resourceMap,
-	}
-
-	jobAgents := make([]*oapi.JobAgent, 0)
-	for _, deploymentJobAgent := range *deployment.JobAgents {
-		if deploymentJobAgent.If != "" {
-			program, err := jobAgentIfEnv.Compile(deploymentJobAgent.If)
-			if err != nil {
-				return nil, fmt.Errorf("failed to compile job agent if expression %q: %w", deploymentJobAgent.If, err)
-			}
-
-			result, err := celutil.EvalBool(program, celCtx)
-			if err != nil {
-				return nil, fmt.Errorf("failed to evaluate job agent if expression: %w", err)
-			}
-
-			if !result {
-				continue
-			}
-		}
-
-		jobAgent, agentExists := f.store.JobAgents.Get(deploymentJobAgent.Ref)
-		if !agentExists {
-			return nil, fmt.Errorf("job agent %s not found", deploymentJobAgent.Ref)
-		}
-		jobAgents = append(jobAgents, jobAgent)
-	}
-	return jobAgents, nil
-}
-
-func (f *Factory) buildJobForAgent(release *oapi.Release, deployment *oapi.Deployment, jobAgent *oapi.JobAgent) (*oapi.Job, error) {
-	jobId := uuid.New().String()
-	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get merged job agent config: %w", err)
-	}
-
-	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent, mergedConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
-	}
-
-	return &oapi.Job{
-		Id:              jobId,
-		ReleaseId:       release.ID(),
-		JobAgentId:      jobAgent.Id,
-		JobAgentConfig:  mergedConfig,
-		Status:          oapi.JobStatusPending,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-		Metadata:        make(map[string]string),
-		DispatchContext: dispatchContext,
-	}, nil
-}
-
-// CreateJobsForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
+// CreateJobForRelease creates a job for a given release (PURE FUNCTION, NO WRITES).
 // The job is configured with merged settings from JobAgent + Deployment.
-func (f *Factory) CreateJobsForRelease(ctx context.Context, release *oapi.Release, action *trace.Action) ([]*oapi.Job, error) {
+func (f *Factory) CreateJobForRelease(ctx context.Context, release *oapi.Release, jobAgent *oapi.JobAgent, action *trace.Action) (*oapi.Job, error) {
 	_, span := tracer.Start(ctx, "CreateJobForRelease",
 		oteltrace.WithAttributes(
 			attribute.String("deployment.id", release.ReleaseTarget.DeploymentId),
@@ -267,30 +162,12 @@ func (f *Factory) CreateJobsForRelease(ctx context.Context, release *oapi.Releas
 			AddMetadata("deployment_name", deployment.Name)
 	}
 
-	jobAgents, err := f.getJobAgents(release, deployment)
-	if err != nil {
-		message := fmt.Sprintf("Failed to get job agents: %s", err.Error())
-		return []*oapi.Job{{
-			Id:             uuid.New().String(),
-			ReleaseId:      release.ID(),
-			JobAgentId:     "",
-			JobAgentConfig: oapi.JobAgentConfig{},
-			Status:         oapi.JobStatusInvalidJobAgent,
-			Message:        &message,
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
-			Metadata:       make(map[string]string),
-		}}, nil
-	}
-
 	if action != nil {
-		for _, jobAgent := range jobAgents {
-			action.AddStep("Validate job agent", trace.StepResultPass,
-				fmt.Sprintf("Job agent '%s' (type: %s) found and validated", jobAgent.Name, jobAgent.Type)).
-				AddMetadata("job_agent_id", jobAgent.Id).
-				AddMetadata("job_agent_name", jobAgent.Name).
-				AddMetadata("job_agent_type", jobAgent.Type)
-		}
+		action.AddStep("Validate job agent", trace.StepResultPass,
+			fmt.Sprintf("Job agent '%s' (type: %s) found and validated", jobAgent.Name, jobAgent.Type)).
+			AddMetadata("job_agent_id", jobAgent.Id).
+			AddMetadata("job_agent_name", jobAgent.Name).
+			AddMetadata("job_agent_type", jobAgent.Type)
 	}
 
 	if action != nil {
@@ -302,27 +179,36 @@ func (f *Factory) CreateJobsForRelease(ctx context.Context, release *oapi.Releas
 	jobId := uuid.New().String()
 
 	if action != nil {
-		for _, jobAgent := range jobAgents {
-			action.AddStep("Create job", trace.StepResultPass,
-				fmt.Sprintf("Job created successfully with ID %s for release %s", jobId, release.ID())).
-				AddMetadata("job_id", jobId).
-				AddMetadata("job_status", string(oapi.JobStatusPending)).
-				AddMetadata("job_agent_id", jobAgent.Id).
-				AddMetadata("release_id", release.ID()).
-				AddMetadata("version_tag", release.Version.Tag)
-		}
+		action.AddStep("Create job", trace.StepResultPass,
+			fmt.Sprintf("Job created successfully with ID %s for release %s", jobId, release.ID())).
+			AddMetadata("job_id", jobId).
+			AddMetadata("job_status", string(oapi.JobStatusPending)).
+			AddMetadata("job_agent_id", jobAgent.Id).
+			AddMetadata("release_id", release.ID()).
+			AddMetadata("version_tag", release.Version.Tag)
 	}
 
-	jobs := make([]*oapi.Job, 0)
-	for _, jobAgent := range jobAgents {
-		job, err := f.buildJobForAgent(release, deployment, jobAgent)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build job for agent: %w", err)
-		}
-		jobs = append(jobs, job)
+	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get merged job agent config: %w", err)
 	}
 
-	return jobs, nil
+	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent, mergedConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
+	}
+
+	return &oapi.Job{
+		Id:              jobId,
+		ReleaseId:       release.ID(),
+		JobAgentId:      jobAgent.Id,
+		JobAgentConfig:  mergedConfig,
+		Status:          oapi.JobStatusPending,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+		Metadata:        make(map[string]string),
+		DispatchContext: dispatchContext,
+	}, nil
 }
 
 func (f *Factory) buildWorkflowJobConfig(wfJob *oapi.WorkflowJob, jobAgent *oapi.JobAgent) (oapi.JobAgentConfig, error) {
@@ -400,37 +286,4 @@ func (f *Factory) CreateJobForWorkflowJob(ctx context.Context, wfJob *oapi.Workf
 		Metadata:        make(map[string]string),
 		DispatchContext: dispatchContext,
 	}, nil
-}
-
-func (f *Factory) BuildDispatchContextForLegacyReleaseJob(job *oapi.Job) (*oapi.DispatchContext, error) {
-	release, ok := f.store.Releases.Get(job.ReleaseId)
-	if !ok {
-		return nil, fmt.Errorf("release %s not found", job.ReleaseId)
-	}
-
-	deployment, ok := f.store.Deployments.Get(release.ReleaseTarget.DeploymentId)
-	if !ok {
-		return nil, fmt.Errorf("deployment %s not found", release.ReleaseTarget.DeploymentId)
-	}
-
-	if deployment.JobAgentId == nil || *deployment.JobAgentId == "" {
-		return nil, fmt.Errorf("deployment %s has no job agent configured", release.ReleaseTarget.DeploymentId)
-	}
-
-	jobAgent, ok := f.store.JobAgents.Get(*deployment.JobAgentId)
-	if !ok {
-		return nil, fmt.Errorf("job agent %s not found", *deployment.JobAgentId)
-	}
-
-	mergedConfig, err := f.buildJobAgentConfig(release, deployment, jobAgent)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build job agent config: %w", err)
-	}
-
-	dispatchContext, err := f.buildDispatchContext(release, deployment, jobAgent, mergedConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build dispatch context: %w", err)
-	}
-
-	return dispatchContext, nil
 }
