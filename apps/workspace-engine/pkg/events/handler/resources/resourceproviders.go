@@ -126,12 +126,13 @@ func HandleResourceProviderSetResources(
 		resource.WorkspaceId = ws.ID
 	}
 
-	// Build identifier map for O(1) lookups
+	// Build identifier map using targeted query (only fetches resources matching incoming identifiers)
 	_, buildMapSpan := tracer.Start(ctx, "BuildIdentifierMap")
-	identifierMap := make(map[string]*oapi.Resource)
-	for _, resource := range ws.Resources().Items() {
-		identifierMap[resource.Identifier] = resource
+	incomingIdentifiers := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		incomingIdentifiers = append(incomingIdentifiers, resource.Identifier)
 	}
+	identifierMap := ws.Resources().GetByIdentifiers(incomingIdentifiers)
 	buildMapSpan.SetAttributes(attribute.Int("existing_resources", len(identifierMap)))
 	buildMapSpan.End()
 
@@ -142,7 +143,6 @@ func HandleResourceProviderSetResources(
 	for _, resource := range resources {
 		newResourceIdentifiers[resource.Identifier] = true
 
-		// If resource exists, use its existing ID; otherwise generate a new UUID
 		if existingResource, ok := identifierMap[resource.Identifier]; ok {
 			resource.Id = existingResource.Id
 		} else if resource.Id == "" {
@@ -153,14 +153,19 @@ func HandleResourceProviderSetResources(
 	}
 
 	// Find resources to delete (belong to this provider but not in new set)
+	_, findDeletesSpan := tracer.Start(ctx, "FindResourcesToDelete")
+	providerResources := ws.Resources().ListByProviderID(payload.ProviderId)
 	var resourcesToDelete []*oapi.Resource
-	for _, resource := range ws.Resources().Items() {
-		if resource.ProviderId != nil && *resource.ProviderId == payload.ProviderId {
-			if !newResourceIdentifiers[resource.Identifier] {
-				resourcesToDelete = append(resourcesToDelete, resource)
-			}
+	for _, resource := range providerResources {
+		if !newResourceIdentifiers[resource.Identifier] {
+			resourcesToDelete = append(resourcesToDelete, resource)
 		}
 	}
+	findDeletesSpan.SetAttributes(
+		attribute.Int("provider_resources", len(providerResources)),
+		attribute.Int("delete_count", len(resourcesToDelete)),
+	)
+	findDeletesSpan.End()
 
 	// Delete removed resources: in-memory cleanup then single batch DB delete
 	if len(resourcesToDelete) > 0 {

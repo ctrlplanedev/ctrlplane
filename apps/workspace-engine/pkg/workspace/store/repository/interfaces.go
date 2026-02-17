@@ -64,6 +64,8 @@ type JobAgentRepo interface {
 type ResourceRepo interface {
 	Get(id string) (*oapi.Resource, bool)
 	GetByIdentifier(identifier string) (*oapi.Resource, bool)
+	GetByIdentifiers(identifiers []string) map[string]*oapi.Resource
+	ListByProviderID(providerID string) []*oapi.Resource
 	Set(entity *oapi.Resource) error
 	SetBatch(entities []*oapi.Resource) error
 	Remove(id string) error

@@ -32,7 +32,7 @@ func (r *Repo) Get(id string) (*oapi.Resource, bool) {
 		return nil, false
 	}
 
-	return ToOapi(row), true
+	return ToOapi(ResourceRow(row)), true
 }
 
 func (r *Repo) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
@@ -50,7 +50,7 @@ func (r *Repo) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
 		return nil, false
 	}
 
-	return ToOapi(row), true
+	return ToOapi(ResourceRow(row)), true
 }
 
 func (r *Repo) Set(entity *oapi.Resource) error {
@@ -133,8 +133,52 @@ func (r *Repo) Items() map[string]*oapi.Resource {
 
 	result := make(map[string]*oapi.Resource, len(rows))
 	for _, row := range rows {
-		res := ToOapi(row)
+		res := ToOapi(ResourceRow(row))
 		result[res.Id] = res
+	}
+	return result
+}
+
+func (r *Repo) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource {
+	uid, err := uuid.Parse(r.workspaceID)
+	if err != nil {
+		log.Warn("Failed to parse workspace id for GetByIdentifiers()", "id", r.workspaceID, "error", err)
+		return make(map[string]*oapi.Resource)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListResourcesByIdentifiers(r.ctx, db.ListResourcesByIdentifiersParams{
+		WorkspaceID: uid,
+		Column2:     identifiers,
+	})
+	if err != nil {
+		log.Warn("Failed to list resources by identifiers", "workspaceId", r.workspaceID, "error", err)
+		return make(map[string]*oapi.Resource)
+	}
+
+	result := make(map[string]*oapi.Resource, len(rows))
+	for _, row := range rows {
+		res := ToOapi(ResourceRow(row))
+		result[res.Identifier] = res
+	}
+	return result
+}
+
+func (r *Repo) ListByProviderID(providerID string) []*oapi.Resource {
+	uid, err := uuid.Parse(providerID)
+	if err != nil {
+		log.Warn("Failed to parse provider id for ListByProviderID()", "id", providerID, "error", err)
+		return nil
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListResourcesByProviderID(r.ctx, uid)
+	if err != nil {
+		log.Warn("Failed to list resources by provider", "providerId", providerID, "error", err)
+		return nil
+	}
+
+	result := make([]*oapi.Resource, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, ToOapi(ResourceRow(row)))
 	}
 	return result
 }

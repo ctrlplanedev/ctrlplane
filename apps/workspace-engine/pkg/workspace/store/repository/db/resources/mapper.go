@@ -25,8 +25,13 @@ func timePtrToTimestamptz(t *time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: *t, Valid: true}
 }
 
-// ToOapi converts a db.Resource into an oapi.Resource.
-func ToOapi(row db.Resource) *oapi.Resource {
+// ResourceRow is the canonical row type returned by resource SELECT queries.
+// All per-query row types (e.g. db.ListResourcesByIdentifiersRow) share
+// the same structure and can be converted to this type.
+type ResourceRow = db.GetResourceByIDRow
+
+// ToOapi converts a resource row into an oapi.Resource.
+func ToOapi(row ResourceRow) *oapi.Resource {
 	config := row.Config
 	if config == nil {
 		config = make(map[string]any)

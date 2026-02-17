@@ -28,9 +28,24 @@ FROM resource
 WHERE id = $1
 `
 
-func (q *Queries) GetResourceByID(ctx context.Context, id uuid.UUID) (Resource, error) {
+type GetResourceByIDRow struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+func (q *Queries) GetResourceByID(ctx context.Context, id uuid.UUID) (GetResourceByIDRow, error) {
 	row := q.db.QueryRow(ctx, getResourceByID, id)
-	var i Resource
+	var i GetResourceByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Version,
@@ -61,9 +76,24 @@ type GetResourceByIdentifierParams struct {
 	Identifier  string
 }
 
-func (q *Queries) GetResourceByIdentifier(ctx context.Context, arg GetResourceByIdentifierParams) (Resource, error) {
+type GetResourceByIdentifierRow struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+func (q *Queries) GetResourceByIdentifier(ctx context.Context, arg GetResourceByIdentifierParams) (GetResourceByIdentifierRow, error) {
 	row := q.db.QueryRow(ctx, getResourceByIdentifier, arg.WorkspaceID, arg.Identifier)
-	var i Resource
+	var i GetResourceByIdentifierRow
 	err := row.Scan(
 		&i.ID,
 		&i.Version,
@@ -81,6 +111,121 @@ func (q *Queries) GetResourceByIdentifier(ctx context.Context, arg GetResourceBy
 	return i, err
 }
 
+const listResourcesByIdentifiers = `-- name: ListResourcesByIdentifiers :many
+SELECT id, version, name, kind, identifier, provider_id, workspace_id,
+       config, created_at, updated_at, deleted_at, metadata
+FROM resource
+WHERE workspace_id = $1 AND identifier = ANY($2::text[])
+`
+
+type ListResourcesByIdentifiersParams struct {
+	WorkspaceID uuid.UUID
+	Column2     []string
+}
+
+type ListResourcesByIdentifiersRow struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+func (q *Queries) ListResourcesByIdentifiers(ctx context.Context, arg ListResourcesByIdentifiersParams) ([]ListResourcesByIdentifiersRow, error) {
+	rows, err := q.db.Query(ctx, listResourcesByIdentifiers, arg.WorkspaceID, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListResourcesByIdentifiersRow
+	for rows.Next() {
+		var i ListResourcesByIdentifiersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Version,
+			&i.Name,
+			&i.Kind,
+			&i.Identifier,
+			&i.ProviderID,
+			&i.WorkspaceID,
+			&i.Config,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listResourcesByProviderID = `-- name: ListResourcesByProviderID :many
+SELECT id, version, name, kind, identifier, provider_id, workspace_id,
+       config, created_at, updated_at, deleted_at, metadata
+FROM resource
+WHERE provider_id = $1
+`
+
+type ListResourcesByProviderIDRow struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+func (q *Queries) ListResourcesByProviderID(ctx context.Context, providerID uuid.UUID) ([]ListResourcesByProviderIDRow, error) {
+	rows, err := q.db.Query(ctx, listResourcesByProviderID, providerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListResourcesByProviderIDRow
+	for rows.Next() {
+		var i ListResourcesByProviderIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Version,
+			&i.Name,
+			&i.Kind,
+			&i.Identifier,
+			&i.ProviderID,
+			&i.WorkspaceID,
+			&i.Config,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Metadata,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listResourcesByWorkspaceID = `-- name: ListResourcesByWorkspaceID :many
 SELECT id, version, name, kind, identifier, provider_id, workspace_id,
        config, created_at, updated_at, deleted_at, metadata
@@ -88,15 +233,30 @@ FROM resource
 WHERE workspace_id = $1
 `
 
-func (q *Queries) ListResourcesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]Resource, error) {
+type ListResourcesByWorkspaceIDRow struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+func (q *Queries) ListResourcesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]ListResourcesByWorkspaceIDRow, error) {
 	rows, err := q.db.Query(ctx, listResourcesByWorkspaceID, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Resource
+	var items []ListResourcesByWorkspaceIDRow
 	for rows.Next() {
-		var i Resource
+		var i ListResourcesByWorkspaceIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Version,
@@ -132,7 +292,8 @@ SET id = EXCLUDED.id, version = EXCLUDED.version, name = EXCLUDED.name,
     kind = EXCLUDED.kind, provider_id = EXCLUDED.provider_id,
     config = EXCLUDED.config, updated_at = EXCLUDED.updated_at,
     deleted_at = EXCLUDED.deleted_at, metadata = EXCLUDED.metadata
-RETURNING id, version, name, kind, identifier, provider_id, workspace_id, config, created_at, updated_at, deleted_at, metadata
+RETURNING id, version, name, kind, identifier, provider_id, workspace_id,
+         config, created_at, updated_at, deleted_at, metadata
 `
 
 type UpsertResourceParams struct {
@@ -150,7 +311,22 @@ type UpsertResourceParams struct {
 	Metadata    map[string]string
 }
 
-func (q *Queries) UpsertResource(ctx context.Context, arg UpsertResourceParams) (Resource, error) {
+type UpsertResourceRow struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+func (q *Queries) UpsertResource(ctx context.Context, arg UpsertResourceParams) (UpsertResourceRow, error) {
 	row := q.db.QueryRow(ctx, upsertResource,
 		arg.ID,
 		arg.Version,
@@ -165,7 +341,7 @@ func (q *Queries) UpsertResource(ctx context.Context, arg UpsertResourceParams) 
 		arg.DeletedAt,
 		arg.Metadata,
 	)
-	var i Resource
+	var i UpsertResourceRow
 	err := row.Scan(
 		&i.ID,
 		&i.Version,

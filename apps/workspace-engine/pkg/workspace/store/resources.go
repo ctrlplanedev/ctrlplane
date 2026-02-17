@@ -126,6 +126,16 @@ func (r *Resources) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
 	return r.repo.GetByIdentifier(identifier)
 }
 
+// GetByIdentifiers returns resources matching the given identifiers, keyed by identifier.
+func (r *Resources) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource {
+	return r.repo.GetByIdentifiers(identifiers)
+}
+
+// ListByProviderID returns all resources belonging to the given provider.
+func (r *Resources) ListByProviderID(providerID string) []*oapi.Resource {
+	return r.repo.ListByProviderID(providerID)
+}
+
 func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariable {
 	variables := make(map[string]*oapi.ResourceVariable, 25)
 	for _, variable := range r.store.repo.ResourceVariables.Items() {
@@ -161,10 +171,8 @@ func (r *Resources) ForDeployment(ctx context.Context, deployment *oapi.Deployme
 
 func (r *Resources) ForProvider(ctx context.Context, providerId string) map[string]*oapi.Resource {
 	resources := make(map[string]*oapi.Resource)
-	for _, resource := range r.Items() {
-		if resource.ProviderId != nil && *resource.ProviderId == providerId {
-			resources[resource.Id] = resource
-		}
+	for _, resource := range r.repo.ListByProviderID(providerId) {
+		resources[resource.Id] = resource
 	}
 	return resources
 }
