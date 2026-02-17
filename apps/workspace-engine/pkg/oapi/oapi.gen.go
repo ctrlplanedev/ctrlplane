@@ -368,9 +368,10 @@ type DeploymentWindowRule struct {
 	Timezone *string `json:"timezone,omitempty"`
 }
 
-// DeploymentWithVariables defines model for DeploymentWithVariables.
-type DeploymentWithVariables struct {
+// DeploymentWithVariablesAndSystems defines model for DeploymentWithVariablesAndSystems.
+type DeploymentWithVariablesAndSystems struct {
 	Deployment Deployment                     `json:"deployment"`
+	Systems    []System                       `json:"systems"`
 	Variables  []DeploymentVariableWithValues `json:"variables"`
 }
 

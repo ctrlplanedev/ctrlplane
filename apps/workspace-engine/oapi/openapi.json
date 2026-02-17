@@ -391,10 +391,16 @@
             ],
             "type": "object"
          },
-         "DeploymentWithVariables": {
+         "DeploymentWithVariablesAndSystems": {
             "properties": {
                "deployment": {
                   "$ref": "#/components/schemas/Deployment"
+               },
+               "systems": {
+                  "items": {
+                     "$ref": "#/components/schemas/System"
+                  },
+                  "type": "array"
                },
                "variables": {
                   "items": {
@@ -405,7 +411,8 @@
             },
             "required": [
                "deployment",
-               "variables"
+               "variables",
+               "systems"
             ],
             "type": "object"
          },
@@ -3171,7 +3178,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/DeploymentWithVariables"
+                           "$ref": "#/components/schemas/DeploymentWithVariablesAndSystems"
                         }
                      }
                   },

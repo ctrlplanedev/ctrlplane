@@ -1126,8 +1126,9 @@ export interface components {
             /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
             timezone?: string;
         };
-        DeploymentWithVariables: {
+        DeploymentWithVariablesAndSystems: {
             deployment: components["schemas"]["Deployment"];
+            systems: components["schemas"]["System"][];
             variables: components["schemas"]["DeploymentVariableWithValues"][];
         };
         DispatchContext: {
@@ -2437,7 +2438,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentWithVariables"];
+                    "application/json": components["schemas"]["DeploymentWithVariablesAndSystems"];
                 };
             };
             /** @description Invalid request */
