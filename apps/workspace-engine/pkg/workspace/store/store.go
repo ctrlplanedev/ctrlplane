@@ -97,6 +97,15 @@ func WithDBSystemEnvironments(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBReleases replaces the default in-memory ReleaseRepo
+// with a DB-backed implementation.
+func WithDBReleases(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Releases.SetRepo(dbRepo.Releases())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}

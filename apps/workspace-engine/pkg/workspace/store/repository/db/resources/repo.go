@@ -67,6 +67,31 @@ func (r *Repo) Set(entity *oapi.Resource) error {
 	return nil
 }
 
+func (r *Repo) SetBatch(entities []*oapi.Resource) error {
+	if len(entities) == 0 {
+		return nil
+	}
+
+	batchParams := make([]db.BatchUpsertResourceParams, 0, len(entities))
+	for _, entity := range entities {
+		entity.WorkspaceId = r.workspaceID
+		params, err := ToBatchUpsertParams(entity)
+		if err != nil {
+			return fmt.Errorf("convert to batch upsert params: %w", err)
+		}
+		batchParams = append(batchParams, params)
+	}
+
+	results := db.GetQueries(r.ctx).BatchUpsertResource(r.ctx, batchParams)
+	var batchErr error
+	results.Exec(func(i int, err error) {
+		if err != nil && batchErr == nil {
+			batchErr = fmt.Errorf("batch upsert resource %d: %w", i, err)
+		}
+	})
+	return batchErr
+}
+
 func (r *Repo) Remove(id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
@@ -74,6 +99,23 @@ func (r *Repo) Remove(id string) error {
 	}
 
 	return db.GetQueries(r.ctx).DeleteResource(r.ctx, uid)
+}
+
+func (r *Repo) RemoveBatch(ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	uuids := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		uid, err := uuid.Parse(id)
+		if err != nil {
+			return fmt.Errorf("parse id %q: %w", id, err)
+		}
+		uuids = append(uuids, uid)
+	}
+
+	return db.GetQueries(r.ctx).DeleteResourcesByIDs(r.ctx, uuids)
 }
 
 func (r *Repo) Items() map[string]*oapi.Resource {

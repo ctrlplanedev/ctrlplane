@@ -124,29 +124,40 @@ func HandleResourceProviderSetResources(
 	}
 
 	// Find resources to delete (belong to this provider but not in new set)
-	var resourcesToDelete []string
+	var resourcesToDelete []*oapi.Resource
 	for _, resource := range ws.Resources().Items() {
 		if resource.ProviderId != nil && *resource.ProviderId == payload.ProviderId {
 			if !newResourceIdentifiers[resource.Identifier] {
-				resourcesToDelete = append(resourcesToDelete, resource.Id)
+				resourcesToDelete = append(resourcesToDelete, resource)
 			}
 		}
 	}
 
-	// Delete removed resources and their relationships
-	for _, resourceId := range resourcesToDelete {
-		ws.Store().RelationshipIndexes.RemoveEntity(ctx, resourceId)
-		ws.Resources().Remove(ctx, resourceId)
-		ws.ReleaseTargets().RemoveForResource(ctx, resourceId)
+	// Delete removed resources: in-memory cleanup then single batch DB delete
+	for _, resource := range resourcesToDelete {
+		ws.Store().RelationshipIndexes.RemoveEntity(ctx, resource.Id)
+		ws.ReleaseTargets().RemoveForResource(ctx, resource.Id)
+	}
+	if len(resourcesToDelete) > 0 {
+		if err := ws.Resources().BulkRemove(ctx, resourcesToDelete); err != nil {
+			return err
+		}
 	}
 
-	// Upsert new/updated resources
+	// Pre-process resources for upsert: resolve IDs, timestamps, and change detection
+	type upsertEntry struct {
+		resource   *oapi.Resource
+		hasChanged bool
+		isNew      bool
+	}
+	upsertEntries := make([]upsertEntry, 0, len(processedResources))
+	resourcesToUpsert := make([]*oapi.Resource, 0, len(processedResources))
+
 	for _, resource := range processedResources {
 		existingResource, exists := identifierMap[resource.Identifier]
 		hasChanged := true
 
 		if exists {
-			// If it belongs to a different provider, skip it
 			if existingResource.ProviderId != nil && *existingResource.ProviderId != payload.ProviderId {
 				log.Warn(
 					"Skipping resource with identifier that belongs to another provider",
@@ -156,16 +167,10 @@ func HandleResourceProviderSetResources(
 				)
 				continue
 			}
-			// Use the existing resource ID to ensure we update, not create
 			resource.Id = existingResource.Id
-
-			// Preserve CreatedAt from existing resource
 			resource.CreatedAt = existingResource.CreatedAt
-
-			// Always set UpdatedAt when resource is touched by SET operation
 			now := time.Now()
 			resource.UpdatedAt = &now
-
 			hasChanged = len(diffcheck.HasResourceChanges(existingResource, resource)) > 0
 		} else {
 			resource.CreatedAt = time.Now()
@@ -173,31 +178,39 @@ func HandleResourceProviderSetResources(
 		}
 
 		resource.ProviderId = &payload.ProviderId
+		resourcesToUpsert = append(resourcesToUpsert, resource)
+		upsertEntries = append(upsertEntries, upsertEntry{
+			resource:   resource,
+			hasChanged: hasChanged,
+			isNew:      !exists,
+		})
+	}
 
-		// Upsert the resource
-		_, err := ws.Resources().Upsert(ctx, resource)
-		if err != nil {
+	// Single batch DB upsert for all resources
+	if len(resourcesToUpsert) > 0 {
+		if err := ws.Resources().BulkUpsert(ctx, resourcesToUpsert); err != nil {
 			return err
 		}
+	}
 
-		if !hasChanged {
+	// Update in-memory relationship indexes and release targets for changed resources
+	for _, entry := range upsertEntries {
+		if !entry.hasChanged {
 			continue
 		}
 
-		// Register or mark entity dirty so relationships are recomputed on next Recompute
-		if exists {
-			ws.Store().RelationshipIndexes.DirtyEntity(ctx, resource.Id)
+		if entry.isNew {
+			ws.Store().RelationshipIndexes.AddEntity(ctx, entry.resource.Id)
 		} else {
-			ws.Store().RelationshipIndexes.AddEntity(ctx, resource.Id)
+			ws.Store().RelationshipIndexes.DirtyEntity(ctx, entry.resource.Id)
 		}
 
-		// Compute and upsert release targets for this resource
-		releaseTargets, err := computeReleaseTargets(ctx, ws, resource)
+		releaseTargets, err := computeReleaseTargets(ctx, ws, entry.resource)
 		if err != nil {
 			return err
 		}
 
-		oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, resource.Id)
+		oldReleaseTargets := ws.ReleaseTargets().GetForResource(ctx, entry.resource.Id)
 		removedReleaseTargets := getRemovedReleaseTargets(oldReleaseTargets, releaseTargets)
 		for _, removedReleaseTarget := range removedReleaseTargets {
 			ws.ReleaseTargets().Remove(removedReleaseTarget.Key())

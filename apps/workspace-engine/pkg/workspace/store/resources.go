@@ -82,6 +82,42 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	r.store.changeset.RecordDelete(resource)
 }
 
+// BulkUpsert writes all resources in a single batched DB round-trip and
+// records changeset entries for each. Callers are responsible for setting
+// timestamps and change-detection before calling this method.
+func (r *Resources) BulkUpsert(ctx context.Context, resources []*oapi.Resource) error {
+	_, span := tracer.Start(ctx, "BulkUpsert", trace.WithAttributes(
+		attribute.Int("resources.count", len(resources)),
+	))
+	defer span.End()
+
+	if err := r.repo.SetBatch(resources); err != nil {
+		return err
+	}
+	for _, resource := range resources {
+		r.store.changeset.RecordUpsert(resource)
+	}
+	return nil
+}
+
+// BulkRemove deletes all given resources in a single batched DB round-trip,
+// cleans up relations, and records changeset entries.
+func (r *Resources) BulkRemove(ctx context.Context, resources []*oapi.Resource) error {
+	_, span := tracer.Start(ctx, "BulkRemove", trace.WithAttributes(
+		attribute.Int("resources.count", len(resources)),
+	))
+	defer span.End()
+
+	ids := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		entity := relationships.NewResourceEntity(resource)
+		r.store.Relations.RemoveForEntity(ctx, entity)
+		r.store.changeset.RecordDelete(resource)
+		ids = append(ids, resource.Id)
+	}
+	return r.repo.RemoveBatch(ids)
+}
+
 func (r *Resources) Items() map[string]*oapi.Resource {
 	return r.repo.Items()
 }

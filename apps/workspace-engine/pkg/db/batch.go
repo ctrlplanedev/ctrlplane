@@ -18,6 +18,84 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const batchUpsertResource = `-- name: BatchUpsertResource :batchexec
+INSERT INTO resource (id, version, name, kind, identifier, provider_id, workspace_id,
+                      config, created_at, updated_at, deleted_at, metadata)
+VALUES ($1, $2, $3, $4, $5,
+        NULLIF($6, '00000000-0000-0000-0000-000000000000'::uuid),
+        $7, $8, $9, $10, $11, $12)
+ON CONFLICT (workspace_id, identifier) DO UPDATE
+SET id = EXCLUDED.id, version = EXCLUDED.version, name = EXCLUDED.name,
+    kind = EXCLUDED.kind, provider_id = EXCLUDED.provider_id,
+    config = EXCLUDED.config, updated_at = EXCLUDED.updated_at,
+    deleted_at = EXCLUDED.deleted_at, metadata = EXCLUDED.metadata
+`
+
+type BatchUpsertResourceBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type BatchUpsertResourceParams struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	Config      map[string]any
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	DeletedAt   pgtype.Timestamptz
+	Metadata    map[string]string
+}
+
+func (q *Queries) BatchUpsertResource(ctx context.Context, arg []BatchUpsertResourceParams) *BatchUpsertResourceBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.ID,
+			a.Version,
+			a.Name,
+			a.Kind,
+			a.Identifier,
+			a.ProviderID,
+			a.WorkspaceID,
+			a.Config,
+			a.CreatedAt,
+			a.UpdatedAt,
+			a.DeletedAt,
+			a.Metadata,
+		}
+		batch.Queue(batchUpsertResource, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &BatchUpsertResourceBatchResults{br, len(arg), false}
+}
+
+func (b *BatchUpsertResourceBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *BatchUpsertResourceBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const deleteChangelogEntry = `-- name: DeleteChangelogEntry :batchexec
 DELETE FROM changelog_entry
 WHERE workspace_id = $1 AND entity_type = $2 AND entity_id = $3

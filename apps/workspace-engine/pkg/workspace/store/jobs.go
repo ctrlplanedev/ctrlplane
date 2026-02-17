@@ -71,7 +71,7 @@ func (j *Jobs) GetJobsForReleaseTarget(releaseTarget *oapi.ReleaseTarget) map[st
 		return jobs
 	}
 
-	releases, err := j.repo.Releases.GetBy("release_target_key", releaseTarget.Key())
+	releases, err := j.store.Releases.GetByReleaseTargetKey(releaseTarget.Key())
 	if err != nil {
 		return jobs
 	}
@@ -122,7 +122,7 @@ func (j *Jobs) GetWithRelease(id string) (*oapi.JobWithRelease, error) {
 	if !ok {
 		return nil, fmt.Errorf("job not found")
 	}
-	release, ok := j.repo.Releases.Get(job.ReleaseId)
+	release, ok := j.store.Releases.Get(job.ReleaseId)
 	if !ok {
 		return nil, fmt.Errorf("release not found")
 	}
