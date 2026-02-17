@@ -214,6 +214,7 @@ func main() {
 				wsstore.WithDBSystemDeployments(ctx),
 				wsstore.WithDBSystemEnvironments(ctx),
 				wsstore.WithDBResources(ctx),
+				wsstore.WithDBJobAgents(ctx),
 			),
 		),
 	)
