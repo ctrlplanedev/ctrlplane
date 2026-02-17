@@ -33,22 +33,11 @@ func TestEngine_SystemDeploymentLinked(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Deployment starts linked only to s1
-	dep, ok := engine.Workspace().Deployments().Get(dId)
-	require.True(t, ok)
-	assert.Equal(t, []string{s1Id}, dep.SystemIds)
-
 	// Link deployment to s2 via event
 	engine.PushEvent(ctx, handler.SystemDeploymentLinked, &oapi.SystemDeploymentLink{
 		SystemId:     s2Id,
 		DeploymentId: dId,
 	})
-
-	// Deployment should now be in both systems
-	dep, ok = engine.Workspace().Deployments().Get(dId)
-	require.True(t, ok)
-	assert.Contains(t, dep.SystemIds, s1Id)
-	assert.Contains(t, dep.SystemIds, s2Id)
 
 	// Materialized views should reflect the change
 	s2Deployments := engine.Workspace().Systems().Deployments(s2Id)
@@ -75,9 +64,6 @@ func TestEngine_SystemDeploymentLinked_Idempotent(t *testing.T) {
 		DeploymentId: dId,
 	})
 
-	dep, ok := engine.Workspace().Deployments().Get(dId)
-	require.True(t, ok)
-	assert.Equal(t, []string{sId}, dep.SystemIds, "should not duplicate system ID")
 }
 
 func TestEngine_SystemDeploymentUnlinked(t *testing.T) {
@@ -105,18 +91,11 @@ func TestEngine_SystemDeploymentUnlinked(t *testing.T) {
 		DeploymentId: dId,
 	})
 
-	dep, _ := engine.Workspace().Deployments().Get(dId)
-	require.Len(t, dep.SystemIds, 2)
-
 	// Unlink from s1
 	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, &oapi.SystemDeploymentLink{
 		SystemId:     s1Id,
 		DeploymentId: dId,
 	})
-
-	dep, ok := engine.Workspace().Deployments().Get(dId)
-	require.True(t, ok)
-	assert.Equal(t, []string{s2Id}, dep.SystemIds)
 
 	// s1 materialized view should be empty
 	s1Deployments := engine.Workspace().Systems().Deployments(s1Id)
@@ -152,9 +131,6 @@ func TestEngine_SystemDeploymentUnlinked_Idempotent(t *testing.T) {
 		DeploymentId: dId,
 	})
 
-	dep, ok := engine.Workspace().Deployments().Get(dId)
-	require.True(t, ok)
-	assert.Equal(t, []string{sId}, dep.SystemIds, "should not change system IDs")
 }
 
 func TestEngine_SystemDeploymentLinked_CreatesReleaseTargets(t *testing.T) {
@@ -264,21 +240,11 @@ func TestEngine_SystemEnvironmentLinked(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Environment starts linked only to s1
-	env, ok := engine.Workspace().Environments().Get(eId)
-	require.True(t, ok)
-	assert.Equal(t, []string{s1Id}, env.SystemIds)
-
 	// Link environment to s2
 	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, &oapi.SystemEnvironmentLink{
 		SystemId:      s2Id,
 		EnvironmentId: eId,
 	})
-
-	env, ok = engine.Workspace().Environments().Get(eId)
-	require.True(t, ok)
-	assert.Contains(t, env.SystemIds, s1Id)
-	assert.Contains(t, env.SystemIds, s2Id)
 
 	// Materialized view should reflect the change
 	s2Environments := engine.Workspace().Systems().Environments(s2Id)
@@ -304,9 +270,6 @@ func TestEngine_SystemEnvironmentLinked_Idempotent(t *testing.T) {
 		EnvironmentId: eId,
 	})
 
-	env, ok := engine.Workspace().Environments().Get(eId)
-	require.True(t, ok)
-	assert.Equal(t, []string{sId}, env.SystemIds, "should not duplicate system ID")
 }
 
 func TestEngine_SystemEnvironmentUnlinked(t *testing.T) {
@@ -334,18 +297,11 @@ func TestEngine_SystemEnvironmentUnlinked(t *testing.T) {
 		EnvironmentId: eId,
 	})
 
-	env, _ := engine.Workspace().Environments().Get(eId)
-	require.Len(t, env.SystemIds, 2)
-
 	// Unlink from s1
 	engine.PushEvent(ctx, handler.SystemEnvironmentUnlinked, &oapi.SystemEnvironmentLink{
 		SystemId:      s1Id,
 		EnvironmentId: eId,
 	})
-
-	env, ok := engine.Workspace().Environments().Get(eId)
-	require.True(t, ok)
-	assert.Equal(t, []string{s2Id}, env.SystemIds)
 
 	s1Environments := engine.Workspace().Systems().Environments(s1Id)
 	assert.Empty(t, s1Environments)
@@ -378,9 +334,6 @@ func TestEngine_SystemEnvironmentUnlinked_Idempotent(t *testing.T) {
 		EnvironmentId: eId,
 	})
 
-	env, ok := engine.Workspace().Environments().Get(eId)
-	require.True(t, ok)
-	assert.Equal(t, []string{sId}, env.SystemIds, "should not change system IDs")
 }
 
 func TestEngine_SystemEnvironmentLinked_CreatesReleaseTargets(t *testing.T) {

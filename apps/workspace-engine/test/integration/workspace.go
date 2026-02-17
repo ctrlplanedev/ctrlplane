@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/jobagents/testrunner"
@@ -174,6 +175,30 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 		tw.t.Fatalf("failed to listen and route event: %v", err)
 	}
 
+	return tw
+}
+
+// PushDeploymentCreateWithLink pushes a DeploymentCreate event followed by a
+// SystemDeploymentLinked event, establishing the system-deployment association.
+func (tw *TestWorkspace) PushDeploymentCreateWithLink(ctx context.Context, systemId string, d *oapi.Deployment) *TestWorkspace {
+	tw.t.Helper()
+	tw.PushEvent(ctx, handler.DeploymentCreate, d)
+	tw.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{
+		"systemId":     systemId,
+		"deploymentId": d.Id,
+	})
+	return tw
+}
+
+// PushEnvironmentCreateWithLink pushes an EnvironmentCreate event followed by a
+// SystemEnvironmentLinked event, establishing the system-environment association.
+func (tw *TestWorkspace) PushEnvironmentCreateWithLink(ctx context.Context, systemId string, e *oapi.Environment) *TestWorkspace {
+	tw.t.Helper()
+	tw.PushEvent(ctx, handler.EnvironmentCreate, e)
+	tw.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{
+		"systemId":      systemId,
+		"environmentId": e.Id,
+	})
 	return tw
 }
 

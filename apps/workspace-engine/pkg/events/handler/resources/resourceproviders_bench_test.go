@@ -51,7 +51,6 @@ func createTestEnvironment(systemID, environmentID, name string) *oapi.Environme
 		Id:               environmentID,
 		Name:             name,
 		Description:      &description,
-		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 		CreatedAt:        time.Now(),
 	}
@@ -87,7 +86,6 @@ func createTestDeployment(systemID, deploymentID, name string) *oapi.Deployment 
 		Name:             name,
 		Slug:             name,
 		Description:      &description,
-		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 		JobAgentId:       nil,
 		JobAgentConfig:   customJobAgentConfig(nil),

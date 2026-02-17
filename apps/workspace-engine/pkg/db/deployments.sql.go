@@ -21,6 +21,20 @@ func (q *Queries) DeleteDeployment(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteSystemDeployment = `-- name: DeleteSystemDeployment :exec
+DELETE FROM system_deployment WHERE system_id = $1 AND deployment_id = $2
+`
+
+type DeleteSystemDeploymentParams struct {
+	SystemID     uuid.UUID
+	DeploymentID uuid.UUID
+}
+
+func (q *Queries) DeleteSystemDeployment(ctx context.Context, arg DeleteSystemDeploymentParams) error {
+	_, err := q.db.Exec(ctx, deleteSystemDeployment, arg.SystemID, arg.DeploymentID)
+	return err
+}
+
 const deleteSystemDeploymentByDeploymentID = `-- name: DeleteSystemDeploymentByDeploymentID :exec
 DELETE FROM system_deployment WHERE deployment_id = $1
 `
@@ -50,6 +64,30 @@ func (q *Queries) GetDeploymentByID(ctx context.Context, id uuid.UUID) (Deployme
 		&i.WorkspaceID,
 	)
 	return i, err
+}
+
+const getDeploymentIDsForSystem = `-- name: GetDeploymentIDsForSystem :many
+SELECT deployment_id FROM system_deployment WHERE system_id = $1
+`
+
+func (q *Queries) GetDeploymentIDsForSystem(ctx context.Context, systemID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getDeploymentIDsForSystem, systemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var deployment_id uuid.UUID
+		if err := rows.Scan(&deployment_id); err != nil {
+			return nil, err
+		}
+		items = append(items, deployment_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getSystemIDsForDeployment = `-- name: GetSystemIDsForDeployment :many

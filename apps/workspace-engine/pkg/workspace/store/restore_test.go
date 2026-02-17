@@ -77,7 +77,6 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 		Id:          environmentId,
 		Name:        "production",
 		Description: ptr("Production environment"),
-		SystemIds:   []string{systemId},
 	}
 
 	// Set up resource selector to match resources with env=production
@@ -94,7 +93,6 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 		Name:        "web-app",
 		Slug:        "web-app",
 		Description: ptr("Web application"),
-		SystemIds:   []string{systemId},
 	}
 
 	deploymentSelector := &oapi.Selector{}
@@ -123,6 +121,8 @@ func TestStore_Restore_MaterializedViewsInitialized(t *testing.T) {
 	// Apply changes to a new store using the Restore method
 	// This is the critical test - Restore() must call ReinitializeMaterializedViews()
 	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
+	_ = testStore.SystemEnvironments.Link(systemId, environmentId)
+	_ = testStore.SystemDeployments.Link(systemId, deploymentId)
 	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err, "Restore should succeed")
 
@@ -245,9 +245,8 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 	// Create multiple environments with different selectors
 	prodEnvId := uuid.New().String()
 	prodEnv := &oapi.Environment{
-		Id:        prodEnvId,
-		Name:      "production",
-		SystemIds: []string{systemId},
+		Id:   prodEnvId,
+		Name: "production",
 	}
 	prodSelector := &oapi.Selector{}
 	_ = prodSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"})
@@ -255,9 +254,8 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 
 	stagingEnvId := uuid.New().String()
 	stagingEnv := &oapi.Environment{
-		Id:        stagingEnvId,
-		Name:      "staging",
-		SystemIds: []string{systemId},
+		Id:   stagingEnvId,
+		Name: "staging",
 	}
 	stagingSelector := &oapi.Selector{}
 	_ = stagingSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'staging'"})
@@ -265,9 +263,8 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 
 	devEnvId := uuid.New().String()
 	devEnv := &oapi.Environment{
-		Id:        devEnvId,
-		Name:      "development",
-		SystemIds: []string{systemId},
+		Id:   devEnvId,
+		Name: "development",
 	}
 	devSelector := &oapi.Selector{}
 	_ = devSelector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'development'"})
@@ -292,6 +289,9 @@ func TestStore_Restore_MultipleEnvironments(t *testing.T) {
 	require.NoError(t, err)
 
 	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
+	_ = testStore.SystemEnvironments.Link(systemId, prodEnvId)
+	_ = testStore.SystemEnvironments.Link(systemId, stagingEnvId)
+	_ = testStore.SystemEnvironments.Link(systemId, devEnvId)
 	err = testStore.Restore(ctx, loadedChanges, func(status string) {})
 	require.NoError(t, err)
 
@@ -366,7 +366,6 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Id:          env1Id,
 		Name:        "production",
 		Description: ptr("Production environment"),
-		SystemIds:   []string{systemId},
 	}
 	env1Selector := &oapi.Selector{}
 	_ = env1Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"})
@@ -377,7 +376,6 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Id:          env2Id,
 		Name:        "production-frontend",
 		Description: ptr("Production frontend environment"),
-		SystemIds:   []string{systemId},
 	}
 	env2Selector := &oapi.Selector{}
 	_ = env2Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"})
@@ -390,7 +388,6 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Name:        "api-deployment",
 		Slug:        "api-deploy",
 		Description: ptr("API deployment"),
-		SystemIds:   []string{systemId},
 	}
 	deploy1Selector := &oapi.Selector{}
 	_ = deploy1Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['tier'] == 'backend'"})
@@ -402,7 +399,6 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 		Name:        "frontend-deployment",
 		Slug:        "frontend-deploy",
 		Description: ptr("Frontend deployment"),
-		SystemIds:   []string{systemId},
 	}
 	deploy2Selector := &oapi.Selector{}
 	_ = deploy2Selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['tier'] == 'frontend'"})
@@ -452,6 +448,10 @@ func TestStore_Restore_AllMaterializedViewsInitialized(t *testing.T) {
 	require.NoError(t, err)
 
 	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
+	_ = testStore.SystemEnvironments.Link(systemId, env1Id)
+	_ = testStore.SystemEnvironments.Link(systemId, env2Id)
+	_ = testStore.SystemDeployments.Link(systemId, deploy1Id)
+	_ = testStore.SystemDeployments.Link(systemId, deploy2Id)
 	err = testStore.Restore(ctx, loadedChanges, nil)
 	require.NoError(t, err, "Restore should succeed")
 
@@ -524,9 +524,8 @@ func TestStore_Restore_DetectsMissingMaterializedViewInitialization(t *testing.T
 
 	environmentId := uuid.New().String()
 	environment := &oapi.Environment{
-		Id:        environmentId,
-		Name:      "production",
-		SystemIds: []string{systemId},
+		Id:   environmentId,
+		Name: "production",
 	}
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "resource.metadata['env'] == 'production'"})
@@ -548,6 +547,7 @@ func TestStore_Restore_DetectsMissingMaterializedViewInitialization(t *testing.T
 	// Create a store and apply changes WITHOUT calling Restore()
 	// This simulates the bug where ReinitializeMaterializedViews() is not called
 	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
+	_ = testStore.SystemEnvironments.Link(systemId, environmentId)
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
@@ -822,7 +822,6 @@ func TestStore_Restore_NilSelectors(t *testing.T) {
 	env := &oapi.Environment{
 		Id:               envId,
 		Name:             "no-selector-env",
-		SystemIds:        []string{systemId},
 		ResourceSelector: nil, // Explicitly nil
 	}
 
@@ -832,7 +831,6 @@ func TestStore_Restore_NilSelectors(t *testing.T) {
 		Id:               deployId,
 		Name:             "no-selector-deploy",
 		Slug:             "no-selector",
-		SystemIds:        []string{systemId},
 		ResourceSelector: nil, // Explicitly nil
 	}
 
@@ -850,6 +848,8 @@ func TestStore_Restore_NilSelectors(t *testing.T) {
 	require.NoError(t, err)
 
 	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
+	_ = testStore.SystemEnvironments.Link(systemId, envId)
+	_ = testStore.SystemDeployments.Link(systemId, deployId)
 	err = testStore.Restore(ctx, loadedChanges, nil)
 	require.NoError(t, err)
 
@@ -884,16 +884,14 @@ func TestStore_Restore_ProgressCallback(t *testing.T) {
 	}
 
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "env1",
-		SystemIds: []string{system.Id},
+		Id:   uuid.New().String(),
+		Name: "env1",
 	}
 
 	deploy := &oapi.Deployment{
-		Id:        uuid.New().String(),
-		Name:      "deploy1",
-		Slug:      "deploy1",
-		SystemIds: []string{system.Id},
+		Id:   uuid.New().String(),
+		Name: "deploy1",
+		Slug: "deploy1",
 	}
 
 	changes := persistence.NewChangesBuilder(namespace).
@@ -913,6 +911,8 @@ func TestStore_Restore_ProgressCallback(t *testing.T) {
 	var statusMessages []string
 
 	testStore := store.New("test-workspace", statechange.NewChangeSet[any]())
+	_ = testStore.SystemEnvironments.Link(system.Id, env.Id)
+	_ = testStore.SystemDeployments.Link(system.Id, deploy.Id)
 	err = testStore.Restore(ctx, loadedChanges, func(status string) {
 		callbackInvoked = true
 		statusMessages = append(statusMessages, status)

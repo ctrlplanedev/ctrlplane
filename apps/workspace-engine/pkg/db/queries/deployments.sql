@@ -35,5 +35,11 @@ ON CONFLICT (system_id, deployment_id) DO NOTHING;
 -- name: DeleteSystemDeploymentByDeploymentID :exec
 DELETE FROM system_deployment WHERE deployment_id = $1;
 
+-- name: DeleteSystemDeployment :exec
+DELETE FROM system_deployment WHERE system_id = $1 AND deployment_id = $2;
+
+-- name: GetDeploymentIDsForSystem :many
+SELECT deployment_id FROM system_deployment WHERE system_id = $1;
+
 -- name: DeleteDeployment :exec
 DELETE FROM deployment WHERE id = $1;

@@ -88,3 +88,11 @@ func (w *WorkflowRun) CompactionKey() (string, string) {
 func (wt *WorkflowJob) CompactionKey() (string, string) {
 	return "workflow_job", wt.Id
 }
+
+func (l *SystemDeploymentLink) CompactionKey() (string, string) {
+	return "system_deployment_link", l.SystemId + ":" + l.DeploymentId
+}
+
+func (l *SystemEnvironmentLink) CompactionKey() (string, string) {
+	return "system_environment_link", l.SystemId + ":" + l.EnvironmentId
+}

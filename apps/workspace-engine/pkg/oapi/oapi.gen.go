@@ -298,7 +298,6 @@ type Deployment struct {
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
 	Slug             string            `json:"slug"`
-	SystemIds        []string          `json:"systemIds"`
 }
 
 // DeploymentAndSystems defines model for DeploymentAndSystems.
@@ -409,7 +408,6 @@ type Environment struct {
 	Metadata         map[string]string `json:"metadata"`
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
-	SystemIds        []string          `json:"systemIds"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.

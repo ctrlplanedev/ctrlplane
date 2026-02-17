@@ -64,7 +64,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 		env.Name = fmt.Sprintf("env-%d", i)
 		env.ResourceSelector = &oapi.Selector{}
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 	}
 
 	// Phase 4: Create deployments with variables
@@ -84,7 +84,7 @@ func BenchmarkEngine_LargeScale(b *testing.B) {
 			"namespace": fmt.Sprintf("ns-%d", i),
 			"cluster":   fmt.Sprintf("cluster-%d", i%5),
 		}
-		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+		engine.PushDeploymentCreateWithLink(ctx, sysID, deployment)
 
 		for v := range benchVarsPerDeployment {
 			dvID := uuid.New().String()
@@ -425,7 +425,7 @@ func BenchmarkEngine_LargeScale_Reconcile(b *testing.B) {
 		env.Name = fmt.Sprintf("env-%d", i)
 		env.ResourceSelector = &oapi.Selector{}
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 	}
 
 	// Create 10 deployments
@@ -438,7 +438,7 @@ func BenchmarkEngine_LargeScale_Reconcile(b *testing.B) {
 		dep.JobAgentId = &jobAgentID
 		dep.ResourceSelector = &oapi.Selector{}
 		_ = dep.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-		engine.PushEvent(ctx, handler.DeploymentCreate, dep)
+		engine.PushDeploymentCreateWithLink(ctx, sysID, dep)
 
 		// Create version
 		version := c.NewDeploymentVersion()
@@ -540,7 +540,7 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 			env.Name = fmt.Sprintf("env-%d", envIdx)
 			env.ResourceSelector = &oapi.Selector{}
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-			engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+			engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 		}
 
 		// Setup: Create 30 deployments
@@ -556,7 +556,7 @@ func benchmarkResourceInsertion(b *testing.B, numResources int) {
 				"namespace": fmt.Sprintf("ns-%d", depIdx),
 				"cluster":   fmt.Sprintf("cluster-%d", depIdx%5),
 			}
-			engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+			engine.PushDeploymentCreateWithLink(ctx, sysID, deployment)
 		}
 
 		// Setup: Create 5 relationship rules

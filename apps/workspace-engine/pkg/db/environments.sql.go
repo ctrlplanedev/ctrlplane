@@ -21,6 +21,20 @@ func (q *Queries) DeleteEnvironment(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteSystemEnvironment = `-- name: DeleteSystemEnvironment :exec
+DELETE FROM system_environment WHERE system_id = $1 AND environment_id = $2
+`
+
+type DeleteSystemEnvironmentParams struct {
+	SystemID      uuid.UUID
+	EnvironmentID uuid.UUID
+}
+
+func (q *Queries) DeleteSystemEnvironment(ctx context.Context, arg DeleteSystemEnvironmentParams) error {
+	_, err := q.db.Exec(ctx, deleteSystemEnvironment, arg.SystemID, arg.EnvironmentID)
+	return err
+}
+
 const deleteSystemEnvironmentByEnvironmentID = `-- name: DeleteSystemEnvironmentByEnvironmentID :exec
 DELETE FROM system_environment WHERE environment_id = $1
 `
@@ -49,6 +63,30 @@ func (q *Queries) GetEnvironmentByID(ctx context.Context, id uuid.UUID) (Environ
 		&i.WorkspaceID,
 	)
 	return i, err
+}
+
+const getEnvironmentIDsForSystem = `-- name: GetEnvironmentIDsForSystem :many
+SELECT environment_id FROM system_environment WHERE system_id = $1
+`
+
+func (q *Queries) GetEnvironmentIDsForSystem(ctx context.Context, systemID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, getEnvironmentIDsForSystem, systemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var environment_id uuid.UUID
+		if err := rows.Scan(&environment_id); err != nil {
+			return nil, err
+		}
+		items = append(items, environment_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getSystemIDsForEnvironment = `-- name: GetSystemIDsForEnvironment :many

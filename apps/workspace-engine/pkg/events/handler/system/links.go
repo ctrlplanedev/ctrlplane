@@ -31,7 +31,7 @@ func makeDeploymentReleaseTargets(
 ) ([]*oapi.ReleaseTarget, error) {
 	seen := make(map[string]struct{})
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, systemID := range deployment.SystemIds {
+	for _, systemID := range ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id) {
 		environments := ws.Systems().Environments(systemID)
 		for _, environment := range environments {
 			resources, err := ws.Environments().Resources(ctx, environment.Id)
@@ -67,7 +67,7 @@ func makeEnvironmentReleaseTargets(
 ) ([]*oapi.ReleaseTarget, error) {
 	seen := make(map[string]struct{})
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, systemID := range environment.SystemIds {
+	for _, systemID := range ws.SystemEnvironments().GetSystemIDsForEnvironment(environment.Id) {
 		deployments := ws.Systems().Deployments(systemID)
 		for _, deployment := range deployments {
 			resources, err := ws.Deployments().Resources(ctx, deployment.Id)
@@ -136,7 +136,8 @@ func HandleSystemDeploymentLinked(
 		return fmt.Errorf("deployment %q not found", link.DeploymentID)
 	}
 
-	if slices.Contains(deployment.SystemIds, link.SystemID) {
+	existingSystemIDs := ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id)
+	if slices.Contains(existingSystemIDs, link.SystemID) {
 		return nil
 	}
 
@@ -145,8 +146,7 @@ func HandleSystemDeploymentLinked(
 		return err
 	}
 
-	deployment.SystemIds = append(deployment.SystemIds, link.SystemID)
-	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
+	if err := ws.SystemDeployments().Link(link.SystemID, link.DeploymentID); err != nil {
 		return err
 	}
 
@@ -188,8 +188,8 @@ func HandleSystemDeploymentUnlinked(
 		return fmt.Errorf("deployment %q not found", link.DeploymentID)
 	}
 
-	idx := slices.Index(deployment.SystemIds, link.SystemID)
-	if idx == -1 {
+	existingSystemIDs := ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id)
+	if !slices.Contains(existingSystemIDs, link.SystemID) {
 		return nil
 	}
 
@@ -198,8 +198,7 @@ func HandleSystemDeploymentUnlinked(
 		return err
 	}
 
-	deployment.SystemIds = slices.Delete(deployment.SystemIds, idx, idx+1)
-	if err := ws.Deployments().Upsert(ctx, deployment); err != nil {
+	if err := ws.SystemDeployments().Unlink(link.SystemID, link.DeploymentID); err != nil {
 		return err
 	}
 
@@ -234,7 +233,8 @@ func HandleSystemEnvironmentLinked(
 		return fmt.Errorf("environment %q not found", link.EnvironmentID)
 	}
 
-	if slices.Contains(environment.SystemIds, link.SystemID) {
+	existingSystemIDs := ws.SystemEnvironments().GetSystemIDsForEnvironment(environment.Id)
+	if slices.Contains(existingSystemIDs, link.SystemID) {
 		return nil
 	}
 
@@ -243,8 +243,7 @@ func HandleSystemEnvironmentLinked(
 		return err
 	}
 
-	environment.SystemIds = append(environment.SystemIds, link.SystemID)
-	if err := ws.Environments().Upsert(ctx, environment); err != nil {
+	if err := ws.SystemEnvironments().Link(link.SystemID, link.EnvironmentID); err != nil {
 		return err
 	}
 
@@ -286,8 +285,8 @@ func HandleSystemEnvironmentUnlinked(
 		return fmt.Errorf("environment %q not found", link.EnvironmentID)
 	}
 
-	idx := slices.Index(environment.SystemIds, link.SystemID)
-	if idx == -1 {
+	existingSystemIDs := ws.SystemEnvironments().GetSystemIDsForEnvironment(environment.Id)
+	if !slices.Contains(existingSystemIDs, link.SystemID) {
 		return nil
 	}
 
@@ -296,8 +295,7 @@ func HandleSystemEnvironmentUnlinked(
 		return err
 	}
 
-	environment.SystemIds = slices.Delete(environment.SystemIds, idx, idx+1)
-	if err := ws.Environments().Upsert(ctx, environment); err != nil {
+	if err := ws.SystemEnvironments().Unlink(link.SystemID, link.EnvironmentID); err != nil {
 		return err
 	}
 

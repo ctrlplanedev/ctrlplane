@@ -133,6 +133,14 @@ func (w *Workspace) Systems() *store.Systems {
 	return w.store.Systems
 }
 
+func (w *Workspace) SystemDeployments() *store.SystemDeployments {
+	return w.store.SystemDeployments
+}
+
+func (w *Workspace) SystemEnvironments() *store.SystemEnvironments {
+	return w.store.SystemEnvironments
+}
+
 func (w *Workspace) Jobs() *store.Jobs {
 	return w.store.Jobs
 }

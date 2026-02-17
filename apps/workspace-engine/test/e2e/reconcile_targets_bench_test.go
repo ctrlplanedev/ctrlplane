@@ -75,7 +75,7 @@ func BenchmarkReconcileTargets_DeploymentVersionCreated(b *testing.B) {
 		_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{
 			Cel: fmt.Sprintf("resource.metadata.region == 'region-%d'", i%numRegions),
 		})
-		engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+		engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 	}
 
 	// Phase 4: Create resources distributed across regions
@@ -128,7 +128,7 @@ func BenchmarkReconcileTargets_DeploymentVersionCreated(b *testing.B) {
 		deployment.ResourceSelector = &oapi.Selector{}
 		_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
-		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+		engine.PushDeploymentCreateWithLink(ctx, sysID, deployment)
 
 		if (i+1)%10 == 0 {
 			b.Logf("  Created %d/%d deployments...", i+1, numDeployments)
@@ -317,7 +317,7 @@ func BenchmarkReconcileTargets_SingleDeployment(b *testing.B) {
 	env.Id = envID
 	env.ResourceSelector = &oapi.Selector{}
 	_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+	engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 	// Create 100 resources
 	for i := 0; i < 100; i++ {
@@ -334,7 +334,7 @@ func BenchmarkReconcileTargets_SingleDeployment(b *testing.B) {
 	deployment.JobAgentId = &jobAgentID
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+	engine.PushDeploymentCreateWithLink(ctx, sysID, deployment)
 
 	// Get release targets
 	releaseTargetsForDeployment, _ := engine.Workspace().ReleaseTargets().GetForDeployment(ctx, depID)
@@ -392,7 +392,7 @@ func BenchmarkReconcileTargets_Scaling(b *testing.B) {
 			env.Id = envID
 			env.ResourceSelector = &oapi.Selector{}
 			_ = env.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-			engine.PushEvent(ctx, handler.EnvironmentCreate, env)
+			engine.PushEnvironmentCreateWithLink(ctx, sysID, env)
 
 			// Create resources
 			for i := 0; i < targetCount; i++ {
@@ -408,7 +408,7 @@ func BenchmarkReconcileTargets_Scaling(b *testing.B) {
 			deployment.JobAgentId = &jobAgentID
 			deployment.ResourceSelector = &oapi.Selector{}
 			_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-			engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+			engine.PushDeploymentCreateWithLink(ctx, sysID, deployment)
 
 			releaseTargetsForDeployment, _ := engine.Workspace().ReleaseTargets().GetForDeployment(ctx, depID)
 

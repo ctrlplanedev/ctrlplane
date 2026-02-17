@@ -49,7 +49,6 @@ func createTestEnvironmentForPlanner(systemID, id, name string) *oapi.Environmen
 		Id:               id,
 		Name:             name,
 		Description:      &description,
-		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 		CreatedAt:        time.Now(),
 	}
@@ -65,7 +64,6 @@ func createTestDeploymentForPlanner(workspaceID, systemID, id, name string) *oap
 		Id:               id,
 		Name:             name,
 		Slug:             name,
-		SystemIds:        []string{systemID},
 		Description:      &description,
 		ResourceSelector: selector,
 		JobAgentId:       &jobAgentID,

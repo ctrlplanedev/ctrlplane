@@ -37,5 +37,11 @@ ON CONFLICT (system_id, environment_id) DO NOTHING;
 -- name: DeleteSystemEnvironmentByEnvironmentID :exec
 DELETE FROM system_environment WHERE environment_id = $1;
 
+-- name: DeleteSystemEnvironment :exec
+DELETE FROM system_environment WHERE system_id = $1 AND environment_id = $2;
+
+-- name: GetEnvironmentIDsForSystem :many
+SELECT environment_id FROM system_environment WHERE system_id = $1;
+
 -- name: DeleteEnvironment :exec
 DELETE FROM environment WHERE id = $1;

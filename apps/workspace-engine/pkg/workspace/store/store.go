@@ -70,6 +70,24 @@ func WithDBResourceProviders(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBSystemDeployments replaces the default in-memory SystemDeploymentRepo
+// with a DB-backed implementation.
+func WithDBSystemDeployments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.SystemDeployments.SetRepo(dbRepo.SystemDeployments())
+	}
+}
+
+// WithDBSystemEnvironments replaces the default in-memory SystemEnvironmentRepo
+// with a DB-backed implementation.
+func WithDBSystemEnvironments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.SystemEnvironments.SetRepo(dbRepo.SystemEnvironments())
+	}
+}
+
 func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption) *Store {
 	repo := memory.New(wsId)
 	store := &Store{id: wsId, repo: repo, changeset: changeset}
@@ -100,6 +118,8 @@ func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption
 	store.WorkflowJobTemplates = NewWorkflowJobTemplates(store)
 	store.WorkflowRuns = NewWorkflowRuns(store)
 	store.WorkflowJobs = NewWorkflowJobs(store)
+	store.SystemDeployments = NewSystemDeployments(store)
+	store.SystemEnvironments = NewSystemEnvironments(store)
 
 	for _, opt := range opts {
 		opt(store)
@@ -139,6 +159,8 @@ type Store struct {
 	WorkflowJobTemplates     *WorkflowJobTemplates
 	WorkflowRuns             *WorkflowRuns
 	WorkflowJobs             *WorkflowJobs
+	SystemDeployments        *SystemDeployments
+	SystemEnvironments       *SystemEnvironments
 }
 
 func (s *Store) ID() string {
@@ -160,12 +182,13 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		return err
 	}
 
+	// Rebuild in-memory link stores from persisted link entities.
+	s.repo.RestoreLinks()
+
 	// Migrate legacy changelog entities into the active repos.
 	// After Router().Apply(), the in-memory repo may contain entities
 	// loaded from changelog_entry records. When the DB backend is
 	// active, sync them so they are available through the DB-backed repos.
-	// The DB repo Set() methods handle creating join table entries
-	// (system_deployment, system_environment) from the oapi SystemIds field.
 	if setStatus != nil {
 		setStatus("Migrating legacy systems")
 	}
@@ -230,10 +253,10 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		setStatus("Computing release targets")
 	}
 
-	// Group deployments by SystemId for O(1) lookup
+	// Group deployments by SystemId for O(1) lookup using the link repos.
 	deploymentsBySystem := make(map[string][]*oapi.Deployment)
 	for _, deployment := range s.Deployments.Items() {
-		for _, sid := range deployment.SystemIds {
+		for _, sid := range s.SystemDeployments.GetSystemIDsForDeployment(deployment.Id) {
 			deploymentsBySystem[sid] = append(deploymentsBySystem[sid], deployment)
 		}
 	}
@@ -246,7 +269,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		// Collect all deployments from systems this environment belongs to.
 		matchingDeployments := make(map[string]*oapi.Deployment)
 		var systemName string
-		for _, sid := range environment.SystemIds {
+		for _, sid := range s.SystemEnvironments.GetSystemIDsForEnvironment(environment.Id) {
 			for _, d := range deploymentsBySystem[sid] {
 				matchingDeployments[d.Id] = d
 			}

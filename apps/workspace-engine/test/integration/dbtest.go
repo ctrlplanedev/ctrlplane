@@ -75,6 +75,8 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			store.WithDBDeploymentVersions(ctx),
 			store.WithDBJobAgents(ctx),
 			store.WithDBResourceProviders(ctx),
+			store.WithDBSystemDeployments(ctx),
+			store.WithDBSystemEnvironments(ctx),
 		),
 	)
 

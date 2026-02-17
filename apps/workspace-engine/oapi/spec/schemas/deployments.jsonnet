@@ -3,13 +3,12 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   Deployment: {
     type: 'object',
-    required: ['id', 'name', 'slug', 'systemIds', 'jobAgentConfig', 'metadata'],
+    required: ['id', 'name', 'slug', 'jobAgentConfig', 'metadata'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
       slug: { type: 'string' },
       description: { type: 'string' },
-      systemIds: { type: 'array', items: { type: 'string' } },
       jobAgentId: { type: 'string' },
       jobAgentConfig: openapi.schemaRef('JobAgentConfig'),
       resourceSelector: openapi.schemaRef('Selector'),

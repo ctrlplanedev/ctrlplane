@@ -190,19 +190,12 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
                "id",
                "name",
                "slug",
-               "systemIds",
                "jobAgentConfig",
                "metadata"
             ],
@@ -512,18 +505,11 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
                "id",
                "name",
-               "systemIds",
                "createdAt",
                "metadata"
             ],

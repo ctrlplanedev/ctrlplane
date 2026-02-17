@@ -52,14 +52,12 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 		Name:        "test-deployment",
 		Slug:        "test-dep",
 		Description: ptr("Test deployment"),
-		SystemIds:   []string{system.Id},
 	}
 
 	environment := &oapi.Environment{
 		Id:          uuid.New().String(),
 		Name:        "production",
 		Description: ptr("Production environment"),
-		SystemIds:   []string{system.Id},
 	}
 
 	// Build changes using the persistence builder
@@ -354,10 +352,9 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	}
 
 	deployment := &oapi.Deployment{
-		Id:        deploymentId,
-		Name:      "test-deployment",
-		Slug:      "test-dep",
-		SystemIds: []string{systemId},
+		Id:   deploymentId,
+		Name: "test-deployment",
+		Slug: "test-dep",
 	}
 
 	deploymentVersion := &oapi.DeploymentVersion{
@@ -373,9 +370,8 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	}
 
 	environment := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{systemId},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	policy := &oapi.Policy{
@@ -533,17 +529,15 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 
 	// Create deployment
 	deployment := &oapi.Deployment{
-		Id:        deploymentId,
-		Name:      "web-app",
-		Slug:      "web-app",
-		SystemIds: []string{systemId},
+		Id:   deploymentId,
+		Name: "web-app",
+		Slug: "web-app",
 	}
 
 	// Create environment
 	environment := &oapi.Environment{
-		Id:        envId,
-		Name:      "production",
-		SystemIds: []string{systemId},
+		Id:   envId,
+		Name: "production",
 	}
 
 	// Create resource

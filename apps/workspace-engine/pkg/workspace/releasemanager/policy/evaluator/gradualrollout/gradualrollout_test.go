@@ -30,21 +30,21 @@ func generateResourceSelector() *oapi.Selector {
 
 func generateEnvironment(ctx context.Context, systemID string, store *store.Store) *oapi.Environment {
 	environment := &oapi.Environment{
-		SystemIds:        []string{systemID},
 		Id:               uuid.New().String(),
 		ResourceSelector: generateResourceSelector(),
 	}
 	_ = store.Environments.Upsert(ctx, environment)
+	_ = store.SystemEnvironments.Link(systemID, environment.Id)
 	return environment
 }
 
 func generateDeployment(ctx context.Context, systemID string, store *store.Store) *oapi.Deployment {
 	deployment := &oapi.Deployment{
-		SystemIds:        []string{systemID},
 		Id:               uuid.New().String(),
 		ResourceSelector: generateResourceSelector(),
 	}
 	_ = store.Deployments.Upsert(ctx, deployment)
+	_ = store.SystemDeployments.Link(systemID, deployment.Id)
 	return deployment
 }
 

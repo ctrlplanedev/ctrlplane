@@ -30,7 +30,6 @@ func NewEnvironment(systemID string) *oapi.Environment {
 		Id:               id,
 		Name:             fmt.Sprintf("env-%s", idSubstring),
 		Description:      &description,
-		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 		CreatedAt:        time.Now(),
 	}

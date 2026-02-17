@@ -101,7 +101,6 @@ func deploymentToMap(d *oapi.Deployment) map[string]any {
 		"id":             d.Id,
 		"name":           d.Name,
 		"slug":           d.Slug,
-		"systemIds":      d.SystemIds,
 		"jobAgentConfig": d.JobAgentConfig,
 		"metadata":       stringMapToAnyMap(d.Metadata),
 	}
@@ -119,7 +118,6 @@ func environmentToMap(e *oapi.Environment) map[string]any {
 		"type":      "environment",
 		"id":        e.Id,
 		"name":      e.Name,
-		"systemIds": e.SystemIds,
 		"metadata":  stringMapToAnyMap(e.Metadata),
 		"createdAt": e.CreatedAt.Format("2006-01-02T15:04:05.999Z07:00"),
 	}

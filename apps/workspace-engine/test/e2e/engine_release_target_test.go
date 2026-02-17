@@ -295,20 +295,16 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	sys2.Name = "system-2"
 	engine.PushEvent(ctx, handler.SystemCreate, sys2)
 
-	d1, _ := engine.Workspace().Deployments().Get(d1Id)
-	e1, _ := engine.Workspace().Environments().Get(e1Id)
-
 	// Verify release target was created
 	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target, got %d", len(releaseTargets))
 	}
 
-	// Move deployment to system 2 - should remove release target
+	// Move deployment to system 2 via unlink/link - should remove release target
 	// (environment is still in system 1, so no matching deployment+environment pair)
-	d1Updated := *d1 // Create a copy of the deployment value
-	d1Updated.SystemIds = []string{sys2.Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, map[string]string{"systemId": sys1Id, "deploymentId": d1Id})
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 0 {
@@ -316,9 +312,8 @@ func TestEngine_ReleaseTargetSystemChange(t *testing.T) {
 	}
 
 	// Move environment to system 2 as well - should recreate release target
-	e1Updated := *e1 // Create a copy of the environment value
-	e1Updated.SystemIds = []string{sys2.Id}
-	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
+	engine.PushEvent(ctx, handler.SystemEnvironmentUnlinked, map[string]string{"systemId": sys1Id, "environmentId": e1Id})
+	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{"systemId": sys2Id, "environmentId": e1Id})
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
@@ -694,7 +689,7 @@ func TestEngine_ReleaseTargetEnvironmentAndDeploymentDelete(t *testing.T) {
 	d3.Name = "deployment-3"
 	d3.ResourceSelector = &oapi.Selector{}
 	_ = d3.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d3)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d3)
 
 	// Should have 1 release target now (d3 × e1 × r1)
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
@@ -760,13 +755,11 @@ func TestEngine_ReleaseTargetSharedAcrossMultipleSystems(t *testing.T) {
 	// Update deployment to belong to both systems
 	d1, _ := engine.Workspace().Deployments().Get(d1Id)
 	d1Updated := *d1
-	d1Updated.SystemIds = []string{sys1Id, sys2Id}
 	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
 
 	// Update environment to belong to both systems
 	e1, _ := engine.Workspace().Environments().Get(e1Id)
 	e1Updated := *e1
-	e1Updated.SystemIds = []string{sys1Id, sys2Id}
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
 
 	// Should still be 2 release targets (deduplicated), NOT 4
@@ -843,10 +836,9 @@ func TestEngine_ReleaseTargetMultipleSystemsPartialOverlap(t *testing.T) {
 	dB.Id = dBId
 	dB.Name = "deployment-B"
 	dB.Slug = "deployment-B"
-	dB.SystemIds = []string{sys2Id}
 	dB.ResourceSelector = &oapi.Selector{}
 	_ = dB.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, dB)
+	engine.PushDeploymentCreateWithLink(ctx, sys2Id, dB)
 
 	// At this point environment-X is only in system-1, so deployment-B has no
 	// matching environment yet. Still 2 release targets.
@@ -855,11 +847,8 @@ func TestEngine_ReleaseTargetMultipleSystemsPartialOverlap(t *testing.T) {
 		t.Fatalf("expected 2 release targets before sharing environment, got %d", len(releaseTargets))
 	}
 
-	// Update environment-X to belong to both systems
-	eX, _ := engine.Workspace().Environments().Get(eXId)
-	eXUpdated := *eX
-	eXUpdated.SystemIds = []string{sys1Id, sys2Id}
-	engine.PushEvent(ctx, handler.EnvironmentUpdate, &eXUpdated)
+	// Link environment-X to system-2 as well (it's already in system-1)
+	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{"systemId": sys2Id, "environmentId": eXId})
 
 	// Now: deployment-A × environment-X × 2 resources = 2 targets
 	//    + deployment-B × environment-X × 2 resources = 2 targets
@@ -934,16 +923,12 @@ func TestEngine_ReleaseTargetMultipleSystemsJobCreation(t *testing.T) {
 	e2 := c.NewEnvironment(sys2Id)
 	e2.Id = e2Id
 	e2.Name = "env-system-2"
-	e2.SystemIds = []string{sys2Id}
 	e2.ResourceSelector = &oapi.Selector{}
 	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys2Id, e2)
 
-	// Update deployment to belong to both systems
-	d1, _ := engine.Workspace().Deployments().Get(d1Id)
-	d1Updated := *d1
-	d1Updated.SystemIds = []string{sys1Id, sys2Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+	// Link deployment to system-2 (already linked to system-1 from setup)
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	// Wait for jobs to be created
 	time.Sleep(500 * time.Millisecond)
@@ -1035,16 +1020,12 @@ func TestEngine_ReleaseTargetSharedSystemRemoval(t *testing.T) {
 	e2 := c.NewEnvironment(sys2Id)
 	e2.Id = e2Id
 	e2.Name = "env-system-2"
-	e2.SystemIds = []string{sys2Id}
 	e2.ResourceSelector = &oapi.Selector{}
 	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys2Id, e2)
 
-	// Update deployment to belong to both systems
-	d1, _ := engine.Workspace().Deployments().Get(d1Id)
-	d1Updated := *d1
-	d1Updated.SystemIds = []string{sys1Id, sys2Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+	// Link deployment to system-2 (already linked to system-1 from setup)
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	// Now: deployment × env-1 × resource + deployment × env-2 × resource = 2 release targets
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
@@ -1052,11 +1033,8 @@ func TestEngine_ReleaseTargetSharedSystemRemoval(t *testing.T) {
 		t.Fatalf("expected 2 release targets after adding system-2, got %d", len(releaseTargets))
 	}
 
-	// Remove system-2 from the deployment (only keep system-1)
-	d1, _ = engine.Workspace().Deployments().Get(d1Id)
-	d1Shrunk := *d1
-	d1Shrunk.SystemIds = []string{sys1Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Shrunk)
+	// Unlink deployment from system-2 (keep only system-1)
+	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	// Now only env-1 (in system-1) should match the deployment.
 	// env-2 is only in system-2, which the deployment no longer belongs to.
@@ -1117,12 +1095,10 @@ func TestEngine_ReleaseTargetSystemDeletionWithSharedEntities(t *testing.T) {
 
 	d1, _ := engine.Workspace().Deployments().Get(d1Id)
 	d1Updated := *d1
-	d1Updated.SystemIds = []string{sys1Id, sys2Id}
 	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
 
 	e1, _ := engine.Workspace().Environments().Get(e1Id)
 	e1Updated := *e1
-	e1Updated.SystemIds = []string{sys1Id, sys2Id}
 	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
 
 	// Verify 1 release target (deduplicated)
@@ -1189,16 +1165,12 @@ func TestEngine_ReleaseTargetNewResourceWithMultiSystemSetup(t *testing.T) {
 	e2 := c.NewEnvironment(sys2Id)
 	e2.Id = e2Id
 	e2.Name = "env-2"
-	e2.SystemIds = []string{sys2Id}
 	e2.ResourceSelector = &oapi.Selector{}
 	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys2Id, e2)
 
-	// Update deployment to belong to both systems
-	d1, _ := engine.Workspace().Deployments().Get(d1Id)
-	d1Updated := *d1
-	d1Updated.SystemIds = []string{sys1Id, sys2Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+	// Link deployment to system-2 (already linked to system-1 from setup)
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	// No resources yet — 0 release targets
 	releaseTargets, _ := engine.Workspace().ReleaseTargets().Items()
@@ -1289,11 +1261,8 @@ func TestEngine_ReleaseTargetThreeSystemsIntersection(t *testing.T) {
 		t.Fatalf("expected 0 release targets (no system overlap), got %d", len(releaseTargets))
 	}
 
-	// Update deployment to [sys1, sys2] — now intersects with environment at sys2
-	d1, _ := engine.Workspace().Deployments().Get(d1Id)
-	d1Updated := *d1
-	d1Updated.SystemIds = []string{sys1Id, sys2Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1Updated)
+	// Link deployment to sys2 (already in sys1) — now intersects with environment at sys2
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	// Should produce 1 release target: deployment and environment intersect at sys2
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
@@ -1313,33 +1282,24 @@ func TestEngine_ReleaseTargetThreeSystemsIntersection(t *testing.T) {
 		t.Fatalf("expected environment %s, got %s", e1Id, rt.EnvironmentId)
 	}
 
-	// Update environment to [sys2, sys3] — still intersects with deployment at sys2
-	e1, _ := engine.Workspace().Environments().Get(e1Id)
-	e1Updated := *e1
-	e1Updated.SystemIds = []string{sys2Id, sys3Id}
-	engine.PushEvent(ctx, handler.EnvironmentUpdate, &e1Updated)
+	// Link environment to sys3 (already in sys2) — still intersects with deployment at sys2
+	engine.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{"systemId": sys3Id, "environmentId": e1Id})
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {
 		t.Fatalf("expected 1 release target (still intersection at sys2), got %d", len(releaseTargets))
 	}
 
-	// Remove sys2 from the deployment — deployment[sys1] ∩ environment[sys2,sys3] = empty
-	d1, _ = engine.Workspace().Deployments().Get(d1Id)
-	d1NoOverlap := *d1
-	d1NoOverlap.SystemIds = []string{sys1Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1NoOverlap)
+	// Unlink deployment from sys2 — deployment[sys1] ∩ environment[sys2,sys3] = empty
+	engine.PushEvent(ctx, handler.SystemDeploymentUnlinked, map[string]string{"systemId": sys2Id, "deploymentId": d1Id})
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 0 {
 		t.Fatalf("expected 0 release targets after removing intersection system, got %d", len(releaseTargets))
 	}
 
-	// Add sys3 to the deployment — deployment[sys1,sys3] ∩ environment[sys2,sys3] = sys3
-	d1, _ = engine.Workspace().Deployments().Get(d1Id)
-	d1WithSys3 := *d1
-	d1WithSys3.SystemIds = []string{sys1Id, sys3Id}
-	engine.PushEvent(ctx, handler.DeploymentUpdate, &d1WithSys3)
+	// Link deployment to sys3 — deployment[sys1,sys3] ∩ environment[sys2,sys3] = sys3
+	engine.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{"systemId": sys3Id, "deploymentId": d1Id})
 
 	releaseTargets, _ = engine.Workspace().ReleaseTargets().Items()
 	if len(releaseTargets) != 1 {

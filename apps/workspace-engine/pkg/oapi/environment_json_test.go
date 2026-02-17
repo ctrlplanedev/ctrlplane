@@ -18,7 +18,6 @@ func TestEnvironment_UnmarshalJSON(t *testing.T) {
 		assert.Equal(t, "env-1", env.Id)
 		assert.Equal(t, "prod", env.Name)
 		assert.Equal(t, 2024, env.CreatedAt.Year())
-		assert.Equal(t, []string{"sys-1"}, env.SystemIds)
 	})
 
 	t.Run("empty createdAt string", func(t *testing.T) {
@@ -41,15 +40,6 @@ func TestEnvironment_UnmarshalJSON(t *testing.T) {
 		var env Environment
 		err := json.Unmarshal([]byte(data), &env)
 		require.NoError(t, err)
-		assert.Equal(t, []string{"legacy-sys"}, env.SystemIds)
-	})
-
-	t.Run("systemIds takes precedence over legacy systemId", func(t *testing.T) {
-		data := `{"id":"env-1","name":"prod","createdAt":"2024-01-01T00:00:00Z","systemIds":["sys-1"],"systemId":"legacy-sys"}`
-		var env Environment
-		err := json.Unmarshal([]byte(data), &env)
-		require.NoError(t, err)
-		assert.Equal(t, []string{"sys-1"}, env.SystemIds)
 	})
 
 	t.Run("invalid JSON", func(t *testing.T) {

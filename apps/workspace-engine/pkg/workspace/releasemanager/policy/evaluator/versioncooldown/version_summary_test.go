@@ -46,7 +46,7 @@ func TestSummaryEvaluator_NoReleaseTargets(t *testing.T) {
 	s, _ := setupTestStore(t)
 	ctx := context.Background()
 
-	deployment := createTestDeployment(ctx, s)
+	deployment, _ := createTestDeployment(ctx, s)
 	version := &oapi.DeploymentVersion{
 		Id:           uuid.New().String(),
 		DeploymentId: deployment.Id,
@@ -78,8 +78,7 @@ func TestSummaryEvaluator_AllTargetsAllowed(t *testing.T) {
 	s, _ := setupTestStore(t)
 	ctx := context.Background()
 
-	deployment := createTestDeployment(ctx, s)
-	systemID := deployment.SystemIds[0]
+	deployment, systemID := createTestDeployment(ctx, s)
 	env := createTestEnvironment(ctx, s, systemID)
 	resource := createTestResource(ctx, s)
 
@@ -116,13 +115,11 @@ func TestSummaryEvaluator_SomeTargetsDenied(t *testing.T) {
 	s, _ := setupTestStore(t)
 	ctx := context.Background()
 
-	deployment := createTestDeployment(ctx, s)
-	systemID := deployment.SystemIds[0]
+	deployment, systemID := createTestDeployment(ctx, s)
 	env1 := createTestEnvironment(ctx, s, systemID)
 	env2 := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{systemID},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 	_ = s.Environments.Upsert(ctx, env2)
 

@@ -982,7 +982,8 @@ func BenchmarkEngine_DeploymentCreation(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		engine.PushEvent(ctx, handler.DeploymentCreate, c.NewDeployment(workspaceID))
+		deployment := c.NewDeployment(workspaceID)
+		engine.PushDeploymentCreateWithLink(ctx, workspaceID, deployment)
 	}
 }
 
@@ -996,7 +997,7 @@ func BenchmarkEngine_DeploymentRemoval(b *testing.B) {
 	for i := range b.N {
 		deployment := c.NewDeployment(workspaceID)
 		deployments[i] = deployment
-		engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+		engine.PushDeploymentCreateWithLink(ctx, workspaceID, deployment)
 	}
 
 	b.ResetTimer()
