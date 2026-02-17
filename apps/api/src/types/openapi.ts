@@ -4197,8 +4197,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK response */
-            200: {
+            /** @description Accepted response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -24,7 +24,13 @@ const upsertResourceProvider: AsyncTypedHandler<
     })
     .returning().then(takeFirstOrNull);
 
-  res.status(200).json(provider);
+  if (provider == null) {
+    res.status(500).json({ error: "Failed to upsert resource provider" });
+    return;
+  }
+
+
+  res.status(202).json(provider);
 };
 
 const getResourceProviderByName: AsyncTypedHandler<

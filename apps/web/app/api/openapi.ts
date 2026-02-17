@@ -1529,10 +1529,6 @@ export interface components {
             /** Format: uuid */
             workspaceId: string;
         };
-        ResourceProviderRequestAccepted: {
-            id: string;
-            message: string;
-        };
         ResourceProviderResource: {
             config: {
                 [key: string]: unknown;
@@ -1552,6 +1548,11 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
             version: string;
+        };
+        ResourceProviderSetRequestAccepted: {
+            batchId?: string;
+            method: string;
+            ok: boolean;
         };
         ResourceRequestAccepted: {
             id: string;
@@ -4202,7 +4203,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                    "application/json": components["schemas"]["ResourceProvider"];
                 };
             };
             /** @description Invalid request */
@@ -4267,7 +4268,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                    "application/json": components["schemas"]["ResourceProviderSetRequestAccepted"];
                 };
             };
             /** @description Invalid request */
