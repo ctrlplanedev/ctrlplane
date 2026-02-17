@@ -2,6 +2,7 @@ import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+import { trpc } from "~/api/trpc";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import {
 import { CopyButton } from "~/components/ui/copy-button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { useWorkspace } from "~/components/WorkspaceProvider";
 import { useDeployment } from "../_components/DeploymentProvider";
 
 type Value = WorkspaceEngine["schemas"]["Value"];
@@ -57,10 +59,16 @@ function formatSelector(selector?: {
 }
 
 export default function DeploymentsSettingsPage() {
+  const { workspace } = useWorkspace();
   const { deployment } = useDeployment();
   const [expandedVariables, setExpandedVariables] = useState<Set<string>>(
     new Set(),
   );
+
+  const { data: variables = [] } = trpc.deployment.variables.useQuery({
+    workspaceId: workspace.id,
+    deploymentId: deployment.id,
+  });
 
   const toggleVariable = (variableId: string) => {
     setExpandedVariables((prev) => {
@@ -113,13 +121,13 @@ export default function DeploymentsSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {deployment.variables.length === 0 ? (
+          {variables.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No variables configured for this deployment.
             </p>
           ) : (
             <div className="space-y-4">
-              {deployment.variables.map((variableWithValues) => {
+              {variables.map((variableWithValues) => {
                 const { variable, values } = variableWithValues;
                 const isExpanded = expandedVariables.has(variable.id);
                 const sortedValues = [...values].sort(

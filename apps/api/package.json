@@ -12,6 +12,7 @@
     "build": "tsc && tsc-alias",
     "clean": "rm -rf .turbo node_modules",
     "dev": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path ./src/types/openapi.ts --ignore-path ./openapi/openapi.json && bash -c 'jsonnetfmt -i ./**/*.jsonnet'",
     "format:fix": "prettier --write . --ignore-path ../../.gitignore --ignore-path ./src/types/openapi.ts --ignore-path ./openapi/openapi.json && bash -c 'jsonnetfmt -i ./**/*.jsonnet'",
     "generate": "jsonnet openapi/main.jsonnet > openapi/openapi.json && pnpm generate:types",

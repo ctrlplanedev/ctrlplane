@@ -36,26 +36,29 @@ const deploymentJobAgentConfig = z.union([
 
 export const deploymentsRouter = router({
   get: protectedProcedure
-    .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
+    .input(z.object({ deploymentId: z.uuid() }))
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "workspace", id: input.workspaceId }),
+          .on({ type: "deployment", id: input.deploymentId }),
     })
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-              deploymentId: input.deploymentId,
+    .query(async ({ input, ctx }) => {
+      const deployment = await ctx.db.query.deployment.findFirst({
+        where: eq(schema.deployment.id, input.deploymentId),
+        with: {
+          systemDeployments: {
+            with: {
+              system: {
+                with: {
+                  systemEnvironments: true,
+                },
+              },
             },
           },
         },
-      );
-      return response.data;
+      });
+      return deployment;
     }),
 
   list: protectedProcedure
@@ -282,6 +285,23 @@ export const deploymentsRouter = router({
       });
 
       return updateData;
+    }),
+
+  variables: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid(), deploymentId: z.string() }))
+    .query(async ({ input }) => {
+      const response = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+              deploymentId: input.deploymentId,
+            },
+          },
+        },
+      );
+      return response.data?.variables ?? [];
     }),
 
   createVersion: protectedProcedure

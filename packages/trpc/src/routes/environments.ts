@@ -12,22 +12,22 @@ import { protectedProcedure, router } from "../trpc.js";
 
 export const environmentRouter = router({
   get: protectedProcedure
-    .input(z.object({ workspaceId: z.uuid(), environmentId: z.string() }))
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-        { params: { path: { workspaceId, environmentId } } },
-      );
+    .input(z.object({ environmentId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const { environmentId } = input;
 
-      if (!result.data) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Environment not found",
-        });
-      }
+      const environment = await ctx.db.query.environment.findFirst({
+        where: eq(schema.environment.id, environmentId),
+        with: {
+          systemEnvironments: {
+            with: {
+              system: true,
+            },
+          },
+        },
+      });
 
-      return result.data;
+      return environment;
     }),
 
   resources: protectedProcedure

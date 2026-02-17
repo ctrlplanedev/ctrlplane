@@ -2,57 +2,8 @@ import type { AsyncTypedHandler } from "@/types/api.js";
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { ApiError, asyncHandler } from "@/types/api.js";
 import { Router } from "express";
-
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { getClientFor } from "@ctrlplane/workspace-engine-sdk";
-
-const getEnvironmentIds = async (
-  workspaceId: string,
-  deploymentVersionId: string,
-) => {
-  const deploymentVersionResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deploymentversions/{deploymentVersionId}",
-    { params: { path: { workspaceId, deploymentVersionId } } },
-  );
-
-  if (deploymentVersionResponse.error != null)
-    throw new ApiError(
-      deploymentVersionResponse.error.error ?? "Deployment version not found",
-      deploymentVersionResponse.response.status,
-    );
-  const { deploymentId } = deploymentVersionResponse.data;
-
-  const deploymentResponse = await getClientFor(workspaceId).GET(
-    "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-    { params: { path: { workspaceId, deploymentId } } },
-  );
-  if (deploymentResponse.error != null)
-    throw new ApiError(
-      deploymentResponse.error.error ?? "Deployment not found",
-      deploymentResponse.response.status,
-    );
-
-  const { deployment } = deploymentResponse.data;
-  const { systemIds } = deployment;
-
-  const environmentIds: string[] = [];
-  for (const systemId of systemIds) {
-    const systemResponse = await getClientFor(workspaceId).GET(
-      "/v1/workspaces/{workspaceId}/systems/{systemId}",
-      { params: { path: { workspaceId, systemId } } },
-    );
-
-    if (systemResponse.error != null)
-      throw new ApiError(
-        systemResponse.error.error ?? "System not found",
-        systemResponse.response.status,
-      );
-    const { environments } = systemResponse.data;
-    environmentIds.push(...environments.map((environment) => environment.id));
-  }
-
-  return environmentIds;
-};
 
 const upsertUserApprovalRecord: AsyncTypedHandler<
   "/v1/workspaces/{workspaceId}/deployment-versions/{deploymentVersionId}/user-approval-records",
@@ -71,12 +22,8 @@ const upsertUserApprovalRecord: AsyncTypedHandler<
     reason: req.body.reason,
   };
 
-  const environmentIds =
-    req.body.environmentIds ??
-    (await getEnvironmentIds(workspaceId, deploymentVersionId));
-
   try {
-    for (const environmentId of environmentIds)
+    for (const environmentId of req.body.environmentIds)
       await sendGoEvent({
         workspaceId,
         eventType: Event.UserApprovalRecordCreated,

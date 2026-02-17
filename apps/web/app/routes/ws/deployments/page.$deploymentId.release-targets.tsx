@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import _ from "lodash";
 import { Search } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
@@ -103,11 +103,17 @@ export default function ReleaseTargetsPage() {
     workspaceId: workspace.id,
   });
 
+  const environmentIds = useMemo(() => {
+    return new Set(
+      deployment.systemDeployments.flatMap((sd) =>
+        sd.system.systemEnvironments.map((se) => se.environmentId),
+      ),
+    );
+  }, [deployment.systemDeployments]);
+
   const environments =
     environmentsQuery.data?.filter((environment) =>
-      environment.systemEnvironments.some((se) =>
-        deployment.systemIds.includes(se.systemId),
-      ),
+      environmentIds.has(environment.id),
     ) ?? [];
 
   const releaseTargets = releaseTargetsQuery.data?.items ?? [];

@@ -1235,7 +1235,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         DeploymentAndSystems: {
             deployment: components["schemas"]["Deployment"];
@@ -1336,7 +1335,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];

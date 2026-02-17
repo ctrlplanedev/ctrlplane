@@ -1767,7 +1767,7 @@ export interface components {
             slug?: string;
         };
         UpsertUserApprovalRecordRequest: {
-            environmentIds?: string[];
+            environmentIds: string[];
             reason?: string;
             status: components["schemas"]["ApprovalStatus"];
         };

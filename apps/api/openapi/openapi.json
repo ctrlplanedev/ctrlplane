@@ -2485,7 +2485,8 @@
                }
             },
             "required": [
-               "status"
+               "status",
+               "environmentIds"
             ],
             "type": "object"
          },

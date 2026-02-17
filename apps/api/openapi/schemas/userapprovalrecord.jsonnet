@@ -3,7 +3,7 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   UpsertUserApprovalRecordRequest: {
     type: 'object',
-    required: ['status'],
+    required: ['status', 'environmentIds'],
     properties: {
       environmentIds: { type: 'array', items: { type: 'string' } },
       status: openapi.schemaRef('ApprovalStatus'),
