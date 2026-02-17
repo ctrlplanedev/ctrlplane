@@ -430,6 +430,17 @@ type EnvironmentSummary struct {
 	Name string `json:"name"`
 }
 
+// EnvironmentWithSystems defines model for EnvironmentWithSystems.
+type EnvironmentWithSystems struct {
+	CreatedAt        time.Time         `json:"createdAt"`
+	Description      *string           `json:"description,omitempty"`
+	Id               string            `json:"id"`
+	Metadata         map[string]string `json:"metadata"`
+	Name             string            `json:"name"`
+	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
+	Systems          []System          `json:"systems"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Error *string `json:"error,omitempty"`

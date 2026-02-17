@@ -1181,6 +1181,9 @@ export interface components {
             id: string;
             message: string;
         };
+        EnvironmentWithSystems: components["schemas"]["Environment"] & {
+            systems: components["schemas"]["System"][];
+        };
         Error: {
             /** @description Error code */
             code?: string;
@@ -3110,7 +3113,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentWithSystems"];
                 };
             };
             /** @description Invalid request */

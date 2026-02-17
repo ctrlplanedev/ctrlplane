@@ -1376,6 +1376,9 @@ export interface components {
       id: string;
       name: string;
     };
+    EnvironmentWithSystems: components["schemas"]["Environment"] & {
+      systems: components["schemas"]["System"][];
+    };
     ErrorResponse: {
       /** @example Workspace not found */
       error?: string;
@@ -2820,7 +2823,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Environment"];
+          "application/json": components["schemas"]["EnvironmentWithSystems"];
         };
       };
       /** @description Invalid request */

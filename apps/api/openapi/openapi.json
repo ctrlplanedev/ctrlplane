@@ -825,6 +825,27 @@
             ],
             "type": "object"
          },
+         "EnvironmentWithSystems": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/Environment"
+               },
+               {
+                  "properties": {
+                     "systems": {
+                        "items": {
+                           "$ref": "#/components/schemas/System"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "systems"
+                  ],
+                  "type": "object"
+               }
+            ]
+         },
          "Error": {
             "properties": {
                "code": {
@@ -4871,7 +4892,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/Environment"
+                           "$ref": "#/components/schemas/EnvironmentWithSystems"
                         }
                      }
                   },
