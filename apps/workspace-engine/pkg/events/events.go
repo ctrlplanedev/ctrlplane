@@ -56,6 +56,11 @@ var handlers = handler.HandlerRegistry{
 	handler.SystemUpdate: system.HandleSystemUpdated,
 	handler.SystemDelete: system.HandleSystemDeleted,
 
+	handler.SystemDeploymentLinked:    system.HandleSystemDeploymentLinked,
+	handler.SystemDeploymentUnlinked:  system.HandleSystemDeploymentUnlinked,
+	handler.SystemEnvironmentLinked:   system.HandleSystemEnvironmentLinked,
+	handler.SystemEnvironmentUnlinked: system.HandleSystemEnvironmentUnlinked,
+
 	handler.EnvironmentCreate: environment.HandleEnvironmentCreated,
 	handler.EnvironmentUpdate: environment.HandleEnvironmentUpdated,
 	handler.EnvironmentDelete: environment.HandleEnvironmentDeleted,

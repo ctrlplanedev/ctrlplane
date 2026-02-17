@@ -24,6 +24,14 @@ CREATE TABLE deployment (
     workspace_id UUID REFERENCES workspace(id)
 );
 
+CREATE TABLE job_agent (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    config JSON NOT NULL DEFAULT '{}'
+);
+
 CREATE TABLE environment (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -32,6 +40,14 @@ CREATE TABLE environment (
     metadata JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE
+);
+
+CREATE TABLE resource_provider (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    metadata JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE resource (
@@ -44,6 +60,9 @@ CREATE TABLE resource (
     workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
     config JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ,
+    locked_at TIMESTAMPTZ,
     metadata JSONB NOT NULL DEFAULT '{}'
 );
 

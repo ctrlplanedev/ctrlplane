@@ -32,20 +32,17 @@ type testEntities struct {
 
 func setupEntities(t *testing.T, s *store.Store, ctx context.Context) testEntities {
 	t.Helper()
-	systemID := uuid.New().String()
 
 	deployment := &oapi.Deployment{
-		Id:        uuid.New().String(),
-		Name:      "test-deployment",
-		Slug:      "test-deployment",
-		SystemIds: []string{systemID},
+		Id:   uuid.New().String(),
+		Name: "test-deployment",
+		Slug: "test-deployment",
 	}
 	require.NoError(t, s.Deployments.Upsert(ctx, deployment))
 
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{systemID},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 	require.NoError(t, s.Environments.Upsert(ctx, env))
 

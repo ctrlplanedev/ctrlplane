@@ -7,6 +7,11 @@ export enum Event {
   SystemUpdated = "system.updated",
   SystemDeleted = "system.deleted",
 
+  SystemDeploymentLinked = "system-deployment.linked",
+  SystemDeploymentUnlinked = "system-deployment.unlinked",
+  SystemEnvironmentLinked = "system-environment.linked",
+  SystemEnvironmentUnlinked = "system-environment.unlinked",
+
   ResourceCreated = "resource.created",
   ResourceUpdated = "resource.updated",
   ResourceDeleted = "resource.deleted",
@@ -79,6 +84,10 @@ export type GoEventPayload = {
   [Event.SystemCreated]: WorkspaceEngine["schemas"]["System"];
   [Event.SystemUpdated]: WorkspaceEngine["schemas"]["System"];
   [Event.SystemDeleted]: WorkspaceEngine["schemas"]["System"];
+  [Event.SystemDeploymentLinked]: WorkspaceEngine["schemas"]["SystemDeploymentLink"];
+  [Event.SystemDeploymentUnlinked]: WorkspaceEngine["schemas"]["SystemDeploymentLink"];
+  [Event.SystemEnvironmentLinked]: WorkspaceEngine["schemas"]["SystemEnvironmentLink"];
+  [Event.SystemEnvironmentUnlinked]: WorkspaceEngine["schemas"]["SystemEnvironmentLink"];
   [Event.ResourceCreated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceUpdated]: WorkspaceEngine["schemas"]["Resource"];
   [Event.ResourceDeleted]: WorkspaceEngine["schemas"]["Resource"];

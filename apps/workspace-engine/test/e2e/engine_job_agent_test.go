@@ -676,8 +676,6 @@ func TestEngine_JobAgentEmptyConfig(t *testing.T) {
 }
 
 func TestEngine_JobAgentNameUniqueness(t *testing.T) {
-	// Note: Job agent names are NOT enforced to be unique in the engine
-	// This test verifies that multiple agents can have the same name (by ID is what matters)
 	engine := integration.NewTestWorkspace(t)
 	ctx := context.Background()
 
@@ -696,20 +694,36 @@ func TestEngine_JobAgentNameUniqueness(t *testing.T) {
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja1)
 	engine.PushEvent(ctx, handler.JobAgentCreate, ja2)
 
-	// Verify both agents exist with the same name but different IDs
 	allAgents := engine.Workspace().JobAgents().Items()
-	if len(allAgents) != 2 {
-		t.Fatalf("expected 2 job agents, got %d", len(allAgents))
-	}
 
-	retrievedJa1, _ := engine.Workspace().JobAgents().Get(ja1.Id)
-	retrievedJa2, _ := engine.Workspace().JobAgents().Get(ja2.Id)
+	if integration.UseDBBacking() {
+		// The database enforces UNIQUE(workspace_id, name), so the second
+		// insert with the same name is rejected and only the first agent
+		// persists.
+		if len(allAgents) != 1 {
+			t.Fatalf("expected 1 job agent (DB unique constraint), got %d", len(allAgents))
+		}
+		retrievedJa1, ok := engine.Workspace().JobAgents().Get(ja1.Id)
+		if !ok {
+			t.Fatal("first job agent should still exist")
+		}
+		if retrievedJa1.Name != sameName {
+			t.Fatal("agent should have the original name")
+		}
+	} else {
+		// In-memory store does not enforce name uniqueness; both agents coexist.
+		if len(allAgents) != 2 {
+			t.Fatalf("expected 2 job agents, got %d", len(allAgents))
+		}
 
-	if retrievedJa1.Name != sameName || retrievedJa2.Name != sameName {
-		t.Fatal("both agents should have the same name")
-	}
+		retrievedJa1, _ := engine.Workspace().JobAgents().Get(ja1.Id)
+		retrievedJa2, _ := engine.Workspace().JobAgents().Get(ja2.Id)
 
-	if retrievedJa1.Id == retrievedJa2.Id {
-		t.Fatal("agents should have different IDs")
+		if retrievedJa1.Name != sameName || retrievedJa2.Name != sameName {
+			t.Fatal("both agents should have the same name")
+		}
+		if retrievedJa1.Id == retrievedJa2.Id {
+			t.Fatal("agents should have different IDs")
+		}
 	}
 }

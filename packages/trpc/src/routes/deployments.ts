@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { desc, eq } from "@ctrlplane/db";
+import { asc, desc, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -36,26 +36,29 @@ const deploymentJobAgentConfig = z.union([
 
 export const deploymentsRouter = router({
   get: protectedProcedure
-    .input(z.object({ workspaceId: z.string(), deploymentId: z.string() }))
+    .input(z.object({ deploymentId: z.uuid() }))
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "workspace", id: input.workspaceId }),
+          .on({ type: "deployment", id: input.deploymentId }),
     })
-    .query(async ({ input }) => {
-      const response = await getClientFor(input.workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
-        {
-          params: {
-            path: {
-              workspaceId: input.workspaceId,
-              deploymentId: input.deploymentId,
+    .query(async ({ input, ctx }) => {
+      const deployment = await ctx.db.query.deployment.findFirst({
+        where: eq(schema.deployment.id, input.deploymentId),
+        with: {
+          systemDeployments: {
+            with: {
+              system: {
+                with: {
+                  systemEnvironments: true,
+                },
+              },
             },
           },
         },
-      );
-      return response.data;
+      });
+      return deployment;
     }),
 
   list: protectedProcedure
@@ -78,6 +81,7 @@ export const deploymentsRouter = router({
             },
           },
         },
+        orderBy: asc(schema.deployment.name),
       });
       return deployments;
     }),
@@ -199,7 +203,7 @@ export const deploymentsRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-              validate.data.errors.length > 0
+            validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });
@@ -281,6 +285,23 @@ export const deploymentsRouter = router({
       });
 
       return updateData;
+    }),
+
+  variables: protectedProcedure
+    .input(z.object({ workspaceId: z.uuid(), deploymentId: z.string() }))
+    .query(async ({ input }) => {
+      const response = await getClientFor(input.workspaceId).GET(
+        "/v1/workspaces/{workspaceId}/deployments/{deploymentId}",
+        {
+          params: {
+            path: {
+              workspaceId: input.workspaceId,
+              deploymentId: input.deploymentId,
+            },
+          },
+        },
+      );
+      return response.data?.variables ?? [];
     }),
 
   createVersion: protectedProcedure

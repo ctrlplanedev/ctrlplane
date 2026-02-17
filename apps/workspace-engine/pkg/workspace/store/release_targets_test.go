@@ -45,7 +45,6 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		Id:          environmentId,
 		Name:        "test-env",
 		Description: ptr("Test environment"),
-		SystemIds:   []string{systemId},
 	}
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
@@ -59,7 +58,6 @@ func createTestReleaseAndJob(s *store.Store, ctx context.Context, tag string, co
 		Name:        "test-deployment",
 		Slug:        "test-deployment",
 		Description: ptr("Test deployment"),
-		SystemIds:   []string{systemId},
 	}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
@@ -255,14 +253,14 @@ func TestGetCurrentRelease_FailedVerification_FallbackToPrevious(t *testing.T) {
 	_, _ = s.Resources.Upsert(ctx, resource)
 
 	environmentId := uuid.New().String()
-	environment := &oapi.Environment{Id: environmentId, Name: "test-env", SystemIds: []string{systemId}}
+	environment := &oapi.Environment{Id: environmentId, Name: "test-env"}
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
 	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
-	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment", SystemIds: []string{systemId}}
+	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment"}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
@@ -370,14 +368,14 @@ func TestGetCurrentRelease_RunningVerification_FallbackToPrevious(t *testing.T) 
 	_, _ = s.Resources.Upsert(ctx, resource)
 
 	environmentId := uuid.New().String()
-	environment := &oapi.Environment{Id: environmentId, Name: "test-env", SystemIds: []string{systemId}}
+	environment := &oapi.Environment{Id: environmentId, Name: "test-env"}
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
 	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
-	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment", SystemIds: []string{systemId}}
+	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment"}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector
@@ -512,14 +510,14 @@ func TestGetCurrentRelease_CancelledVerification_FallbackToPrevious(t *testing.T
 	_, _ = s.Resources.Upsert(ctx, resource)
 
 	environmentId := uuid.New().String()
-	environment := &oapi.Environment{Id: environmentId, Name: "test-env", SystemIds: []string{systemId}}
+	environment := &oapi.Environment{Id: environmentId, Name: "test-env"}
 	selector := &oapi.Selector{}
 	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	environment.ResourceSelector = selector
 	_ = s.Environments.Upsert(ctx, environment)
 
 	deploymentId := uuid.New().String()
-	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment", SystemIds: []string{systemId}}
+	deployment := &oapi.Deployment{Id: deploymentId, Name: "test-deployment", Slug: "test-deployment"}
 	deploymentSelector := &oapi.Selector{}
 	_ = deploymentSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	deployment.ResourceSelector = deploymentSelector

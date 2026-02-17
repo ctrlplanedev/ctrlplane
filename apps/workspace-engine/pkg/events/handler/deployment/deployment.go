@@ -20,7 +20,7 @@ import (
 func makeReleaseTargets(ctx context.Context, ws *workspace.Workspace, deployment *oapi.Deployment) ([]*oapi.ReleaseTarget, error) {
 	seen := make(map[string]struct{})
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
-	for _, systemID := range deployment.SystemIds {
+	for _, systemID := range ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id) {
 		environments := ws.Systems().Environments(systemID)
 		for _, environment := range environments {
 			resources, err := ws.Environments().Resources(ctx, environment.Id)

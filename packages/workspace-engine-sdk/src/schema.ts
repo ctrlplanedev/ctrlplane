@@ -1235,7 +1235,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         DeploymentAndSystems: {
             deployment: components["schemas"]["Deployment"];
@@ -1336,7 +1335,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
@@ -1904,6 +1902,14 @@ export interface components {
             };
             name: string;
             workspaceId: string;
+        };
+        SystemDeploymentLink: {
+            deploymentId: string;
+            systemId: string;
+        };
+        SystemEnvironmentLink: {
+            environmentId: string;
+            systemId: string;
         };
         TerraformCloudJobAgentConfig: {
             /** @description Terraform Cloud address (e.g. https://app.terraform.io). */

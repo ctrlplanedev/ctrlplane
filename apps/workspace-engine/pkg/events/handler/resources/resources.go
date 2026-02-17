@@ -11,12 +11,12 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/trace"
 )
 
-func shareSystem(a, b []string) bool {
-	set := make(map[string]struct{}, len(a))
-	for _, id := range a {
+func shareSystem(envSystemIDs, depSystemIDs []string) bool {
+	set := make(map[string]struct{}, len(envSystemIDs))
+	for _, id := range envSystemIDs {
 		set[id] = struct{}{}
 	}
-	for _, id := range b {
+	for _, id := range depSystemIDs {
 		if _, ok := set[id]; ok {
 			return true
 		}
@@ -36,8 +36,10 @@ func computeReleaseTargets(ctx context.Context, ws *workspace.Workspace, resourc
 
 	releaseTargets := make([]*oapi.ReleaseTarget, 0)
 	for _, environment := range environments {
+		envSystemIDs := ws.SystemEnvironments().GetSystemIDsForEnvironment(environment.Id)
 		for _, deployment := range deployments {
-			if !shareSystem(environment.SystemIds, deployment.SystemIds) {
+			depSystemIDs := ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id)
+			if !shareSystem(envSystemIDs, depSystemIDs) {
 				continue
 			}
 

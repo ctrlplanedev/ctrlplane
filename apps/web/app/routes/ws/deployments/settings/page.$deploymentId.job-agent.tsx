@@ -28,7 +28,6 @@ import { ArgoCDConfig } from "./_components/ArgoCD";
 import { GithubAgentConfig } from "./_components/GithubAgentConfig";
 import { TerraformCloudConfig } from "./_components/TerraformCloudConfig";
 import { useAllJobAgents, useSelectedJobAgent } from "./_hooks/job-agents";
-import { deploymentJobAgentConfig } from "./deploymentJobAgentConfig";
 
 const formSchema = z.object({
   jobAgentId: z.string(),

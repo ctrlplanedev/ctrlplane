@@ -151,9 +151,8 @@ func TestEvaluatePolicy(t *testing.T) {
 	ctx := context.Background()
 
 	environment := &oapi.Environment{
-		Id:        "env-1",
-		SystemIds: []string{"system-1"},
-		Name:      "production",
+		Id:   "env-1",
+		Name: "production",
 	}
 
 	version := &oapi.DeploymentVersion{
@@ -380,9 +379,8 @@ func TestEvaluatePolicy_MultipleRules(t *testing.T) {
 	manager := New(st)
 
 	environment := &oapi.Environment{
-		Id:        "env-1",
-		SystemIds: []string{"system-1"},
-		Name:      "production",
+		Id:   "env-1",
+		Name: "production",
 	}
 	_ = st.Environments.Upsert(ctx, environment)
 

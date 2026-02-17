@@ -174,10 +174,9 @@ func TestRelatableEntity_Item(t *testing.T) {
 
 	// Deployment
 	deployment := &Deployment{
-		Id:        "dep-1",
-		Name:      "test-deploy",
-		Slug:      "test-deploy",
-		SystemIds: []string{"sys-1"},
+		Id:   "dep-1",
+		Name: "test-deploy",
+		Slug: "test-deploy",
 	}
 	depEntity := &RelatableEntity{}
 	err = depEntity.FromDeployment(*deployment)
@@ -190,9 +189,8 @@ func TestRelatableEntity_Item(t *testing.T) {
 
 	// Environment
 	env := &Environment{
-		Id:        "env-1",
-		Name:      "production",
-		SystemIds: []string{"sys-1"},
+		Id:   "env-1",
+		Name: "production",
 	}
 	envEntity := &RelatableEntity{}
 	err = envEntity.FromEnvironment(*env)

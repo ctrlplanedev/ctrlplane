@@ -2,7 +2,7 @@ package memory
 
 import (
 	"fmt"
-	"slices"
+	"sync"
 	"workspace-engine/pkg/cmap"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence"
@@ -48,8 +48,8 @@ func New(wsId string) *InMemory {
 		db:     memdb,
 
 		JobVerifications:         createTypedStore[*oapi.JobVerification](router, "job_verification"),
-		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
-		ResourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
+		resources:                createTypedStore[*oapi.Resource](router, "resource"),
+		resourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
 		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
 		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
 		deploymentVersions:       createMemDBStore[*oapi.DeploymentVersion](router, "deployment_version", memdb),
@@ -61,7 +61,7 @@ func New(wsId string) *InMemory {
 		systems:                  createTypedStore[*oapi.System](router, "system"),
 		Releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
-		JobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
+		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
 		RelationshipRules:        createTypedStore[*oapi.RelationshipRule](router, "relationship_rule"),
 		GithubEntities:           createTypedStore[*oapi.GithubEntity](router, "github_entity"),
@@ -69,6 +69,11 @@ func New(wsId string) *InMemory {
 		WorkflowJobTemplates:     createTypedStore[*oapi.WorkflowJobTemplate](router, "workflow_job_template"),
 		WorkflowRuns:             createTypedStore[*oapi.WorkflowRun](router, "workflow_run"),
 		WorkflowJobs:             createTypedStore[*oapi.WorkflowJob](router, "workflow_job"),
+
+		systemDeploymentLinks:      &linkStore{},
+		systemEnvironmentLinks:     &linkStore{},
+		systemDeploymentLinkStore:  createTypedStore[*oapi.SystemDeploymentLink](router, "system_deployment_link"),
+		systemEnvironmentLinkStore: createTypedStore[*oapi.SystemEnvironmentLink](router, "system_environment_link"),
 	}
 }
 
@@ -79,9 +84,9 @@ type InMemory struct {
 	router *persistence.RepositoryRouter
 	db     *memdb.MemDB
 
-	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
+	resources         cmap.ConcurrentMap[string, *oapi.Resource]
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
-	ResourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
+	resourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
 
 	deployments              cmap.ConcurrentMap[string, *oapi.Deployment]
 	DeploymentVariables      cmap.ConcurrentMap[string, *oapi.DeploymentVariable]
@@ -96,7 +101,7 @@ type InMemory struct {
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
 	Jobs      *indexstore.Store[*oapi.Job]
-	JobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
+	jobAgents cmap.ConcurrentMap[string, *oapi.JobAgent]
 
 	GithubEntities      cmap.ConcurrentMap[string, *oapi.GithubEntity]
 	UserApprovalRecords cmap.ConcurrentMap[string, *oapi.UserApprovalRecord]
@@ -106,6 +111,11 @@ type InMemory struct {
 	WorkflowJobTemplates cmap.ConcurrentMap[string, *oapi.WorkflowJobTemplate]
 	WorkflowRuns         cmap.ConcurrentMap[string, *oapi.WorkflowRun]
 	WorkflowJobs         cmap.ConcurrentMap[string, *oapi.WorkflowJob]
+
+	systemDeploymentLinks      *linkStore
+	systemEnvironmentLinks     *linkStore
+	systemDeploymentLinkStore  cmap.ConcurrentMap[string, *oapi.SystemDeploymentLink]
+	systemEnvironmentLinkStore cmap.ConcurrentMap[string, *oapi.SystemEnvironmentLink]
 }
 
 // deploymentVersionRepoAdapter wraps an indexstore.Store to satisfy the
@@ -147,49 +157,67 @@ func (a *cmapRepoAdapter[E]) Items() map[string]E {
 	return a.store.Items()
 }
 
-// deploymentRepoAdapter wraps a cmap for deployments and adds GetBySystemID.
-type deploymentRepoAdapter struct {
-	cmapRepoAdapter[*oapi.Deployment]
-}
-
-func (a *deploymentRepoAdapter) GetBySystemID(systemID string) map[string]*oapi.Deployment {
-	result := make(map[string]*oapi.Deployment)
-	for id, d := range a.store.Items() {
-		if slices.Contains(d.SystemIds, systemID) {
-			result[id] = d
-		}
-	}
-	return result
-}
-
 // Deployments implements repository.Repo.
 func (s *InMemory) Deployments() repository.DeploymentRepo {
-	return &deploymentRepoAdapter{cmapRepoAdapter[*oapi.Deployment]{store: &s.deployments}}
-}
-
-// environmentRepoAdapter wraps a cmap for environments and adds GetBySystemID.
-type environmentRepoAdapter struct {
-	cmapRepoAdapter[*oapi.Environment]
-}
-
-func (a *environmentRepoAdapter) GetBySystemID(systemID string) map[string]*oapi.Environment {
-	result := make(map[string]*oapi.Environment)
-	for id, e := range a.store.Items() {
-		if slices.Contains(e.SystemIds, systemID) {
-			result[id] = e
-		}
-	}
-	return result
+	return &cmapRepoAdapter[*oapi.Deployment]{store: &s.deployments}
 }
 
 // Environments implements repository.Repo.
 func (s *InMemory) Environments() repository.EnvironmentRepo {
-	return &environmentRepoAdapter{cmapRepoAdapter[*oapi.Environment]{store: &s.environments}}
+	return &cmapRepoAdapter[*oapi.Environment]{store: &s.environments}
 }
 
 // Systems implements repository.Repo.
 func (s *InMemory) Systems() repository.SystemRepo {
 	return &cmapRepoAdapter[*oapi.System]{store: &s.systems}
+}
+
+// JobAgents implements repository.Repo.
+func (s *InMemory) JobAgents() repository.JobAgentRepo {
+	return &cmapRepoAdapter[*oapi.JobAgent]{store: &s.jobAgents}
+}
+
+// resourceRepoAdapter wraps a cmap.ConcurrentMap to satisfy ResourceRepo,
+// adding the GetByIdentifier lookup.
+type resourceRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.Resource]
+}
+
+func (a *resourceRepoAdapter) Get(id string) (*oapi.Resource, bool) {
+	return a.store.Get(id)
+}
+
+func (a *resourceRepoAdapter) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
+	for item := range a.store.IterBuffered() {
+		if item.Val.Identifier == identifier {
+			return item.Val, true
+		}
+	}
+	return nil, false
+}
+
+func (a *resourceRepoAdapter) Set(entity *oapi.Resource) error {
+	a.store.Set(entity.Id, entity)
+	return nil
+}
+
+func (a *resourceRepoAdapter) Remove(id string) error {
+	a.store.Remove(id)
+	return nil
+}
+
+func (a *resourceRepoAdapter) Items() map[string]*oapi.Resource {
+	return a.store.Items()
+}
+
+// Resources implements repository.Repo.
+func (s *InMemory) Resources() repository.ResourceRepo {
+	return &resourceRepoAdapter{store: &s.resources}
+}
+
+// ResourceProviders implements repository.Repo.
+func (s *InMemory) ResourceProviders() repository.ResourceProviderRepo {
+	return &cmapRepoAdapter[*oapi.ResourceProvider]{store: &s.resourceProviders}
 }
 
 func (s *InMemory) Router() *persistence.RepositoryRouter {
@@ -198,4 +226,147 @@ func (s *InMemory) Router() *persistence.RepositoryRouter {
 
 func (s *InMemory) DB() *memdb.MemDB {
 	return s.db
+}
+
+// --- In-memory bidirectional link store ---
+
+// linkPair represents one link between two IDs (e.g. systemID <-> deploymentID).
+type linkPair struct {
+	Left  string
+	Right string
+}
+
+// linkStore is a simple thread-safe set of link pairs with bidirectional lookup.
+type linkStore struct {
+	mu    sync.RWMutex
+	pairs []linkPair
+}
+
+func (ls *linkStore) getRightByLeft(left string) []string {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
+	var result []string
+	for _, p := range ls.pairs {
+		if p.Left == left {
+			result = append(result, p.Right)
+		}
+	}
+	return result
+}
+
+func (ls *linkStore) getLeftByRight(right string) []string {
+	ls.mu.RLock()
+	defer ls.mu.RUnlock()
+	var result []string
+	for _, p := range ls.pairs {
+		if p.Right == right {
+			result = append(result, p.Left)
+		}
+	}
+	return result
+}
+
+func (ls *linkStore) link(left, right string) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	for _, p := range ls.pairs {
+		if p.Left == left && p.Right == right {
+			return
+		}
+	}
+	ls.pairs = append(ls.pairs, linkPair{Left: left, Right: right})
+}
+
+func (ls *linkStore) unlink(left, right string) {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	for i, p := range ls.pairs {
+		if p.Left == left && p.Right == right {
+			ls.pairs = append(ls.pairs[:i], ls.pairs[i+1:]...)
+			return
+		}
+	}
+}
+
+// systemDeploymentRepoAdapter adapts linkStore for SystemDeploymentRepo.
+// Left = systemID, Right = deploymentID.
+type systemDeploymentRepoAdapter struct {
+	links     *linkStore
+	persisted *cmap.ConcurrentMap[string, *oapi.SystemDeploymentLink]
+}
+
+func (a *systemDeploymentRepoAdapter) GetSystemIDsForDeployment(deploymentID string) []string {
+	return a.links.getLeftByRight(deploymentID)
+}
+
+func (a *systemDeploymentRepoAdapter) GetDeploymentIDsForSystem(systemID string) []string {
+	return a.links.getRightByLeft(systemID)
+}
+
+func (a *systemDeploymentRepoAdapter) Link(systemID, deploymentID string) error {
+	a.links.link(systemID, deploymentID)
+	link := &oapi.SystemDeploymentLink{SystemId: systemID, DeploymentId: deploymentID}
+	a.persisted.Set(systemID+":"+deploymentID, link)
+	return nil
+}
+
+func (a *systemDeploymentRepoAdapter) Unlink(systemID, deploymentID string) error {
+	a.links.unlink(systemID, deploymentID)
+	a.persisted.Remove(systemID + ":" + deploymentID)
+	return nil
+}
+
+// SystemDeployments implements repository.Repo.
+func (s *InMemory) SystemDeployments() repository.SystemDeploymentRepo {
+	return &systemDeploymentRepoAdapter{
+		links:     s.systemDeploymentLinks,
+		persisted: &s.systemDeploymentLinkStore,
+	}
+}
+
+// systemEnvironmentRepoAdapter adapts linkStore for SystemEnvironmentRepo.
+// Left = systemID, Right = environmentID.
+type systemEnvironmentRepoAdapter struct {
+	links     *linkStore
+	persisted *cmap.ConcurrentMap[string, *oapi.SystemEnvironmentLink]
+}
+
+func (a *systemEnvironmentRepoAdapter) GetSystemIDsForEnvironment(environmentID string) []string {
+	return a.links.getLeftByRight(environmentID)
+}
+
+func (a *systemEnvironmentRepoAdapter) GetEnvironmentIDsForSystem(systemID string) []string {
+	return a.links.getRightByLeft(systemID)
+}
+
+func (a *systemEnvironmentRepoAdapter) Link(systemID, environmentID string) error {
+	a.links.link(systemID, environmentID)
+	link := &oapi.SystemEnvironmentLink{SystemId: systemID, EnvironmentId: environmentID}
+	a.persisted.Set(systemID+":"+environmentID, link)
+	return nil
+}
+
+func (a *systemEnvironmentRepoAdapter) Unlink(systemID, environmentID string) error {
+	a.links.unlink(systemID, environmentID)
+	a.persisted.Remove(systemID + ":" + environmentID)
+	return nil
+}
+
+// SystemEnvironments implements repository.Repo.
+func (s *InMemory) SystemEnvironments() repository.SystemEnvironmentRepo {
+	return &systemEnvironmentRepoAdapter{
+		links:     s.systemEnvironmentLinks,
+		persisted: &s.systemEnvironmentLinkStore,
+	}
+}
+
+// RestoreLinks rebuilds the in-memory link stores from the persisted link entities.
+// This should be called after Router().Apply() loads data from persistence.
+func (s *InMemory) RestoreLinks() {
+	for item := range s.systemDeploymentLinkStore.IterBuffered() {
+		s.systemDeploymentLinks.link(item.Val.SystemId, item.Val.DeploymentId)
+	}
+	for item := range s.systemEnvironmentLinkStore.IterBuffered() {
+		s.systemEnvironmentLinks.link(item.Val.SystemId, item.Val.EnvironmentId)
+	}
 }

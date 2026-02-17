@@ -54,7 +54,7 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 				"env":    "prod",
 				"region": "us-east-1",
 			}),
-			integration.ResourceConfig(map[string]interface{}{
+			integration.ResourceConfig(map[string]any{
 				"replicas": float64(3),
 				"image":    "nginx:latest",
 			}),
@@ -100,7 +100,6 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	require.True(t, ok, "Deployment should be loaded")
 	assert.Equal(t, "web-deployment", loadedDeployment.Name)
 	assert.Equal(t, "Web application deployment", *loadedDeployment.Description)
-	assert.Contains(t, loadedDeployment.SystemIds, systemID)
 	assert.Equal(t, jobAgentID, *loadedDeployment.JobAgentId)
 
 	// Verify Environment
@@ -108,7 +107,6 @@ func TestEngine_Persistence_BasicEntities(t *testing.T) {
 	require.True(t, ok, "Environment should be loaded")
 	assert.Equal(t, "production", loadedEnv.Name)
 	assert.Equal(t, "Production environment", *loadedEnv.Description)
-	assert.Contains(t, loadedEnv.SystemIds, systemID)
 
 	// Verify Resources
 	allResources := ws.Resources().Items()

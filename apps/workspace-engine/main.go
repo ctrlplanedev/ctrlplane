@@ -165,22 +165,6 @@ func initMetrics() (func(), error) {
 	otel.SetMeterProvider(mp)
 
 	// Start runtime metrics collection
-	// This will automatically collect and report:
-	// - runtime.uptime
-	// - process.runtime.go.cgo.calls
-	// - process.runtime.go.gc.count
-	// - process.runtime.go.gc.pause_ns
-	// - process.runtime.go.gc.pause_total_ns
-	// - process.runtime.go.goroutines ← Goroutine count!
-	// - process.runtime.go.lookups
-	// - process.runtime.go.mem.heap_alloc
-	// - process.runtime.go.mem.heap_idle
-	// - process.runtime.go.mem.heap_inuse
-	// - process.runtime.go.mem.heap_objects
-	// - process.runtime.go.mem.heap_released
-	// - process.runtime.go.mem.heap_sys
-	// - process.runtime.go.mem.live_objects
-	// - and more...
 	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
 	if err != nil {
 		return nil, fmt.Errorf("failed to start runtime metrics: %w", err)
@@ -225,8 +209,13 @@ func main() {
 				wsstore.WithDBEnvironments(ctx),
 				wsstore.WithDBDeployments(ctx),
 				wsstore.WithDBSystems(ctx),
+				// wsstore.WithDBJobAgents(ctx),
+				wsstore.WithDBResourceProviders(ctx),
+				wsstore.WithDBSystemDeployments(ctx),
+				wsstore.WithDBSystemEnvironments(ctx),
+				wsstore.WithDBResources(ctx),
+				wsstore.WithDBJobAgents(ctx),
 			),
-			// workspace.AddDefaultSystem(),
 		),
 	)
 

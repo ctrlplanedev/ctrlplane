@@ -52,14 +52,12 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 		Name:        "test-deployment",
 		Slug:        "test-dep",
 		Description: ptr("Test deployment"),
-		SystemIds:   []string{system.Id},
 	}
 
 	environment := &oapi.Environment{
 		Id:          uuid.New().String(),
 		Name:        "production",
 		Description: ptr("Production environment"),
-		SystemIds:   []string{system.Id},
 	}
 
 	// Build changes using the persistence builder
@@ -92,7 +90,7 @@ func TestPersistence_BasicSaveAndLoad(t *testing.T) {
 	assert.Equal(t, system.Name, restoredSystem.Name)
 	assert.Equal(t, system.Description, restoredSystem.Description)
 
-	restoredResource, ok := testStore.Repo().Resources.Get(resource.Id)
+	restoredResource, ok := testStore.Repo().Resources().Get(resource.Id)
 	require.True(t, ok, "Resource should be restored")
 	assert.Equal(t, resource.Name, restoredResource.Name)
 	assert.Equal(t, resource.Kind, restoredResource.Kind)
@@ -173,7 +171,7 @@ func TestPersistence_UpdateAndCompaction(t *testing.T) {
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
-	restoredResource, ok := testStore.Repo().Resources.Get(resourceId)
+	restoredResource, ok := testStore.Repo().Resources().Get(resourceId)
 	require.True(t, ok)
 	assert.Equal(t, "updated-name", restoredResource.Name)
 	assert.Equal(t, "2.0.0", restoredResource.Version)
@@ -231,7 +229,7 @@ func TestPersistence_DeleteEntity(t *testing.T) {
 	err = testStore.Repo().Router().Apply(ctx, loadedChanges)
 	require.NoError(t, err)
 
-	_, ok := testStore.Repo().Resources.Get(resource.Id)
+	_, ok := testStore.Repo().Resources().Get(resource.Id)
 
 	// Resource should not exist (because Load didn't return it)
 	assert.False(t, ok)
@@ -354,10 +352,9 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	}
 
 	deployment := &oapi.Deployment{
-		Id:        deploymentId,
-		Name:      "test-deployment",
-		Slug:      "test-dep",
-		SystemIds: []string{systemId},
+		Id:   deploymentId,
+		Name: "test-deployment",
+		Slug: "test-dep",
 	}
 
 	deploymentVersion := &oapi.DeploymentVersion{
@@ -373,9 +370,8 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	}
 
 	environment := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{systemId},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	policy := &oapi.Policy{
@@ -467,10 +463,10 @@ func TestPersistence_AllEntityTypes(t *testing.T) {
 	_, ok := testStore.Repo().Systems().Get(systemId)
 	assert.True(t, ok, "System should be restored")
 
-	_, ok = testStore.Repo().Resources.Get(resource.Id)
+	_, ok = testStore.Repo().Resources().Get(resource.Id)
 	assert.True(t, ok, "Resource should be restored")
 
-	_, ok = testStore.Repo().ResourceProviders.Get(resourceProvider.Id)
+	_, ok = testStore.Repo().ResourceProviders().Get(resourceProvider.Id)
 	assert.True(t, ok, "ResourceProvider should be restored")
 
 	_, ok = testStore.Repo().ResourceVariables.Get(resourceVariable.ID())
@@ -533,17 +529,15 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 
 	// Create deployment
 	deployment := &oapi.Deployment{
-		Id:        deploymentId,
-		Name:      "web-app",
-		Slug:      "web-app",
-		SystemIds: []string{systemId},
+		Id:   deploymentId,
+		Name: "web-app",
+		Slug: "web-app",
 	}
 
 	// Create environment
 	environment := &oapi.Environment{
-		Id:        envId,
-		Name:      "production",
-		SystemIds: []string{systemId},
+		Id:   envId,
+		Name: "production",
 	}
 
 	// Create resource
@@ -657,7 +651,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "Environment should be restored")
 	assert.Equal(t, "production", restoredEnv.Name)
 
-	restoredResource, ok := newStore.Repo().Resources.Get(resource.Id)
+	restoredResource, ok := newStore.Repo().Resources().Get(resource.Id)
 	require.True(t, ok, "Resource should be restored")
 	assert.Equal(t, "web-server-1", restoredResource.Name)
 	assert.Equal(t, "us-east-1", restoredResource.Metadata["cluster"])

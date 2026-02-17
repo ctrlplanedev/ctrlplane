@@ -7,7 +7,7 @@ import (
 	"workspace-engine/pkg/selector"
 	"workspace-engine/pkg/workspace/relationships"
 	"workspace-engine/pkg/workspace/store/diffcheck"
-	"workspace-engine/pkg/workspace/store/repository/memory"
+	"workspace-engine/pkg/workspace/store/repository"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -15,14 +15,19 @@ import (
 
 func NewResources(store *Store) *Resources {
 	return &Resources{
-		repo:  store.repo,
+		repo:  store.repo.Resources(),
 		store: store,
 	}
 }
 
 type Resources struct {
-	repo  *memory.InMemory
+	repo  repository.ResourceRepo
 	store *Store
+}
+
+// SetRepo replaces the underlying ResourceRepo implementation.
+func (r *Resources) SetRepo(repo repository.ResourceRepo) {
+	r.repo = repo
 }
 
 func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.Resource, error) {
@@ -31,35 +36,32 @@ func (r *Resources) Upsert(ctx context.Context, resource *oapi.Resource) (*oapi.
 	))
 	defer span.End()
 
-	// Check if resource already exists to determine if this is an update
-	existing, exists := r.repo.Resources.Get(resource.Id)
+	existing, exists := r.repo.Get(resource.Id)
 
 	if exists && existing != nil {
-		// Preserve CreatedAt from the existing resource
 		if resource.CreatedAt.IsZero() {
 			resource.CreatedAt = existing.CreatedAt
 		}
-		// Only set UpdatedAt if there are actual changes
 		if len(diffcheck.HasResourceChanges(existing, resource)) > 0 {
 			now := time.Now()
 			resource.UpdatedAt = &now
 		}
 	} else {
-		// New resource - ensure CreatedAt is set
 		if resource.CreatedAt.IsZero() {
 			resource.CreatedAt = time.Now()
 		}
 	}
 
-	// Store the resource
-	r.repo.Resources.Set(resource.Id, resource)
+	if err := r.repo.Set(resource); err != nil {
+		return nil, err
+	}
 	r.store.changeset.RecordUpsert(resource)
 
 	return resource, nil
 }
 
 func (r *Resources) Get(id string) (*oapi.Resource, bool) {
-	return r.repo.Resources.Get(id)
+	return r.repo.Get(id)
 }
 
 func (r *Resources) Remove(ctx context.Context, id string) {
@@ -68,35 +70,29 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	))
 	defer span.End()
 
-	resource, ok := r.repo.Resources.Get(id)
+	resource, ok := r.repo.Get(id)
 	if !ok || resource == nil {
 		return
 	}
 
-	// Clean up relationships for this resource
 	entity := relationships.NewResourceEntity(resource)
 	r.store.Relations.RemoveForEntity(ctx, entity)
 
-	r.repo.Resources.Remove(id)
+	r.repo.Remove(id)
 	r.store.changeset.RecordDelete(resource)
 }
 
 func (r *Resources) Items() map[string]*oapi.Resource {
-	return r.repo.Resources.Items()
+	return r.repo.Items()
 }
 
 func (r *Resources) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
-	for _, resource := range r.repo.Resources.Items() {
-		if resource.Identifier == identifier {
-			return resource, true
-		}
-	}
-	return nil, false
+	return r.repo.GetByIdentifier(identifier)
 }
 
 func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariable {
 	variables := make(map[string]*oapi.ResourceVariable, 25)
-	for _, variable := range r.repo.ResourceVariables.Items() {
+	for _, variable := range r.store.repo.ResourceVariables.Items() {
 		if variable.ResourceId != resourceId {
 			continue
 		}

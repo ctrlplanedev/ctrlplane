@@ -72,16 +72,9 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
-               "systemIds",
                "name",
                "slug"
             ],
@@ -140,16 +133,9 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
-               "systemIds",
                "name"
             ],
             "type": "object"
@@ -440,19 +426,12 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
                "id",
                "name",
                "slug",
-               "systemIds",
                "jobAgentConfig"
             ],
             "type": "object"
@@ -778,18 +757,11 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
                "id",
                "name",
-               "systemIds",
                "createdAt"
             ],
             "type": "object"
@@ -1850,21 +1822,6 @@
             ],
             "type": "object"
          },
-         "ResourceProviderRequestAccepted": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "message": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "message"
-            ],
-            "type": "object"
-         },
          "ResourceProviderResource": {
             "properties": {
                "config": {
@@ -1914,6 +1871,24 @@
                "createdAt",
                "config",
                "metadata"
+            ],
+            "type": "object"
+         },
+         "ResourceProviderSetRequestAccepted": {
+            "properties": {
+               "batchId": {
+                  "type": "string"
+               },
+               "method": {
+                  "type": "string"
+               },
+               "ok": {
+                  "type": "boolean"
+               }
+            },
+            "required": [
+               "ok",
+               "method"
             ],
             "type": "object"
          },
@@ -2224,16 +2199,9 @@
                },
                "slug": {
                   "type": "string"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
-               "systemIds",
                "name",
                "slug"
             ],
@@ -2330,16 +2298,9 @@
                },
                "resourceSelector": {
                   "$ref": "#/components/schemas/Selector"
-               },
-               "systemIds": {
-                  "items": {
-                     "type": "string"
-                  },
-                  "type": "array"
                }
             },
             "required": [
-               "systemIds",
                "name"
             ],
             "type": "object"
@@ -2524,7 +2485,8 @@
                }
             },
             "required": [
-               "status"
+               "status",
+               "environmentIds"
             ],
             "type": "object"
          },
@@ -6492,7 +6454,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
+                           "$ref": "#/components/schemas/ResourceProvider"
                         }
                      }
                   },
@@ -6599,7 +6561,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/ResourceProviderRequestAccepted"
+                           "$ref": "#/components/schemas/ResourceProviderSetRequestAccepted"
                         }
                      }
                   },
@@ -7459,6 +7421,270 @@
                }
             },
             "summary": "Upsert system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}": {
+         "delete": {
+            "operationId": "unlinkDeploymentFromSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Unlink deployment from system"
+         },
+         "put": {
+            "operationId": "linkDeploymentToSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Link deployment to system"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}": {
+         "delete": {
+            "operationId": "unlinkEnvironmentFromSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Unlink environment from system"
+         },
+         "put": {
+            "operationId": "linkEnvironmentToSystem",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "202": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemRequestAccepted"
+                        }
+                     }
+                  },
+                  "description": "Accepted response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Link environment to system"
          }
       },
       "/v1/workspaces/{workspaceId}/workflows": {

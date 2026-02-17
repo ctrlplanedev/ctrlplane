@@ -35,11 +35,7 @@ func (y *YesMatchableCondition) Matches(entity any) (bool, error) {
 
 func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCondition, error) {
 	jsonSelector, err := selector.AsJsonSelector()
-	if err != nil {
-		return nil, fmt.Errorf("selector is not a json selector")
-	}
-
-	if len(jsonSelector.Json) != 0 {
+	if err == nil && len(jsonSelector.Json) != 0 {
 		unknownCondition, err := unknown.ParseFromMap(jsonSelector.Json)
 		if err != nil {
 			return &NoMatchableCondition{}, err
@@ -55,7 +51,7 @@ func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCond
 
 	cselSelector, err := selector.AsCelSelector()
 	if err != nil {
-		return &NoMatchableCondition{}, fmt.Errorf("selector is not a cel selector")
+		return &NoMatchableCondition{}, fmt.Errorf("selector is not a cel or json selector")
 	}
 
 	if cselSelector.Cel == "" {
@@ -67,7 +63,6 @@ func Matchable(ctx context.Context, selector *oapi.Selector) (util.MatchableCond
 		return &NoMatchableCondition{}, err
 	}
 	return condition, nil
-
 }
 
 // entityCacheKey generates a cache key component for an entity.

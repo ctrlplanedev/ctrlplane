@@ -16,7 +16,6 @@ import (
 // TestEngine_ReleaseVariableResolution_LiteralValues tests resolving literal variable values
 func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 	jobAgentID := uuid.New().String()
-	resourceID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
 	providerID := uuid.New().String()
@@ -48,7 +47,7 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 		),
 		system,
 		integration.WithResource(
-			integration.ResourceID(resourceID),
+			integration.ResourceIdentifier("server-1"),
 			integration.ResourceName("server-1"),
 			integration.ResourceKind("server"),
 			integration.WithResourceVariable(
@@ -77,7 +76,7 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 			integration.ProviderID(providerID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID(resourceID),
+				integration.ResourceIdentifier("server-1"),
 				integration.ResourceName("server-1"),
 				integration.ResourceKind("server"),
 				integration.WithResourceVariable(
@@ -111,10 +110,14 @@ func TestEngine_ReleaseVariableResolution_LiteralValues(t *testing.T) {
 		engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
 		// Get the release for the target
+		resource, ok := engine.Workspace().Resources().GetByIdentifier("server-1")
+		if !ok {
+			t.Fatalf("server-1 not found")
+		}
 		releaseTarget := &oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
 			EnvironmentId: environmentID,
-			ResourceId:    resourceID,
+			ResourceId:    resource.Id,
 		}
 
 		jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
@@ -292,8 +295,6 @@ func TestEngine_ReleaseVariableResolution_ObjectValue(t *testing.T) {
 // TestEngine_ReleaseVariableResolution_ReferenceValue tests resolving reference variable values
 func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 	jobAgentID := uuid.New().String()
-	resourceID := uuid.New().String()
-	vpcID := uuid.New().String()
 	deploymentID := uuid.New().String()
 	environmentID := uuid.New().String()
 	relRuleID := uuid.New().String()
@@ -324,21 +325,9 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 		integration.RelationshipRuleReference("vpc"),
 		integration.RelationshipRuleFromType("resource"),
 		integration.RelationshipRuleToType("resource"),
-		integration.RelationshipRuleFromJsonSelector(map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "kubernetes-cluster",
-		}),
-		integration.RelationshipRuleToJsonSelector(map[string]any{
-			"type":     "kind",
-			"operator": "equals",
-			"value":    "vpc",
-		}),
-		integration.WithPropertyMatcher(
-			integration.PropertyMatcherFromProperty([]string{"metadata", "vpc_id"}),
-			integration.PropertyMatcherToProperty([]string{"id"}),
-			integration.PropertyMatcherOperator(oapi.Equals),
-		),
+		integration.RelationshipRuleFromCelSelector("resource.kind == 'kubernetes-cluster'"),
+		integration.RelationshipRuleToCelSelector("resource.kind == 'vpc'"),
+		integration.WithCelMatcher("from.metadata.vpc_name == to.name"),
 	)
 
 	engineDirect := integration.NewTestWorkspace(
@@ -350,7 +339,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 		system,
 		rule,
 		integration.WithResource(
-			integration.ResourceID(vpcID),
+			integration.ResourceIdentifier("vpc-main"),
 			integration.ResourceName("vpc-main"),
 			integration.ResourceKind("vpc"),
 			integration.ResourceMetadata(map[string]string{
@@ -359,12 +348,12 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 			}),
 		),
 		integration.WithResource(
-			integration.ResourceID(resourceID),
+			integration.ResourceIdentifier("cluster-main"),
 			integration.ResourceName("cluster-main"),
 			integration.ResourceKind("kubernetes-cluster"),
 			integration.ResourceMetadata(map[string]string{
-				"vpc_id": vpcID,
-				"region": "us-east-1",
+				"vpc_name": "vpc-main",
+				"region":   "us-east-1",
 			}),
 			integration.WithResourceVariable(
 				"vpc_id",
@@ -393,7 +382,7 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 			integration.ProviderID(providerID),
 			integration.ProviderName("test-provider"),
 			integration.WithResourceProviderResource(
-				integration.ResourceID(vpcID),
+				integration.ResourceIdentifier("vpc-main"),
 				integration.ResourceName("vpc-main"),
 				integration.ResourceKind("vpc"),
 				integration.ResourceMetadata(map[string]string{
@@ -402,12 +391,12 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 				}),
 			),
 			integration.WithResourceProviderResource(
-				integration.ResourceID(resourceID),
+				integration.ResourceIdentifier("cluster-main"),
 				integration.ResourceName("cluster-main"),
 				integration.ResourceKind("kubernetes-cluster"),
 				integration.ResourceMetadata(map[string]string{
-					"vpc_id": vpcID,
-					"region": "us-east-1",
+					"vpc_name": "vpc-main",
+					"region":   "us-east-1",
 				}),
 				integration.WithResourceVariable(
 					"vpc_id",
@@ -439,11 +428,21 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 		dv.Tag = "v1.0.0"
 		engine.PushEvent(ctx, handler.DeploymentVersionCreate, dv)
 
+		// Look up resources by identifier
+		vpc, ok := engine.Workspace().Resources().GetByIdentifier("vpc-main")
+		if !ok {
+			t.Fatalf("vpc-main not found")
+		}
+		cluster, ok := engine.Workspace().Resources().GetByIdentifier("cluster-main")
+		if !ok {
+			t.Fatalf("cluster-main not found")
+		}
+
 		// Get the release for the target
 		releaseTarget := &oapi.ReleaseTarget{
 			DeploymentId:  deploymentID,
 			EnvironmentId: environmentID,
-			ResourceId:    resourceID,
+			ResourceId:    cluster.Id,
 		}
 
 		jobs := engine.Workspace().Jobs().GetJobsForReleaseTarget(releaseTarget)
@@ -475,8 +474,8 @@ func TestEngine_ReleaseVariableResolution_ReferenceValue(t *testing.T) {
 			t.Fatalf("vpc_id variable not found")
 		}
 		vpcIDStr, _ := vpcIDVar.AsStringValue()
-		if vpcIDStr != vpcID {
-			t.Errorf("vpc_id = %s, want %s", vpcIDStr, vpcID)
+		if vpcIDStr != vpc.Id {
+			t.Errorf("vpc_id = %s, want %s", vpcIDStr, vpc.Id)
 		}
 
 		// Check vpc_region

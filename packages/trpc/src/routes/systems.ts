@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { eq } from "@ctrlplane/db";
+import { asc, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -27,6 +27,7 @@ export const systemsRouter = router({
           systemDeployments: true,
           systemEnvironments: true,
         },
+        orderBy: [asc(schema.system.name), asc(schema.system.id)],
       });
 
       return systems;

@@ -34,11 +34,7 @@ func TestEngine_ReleaseTargetState_NoCurrentNoDesired(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -102,11 +98,7 @@ func TestEngine_ReleaseTargetState_NoCurrentWithDesired(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -181,11 +173,7 @@ func TestEngine_ReleaseTargetState_CurrentMatchesDesired(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -287,11 +275,7 @@ func TestEngine_ReleaseTargetState_CurrentDiffersFromDesired(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -395,11 +379,7 @@ func TestEngine_ReleaseTargetState_JobStatusTransitions(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -553,11 +533,7 @@ func TestEngine_ReleaseTargetState_MultipleReleaseTargets(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(
@@ -672,11 +648,7 @@ func TestEngine_ReleaseTargetState_MostRecentSuccessful(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentID(environmentID),
 				integration.EnvironmentName("production"),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

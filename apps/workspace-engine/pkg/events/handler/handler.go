@@ -61,6 +61,11 @@ const (
 	SystemUpdate EventType = "system.updated"
 	SystemDelete EventType = "system.deleted"
 
+	SystemDeploymentLinked    EventType = "system-deployment.linked"
+	SystemDeploymentUnlinked  EventType = "system-deployment.unlinked"
+	SystemEnvironmentLinked   EventType = "system-environment.linked"
+	SystemEnvironmentUnlinked EventType = "system-environment.unlinked"
+
 	JobAgentCreate EventType = "job-agent.created"
 	JobAgentUpdate EventType = "job-agent.updated"
 	JobAgentDelete EventType = "job-agent.deleted"
@@ -180,9 +185,9 @@ func (el *EventListener) ListenAndRoute(ctx context.Context, msg *messaging.Mess
 		return ws, fmt.Errorf("handler failed to process event %s: %w", rawEvent.EventType, err)
 	}
 
-	// Recompute relationship indexes so dirty indexes are materialized
-	// before ProcessChanges reads them.
-	ws.Store().RelationshipIndexes.Recompute(ctx)
+	// Relationship indexes are lazily recomputed: dirty state is tracked
+	// incrementally here, and the actual CEL evaluation is deferred until
+	// GetRelatedEntities is called (e.g. during reconciliation).
 
 	if err := ws.ReleaseManager().ProcessChanges(ctx, ws.Changeset()); err != nil {
 		span.RecordError(err)

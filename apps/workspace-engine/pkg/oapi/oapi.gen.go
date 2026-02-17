@@ -299,7 +299,6 @@ type Deployment struct {
 	Name             string                `json:"name"`
 	ResourceSelector *Selector             `json:"resourceSelector,omitempty"`
 	Slug             string                `json:"slug"`
-	SystemIds        []string              `json:"systemIds"`
 }
 
 // DeploymentAndSystems defines model for DeploymentAndSystems.
@@ -419,7 +418,6 @@ type Environment struct {
 	Metadata         map[string]string `json:"metadata"`
 	Name             string            `json:"name"`
 	ResourceSelector *Selector         `json:"resourceSelector,omitempty"`
-	SystemIds        []string          `json:"systemIds"`
 }
 
 // EnvironmentProgressionRule defines model for EnvironmentProgressionRule.
@@ -1046,6 +1044,18 @@ type System struct {
 	Metadata    *map[string]string `json:"metadata,omitempty"`
 	Name        string             `json:"name"`
 	WorkspaceId string             `json:"workspaceId"`
+}
+
+// SystemDeploymentLink defines model for SystemDeploymentLink.
+type SystemDeploymentLink struct {
+	DeploymentId string `json:"deploymentId"`
+	SystemId     string `json:"systemId"`
+}
+
+// SystemEnvironmentLink defines model for SystemEnvironmentLink.
+type SystemEnvironmentLink struct {
+	EnvironmentId string `json:"environmentId"`
+	SystemId      string `json:"systemId"`
 }
 
 // TerraformCloudJobAgentConfig defines model for TerraformCloudJobAgentConfig.

@@ -36,14 +36,14 @@ func TestEngine_JobCreationWithSingleReleaseTarget(t *testing.T) {
 	d1.JobAgentConfig = jobAgentConfig
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1.ResourceSelector = &oapi.Selector{}
 	_ = e1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource - this creates a release target
 	r1 := c.NewResource(workspaceID)
@@ -148,20 +148,20 @@ func TestEngine_JobCreationWithMultipleReleaseTargets(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create two environments with selectors to match all resources
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
 	e1.ResourceSelector = &oapi.Selector{}
 	_ = e1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
 	e2.ResourceSelector = &oapi.Selector{}
 	_ = e2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e2)
 
 	// Create three resources
 	r1 := c.NewResource(workspaceID)
@@ -246,27 +246,17 @@ func TestEngine_JobCreationWithFilteredResources(t *testing.T) {
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
 	d1Selector := &oapi.Selector{}
-	_ = d1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = d1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	d1.ResourceSelector = d1Selector
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment with a resource selector
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-prod"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create resources with different metadata
 	r1 := c.NewResource(workspaceID)
@@ -351,7 +341,7 @@ func TestEngine_NoJobsCreatedWithoutReleaseTargets(t *testing.T) {
 	d1 := c.NewDeployment(sys.Id)
 	d1.Name = "deployment-1"
 	d1.JobAgentId = &jobAgent.Id
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create a deployment version without any environments or resources
 	dv1 := c.NewDeploymentVersion()
@@ -394,7 +384,7 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment with a selector to match all resources
 	e1 := c.NewEnvironment(sys.Id)
@@ -402,7 +392,7 @@ func TestEngine_MultipleDeploymentVersionsCreateMultipleJobs(t *testing.T) {
 	e1Selector := &oapi.Selector{}
 	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -451,7 +441,7 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	// No JobAgentId set
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
@@ -459,7 +449,7 @@ func TestEngine_NoJobsWithoutJobAgent(t *testing.T) {
 	e1Selector := &oapi.Selector{}
 	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create a resource
 	r1 := c.NewResource(workspaceID)
@@ -665,14 +655,14 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	d2 := c.NewDeployment(sys.Id)
 	d2.Name = "deployment-2"
 	d2.JobAgentId = &jobAgent.Id
 	d2.ResourceSelector = &oapi.Selector{}
 	_ = d2.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d2)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d2)
 
 	// Create an environment
 	e1 := c.NewEnvironment(sys.Id)
@@ -680,7 +670,7 @@ func TestEngine_JobsAcrossMultipleDeployments(t *testing.T) {
 	e1Selector := &oapi.Selector{}
 	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	// Create two resources
 	r1 := c.NewResource(workspaceID)
@@ -976,22 +966,12 @@ func TestEngine_JobsWithDifferentEnvironmentSelectors(t *testing.T) {
 			integration.WithEnvironment(
 				integration.EnvironmentName(e1Id),
 				integration.EnvironmentID(e1Id),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "dev",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "dev"`),
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentName(e2Id),
 				integration.EnvironmentID(e2Id),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "metadata",
-					"operator": "equals",
-					"value":    "prod",
-					"key":      "env",
-				}),
+				integration.EnvironmentCelResourceSelector(`resource.metadata["env"] == "prod"`),
 			),
 		),
 		integration.WithResource(
@@ -1171,32 +1151,22 @@ func TestEngine_EnvironmentDeletionCancelsPendingJobs(t *testing.T) {
 	d1.JobAgentId = &jobAgent.Id
 	d1.ResourceSelector = &oapi.Selector{}
 	_ = d1.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, d1)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, d1)
 
 	// Create two environments
 	e1 := c.NewEnvironment(sys.Id)
 	e1.Name = "env-dev"
 	e1Selector := &oapi.Selector{}
-	_ = e1Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "dev",
-		"key":      "env",
-	}})
+	_ = e1Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "dev"`})
 	e1.ResourceSelector = e1Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e1)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e1)
 
 	e2 := c.NewEnvironment(sys.Id)
 	e2.Name = "env-prod"
 	e2Selector := &oapi.Selector{}
-	_ = e2Selector.FromJsonSelector(oapi.JsonSelector{Json: map[string]any{
-		"type":     "metadata",
-		"operator": "equals",
-		"value":    "prod",
-		"key":      "env",
-	}})
+	_ = e2Selector.FromCelSelector(oapi.CelSelector{Cel: `resource.metadata["env"] == "prod"`})
 	e2.ResourceSelector = e2Selector
-	engine.PushEvent(ctx, handler.EnvironmentCreate, e2)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, e2)
 
 	// Create resources
 	r1 := c.NewResource(workspaceID)

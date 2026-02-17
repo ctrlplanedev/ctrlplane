@@ -8,11 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func NewJsonSelector(json map[string]any) *oapi.Selector {
+func NewCelSelector(cel string) *oapi.Selector {
 	selector := &oapi.Selector{}
-	_ = selector.FromJsonSelector(oapi.JsonSelector{
-		Json: json,
-	})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: cel})
 	return selector
 }
 
@@ -24,13 +22,7 @@ func NewEnvironment(systemID string) *oapi.Environment {
 	idSubstring := id[:8]
 
 	selector := &oapi.Selector{}
-	_ = selector.FromJsonSelector(oapi.JsonSelector{
-		Json: map[string]any{
-			"type":     "name",
-			"operator": "starts-with",
-			"value":    "",
-		},
-	})
+	_ = selector.FromCelSelector(oapi.CelSelector{Cel: "true"})
 
 	description := fmt.Sprintf("Test environment %s", idSubstring)
 
@@ -38,7 +30,6 @@ func NewEnvironment(systemID string) *oapi.Environment {
 		Id:               id,
 		Name:             fmt.Sprintf("env-%s", idSubstring),
 		Description:      &description,
-		SystemIds:        []string{systemID},
 		ResourceSelector: selector,
 		CreatedAt:        time.Now(),
 	}

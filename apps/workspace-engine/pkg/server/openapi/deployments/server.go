@@ -222,8 +222,9 @@ func (s *Deployments) ListDeployments(c *gin.Context, workspaceId string, params
 
 	deploymentsWithSystems := make([]*oapi.DeploymentAndSystems, 0, total)
 	for _, deployment := range deploymentsList[start:end] {
-		systems := make([]oapi.System, 0, len(deployment.SystemIds))
-		for _, sid := range deployment.SystemIds {
+		systemIDs := ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id)
+		systems := make([]oapi.System, 0, len(systemIDs))
+		for _, sid := range systemIDs {
 			system, ok := ws.Systems().Get(sid)
 			if !ok {
 				log.Warn("System not found for deployment", "deploymentId", deployment.Id, "systemId", sid)

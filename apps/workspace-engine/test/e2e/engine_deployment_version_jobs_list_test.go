@@ -412,14 +412,12 @@ func TestEngine_DeploymentVersionJobsList_EnvironmentSorting(t *testing.T) {
 	)
 
 	ws := engine.Workspace()
-	deployment, _ := ws.Deployments().Get(deploymentId)
+	_, _ = ws.Deployments().Get(deploymentId)
 
-	// Get all environments for this system
+	// Get all environments
 	environments := []*oapi.Environment{}
 	for _, env := range ws.Environments().Items() {
-		if len(env.SystemIds) > 0 && len(deployment.SystemIds) > 0 && env.SystemIds[0] == deployment.SystemIds[0] {
-			environments = append(environments, env)
-		}
+		environments = append(environments, env)
 	}
 
 	if len(environments) != 3 {

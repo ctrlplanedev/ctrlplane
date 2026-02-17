@@ -45,11 +45,7 @@ func TestEngine_PolicyUpdateBlocksNewDeployments(t *testing.T) {
 			),
 			integration.WithEnvironment(
 				integration.EnvironmentID(e1ID),
-				integration.EnvironmentJsonResourceSelector(map[string]any{
-					"type":     "name",
-					"operator": "starts-with",
-					"value":    "",
-				}),
+				integration.EnvironmentCelResourceSelector("true"),
 			),
 		),
 		integration.WithResource(

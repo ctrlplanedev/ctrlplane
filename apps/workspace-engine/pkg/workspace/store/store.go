@@ -34,6 +34,15 @@ func WithDBDeployments(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBResources replaces the default in-memory ResourceRepo
+// with a DB-backed implementation.
+func WithDBResources(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Resources.SetRepo(dbRepo.Resources())
+	}
+}
+
 // WithDBEnvironments replaces the default in-memory EnvironmentRepo
 // with a DB-backed implementation.
 func WithDBEnvironments(ctx context.Context) StoreOption {
@@ -49,6 +58,42 @@ func WithDBSystems(ctx context.Context) StoreOption {
 	return func(s *Store) {
 		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
 		s.Systems.SetRepo(dbRepo.Systems())
+	}
+}
+
+// WithDBJobAgents replaces the default in-memory JobAgentRepo
+// with a DB-backed implementation.
+func WithDBJobAgents(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.JobAgents.SetRepo(dbRepo.JobAgents())
+	}
+}
+
+// WithDBResourceProviders replaces the default in-memory ResourceProviderRepo
+// with a DB-backed implementation.
+func WithDBResourceProviders(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.ResourceProviders.SetRepo(dbRepo.ResourceProviders())
+	}
+}
+
+// WithDBSystemDeployments replaces the default in-memory SystemDeploymentRepo
+// with a DB-backed implementation.
+func WithDBSystemDeployments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.SystemDeployments.SetRepo(dbRepo.SystemDeployments())
+	}
+}
+
+// WithDBSystemEnvironments replaces the default in-memory SystemEnvironmentRepo
+// with a DB-backed implementation.
+func WithDBSystemEnvironments(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.SystemEnvironments.SetRepo(dbRepo.SystemEnvironments())
 	}
 }
 
@@ -82,6 +127,8 @@ func New(wsId string, changeset *statechange.ChangeSet[any], opts ...StoreOption
 	store.WorkflowJobTemplates = NewWorkflowJobTemplates(store)
 	store.WorkflowRuns = NewWorkflowRuns(store)
 	store.WorkflowJobs = NewWorkflowJobs(store)
+	store.SystemDeployments = NewSystemDeployments(store)
+	store.SystemEnvironments = NewSystemEnvironments(store)
 
 	for _, opt := range opts {
 		opt(store)
@@ -121,6 +168,8 @@ type Store struct {
 	WorkflowJobTemplates     *WorkflowJobTemplates
 	WorkflowRuns             *WorkflowRuns
 	WorkflowJobs             *WorkflowJobs
+	SystemDeployments        *SystemDeployments
+	SystemEnvironments       *SystemEnvironments
 }
 
 func (s *Store) ID() string {
@@ -142,12 +191,13 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		return err
 	}
 
+	// Rebuild in-memory link stores from persisted link entities.
+	s.repo.RestoreLinks()
+
 	// Migrate legacy changelog entities into the active repos.
 	// After Router().Apply(), the in-memory repo may contain entities
 	// loaded from changelog_entry records. When the DB backend is
 	// active, sync them so they are available through the DB-backed repos.
-	// The DB repo Set() methods handle creating join table entries
-	// (system_deployment, system_environment) from the oapi SystemIds field.
 	if setStatus != nil {
 		setStatus("Migrating legacy systems")
 	}
@@ -189,13 +239,43 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	}
 
 	if setStatus != nil {
+		setStatus("Migrating legacy job agents")
+	}
+	for _, ja := range s.repo.JobAgents().Items() {
+		if err := s.JobAgents.repo.Set(ja); err != nil {
+			log.Warn("Failed to migrate legacy job agent",
+				"job_agent_id", ja.Id, "name", ja.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy resources")
+	}
+	for _, r := range s.repo.Resources().Items() {
+		if err := s.Resources.repo.Set(r); err != nil {
+			log.Warn("Failed to migrate legacy resource",
+				"resource_id", r.Id, "name", r.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy resource providers")
+	}
+	for _, rp := range s.repo.ResourceProviders().Items() {
+		if err := s.ResourceProviders.repo.Set(rp); err != nil {
+			log.Warn("Failed to migrate legacy resource provider",
+				"resource_provider_id", rp.Id, "name", rp.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
 		setStatus("Computing release targets")
 	}
 
-	// Group deployments by SystemId for O(1) lookup
+	// Group deployments by SystemId for O(1) lookup using the link repos.
 	deploymentsBySystem := make(map[string][]*oapi.Deployment)
 	for _, deployment := range s.Deployments.Items() {
-		for _, sid := range deployment.SystemIds {
+		for _, sid := range s.SystemDeployments.GetSystemIDsForDeployment(deployment.Id) {
 			deploymentsBySystem[sid] = append(deploymentsBySystem[sid], deployment)
 		}
 	}
@@ -208,7 +288,7 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		// Collect all deployments from systems this environment belongs to.
 		matchingDeployments := make(map[string]*oapi.Deployment)
 		var systemName string
-		for _, sid := range environment.SystemIds {
+		for _, sid := range s.SystemEnvironments.GetSystemIDsForEnvironment(environment.Id) {
 			for _, d := range deploymentsBySystem[sid] {
 				matchingDeployments[d.Id] = d
 			}
@@ -258,14 +338,20 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 	_, span = relationshipIndexesTracer.Start(ctx, "Store.Restore.RelationshipIndexes")
 	for _, rule := range s.Relationships.Items() {
 		if setStatus != nil {
-			setStatus("Computing relationships for rule: " + rule.Name)
+			setStatus("Registering relationships for rule: " + rule.Name)
 		}
+
 		s.RelationshipIndexes.AddRule(ctx, rule)
 	}
-	s.RelationshipIndexes.Recompute(ctx)
+	// Recomputation is deferred until the first GetRelatedEntities call,
+	// avoiding the O(N²) CEL evaluation cost during boot.
 	span.End()
 
 	s.changeset.Clear()
+
+	if setStatus != nil {
+		setStatus("Adding entities to relationship indexes")
+	}
 
 	return nil
 }

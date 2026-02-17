@@ -97,14 +97,17 @@ export default function DeploymentDetail() {
     [policiesQuery.data],
   );
 
-  const environments = useMemo(
+  const envIds = useMemo(
     () =>
-      (environmentsQuery.data ?? []).filter((e) =>
-        e.systemEnvironments.some((se) =>
-          deployment.systemIds.includes(se.systemId),
-        ),
+      deployment.systemDeployments.flatMap((sd) =>
+        sd.system.systemEnvironments.map((se) => se.environmentId),
       ),
-    [deployment.systemIds, environmentsQuery.data],
+    [deployment.systemDeployments],
+  );
+
+  const environments = useMemo(
+    () => (environmentsQuery.data ?? []).filter((e) => envIds.includes(e.id)),
+    [envIds, environmentsQuery.data],
   );
 
   const envDependsOn = useCallback(

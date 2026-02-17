@@ -792,6 +792,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link deployment to system */
+        put: operations["linkDeploymentToSystem"];
+        post?: never;
+        /** Unlink deployment from system */
+        delete: operations["unlinkDeploymentFromSystem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link environment to system */
+        put: operations["linkEnvironmentToSystem"];
+        post?: never;
+        /** Unlink environment from system */
+        delete: operations["unlinkEnvironmentFromSystem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/workspaces/{workspaceId}/workflows": {
         parameters: {
             query?: never;
@@ -873,7 +909,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         CreateDeploymentVersionRequest: {
             config?: {
@@ -898,7 +933,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         CreatePolicyRequest: {
             description?: string;
@@ -1015,7 +1049,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         DeploymentAndSystems: {
             deployment: components["schemas"]["Deployment"];
@@ -1122,7 +1155,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
@@ -1493,10 +1525,6 @@ export interface components {
             /** Format: uuid */
             workspaceId: string;
         };
-        ResourceProviderRequestAccepted: {
-            id: string;
-            message: string;
-        };
         ResourceProviderResource: {
             config: {
                 [key: string]: unknown;
@@ -1516,6 +1544,11 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
             version: string;
+        };
+        ResourceProviderSetRequestAccepted: {
+            batchId?: string;
+            method: string;
+            ok: boolean;
         };
         ResourceRequestAccepted: {
             id: string;
@@ -1643,7 +1676,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         UpsertDeploymentVariableRequest: {
             defaultValue?: components["schemas"]["LiteralValue"];
@@ -1680,7 +1712,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         UpsertJobAgentRequest: {
             config: {
@@ -4166,7 +4197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                    "application/json": components["schemas"]["ResourceProvider"];
                 };
             };
             /** @description Invalid request */
@@ -4231,7 +4262,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ResourceProviderRequestAccepted"];
+                    "application/json": components["schemas"]["ResourceProviderSetRequestAccepted"];
                 };
             };
             /** @description Invalid request */
@@ -4710,6 +4741,186 @@ export interface operations {
                 workspaceId: string;
                 /** @description ID of the system */
                 systemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    linkDeploymentToSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlinkDeploymentFromSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    linkEnvironmentToSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlinkEnvironmentFromSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the environment */
+                environmentId: string;
             };
             cookie?: never;
         };

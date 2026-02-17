@@ -584,18 +584,19 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "resource to deployment by workspace_id",
+			name: "resource to deployment by name",
 			from: NewResourceEntity(&oapi.Resource{
 				Id:          "resource-1",
+				Name:        "my-deploy",
 				WorkspaceId: "workspace-1",
 			}),
 			to: NewDeploymentEntity(&oapi.Deployment{
-				Id:        "deployment-1",
-				SystemIds: []string{"workspace-1"},
+				Id:   "deployment-1",
+				Name: "my-deploy",
 			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
-				FromProperty: []string{"workspace_id"},
-				ToProperty:   []string{"system_id"},
+				FromProperty: []string{"name"},
+				ToProperty:   []string{"name"},
 				Operator:     "equals",
 			}),
 			expected: true,
@@ -608,9 +609,8 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 				WorkspaceId: "workspace-1",
 			}),
 			to: NewEnvironmentEntity(&oapi.Environment{
-				Id:        "env-1",
-				Name:      "production",
-				SystemIds: []string{"system-1"},
+				Id:   "env-1",
+				Name: "production",
 			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
@@ -622,14 +622,12 @@ func TestPropertyMatcher_Evaluate_DifferentEntityTypes(t *testing.T) {
 		{
 			name: "deployment to environment name contains",
 			from: NewDeploymentEntity(&oapi.Deployment{
-				Id:        "deployment-1",
-				Name:      "my-production-deploy",
-				SystemIds: []string{"system-1"},
+				Id:   "deployment-1",
+				Name: "my-production-deploy",
 			}),
 			to: NewEnvironmentEntity(&oapi.Environment{
-				Id:        "env-1",
-				Name:      "production",
-				SystemIds: []string{"system-1"},
+				Id:   "env-1",
+				Name: "production",
 			}),
 			matcher: NewPropertyMatcher(&oapi.PropertyMatcher{
 				FromProperty: []string{"name"},
@@ -992,9 +990,8 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment id",
 			deployment: &oapi.Deployment{
-				Id:        "deploy-123",
-				Name:      "My Deployment",
-				SystemIds: []string{"system-1"},
+				Id:   "deploy-123",
+				Name: "My Deployment",
 			},
 			propertyPath: []string{"id"},
 			wantValue:    "deploy-123",
@@ -1003,9 +1000,8 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment name",
 			deployment: &oapi.Deployment{
-				Id:        "deploy-123",
-				Name:      "My Deployment",
-				SystemIds: []string{"system-1"},
+				Id:   "deploy-123",
+				Name: "My Deployment",
 			},
 			propertyPath: []string{"name"},
 			wantValue:    "My Deployment",
@@ -1014,9 +1010,8 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment slug",
 			deployment: &oapi.Deployment{
-				Id:        "deploy-123",
-				Slug:      "my-deployment",
-				SystemIds: []string{"system-1"},
+				Id:   "deploy-123",
+				Slug: "my-deployment",
 			},
 			propertyPath: []string{"slug"},
 			wantValue:    "my-deployment",
@@ -1027,7 +1022,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			deployment: &oapi.Deployment{
 				Id:          "deploy-123",
 				Description: &description,
-				SystemIds:   []string{"system-1"},
 			},
 			propertyPath: []string{"description"},
 			wantValue:    "Test deployment",
@@ -1036,29 +1030,24 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 		{
 			name: "get deployment system_id",
 			deployment: &oapi.Deployment{
-				Id:        "deploy-123",
-				SystemIds: []string{"system-456"},
+				Id: "deploy-123",
 			},
 			propertyPath: []string{"system_id"},
-			wantValue:    "system-456",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "get deployment systemid (case variant)",
 			deployment: &oapi.Deployment{
-				Id:        "deploy-123",
-				SystemIds: []string{"system-789"},
+				Id: "deploy-123",
 			},
 			propertyPath: []string{"systemid"},
-			wantValue:    "system-789",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "get deployment job_agent_id",
 			deployment: &oapi.Deployment{
 				Id:         "deploy-123",
 				JobAgentId: &jobAgentId,
-				SystemIds:  []string{"system-1"},
 			},
 			propertyPath: []string{"job_agent_id"},
 			wantValue:    "agent-123",
@@ -1068,7 +1057,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			name: "get nested job_agent_config",
 			deployment: &oapi.Deployment{
 				Id:             "deploy-123",
-				SystemIds:      []string{"system-1"},
 				JobAgentConfig: customJobAgentConfigMap,
 			},
 			propertyPath: []string{"job_agent_config", "kubernetes", "namespace"},
@@ -1080,7 +1068,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			deployment: &oapi.Deployment{
 				Id:          "deploy-123",
 				Description: nil,
-				SystemIds:   []string{"system-1"},
 			},
 			propertyPath: []string{"description"},
 			wantErr:      true,
@@ -1090,7 +1077,6 @@ func TestGetPropertyValue_Deployment(t *testing.T) {
 			deployment: &oapi.Deployment{
 				Id:         "deploy-123",
 				JobAgentId: nil,
-				SystemIds:  []string{"system-1"},
 			},
 			propertyPath: []string{"job_agent_id"},
 			wantErr:      true,
@@ -1129,9 +1115,8 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 		{
 			name: "get environment id",
 			environment: &oapi.Environment{
-				Id:        "env-123",
-				Name:      "Production",
-				SystemIds: []string{"system-1"},
+				Id:   "env-123",
+				Name: "Production",
 			},
 			propertyPath: []string{"id"},
 			wantValue:    "env-123",
@@ -1140,9 +1125,8 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 		{
 			name: "get environment name",
 			environment: &oapi.Environment{
-				Id:        "env-123",
-				Name:      "Production",
-				SystemIds: []string{"system-1"},
+				Id:   "env-123",
+				Name: "Production",
 			},
 			propertyPath: []string{"name"},
 			wantValue:    "Production",
@@ -1153,7 +1137,6 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 			environment: &oapi.Environment{
 				Id:          "env-123",
 				Description: &description,
-				SystemIds:   []string{"system-1"},
 			},
 			propertyPath: []string{"description"},
 			wantValue:    "Test environment",
@@ -1162,29 +1145,24 @@ func TestGetPropertyValue_Environment(t *testing.T) {
 		{
 			name: "get environment system_id",
 			environment: &oapi.Environment{
-				Id:        "env-123",
-				SystemIds: []string{"system-456"},
+				Id: "env-123",
 			},
 			propertyPath: []string{"system_id"},
-			wantValue:    "system-456",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "get environment systemid (case variant)",
 			environment: &oapi.Environment{
-				Id:        "env-123",
-				SystemIds: []string{"system-789"},
+				Id: "env-123",
 			},
 			propertyPath: []string{"systemid"},
-			wantValue:    "system-789",
-			wantErr:      false,
+			wantErr:      true,
 		},
 		{
 			name: "nil description",
 			environment: &oapi.Environment{
 				Id:          "env-123",
 				Description: nil,
-				SystemIds:   []string{"system-1"},
 			},
 			propertyPath: []string{"description"},
 			wantErr:      true,
@@ -1370,9 +1348,8 @@ func TestMatches_CelMatcher(t *testing.T) {
 		WorkspaceId: "workspace-1",
 	})
 	to := NewDeploymentEntity(&oapi.Deployment{
-		Id:        "deployment-1",
-		Name:      "web-server",
-		SystemIds: []string{"system-1"},
+		Id:   "deployment-1",
+		Name: "web-server",
 	})
 
 	matcher := &oapi.RelationshipRule_Matcher{}
@@ -1395,9 +1372,8 @@ func TestMatches_CelMatcher_NoMatch(t *testing.T) {
 		WorkspaceId: "workspace-1",
 	})
 	to := NewDeploymentEntity(&oapi.Deployment{
-		Id:        "deployment-1",
-		Name:      "api-server",
-		SystemIds: []string{"system-1"},
+		Id:   "deployment-1",
+		Name: "api-server",
 	})
 
 	matcher := &oapi.RelationshipRule_Matcher{}
@@ -1485,9 +1461,8 @@ func TestMatchesWithCache_CelMatcher(t *testing.T) {
 		WorkspaceId: "workspace-1",
 	})
 	to := NewDeploymentEntity(&oapi.Deployment{
-		Id:        "deployment-1",
-		Name:      "web-server",
-		SystemIds: []string{"system-1"},
+		Id:   "deployment-1",
+		Name: "web-server",
 	})
 
 	matcher := &oapi.RelationshipRule_Matcher{}
@@ -1524,14 +1499,12 @@ func TestBuildEntityMapCache(t *testing.T) {
 			WorkspaceId: "workspace-1",
 		}),
 		NewDeploymentEntity(&oapi.Deployment{
-			Id:        "deployment-1",
-			Name:      "deploy-1",
-			SystemIds: []string{"system-1"},
+			Id:   "deployment-1",
+			Name: "deploy-1",
 		}),
 		NewEnvironmentEntity(&oapi.Environment{
-			Id:        "env-1",
-			Name:      "production",
-			SystemIds: []string{"system-1"},
+			Id:   "env-1",
+			Name: "production",
 		}),
 	}
 
@@ -1562,9 +1535,8 @@ func TestEntityToMap(t *testing.T) {
 
 	// Deployment
 	deployment := &oapi.Deployment{
-		Id:        "dep-1",
-		Name:      "deploy-1",
-		SystemIds: []string{"system-1"},
+		Id:   "dep-1",
+		Name: "deploy-1",
 	}
 	m, err = EntityToMap(deployment)
 	assert.NoError(t, err)
@@ -1573,9 +1545,8 @@ func TestEntityToMap(t *testing.T) {
 
 	// Environment
 	env := &oapi.Environment{
-		Id:        "env-1",
-		Name:      "production",
-		SystemIds: []string{"system-1"},
+		Id:   "env-1",
+		Name: "production",
 	}
 	m, err = EntityToMap(env)
 	assert.NoError(t, err)

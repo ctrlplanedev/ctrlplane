@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import { eq } from "@ctrlplane/db";
+import { asc, eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Event, sendGoEvent } from "@ctrlplane/events/kafka";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -12,22 +12,22 @@ import { protectedProcedure, router } from "../trpc.js";
 
 export const environmentRouter = router({
   get: protectedProcedure
-    .input(z.object({ workspaceId: z.uuid(), environmentId: z.string() }))
-    .query(async ({ input }) => {
-      const { workspaceId, environmentId } = input;
-      const result = await getClientFor(workspaceId).GET(
-        "/v1/workspaces/{workspaceId}/environments/{environmentId}",
-        { params: { path: { workspaceId, environmentId } } },
-      );
+    .input(z.object({ environmentId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const { environmentId } = input;
 
-      if (!result.data) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Environment not found",
-        });
-      }
+      const environment = await ctx.db.query.environment.findFirst({
+        where: eq(schema.environment.id, environmentId),
+        with: {
+          systemEnvironments: {
+            with: {
+              system: true,
+            },
+          },
+        },
+      });
 
-      return result.data;
+      return environment;
     }),
 
   resources: protectedProcedure
@@ -97,6 +97,7 @@ export const environmentRouter = router({
         with: {
           systemEnvironments: true,
         },
+        orderBy: asc(schema.environment.name),
       });
       return environments;
     }),
@@ -130,7 +131,7 @@ export const environmentRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-              validate.data.errors.length > 0
+            validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });
@@ -193,7 +194,7 @@ export const environmentRouter = router({
           code: "BAD_REQUEST",
           message:
             Array.isArray(validate.data?.errors) &&
-              validate.data.errors.length > 0
+            validate.data.errors.length > 0
               ? validate.data.errors.join(", ")
               : "Invalid resource selector",
         });

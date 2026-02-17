@@ -3,9 +3,8 @@ local openapi = import '../lib/openapi.libsonnet';
 {
   CreateEnvironmentRequest: {
     type: 'object',
-    required: ['systemIds', 'name'],
+    required: ['name'],
     properties: {
-      systemIds: { type: 'array', items: { type: 'string' } },
       name: { type: 'string' },
       description: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
@@ -14,9 +13,8 @@ local openapi = import '../lib/openapi.libsonnet';
   },
   UpsertEnvironmentRequest: {
     type: 'object',
-    required: ['systemIds', 'name'],
+    required: ['name'],
     properties: {
-      systemIds: { type: 'array', items: { type: 'string' } },
       name: { type: 'string' },
       description: { type: 'string' },
       resourceSelector: openapi.schemaRef('Selector'),
@@ -35,12 +33,11 @@ local openapi = import '../lib/openapi.libsonnet';
 
   Environment: {
     type: 'object',
-    required: ['id', 'name', 'systemIds', 'createdAt'],
+    required: ['id', 'name', 'createdAt'],
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
       description: { type: 'string' },
-      systemIds: { type: 'array', items: { type: 'string' } },
       resourceSelector: openapi.schemaRef('Selector'),
       createdAt: { type: 'string', format: 'date-time' },
       metadata: { type: 'object', additionalProperties: { type: 'string' } },

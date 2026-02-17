@@ -70,9 +70,8 @@ func TestSummaryEvaluator_AllowWindow_InsideWindow(t *testing.T) {
 		CreatedAt:    now,
 	}
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{uuid.New().String()},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	scope := evaluator.EvaluatorScope{
@@ -113,9 +112,8 @@ func TestSummaryEvaluator_AllowWindow_OutsideWindow(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{uuid.New().String()},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	scope := evaluator.EvaluatorScope{
@@ -157,9 +155,8 @@ func TestSummaryEvaluator_DenyWindow_OutsideWindow(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{uuid.New().String()},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	scope := evaluator.EvaluatorScope{
@@ -197,9 +194,8 @@ func TestSummaryEvaluator_DenyWindow_InsideWindow(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{uuid.New().String()},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	scope := evaluator.EvaluatorScope{
@@ -237,9 +233,8 @@ func TestSummaryEvaluator_WithTimezone(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{uuid.New().String()},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	scope := evaluator.EvaluatorScope{
@@ -276,9 +271,8 @@ func TestSummaryEvaluator_DefaultAllowWindow(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 	env := &oapi.Environment{
-		Id:        uuid.New().String(),
-		Name:      "production",
-		SystemIds: []string{uuid.New().String()},
+		Id:   uuid.New().String(),
+		Name: "production",
 	}
 
 	scope := evaluator.EvaluatorScope{

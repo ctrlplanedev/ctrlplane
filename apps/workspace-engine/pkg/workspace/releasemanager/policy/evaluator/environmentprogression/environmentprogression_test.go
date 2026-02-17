@@ -37,24 +37,24 @@ func setupTestStore() *store.Store {
 	devEnv := &oapi.Environment{
 		Id:               "env-dev",
 		Name:             "dev",
-		SystemIds:        []string{"system-1"},
 		ResourceSelector: resourceSelector,
 	}
 	stagingEnv := &oapi.Environment{
 		Id:               "env-staging",
 		Name:             "staging",
-		SystemIds:        []string{"system-1"},
 		ResourceSelector: resourceSelector,
 	}
 	prodEnv := &oapi.Environment{
 		Id:               "env-prod",
 		Name:             "prod",
-		SystemIds:        []string{"system-1"},
 		ResourceSelector: resourceSelector,
 	}
 	_ = st.Environments.Upsert(ctx, devEnv)
 	_ = st.Environments.Upsert(ctx, stagingEnv)
 	_ = st.Environments.Upsert(ctx, prodEnv)
+	_ = st.SystemEnvironments.Link("system-1", "env-dev")
+	_ = st.SystemEnvironments.Link("system-1", "env-staging")
+	_ = st.SystemEnvironments.Link("system-1", "env-prod")
 
 	// Create deployment
 	jobAgentId := "agent-1"
@@ -64,13 +64,13 @@ func setupTestStore() *store.Store {
 		Id:               "deploy-1",
 		Name:             "my-app",
 		Slug:             "my-app",
-		SystemIds:        []string{"system-1"},
 		JobAgentId:       &jobAgentId,
 		Description:      &description,
 		JobAgentConfig:   oapi.JobAgentConfig{},
 		ResourceSelector: resourceSelector,
 	}
 	_ = st.Deployments.Upsert(ctx, deployment)
+	_ = st.SystemDeployments.Link("system-1", "deploy-1")
 
 	// Create resource
 	resource := &oapi.Resource{

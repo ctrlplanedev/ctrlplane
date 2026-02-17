@@ -3,7 +3,6 @@ package deploymentversions
 import (
 	"fmt"
 	"net/http"
-	"slices"
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
@@ -36,19 +35,17 @@ func (s *DeploymentVersions) GetDeploymentVersion(c *gin.Context, workspaceId st
 func getSystemsEnvironments(ws *workspace.Workspace, systemIds []string) []*oapi.Environment {
 	seen := make(map[string]struct{})
 	environments := make([]*oapi.Environment, 0)
-	for _, environment := range ws.Environments().Items() {
-		if _, ok := seen[environment.Id]; ok {
-			continue
-		}
-		for _, sid := range systemIds {
-			if slices.Contains(environment.SystemIds, sid) {
-				seen[environment.Id] = struct{}{}
-				environments = append(environments, environment)
-				break
+	for _, sid := range systemIds {
+		for _, eid := range ws.SystemEnvironments().GetEnvironmentIDsForSystem(sid) {
+			if _, ok := seen[eid]; ok {
+				continue
+			}
+			seen[eid] = struct{}{}
+			if env, ok := ws.Environments().Get(eid); ok {
+				environments = append(environments, env)
 			}
 		}
 	}
-
 	return environments
 }
 
@@ -151,7 +148,8 @@ func (s *DeploymentVersions) GetDeploymentVersionJobsList(c *gin.Context, worksp
 		return
 	}
 
-	environments := getSystemsEnvironments(ws, deployment.SystemIds)
+	deploymentSystemIDs := ws.SystemDeployments().GetSystemIDsForDeployment(deployment.Id)
+	environments := getSystemsEnvironments(ws, deploymentSystemIDs)
 	releaseTargets, err := getDeploymentReleaseTargets(c, ws, deployment.Id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

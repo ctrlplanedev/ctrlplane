@@ -24,9 +24,7 @@ export default function EnvironmentResources() {
   const { workspace } = useWorkspace();
   const { environment } = useEnvironment();
 
-  const [filter, setFilter] = useState(
-    environment.resourceSelector?.cel ?? "true",
-  );
+  const [filter, setFilter] = useState(environment.resourceSelector ?? "true");
   const [filterDebounced, setFilterDebounced] = useState(filter);
   useDebounce(
     () => {
@@ -96,7 +94,7 @@ export default function EnvironmentResources() {
           />
         </div>
         <Button
-          className="h-[2.5rem]"
+          className="h-10"
           onClick={async () => {
             await onResourceSelectorChange(filter);
             toast.success(

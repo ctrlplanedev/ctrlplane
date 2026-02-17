@@ -158,10 +158,12 @@ func (e *EnvironmentProgressionEvaluator) findDependencyEnvironments(
 
 	// Iterate through all environments
 	envItems := e.store.Environments.Items()
+	envSystemIDs := e.store.SystemEnvironments.GetSystemIDsForEnvironment(environment.Id)
 	for _, env := range envItems {
 		// By default, only check environments that share at least one system
 		// This prevents accidental cross-system dependencies
-		if !shareSystem(env.SystemIds, environment.SystemIds) {
+		candidateSystemIDs := e.store.SystemEnvironments.GetSystemIDsForEnvironment(env.Id)
+		if !shareSystem(candidateSystemIDs, envSystemIDs) {
 			continue
 		}
 

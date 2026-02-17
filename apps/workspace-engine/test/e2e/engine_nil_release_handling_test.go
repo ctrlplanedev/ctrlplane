@@ -37,13 +37,13 @@ func TestEngine_JobsWithNilReleaseReference(t *testing.T) {
 	deployment.JobAgentConfig = map[string]any{"test": "config"}
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, deployment)
 
 	environment := c.NewEnvironment(sys.Id)
 	environment.Name = "test-env"
 	environment.ResourceSelector = &oapi.Selector{}
 	_ = environment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, environment)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, environment)
 
 	resource := c.NewResource(workspaceID)
 	resource.Name = "test-resource"
@@ -133,12 +133,12 @@ func TestEngine_ReleaseTargetStateWithNilRelease(t *testing.T) {
 	deployment.JobAgentConfig = map[string]any{}
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, deployment)
 
 	environment := c.NewEnvironment(sys.Id)
 	environment.ResourceSelector = &oapi.Selector{}
 	_ = environment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, environment)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, environment)
 
 	resource := c.NewResource(workspaceID)
 	engine.PushEvent(ctx, handler.ResourceCreate, resource)
@@ -220,12 +220,12 @@ func TestEngine_MultipleJobsWithMixedNilReleases(t *testing.T) {
 	deployment.JobAgentConfig = map[string]any{}
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, deployment)
 
 	environment := c.NewEnvironment(sys.Id)
 	environment.ResourceSelector = &oapi.Selector{}
 	_ = environment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, environment)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, environment)
 
 	resource := c.NewResource(workspaceID)
 	engine.PushEvent(ctx, handler.ResourceCreate, resource)
@@ -334,12 +334,12 @@ func TestEngine_DeploymentDeletionLeavesOrphanedJobs(t *testing.T) {
 	deployment.JobAgentConfig = map[string]any{}
 	deployment.ResourceSelector = &oapi.Selector{}
 	_ = deployment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.DeploymentCreate, deployment)
+	engine.PushDeploymentCreateWithLink(ctx, sys.Id, deployment)
 
 	environment := c.NewEnvironment(sys.Id)
 	environment.ResourceSelector = &oapi.Selector{}
 	_ = environment.ResourceSelector.FromCelSelector(oapi.CelSelector{Cel: "true"})
-	engine.PushEvent(ctx, handler.EnvironmentCreate, environment)
+	engine.PushEnvironmentCreateWithLink(ctx, sys.Id, environment)
 
 	resource := c.NewResource(workspaceID)
 	engine.PushEvent(ctx, handler.ResourceCreate, resource)

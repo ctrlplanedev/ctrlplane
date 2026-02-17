@@ -10,13 +10,37 @@ import (
 	"workspace-engine/pkg/events"
 	"workspace-engine/pkg/events/handler"
 	"workspace-engine/pkg/messaging"
+	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/persistence/memory"
 	"workspace-engine/pkg/workspace"
+	"workspace-engine/pkg/workspace/jobagents/testrunner"
 	"workspace-engine/pkg/workspace/manager"
 	"workspace-engine/pkg/workspace/releasemanager/trace/spanstore"
 )
 
 var globalTraceStore = spanstore.NewInMemoryStore()
+
+// noopProducer is a no-op messaging.Producer used in tests to avoid
+// connecting to a real Kafka broker.
+type noopProducer struct{}
+
+func (noopProducer) Publish([]byte, []byte) error                   { return nil }
+func (noopProducer) PublishToPartition([]byte, []byte, int32) error { return nil }
+func (noopProducer) Flush(int) int                                  { return 0 }
+func (noopProducer) Close() error                                   { return nil }
+
+// overrideTestRunnerProducer replaces the TestRunner in the workspace's
+// job agent registry with one that uses a no-op Kafka producer, preventing
+// real Kafka connections during tests.
+func overrideTestRunnerProducer(ws *workspace.Workspace) {
+	ws.JobAgentRegistry().Register(
+		testrunner.NewWithOptions(ws.Store(), testrunner.Options{
+			ProducerFactory: func() (messaging.Producer, error) {
+				return noopProducer{}, nil
+			},
+		}),
+	)
+}
 
 func init() {
 	manager.Configure(
@@ -86,6 +110,8 @@ func newMemoryTestWorkspace(
 		t.Fatalf("failed to get or create workspace: %v", err)
 	}
 
+	overrideTestRunnerProducer(ws)
+
 	tw := &TestWorkspace{}
 	tw.t = t
 	tw.workspace = ws
@@ -149,6 +175,30 @@ func (tw *TestWorkspace) PushEvent(ctx context.Context, eventType handler.EventT
 		tw.t.Fatalf("failed to listen and route event: %v", err)
 	}
 
+	return tw
+}
+
+// PushDeploymentCreateWithLink pushes a DeploymentCreate event followed by a
+// SystemDeploymentLinked event, establishing the system-deployment association.
+func (tw *TestWorkspace) PushDeploymentCreateWithLink(ctx context.Context, systemId string, d *oapi.Deployment) *TestWorkspace {
+	tw.t.Helper()
+	tw.PushEvent(ctx, handler.DeploymentCreate, d)
+	tw.PushEvent(ctx, handler.SystemDeploymentLinked, map[string]string{
+		"systemId":     systemId,
+		"deploymentId": d.Id,
+	})
+	return tw
+}
+
+// PushEnvironmentCreateWithLink pushes an EnvironmentCreate event followed by a
+// SystemEnvironmentLinked event, establishing the system-environment association.
+func (tw *TestWorkspace) PushEnvironmentCreateWithLink(ctx context.Context, systemId string, e *oapi.Environment) *TestWorkspace {
+	tw.t.Helper()
+	tw.PushEvent(ctx, handler.EnvironmentCreate, e)
+	tw.PushEvent(ctx, handler.SystemEnvironmentLinked, map[string]string{
+		"systemId":      systemId,
+		"environmentId": e.Id,
+	})
 	return tw
 }
 

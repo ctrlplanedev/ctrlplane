@@ -6,7 +6,6 @@ import (
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
 
-	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -16,12 +15,6 @@ func selectorFromString(s string) *oapi.Selector {
 		return nil
 	}
 	sel := &oapi.Selector{}
-	// Try parsing as JSON selector first, fall back to CEL.
-	if json.Valid([]byte(s)) {
-		if err := sel.UnmarshalJSON([]byte(s)); err == nil {
-			return sel
-		}
-	}
 	celJSON, _ := json.Marshal(oapi.CelSelector{Cel: s})
 	_ = sel.UnmarshalJSON(celJSON)
 	return sel
@@ -32,20 +25,13 @@ func selectorToString(sel *oapi.Selector) string {
 		return "false"
 	}
 	cel, err := sel.AsCelSelector()
-	if err != nil {
-		log.Warn("Failed to convert selector to CEL, falling back to JSON", "error", err)
-		b, err := sel.MarshalJSON()
-		if err != nil {
-			return "false"
-		}
-		return string(b)
+	if err == nil && cel.Cel != "" {
+		return cel.Cel
 	}
-	return cel.Cel
+	return "false"
 }
 
 // ToOapi converts a db.Deployment into an oapi.Deployment.
-// SystemIds is not populated here — it is resolved through the join table
-// via GetBySystemID when needed.
 func ToOapi(row db.Deployment) *oapi.Deployment {
 	description := row.Description
 	var descPtr *string

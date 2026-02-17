@@ -322,7 +322,6 @@ func SystemID(id string) SystemOption {
 func WithDeployment(options ...DeploymentOption) SystemOption {
 	return func(ws *TestWorkspace, s *oapi.System, eb *eventsBuilder) {
 		d := c.NewDeployment(s.Id)
-		d.SystemIds = []string{s.Id}
 
 		dvEB := newEventsBuilder()
 		for _, option := range options {
@@ -334,6 +333,11 @@ func WithDeployment(options ...DeploymentOption) SystemOption {
 			Data: d,
 		})
 
+		eb.postEvents = append(eb.postEvents, event{
+			Type: handler.SystemDeploymentLinked,
+			Data: map[string]string{"systemId": s.Id, "deploymentId": d.Id},
+		})
+
 		// Add deployment version events after deployment
 		eb.postEvents = append(eb.postEvents, dvEB.postEvents...)
 	}
@@ -342,7 +346,6 @@ func WithDeployment(options ...DeploymentOption) SystemOption {
 func WithEnvironment(options ...EnvironmentOption) SystemOption {
 	return func(ws *TestWorkspace, s *oapi.System, eb *eventsBuilder) {
 		e := c.NewEnvironment(s.Id)
-		e.SystemIds = []string{s.Id}
 
 		for _, option := range options {
 			option(ws, e)
@@ -351,6 +354,11 @@ func WithEnvironment(options ...EnvironmentOption) SystemOption {
 		eb.postEvents = append(eb.postEvents, event{
 			Type: handler.EnvironmentCreate,
 			Data: e,
+		})
+
+		eb.postEvents = append(eb.postEvents, event{
+			Type: handler.SystemEnvironmentLinked,
+			Data: map[string]string{"systemId": s.Id, "environmentId": e.Id},
 		})
 	}
 }

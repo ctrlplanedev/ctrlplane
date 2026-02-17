@@ -14,3 +14,4 @@ export * from "./rbac.js";
 export * from "./event.js";
 export * from "./deployment-trace.js";
 export * from "./changelog-entry.js";
+export * from "./release.js";

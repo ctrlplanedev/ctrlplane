@@ -111,7 +111,6 @@ func TestPropertyValueExtraction_Deployment(t *testing.T) {
 		Name:        "my-deployment",
 		Slug:        "my-deployment-slug",
 		Description: &desc,
-		SystemIds:   []string{"sys-1", "sys-2"},
 		JobAgentId:  &agentID,
 		JobAgentConfig: map[string]any{
 			"repo": "my-repo",
@@ -132,10 +131,6 @@ func TestPropertyValueExtraction_Deployment(t *testing.T) {
 		{name: "name", path: []string{"name"}},
 		{name: "slug", path: []string{"slug"}},
 		{name: "description", path: []string{"description"}},
-		{name: "system_ids", path: []string{"system_ids"}, wantErr: true, contains: "unexpected"}, // []string not handled by convertValue
-		{name: "systemids alias", path: []string{"systemids"}, wantErr: true, contains: "unexpected"},
-		{name: "system_id first", path: []string{"system_id"}},
-		{name: "systemid alias", path: []string{"systemid"}},
 		{name: "job_agent_id", path: []string{"job_agent_id"}},
 		{name: "jobagentid alias", path: []string{"jobagentid"}},
 		{name: "job_agent_config whole", path: []string{"job_agent_config"}, wantErr: true, contains: "unexpected"}, // JobAgentConfig type not handled
@@ -167,7 +162,6 @@ func TestPropertyValueExtraction_Deployment_NilFields(t *testing.T) {
 		Name:        "my-deployment",
 		Slug:        "my-slug",
 		Description: nil,
-		SystemIds:   []string{},
 		JobAgentId:  nil,
 	}
 	entity := makeDeploymentEntity(deployment)
@@ -175,10 +169,6 @@ func TestPropertyValueExtraction_Deployment_NilFields(t *testing.T) {
 	_, err := GetPropertyValue(entity, []string{"description"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nil")
-
-	_, err = GetPropertyValue(entity, []string{"system_id"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "empty")
 
 	_, err = GetPropertyValue(entity, []string{"job_agent_id"})
 	require.Error(t, err)
@@ -191,7 +181,6 @@ func TestPropertyValueExtraction_Environment(t *testing.T) {
 		Id:          "env-1",
 		Name:        "production",
 		Description: &desc,
-		SystemIds:   []string{"sys-1"},
 	}
 	entity := makeEnvironmentEntity(env)
 
@@ -204,10 +193,6 @@ func TestPropertyValueExtraction_Environment(t *testing.T) {
 		{name: "id", path: []string{"id"}},
 		{name: "name", path: []string{"name"}},
 		{name: "description", path: []string{"description"}},
-		{name: "system_ids", path: []string{"system_ids"}, wantErr: true, contains: "unexpected"}, // []string not handled by convertValue
-		{name: "systemids alias", path: []string{"systemids"}, wantErr: true, contains: "unexpected"},
-		{name: "system_id first", path: []string{"system_id"}},
-		{name: "systemid alias", path: []string{"systemid"}},
 		{name: "empty path", path: []string{}, wantErr: true, contains: "empty"},
 	}
 
@@ -232,17 +217,12 @@ func TestPropertyValueExtraction_Environment_NilFields(t *testing.T) {
 		Id:          "env-1",
 		Name:        "staging",
 		Description: nil,
-		SystemIds:   []string{},
 	}
 	entity := makeEnvironmentEntity(env)
 
 	_, err := GetPropertyValue(entity, []string{"description"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nil")
-
-	_, err = GetPropertyValue(entity, []string{"system_id"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "empty")
 }
 
 func TestGetMapValue(t *testing.T) {

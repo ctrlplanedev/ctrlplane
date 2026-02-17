@@ -2,7 +2,6 @@ package systems
 
 import (
 	"net/http"
-	"slices"
 	"sort"
 	"workspace-engine/pkg/oapi"
 	"workspace-engine/pkg/server/openapi/utils"
@@ -29,19 +28,19 @@ func (s *Systems) GetSystem(c *gin.Context, workspaceId string, systemId string)
 		return
 	}
 
-	environments := ws.Environments().Items()
-	environmentsList := make([]*oapi.Environment, 0, len(environments))
-	for _, environment := range environments {
-		if slices.Contains(environment.SystemIds, systemId) {
-			environmentsList = append(environmentsList, environment)
+	envIDs := ws.SystemEnvironments().GetEnvironmentIDsForSystem(systemId)
+	environmentsList := make([]*oapi.Environment, 0, len(envIDs))
+	for _, eid := range envIDs {
+		if env, ok := ws.Environments().Get(eid); ok {
+			environmentsList = append(environmentsList, env)
 		}
 	}
 
-	deployments := ws.Deployments().Items()
-	deploymentsList := make([]*oapi.Deployment, 0, len(deployments))
-	for _, deployment := range deployments {
-		if slices.Contains(deployment.SystemIds, systemId) {
-			deploymentsList = append(deploymentsList, deployment)
+	depIDs := ws.SystemDeployments().GetDeploymentIDsForSystem(systemId)
+	deploymentsList := make([]*oapi.Deployment, 0, len(depIDs))
+	for _, did := range depIDs {
+		if dep, ok := ws.Deployments().Get(did); ok {
+			deploymentsList = append(deploymentsList, dep)
 		}
 	}
 

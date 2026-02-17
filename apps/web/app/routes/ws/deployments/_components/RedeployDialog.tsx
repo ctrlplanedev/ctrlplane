@@ -42,12 +42,10 @@ const useRedeploy = (releaseTarget: ReleaseTarget, onClose: () => void) => {
 };
 
 const useDeployment = (deploymentId: string) => {
-  const { workspace } = useWorkspace();
   const { data: deployment, isLoading } = trpc.deployment.get.useQuery({
-    workspaceId: workspace.id,
     deploymentId,
   });
-  return { deployment: deployment?.deployment, isLoading };
+  return { deployment, isLoading };
 };
 
 function DeploymentBadge({ deploymentId }: { deploymentId: string }) {

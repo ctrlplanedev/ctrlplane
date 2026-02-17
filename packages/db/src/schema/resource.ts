@@ -42,7 +42,7 @@ export const resource = pgTable(
     metadata: jsonb("metadata").default("{}").$type<Record<string, string>>(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.identifier, t.workspaceId) }),
+  (t) => [uniqueIndex().on(t.identifier, t.workspaceId)],
 );
 
 export const resourceRelations = relations(resource, ({ one }) => ({
