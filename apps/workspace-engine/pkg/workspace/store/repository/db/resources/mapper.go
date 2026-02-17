@@ -112,3 +112,52 @@ func ToUpsertParams(r *oapi.Resource) (db.UpsertResourceParams, error) {
 		Metadata:    metadata,
 	}, nil
 }
+
+// ToBatchUpsertParams converts an oapi.Resource into sqlc batch upsert params.
+func ToBatchUpsertParams(r *oapi.Resource) (db.BatchUpsertResourceParams, error) {
+	id, err := uuid.Parse(r.Id)
+	if err != nil {
+		return db.BatchUpsertResourceParams{}, fmt.Errorf("parse id: %w", err)
+	}
+
+	wsID, err := uuid.Parse(r.WorkspaceId)
+	if err != nil {
+		return db.BatchUpsertResourceParams{}, fmt.Errorf("parse workspace_id: %w", err)
+	}
+
+	var providerID uuid.UUID
+	if r.ProviderId != nil {
+		parsed, err := uuid.Parse(*r.ProviderId)
+		if err != nil {
+			return db.BatchUpsertResourceParams{}, fmt.Errorf("parse provider_id: %w", err)
+		}
+		providerID = parsed
+	}
+
+	config := r.Config
+	if config == nil {
+		config = make(map[string]any)
+	}
+
+	metadata := r.Metadata
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+
+	createdAt := pgtype.Timestamptz{Time: r.CreatedAt, Valid: !r.CreatedAt.IsZero()}
+
+	return db.BatchUpsertResourceParams{
+		ID:          id,
+		Version:     r.Version,
+		Name:        r.Name,
+		Kind:        r.Kind,
+		Identifier:  r.Identifier,
+		ProviderID:  providerID,
+		WorkspaceID: wsID,
+		Config:      config,
+		CreatedAt:   createdAt,
+		UpdatedAt:   timePtrToTimestamptz(r.UpdatedAt),
+		DeletedAt:   timePtrToTimestamptz(r.DeletedAt),
+		Metadata:    metadata,
+	}, nil
+}

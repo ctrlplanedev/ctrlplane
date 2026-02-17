@@ -216,8 +216,22 @@ func (a *resourceRepoAdapter) Set(entity *oapi.Resource) error {
 	return nil
 }
 
+func (a *resourceRepoAdapter) SetBatch(entities []*oapi.Resource) error {
+	for _, entity := range entities {
+		a.store.Set(entity.Id, entity)
+	}
+	return nil
+}
+
 func (a *resourceRepoAdapter) Remove(id string) error {
 	a.store.Remove(id)
+	return nil
+}
+
+func (a *resourceRepoAdapter) RemoveBatch(ids []string) error {
+	for _, id := range ids {
+		a.store.Remove(id)
+	}
 	return nil
 }
 

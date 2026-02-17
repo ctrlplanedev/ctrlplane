@@ -65,7 +65,9 @@ type ResourceRepo interface {
 	Get(id string) (*oapi.Resource, bool)
 	GetByIdentifier(identifier string) (*oapi.Resource, bool)
 	Set(entity *oapi.Resource) error
+	SetBatch(entities []*oapi.Resource) error
 	Remove(id string) error
+	RemoveBatch(ids []string) error
 	Items() map[string]*oapi.Resource
 }
 

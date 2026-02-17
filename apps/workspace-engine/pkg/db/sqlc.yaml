@@ -13,6 +13,7 @@ sql:
       - queries/environments.sql
       - queries/systems.sql
       - queries/job_agents.sql
+      - queries/resources_batch.sql
       - queries/resource_providers.sql
       - queries/releases.sql
       - queries/changelog.sql
