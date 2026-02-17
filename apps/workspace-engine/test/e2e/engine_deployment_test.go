@@ -1007,3 +1007,317 @@ func BenchmarkEngine_DeploymentRemoval(b *testing.B) {
 		engine.PushEvent(ctx, handler.DeploymentDelete, deployments[i])
 	}
 }
+
+// ===== Multi-Agent (JobAgents array) E2E Tests =====
+
+func TestEngine_DeploymentJobAgentsArray_AllAgentsNoCondition(t *testing.T) {
+	agentK8s := uuid.New().String()
+	agentDocker := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(agentK8s),
+			integration.JobAgentName("Kubernetes Agent"),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(agentDocker),
+			integration.JobAgentName("Docker Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("multi-agent-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: agentK8s, Config: oapi.JobAgentConfig{}},
+					{Ref: agentDocker, Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	jobAgentIDs := map[string]bool{}
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found for job %s", job.Id)
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			jobAgentIDs[job.JobAgentId] = true
+		}
+	}
+
+	assert.True(t, jobAgentIDs[agentK8s], "should have a job for the Kubernetes agent")
+	assert.True(t, jobAgentIDs[agentDocker], "should have a job for the Docker agent")
+	assert.Equal(t, 2, len(jobAgentIDs), "should have exactly 2 jobs (one per agent)")
+}
+
+func TestEngine_DeploymentJobAgentsArray_WithIfConditionFilters(t *testing.T) {
+	agentK8s := uuid.New().String()
+	agentDocker := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(agentK8s),
+			integration.JobAgentName("Kubernetes Agent"),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(agentDocker),
+			integration.JobAgentName("Docker Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("conditional-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: agentK8s, If: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentDocker, If: "true", Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("gcp-resource"),
+			integration.ResourceMetadata(map[string]string{"cloud": "gcp"}),
+		),
+	)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	jobAgentIDs := map[string]bool{}
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found for job %s", job.Id)
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			jobAgentIDs[job.JobAgentId] = true
+		}
+	}
+
+	assert.True(t, jobAgentIDs[agentK8s], "k8s agent should match (resource cloud=gcp)")
+	assert.True(t, jobAgentIDs[agentDocker], "docker agent should match (if=true)")
+	assert.Equal(t, 2, len(jobAgentIDs), "both agents should produce jobs")
+}
+
+func TestEngine_DeploymentJobAgentsArray_IfConditionExcludesAgent(t *testing.T) {
+	agentK8s := uuid.New().String()
+	agentDocker := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(agentK8s),
+			integration.JobAgentName("Kubernetes Agent"),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(agentDocker),
+			integration.JobAgentName("Docker Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("filtered-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: agentK8s, If: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentDocker, If: `resource.metadata.cloud == "aws"`, Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("gcp-resource"),
+			integration.ResourceMetadata(map[string]string{"cloud": "gcp"}),
+		),
+	)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	jobAgentIDs := map[string]bool{}
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found for job %s", job.Id)
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			jobAgentIDs[job.JobAgentId] = true
+		}
+	}
+
+	assert.True(t, jobAgentIDs[agentK8s], "k8s agent should match (cloud=gcp)")
+	assert.False(t, jobAgentIDs[agentDocker], "docker agent should NOT match (cloud!=aws)")
+	assert.Equal(t, 1, len(jobAgentIDs), "only one agent should produce a job")
+}
+
+func TestEngine_DeploymentJobAgentsArray_AllConditionsFalse(t *testing.T) {
+	agentA := uuid.New().String()
+	agentB := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(agentA),
+			integration.JobAgentName("Agent A"),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(agentB),
+			integration.JobAgentName("Agent B"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("no-match-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: agentA, If: `environment.name == "staging"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentB, If: `environment.name == "staging"`, Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("resource-1"),
+		),
+	)
+
+	allJobs := engine.Workspace().Jobs().Items()
+
+	deploymentJobs := 0
+	for _, job := range allJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			continue
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			deploymentJobs++
+			assert.Equal(t, oapi.JobStatusInvalidJobAgent, job.Status,
+				"when no agents match, should create an InvalidJobAgent job")
+		}
+	}
+
+	assert.Equal(t, 1, deploymentJobs, "should have 1 job with InvalidJobAgent status")
+}
+
+func TestEngine_DeploymentJobAgentsArray_MultipleResourcesDifferentAgents(t *testing.T) {
+	agentGCP := uuid.New().String()
+	agentAWS := uuid.New().String()
+	deploymentID := uuid.New().String()
+
+	engine := integration.NewTestWorkspace(
+		t,
+		integration.WithJobAgent(
+			integration.JobAgentID(agentGCP),
+			integration.JobAgentName("GCP Agent"),
+		),
+		integration.WithJobAgent(
+			integration.JobAgentID(agentAWS),
+			integration.JobAgentName("AWS Agent"),
+		),
+		integration.WithSystem(
+			integration.SystemName("test-system"),
+			integration.WithDeployment(
+				integration.DeploymentID(deploymentID),
+				integration.DeploymentName("multi-cloud-deploy"),
+				integration.DeploymentCelResourceSelector("true"),
+				integration.DeploymentJobAgents([]oapi.DeploymentJobAgent{
+					{Ref: agentGCP, If: `resource.metadata.cloud == "gcp"`, Config: oapi.JobAgentConfig{}},
+					{Ref: agentAWS, If: `resource.metadata.cloud == "aws"`, Config: oapi.JobAgentConfig{}},
+				}),
+				integration.WithDeploymentVersion(
+					integration.DeploymentVersionTag("v1.0.0"),
+				),
+			),
+			integration.WithEnvironment(
+				integration.EnvironmentName("production"),
+				integration.EnvironmentCelResourceSelector("true"),
+			),
+		),
+		integration.WithResource(
+			integration.ResourceName("gcp-server"),
+			integration.ResourceMetadata(map[string]string{"cloud": "gcp"}),
+		),
+		integration.WithResource(
+			integration.ResourceName("aws-server"),
+			integration.ResourceMetadata(map[string]string{"cloud": "aws"}),
+		),
+	)
+
+	pendingJobs := engine.Workspace().Jobs().GetPending()
+
+	type jobInfo struct {
+		agentID    string
+		resourceID string
+	}
+	var jobs []jobInfo
+	for _, job := range pendingJobs {
+		release, ok := engine.Workspace().Releases().Get(job.ReleaseId)
+		if !ok {
+			t.Fatalf("release not found for job %s", job.Id)
+		}
+		if release.ReleaseTarget.DeploymentId == deploymentID {
+			jobs = append(jobs, jobInfo{
+				agentID:    job.JobAgentId,
+				resourceID: release.ReleaseTarget.ResourceId,
+			})
+		}
+	}
+
+	// 2 resources x 1 matching agent each = 2 pending jobs
+	assert.Equal(t, 2, len(jobs), "should have 2 pending jobs (one per resource)")
+
+	gcpJobs := 0
+	awsJobs := 0
+	for _, j := range jobs {
+		if j.agentID == agentGCP {
+			gcpJobs++
+		}
+		if j.agentID == agentAWS {
+			awsJobs++
+		}
+	}
+
+	assert.Equal(t, 1, gcpJobs, "GCP agent should have 1 job (for gcp-server)")
+	assert.Equal(t, 1, awsJobs, "AWS agent should have 1 job (for aws-server)")
+}
