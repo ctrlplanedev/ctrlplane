@@ -34,6 +34,15 @@ func WithDBDeployments(ctx context.Context) StoreOption {
 	}
 }
 
+// WithDBResources replaces the default in-memory ResourceRepo
+// with a DB-backed implementation.
+func WithDBResources(ctx context.Context) StoreOption {
+	return func(s *Store) {
+		dbRepo := dbrepo.NewDBRepo(ctx, s.id)
+		s.Resources.SetRepo(dbRepo.Resources())
+	}
+}
+
 // WithDBEnvironments replaces the default in-memory EnvironmentRepo
 // with a DB-backed implementation.
 func WithDBEnvironments(ctx context.Context) StoreOption {
@@ -236,6 +245,16 @@ func (s *Store) Restore(ctx context.Context, changes persistence.Changes, setSta
 		if err := s.JobAgents.repo.Set(ja); err != nil {
 			log.Warn("Failed to migrate legacy job agent",
 				"job_agent_id", ja.Id, "name", ja.Name, "error", err)
+		}
+	}
+
+	if setStatus != nil {
+		setStatus("Migrating legacy resources")
+	}
+	for _, r := range s.repo.Resources().Items() {
+		if err := s.Resources.repo.Set(r); err != nil {
+			log.Warn("Failed to migrate legacy resource",
+				"resource_id", r.Id, "name", r.Name, "error", err)
 		}
 	}
 

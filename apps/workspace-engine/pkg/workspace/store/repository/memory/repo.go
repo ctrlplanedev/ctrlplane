@@ -48,7 +48,7 @@ func New(wsId string) *InMemory {
 		db:     memdb,
 
 		JobVerifications:         createTypedStore[*oapi.JobVerification](router, "job_verification"),
-		Resources:                createTypedStore[*oapi.Resource](router, "resource"),
+		resources:                createTypedStore[*oapi.Resource](router, "resource"),
 		resourceProviders:        createTypedStore[*oapi.ResourceProvider](router, "resource_provider"),
 		ResourceVariables:        createTypedStore[*oapi.ResourceVariable](router, "resource_variable"),
 		deployments:              createTypedStore[*oapi.Deployment](router, "deployment"),
@@ -84,7 +84,7 @@ type InMemory struct {
 	router *persistence.RepositoryRouter
 	db     *memdb.MemDB
 
-	Resources         cmap.ConcurrentMap[string, *oapi.Resource]
+	resources         cmap.ConcurrentMap[string, *oapi.Resource]
 	ResourceVariables cmap.ConcurrentMap[string, *oapi.ResourceVariable]
 	resourceProviders cmap.ConcurrentMap[string, *oapi.ResourceProvider]
 
@@ -175,6 +175,44 @@ func (s *InMemory) Systems() repository.SystemRepo {
 // JobAgents implements repository.Repo.
 func (s *InMemory) JobAgents() repository.JobAgentRepo {
 	return &cmapRepoAdapter[*oapi.JobAgent]{store: &s.jobAgents}
+}
+
+// resourceRepoAdapter wraps a cmap.ConcurrentMap to satisfy ResourceRepo,
+// adding the GetByIdentifier lookup.
+type resourceRepoAdapter struct {
+	store *cmap.ConcurrentMap[string, *oapi.Resource]
+}
+
+func (a *resourceRepoAdapter) Get(id string) (*oapi.Resource, bool) {
+	return a.store.Get(id)
+}
+
+func (a *resourceRepoAdapter) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
+	for item := range a.store.IterBuffered() {
+		if item.Val.Identifier == identifier {
+			return item.Val, true
+		}
+	}
+	return nil, false
+}
+
+func (a *resourceRepoAdapter) Set(entity *oapi.Resource) error {
+	a.store.Set(entity.Id, entity)
+	return nil
+}
+
+func (a *resourceRepoAdapter) Remove(id string) error {
+	a.store.Remove(id)
+	return nil
+}
+
+func (a *resourceRepoAdapter) Items() map[string]*oapi.Resource {
+	return a.store.Items()
+}
+
+// Resources implements repository.Repo.
+func (s *InMemory) Resources() repository.ResourceRepo {
+	return &resourceRepoAdapter{store: &s.resources}
 }
 
 // ResourceProviders implements repository.Repo.
