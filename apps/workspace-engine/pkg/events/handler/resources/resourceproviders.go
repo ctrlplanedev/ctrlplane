@@ -13,7 +13,13 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("events/handler/resources")
 
 func HandleResourceProviderCreated(
 	ctx context.Context,
@@ -67,33 +73,53 @@ func HandleResourceProviderSetResources(
 	ws *workspace.Workspace,
 	event handler.RawEvent,
 ) error {
+	ctx, span := tracer.Start(ctx, "HandleResourceProviderSetResources")
+	defer span.End()
+
 	var payload struct {
 		ProviderId string  `json:"providerId"`
 		BatchId    *string `json:"batchId,omitempty"`
 	}
 	if err := json.Unmarshal(event.Data, &payload); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to unmarshal payload")
 		return err
 	}
 
+	span.SetAttributes(
+		attribute.String("provider.id", payload.ProviderId),
+		attribute.String("workspace.id", ws.ID),
+	)
+
 	if payload.BatchId == nil {
-		return fmt.Errorf("batchId is required - resources must be cached via /cache-batch endpoint")
+		err := fmt.Errorf("batchId is required - resources must be cached via /cache-batch endpoint")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing batchId")
+		return err
 	}
+	span.SetAttributes(attribute.String("batch.id", *payload.BatchId))
 
 	// Retrieve from in-memory cache
 	cache := store.GetResourceProviderBatchCache()
 	batch, err := cache.Retrieve(ctx, *payload.BatchId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to retrieve cached batch")
 		log.Error("Failed to retrieve cached batch", "error", err, "batchId", *payload.BatchId)
 		return err
 	}
 
 	// Verify provider ID matches
 	if batch.ProviderId != payload.ProviderId {
-		return fmt.Errorf("provider ID mismatch: expected %s, got %s",
+		err := fmt.Errorf("provider ID mismatch: expected %s, got %s",
 			payload.ProviderId, batch.ProviderId)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "provider ID mismatch")
+		return err
 	}
 
 	resources := batch.Resources
+	span.SetAttributes(attribute.Int("batch.resource_count", len(resources)))
 
 	// Ensure all resources have the correct workspace ID
 	for _, resource := range resources {
@@ -101,10 +127,13 @@ func HandleResourceProviderSetResources(
 	}
 
 	// Build identifier map for O(1) lookups
+	_, buildMapSpan := tracer.Start(ctx, "BuildIdentifierMap")
 	identifierMap := make(map[string]*oapi.Resource)
 	for _, resource := range ws.Resources().Items() {
 		identifierMap[resource.Identifier] = resource
 	}
+	buildMapSpan.SetAttributes(attribute.Int("existing_resources", len(identifierMap)))
+	buildMapSpan.End()
 
 	// Process new resource identifiers
 	processedResources := make([]*oapi.Resource, 0, len(resources))
@@ -134,17 +163,30 @@ func HandleResourceProviderSetResources(
 	}
 
 	// Delete removed resources: in-memory cleanup then single batch DB delete
-	for _, resource := range resourcesToDelete {
-		ws.Store().RelationshipIndexes.RemoveEntity(ctx, resource.Id)
-		ws.ReleaseTargets().RemoveForResource(ctx, resource.Id)
-	}
 	if len(resourcesToDelete) > 0 {
+		_, deleteSpan := tracer.Start(ctx, "DeleteRemovedResources", trace.WithAttributes(
+			attribute.Int("delete_count", len(resourcesToDelete)),
+		))
+		for _, resource := range resourcesToDelete {
+			ws.Store().RelationshipIndexes.RemoveEntity(ctx, resource.Id)
+			ws.ReleaseTargets().RemoveForResource(ctx, resource.Id)
+		}
 		if err := ws.Resources().BulkRemove(ctx, resourcesToDelete); err != nil {
+			deleteSpan.RecordError(err)
+			deleteSpan.SetStatus(codes.Error, "bulk remove failed")
+			deleteSpan.End()
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "bulk remove failed")
 			return err
 		}
+		deleteSpan.End()
 	}
 
 	// Pre-process resources for upsert: resolve IDs, timestamps, and change detection
+	_, preprocessSpan := tracer.Start(ctx, "PreprocessResources", trace.WithAttributes(
+		attribute.Int("processed_count", len(processedResources)),
+	))
+
 	type upsertEntry struct {
 		resource   *oapi.Resource
 		hasChanged bool
@@ -152,6 +194,9 @@ func HandleResourceProviderSetResources(
 	}
 	upsertEntries := make([]upsertEntry, 0, len(processedResources))
 	resourcesToUpsert := make([]*oapi.Resource, 0, len(processedResources))
+	newCount := 0
+	changedCount := 0
+	skippedCount := 0
 
 	for _, resource := range processedResources {
 		existingResource, exists := identifierMap[resource.Identifier]
@@ -165,6 +210,7 @@ func HandleResourceProviderSetResources(
 					"existingProviderId", *existingResource.ProviderId,
 					"newProviderId", payload.ProviderId,
 				)
+				skippedCount++
 				continue
 			}
 			resource.Id = existingResource.Id
@@ -175,6 +221,11 @@ func HandleResourceProviderSetResources(
 		} else {
 			resource.CreatedAt = time.Now()
 			resource.UpdatedAt = &resource.CreatedAt
+			newCount++
+		}
+
+		if hasChanged {
+			changedCount++
 		}
 
 		resource.ProviderId = &payload.ProviderId
@@ -186,14 +237,35 @@ func HandleResourceProviderSetResources(
 		})
 	}
 
+	preprocessSpan.SetAttributes(
+		attribute.Int("new_count", newCount),
+		attribute.Int("changed_count", changedCount),
+		attribute.Int("skipped_count", skippedCount),
+		attribute.Int("upsert_count", len(resourcesToUpsert)),
+	)
+	preprocessSpan.End()
+
 	// Single batch DB upsert for all resources
 	if len(resourcesToUpsert) > 0 {
+		_, upsertSpan := tracer.Start(ctx, "BulkUpsertResources", trace.WithAttributes(
+			attribute.Int("upsert_count", len(resourcesToUpsert)),
+		))
 		if err := ws.Resources().BulkUpsert(ctx, resourcesToUpsert); err != nil {
+			upsertSpan.RecordError(err)
+			upsertSpan.SetStatus(codes.Error, "bulk upsert failed")
+			upsertSpan.End()
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "bulk upsert failed")
 			return err
 		}
+		upsertSpan.End()
 	}
 
 	// Update in-memory relationship indexes and release targets for changed resources
+	_, postProcessSpan := tracer.Start(ctx, "UpdateRelationshipsAndReleaseTargets", trace.WithAttributes(
+		attribute.Int("changed_count", changedCount),
+	))
+
 	for _, entry := range upsertEntries {
 		if !entry.hasChanged {
 			continue
@@ -207,6 +279,11 @@ func HandleResourceProviderSetResources(
 
 		releaseTargets, err := computeReleaseTargets(ctx, ws, entry.resource)
 		if err != nil {
+			postProcessSpan.RecordError(err)
+			postProcessSpan.SetStatus(codes.Error, "compute release targets failed")
+			postProcessSpan.End()
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "compute release targets failed")
 			return err
 		}
 
@@ -220,6 +297,16 @@ func HandleResourceProviderSetResources(
 			_ = ws.ReleaseTargets().Upsert(ctx, releaseTarget)
 		}
 	}
+	postProcessSpan.End()
+
+	span.SetAttributes(
+		attribute.Int("total.deleted", len(resourcesToDelete)),
+		attribute.Int("total.upserted", len(resourcesToUpsert)),
+		attribute.Int("total.changed", changedCount),
+		attribute.Int("total.new", newCount),
+		attribute.Int("total.skipped", skippedCount),
+	)
+	span.SetStatus(codes.Ok, "set resources completed")
 
 	return nil
 }
