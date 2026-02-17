@@ -909,7 +909,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         CreateDeploymentVersionRequest: {
             config?: {
@@ -934,7 +933,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         CreatePolicyRequest: {
             description?: string;
@@ -1051,7 +1049,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         DeploymentAndSystems: {
             deployment: components["schemas"]["Deployment"];
@@ -1158,7 +1155,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         EnvironmentProgressionRule: {
             dependsOnEnvironmentSelector: components["schemas"]["Selector"];
@@ -1680,7 +1676,6 @@ export interface components {
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
             slug: string;
-            systemIds: string[];
         };
         UpsertDeploymentVariableRequest: {
             defaultValue?: components["schemas"]["LiteralValue"];
@@ -1717,7 +1712,6 @@ export interface components {
             };
             name: string;
             resourceSelector?: components["schemas"]["Selector"];
-            systemIds: string[];
         };
         UpsertJobAgentRequest: {
             config: {
