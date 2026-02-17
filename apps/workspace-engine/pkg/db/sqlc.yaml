@@ -14,6 +14,7 @@ sql:
       - queries/systems.sql
       - queries/job_agents.sql
       - queries/resource_providers.sql
+      - queries/releases.sql
       - queries/changelog.sql
     database:
       uri: "postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane?sslmode=disable"
@@ -75,3 +76,8 @@ sql:
           - column: "job_agent.config"
             go_type:
               type: "map[string]any"
+
+          # ReleaseVariable
+          - column: "release_variable.value"
+            go_type:
+              type: "[]byte"

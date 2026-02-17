@@ -59,7 +59,7 @@ func New(wsId string) *InMemory {
 		Policies:                 createTypedStore[*oapi.Policy](router, "policy"),
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		systems:                  createTypedStore[*oapi.System](router, "system"),
-		Releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
+		releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
@@ -97,7 +97,7 @@ type InMemory struct {
 	Policies         cmap.ConcurrentMap[string, *oapi.Policy]
 	PolicySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
 	systems          cmap.ConcurrentMap[string, *oapi.System]
-	Releases         *indexstore.Store[*oapi.Release]
+	releases         *indexstore.Store[*oapi.Release]
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
 	Jobs      *indexstore.Store[*oapi.Job]
@@ -131,6 +131,21 @@ func (a *deploymentVersionRepoAdapter) GetByDeploymentID(deploymentID string) ([
 // DeploymentVersions implements repository.Repo.
 func (s *InMemory) DeploymentVersions() repository.DeploymentVersionRepo {
 	return &deploymentVersionRepoAdapter{s.deploymentVersions}
+}
+
+// releaseRepoAdapter wraps an indexstore.Store to satisfy the
+// explicit ReleaseRepo interface.
+type releaseRepoAdapter struct {
+	*indexstore.Store[*oapi.Release]
+}
+
+func (a *releaseRepoAdapter) GetByReleaseTargetKey(key string) ([]*oapi.Release, error) {
+	return a.GetBy("release_target_key", key)
+}
+
+// Releases implements repository.Repo.
+func (s *InMemory) Releases() repository.ReleaseRepo {
+	return &releaseRepoAdapter{s.releases}
 }
 
 // cmapRepoAdapter wraps a cmap.ConcurrentMap to satisfy a basic entity repo interface.

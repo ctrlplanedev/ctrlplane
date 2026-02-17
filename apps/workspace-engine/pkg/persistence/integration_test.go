@@ -664,7 +664,7 @@ func TestPersistence_ComplexWorkspaceWithComputedValues(t *testing.T) {
 	require.True(t, ok, "JobAgent should be restored")
 	assert.Equal(t, "k8s-agent", restoredJobAgent.Name)
 
-	restoredRelease, ok := newStore.Repo().Releases.Get(release.ID())
+	restoredRelease, ok := newStore.Repo().Releases().Get(release.ID())
 	require.True(t, ok, "Release should be restored")
 	assert.Equal(t, "v1.2.3", restoredRelease.Version.Tag)
 

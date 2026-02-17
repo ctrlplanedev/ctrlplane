@@ -76,3 +76,12 @@ type ResourceProviderRepo interface {
 	Remove(id string) error
 	Items() map[string]*oapi.ResourceProvider
 }
+
+// ReleaseRepo defines the contract for release storage.
+type ReleaseRepo interface {
+	Get(id string) (*oapi.Release, bool)
+	GetByReleaseTargetKey(key string) ([]*oapi.Release, error)
+	Set(entity *oapi.Release) error
+	Remove(id string) error
+	Items() map[string]*oapi.Release
+}

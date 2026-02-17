@@ -108,6 +108,24 @@ type JobAgent struct {
 	Config      map[string]any
 }
 
+type Release struct {
+	ID            uuid.UUID
+	ResourceID    uuid.UUID
+	EnvironmentID uuid.UUID
+	DeploymentID  uuid.UUID
+	VersionID     uuid.UUID
+	CreatedAt     pgtype.Timestamptz
+}
+
+type ReleaseVariable struct {
+	ID        uuid.UUID
+	ReleaseID uuid.UUID
+	Key       string
+	Value     []byte
+	Encrypted bool
+	CreatedAt pgtype.Timestamptz
+}
+
 type Resource struct {
 	ID          uuid.UUID
 	Version     string
