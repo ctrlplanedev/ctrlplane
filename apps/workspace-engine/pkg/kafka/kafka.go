@@ -13,7 +13,6 @@ import (
 	"workspace-engine/pkg/workspace/manager"
 
 	"github.com/charmbracelet/log"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 // Configuration variables loaded from environment
@@ -24,17 +23,10 @@ var (
 )
 
 func NewConsumer(brokers string, topic string) (messaging.Consumer, error) {
-	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, topic, &kafka.ConfigMap{
-		"bootstrap.servers":               Brokers,
-		"group.id":                        GroupID,
-		"auto.offset.reset":               "latest",
-		"enable.auto.commit":              false,
-		"partition.assignment.strategy":   "cooperative-sticky",
-		"go.application.rebalance.enable": true,
-		"max.poll.interval.ms":            900_000, // 15 minutes
-
-		// "debug":                      "cgrp,broker,protocol",
-	})
+	cfg := confluent.BaseConsumerConfig()
+	_ = cfg.SetKey("auto.offset.reset", "latest")
+	_ = cfg.SetKey("max.poll.interval.ms", 900_000)
+	return confluent.NewConfluent(brokers).CreateConsumer(GroupID, topic, cfg)
 }
 
 // RunConsumerWithWorkspaceLoader starts the Kafka consumer with workspace-based offset resume

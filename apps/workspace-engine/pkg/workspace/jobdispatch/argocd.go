@@ -22,7 +22,6 @@ import (
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/avast/retry-go"
 	"github.com/charmbracelet/log"
-	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -362,13 +361,7 @@ func (d *ArgoCDDispatcher) getKafkaProducer() (messaging.Producer, error) {
 	if d.kafkaProducerFactory != nil {
 		return d.kafkaProducerFactory()
 	}
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
-		"bootstrap.servers":        config.Global.KafkaBrokers,
-		"enable.idempotence":       true,
-		"compression.type":         "snappy",
-		"message.send.max.retries": 10,
-		"retry.backoff.ms":         100,
-	})
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, confluent.BaseProducerConfig())
 }
 
 // sendJobFailureEvent sends a job update event with a failure status and message

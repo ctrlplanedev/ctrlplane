@@ -19,8 +19,6 @@ import (
 	"workspace-engine/pkg/workspace/releasemanager/verification"
 	"workspace-engine/pkg/workspace/store"
 
-	confluentkafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-
 	argocdclient "github.com/argoproj/argo-cd/v2/pkg/apiclient"
 	argocdapplication "github.com/argoproj/argo-cd/v2/pkg/apiclient/application"
 	"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
@@ -316,11 +314,5 @@ func (a *ArgoApplication) sendJobUpdateEvent(serverAddr string, app *v1alpha1.Ap
 }
 
 func (a *ArgoApplication) getKafkaProducer() (messaging.Producer, error) {
-	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, &confluentkafka.ConfigMap{
-		"bootstrap.servers":        config.Global.KafkaBrokers,
-		"enable.idempotence":       true,
-		"compression.type":         "snappy",
-		"message.send.max.retries": 10,
-		"retry.backoff.ms":         100,
-	})
+	return confluent.NewConfluent(config.Global.KafkaBrokers).CreateProducer(config.Global.KafkaTopic, confluent.BaseProducerConfig())
 }
