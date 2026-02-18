@@ -28,7 +28,7 @@ export function DatadogVerificationDisplay({
   );
 
   return (
-    <div className="space-y-3 pl-1 pr-2">
+    <div className="min-w-0 space-y-3 overflow-hidden pl-1 pr-2">
       <ProviderInfo
         queries={provider?.queries}
         formula={provider?.formula}
@@ -47,11 +47,11 @@ function TruncatedCode({ children }: { children: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <code className="min-w-0 truncate rounded bg-muted px-1.5 py-0.5 font-mono">
+        <code className="block min-w-0 overflow-hidden truncate rounded bg-muted px-1.5 py-0.5 font-mono">
           {children}
         </code>
       </TooltipTrigger>
-      <TooltipContent className="max-w-sm break-all font-mono text-xs">
+      <TooltipContent className="max-w-md break-all font-mono text-xs">
         {children}
       </TooltipContent>
     </Tooltip>
