@@ -193,19 +193,17 @@ func HandleResourceProviderSetResources(
 	))
 
 	type upsertEntry struct {
-		resource   *oapi.Resource
-		hasChanged bool
-		isNew      bool
+		resource *oapi.Resource
+		isNew    bool
 	}
 	upsertEntries := make([]upsertEntry, 0, len(processedResources))
 	resourcesToUpsert := make([]*oapi.Resource, 0, len(processedResources))
 	newCount := 0
-	changedCount := 0
+	unchangedCount := 0
 	skippedCount := 0
 
 	for _, resource := range processedResources {
 		existingResource, exists := identifierMap[resource.Identifier]
-		hasChanged := true
 
 		if exists {
 			if existingResource.ProviderId != nil && *existingResource.ProviderId != payload.ProviderId {
@@ -220,37 +218,38 @@ func HandleResourceProviderSetResources(
 			}
 			resource.Id = existingResource.Id
 			resource.CreatedAt = existingResource.CreatedAt
+			resource.ProviderId = &payload.ProviderId
+
+			if len(diffcheck.HasResourceChanges(existingResource, resource)) == 0 {
+				unchangedCount++
+				continue
+			}
+
 			now := time.Now()
 			resource.UpdatedAt = &now
-			hasChanged = len(diffcheck.HasResourceChanges(existingResource, resource)) > 0
 		} else {
 			resource.CreatedAt = time.Now()
 			resource.UpdatedAt = &resource.CreatedAt
+			resource.ProviderId = &payload.ProviderId
 			newCount++
 		}
 
-		if hasChanged {
-			changedCount++
-		}
-
-		resource.ProviderId = &payload.ProviderId
 		resourcesToUpsert = append(resourcesToUpsert, resource)
 		upsertEntries = append(upsertEntries, upsertEntry{
-			resource:   resource,
-			hasChanged: hasChanged,
-			isNew:      !exists,
+			resource: resource,
+			isNew:    !exists,
 		})
 	}
 
 	preprocessSpan.SetAttributes(
 		attribute.Int("new_count", newCount),
-		attribute.Int("changed_count", changedCount),
+		attribute.Int("changed_count", len(resourcesToUpsert)),
+		attribute.Int("unchanged_count", unchangedCount),
 		attribute.Int("skipped_count", skippedCount),
-		attribute.Int("upsert_count", len(resourcesToUpsert)),
 	)
 	preprocessSpan.End()
 
-	// Single batch DB upsert for all resources
+	// Only upsert resources that actually changed
 	if len(resourcesToUpsert) > 0 {
 		_, upsertSpan := tracer.Start(ctx, "BulkUpsertResources", trace.WithAttributes(
 			attribute.Int("upsert_count", len(resourcesToUpsert)),
@@ -268,14 +267,10 @@ func HandleResourceProviderSetResources(
 
 	// Update in-memory relationship indexes and release targets for changed resources
 	_, postProcessSpan := tracer.Start(ctx, "UpdateRelationshipsAndReleaseTargets", trace.WithAttributes(
-		attribute.Int("changed_count", changedCount),
+		attribute.Int("changed_count", len(upsertEntries)),
 	))
 
 	for _, entry := range upsertEntries {
-		if !entry.hasChanged {
-			continue
-		}
-
 		if entry.isNew {
 			ws.Store().RelationshipIndexes.AddEntity(ctx, entry.resource.Id)
 		} else {
@@ -307,7 +302,7 @@ func HandleResourceProviderSetResources(
 	span.SetAttributes(
 		attribute.Int("total.deleted", len(resourcesToDelete)),
 		attribute.Int("total.upserted", len(resourcesToUpsert)),
-		attribute.Int("total.changed", changedCount),
+		attribute.Int("total.unchanged", unchangedCount),
 		attribute.Int("total.new", newCount),
 		attribute.Int("total.skipped", skippedCount),
 	)

@@ -83,8 +83,8 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 }
 
 // BulkUpsert writes all resources in a single batched DB round-trip and
-// records changeset entries for each. Callers are responsible for setting
-// timestamps and change-detection before calling this method.
+// records changeset entries for each. Callers should only pass resources
+// that have actually changed to avoid unnecessary DB and changelog work.
 func (r *Resources) BulkUpsert(ctx context.Context, resources []*oapi.Resource) error {
 	_, span := tracer.Start(ctx, "BulkUpsert", trace.WithAttributes(
 		attribute.Int("resources.count", len(resources)),
