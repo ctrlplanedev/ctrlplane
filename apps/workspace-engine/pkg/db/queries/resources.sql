@@ -37,6 +37,12 @@ SELECT id, version, name, kind, identifier, provider_id, workspace_id,
 FROM resource
 WHERE workspace_id = $1 AND identifier = ANY($2::text[]);
 
+-- name: ListResourceSummariesByIdentifiers :many
+SELECT id, version, name, kind, identifier, provider_id, workspace_id,
+       created_at, updated_at
+FROM resource
+WHERE workspace_id = $1 AND identifier = ANY($2::text[]);
+
 -- name: ListResourcesByProviderID :many
 SELECT id, version, name, kind, identifier, provider_id, workspace_id,
        config, created_at, updated_at, deleted_at, metadata

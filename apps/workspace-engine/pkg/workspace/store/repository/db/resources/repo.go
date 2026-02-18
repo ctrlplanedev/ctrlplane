@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -159,6 +160,30 @@ func (r *Repo) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource 
 	for _, row := range rows {
 		res := ToOapi(ResourceRow(row))
 		result[res.Identifier] = res
+	}
+	return result
+}
+
+func (r *Repo) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+	uid, err := uuid.Parse(r.workspaceID)
+	if err != nil {
+		log.Warn("Failed to parse workspace id for GetSummariesByIdentifiers()", "id", r.workspaceID, "error", err)
+		return make(map[string]*repository.ResourceSummary)
+	}
+
+	rows, err := db.GetQueries(r.ctx).ListResourceSummariesByIdentifiers(r.ctx, db.ListResourceSummariesByIdentifiersParams{
+		WorkspaceID: uid,
+		Column2:     identifiers,
+	})
+	if err != nil {
+		log.Warn("Failed to list resource summaries by identifiers", "workspaceId", r.workspaceID, "error", err)
+		return make(map[string]*repository.ResourceSummary)
+	}
+
+	result := make(map[string]*repository.ResourceSummary, len(rows))
+	for _, row := range rows {
+		s := ToSummary(row)
+		result[s.Identifier] = s
 	}
 	return result
 }

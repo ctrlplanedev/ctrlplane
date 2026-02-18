@@ -131,6 +131,12 @@ func (r *Resources) GetByIdentifiers(identifiers []string) map[string]*oapi.Reso
 	return r.repo.GetByIdentifiers(identifiers)
 }
 
+// GetSummariesByIdentifiers returns lightweight summaries (no JSONB columns)
+// for resources matching the given identifiers, keyed by identifier.
+func (r *Resources) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+	return r.repo.GetSummariesByIdentifiers(identifiers)
+}
+
 // ListByProviderID returns all resources belonging to the given provider.
 func (r *Resources) ListByProviderID(providerID string) []*oapi.Resource {
 	return r.repo.ListByProviderID(providerID)

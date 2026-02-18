@@ -5,6 +5,7 @@ import (
 	"time"
 	"workspace-engine/pkg/db"
 	"workspace-engine/pkg/oapi"
+	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -66,6 +67,31 @@ func ToOapi(row ResourceRow) *oapi.Resource {
 		UpdatedAt:   timestamptzToTimePtr(row.UpdatedAt),
 		DeletedAt:   timestamptzToTimePtr(row.DeletedAt),
 		Metadata:    metadata,
+	}
+}
+
+// ToSummary converts a lightweight summary row into a ResourceSummary.
+func ToSummary(row db.ListResourceSummariesByIdentifiersRow) *repository.ResourceSummary {
+	var createdAt time.Time
+	if row.CreatedAt.Valid {
+		createdAt = row.CreatedAt.Time
+	}
+
+	var providerID *string
+	if row.ProviderID != uuid.Nil {
+		s := row.ProviderID.String()
+		providerID = &s
+	}
+
+	return &repository.ResourceSummary{
+		Id:         row.ID.String(),
+		Identifier: row.Identifier,
+		ProviderId: providerID,
+		Version:    row.Version,
+		Name:       row.Name,
+		Kind:       row.Kind,
+		CreatedAt:  createdAt,
+		UpdatedAt:  timestamptzToTimePtr(row.UpdatedAt),
 	}
 }
 

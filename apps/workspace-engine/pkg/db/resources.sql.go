@@ -111,6 +111,60 @@ func (q *Queries) GetResourceByIdentifier(ctx context.Context, arg GetResourceBy
 	return i, err
 }
 
+const listResourceSummariesByIdentifiers = `-- name: ListResourceSummariesByIdentifiers :many
+SELECT id, version, name, kind, identifier, provider_id, workspace_id,
+       created_at, updated_at
+FROM resource
+WHERE workspace_id = $1 AND identifier = ANY($2::text[])
+`
+
+type ListResourceSummariesByIdentifiersParams struct {
+	WorkspaceID uuid.UUID
+	Column2     []string
+}
+
+type ListResourceSummariesByIdentifiersRow struct {
+	ID          uuid.UUID
+	Version     string
+	Name        string
+	Kind        string
+	Identifier  string
+	ProviderID  uuid.UUID
+	WorkspaceID uuid.UUID
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) ListResourceSummariesByIdentifiers(ctx context.Context, arg ListResourceSummariesByIdentifiersParams) ([]ListResourceSummariesByIdentifiersRow, error) {
+	rows, err := q.db.Query(ctx, listResourceSummariesByIdentifiers, arg.WorkspaceID, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListResourceSummariesByIdentifiersRow
+	for rows.Next() {
+		var i ListResourceSummariesByIdentifiersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Version,
+			&i.Name,
+			&i.Kind,
+			&i.Identifier,
+			&i.ProviderID,
+			&i.WorkspaceID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listResourcesByIdentifiers = `-- name: ListResourcesByIdentifiers :many
 SELECT id, version, name, kind, identifier, provider_id, workspace_id,
        config, created_at, updated_at, deleted_at, metadata

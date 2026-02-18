@@ -10,6 +10,7 @@ import (
 	"workspace-engine/pkg/workspace"
 	"workspace-engine/pkg/workspace/store"
 	"workspace-engine/pkg/workspace/store/diffcheck"
+	"workspace-engine/pkg/workspace/store/repository"
 
 	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 )
 
 var tracer = otel.Tracer("events/handler/resources")
@@ -126,25 +128,41 @@ func HandleResourceProviderSetResources(
 		resource.WorkspaceId = ws.ID
 	}
 
-	// Build identifier map using targeted query (only fetches resources matching incoming identifiers)
-	_, buildMapSpan := tracer.Start(ctx, "BuildIdentifierMap")
+	// Phase 1: Fetch lightweight summaries (no JSONB) and provider resources concurrently
 	incomingIdentifiers := make([]string, 0, len(resources))
 	for _, resource := range resources {
 		incomingIdentifiers = append(incomingIdentifiers, resource.Identifier)
 	}
-	identifierMap := ws.Resources().GetByIdentifiers(incomingIdentifiers)
-	buildMapSpan.SetAttributes(attribute.Int("existing_resources", len(identifierMap)))
-	buildMapSpan.End()
 
-	// Process new resource identifiers
+	var summaryMap map[string]*repository.ResourceSummary
+	var providerResources []*oapi.Resource
+
+	g, _ := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		_, buildMapSpan := tracer.Start(ctx, "FetchResourceSummaries")
+		summaryMap = ws.Resources().GetSummariesByIdentifiers(incomingIdentifiers)
+		buildMapSpan.SetAttributes(attribute.Int("existing_resources", len(summaryMap)))
+		buildMapSpan.End()
+		return nil
+	})
+	g.Go(func() error {
+		_, findProvSpan := tracer.Start(ctx, "ListProviderResources")
+		providerResources = ws.Resources().ListByProviderID(payload.ProviderId)
+		findProvSpan.SetAttributes(attribute.Int("provider_resources", len(providerResources)))
+		findProvSpan.End()
+		return nil
+	})
+	_ = g.Wait()
+
+	// Process resource identifiers and detect scalar-level changes
 	processedResources := make([]*oapi.Resource, 0, len(resources))
 	newResourceIdentifiers := make(map[string]bool)
 
 	for _, resource := range resources {
 		newResourceIdentifiers[resource.Identifier] = true
 
-		if existingResource, ok := identifierMap[resource.Identifier]; ok {
-			resource.Id = existingResource.Id
+		if summary, ok := summaryMap[resource.Identifier]; ok {
+			resource.Id = summary.Id
 		} else if resource.Id == "" {
 			resource.Id = uuid.New().String()
 		}
@@ -153,19 +171,12 @@ func HandleResourceProviderSetResources(
 	}
 
 	// Find resources to delete (belong to this provider but not in new set)
-	_, findDeletesSpan := tracer.Start(ctx, "FindResourcesToDelete")
-	providerResources := ws.Resources().ListByProviderID(payload.ProviderId)
 	var resourcesToDelete []*oapi.Resource
 	for _, resource := range providerResources {
 		if !newResourceIdentifiers[resource.Identifier] {
 			resourcesToDelete = append(resourcesToDelete, resource)
 		}
 	}
-	findDeletesSpan.SetAttributes(
-		attribute.Int("provider_resources", len(providerResources)),
-		attribute.Int("delete_count", len(resourcesToDelete)),
-	)
-	findDeletesSpan.End()
 
 	// Delete removed resources: in-memory cleanup then single batch DB delete
 	if len(resourcesToDelete) > 0 {
@@ -187,7 +198,8 @@ func HandleResourceProviderSetResources(
 		deleteSpan.End()
 	}
 
-	// Pre-process resources for upsert: resolve IDs, timestamps, and change detection
+	// Pre-process: use summaries for quick scalar diff, collect identifiers
+	// that need a full fetch (scalars match but config/metadata might differ)
 	_, preprocessSpan := tracer.Start(ctx, "PreprocessResources", trace.WithAttributes(
 		attribute.Int("processed_count", len(processedResources)),
 	))
@@ -198,51 +210,87 @@ func HandleResourceProviderSetResources(
 	}
 	upsertEntries := make([]upsertEntry, 0, len(processedResources))
 	resourcesToUpsert := make([]*oapi.Resource, 0, len(processedResources))
+	needFullFetch := make([]string, 0)
 	newCount := 0
-	unchangedCount := 0
+	scalarChangedCount := 0
 	skippedCount := 0
 
+	type pendingResource struct {
+		resource *oapi.Resource
+		summary  *repository.ResourceSummary
+	}
+	var pendingDiffCheck []pendingResource
+
 	for _, resource := range processedResources {
-		existingResource, exists := identifierMap[resource.Identifier]
+		summary, exists := summaryMap[resource.Identifier]
 
 		if exists {
-			if existingResource.ProviderId != nil && *existingResource.ProviderId != payload.ProviderId {
+			if summary.ProviderId != nil && *summary.ProviderId != payload.ProviderId {
 				log.Warn(
 					"Skipping resource with identifier that belongs to another provider",
 					"identifier", resource.Identifier,
-					"existingProviderId", *existingResource.ProviderId,
+					"existingProviderId", *summary.ProviderId,
 					"newProviderId", payload.ProviderId,
 				)
 				skippedCount++
 				continue
 			}
-			resource.Id = existingResource.Id
-			resource.CreatedAt = existingResource.CreatedAt
+			resource.Id = summary.Id
+			resource.CreatedAt = summary.CreatedAt
 			resource.ProviderId = &payload.ProviderId
 
-			if len(diffcheck.HasResourceChanges(existingResource, resource)) == 0 {
-				unchangedCount++
-				continue
+			if resource.Name != summary.Name || resource.Kind != summary.Kind || resource.Version != summary.Version {
+				scalarChangedCount++
+				now := time.Now()
+				resource.UpdatedAt = &now
+				resourcesToUpsert = append(resourcesToUpsert, resource)
+				upsertEntries = append(upsertEntries, upsertEntry{resource: resource, isNew: false})
+			} else {
+				needFullFetch = append(needFullFetch, resource.Identifier)
+				pendingDiffCheck = append(pendingDiffCheck, pendingResource{resource: resource, summary: summary})
 			}
-
-			now := time.Now()
-			resource.UpdatedAt = &now
 		} else {
 			resource.CreatedAt = time.Now()
 			resource.UpdatedAt = &resource.CreatedAt
 			resource.ProviderId = &payload.ProviderId
 			newCount++
+			resourcesToUpsert = append(resourcesToUpsert, resource)
+			upsertEntries = append(upsertEntries, upsertEntry{resource: resource, isNew: true})
 		}
+	}
 
-		resourcesToUpsert = append(resourcesToUpsert, resource)
-		upsertEntries = append(upsertEntries, upsertEntry{
-			resource: resource,
-			isNew:    !exists,
-		})
+	// Phase 2: fetch full rows only for resources where scalars matched
+	// but config/metadata might differ
+	unchangedCount := 0
+	if len(needFullFetch) > 0 {
+		_, phase2Span := tracer.Start(ctx, "FetchFullRowsForDiff", trace.WithAttributes(
+			attribute.Int("fetch_count", len(needFullFetch)),
+		))
+		fullResources := ws.Resources().GetByIdentifiers(needFullFetch)
+		phase2Span.End()
+
+		for _, pending := range pendingDiffCheck {
+			existingFull, ok := fullResources[pending.resource.Identifier]
+			if !ok {
+				continue
+			}
+
+			if len(diffcheck.HasResourceChanges(existingFull, pending.resource)) == 0 {
+				unchangedCount++
+				continue
+			}
+
+			now := time.Now()
+			pending.resource.UpdatedAt = &now
+			resourcesToUpsert = append(resourcesToUpsert, pending.resource)
+			upsertEntries = append(upsertEntries, upsertEntry{resource: pending.resource, isNew: false})
+		}
 	}
 
 	preprocessSpan.SetAttributes(
 		attribute.Int("new_count", newCount),
+		attribute.Int("scalar_changed_count", scalarChangedCount),
+		attribute.Int("full_diff_count", len(needFullFetch)),
 		attribute.Int("changed_count", len(resourcesToUpsert)),
 		attribute.Int("unchanged_count", unchangedCount),
 		attribute.Int("skipped_count", skippedCount),
