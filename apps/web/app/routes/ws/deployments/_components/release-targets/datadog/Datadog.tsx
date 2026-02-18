@@ -1,6 +1,11 @@
 import type { WorkspaceEngine } from "@ctrlplane/workspace-engine-sdk";
 import { formatDistanceToNowStrict } from "date-fns";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 import {
   parseDatadogMeasurement,
@@ -38,6 +43,21 @@ export function DatadogVerificationDisplay({
   );
 }
 
+function TruncatedCode({ children }: { children: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <code className="min-w-0 truncate rounded bg-muted px-1.5 py-0.5 font-mono">
+          {children}
+        </code>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-sm break-all font-mono text-xs">
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function ProviderInfo({
   queries,
   formula,
@@ -54,28 +74,22 @@ function ProviderInfo({
   const queryEntries = Object.entries(queries ?? {});
 
   return (
-    <div className="flex flex-col gap-1 text-xs">
+    <div className="flex min-w-0 flex-col gap-1 text-xs">
       {queryEntries.map(([name, query]) => (
-        <div key={name} className="flex justify-between gap-4">
+        <div key={name} className="flex min-w-0 justify-between gap-4">
           <span className="shrink-0 text-muted-foreground">Query ({name})</span>
-          <code className="truncate rounded bg-muted px-1.5 py-0.5 font-mono">
-            {query}
-          </code>
+          <TruncatedCode>{query}</TruncatedCode>
         </div>
       ))}
       {formula != null && (
-        <div className="flex justify-between gap-4">
+        <div className="flex min-w-0 justify-between gap-4">
           <span className="shrink-0 text-muted-foreground">Formula</span>
-          <code className="truncate rounded bg-muted px-1.5 py-0.5 font-mono">
-            {formula}
-          </code>
+          <TruncatedCode>{formula}</TruncatedCode>
         </div>
       )}
-      <div className="flex justify-between gap-4">
+      <div className="flex min-w-0 justify-between gap-4">
         <span className="shrink-0 text-muted-foreground">Condition</span>
-        <code className="truncate rounded bg-muted px-1.5 py-0.5 font-mono">
-          {successCondition}
-        </code>
+        <TruncatedCode>{successCondition}</TruncatedCode>
       </div>
       {aggregator != null && (
         <div className="flex justify-between gap-4">
