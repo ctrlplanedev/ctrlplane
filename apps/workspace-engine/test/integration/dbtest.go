@@ -78,6 +78,7 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			store.WithDBSystemDeployments(ctx),
 			store.WithDBSystemEnvironments(ctx),
 			store.WithDBResources(ctx),
+			// store.WithDBReleases(ctx),
 		),
 	)
 
@@ -101,6 +102,8 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			label string
 			sql   string
 		}{
+			{"release variables", "DELETE FROM release_variable WHERE release_id IN (SELECT r.id FROM release r JOIN deployment d ON d.id = r.deployment_id WHERE d.workspace_id = $1)"},
+			{"releases", "DELETE FROM release WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)"},
 			{"deployment versions", "DELETE FROM deployment_version WHERE workspace_id = $1"},
 			{"system deployments", "DELETE FROM system_deployment WHERE deployment_id IN (SELECT id FROM deployment WHERE workspace_id = $1)"},
 			{"system environments", "DELETE FROM system_environment WHERE environment_id IN (SELECT id FROM environment WHERE workspace_id = $1)"},
@@ -108,6 +111,8 @@ func newDBTestWorkspace(t *testing.T, options ...WorkspaceOption) *TestWorkspace
 			{"environments", "DELETE FROM environment WHERE workspace_id = $1"},
 			{"systems", "DELETE FROM system WHERE workspace_id = $1"},
 			{"job agents", "DELETE FROM job_agent WHERE workspace_id = $1"},
+			{"resources", "DELETE FROM resource WHERE workspace_id = $1"},
+			{"resource providers", "DELETE FROM resource_provider WHERE workspace_id = $1"},
 			{"workspace", "DELETE FROM workspace WHERE id = $1"},
 		}
 

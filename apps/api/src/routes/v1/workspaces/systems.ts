@@ -29,7 +29,8 @@ export const getSystem: AsyncTypedHandler<
       system.response.status,
     );
 
-  res.status(200).json(system.data.system);
+  const { system: sys, environments, deployments } = system.data;
+  res.status(200).json({ ...sys, environments, deployments });
 };
 
 export const upsertSystem: AsyncTypedHandler<
@@ -43,12 +44,16 @@ export const upsertSystem: AsyncTypedHandler<
       workspaceId,
       eventType: Event.SystemUpdated,
       timestamp: Date.now(),
-      data: { id: systemId, name, description, metadata: metadata ?? {}, workspaceId },
+      data: {
+        id: systemId,
+        name,
+        description,
+        metadata: metadata ?? {},
+        workspaceId,
+      },
     });
 
-    res
-      .status(202)
-      .json({ id: systemId, message: "System update requested" });
+    res.status(202).json({ id: systemId, message: "System update requested" });
   } catch {
     throw new ApiError("Failed to update system", 500);
   }
@@ -128,6 +133,40 @@ export const createSystem: AsyncTypedHandler<
   } catch {
     throw new ApiError("Failed to create system", 500);
   }
+};
+
+export const getDeploymentSystemLink: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, systemId, deploymentId } = req.params;
+  const deploymentSystemLink = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}",
+    { params: { path: { workspaceId, systemId, deploymentId } } },
+  );
+  if (deploymentSystemLink.error != null)
+    throw new ApiError(
+      deploymentSystemLink.error.error ?? "Deployment system link not found",
+      deploymentSystemLink.response.status,
+    );
+  res.status(200).json(deploymentSystemLink.data);
+};
+
+export const getEnvironmentSystemLink: AsyncTypedHandler<
+  "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}",
+  "get"
+> = async (req, res) => {
+  const { workspaceId, systemId, environmentId } = req.params;
+  const environmentSystemLink = await getClientFor(workspaceId).GET(
+    "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}",
+    { params: { path: { workspaceId, systemId, environmentId } } },
+  );
+  if (environmentSystemLink.error != null)
+    throw new ApiError(
+      environmentSystemLink.error.error ?? "Environment system link not found",
+      environmentSystemLink.response.status,
+    );
+  res.status(200).json(environmentSystemLink.data);
 };
 
 export const linkDeploymentToSystem: AsyncTypedHandler<
@@ -216,6 +255,10 @@ export const systemRouter = Router({ mergeParams: true })
   .get("/:systemId", asyncHandler(getSystem))
   .delete("/:systemId", asyncHandler(deleteSystem))
   .put("/:systemId", asyncHandler(upsertSystem))
+  .get(
+    "/:systemId/deployments/:deploymentId",
+    asyncHandler(getDeploymentSystemLink),
+  )
   .put(
     "/:systemId/deployments/:deploymentId",
     asyncHandler(linkDeploymentToSystem),
@@ -223,6 +266,10 @@ export const systemRouter = Router({ mergeParams: true })
   .delete(
     "/:systemId/deployments/:deploymentId",
     asyncHandler(unlinkDeploymentFromSystem),
+  )
+  .get(
+    "/:systemId/environments/:environmentId",
+    asyncHandler(getEnvironmentSystemLink),
   )
   .put(
     "/:systemId/environments/:environmentId",

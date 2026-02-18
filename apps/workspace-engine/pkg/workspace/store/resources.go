@@ -82,12 +82,64 @@ func (r *Resources) Remove(ctx context.Context, id string) {
 	r.store.changeset.RecordDelete(resource)
 }
 
+// BulkUpsert writes all resources in a single batched DB round-trip and
+// records changeset entries for each. Callers should only pass resources
+// that have actually changed to avoid unnecessary DB and changelog work.
+func (r *Resources) BulkUpsert(ctx context.Context, resources []*oapi.Resource) error {
+	_, span := tracer.Start(ctx, "BulkUpsert", trace.WithAttributes(
+		attribute.Int("resources.count", len(resources)),
+	))
+	defer span.End()
+
+	if err := r.repo.SetBatch(resources); err != nil {
+		return err
+	}
+	for _, resource := range resources {
+		r.store.changeset.RecordUpsert(resource)
+	}
+	return nil
+}
+
+// BulkRemove deletes all given resources in a single batched DB round-trip,
+// cleans up relations, and records changeset entries.
+func (r *Resources) BulkRemove(ctx context.Context, resources []*oapi.Resource) error {
+	_, span := tracer.Start(ctx, "BulkRemove", trace.WithAttributes(
+		attribute.Int("resources.count", len(resources)),
+	))
+	defer span.End()
+
+	ids := make([]string, 0, len(resources))
+	for _, resource := range resources {
+		entity := relationships.NewResourceEntity(resource)
+		r.store.Relations.RemoveForEntity(ctx, entity)
+		r.store.changeset.RecordDelete(resource)
+		ids = append(ids, resource.Id)
+	}
+	return r.repo.RemoveBatch(ids)
+}
+
 func (r *Resources) Items() map[string]*oapi.Resource {
 	return r.repo.Items()
 }
 
 func (r *Resources) GetByIdentifier(identifier string) (*oapi.Resource, bool) {
 	return r.repo.GetByIdentifier(identifier)
+}
+
+// GetByIdentifiers returns resources matching the given identifiers, keyed by identifier.
+func (r *Resources) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource {
+	return r.repo.GetByIdentifiers(identifiers)
+}
+
+// GetSummariesByIdentifiers returns lightweight summaries (no JSONB columns)
+// for resources matching the given identifiers, keyed by identifier.
+func (r *Resources) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+	return r.repo.GetSummariesByIdentifiers(identifiers)
+}
+
+// ListByProviderID returns all resources belonging to the given provider.
+func (r *Resources) ListByProviderID(providerID string) []*oapi.Resource {
+	return r.repo.ListByProviderID(providerID)
 }
 
 func (r *Resources) Variables(resourceId string) map[string]*oapi.ResourceVariable {
@@ -125,10 +177,8 @@ func (r *Resources) ForDeployment(ctx context.Context, deployment *oapi.Deployme
 
 func (r *Resources) ForProvider(ctx context.Context, providerId string) map[string]*oapi.Resource {
 	resources := make(map[string]*oapi.Resource)
-	for _, resource := range r.Items() {
-		if resource.ProviderId != nil && *resource.ProviderId == providerId {
-			resources[resource.Id] = resource
-		}
+	for _, resource := range r.repo.ListByProviderID(providerId) {
+		resources[resource.Id] = resource
 	}
 	return resources
 }

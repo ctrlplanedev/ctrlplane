@@ -467,7 +467,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get relationship rules for a given workspace
+         * @description Returns all relationship rules for the specified workspace.
+         */
+        get: operations["getRelationshipRules"];
         put?: never;
         /** Create relationship rule */
         post: operations["createRelationshipRule"];
@@ -799,7 +803,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get deployment system link */
+        get: operations["getDeploymentSystemLink"];
         /** Link deployment to system */
         put: operations["linkDeploymentToSystem"];
         post?: never;
@@ -817,7 +822,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get environment system link */
+        get: operations["getEnvironmentSystemLink"];
         /** Link environment to system */
         put: operations["linkEnvironmentToSystem"];
         post?: never;
@@ -1126,8 +1132,9 @@ export interface components {
             /** @description IANA timezone for the rrule (e.g., America/New_York). Defaults to UTC if not specified */
             timezone?: string;
         };
-        DeploymentWithVariables: {
+        DeploymentWithVariablesAndSystems: {
             deployment: components["schemas"]["Deployment"];
+            systems: components["schemas"]["System"][];
             variables: components["schemas"]["DeploymentVariableWithValues"][];
         };
         DispatchContext: {
@@ -1179,6 +1186,9 @@ export interface components {
         EnvironmentRequestAccepted: {
             id: string;
             message: string;
+        };
+        EnvironmentWithSystems: components["schemas"]["Environment"] & {
+            systems: components["schemas"]["System"][];
         };
         Error: {
             /** @description Error code */
@@ -1611,9 +1621,21 @@ export interface components {
             slug: string;
             workspaceId: string;
         };
+        SystemDeploymentLink: {
+            deploymentId: string;
+            systemId: string;
+        };
+        SystemEnvironmentLink: {
+            environmentId: string;
+            systemId: string;
+        };
         SystemRequestAccepted: {
             id: string;
             message: string;
+        };
+        SystemWithLinkedEntities: components["schemas"]["System"] & {
+            deployments: components["schemas"]["Deployment"][];
+            environments: components["schemas"]["Environment"][];
         };
         TerraformCloudRunMetricProvider: {
             /**
@@ -2437,7 +2459,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeploymentWithVariables"];
+                    "application/json": components["schemas"]["DeploymentWithVariablesAndSystems"];
                 };
             };
             /** @description Invalid request */
@@ -3109,7 +3131,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Environment"];
+                    "application/json": components["schemas"]["EnvironmentWithSystems"];
                 };
             };
             /** @description Invalid request */
@@ -3752,6 +3774,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PolicyRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getRelationshipRules: {
+        parameters: {
+            query?: {
+                /** @description Number of items to skip */
+                offset?: number;
+                /** @description Maximum number of items to return */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["RelationshipRule"][];
+                        /** @description Maximum number of items returned */
+                        limit: number;
+                        /** @description Number of items skipped */
+                        offset: number;
+                        /** @description Total number of items available */
+                        total: number;
+                    };
                 };
             };
             /** @description Invalid request */
@@ -4680,7 +4756,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemWithLinkedEntities"];
                 };
             };
             /** @description Invalid request */
@@ -4775,6 +4851,51 @@ export interface operations {
             };
         };
     };
+    getDeploymentSystemLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemDeploymentLink"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     linkDeploymentToSystem: {
         parameters: {
             query?: never;
@@ -4843,6 +4964,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getEnvironmentSystemLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemEnvironmentLink"];
                 };
             };
             /** @description Invalid request */

@@ -59,7 +59,7 @@ func New(wsId string) *InMemory {
 		Policies:                 createTypedStore[*oapi.Policy](router, "policy"),
 		PolicySkips:              createTypedStore[*oapi.PolicySkip](router, "policy_skip"),
 		systems:                  createTypedStore[*oapi.System](router, "system"),
-		Releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
+		releases:                 createMemDBStore[*oapi.Release](router, "release", memdb),
 		Jobs:                     createMemDBStore[*oapi.Job](router, "job", memdb),
 		jobAgents:                createTypedStore[*oapi.JobAgent](router, "job_agent"),
 		UserApprovalRecords:      createTypedStore[*oapi.UserApprovalRecord](router, "user_approval_record"),
@@ -97,7 +97,7 @@ type InMemory struct {
 	Policies         cmap.ConcurrentMap[string, *oapi.Policy]
 	PolicySkips      cmap.ConcurrentMap[string, *oapi.PolicySkip]
 	systems          cmap.ConcurrentMap[string, *oapi.System]
-	Releases         *indexstore.Store[*oapi.Release]
+	releases         *indexstore.Store[*oapi.Release]
 	JobVerifications cmap.ConcurrentMap[string, *oapi.JobVerification]
 
 	Jobs      *indexstore.Store[*oapi.Job]
@@ -131,6 +131,21 @@ func (a *deploymentVersionRepoAdapter) GetByDeploymentID(deploymentID string) ([
 // DeploymentVersions implements repository.Repo.
 func (s *InMemory) DeploymentVersions() repository.DeploymentVersionRepo {
 	return &deploymentVersionRepoAdapter{s.deploymentVersions}
+}
+
+// releaseRepoAdapter wraps an indexstore.Store to satisfy the
+// explicit ReleaseRepo interface.
+type releaseRepoAdapter struct {
+	*indexstore.Store[*oapi.Release]
+}
+
+func (a *releaseRepoAdapter) GetByReleaseTargetKey(key string) ([]*oapi.Release, error) {
+	return a.GetBy("release_target_key", key)
+}
+
+// Releases implements repository.Repo.
+func (s *InMemory) Releases() repository.ReleaseRepo {
+	return &releaseRepoAdapter{s.releases}
 }
 
 // cmapRepoAdapter wraps a cmap.ConcurrentMap to satisfy a basic entity repo interface.
@@ -196,13 +211,75 @@ func (a *resourceRepoAdapter) GetByIdentifier(identifier string) (*oapi.Resource
 	return nil, false
 }
 
+func (a *resourceRepoAdapter) GetByIdentifiers(identifiers []string) map[string]*oapi.Resource {
+	wanted := make(map[string]struct{}, len(identifiers))
+	for _, id := range identifiers {
+		wanted[id] = struct{}{}
+	}
+	result := make(map[string]*oapi.Resource, len(identifiers))
+	for item := range a.store.IterBuffered() {
+		if _, ok := wanted[item.Val.Identifier]; ok {
+			result[item.Val.Identifier] = item.Val
+		}
+	}
+	return result
+}
+
+func (a *resourceRepoAdapter) GetSummariesByIdentifiers(identifiers []string) map[string]*repository.ResourceSummary {
+	wanted := make(map[string]struct{}, len(identifiers))
+	for _, id := range identifiers {
+		wanted[id] = struct{}{}
+	}
+	result := make(map[string]*repository.ResourceSummary, len(identifiers))
+	for item := range a.store.IterBuffered() {
+		if _, ok := wanted[item.Val.Identifier]; ok {
+			r := item.Val
+			result[r.Identifier] = &repository.ResourceSummary{
+				Id:         r.Id,
+				Identifier: r.Identifier,
+				ProviderId: r.ProviderId,
+				Version:    r.Version,
+				Name:       r.Name,
+				Kind:       r.Kind,
+				CreatedAt:  r.CreatedAt,
+				UpdatedAt:  r.UpdatedAt,
+			}
+		}
+	}
+	return result
+}
+
+func (a *resourceRepoAdapter) ListByProviderID(providerID string) []*oapi.Resource {
+	var result []*oapi.Resource
+	for item := range a.store.IterBuffered() {
+		if item.Val.ProviderId != nil && *item.Val.ProviderId == providerID {
+			result = append(result, item.Val)
+		}
+	}
+	return result
+}
+
 func (a *resourceRepoAdapter) Set(entity *oapi.Resource) error {
 	a.store.Set(entity.Id, entity)
 	return nil
 }
 
+func (a *resourceRepoAdapter) SetBatch(entities []*oapi.Resource) error {
+	for _, entity := range entities {
+		a.store.Set(entity.Id, entity)
+	}
+	return nil
+}
+
 func (a *resourceRepoAdapter) Remove(id string) error {
 	a.store.Remove(id)
+	return nil
+}
+
+func (a *resourceRepoAdapter) RemoveBatch(ids []string) error {
+	for _, id := range ids {
+		a.store.Remove(id)
+	}
 	return nil
 }
 
