@@ -2120,6 +2120,34 @@
             ],
             "type": "object"
          },
+         "SystemWithLinkedEntities": {
+            "allOf": [
+               {
+                  "$ref": "#/components/schemas/System"
+               },
+               {
+                  "properties": {
+                     "deployments": {
+                        "items": {
+                           "$ref": "#/components/schemas/Deployment"
+                        },
+                        "type": "array"
+                     },
+                     "environments": {
+                        "items": {
+                           "$ref": "#/components/schemas/Environment"
+                        },
+                        "type": "array"
+                     }
+                  },
+                  "required": [
+                     "environments",
+                     "deployments"
+                  ],
+                  "type": "object"
+               }
+            ]
+         },
          "TerraformCloudRunMetricProvider": {
             "properties": {
                "address": {
@@ -7405,7 +7433,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/System"
+                           "$ref": "#/components/schemas/SystemWithLinkedEntities"
                         }
                      }
                   },

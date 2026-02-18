@@ -29,7 +29,8 @@ export const getSystem: AsyncTypedHandler<
       system.response.status,
     );
 
-  res.status(200).json(system.data.system);
+  const { system: sys, environments, deployments } = system.data;
+  res.status(200).json({ ...sys, environments, deployments });
 };
 
 export const upsertSystem: AsyncTypedHandler<

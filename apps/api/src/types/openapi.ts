@@ -1629,6 +1629,10 @@ export interface components {
             id: string;
             message: string;
         };
+        SystemWithLinkedEntities: components["schemas"]["System"] & {
+            deployments: components["schemas"]["Deployment"][];
+            environments: components["schemas"]["Environment"][];
+        };
         TerraformCloudRunMetricProvider: {
             /**
              * @description Terraform Cloud address
@@ -4694,7 +4698,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["System"];
+                    "application/json": components["schemas"]["SystemWithLinkedEntities"];
                 };
             };
             /** @description Invalid request */
