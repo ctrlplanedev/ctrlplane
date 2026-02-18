@@ -799,7 +799,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get deployment system link */
+        get: operations["getDeploymentSystemLink"];
         /** Link deployment to system */
         put: operations["linkDeploymentToSystem"];
         post?: never;
@@ -817,7 +818,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get environment system link */
+        get: operations["getEnvironmentSystemLink"];
         /** Link environment to system */
         put: operations["linkEnvironmentToSystem"];
         post?: never;
@@ -1614,6 +1616,14 @@ export interface components {
             name: string;
             slug: string;
             workspaceId: string;
+        };
+        SystemDeploymentLink: {
+            deploymentId: string;
+            systemId: string;
+        };
+        SystemEnvironmentLink: {
+            environmentId: string;
+            systemId: string;
         };
         SystemRequestAccepted: {
             id: string;
@@ -4779,6 +4789,51 @@ export interface operations {
             };
         };
     };
+    getDeploymentSystemLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the deployment */
+                deploymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemDeploymentLink"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     linkDeploymentToSystem: {
         parameters: {
             query?: never;
@@ -4847,6 +4902,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemRequestAccepted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getEnvironmentSystemLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ID of the workspace */
+                workspaceId: string;
+                /** @description ID of the system */
+                systemId: string;
+                /** @description ID of the environment */
+                environmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemEnvironmentLink"];
                 };
             };
             /** @description Invalid request */

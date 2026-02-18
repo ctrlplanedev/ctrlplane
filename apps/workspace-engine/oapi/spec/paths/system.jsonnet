@@ -49,4 +49,34 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.badRequestResponse(),
     },
   },
+  '/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}': {
+    get: {
+      summary: 'Get deployment system link',
+      operationId: 'getDeploymentSystemLink',
+      description: 'Returns a specific deployment system link by ID.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('SystemDeploymentLink'), 'The requested deployment system link')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
+  '/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}': {
+    get: {
+      summary: 'Get environment system link',
+      operationId: 'getEnvironmentSystemLink',
+      description: 'Returns a specific environment system link by ID.',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.environmentIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('SystemEnvironmentLink'), 'The requested environment system link')
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
+  },
 }

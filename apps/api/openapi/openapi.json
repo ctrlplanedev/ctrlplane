@@ -2075,6 +2075,36 @@
             ],
             "type": "object"
          },
+         "SystemDeploymentLink": {
+            "properties": {
+               "deploymentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "deploymentId"
+            ],
+            "type": "object"
+         },
+         "SystemEnvironmentLink": {
+            "properties": {
+               "environmentId": {
+                  "type": "string"
+               },
+               "systemId": {
+                  "type": "string"
+               }
+            },
+            "required": [
+               "systemId",
+               "environmentId"
+            ],
+            "type": "object"
+         },
          "SystemRequestAccepted": {
             "properties": {
                "id": {
@@ -7517,6 +7547,71 @@
             },
             "summary": "Unlink deployment from system"
          },
+         "get": {
+            "operationId": "getDeploymentSystemLink",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemDeploymentLink"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment system link"
+         },
          "put": {
             "operationId": "linkDeploymentToSystem",
             "parameters": [
@@ -7648,6 +7743,71 @@
                }
             },
             "summary": "Unlink environment from system"
+         },
+         "get": {
+            "operationId": "getEnvironmentSystemLink",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemEnvironmentLink"
+                        }
+                     }
+                  },
+                  "description": "OK response"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get environment system link"
          },
          "put": {
             "operationId": "linkEnvironmentToSystem",

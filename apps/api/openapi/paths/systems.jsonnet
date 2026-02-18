@@ -71,6 +71,18 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
   '/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}': {
+    get: {
+      summary: 'Get deployment system link',
+      operationId: 'getDeploymentSystemLink',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.deploymentIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('SystemDeploymentLink'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
     put: {
       summary: 'Link deployment to system',
       operationId: 'linkDeploymentToSystem',
@@ -97,6 +109,18 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
   '/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}': {
+    get: {
+      summary: 'Get environment system link',
+      operationId: 'getEnvironmentSystemLink',
+      parameters: [
+        openapi.workspaceIdParam(),
+        openapi.systemIdParam(),
+        openapi.environmentIdParam(),
+      ],
+      responses: openapi.okResponse(openapi.schemaRef('SystemEnvironmentLink'))
+                 + openapi.notFoundResponse()
+                 + openapi.badRequestResponse(),
+    },
     put: {
       summary: 'Link environment to system',
       operationId: 'linkEnvironmentToSystem',
@@ -121,5 +145,5 @@ local openapi = import '../lib/openapi.libsonnet';
                  + openapi.notFoundResponse()
                  + openapi.badRequestResponse(),
     },
-  },
+  }
 }

@@ -41,6 +41,7 @@
       (import 'schemas/environments.jsonnet') +
       (import 'schemas/verification.jsonnet') +
       (import 'schemas/resourcevariables.jsonnet') +
+      (import 'schemas/systems.jsonnet') +
       (import 'schemas/workflows.jsonnet'),
   },
 }

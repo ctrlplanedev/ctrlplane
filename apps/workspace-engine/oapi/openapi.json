@@ -7025,6 +7025,142 @@
             "summary": "Get system"
          }
       },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/deployments/{deploymentId}": {
+         "get": {
+            "description": "Returns a specific deployment system link by ID.",
+            "operationId": "getDeploymentSystemLink",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the deployment",
+                  "in": "path",
+                  "name": "deploymentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemDeploymentLink"
+                        }
+                     }
+                  },
+                  "description": "The requested deployment system link"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get deployment system link"
+         }
+      },
+      "/v1/workspaces/{workspaceId}/systems/{systemId}/environments/{environmentId}": {
+         "get": {
+            "description": "Returns a specific environment system link by ID.",
+            "operationId": "getEnvironmentSystemLink",
+            "parameters": [
+               {
+                  "description": "ID of the workspace",
+                  "in": "path",
+                  "name": "workspaceId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the system",
+                  "in": "path",
+                  "name": "systemId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               },
+               {
+                  "description": "ID of the environment",
+                  "in": "path",
+                  "name": "environmentId",
+                  "required": true,
+                  "schema": {
+                     "type": "string"
+                  }
+               }
+            ],
+            "responses": {
+               "200": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/SystemEnvironmentLink"
+                        }
+                     }
+                  },
+                  "description": "The requested environment system link"
+               },
+               "400": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Invalid request"
+               },
+               "404": {
+                  "content": {
+                     "application/json": {
+                        "schema": {
+                           "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                     }
+                  },
+                  "description": "Resource not found"
+               }
+            },
+            "summary": "Get environment system link"
+         }
+      },
       "/v1/workspaces/{workspaceId}/workflows": {
          "get": {
             "description": "Returns a list of workflows.",
