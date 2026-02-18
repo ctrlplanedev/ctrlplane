@@ -1339,21 +1339,6 @@
             ],
             "type": "object"
          },
-         "PolicyRequestAccepted": {
-            "properties": {
-               "id": {
-                  "type": "string"
-               },
-               "message": {
-                  "type": "string"
-               }
-            },
-            "required": [
-               "id",
-               "message"
-            ],
-            "type": "object"
-         },
          "PolicyRule": {
             "properties": {
                "anyApproval": {
@@ -5686,7 +5671,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/PolicyRequestAccepted"
+                           "$ref": "#/components/schemas/Policy"
                         }
                      }
                   },
@@ -5734,11 +5719,11 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/PolicyRequestAccepted"
+                           "$ref": "#/components/schemas/Policy"
                         }
                      }
                   },
-                  "description": "Policy updated"
+                  "description": "Policy deleted"
                },
                "400": {
                   "content": {
@@ -5856,7 +5841,7 @@
                   "content": {
                      "application/json": {
                         "schema": {
-                           "$ref": "#/components/schemas/PolicyRequestAccepted"
+                           "$ref": "#/components/schemas/Policy"
                         }
                      }
                   },

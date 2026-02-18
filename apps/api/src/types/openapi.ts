@@ -1348,10 +1348,6 @@ export interface components {
             selector: string;
             workspaceId: string;
         };
-        PolicyRequestAccepted: {
-            id: string;
-            message: string;
-        };
         PolicyRule: {
             anyApproval?: components["schemas"]["AnyApprovalRule"];
             createdAt: string;
@@ -3649,7 +3645,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyRequestAccepted"];
+                    "application/json": components["schemas"]["Policy"];
                 };
             };
             /** @description Invalid request */
@@ -3730,7 +3726,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyRequestAccepted"];
+                    "application/json": components["schemas"]["Policy"];
                 };
             };
             /** @description Invalid request */
@@ -3767,13 +3763,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Policy updated */
+            /** @description Policy deleted */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyRequestAccepted"];
+                    "application/json": components["schemas"]["Policy"];
                 };
             };
             /** @description Invalid request */

@@ -49,15 +49,6 @@ local openapi = import '../lib/openapi.libsonnet';
     },
   },
 
-  PolicyRequestAccepted: {
-    type: 'object',
-    required: ['id', 'message'],
-    properties: {
-      id: { type: 'string' },
-      message: { type: 'string' },
-    },
-  },
-
   Policy: {
     type: 'object',
     required: ['id', 'name', 'createdAt', 'workspaceId', 'selector', 'rules', 'metadata', 'priority', 'enabled'],
